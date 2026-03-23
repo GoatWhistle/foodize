@@ -1,0 +1,74 @@
+version: "3.9"
+
+services:
+  pg:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER}" ]
+      interval: 5s
+      retries: 5
+      timeout: 5s
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - app-net
+
+  backend:
+    build:
+      dockerfile: Dockerfile
+      context: ./src/backend
+      target: backend
+    env_file:
+      - .env
+    depends_on:
+      pg:
+        condition: service_healthy
+    environment:
+      DB_URL: ${DB__URL}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src/backend:/backend
+    networks:
+      - app-net
+
+  migrations:
+    build:
+      dockerfile: Dockerfile
+      context: ./src/backend
+      target: migrations
+    env_file:
+      - .env
+    entrypoint: /backend/entrypoint.sh
+    depends_on:
+      pg:
+        condition: service_healthy
+    environment:
+      DB_URL: ${DB__URL}
+    networks:
+      - app-net
+
+  frontend:
+    build:
+      dockerfile: Dockerfile
+      context: ./src/frontend
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    volumes:
+      - ./src/frontend:/frontend
+    networks:
+      - app-net
+
+volumes:
+  pgdata:
+
+networks:
+  app-net:
