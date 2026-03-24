@@ -8,7 +8,7 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from database import Base
-from features import *  # noqa
+from features import *
 
 # Alembic Config object
 config = context.config
