@@ -9,7 +9,7 @@ app = FastAPI()
 app.include_router(api_router)
 
 
-@app.get("/api/hehehehe")
+@app.get("/api/ping")
 async def ping():
     return {"status": "pong"}
 
