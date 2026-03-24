@@ -7,8 +7,8 @@ from database import Base, IdIntPkMixin
 
 
 if TYPE_CHECKING:
-    from ..users import User
-    from ..restaurants import Restaurant
+    from features.users.models import User
+    from features.restaurants.models import Restaurant
 
 
 class VendorProfile(Base, IdIntPkMixin):

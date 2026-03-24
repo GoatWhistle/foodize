@@ -8,14 +8,14 @@ from database.mixins.name_str import NameStrMixin
 from shared.enums.roles import UserRole
 
 if TYPE_CHECKING:
-    from ..orders.models.order import Order
+    from features.orders.models.order import Order
+    from features.vendors.models import VendorProfile
 
 
 class User(Base, IdIntPkMixin, NameStrMixin):
     phone_number: Mapped[str] = mapped_column(unique=True)
     user_role: Mapped[UserRole] = mapped_column(
-        Enum(UserRole),
-        server_default=UserRole.CUSTOMER.value
+        Enum(UserRole), server_default=UserRole.CUSTOMER.value
     )
 
     vendor_profile: Mapped["VendorProfile | None"] = relationship(back_populates="user")

@@ -11,7 +11,8 @@ app.include_router(api_router)
 
 @app.get("/api/hehe")
 async def ping():
-    return {"status": "barc"}
+    return {"status": "pong"}
+
 
 if __name__ == "__main__":
     uvicorn.run(

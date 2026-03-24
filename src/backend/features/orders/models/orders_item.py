@@ -5,8 +5,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database import Base, IdIntPkMixin
 
 if TYPE_CHECKING:
-    from .order import Order
-    from backend.features.menu.models import Menu
+    from features.orders.models.order import Order
+    from features.menu.models import Menu
 
 
 class OrderItem(Base, IdIntPkMixin):

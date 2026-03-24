@@ -9,17 +9,15 @@ from shared.enums.category import Category
 
 
 if TYPE_CHECKING:
-    from ..restaurants import Restaurant
-    from ..orders.models.orders_item import OrderItem
+    from features.restaurants.models import Restaurant
+    from features.orders.models.orders_item import OrderItem
 
 
 class Menu(Base, IdIntPkMixin, NameStrMixin):
     description: Mapped[str | None]
     price: Mapped[int]
     category: Mapped[Category] = mapped_column(
-        Enum(Category),
-        default=Category.SHAURMA,
-        nullable=True
+        Enum(Category), default=Category.SHAURMA, nullable=True
     )
     restaurant_id: Mapped[int] = mapped_column(ForeignKey("restaurants.id"))
     restaurant: Mapped["Restaurant"] = relationship(back_populates="menu_items")

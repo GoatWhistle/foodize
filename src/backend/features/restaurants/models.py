@@ -7,10 +7,9 @@ from database import IdIntPkMixin, Base
 from database.mixins.name_str import NameStrMixin
 
 if TYPE_CHECKING:
-    from ..vendors import VendorProfile
-    from ..menu import Menu
-    from ..orders.models.order import Order
-
+    from features.vendors.models import VendorProfile
+    from features.menu.models import Menu
+    from features.orders.models.order import Order
 
 
 class Restaurant(Base, IdIntPkMixin, NameStrMixin):
@@ -21,7 +20,3 @@ class Restaurant(Base, IdIntPkMixin, NameStrMixin):
 
     menu_items: Mapped[list["Menu"]] = relationship(back_populates="restaurant")
     orders: Mapped[list["Order"]] = relationship(back_populates="restaurant")
-
-
-
-

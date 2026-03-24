@@ -6,9 +6,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database import Base, IdIntPkMixin
 
 if TYPE_CHECKING:
-    from backend.features.users.models import User
-    from backend.features.restaurants.models import Restaurant
-    from .orders_item import OrderItem
+    from features.users.models import User
+    from features.restaurants.models import Restaurant
+    from features.orders.models.orders_item import OrderItem
+
 
 class Order(Base, IdIntPkMixin):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))

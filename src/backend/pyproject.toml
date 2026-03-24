@@ -1,9 +1,11 @@
 [project]
-name = "twinkle"
+name = "Twinkle"
 version = "0.1.0"
 description = ""
 author = [
     { name = "Mikhail Khorokhorin", email = "mikhailkhorokhorin@gmail.com" },
+    { name = "Timofey Pupykin", email = "pupykint@gmail.com" },
+    { name = "Ivan Gerasimov", email = "ivan.gerasimou@yandex.ru" },
 ]
 license = { text = "MIT" }
 readme = "../../README.md"
