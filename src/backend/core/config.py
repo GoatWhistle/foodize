@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from pydantic import BaseModel, PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 
@@ -38,6 +38,16 @@ class ApiPrefix(BaseModel):
     v1: ApiV1Prefix = ApiV1Prefix()
 
 
+class AuthJWT(BaseModel):
+    private_key_path: Path = BASE_DIR / "jwt-private.pem"
+    public_key_path: Path = BASE_DIR / "jwt-public.pem"
+    algorithm: str = "RS256"
+    access_token_lifetime_seconds: int = 1800
+    refresh_token_lifetime_seconds: int = 2_592_000
+    email_token_lifetime_seconds: int = 7200
+    password_token_lifetime_seconds: int = 600
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / ".env",
@@ -49,6 +59,7 @@ class Settings(BaseSettings):
     run: RunConfig
     db: DbConfig
     api: ApiPrefix = ApiPrefix()
+    auth_jwt: AuthJWT = AuthJWT()
 
 
 settings = Settings()

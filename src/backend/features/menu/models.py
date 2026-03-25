@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Enum
+from sqlalchemy import ForeignKey, Enum, String
 from sqlalchemy.orm import Mapped, relationship, mapped_column
 
 from database import Base, IdIntPkMixin
@@ -17,7 +17,7 @@ class Menu(Base, IdIntPkMixin, NameStrMixin):
     description: Mapped[str | None]
     price: Mapped[int]
     category: Mapped[Category] = mapped_column(
-        Enum(Category), default=Category.SHAURMA, nullable=True
+        String, default=Category.SHAURMA, server_default="SHAURMA", nullable=True
     )
     restaurant_id: Mapped[int] = mapped_column(ForeignKey("restaurants.id"))
     restaurant: Mapped["Restaurant"] = relationship(back_populates="menu_items")

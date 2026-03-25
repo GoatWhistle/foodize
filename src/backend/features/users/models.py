@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Enum
+from sqlalchemy import String
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 
 from database import IdIntPkMixin, Base
@@ -14,9 +14,9 @@ if TYPE_CHECKING:
 
 class User(Base, IdIntPkMixin, NameStrMixin):
     phone_number: Mapped[str] = mapped_column(unique=True)
+    hashed_password: Mapped[str]
     user_role: Mapped[UserRole] = mapped_column(
-        Enum(UserRole), server_default=UserRole.CUSTOMER.value
+        String, default=UserRole.CUSTOMER, server_default="CUSTOMER", nullable=False
     )
-
     vendor_profile: Mapped["VendorProfile | None"] = relationship(back_populates="user")
     orders: Mapped[list["Order"]] = relationship(back_populates="user")

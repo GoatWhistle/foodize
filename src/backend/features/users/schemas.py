@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from shared.enums.roles import UserRole
 
@@ -6,6 +6,7 @@ from shared.enums.roles import UserRole
 class UserBase(BaseModel):
     name: str
     phone_number: str
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserUpdate(BaseModel):
@@ -13,8 +14,10 @@ class UserUpdate(BaseModel):
 
 
 class UserCreate(UserBase):
-    user_role: UserRole = UserRole.ADMIN
+    user_role: UserRole
+    password: str
+    model_config = ConfigDict(from_attributes=True)
 
 
-class UserRead(UserCreate):
-    pass
+class UserRead(UserBase):
+    id: int
