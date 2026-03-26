@@ -44,9 +44,7 @@ async def get_user_by_id_or_404(
     return user
 
 
-async def ensure_user_not_exists_by_phone(
-    session: AsyncSession, phone_number: str
-) -> None:
+async def ensure_user_not_exists_by_phone(session: AsyncSession, phone_number: str) -> None:
     user = await get_user_by_phone(session, phone_number)
 
     if user:

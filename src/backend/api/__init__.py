@@ -1,5 +1,6 @@
-from settings.config.app_config import settings
 from fastapi import APIRouter
+
+from settings.config.app_config import settings
 
 from .v1 import router as api_v1_router
 

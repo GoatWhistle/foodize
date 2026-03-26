@@ -3,12 +3,13 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from database import Base, IdIntPkMixin
 
 if TYPE_CHECKING:
-    from features.users.models import User
-    from features.restaurants.models import Restaurant
     from features.orders.models.orders_item import OrderItem
+    from features.restaurants.models import Restaurant
+    from features.users.models import User
 
 
 class Order(Base, IdIntPkMixin):

@@ -1,6 +1,6 @@
 from pathlib import Path
-from settings.config.base import BASE_DIRECTORY, BaseConfig
 
+from settings.config.base import BASE_DIRECTORY, BaseConfig
 
 _JWT_DIR = BASE_DIRECTORY
 

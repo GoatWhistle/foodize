@@ -1,7 +1,8 @@
-from settings.config.app_config import settings
 from fastapi import APIRouter
-from features.users.router import router as user_router
-from features.auth.router import router as auth_router
+
+from features.auth.api import router as auth_router
+from features.users.api import router as user_router
+from settings.config.app_config import settings
 
 router = APIRouter(
     prefix=settings.api.v1.prefix,

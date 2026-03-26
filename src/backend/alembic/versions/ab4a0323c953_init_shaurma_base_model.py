@@ -8,9 +8,9 @@ Create Date: 2026-03-24 13:57:32.974257
 
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "ab4a0323c953"
@@ -48,9 +48,7 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id", name=op.f("pk_vendor_profiles")),
         sa.UniqueConstraint("user_id", name=op.f("uq_vendor_profiles_user_id")),
     )
-    op.create_index(
-        op.f("ix_vendor_profiles_id"), "vendor_profiles", ["id"], unique=False
-    )
+    op.create_index(op.f("ix_vendor_profiles_id"), "vendor_profiles", ["id"], unique=False)
     op.create_table(
         "restaurants",
         sa.Column("address", sa.String(), nullable=False),
@@ -92,18 +90,14 @@ def upgrade() -> None:
         sa.Column("restaurant_id", sa.Integer(), nullable=False),
         sa.Column("status", sa.String(), server_default="pending", nullable=False),
         sa.Column("total_price", sa.Integer(), nullable=False),
-        sa.Column(
-            "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
-        ),
+        sa.Column("created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False),
         sa.Column("id", sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(
             ["restaurant_id"],
             ["restaurants.id"],
             name=op.f("fk_orders_restaurant_id_restaurants"),
         ),
-        sa.ForeignKeyConstraint(
-            ["user_id"], ["users.id"], name=op.f("fk_orders_user_id_users")
-        ),
+        sa.ForeignKeyConstraint(["user_id"], ["users.id"], name=op.f("fk_orders_user_id_users")),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_orders")),
     )
     op.create_index(op.f("ix_orders_id"), "orders", ["id"], unique=False)

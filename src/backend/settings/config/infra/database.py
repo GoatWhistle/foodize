@@ -1,4 +1,5 @@
 from pydantic import PostgresDsn
+
 from settings.config.base import BaseConfig
 
 

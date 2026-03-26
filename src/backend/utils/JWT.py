@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta
+
 import bcrypt
 import jwt
 from pytz import utc
+
 from settings.config.app_config import settings
 
 

@@ -1,19 +1,19 @@
+from fastapi import Depends, Request, Response
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import Response, Depends
-from settings.config.app_config import settings
+
 from database import db_helper
 from features.auth.schemas import TokenResponse, UserLogin
 from features.users.crud import create_user
 from features.users.dependecies import (
-    get_user_by_phone_or_401,
-    get_user_by_id_or_404,
     ensure_user_not_exists_by_phone,
+    get_user_by_id_or_404,
+    get_user_by_phone_or_401,
 )
-from features.users.schemas import UserRead, UserCreate
+from features.users.schemas import UserCreate, UserRead
+from settings.config.app_config import settings
 from shared.exceptions.existence import AuthException
 from utils.JWT import create_access_token, create_refresh_token, decode_jwt
-from fastapi import Request
-from fastapi.security import OAuth2PasswordBearer
 
 
 class OAuth2PasswordBearerWithCookie(OAuth2PasswordBearer):

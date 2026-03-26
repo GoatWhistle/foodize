@@ -1,16 +1,15 @@
 from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey, String
-from sqlalchemy.orm import Mapped, relationship, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base, IdIntPkMixin
 from database.mixins.name_str import NameStrMixin
 from shared.enums.category import Category
 
-
 if TYPE_CHECKING:
-    from features.restaurants.models import Restaurant
     from features.orders.models.orders_item import OrderItem
+    from features.restaurants.models import Restaurant
 
 
 class Menu(Base, IdIntPkMixin, NameStrMixin):

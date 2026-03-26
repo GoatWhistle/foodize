@@ -6,5 +6,5 @@ __all__ = [
 ]
 
 from .base import Base
-from .db_helper import db_helper, DbHelper
+from .db_helper import DbHelper, db_helper
 from .mixins import IdIntPkMixin

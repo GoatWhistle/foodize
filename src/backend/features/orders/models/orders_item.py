@@ -2,11 +2,12 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from database import Base, IdIntPkMixin
 
 if TYPE_CHECKING:
-    from features.orders.models.order import Order
     from features.menu.models import Menu
+    from features.orders.models.order import Order
 
 
 class OrderItem(Base, IdIntPkMixin):

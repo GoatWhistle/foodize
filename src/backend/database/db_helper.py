@@ -1,9 +1,9 @@
 from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import (
-    async_sessionmaker,
     AsyncEngine,
     AsyncSession,
+    async_sessionmaker,
     create_async_engine,
 )
 

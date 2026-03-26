@@ -1,6 +1,6 @@
 from settings.config.base import BaseConfig
 from settings.config.infra import DbConfig
-from settings.config.runtime import RunConfig, ApiPrefix, AuthConfig
+from settings.config.runtime import ApiPrefix, AuthConfig, RunConfig
 
 
 class AppConfig(BaseConfig):
