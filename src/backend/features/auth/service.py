@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Response, Depends
-from core.config import settings
+from settings.config.app_config import settings
 from database import db_helper
 from features.auth.schemas import TokenResponse, UserLogin
 from features.users.crud import create_user
@@ -79,7 +79,7 @@ async def login_user(
         key="access_token",
         value=access_token,
         httponly=True,
-        max_age=settings.auth_jwt.access_token_lifetime_seconds,
+        max_age=settings.auth.access_token_lifetime_seconds,
         samesite="lax",
     )
 
@@ -87,7 +87,7 @@ async def login_user(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        max_age=settings.auth_jwt.refresh_token_lifetime_seconds,
+        max_age=settings.auth.refresh_token_lifetime_seconds,
         samesite="lax",
     )
 

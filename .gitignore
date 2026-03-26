@@ -1,8 +1,11 @@
 .venv/
 .idea/
+.ruff_cache/
 node_modules/
-.env
 dist/
+
 *.pem
 jwt-private.key
-src/backend/jwt-private.key.pub
+jwt-private.key.pub
+
+.env

@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Enum, String
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, relationship, mapped_column
 
 from database import Base, IdIntPkMixin

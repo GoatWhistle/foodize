@@ -1,4 +1,4 @@
-FROM python:3.13.0-bookworm AS base
+FROM python:3.13.0-bookworm
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -14,12 +14,3 @@ COPY pyproject.toml poetry.lock /backend/
 RUN poetry install --no-interaction --no-ansi --no-root
 
 COPY . /backend/
-
-FROM base AS migrations
-
-RUN chmod +x /backend/entrypoint.sh
-CMD ["/backend/entrypoint.sh"]
-
-FROM base AS backend
-
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

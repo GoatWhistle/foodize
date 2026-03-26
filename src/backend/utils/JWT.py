@@ -2,21 +2,21 @@ from datetime import datetime, timedelta
 import bcrypt
 import jwt
 from pytz import utc
-from core.config import settings
+from settings.config.app_config import settings
 
 
 def encode_jwt(
     payload: dict,
-    private_key: str = settings.auth_jwt.private_key_path.read_text(),
-    algorithm: str = settings.auth_jwt.algorithm,
+    private_key: str = settings.auth.private_key_path.read_text(),
+    algorithm: str = settings.auth.algorithm,
 ):
     return jwt.encode(payload, private_key, algorithm=algorithm)
 
 
 def decode_jwt(
     token: str,
-    public_key: str = settings.auth_jwt.public_key_path.read_text(),
-    algorithm: str = settings.auth_jwt.algorithm,
+    public_key: str = settings.auth.public_key_path.read_text(),
+    algorithm: str = settings.auth.algorithm,
 ) -> dict:
     return jwt.decode(token, public_key, algorithms=[algorithm])
 
@@ -42,7 +42,7 @@ def create_access_token(user_id: int, phone_number: str) -> str:
     return create_jwt_token(
         user_id=user_id,
         phone_number=phone_number,
-        lifetime_seconds=settings.auth_jwt.access_token_lifetime_seconds,
+        lifetime_seconds=settings.auth.access_token_lifetime_seconds,
     )
 
 
@@ -50,7 +50,7 @@ def create_refresh_token(user_id: int, phone_number: str) -> str:
     return create_jwt_token(
         user_id=user_id,
         phone_number=phone_number,
-        lifetime_seconds=settings.auth_jwt.refresh_token_lifetime_seconds,
+        lifetime_seconds=settings.auth.refresh_token_lifetime_seconds,
     )
 
 

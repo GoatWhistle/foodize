@@ -1,4 +1,4 @@
-from core.config import settings
+from settings.config.app_config import settings
 from fastapi import APIRouter
 from features.users.router import router as user_router
 from features.auth.router import router as auth_router
