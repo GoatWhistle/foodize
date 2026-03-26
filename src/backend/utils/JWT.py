@@ -9,18 +9,23 @@ from settings.config.app_config import settings
 
 def encode_jwt(
     payload: dict,
-    private_key: str = settings.auth.private_key_path.read_text(),
+    private_key: str | None = None,
     algorithm: str = settings.auth.algorithm,
 ):
+    if private_key is None:
+        private_key = settings.auth.private_key_path.read_text()
     return jwt.encode(payload, private_key, algorithm=algorithm)
 
 
 def decode_jwt(
     token: str,
-    public_key: str = settings.auth.public_key_path.read_text(),
+    public_key: str | None = None,
     algorithm: str = settings.auth.algorithm,
 ) -> dict:
+    if public_key is None:
+        public_key = settings.auth.public_key_path.read_text()
     return jwt.decode(token, public_key, algorithms=[algorithm])
+
 
 
 def create_jwt_token(
