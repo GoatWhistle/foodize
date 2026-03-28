@@ -1,16 +1,23 @@
-FROM python:3.13.0-bookworm
+FROM python:3.13.0-bookworm AS base
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
+ENV UV_SYSTEM_PYTHON=1
+
+COPY --from=ghcr.io/astral-sh/uv:0.6.0 /uv /uvx /bin/
 
 WORKDIR /backend
 
 RUN apt-get update && apt-get install -y netcat-openbsd && apt-get clean
 
-RUN pip install --upgrade pip wheel "poetry==2.1.1"
-RUN poetry config virtualenvs.create false
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-install-project --no-dev
 
-COPY pyproject.toml poetry.lock /backend/
-RUN poetry install --no-interaction --no-ansi --no-root
+COPY . .
 
-COPY . /backend/
+FROM base AS migrations
+RUN chmod +x /backend/entrypoint.sh
+CMD ["/backend/entrypoint.sh"]
+
+FROM base AS backend
+CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
