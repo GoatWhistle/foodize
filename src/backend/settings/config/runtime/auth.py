@@ -2,7 +2,7 @@ from pathlib import Path
 
 from settings.config.base import BASE_DIRECTORY, BaseConfig
 
-_JWT_DIR = BASE_DIRECTORY
+_JWT_DIR = BASE_DIRECTORY / "certs"
 
 
 class AuthConfig(BaseConfig):
