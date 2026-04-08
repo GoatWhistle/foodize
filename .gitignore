@@ -7,5 +7,6 @@ dist/
 *.pem
 jwt-private.key
 jwt-private.key.pub
+certs/
 
 .env

@@ -1,8 +1,7 @@
 SHELL := /bin/bash
-
 SERVICE ?=
-BACKEND_DIR := src/backend
-
+BACKEND_DIR := $(CURDIR)/src/backend
+CERTS_DIR := $(BACKEND_DIR)/certs
 .PHONY: help install lint build up down stop logs run
 
 help:
@@ -21,6 +20,13 @@ help:
 
 install:
 	cd $(BACKEND_DIR) && pip install poetry && poetry install
+
+generate-keys:
+	@mkdir -p $(CERTS_DIR)
+	@echo "Generating RSA keys..."
+	openssl genrsa -out $(CERTS_DIR)/jwt-private.pem 2048
+	openssl rsa -in $(CERTS_DIR)/jwt-private.pem -outform PEM -pubout -out $(CERTS_DIR)/jwt-public.pem
+	@echo "Keys generated in $(CERTS_DIR)"
 
 lint:
 	cd $(BACKEND_DIR) && poetry run pre-commit run --all-files
