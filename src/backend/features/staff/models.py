@@ -1,11 +1,13 @@
 from typing import TYPE_CHECKING
+
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from database import Base, IdIntPkMixin
 
 if TYPE_CHECKING:
-    from features.users.models import User
     from features.restaurants.models import Restaurant
+    from features.users.models import User
 
 
 class StaffProfile(Base, IdIntPkMixin):

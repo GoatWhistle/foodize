@@ -27,7 +27,6 @@ def decode_jwt(
     return jwt.decode(token, public_key, algorithms=[algorithm])
 
 
-
 def create_jwt_token(
     user_id: int,
     phone_number: str,

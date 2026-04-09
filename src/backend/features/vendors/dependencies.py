@@ -4,21 +4,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from database import db_helper
-from features import VendorProfile, User
+from features import User
 from features.auth.service import get_current_user
-from features.vendors.crud import get_vendor_profile_or_404, get_vendor_profile
-from shared.exceptions import RuleException, NotFoundException
+from features.vendors.crud import get_vendor_profile
+from shared.exceptions import NotFoundException, RuleException
 
 
 async def get_current_vendor(
-        session: AsyncSession = Depends(db_helper.dependency_session_getter),
-        user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+    user: User = Depends(get_current_user),
 ):
-    stmt = (
-        select(User)
-        .where(User.id == user.id)
-        .options(selectinload(User.vendor_profile))
-    )
+    stmt = select(User).where(User.id == user.id).options(selectinload(User.vendor_profile))
     result = await session.execute(stmt)
     user = result.scalar_one_or_none()
 
@@ -26,8 +22,8 @@ async def get_current_vendor(
 
 
 async def ensure_no_vendor_profile(
-        user: User,
-        session: AsyncSession,
+    user: User,
+    session: AsyncSession,
 ):
     vendor = await get_vendor_profile(session, user.id)
     if vendor:
@@ -35,8 +31,8 @@ async def ensure_no_vendor_profile(
 
 
 async def get_vendor_or_404(
-        user: User,
-        session: AsyncSession,
+    user: User,
+    session: AsyncSession,
 ):
     vendor = await get_vendor_profile(session, user.id)
     if not vendor:

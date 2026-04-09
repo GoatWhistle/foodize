@@ -2,9 +2,9 @@ from features.menu.models import Menu
 from features.orders.models.order import Order
 from features.orders.models.orders_item import OrderItem
 from features.restaurants.models import Restaurant
+from features.staff.models import StaffProfile
 from features.users.models import User
 from features.vendors.models import VendorProfile
-from features.staff.models import StaffProfile
 
 __all__ = [
     "User",
