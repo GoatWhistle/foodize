@@ -1,7 +1,12 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from features.restaurants.crud import create_restaurant_in_db
-from features.restaurants.schemas import RestaurantCreate
+from features.restaurants.crud import (
+    create_restaurant_in_db,
+    get_vendor_restaurants_from_db,
+    update_restaurant_in_db,
+)
+from features.restaurants.dependencies import get_restaurant_and_check_ownership
+from features.restaurants.schemas import RestaurantCreate, RestaurantUpdate
 
 
 async def register_new_restaurant(
@@ -9,3 +14,17 @@ async def register_new_restaurant(
 ):
 
     return await create_restaurant_in_db(session, restaurant_data, vendor_id)
+
+
+async def update_restaurant_logic(
+    session: AsyncSession, restaurant_id: int, update_data: RestaurantUpdate, vendor_id: int
+):
+    restaurant = await get_restaurant_and_check_ownership(
+        session=session, restaurant_id=restaurant_id, vendor_id=vendor_id
+    )
+
+    return await update_restaurant_in_db(session, restaurant, update_data)
+
+
+async def get_my_restaurants(session: AsyncSession, vendor_id: int):
+    return await get_vendor_restaurants_from_db(session, vendor_id)

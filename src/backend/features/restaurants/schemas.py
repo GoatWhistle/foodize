@@ -11,3 +11,8 @@ class RestaurantResponse(BaseModel):
     name: str
     address: str
     vendor_id: int
+
+
+class RestaurantUpdate(BaseModel):
+    name: str = None
+    address: str = None
