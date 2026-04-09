@@ -1,7 +1,10 @@
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from features import User
 from features.users.schemas import UserCreate
 from utils.JWT import hash_password
+
+
 async def create_user(
     session: AsyncSession,
     user_in: UserCreate,

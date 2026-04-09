@@ -1,6 +1,10 @@
 from pathlib import Path
+
 from settings.config.base import BASE_DIRECTORY, BaseConfig
+
 _JWT_DIR = BASE_DIRECTORY / "certs"
+
+
 class AuthConfig(BaseConfig):
     private_key_path: Path = _JWT_DIR / "jwt-private.pem"
     public_key_path: Path = _JWT_DIR / "jwt-public.pem"

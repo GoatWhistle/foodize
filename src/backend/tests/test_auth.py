@@ -1,7 +1,11 @@
 from unittest.mock import AsyncMock, patch
+
 import pytest
+
 from features.users.models import User
 from shared.enums.roles import UserRole
+
+
 @pytest.mark.asyncio
 async def test_register_user(client, mock_db_session):
     with patch("features.auth.service.ensure_user_not_exists_by_phone", new_callable=AsyncMock):
@@ -28,6 +32,8 @@ async def test_register_user(client, mock_db_session):
             assert data["name"] == "Test User"
             assert data["phone_number"] == "1234567890"
             assert "id" in data
+
+
 @pytest.mark.asyncio
 async def test_login_user(client, mock_db_session):
     mock_user = User(

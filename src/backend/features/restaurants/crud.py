@@ -1,8 +1,12 @@
 import uuid
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from features import Restaurant
 from features.restaurants.schemas import RestaurantCreate, RestaurantUpdate
+
+
 async def create_restaurant_in_db(
     session: AsyncSession, restaurant_data: RestaurantCreate, vendor_id: uuid.UUID
 ) -> Restaurant:
@@ -10,6 +14,8 @@ async def create_restaurant_in_db(
     session.add(new_restaurant)
     await session.commit()
     return new_restaurant
+
+
 async def update_restaurant_in_db(
     session: AsyncSession, restaurant: Restaurant, update_data: RestaurantUpdate
 ) -> Restaurant:
@@ -19,6 +25,8 @@ async def update_restaurant_in_db(
     await session.commit()
     await session.refresh(restaurant)
     return restaurant
+
+
 async def get_vendor_restaurants_from_db(
     session: AsyncSession, vendor_id: uuid.UUID
 ) -> list[Restaurant]:

@@ -4,6 +4,7 @@ from features.restaurants.models import Restaurant
 from features.staff.models import StaffProfile
 from features.users.models import User
 from features.vendors.models import VendorProfile
+
 __all__ = [
     "User",
     "VendorProfile",

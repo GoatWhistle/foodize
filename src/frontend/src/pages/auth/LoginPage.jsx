@@ -1,12 +1,12 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../../store/useAuthStore';
-import { ROUTES } from '../../constants/routes';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "../../store/useAuthStore";
+import { ROUTES } from "../../constants/routes";
 
 const LoginPage = () => {
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const login = useAuthStore((state) => state.login);
@@ -14,14 +14,16 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setIsLoading(true);
 
     try {
       await login({ phone_number: phoneNumber, password });
       navigate(ROUTES.HOME);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Ошибка при входе. Проверьте данные.');
+      setError(
+        err.response?.data?.detail || "Ошибка при входе. Проверьте данные.",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -31,7 +33,9 @@ const LoginPage = () => {
     <div className="auth-container">
       <div className="auth-card glass-panel">
         <h2 className="auth-title">Вход в Foodize</h2>
-        <p className="auth-subtitle">С возвращением! Пожалуйста, введите ваши данные.</p>
+        <p className="auth-subtitle">
+          С возвращением! Пожалуйста, введите ваши данные.
+        </p>
 
         {error && <div className="auth-error">{error}</div>}
 
@@ -63,15 +67,16 @@ const LoginPage = () => {
 
           <button
             type="submit"
-            className={`auth-submit-btn ${isLoading ? 'loading' : ''}`}
+            className={`auth-submit-btn ${isLoading ? "loading" : ""}`}
             disabled={isLoading}
           >
-            {isLoading ? 'Загрузка...' : 'Войти'}
+            {isLoading ? "Загрузка..." : "Войти"}
           </button>
         </form>
 
         <div className="auth-footer">
-          У вас ещё нет аккаунта? <a href={ROUTES.REGISTER}>Зарегистрироваться</a>
+          У вас ещё нет аккаунта?{" "}
+          <a href={ROUTES.REGISTER}>Зарегистрироваться</a>
         </div>
       </div>
     </div>
@@ -79,4 +84,3 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
-

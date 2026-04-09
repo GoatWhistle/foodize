@@ -1,11 +1,15 @@
 from typing import AsyncGenerator
+
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
+
 from settings.config.app_config import settings
+
+
 class DbHelper:
     def __init__(
         self,
@@ -28,9 +32,13 @@ class DbHelper:
             autocommit=False,
             expire_on_commit=False,
         )
+
     async def dispose(self):
         await self.engine.dispose()
+
     async def dependency_session_getter(self) -> AsyncGenerator[AsyncSession, None]:
         async with self.session_factory() as session:
             yield session
+
+
 db_helper = DbHelper(url=str(settings.db.url))

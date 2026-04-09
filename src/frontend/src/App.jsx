@@ -1,7 +1,7 @@
-import { RouterProvider, createBrowserRouter } from 'react-router-dom';
-import MainLayout from './components/layout/MainLayout';
-import LoginPage from './pages/auth/LoginPage';
-import { ROUTES } from './constants/routes';
+import { RouterProvider, createBrowserRouter } from "react-router-dom";
+import MainLayout from "./components/layout/MainLayout";
+import LoginPage from "./pages/auth/LoginPage";
+import { ROUTES } from "./constants/routes";
 
 const router = createBrowserRouter([
   {
@@ -31,7 +31,7 @@ const router = createBrowserRouter([
     ],
   },
   {
-    path: '*',
+    path: "*",
     element: <div>404 Not Found</div>,
   },
 ]);
@@ -41,4 +41,3 @@ function App() {
 }
 
 export default App;
-

@@ -1,6 +1,8 @@
 import uuid
+
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from features.orders.crud import (
     create_order_in_db,
     get_menu_items_by_ids,
@@ -9,6 +11,8 @@ from features.orders.crud import (
 )
 from features.orders.models import Order
 from features.orders.schemas import OrderCreate
+
+
 async def place_order(
     session: AsyncSession,
     order_data: OrderCreate,
@@ -27,10 +31,12 @@ async def place_order(
         user_id=user_id,
         menu_items=menu_items,
     )
-async def get_user_orders(
-    session: AsyncSession, user_id: uuid.UUID
-) -> list[Order]:
+
+
+async def get_user_orders(session: AsyncSession, user_id: uuid.UUID) -> list[Order]:
     return await get_orders_by_user_id(session, user_id)
+
+
 async def get_order_for_user(
     session: AsyncSession,
     order_id: uuid.UUID,

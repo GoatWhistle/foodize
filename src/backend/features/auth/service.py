@@ -1,7 +1,9 @@
 import uuid
+
 from fastapi import Depends, Request, Response
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from database import db_helper
 from features.auth.schemas import TokenResponse, UserLogin
 from features.users.crud import create_user
@@ -14,6 +16,8 @@ from features.users.schemas import UserCreate, UserRead
 from settings.config.app_config import settings
 from shared.exceptions.existence import AuthException
 from utils.JWT import create_access_token, create_refresh_token, decode_jwt
+
+
 class OAuth2PasswordBearerWithCookie(OAuth2PasswordBearer):
     async def __call__(self, request: Request) -> str | None:
         token = request.cookies.get("access_token")
@@ -23,10 +27,14 @@ class OAuth2PasswordBearerWithCookie(OAuth2PasswordBearer):
         if auth_header:
             return auth_header
         return None
+
+
 OAuth2_scheme = OAuth2PasswordBearerWithCookie(
     tokenUrl="/api/auth/token",
     auto_error=False,
 )
+
+
 async def get_current_user(
     token: str = Depends(OAuth2_scheme),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
@@ -42,6 +50,8 @@ async def get_current_user(
         raise AuthException()
     user = await get_user_by_id_or_404(session, uuid.UUID(user_id))
     return user
+
+
 async def register_user(
     session: AsyncSession,
     user_data: UserCreate,
@@ -49,6 +59,8 @@ async def register_user(
     await ensure_user_not_exists_by_phone(session, user_data.phone_number)
     user = await create_user(session, user_data)
     return user
+
+
 async def login_user(
     session: AsyncSession,
     user_data: UserLogin,

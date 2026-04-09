@@ -1,8 +1,12 @@
 import uuid
+
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from features import Restaurant
 from shared.exceptions import RuleException
 from shared.exceptions.existence import NotFoundException
+
+
 async def get_restaurant_and_check_ownership(
     session: AsyncSession, restaurant_id: uuid.UUID, vendor_id: uuid.UUID
 ):

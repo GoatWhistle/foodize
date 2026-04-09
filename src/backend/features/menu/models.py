@@ -1,13 +1,18 @@
 import uuid
 from typing import TYPE_CHECKING
+
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from database import Base, CreatedAtMixin, IdUuidPkMixin, UpdatedAtMixin
 from database.mixins.name_str import NameStrMixin
 from shared.enums.category import Category
+
 if TYPE_CHECKING:
     from features.orders.models import OrderItem
     from features.restaurants.models import Restaurant
+
+
 class MenuItem(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin):
     description: Mapped[str | None]
     price: Mapped[int]

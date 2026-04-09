@@ -1,6 +1,6 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { authService } from '../services/authService';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { authService } from "../services/authService";
 
 export const useAuthStore = create(
   persist(
@@ -11,7 +11,7 @@ export const useAuthStore = create(
       login: async (credentials) => {
         const response = await authService.login(credentials);
         const { access_token } = response.data;
-        localStorage.setItem('access_token', access_token);
+        localStorage.setItem("access_token", access_token);
         const me = await authService.getMe();
         set({ user: me.data, isAuthenticated: true });
       },
@@ -24,7 +24,7 @@ export const useAuthStore = create(
         try {
           await authService.logout();
         } finally {
-          localStorage.removeItem('access_token');
+          localStorage.removeItem("access_token");
           set({ user: null, isAuthenticated: false });
         }
       },
@@ -39,9 +39,11 @@ export const useAuthStore = create(
       },
     }),
     {
-      name: 'auth-storage',
-      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
-    }
-  )
+      name: "auth-storage",
+      partialize: (state) => ({
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
+      }),
+    },
+  ),
 );
-

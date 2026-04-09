@@ -1,5 +1,8 @@
 from pydantic import PostgresDsn
+
 from settings.config.base import BaseConfig
+
+
 class DbConfig(BaseConfig):
     url: PostgresDsn
     echo: bool = False

@@ -1,9 +1,13 @@
 from unittest.mock import AsyncMock, patch
+
 import pytest
+
 from features.auth.service import get_current_user
 from features.users.models import User
 from main import app
 from shared.enums.roles import UserRole
+
+
 @pytest.mark.asyncio
 async def test_get_my_profile(client):
     mock_user = User(
@@ -20,6 +24,8 @@ async def test_get_my_profile(client):
     assert data["name"] == "Test User"
     assert data["phone_number"] == "1234567890"
     app.dependency_overrides.clear()
+
+
 @pytest.mark.asyncio
 async def test_get_user_by_id(client, mock_db_session):
     mock_user = User(

@@ -1,10 +1,12 @@
 from fastapi import APIRouter
+
 from features.auth.api import router as auth_router
 from features.orders.api import router as order_router
 from features.restaurants.api import router as restaurant_router
 from features.users.api import router as user_router
 from features.vendors.api import router as vendor_router
 from settings.config.app_config import settings
+
 router = APIRouter(
     prefix=settings.api.v1.prefix,
 )
