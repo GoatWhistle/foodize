@@ -27,7 +27,7 @@ class Order(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
 
 class OrderItem(Base, IdUuidPkMixin, CreatedAtMixin):
     order_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("orders.id"))
-    menu_item_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("menus.id"))
+    menu_item_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("menu_items.id"))
     quantity: Mapped[int] = mapped_column(default=1)
     price_at_purchase: Mapped[int]
     order: Mapped["Order"] = relationship(back_populates="items")
