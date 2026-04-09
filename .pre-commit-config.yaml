@@ -1,4 +1,4 @@
-exclude: '(^|.*/)(package(-lock)?\.json|__pycache__|\.mypy_cache|\.venv)/'
+exclude: '(^|.*/)(package(-lock)?\.json|__pycache__|\.mypy_cache|\.venv|\.vite)/'
 
 repos:
   - repo: https://github.com/charliermarsh/ruff-pre-commit

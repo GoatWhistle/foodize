@@ -14,9 +14,6 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-install-project --no-dev
 
 COPY . .
-RUN chmod +x /backend/entrypoint.sh
-
-ENTRYPOINT ["/backend/entrypoint.sh"]
 
 FROM base AS migrations
 CMD ["uv", "run", "alembic", "upgrade", "head"]

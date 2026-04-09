@@ -12,3 +12,5 @@ jwt-private.key.pub
 certs/
 
 .env
+
+.vite
