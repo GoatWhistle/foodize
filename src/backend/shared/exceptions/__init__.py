@@ -4,7 +4,6 @@ __all__ = [
     "InactiveObjectException",
     "RuleException",
 ]
-
 from .base import AppException
 from .existence import NotFoundException
 from .rules import InactiveObjectException, RuleException

@@ -1,16 +1,14 @@
-from features.menu.models import Menu
-from features.orders.models.order import Order
-from features.orders.models.orders_item import OrderItem
+from features.menu.models import MenuItem
+from features.orders.models import Order, OrderItem
 from features.restaurants.models import Restaurant
 from features.staff.models import StaffProfile
 from features.users.models import User
 from features.vendors.models import VendorProfile
-
 __all__ = [
     "User",
     "VendorProfile",
     "Restaurant",
-    "Menu",
+    "MenuItem",
     "Order",
     "OrderItem",
     "StaffProfile",

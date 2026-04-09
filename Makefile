@@ -1,35 +1,42 @@
 SHELL := /bin/bash
-SERVICE ?=
+
 BACKEND_DIR := $(CURDIR)/src/backend
 CERTS_DIR := $(BACKEND_DIR)/certs
-.PHONY: help install lint build up down stop logs run
+
+.PHONY: help sync lint build up down stop logs run
 
 help:
+	@echo " "
 	@echo "Targets:"
-	@echo "  install         - Install project dependencies with Poetry"
-	@echo "  lint            - Run code linting with ruff"
+	@echo "  sync            - Sync locally project dependencies with UV"
+	@echo "  lint            - Run all project code linting"
+	@echo "  keys            - Generate RSA keys for JWT auth"
+	@echo " "
 	@echo "  build           - Build docker containers (use SERVICE=... to build a specific service)"
 	@echo "  up              - Start containers (use SERVICE=... to start a specific service)"
-	@echo "  down            - Stop containers and remove them (use SERVICE=... to remove a specific service)"
-	@echo "  stop            - Only stop running containers (use SERVICE=... to stop a specific service)"
-	@echo "  run             - Run a command inside a container (requires SERVICE=...)"
-	@echo "  logs            - View logs (use SERVICE=... and/or LOGS_TAIL=...)"
+	@echo "  down            - Stop and remove containers (use SERVICE=... to stop and remove a specific service)"
+	@echo "  stop            - Stop running containers (use SERVICE=... to stop a specific service)"
+	@echo "  logs            - View containers logs (use SERVICE=... to specific containers logs and/or LOGS_TAIL=... to set logs length)"
 	@echo " "
-	@echo "If SERVICE is not specified, the command applies to all containers"
-	@echo "Use LOGS_TAIL=N to limit the number of log lines shown"
 
-install:
-	cd $(BACKEND_DIR) && pip install poetry && poetry install
-
-generate-keys:
-	@mkdir -p $(CERTS_DIR)
-	@echo "Generating RSA keys..."
-	openssl genrsa -out $(CERTS_DIR)/jwt-private.pem 2048
-	openssl rsa -in $(CERTS_DIR)/jwt-private.pem -outform PEM -pubout -out $(CERTS_DIR)/jwt-public.pem
-	@echo "Keys generated in $(CERTS_DIR)"
+sync:
+	cd $(BACKEND_DIR) && pip install uv && uv sync
+	@echo " "
+	@echo "Dependencies synced!"
 
 lint:
-	cd $(BACKEND_DIR) && poetry run pre-commit run --all-files
+	cd $(BACKEND_DIR) && uv run pre-commit run --all-files
+	@echo " "
+	@echo "Linting completed!"
+
+keys:
+	@mkdir -p $(CERTS_DIR)
+	openssl genrsa -out $(CERTS_DIR)/jwt-private.pem 2048
+	openssl rsa -in $(CERTS_DIR)/jwt-private.pem -outform PEM -pubout -out $(CERTS_DIR)/jwt-public.pem
+	@echo " "
+	@echo "Keys generated in $(CERTS_DIR)!"
+
+SERVICE ?=
 
 build:
 	@if [ -n "$(SERVICE)" ]; then \
@@ -37,6 +44,8 @@ build:
 	else \
 		docker compose build; \
 	fi
+	@echo " "
+	@echo "Build completed!"
 
 up:
 	@if [ -n "$(SERVICE)" ]; then \
@@ -44,6 +53,8 @@ up:
 	else \
 		docker compose up -d --remove-orphans; \
 	fi
+	@echo " "
+	@echo "Containers started!"
 
 down:
 	@if [ -n "$(SERVICE)" ]; then \
@@ -52,6 +63,8 @@ down:
 	else \
 		docker compose down; \
 	fi
+	@echo " "
+	@echo "Containers stopped and removed!"
 
 stop:
 	@if [ -n "$(SERVICE)" ]; then \
@@ -59,23 +72,30 @@ stop:
 	else \
 		docker compose stop; \
 	fi
-
-run:
-	@if [ -z "$(SERVICE)" ]; then \
-		echo "Error: SERVICE is not specified. Use SERVICE=app"; \
-		exit 1; \
-	fi
-	docker compose run --rm $(SERVICE)
+	@echo " "
+	@echo "Containers stopped!"
 
 LOGS_TAIL ?=
 
 logs:
 	@if [ -n "$(SERVICE)" ] && [ -n "$(LOGS_TAIL)" ]; then \
+  		echo " " \
+  		echo "Showing last $(LOGS_TAIL) lines from service: $(SERVICE)"; \
+  		echo " " \
 		docker compose logs -f --tail=$(LOGS_TAIL) $(SERVICE); \
 	elif [ -n "$(SERVICE)" ]; then \
+	  	echo " " \
+	  	echo "Following logs from service: $(SERVICE)"; \
+  		echo " " \
 		docker compose logs -f $(SERVICE); \
 	elif [ -n "$(LOGS_TAIL)" ]; then \
+	    echo " " \
+	  	echo "Showing last $(LOGS_TAIL) lines from all services"; \
+		echo " " \
 		docker compose logs -f --tail=$(LOGS_TAIL); \
 	else \
+	  	echo " " \
+	  	echo "Following logs from all services"; \
+		echo " " \
 		docker compose logs -f; \
 	fi

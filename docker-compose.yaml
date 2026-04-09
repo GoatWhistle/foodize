@@ -21,6 +21,7 @@ services:
     build:
       context: ./src/backend
       dockerfile: Dockerfile
+      target: migrations
     volumes:
       - ./src/backend:/backend
     env_file:
@@ -30,8 +31,6 @@ services:
         condition: service_healthy
     environment:
       DB_URL: ${DB__URL}
-    command: >
-      sh -c "uv run alembic upgrade head"
     restart: "no"
     networks:
       - foodize-network
@@ -40,6 +39,7 @@ services:
     build:
       context: ./src/backend
       dockerfile: Dockerfile
+      target: backend
     env_file:
       - .env
     depends_on:
@@ -51,8 +51,6 @@ services:
       - "8000:8000"
     volumes:
       - ./src/backend:/backend
-    command: >
-      uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     networks:
       - foodize-network
 
