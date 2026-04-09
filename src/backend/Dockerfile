@@ -11,12 +11,13 @@ WORKDIR /backend
 RUN apt-get update && apt-get install -y netcat-openbsd && apt-get clean
 
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-install-project --no-dev
+RUN uv pip install --system --no-cache -r pyproject.toml
 
 COPY . .
+RUN chmod +x entrypoint.sh
 
 FROM base AS migrations
-CMD ["uv", "run", "alembic", "upgrade", "head"]
+CMD ["alembic", "upgrade", "head"]
 
 FROM base AS backend
-CMD ["uv", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
