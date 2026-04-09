@@ -4,6 +4,7 @@ from features.orders.models.orders_item import OrderItem
 from features.restaurants.models import Restaurant
 from features.users.models import User
 from features.vendors.models import VendorProfile
+from features.staff.models import StaffProfile
 
 __all__ = [
     "User",
@@ -12,4 +13,5 @@ __all__ = [
     "Menu",
     "Order",
     "OrderItem",
+    "StaffProfile",
 ]

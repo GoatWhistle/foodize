@@ -20,3 +20,4 @@ class User(Base, IdIntPkMixin, NameStrMixin):
     )
     vendor_profile: Mapped["VendorProfile | None"] = relationship(back_populates="user")
     orders: Mapped[list["Order"]] = relationship(back_populates="user")
+    staff_profile: Mapped["StaffProfile | None"] = relationship(back_populates="user")

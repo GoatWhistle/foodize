@@ -8,7 +8,15 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from alembic import context
 from database import Base
-
+from features import (
+    User,
+    VendorProfile,
+    Restaurant,
+    Menu,
+    Order,
+    OrderItem,
+    StaffProfile,
+)
 # Alembic Config object
 config = context.config
 
