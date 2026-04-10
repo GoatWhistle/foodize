@@ -7,6 +7,6 @@ __all__ = [
     "UpdatedAtMixin",
     "Base",
 ]
-from .base import Base
-from .db_helper import DbHelper, db_helper
-from .mixins import CreatedAtMixin, IdIntPkMixin, IdUuidPkMixin, UpdatedAtMixin
+from database.base import Base
+from database.db_helper import DbHelper, db_helper
+from database.mixins import CreatedAtMixin, IdIntPkMixin, IdUuidPkMixin, UpdatedAtMixin

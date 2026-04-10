@@ -1,0 +1,42 @@
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import MockAdapter from "axios-mock-adapter";
+import api from "../../services/api";
+import { restaurantService } from "../../services/restaurantService";
+
+describe("restaurantService", () => {
+  let mock;
+
+  beforeEach(() => {
+    mock = new MockAdapter(api);
+  });
+
+  afterEach(() => {
+    mock.restore();
+  });
+
+  it("getAll sends GET to /restaurants/", async () => {
+    const mockData = [{ id: "1", name: "Sushi" }];
+    mock.onGet("/restaurants/").reply(200, mockData);
+
+    const result = await restaurantService.getAll();
+    expect(result.data).toEqual(mockData);
+  });
+
+  it("create sends POST to /restaurants/", async () => {
+    const mockData = { id: "1", name: "New Rest" };
+    mock.onPost("/restaurants/").reply(201, mockData);
+
+    const result = await restaurantService.create({ name: "New Rest" });
+    expect(result.data).toEqual(mockData);
+  });
+
+  it("update sends PATCH to /restaurants/{id}", async () => {
+    const mockData = { id: "1", name: "Updated Rest" };
+    mock.onPatch("/restaurants/1").reply(200, mockData);
+
+    const result = await restaurantService.update("1", {
+      name: "Updated Rest",
+    });
+    expect(result.data).toEqual(mockData);
+  });
+});

@@ -1,4 +1,4 @@
 __all__ = [
     "RoleChecker",
 ]
-from .roles import RoleChecker
+from shared.dependencies.roles import RoleChecker

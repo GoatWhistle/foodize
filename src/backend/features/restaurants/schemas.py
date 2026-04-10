@@ -1,3 +1,5 @@
+import uuid
+
 from pydantic import BaseModel
 
 
@@ -7,10 +9,10 @@ class RestaurantCreate(BaseModel):
 
 
 class RestaurantResponse(BaseModel):
-    id: int
+    id: uuid.UUID
     name: str
     address: str
-    vendor_id: int
+    vendor_id: uuid.UUID
 
 
 class RestaurantUpdate(BaseModel):

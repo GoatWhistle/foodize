@@ -6,9 +6,9 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 
+import features  # noqa: F401
 from alembic import context
 from database import Base
-import features  # noqa: F401
 
 # Alembic Config object
 config = context.config

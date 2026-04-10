@@ -1,7 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import Enum, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base, CreatedAtMixin, IdUuidPkMixin, UpdatedAtMixin
@@ -17,7 +17,7 @@ class MenuItem(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin
     description: Mapped[str | None]
     price: Mapped[int]
     category: Mapped[Category] = mapped_column(
-        String, default=Category.SHAURMA, server_default="SHAURMA", nullable=True
+        Enum(Category), default=Category.SHAURMA, server_default="SHAURMA", nullable=True
     )
     restaurant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("restaurants.id"))
     restaurant: Mapped["Restaurant"] = relationship(back_populates="menu_items")

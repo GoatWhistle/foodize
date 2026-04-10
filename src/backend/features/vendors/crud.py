@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features import User, VendorProfile
@@ -12,11 +14,11 @@ async def create_vendors_profile(session: AsyncSession, user: User, vendor_in: C
     return vendor
 
 
-async def get_vendor_profile(session: AsyncSession, user_id: int):
+async def get_vendor_profile(session: AsyncSession, user_id: uuid.UUID):
     return await session.get(VendorProfile, user_id)
 
 
-async def get_vendor_profile_or_404(session: AsyncSession, user_id: int):
+async def get_vendor_profile_or_404(session: AsyncSession, user_id: uuid.UUID):
     vendor = await get_vendor_profile(session, user_id)
     if not vendor:
         raise NotFoundException
