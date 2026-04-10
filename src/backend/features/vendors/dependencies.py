@@ -7,7 +7,8 @@ from database import db_helper
 from features import User
 from features.auth.service import get_current_user
 from features.vendors.crud import get_vendor_profile
-from shared.exceptions import NotFoundException, RuleException
+from features.vendors.exeptions import VendorAlreadyExistsException
+from shared.exceptions import NotFoundException
 
 
 async def get_current_vendor(
@@ -26,7 +27,7 @@ async def ensure_no_vendor_profile(
 ):
     vendor = await get_vendor_profile(session, user.id)
     if vendor:
-        raise RuleException
+        raise VendorAlreadyExistsException()
 
 
 async def get_vendor_or_404(

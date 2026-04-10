@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from features import User
 from features.auth.schemas import UserLogin
-from shared.exceptions import RuleException
+from features.users.exeptions import UserAlreadyExistsException
 from shared.exceptions.existence import InvalidCredentialsException, NotFoundException
 from utils.JWT import validate_password
 
@@ -45,4 +45,4 @@ async def get_user_by_id_or_404(
 async def ensure_user_not_exists_by_phone(session: AsyncSession, phone_number: str) -> None:
     user = await get_user_by_phone(session, phone_number)
     if user:
-        raise RuleException()
+        raise UserAlreadyExistsException()
