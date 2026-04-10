@@ -8,9 +8,7 @@ from database import Base, CreatedAtMixin, IdUuidPkMixin, UpdatedAtMixin
 from shared.enums.order_status import OrderStatus
 
 if TYPE_CHECKING:
-    from features import OrderItem
-    from features.restaurants.models import Restaurant
-    from features.users.models import User
+    from features import OrderItem, Restaurant, User
 
 
 class Order(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):

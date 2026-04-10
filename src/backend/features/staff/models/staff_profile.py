@@ -1,19 +1,23 @@
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base, CreatedAtMixin, IdUuidPkMixin, UpdatedAtMixin
+from shared.enums.staff_roles import StaffRole
 
 if TYPE_CHECKING:
-    from features.restaurants.models import Restaurant
-    from features.users.models import User
+    from features import Restaurant, User
 
 
 class StaffProfile(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), unique=True)
     restaurant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("restaurants.id"))
-    is_on_shift: Mapped[bool] = mapped_column(default=True, server_default="true")
+
+    role: Mapped[StaffRole] = mapped_column(
+        String, default=StaffRole.COOK, server_default="COOK", nullable=False
+    )
+
     user: Mapped["User"] = relationship(back_populates="staff_profile")
-    restaurant: Mapped["Restaurant"] = relationship()
+    restaurant: Mapped["Restaurant"] = relationship(back_populates="staff_members")

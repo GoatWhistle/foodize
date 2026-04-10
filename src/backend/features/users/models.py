@@ -8,9 +8,7 @@ from database.mixins.name_str import NameStrMixin
 from shared.enums.roles import UserRole
 
 if TYPE_CHECKING:
-    from features.orders.models import Order
-    from features.staff.models import StaffProfile
-    from features.vendors.models import VendorProfile
+    from features import Order, StaffProfile, StaffRequest, VendorProfile
 
 
 class User(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin):
@@ -22,3 +20,4 @@ class User(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin):
     vendor_profile: Mapped["VendorProfile | None"] = relationship(back_populates="user")
     orders: Mapped[list["Order"]] = relationship(back_populates="user")
     staff_profile: Mapped["StaffProfile | None"] = relationship(back_populates="user")
+    staff_requests: Mapped[list["StaffRequest"]] = relationship(back_populates="user")
