@@ -14,7 +14,6 @@ COPY pyproject.toml uv.lock ./
 RUN uv pip install --system --no-cache -r pyproject.toml
 
 COPY . .
-RUN chmod +x entrypoint.sh
 
 FROM base AS migrations
 CMD ["alembic", "upgrade", "head"]

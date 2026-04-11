@@ -16,12 +16,18 @@ export default [
       },
       ecmaVersion: "latest",
       sourceType: "module",
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true,
+        },
+      },
     },
     plugins: {
       react,
       "react-hooks": reactHooks,
     },
     rules: {
+      "react/jsx-uses-vars": "error",
       "react/react-in-jsx-scope": "off",
       "react/prop-types": "off",
       "react-hooks/rules-of-hooks": "error",

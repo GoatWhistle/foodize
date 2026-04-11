@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from shared.enums.staff_request_status import StaffRequestStatus
 
@@ -20,5 +20,4 @@ class StaffRequestResponse(BaseModel):
     message: str | None
     status: StaffRequestStatus
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

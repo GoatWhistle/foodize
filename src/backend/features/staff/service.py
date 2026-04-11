@@ -21,7 +21,7 @@ async def create_new_staff_request(
     restaurant_id: uuid.UUID,
     request_data: StaffRequestCreate,
 ):
-    if not is_need_staff_for_restaurant(restaurant_id, session):
+    if not await is_need_staff_for_restaurant(restaurant_id, session):
         raise RestaurantNotHiringException()
     if await crud.get_staff_profile_by_user_id(session, user_id):
         raise AlreadyStaffException()

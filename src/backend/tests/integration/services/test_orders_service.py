@@ -3,10 +3,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from factories import make_user
-from fastapi import HTTPException
 
-from features.orders.schemas import OrderCreate, OrderItemCreate
-from features.orders.service import get_order_for_user, get_user_orders, place_order
+from features.orders.exceptions import (
+    MenuItemsNotFoundException,
+    OrderAccessDeniedException,
+    OrderNotFoundException,
+)
+from features.orders.schemas.order import OrderCreate
+from features.orders.schemas.order_item import OrderItemCreate
+from features.orders.services.order import get_order_for_user, get_user_orders, place_order
 
 
 def make_mock_menu_item(item_id: uuid.UUID, price: int = 500):
@@ -37,12 +42,12 @@ class TestPlaceOrder:
 
         with (
             patch(
-                "features.orders.service.get_menu_items_by_ids",
+                "features.orders.services.order.get_menu_items_by_ids",
                 new_callable=AsyncMock,
                 return_value={item_id: mock_menu_item},
             ),
             patch(
-                "features.orders.service.create_order_in_db",
+                "features.orders.services.order.create_order_in_db",
                 new_callable=AsyncMock,
                 return_value=mock_order,
             ) as mock_create,
@@ -63,14 +68,12 @@ class TestPlaceOrder:
             ],
         )
         with patch(
-            "features.orders.service.get_menu_items_by_ids",
+            "features.orders.services.order.get_menu_items_by_ids",
             new_callable=AsyncMock,
             return_value={item_id_1: make_mock_menu_item(item_id_1)},
         ):
-            with pytest.raises(HTTPException) as exc_info:
+            with pytest.raises(MenuItemsNotFoundException):
                 await place_order(mock_db_session, order_data, uuid.uuid4())
-
-        assert exc_info.value.status_code == 422
 
     async def test_place_order_all_items_missing(self, mock_db_session):
         order_data = OrderCreate(
@@ -78,14 +81,12 @@ class TestPlaceOrder:
             items=[OrderItemCreate(menu_item_id=uuid.uuid4(), quantity=1)],
         )
         with patch(
-            "features.orders.service.get_menu_items_by_ids",
+            "features.orders.services.order.get_menu_items_by_ids",
             new_callable=AsyncMock,
             return_value={},
         ):
-            with pytest.raises(HTTPException) as exc_info:
+            with pytest.raises(MenuItemsNotFoundException):
                 await place_order(mock_db_session, order_data, uuid.uuid4())
-
-        assert exc_info.value.status_code == 422
 
     async def test_place_order_empty_items(self, mock_db_session):
         order_data = OrderCreate(restaurant_id=uuid.uuid4(), items=[])
@@ -93,12 +94,12 @@ class TestPlaceOrder:
 
         with (
             patch(
-                "features.orders.service.get_menu_items_by_ids",
+                "features.orders.services.order.get_menu_items_by_ids",
                 new_callable=AsyncMock,
                 return_value={},
             ),
             patch(
-                "features.orders.service.create_order_in_db",
+                "features.orders.services.order.create_order_in_db",
                 new_callable=AsyncMock,
                 return_value=mock_order,
             ),
@@ -115,7 +116,7 @@ class TestGetOrderForUser:
         mock_order = make_mock_order(order_id, user_id)
 
         with patch(
-            "features.orders.service.get_order_by_id",
+            "features.orders.services.order.get_order_by_id",
             new_callable=AsyncMock,
             return_value=mock_order,
         ):
@@ -125,14 +126,12 @@ class TestGetOrderForUser:
 
     async def test_get_order_not_found_raises_404(self, mock_db_session):
         with patch(
-            "features.orders.service.get_order_by_id",
+            "features.orders.services.order.get_order_by_id",
             new_callable=AsyncMock,
             return_value=None,
         ):
-            with pytest.raises(HTTPException) as exc_info:
+            with pytest.raises(OrderNotFoundException):
                 await get_order_for_user(mock_db_session, uuid.uuid4(), uuid.uuid4())
-
-        assert exc_info.value.status_code == 404
 
     async def test_get_order_wrong_user_raises_403(self, mock_db_session):
         owner_id = uuid.uuid4()
@@ -141,14 +140,12 @@ class TestGetOrderForUser:
         mock_order = make_mock_order(order_id, owner_id)
 
         with patch(
-            "features.orders.service.get_order_by_id",
+            "features.orders.services.order.get_order_by_id",
             new_callable=AsyncMock,
             return_value=mock_order,
         ):
-            with pytest.raises(HTTPException) as exc_info:
+            with pytest.raises(OrderAccessDeniedException):
                 await get_order_for_user(mock_db_session, order_id, other_user_id)
-
-        assert exc_info.value.status_code == 403
 
 
 class TestGetUserOrders:
@@ -157,7 +154,7 @@ class TestGetUserOrders:
         orders = [make_mock_order(uuid.uuid4(), user_id) for _ in range(3)]
 
         with patch(
-            "features.orders.service.get_orders_by_user_id",
+            "features.orders.services.order.get_orders_by_user_id",
             new_callable=AsyncMock,
             return_value=orders,
         ):
@@ -167,7 +164,7 @@ class TestGetUserOrders:
 
     async def test_returns_empty_list(self, mock_db_session):
         with patch(
-            "features.orders.service.get_orders_by_user_id",
+            "features.orders.services.order.get_orders_by_user_id",
             new_callable=AsyncMock,
             return_value=[],
         ):

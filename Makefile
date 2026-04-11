@@ -1,15 +1,17 @@
 SHELL := /bin/bash
 
 BACKEND_DIR := $(CURDIR)/src/backend
+FRONTEND_DIR := $(CURDIR)/src/frontend
 CERTS_DIR := $(BACKEND_DIR)/certs
 
-.PHONY: help sync lint build up down stop logs run
+.PHONY: help sync lint test build up down stop logs run
 
 help:
 	@echo " "
 	@echo "Targets:"
 	@echo "  sync            - Sync locally project dependencies with UV"
 	@echo "  lint            - Run all project code linting"
+	@echo "  test            - Run all project tests"
 	@echo "  keys            - Generate RSA keys for JWT auth"
 	@echo " "
 	@echo "  build           - Build docker containers (use SERVICE=... to build a specific service)"
@@ -28,6 +30,12 @@ lint:
 	cd $(BACKEND_DIR) && uv run pre-commit run --all-files
 	@echo " "
 	@echo "Linting completed!"
+
+test:
+	cd $(BACKEND_DIR) && uv run pytest
+	cd $(FRONTEND_DIR) && npm test -- --run
+	@echo " "
+	@echo "Tests completed!"
 
 keys:
 	@mkdir -p $(CERTS_DIR)

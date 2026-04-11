@@ -1,14 +1,17 @@
 import pytest
 
 from features.menu.models import MenuItem
-from features.orders.crud import create_order_in_db, get_order_by_id, get_orders_by_user_id
-from features.orders.schemas import OrderCreate, OrderItemCreate
+from features.orders.crud.order import get_order_by_id, get_orders_by_user_id
+from features.orders.schemas.order import OrderCreate
+from features.orders.schemas.order_item import OrderItemCreate
+from features.orders.services.order import create_order_in_db
 from features.restaurants.crud import create_restaurant_in_db
 from features.restaurants.schemas import RestaurantCreate
 from features.users.crud import create_user
 from features.users.schemas import UserCreate
 from features.vendors.crud import create_vendors_profile
 from features.vendors.schemas import CreateVendor
+from shared.enums.category import Category
 from shared.enums.roles import UserRole
 
 
@@ -39,6 +42,7 @@ async def test_order_crud_flow(db_session):
         name="Pizza",
         description="Cheese",
         price=500,
+        category=Category.SHAURMA.value,
     )
     db_session.add(menu_item)
     await db_session.commit()

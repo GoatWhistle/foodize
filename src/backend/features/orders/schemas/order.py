@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from features.orders.schemas.order_item import OrderItemCreate, OrderItemResponse
 from shared.enums.order_status import OrderStatus
@@ -19,5 +19,4 @@ class OrderResponse(BaseModel):
     total_price: int
     items: list[OrderItemResponse]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

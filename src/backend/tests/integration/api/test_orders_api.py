@@ -31,7 +31,7 @@ class TestOrdersAPI:
         }
 
         with patch(
-            "features.orders.api.place_order", new_callable=AsyncMock, return_value=mock_order
+            "features.orders.api.order.place_order", new_callable=AsyncMock, return_value=mock_order
         ) as mock_place:
             response = await client.post(
                 "/api/v1/orders/",
@@ -49,7 +49,7 @@ class TestOrdersAPI:
     @pytest.mark.asyncio
     async def test_get_my_orders(self, client: AsyncClient, as_user):
         with patch(
-            "features.orders.api.get_user_orders", new_callable=AsyncMock, return_value=[]
+            "features.orders.api.order.get_user_orders", new_callable=AsyncMock, return_value=[]
         ) as mock_get_all:
             response = await client.get("/api/v1/orders/me")
 
@@ -70,7 +70,7 @@ class TestOrdersAPI:
         }
 
         with patch(
-            "features.orders.api.get_order_for_user",
+            "features.orders.api.order.get_order_for_user",
             new_callable=AsyncMock,
             return_value=mock_order,
         ) as mock_get:
