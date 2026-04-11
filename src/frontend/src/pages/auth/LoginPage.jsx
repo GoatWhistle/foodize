@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/useAuthStore";
 import { ROUTES } from "../../constants/routes";
+import FoodizeLogo from "../../components/ui/FoodizeLogo";
 
 const LoginPage = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -9,74 +10,94 @@ const LoginPage = () => {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const login = useAuthStore((state) => state.login);
+  const login = useAuthStore((s) => s.login);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
-
     try {
       await login({ phone_number: phoneNumber, password });
       navigate(ROUTES.HOME);
     } catch (err) {
-      setError(
-        err.response?.data?.detail || "Ошибка при входе. Проверьте данные.",
-      );
+      setError(err.response?.data?.detail || "Неверный телефон или пароль");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card glass-panel">
-        <h2 className="auth-title">Вход в Foodize</h2>
-        <p className="auth-subtitle">
-          С возвращением! Пожалуйста, введите ваши данные.
-        </p>
+    <div className="auth-page">
+      <div className="auth-card">
+        <div className="auth-logo">
+          <FoodizeLogo size={32} />
+        </div>
 
-        {error && <div className="auth-error">{error}</div>}
+        <h1 className="auth-heading">Добро пожаловать</h1>
+        <p className="auth-subheading">Войдите, чтобы сделать заказ</p>
 
-        <form onSubmit={handleSubmit} className="auth-form">
-          <div className="input-group">
-            <label htmlFor="phone">Номер телефона</label>
+        {error && (
+          <div className="form-error" style={{ marginBottom: 16 }}>
+            {error}
+          </div>
+        )}
+
+        <form className="auth-form" onSubmit={handleSubmit} noValidate>
+          <div className="form-group">
+            <label className="form-label" htmlFor="login-phone">
+              Телефон
+            </label>
             <input
-              id="phone"
-              type="text"
+              id="login-phone"
+              className="form-input"
+              type="tel"
               placeholder="+7 (999) 000-00-00"
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
               required
+              autoComplete="tel"
+              autoFocus
             />
           </div>
 
-          <div className="input-group">
-            <label htmlFor="password">Пароль</label>
+          <div className="form-group">
+            <label className="form-label" htmlFor="login-password">
+              Пароль
+            </label>
             <input
-              id="password"
+              id="login-password"
+              className="form-input"
               type="password"
-              placeholder="••••••••"
+              placeholder="Минимум 8 символов"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={8}
+              autoComplete="current-password"
             />
           </div>
 
           <button
+            id="login-submit-btn"
             type="submit"
-            className={`auth-submit-btn ${isLoading ? "loading" : ""}`}
+            className="btn btn-primary btn-full"
             disabled={isLoading}
+            style={{ marginTop: 4 }}
           >
-            {isLoading ? "Загрузка..." : "Войти"}
+            {isLoading ? (
+              <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span className="spinner" style={{ width: 18, height: 18 }} />
+                Вход...
+              </span>
+            ) : (
+              "Войти"
+            )}
           </button>
         </form>
 
         <div className="auth-footer">
-          У вас ещё нет аккаунта?{" "}
-          <a href={ROUTES.REGISTER}>Зарегистрироваться</a>
+          Нет аккаунта? <Link to={ROUTES.REGISTER}>Зарегистрироваться</Link>
         </div>
       </div>
     </div>

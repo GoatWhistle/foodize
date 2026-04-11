@@ -29,16 +29,22 @@ class TestCreateNewStaffRequest:
     @pytest.fixture(autouse=True)
     def setup_mocks(self):
         self.mock_is_hiring = patch(
-            "features.staff.service.is_need_staff_for_restaurant", new_callable=AsyncMock, return_value=True
+            "features.staff.service.is_need_staff_for_restaurant",
+            new_callable=AsyncMock,
+            return_value=True,
         ).start()
         self.mock_get_profile = patch(
-            "features.staff.crud.get_staff_profile_by_user_id", new_callable=AsyncMock, return_value=None
+            "features.staff.crud.get_staff_profile_by_user_id",
+            new_callable=AsyncMock,
+            return_value=None,
         ).start()
         self.mock_get_last = patch(
             "features.staff.crud.get_last_request", new_callable=AsyncMock, return_value=None
         ).start()
         self.mock_create = patch(
-            "features.staff.crud.create_staff_request_in_db", new_callable=AsyncMock, return_value=MagicMock()
+            "features.staff.crud.create_staff_request_in_db",
+            new_callable=AsyncMock,
+            return_value=MagicMock(),
         ).start()
 
         yield
@@ -54,25 +60,33 @@ class TestCreateNewStaffRequest:
     async def test_not_hiring(self, mock_db_session):
         self.mock_is_hiring.return_value = False
         with pytest.raises(RestaurantNotHiringException):
-            await create_new_staff_request(mock_db_session, uuid.uuid4(), uuid.uuid4(), StaffRequestCreate())
+            await create_new_staff_request(
+                mock_db_session, uuid.uuid4(), uuid.uuid4(), StaffRequestCreate()
+            )
 
     async def test_already_staff(self, mock_db_session):
         self.mock_get_profile.return_value = MagicMock()
         with pytest.raises(AlreadyStaffException):
-            await create_new_staff_request(mock_db_session, uuid.uuid4(), uuid.uuid4(), StaffRequestCreate())
+            await create_new_staff_request(
+                mock_db_session, uuid.uuid4(), uuid.uuid4(), StaffRequestCreate()
+            )
 
     async def test_active_request_exists(self, mock_db_session):
         self.mock_get_last.return_value = mock_staff_request(status=StaffRequestStatus.PENDING)
         with pytest.raises(StaffRequestActiveExistsException):
-            await create_new_staff_request(mock_db_session, uuid.uuid4(), uuid.uuid4(), StaffRequestCreate())
+            await create_new_staff_request(
+                mock_db_session, uuid.uuid4(), uuid.uuid4(), StaffRequestCreate()
+            )
 
     async def test_cooldown(self, mock_db_session):
         self.mock_get_last.return_value = mock_staff_request(
             status=StaffRequestStatus.REJECTED,
-            updated_at=datetime.now(timezone.utc) - timedelta(hours=2)
+            updated_at=datetime.now(timezone.utc) - timedelta(hours=2),
         )
         with pytest.raises(StaffRequestCooldownException):
-            await create_new_staff_request(mock_db_session, uuid.uuid4(), uuid.uuid4(), StaffRequestCreate())
+            await create_new_staff_request(
+                mock_db_session, uuid.uuid4(), uuid.uuid4(), StaffRequestCreate()
+            )
 
 
 class TestProcessStaffRequest:
@@ -80,15 +94,19 @@ class TestProcessStaffRequest:
     def setup_mocks(self):
         self.req_id = uuid.uuid4()
         self.req = mock_staff_request(status=StaffRequestStatus.PENDING)
-        
+
         self.mock_get_req = patch(
             "features.staff.crud.get_request_by_id", new_callable=AsyncMock, return_value=self.req
         ).start()
         self.mock_get_profile = patch(
-            "features.staff.crud.get_staff_profile_by_user_id", new_callable=AsyncMock, return_value=None
+            "features.staff.crud.get_staff_profile_by_user_id",
+            new_callable=AsyncMock,
+            return_value=None,
         ).start()
         self.mock_update = patch(
-            "features.staff.crud.update_request_status_and_create_profile", new_callable=AsyncMock, return_value=self.req
+            "features.staff.crud.update_request_status_and_create_profile",
+            new_callable=AsyncMock,
+            return_value=self.req,
         ).start()
 
         yield
@@ -103,20 +121,26 @@ class TestProcessStaffRequest:
     async def test_accepted_creates_profile(self, mock_db_session):
         await process_staff_request(mock_db_session, self.req_id, StaffRequestStatus.ACCEPTED)
         self.mock_update.assert_awaited_once_with(
-            session=mock_db_session, request=self.req, new_status=StaffRequestStatus.ACCEPTED, create_profile=True
+            session=mock_db_session,
+            request=self.req,
+            new_status=StaffRequestStatus.ACCEPTED,
+            create_profile=True,
         )
 
     async def test_rejected_no_profile(self, mock_db_session):
         await process_staff_request(mock_db_session, self.req_id, StaffRequestStatus.REJECTED)
         self.mock_update.assert_awaited_once_with(
-            session=mock_db_session, request=self.req, new_status=StaffRequestStatus.REJECTED, create_profile=False
+            session=mock_db_session,
+            request=self.req,
+            new_status=StaffRequestStatus.REJECTED,
+            create_profile=False,
         )
 
     async def test_accepted_already_staff_raises(self, mock_db_session):
         self.mock_get_profile.return_value = MagicMock()
         with pytest.raises(AlreadyStaffException):
             await process_staff_request(mock_db_session, self.req_id, StaffRequestStatus.ACCEPTED)
-        
+
         self.mock_update.assert_awaited_once_with(
             mock_db_session, self.req, StaffRequestStatus.REJECTED
         )

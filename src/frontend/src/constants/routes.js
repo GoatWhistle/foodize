@@ -5,6 +5,8 @@ export const ROUTES = {
   RESTAURANTS: "/restaurants",
   RESTAURANT: "/restaurants/:id",
   ORDERS: "/orders",
-  ORDER: "/orders/:id",
+  ORDER_STATUS: "/orders/:id",
+  ORDER_CONFIRM: "/orders/confirm",
   PROFILE: "/profile",
+  VENDOR_DASHBOARD: "/vendor",
 };

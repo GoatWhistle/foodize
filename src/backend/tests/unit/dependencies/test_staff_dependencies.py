@@ -1,20 +1,25 @@
 import uuid
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import HTTPException
 
 from features.staff.dependencies import (
-    get_valid_staff_request,
     get_restaurant_or_404,
+    get_valid_staff_request,
     is_need_staff_for_restaurant,
 )
 from shared.exceptions import NotFoundException
 
+
 class TestGetValidStaffRequest:
     @pytest.mark.asyncio
     async def test_not_found(self):
-        with patch("features.staff.dependencies.crud.get_request_by_id", new_callable=AsyncMock, return_value=None):
+        with patch(
+            "features.staff.dependencies.crud.get_request_by_id",
+            new_callable=AsyncMock,
+            return_value=None,
+        ):
             with pytest.raises(HTTPException) as exc:
                 await get_valid_staff_request(uuid.uuid4(), MagicMock(), MagicMock())
             assert exc.value.status_code == 404
@@ -30,25 +35,34 @@ class TestGetValidStaffRequest:
         mock_result.scalar_one_or_none.return_value = mock_rest
         mock_session.execute.return_value = mock_result
 
-        with patch("features.staff.dependencies.crud.get_request_by_id", new_callable=AsyncMock, return_value=req):
+        with patch(
+            "features.staff.dependencies.crud.get_request_by_id",
+            new_callable=AsyncMock,
+            return_value=req,
+        ):
             with pytest.raises(HTTPException) as exc:
                 await get_valid_staff_request(uuid.uuid4(), mock_session, mock_vendor)
             assert exc.value.status_code == 403
-            
+
     @pytest.mark.asyncio
     async def test_success(self):
         req = MagicMock(restaurant_id=uuid.uuid4())
         mock_vendor = MagicMock(id=uuid.uuid4())
-        mock_rest = MagicMock(vendor_id=mock_vendor.id) 
+        mock_rest = MagicMock(vendor_id=mock_vendor.id)
 
         mock_session = AsyncMock()
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_rest
         mock_session.execute.return_value = mock_result
 
-        with patch("features.staff.dependencies.crud.get_request_by_id", new_callable=AsyncMock, return_value=req):
+        with patch(
+            "features.staff.dependencies.crud.get_request_by_id",
+            new_callable=AsyncMock,
+            return_value=req,
+        ):
             res = await get_valid_staff_request(uuid.uuid4(), mock_session, mock_vendor)
             assert res == req
+
 
 class TestGetRestaurantOr404:
     @pytest.mark.asyncio
@@ -58,10 +72,15 @@ class TestGetRestaurantOr404:
         with pytest.raises(NotFoundException):
             await get_restaurant_or_404(uuid.uuid4(), mock_session)
 
+
 class TestIsNeedStaff:
     @pytest.mark.asyncio
     async def test_is_need_staff(self):
         mock_rest = MagicMock(is_hiring=True)
-        with patch("features.staff.dependencies.get_restaurant_or_404", new_callable=AsyncMock, return_value=mock_rest):
+        with patch(
+            "features.staff.dependencies.get_restaurant_or_404",
+            new_callable=AsyncMock,
+            return_value=mock_rest,
+        ):
             res = await is_need_staff_for_restaurant(uuid.uuid4(), MagicMock())
             assert res is True
