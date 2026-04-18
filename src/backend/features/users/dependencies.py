@@ -3,9 +3,9 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from features import User
 from features.auth.schemas import UserLogin
-from features.users.exeptions import UserAlreadyExistsException
+from features.users.exceptions import UserAlreadyExistsException
+from features.users.models import User
 from shared.exceptions.existence import InvalidCredentialsException, NotFoundException
 from utils.JWT import validate_password
 

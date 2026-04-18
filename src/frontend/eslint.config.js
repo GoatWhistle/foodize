@@ -32,7 +32,6 @@ export default [
       "react/prop-types": "off",
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "warn",
-      indent: ["error", 2],
     },
     settings: {
       react: {

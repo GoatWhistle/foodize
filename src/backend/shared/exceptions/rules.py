@@ -10,3 +10,7 @@ class RuleException(AppException):
 
 class InactiveObjectException(RuleException):
     detail: str = "Operation is not allowed on inactive object"
+
+
+class AccessDeniedException(RuleException):
+    detail: str = "Access denied"

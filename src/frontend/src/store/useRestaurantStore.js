@@ -3,11 +3,22 @@ import { restaurantService } from "../services/restaurantService";
 import { menuService } from "../services/menuService";
 
 export const useRestaurantStore = create((set, get) => ({
+  publicRestaurants: [],
   restaurants: [],
   menus: {}, // { [restaurantId]: MenuItem[] }
   currentRestaurant: null,
   loading: false,
   error: null,
+
+  fetchPublicRestaurants: async (params = {}) => {
+    set({ loading: true, error: null });
+    try {
+      const res = await restaurantService.getAll(params);
+      set({ publicRestaurants: res.data.data || res.data, loading: false });
+    } catch (e) {
+      set({ error: e.message, loading: false });
+    }
+  },
 
   fetchMyRestaurants: async () => {
     set({ loading: true, error: null });

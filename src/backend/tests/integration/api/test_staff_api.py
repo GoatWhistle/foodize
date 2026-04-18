@@ -1,5 +1,5 @@
 import uuid
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import ANY, AsyncMock, MagicMock, patch
 
 import pytest
 from httpx import AsyncClient
@@ -11,7 +11,7 @@ from shared.enums.staff_request_status import StaffRequestStatus
 
 class TestStaffAPI:
     @pytest.mark.asyncio
-    async def test_apply_for_job(self, client: AsyncClient, as_user):
+    async def test_create_staff_request(self, client: AsyncClient, as_user):
         restaurant_id = uuid.uuid4()
         req_id = uuid.uuid4()
 
@@ -24,7 +24,7 @@ class TestStaffAPI:
         }
 
         with patch(
-            "features.staff.api.service.create_new_staff_request",
+            "features.staff.api.service.create_staff_request",
             new_callable=AsyncMock,
             return_value=mock_response,
         ) as mock_create:
@@ -37,7 +37,7 @@ class TestStaffAPI:
         mock_create.assert_awaited_once()
 
     @pytest.mark.asyncio
-    async def test_update_request_status(self, client: AsyncClient, as_vendor):
+    async def test_update_staff_status(self, client: AsyncClient, as_vendor):
         req_id = uuid.uuid4()
 
         mock_response = {
@@ -67,10 +67,12 @@ class TestStaffAPI:
 
         assert res.status_code == 200
         assert res.json()["status"] == StaffRequestStatus.ACCEPTED.value
-        mock_process.assert_awaited_once()
+        mock_process.assert_awaited_once_with(
+            session=ANY, request=mock_req, new_status=StaffRequestStatus.ACCEPTED
+        )
 
     @pytest.mark.asyncio
-    async def test_get_vendor_staff_requests(self, vendor_client):
+    async def test_read_vendor_requests(self, vendor_client):
         client, vendor = vendor_client
         with patch(
             "features.staff.api.service.get_vendor_staff_requests",

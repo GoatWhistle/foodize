@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { BrowserRouter } from "react-router-dom";
 import MainLayout from "../../components/layout/MainLayout";
 import { useAuthStore } from "../../store/useAuthStore";
-import { useThemeStore } from "../../store/useThemeStore";
 
 vi.mock("../../store/useAuthStore", () => ({
   useAuthStore: vi.fn((sel) => {

@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from features import MenuItem
+from features.menu.models import MenuItem
 
 
 async def get_menu_items_by_ids(

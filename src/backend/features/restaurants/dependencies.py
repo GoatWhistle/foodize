@@ -2,7 +2,7 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from features import Restaurant
+from features.restaurants.models import Restaurant
 from shared.exceptions import RuleException
 from shared.exceptions.existence import NotFoundException
 

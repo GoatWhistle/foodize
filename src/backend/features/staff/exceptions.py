@@ -1,6 +1,7 @@
 from http import HTTPStatus
 
 from shared.exceptions import RuleException
+from shared.exceptions.existence import NotFoundException
 
 
 class StaffRequestActiveExistsException(RuleException):
@@ -21,3 +22,7 @@ class AlreadyStaffException(RuleException):
 class RestaurantNotHiringException(RuleException):
     status_code = HTTPStatus.CONFLICT
     detail = "You are not a hiring restaurant."
+
+
+class StaffRequestNotFoundException(NotFoundException):
+    detail = "Staff request not found"

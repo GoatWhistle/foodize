@@ -1,14 +1,18 @@
 import uuid
+from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base, CreatedAtMixin, IdUuidPkMixin, UpdatedAtMixin
 from shared.enums.order_status import OrderStatus
 
 if TYPE_CHECKING:
-    from features import OrderItem, Restaurant, User
+    from features.orders.models.order_event import OrderEvent
+    from features.orders.models.order_item import OrderItem
+    from features.restaurants.models import Restaurant
+    from features.users.models import User
 
 
 class Order(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
@@ -18,6 +22,10 @@ class Order(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
         String, default=OrderStatus.PENDING, server_default="PENDING", nullable=False
     )
     total_price: Mapped[int]
+    ready_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     user: Mapped["User"] = relationship(back_populates="orders")
     restaurant: Mapped["Restaurant"] = relationship(back_populates="orders")
     items: Mapped[list["OrderItem"]] = relationship(back_populates="order")
+    events: Mapped[list["OrderEvent"]] = relationship(
+        back_populates="order", order_by="OrderEvent.created_at"
+    )

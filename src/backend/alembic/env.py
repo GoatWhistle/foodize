@@ -10,14 +10,11 @@ import features  # noqa: F401
 from alembic import context
 from database import Base
 
-# Alembic Config object
 config = context.config
 
-# Logging setup
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Target metadata for 'autogenerate'
 target_metadata = Base.metadata
 
 
@@ -65,7 +62,6 @@ def run_migrations_online() -> None:
     asyncio.run(run_async_migrations())
 
 
-# Decide offline/online mode
 if context.is_offline_mode():
     run_migrations_offline()
 else:

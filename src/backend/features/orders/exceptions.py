@@ -14,3 +14,18 @@ class OrderAccessDeniedException(RuleException):
 class MenuItemsNotFoundException(AppException):
     status_code: int = HTTPStatus.UNPROCESSABLE_ENTITY
     detail: str = "One or more menu items were not found"
+
+
+class MenuItemRestaurantMismatchException(AppException):
+    status_code: int = HTTPStatus.UNPROCESSABLE_ENTITY
+    detail: str = "One or more menu items do not belong to the specified restaurant"
+
+
+class OrderNotCancellableException(RuleException):
+    status_code: int = HTTPStatus.CONFLICT
+    detail: str = "Order can only be cancelled when in PENDING status"
+
+
+class InvalidStatusTransitionException(AppException):
+    status_code: int = HTTPStatus.UNPROCESSABLE_ENTITY
+    detail: str = "Invalid order status transition"

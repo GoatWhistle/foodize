@@ -2,7 +2,6 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { BrowserRouter } from "react-router-dom";
 import HomePage from "../../pages/home/HomePage";
-import { useAuthStore } from "../../store/useAuthStore";
 
 vi.mock("../../store/useAuthStore", () => ({
   useAuthStore: (sel) => {

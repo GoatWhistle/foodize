@@ -79,7 +79,7 @@ export const useOrderStore = create((set, get) => ({
     set({ ordersLoading: true });
     try {
       const res = await orderService.getMyOrders();
-      set({ orders: res.data, ordersLoading: false });
+      set({ orders: res.data.data, ordersLoading: false });
     } catch {
       set({ ordersLoading: false });
     }

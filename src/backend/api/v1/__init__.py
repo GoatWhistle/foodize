@@ -1,9 +1,11 @@
 from fastapi import APIRouter
 
+from features.admin.api import router as admin_router
 from features.auth.api import router as auth_router
 from features.menu.api import router as menu_router
 from features.orders.router import router as order_router
 from features.restaurants.api import router as restaurant_router
+from features.reviews.api import router as reviews_router
 from features.staff.api import router as staff_router
 from features.users.api import router as user_router
 from features.vendors.api import router as vendor_router
@@ -21,3 +23,5 @@ router.include_router(vendor_router)
 router.include_router(restaurant_router)
 router.include_router(menu_router)
 router.include_router(order_router)
+router.include_router(reviews_router)
+router.include_router(admin_router)

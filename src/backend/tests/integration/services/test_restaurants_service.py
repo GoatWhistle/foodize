@@ -5,9 +5,9 @@ import pytest
 
 from features.restaurants.schemas import RestaurantCreate, RestaurantUpdate
 from features.restaurants.service import (
+    create_restaurant_for_vendor,
     get_my_restaurants,
-    register_new_restaurant,
-    update_restaurant_logic,
+    update_restaurant_for_vendor,
 )
 from shared.exceptions.existence import NotFoundException
 
@@ -21,24 +21,24 @@ def make_mock_restaurant(restaurant_id: uuid.UUID = None, vendor_id: uuid.UUID =
     return r
 
 
-class TestRegisterNewRestaurant:
+class TestCreateRestaurantForVendor:
     async def test_creates_restaurant(self, mock_db_session):
         vendor_id = uuid.uuid4()
         mock_restaurant = make_mock_restaurant(vendor_id=vendor_id)
         restaurant_data = RestaurantCreate(name="Sushi Bar", address="Lenin St 1")
 
         with patch(
-            "features.restaurants.service.create_restaurant_in_db",
+            "features.restaurants.service.create_restaurant",
             new_callable=AsyncMock,
             return_value=mock_restaurant,
         ) as mock_create:
-            result = await register_new_restaurant(mock_db_session, restaurant_data, vendor_id)
+            result = await create_restaurant_for_vendor(mock_db_session, restaurant_data, vendor_id)
 
         assert result is mock_restaurant
         mock_create.assert_awaited_once_with(mock_db_session, restaurant_data, vendor_id)
 
 
-class TestUpdateRestaurantLogic:
+class TestUpdateRestaurantForVendor:
     async def test_update_success(self, mock_db_session):
         vendor_id = uuid.uuid4()
         restaurant_id = uuid.uuid4()
@@ -52,12 +52,12 @@ class TestUpdateRestaurantLogic:
                 return_value=mock_restaurant,
             ),
             patch(
-                "features.restaurants.service.update_restaurant_in_db",
+                "features.restaurants.service.update_restaurant",
                 new_callable=AsyncMock,
                 return_value=mock_restaurant,
             ) as mock_update,
         ):
-            result = await update_restaurant_logic(
+            result = await update_restaurant_for_vendor(
                 mock_db_session, restaurant_id, update_data, vendor_id
             )
 
@@ -71,7 +71,7 @@ class TestUpdateRestaurantLogic:
             side_effect=NotFoundException(),
         ):
             with pytest.raises(NotFoundException):
-                await update_restaurant_logic(
+                await update_restaurant_for_vendor(
                     mock_db_session,
                     uuid.uuid4(),
                     RestaurantUpdate(name="x"),
@@ -85,7 +85,7 @@ class TestGetMyRestaurants:
         restaurants = [make_mock_restaurant(vendor_id=vendor_id) for _ in range(2)]
 
         with patch(
-            "features.restaurants.service.get_vendor_restaurants_from_db",
+            "features.restaurants.service.get_vendor_restaurants",
             new_callable=AsyncMock,
             return_value=restaurants,
         ):
@@ -95,7 +95,7 @@ class TestGetMyRestaurants:
 
     async def test_returns_empty_when_no_restaurants(self, mock_db_session):
         with patch(
-            "features.restaurants.service.get_vendor_restaurants_from_db",
+            "features.restaurants.service.get_vendor_restaurants",
             new_callable=AsyncMock,
             return_value=[],
         ):

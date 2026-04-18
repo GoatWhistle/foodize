@@ -9,7 +9,8 @@ from database.mixins.name_str import NameStrMixin
 from shared.enums.category import Category
 
 if TYPE_CHECKING:
-    from features import OrderItem, Restaurant
+    from features.orders.models import OrderItem
+    from features.restaurants.models import Restaurant
 
 
 class MenuItem(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin):
@@ -18,6 +19,8 @@ class MenuItem(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin
     category: Mapped[Category] = mapped_column(
         String, default=Category.SHAURMA, server_default="SHAURMA", nullable=True
     )
+    is_available: Mapped[bool] = mapped_column(default=True, server_default="true")
+    is_deleted: Mapped[bool] = mapped_column(default=False, server_default="false")
     restaurant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("restaurants.id"))
     restaurant: Mapped["Restaurant"] = relationship(back_populates="menu_items")
     order_items: Mapped[list["OrderItem"]] = relationship(back_populates="menu_item")

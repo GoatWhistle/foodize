@@ -11,10 +11,6 @@ class UserBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class UserUpdate(BaseModel):
-    pass
-
-
 class UserCreate(UserBase):
     user_role: UserRole
     password: str = Field(min_length=8)

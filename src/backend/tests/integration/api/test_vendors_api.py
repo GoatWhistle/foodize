@@ -1,3 +1,4 @@
+import uuid
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -7,21 +8,25 @@ from httpx import AsyncClient
 class TestVendorsAPI:
     @pytest.mark.asyncio
     async def test_create_vendor(self, client: AsyncClient, as_user):
-        mock_vendor = {"description": "Best food here"}
+        mock_vendor = {
+            "id": str(uuid.uuid4()),
+            "user_id": str(uuid.uuid4()),
+            "description": "Best food here",
+        }
 
         with patch(
-            "features.vendors.api.add_vendors_profile",
+            "features.vendors.api.service.register_vendor",
             new_callable=AsyncMock,
             return_value=mock_vendor,
         ) as mock_add:
             response = await client.post("/api/v1/vendors/", json={"description": "Best food here"})
 
-        assert response.status_code == 200
-        assert response.json() == mock_vendor
+        assert response.status_code == 201
+        assert response.json()["description"] == "Best food here"
         mock_add.assert_awaited_once()
 
     @pytest.mark.asyncio
-    async def test_get_my_profile(self, vendor_client):
+    async def test_read_my_vendor_profile(self, vendor_client):
         client, vendor_profile = vendor_client
         vendor_profile.description = "Test Desc"
 
@@ -33,10 +38,14 @@ class TestVendorsAPI:
     @pytest.mark.asyncio
     async def test_update_description(self, vendor_client):
         client, vendor_profile = vendor_client
-        mock_updated = {"description": "New Desc"}
+        mock_updated = {
+            "id": str(uuid.uuid4()),
+            "user_id": str(vendor_profile.user_id),
+            "description": "New Desc",
+        }
 
         with patch(
-            "features.vendors.api.update_vendor_details",
+            "features.vendors.api.service.update_description",
             new_callable=AsyncMock,
             return_value=mock_updated,
         ) as mock_update:

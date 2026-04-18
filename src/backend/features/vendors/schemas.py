@@ -1,9 +1,15 @@
-from pydantic import BaseModel
+import uuid
+
+from pydantic import BaseModel, ConfigDict
 
 
-class CreateVendor(BaseModel):
+class VendorCreate(BaseModel):
     description: str | None = None
 
 
 class VendorResponse(BaseModel):
+    id: uuid.UUID
+    user_id: uuid.UUID
     description: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)

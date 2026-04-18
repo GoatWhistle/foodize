@@ -10,3 +10,8 @@ class AppException(Exception):
             self.status_code = status_code
         if detail:
             self.detail = detail
+
+
+class BadRequestException(AppException):
+    status_code: int = HTTPStatus.BAD_REQUEST
+    detail: str = "Bad request"

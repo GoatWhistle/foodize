@@ -4,7 +4,6 @@ import { BrowserRouter } from "react-router-dom";
 import VendorDashboardPage from "../../pages/vendor/VendorDashboardPage";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useRestaurantStore } from "../../store/useRestaurantStore";
-import { vendorService } from "../../services/vendorService";
 
 // Mock Stores & Services
 vi.mock("../../store/useAuthStore", () => ({

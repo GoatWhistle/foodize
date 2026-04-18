@@ -1,6 +1,7 @@
 from fastapi import Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from shared.exceptions.base import AppException
 from shared.schemas.error import ErrorDescriptionSchema, ErrorSchema
@@ -26,4 +27,11 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
         content=ErrorSchema(
             detail=ErrorDescriptionSchema(error="Internal server error")
         ).model_dump(),
+    )
+
+
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=ErrorSchema(detail=ErrorDescriptionSchema(error=exc.detail)).model_dump(),
     )

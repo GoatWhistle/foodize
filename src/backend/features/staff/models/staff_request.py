@@ -8,7 +8,8 @@ from database import Base, CreatedAtMixin, IdUuidPkMixin, UpdatedAtMixin
 from shared.enums.staff_request_status import StaffRequestStatus
 
 if TYPE_CHECKING:
-    from features import Restaurant, User
+    from features.restaurants.models import Restaurant
+    from features.users.models import User
 
 
 class StaffRequest(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):

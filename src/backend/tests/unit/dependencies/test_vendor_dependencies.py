@@ -8,7 +8,7 @@ from features.vendors.dependencies import (
     get_current_vendor,
     get_vendor_or_404,
 )
-from features.vendors.exeptions import VendorAlreadyExistsException
+from features.vendors.exceptions import VendorAlreadyExistsException
 from shared.exceptions import NotFoundException
 
 
@@ -28,7 +28,7 @@ class TestVendorDependencies:
     @pytest.mark.asyncio
     async def test_ensure_no_vendor_profile_raises(self):
         with patch(
-            "features.vendors.dependencies.get_vendor_profile",
+            "features.vendors.dependencies.get_vendor_by_user_id",
             new_callable=AsyncMock,
             return_value=MagicMock(),
         ):
@@ -38,7 +38,7 @@ class TestVendorDependencies:
     @pytest.mark.asyncio
     async def test_get_vendor_or_404_raises(self):
         with patch(
-            "features.vendors.dependencies.get_vendor_profile",
+            "features.vendors.dependencies.get_vendor_by_user_id",
             new_callable=AsyncMock,
             return_value=None,
         ):

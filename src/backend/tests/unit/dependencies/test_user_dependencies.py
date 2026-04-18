@@ -8,8 +8,9 @@ from features.users.dependencies import (
     get_user_by_id_or_404,
     get_user_by_phone_or_401,
 )
-from features.users.exeptions import UserAlreadyExistsException
+from features.users.exceptions import UserAlreadyExistsException
 from shared.exceptions import NotFoundException
+from shared.exceptions.existence import InvalidCredentialsException
 
 
 class TestUserDependencies:
@@ -20,8 +21,6 @@ class TestUserDependencies:
             new_callable=AsyncMock,
             return_value=None,
         ):
-            from shared.exceptions.existence import InvalidCredentialsException
-
             with pytest.raises(InvalidCredentialsException):
                 await get_user_by_phone_or_401(MagicMock(), MagicMock())
 

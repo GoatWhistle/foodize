@@ -3,42 +3,10 @@ import { useNavigate } from "react-router-dom";
 import RestaurantCard from "../../components/ui/RestaurantCard";
 import EmptyState from "../../components/ui/EmptyState";
 import { useAuthStore } from "../../store/useAuthStore";
+import { useRestaurantStore } from "../../store/useRestaurantStore";
 import { ROUTES } from "../../constants/routes";
 
-const MOCK_RESTAURANTS = [
-  {
-    id: "mock-1",
-    name: "Шаурма Хаус",
-    address: "ул. Ленина, 12",
-    vendor_id: "v1",
-    category: "SHAURMA",
-    photo_url: null,
-  },
-  {
-    id: "mock-2",
-    name: "Burger Point",
-    address: "пр. Мира, 34",
-    vendor_id: "v2",
-    category: "BURGER",
-    photo_url: null,
-  },
-  {
-    id: "mock-3",
-    name: "Pizza Nova",
-    address: "ул. Советская, 8",
-    vendor_id: "v3",
-    category: "PIZZA",
-    photo_url: null,
-  },
-  {
-    id: "mock-4",
-    name: "Sushi Market",
-    address: "ул. Кирова, 55",
-    vendor_id: "v4",
-    category: "SUSHI",
-    photo_url: null,
-  },
-];
+
 
 const CATEGORIES = [
   { key: "ALL", label: "Все", emoji: "🍽️" },
@@ -52,16 +20,21 @@ const HomePage = () => {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("ALL");
   const { isAuthenticated } = useAuthStore();
+  const { publicRestaurants, fetchPublicRestaurants, loading } = useRestaurantStore();
   const navigate = useNavigate();
 
-  const filtered = MOCK_RESTAURANTS.filter((r) => {
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      fetchPublicRestaurants({ name: search || undefined });
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [search, fetchPublicRestaurants]);
+
+  const filtered = publicRestaurants.filter((r) => {
+    // Backend filters by name, but we can do category client-side
     const matchCategory =
       activeCategory === "ALL" || r.category === activeCategory;
-    const matchSearch =
-      !search ||
-      r.name.toLowerCase().includes(search.toLowerCase()) ||
-      r.address.toLowerCase().includes(search.toLowerCase());
-    return matchCategory && matchSearch;
+    return matchCategory;
   });
 
   const handleCardClick = (restaurant) => {
@@ -124,7 +97,11 @@ const HomePage = () => {
           </span>
         </div>
 
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="loading-center">
+            <div className="spinner" />
+          </div>
+        ) : filtered.length === 0 ? (
           <EmptyState
             title="Ничего не найдено"
             subtitle="Попробуйте другой поиск или категорию"

@@ -4,6 +4,48 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 
+class TestRestaurantsPublicAPI:
+    @pytest.mark.asyncio
+    async def test_read_public_restaurants_no_auth(self, client):
+        mock_restaurants = [
+            {
+                "id": str(uuid.uuid4()),
+                "name": "Шаурма у вуза",
+                "address": "ул. Ленина 1",
+                "vendor_id": str(uuid.uuid4()),
+                "is_hiring": True,
+            }
+        ]
+
+        with patch(
+            "features.restaurants.api.service.get_all_restaurants_public",
+            new_callable=AsyncMock,
+            return_value=(mock_restaurants, 1),
+        ) as mock_get:
+            response = await client.get("/api/v1/restaurants/public")
+
+        assert response.status_code == 200
+        body = response.json()
+        assert len(body["data"]) == 1
+        assert body["data"][0]["name"] == "Шаурма у вуза"
+        assert body["pagination"]["total"] == 1
+        mock_get.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_read_public_restaurants_returns_list(self, client):
+        with patch(
+            "features.restaurants.api.service.get_all_restaurants_public",
+            new_callable=AsyncMock,
+            return_value=([], 0),
+        ):
+            response = await client.get("/api/v1/restaurants/public")
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["data"] == []
+        assert body["pagination"]["total"] == 0
+
+
 class TestRestaurantsAPI:
     @pytest.mark.asyncio
     async def test_create_restaurant(self, vendor_client):
@@ -17,7 +59,7 @@ class TestRestaurantsAPI:
         }
 
         with patch(
-            "features.restaurants.api.register_new_restaurant",
+            "features.restaurants.api.service.create_restaurant_for_vendor",
             new_callable=AsyncMock,
             return_value=mock_restaurant,
         ) as mock_register:
@@ -43,7 +85,7 @@ class TestRestaurantsAPI:
         }
 
         with patch(
-            "features.restaurants.api.update_restaurant_logic",
+            "features.restaurants.api.service.update_restaurant_for_vendor",
             new_callable=AsyncMock,
             return_value=mock_restaurant,
         ) as mock_update:
@@ -56,11 +98,13 @@ class TestRestaurantsAPI:
         mock_update.assert_awaited_once()
 
     @pytest.mark.asyncio
-    async def test_get_restaurants(self, vendor_client):
+    async def test_read_my_restaurants(self, vendor_client):
         client, vendor_profile = vendor_client
 
         with patch(
-            "features.restaurants.api.get_my_restaurants", new_callable=AsyncMock, return_value=[]
+            "features.restaurants.api.service.get_my_restaurants",
+            new_callable=AsyncMock,
+            return_value=[],
         ) as mock_get:
             response = await client.get("/api/v1/restaurants/")
 

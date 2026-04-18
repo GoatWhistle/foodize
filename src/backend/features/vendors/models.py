@@ -7,7 +7,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database import Base, CreatedAtMixin, IdUuidPkMixin, UpdatedAtMixin
 
 if TYPE_CHECKING:
-    from features import Restaurant, User
+    from features.restaurants.models import Restaurant
+    from features.users.models import User
 
 
 class VendorProfile(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):

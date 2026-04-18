@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
@@ -11,12 +12,17 @@ class OrderCreate(BaseModel):
     items: list[OrderItemCreate]
 
 
+class OrderStatusUpdate(BaseModel):
+    status: OrderStatus
+
+
 class OrderResponse(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID
     restaurant_id: uuid.UUID
     status: OrderStatus
     total_price: int
+    ready_at: datetime | None = None
     items: list[OrderItemResponse]
 
     model_config = ConfigDict(from_attributes=True)

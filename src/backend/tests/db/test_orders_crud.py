@@ -4,13 +4,13 @@ from features.menu.models import MenuItem
 from features.orders.crud.order import get_order_by_id, get_orders_by_user_id
 from features.orders.schemas.order import OrderCreate
 from features.orders.schemas.order_item import OrderItemCreate
-from features.orders.services.order import create_order_in_db
-from features.restaurants.crud import create_restaurant_in_db
+from features.orders.services.order import _create_order
+from features.restaurants.crud import create_restaurant
 from features.restaurants.schemas import RestaurantCreate
 from features.users.crud import create_user
 from features.users.schemas import UserCreate
-from features.vendors.crud import create_vendors_profile
-from features.vendors.schemas import CreateVendor
+from features.vendors.crud import create_vendor_profile
+from features.vendors.schemas import VendorCreate
 from shared.enums.category import Category
 from shared.enums.roles import UserRole
 
@@ -32,10 +32,10 @@ async def test_order_crud_flow(db_session):
         user_role=UserRole.VENDOR,
     )
     vendor_user = await create_user(db_session, vendor_data)
-    vendor_profile = await create_vendors_profile(db_session, vendor_user, CreateVendor())
+    vendor_profile = await create_vendor_profile(db_session, vendor_user, VendorCreate())
 
     restaurant_data = RestaurantCreate(name="Rest", address="Addr")
-    restaurant = await create_restaurant_in_db(db_session, restaurant_data, vendor_profile.id)
+    restaurant = await create_restaurant(db_session, restaurant_data, vendor_profile.id)
 
     menu_item = MenuItem(
         restaurant_id=restaurant.id,
@@ -53,7 +53,7 @@ async def test_order_crud_flow(db_session):
 
     menu_items_map = {menu_item.id: menu_item}
 
-    order = await create_order_in_db(db_session, order_in, customer.id, menu_items_map)
+    order = await _create_order(db_session, order_in, customer.id, menu_items_map)
 
     assert order.id is not None
     assert order.user_id == customer.id
@@ -66,3 +66,5 @@ async def test_order_crud_flow(db_session):
     fetched_order = await get_order_by_id(db_session, order.id)
     assert fetched_order is not None
     assert fetched_order.id == order.id
+    assert len(fetched_order.items) == 1
+    assert fetched_order.items[0].menu_item.name == "Pizza"

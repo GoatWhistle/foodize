@@ -2,14 +2,14 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from fastapi import HTTPException
 
 from features.staff.dependencies import (
     get_restaurant_or_404,
     get_valid_staff_request,
     is_need_staff_for_restaurant,
 )
-from shared.exceptions import NotFoundException
+from features.staff.exceptions import StaffRequestNotFoundException
+from shared.exceptions import AccessDeniedException, NotFoundException
 
 
 class TestGetValidStaffRequest:
@@ -20,9 +20,8 @@ class TestGetValidStaffRequest:
             new_callable=AsyncMock,
             return_value=None,
         ):
-            with pytest.raises(HTTPException) as exc:
+            with pytest.raises(StaffRequestNotFoundException):
                 await get_valid_staff_request(uuid.uuid4(), MagicMock(), MagicMock())
-            assert exc.value.status_code == 404
 
     @pytest.mark.asyncio
     async def test_forbidden(self):
@@ -40,9 +39,8 @@ class TestGetValidStaffRequest:
             new_callable=AsyncMock,
             return_value=req,
         ):
-            with pytest.raises(HTTPException) as exc:
+            with pytest.raises(AccessDeniedException):
                 await get_valid_staff_request(uuid.uuid4(), mock_session, mock_vendor)
-            assert exc.value.status_code == 403
 
     @pytest.mark.asyncio
     async def test_success(self):

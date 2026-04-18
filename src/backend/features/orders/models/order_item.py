@@ -7,7 +7,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database import Base, CreatedAtMixin, IdUuidPkMixin
 
 if TYPE_CHECKING:
-    from features import MenuItem, Order
+    from features.menu.models import MenuItem
+    from features.orders.models.order import Order
 
 
 class OrderItem(Base, IdUuidPkMixin, CreatedAtMixin):

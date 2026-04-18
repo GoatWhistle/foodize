@@ -1,16 +1,25 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from features import User, VendorProfile
-from features.vendors.crud import create_vendors_profile, update_description
-from features.vendors.dependencies import ensure_no_vendor_profile
-from features.vendors.schemas import CreateVendor
+from features.users.models import User
+from features.vendors.crud import (
+    create_vendor_profile,
+    get_vendor_by_user_id,
+    update_vendor_description,
+)
+from features.vendors.exceptions import VendorAlreadyExistsException
+from features.vendors.models import VendorProfile
+from features.vendors.schemas import VendorCreate
 
 
-async def add_vendors_profile(session: AsyncSession, user: User, vendor_in: CreateVendor):
-    await ensure_no_vendor_profile(user, session)
-    vendors_profile = await create_vendors_profile(session=session, user=user, vendor_in=vendor_in)
-    return vendors_profile
+async def register_vendor(
+    session: AsyncSession, user: User, vendor_in: VendorCreate
+) -> VendorProfile:
+    if await get_vendor_by_user_id(session, user.id):
+        raise VendorAlreadyExistsException()
+    return await create_vendor_profile(session=session, user=user, vendor_in=vendor_in)
 
 
-async def update_vendor_details(session: AsyncSession, vendor: VendorProfile, new_description: str):
-    return await update_description(session, vendor, new_description)
+async def update_description(
+    session: AsyncSession, vendor: VendorProfile, new_description: str
+) -> VendorProfile:
+    return await update_vendor_description(session, vendor, new_description)

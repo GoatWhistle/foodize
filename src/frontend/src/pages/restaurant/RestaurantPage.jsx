@@ -26,7 +26,7 @@ const RestaurantPage = () => {
   };
 
   const { fetchMenu, menus, loading } = useRestaurantStore();
-  const { addToCart, cartCount, cartTotal } = useOrderStore();
+  const { addToCart } = useOrderStore();
   const count = useOrderStore((s) => s.cartCount());
   const total = useOrderStore((s) => s.cartTotal());
 

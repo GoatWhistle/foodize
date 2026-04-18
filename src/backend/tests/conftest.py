@@ -62,3 +62,10 @@ def as_vendor(vendor_user: User):
     app.dependency_overrides[get_current_user] = lambda: vendor_user
     yield vendor_user
     app.dependency_overrides.pop(get_current_user, None)
+
+
+@pytest.fixture
+def as_admin(admin_user: User):
+    app.dependency_overrides[get_current_user] = lambda: admin_user
+    yield admin_user
+    app.dependency_overrides.pop(get_current_user, None)

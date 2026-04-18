@@ -8,7 +8,7 @@ from httpx import AsyncClient
 
 class TestUsersAPI:
     @pytest.mark.asyncio
-    async def test_get_user_by_id(self, client: AsyncClient):
+    async def test_read_user_by_id(self, client: AsyncClient):
         user_id = uuid.uuid4()
         mock_user = make_user(user_id=user_id, name="Target User")
 
@@ -26,7 +26,7 @@ class TestUsersAPI:
         mock_get.assert_awaited_once()
 
     @pytest.mark.asyncio
-    async def test_get_my_profile(self, client: AsyncClient, as_user):
+    async def test_read_my_profile(self, client: AsyncClient, as_user):
         response = await client.get("/api/v1/users/")
 
         assert response.status_code == 200

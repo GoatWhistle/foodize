@@ -1,13 +1,13 @@
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from features import Restaurant
+from features.restaurants.models import Restaurant
 from features.restaurants.schemas import RestaurantCreate, RestaurantUpdate
 
 
-async def create_restaurant_in_db(
+async def create_restaurant(
     session: AsyncSession, restaurant_data: RestaurantCreate, vendor_id: uuid.UUID
 ) -> Restaurant:
     new_restaurant = Restaurant(**restaurant_data.model_dump(), vendor_id=vendor_id)
@@ -16,20 +16,61 @@ async def create_restaurant_in_db(
     return new_restaurant
 
 
-async def update_restaurant_in_db(
+async def update_restaurant(
     session: AsyncSession, restaurant: Restaurant, update_data: RestaurantUpdate
 ) -> Restaurant:
-    data = update_data.model_dump(exclude_unset=True)
-    for key, value in data.items():
+    for key, value in update_data.model_dump(exclude_unset=True).items():
         setattr(restaurant, key, value)
     await session.commit()
     await session.refresh(restaurant)
     return restaurant
 
 
-async def get_vendor_restaurants_from_db(
-    session: AsyncSession, vendor_id: uuid.UUID
+async def get_vendor_restaurants(session: AsyncSession, vendor_id: uuid.UUID) -> list[Restaurant]:
+    result = await session.execute(
+        select(Restaurant).where(Restaurant.vendor_id == vendor_id).order_by(Restaurant.id)
+    )
+    return list(result.scalars().all())
+
+
+async def get_restaurant_by_id(
+    session: AsyncSession, restaurant_id: uuid.UUID
+) -> Restaurant | None:
+    return await session.get(Restaurant, restaurant_id)
+
+
+async def count_restaurants(
+    session: AsyncSession,
+    name: str | None = None,
+    is_hiring: bool | None = None,
+    is_open: bool | None = None,
+) -> int:
+    stmt = select(func.count()).select_from(Restaurant)
+    if name is not None:
+        stmt = stmt.where(Restaurant.name.ilike(f"%{name}%"))
+    if is_hiring is not None:
+        stmt = stmt.where(Restaurant.is_hiring == is_hiring)
+    if is_open is not None:
+        stmt = stmt.where(Restaurant.is_open == is_open)
+    result = await session.execute(stmt)
+    return result.scalar_one()
+
+
+async def get_all_restaurants(
+    session: AsyncSession,
+    name: str | None = None,
+    is_hiring: bool | None = None,
+    is_open: bool | None = None,
+    offset: int = 0,
+    limit: int = 20,
 ) -> list[Restaurant]:
-    stmt = select(Restaurant).where(Restaurant.vendor_id == vendor_id).order_by(Restaurant.id)
+    stmt = select(Restaurant)
+    if name is not None:
+        stmt = stmt.where(Restaurant.name.ilike(f"%{name}%"))
+    if is_hiring is not None:
+        stmt = stmt.where(Restaurant.is_hiring == is_hiring)
+    if is_open is not None:
+        stmt = stmt.where(Restaurant.is_open == is_open)
+    stmt = stmt.order_by(Restaurant.name).offset(offset).limit(limit)
     result = await session.execute(stmt)
     return list(result.scalars().all())

@@ -10,7 +10,7 @@ from features.users.schemas import UserRead
 
 class TestAuthAPI:
     @pytest.mark.asyncio
-    async def test_register_endpoint(self, client: AsyncClient):
+    async def test_create_registration(self, client: AsyncClient):
         user_id = uuid.uuid4()
         mock_user_read = UserRead(id=user_id, name="Test Ivan", phone_number="79001234567")
 
@@ -36,7 +36,7 @@ class TestAuthAPI:
         mock_register.assert_awaited_once()
 
     @pytest.mark.asyncio
-    async def test_login_endpoint(self, client: AsyncClient):
+    async def test_create_login(self, client: AsyncClient):
         mock_token_resp = TokenResponse(
             access_token="mock_access", refresh_token="mock_refresh", token_type="bearer"
         )
