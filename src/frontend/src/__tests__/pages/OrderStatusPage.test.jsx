@@ -18,13 +18,15 @@ describe("OrderStatusPage", () => {
       fetchOrder: fetchOrderMock,
       currentOrder: {
         id: "ord-1",
-        status: "pending",
+        status: "PENDING",
         total_price: 500,
         items: [
           {
             id: "i1",
             quantity: 1,
             menu_item_id: "m1",
+            menu_item_name: "Бургер",
+            menu_item_category: "BURGER",
             price_at_purchase: 500,
           },
         ],
@@ -55,7 +57,7 @@ describe("OrderStatusPage", () => {
 
     expect(screen.getByText("Принят")).toBeDefined();
     expect(screen.getAllByText(/500 ₽/)).toHaveLength(2);
-    expect(screen.getByText("Позиция #m1")).toBeDefined();
+    expect(screen.getByText("Бургер")).toBeDefined();
   });
 
   it("polls for order updates", async () => {
@@ -72,7 +74,7 @@ describe("OrderStatusPage", () => {
 
   it("stops polling when status is ready", async () => {
     // Return ready on the next poll
-    fetchOrderMock.mockResolvedValue({ status: "ready" });
+    fetchOrderMock.mockResolvedValue({ status: "READY" });
 
     renderWithRouter();
 

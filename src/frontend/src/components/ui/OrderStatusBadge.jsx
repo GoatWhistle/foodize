@@ -1,5 +1,5 @@
 const OrderStatusBadge = ({ status, progress = 0.6 }) => {
-  if (status === "pending") {
+  if (status === "PENDING" || status === "ACCEPTED") {
     return (
       <div className="status-icon-wrap">
         {[0, 1, 2].map((i) => (
@@ -36,7 +36,7 @@ const OrderStatusBadge = ({ status, progress = 0.6 }) => {
     );
   }
 
-  if (status === "preparing") {
+  if (status === "COOKING") {
     const r = 48;
     const circumference = 2 * Math.PI * r;
     const offset = circumference * (1 - progress);
@@ -94,7 +94,7 @@ const OrderStatusBadge = ({ status, progress = 0.6 }) => {
     );
   }
 
-  if (status === "ready") {
+  if (status === "READY" || status === "COMPLETED") {
     return (
       <div className="status-icon-wrap status-ready-flash">
         <div style={{ fontSize: "4rem", marginBottom: 12 }}>✅</div>
@@ -107,10 +107,33 @@ const OrderStatusBadge = ({ status, progress = 0.6 }) => {
             color: "var(--ember-orange)",
           }}
         >
-          Забирай!
+          {status === "COMPLETED" ? "Приятного аппетита!" : "Забирай!"}
         </p>
         <p style={{ color: "var(--stone)", marginTop: 8, fontWeight: 600 }}>
-          Заказ ждёт тебя на кассе
+          {status === "COMPLETED"
+            ? "Заказ уже получен"
+            : "Заказ ждёт тебя на кассе"}
+        </p>
+      </div>
+    );
+  }
+
+  if (status === "CANCELLED") {
+    return (
+      <div className="status-icon-wrap">
+        <div style={{ fontSize: "4rem", marginBottom: 12 }}>❌</div>
+        <p
+          style={{
+            fontWeight: 800,
+            fontSize: "1.6rem",
+            letterSpacing: "-0.03em",
+            color: "var(--error, #ef4444)",
+          }}
+        >
+          Заказ отменён
+        </p>
+        <p style={{ color: "var(--stone)", marginTop: 8 }}>
+          Средства будут возвращены
         </p>
       </div>
     );

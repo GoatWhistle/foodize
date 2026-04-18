@@ -43,12 +43,12 @@ class TestAdminUsers:
 
         with (
             patch(
-                "features.admin.api.get_all_users",
+                "features.admin.crud.get_all_users",
                 new_callable=AsyncMock,
                 return_value=mock_users,
             ),
             patch(
-                "features.admin.api.count_all_users",
+                "features.admin.crud.count_all_users",
                 new_callable=AsyncMock,
                 return_value=3,
             ),
@@ -64,12 +64,12 @@ class TestAdminUsers:
     async def test_read_users_filter_by_role(self, client: AsyncClient, as_admin):
         with (
             patch(
-                "features.admin.api.get_all_users",
+                "features.admin.crud.get_all_users",
                 new_callable=AsyncMock,
                 return_value=[],
             ),
             patch(
-                "features.admin.api.count_all_users",
+                "features.admin.crud.count_all_users",
                 new_callable=AsyncMock,
                 return_value=0,
             ),
@@ -85,7 +85,7 @@ class TestAdminUsers:
         mock_user = _make_admin_user_dict(user_id)
 
         with patch(
-            "features.admin.api.get_user_by_id",
+            "features.admin.crud.get_user_by_id",
             new_callable=AsyncMock,
             return_value=mock_user,
         ):
@@ -97,7 +97,7 @@ class TestAdminUsers:
     @pytest.mark.asyncio
     async def test_read_user_not_found(self, client: AsyncClient, as_admin):
         with patch(
-            "features.admin.api.get_user_by_id",
+            "features.admin.crud.get_user_by_id",
             new_callable=AsyncMock,
             return_value=None,
         ):
@@ -113,12 +113,12 @@ class TestAdminUsers:
 
         with (
             patch(
-                "features.admin.api.get_user_by_id",
+                "features.admin.crud.get_user_by_id",
                 new_callable=AsyncMock,
                 return_value=mock_user,
             ),
             patch(
-                "features.admin.api.deactivate_user",
+                "features.admin.crud.deactivate_user",
                 new_callable=AsyncMock,
                 return_value=deactivated,
             ),
@@ -131,7 +131,7 @@ class TestAdminUsers:
     @pytest.mark.asyncio
     async def test_delete_user_not_found(self, client: AsyncClient, as_admin):
         with patch(
-            "features.admin.api.get_user_by_id",
+            "features.admin.crud.get_user_by_id",
             new_callable=AsyncMock,
             return_value=None,
         ):
@@ -156,12 +156,12 @@ class TestAdminOrders:
 
         with (
             patch(
-                "features.admin.api.get_all_orders",
+                "features.admin.crud.get_all_orders",
                 new_callable=AsyncMock,
                 return_value=mock_orders,
             ),
             patch(
-                "features.admin.api.count_all_orders",
+                "features.admin.crud.count_all_orders",
                 new_callable=AsyncMock,
                 return_value=1,
             ),
@@ -177,12 +177,12 @@ class TestAdminOrders:
     async def test_read_orders_with_filters(self, client: AsyncClient, as_admin):
         with (
             patch(
-                "features.admin.api.get_all_orders",
+                "features.admin.crud.get_all_orders",
                 new_callable=AsyncMock,
                 return_value=[],
             ),
             patch(
-                "features.admin.api.count_all_orders",
+                "features.admin.crud.count_all_orders",
                 new_callable=AsyncMock,
                 return_value=0,
             ),
@@ -203,7 +203,7 @@ class TestAdminStats:
         }
 
         with patch(
-            "features.admin.api.get_platform_stats",
+            "features.admin.crud.get_platform_stats",
             new_callable=AsyncMock,
             return_value=mock_stats,
         ):

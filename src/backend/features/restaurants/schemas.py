@@ -6,6 +6,8 @@ from pydantic import BaseModel, ConfigDict
 class RestaurantCreate(BaseModel):
     name: str
     address: str
+    is_hiring: bool = True
+    is_open: bool = True
 
 
 class RestaurantResponse(BaseModel):

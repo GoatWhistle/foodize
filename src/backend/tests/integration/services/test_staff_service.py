@@ -20,6 +20,7 @@ def mock_staff_request(status=StaffRequestStatus.PENDING, updated_at=None):
     req.id = uuid.uuid4()
     req.user_id = uuid.uuid4()
     req.restaurant_id = uuid.uuid4()
+    req.message = None
     req.status = status
     req.updated_at = updated_at or datetime.now(timezone.utc)
     return req
@@ -44,7 +45,7 @@ class TestCreateStaffRequest:
         self.mock_create = patch(
             "features.staff.crud.create_staff_request",
             new_callable=AsyncMock,
-            return_value=MagicMock(),
+            return_value=mock_staff_request(),
         ).start()
 
         yield

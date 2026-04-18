@@ -7,6 +7,6 @@ from shared.enums.roles import UserRole
 
 
 async def require_admin(user: User = Depends(get_current_user)) -> User:
-    if user.user_role != UserRole.ADMIN:
+    if user.user_role != UserRole.ADMIN.value:
         raise AdminAccessDeniedException()
     return user

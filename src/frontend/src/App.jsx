@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import {
   RouterProvider,
   createBrowserRouter,
@@ -6,7 +6,6 @@ import {
 } from "react-router-dom";
 
 import MainLayout from "./components/layout/MainLayout";
-import SplashScreen from "./components/ui/SplashScreen";
 
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
@@ -16,6 +15,7 @@ import OrdersPage from "./pages/orders/OrdersPage";
 import OrderStatusPage from "./pages/orders/OrderStatusPage";
 import VendorDashboardPage from "./pages/vendor/VendorDashboardPage";
 import ProfilePage from "./pages/profile/ProfilePage";
+import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 
 import { ROUTES } from "./constants/routes";
 import { useAuthStore } from "./store/useAuthStore";
@@ -83,6 +83,14 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+      {
+        path: ROUTES.ADMIN,
+        element: (
+          <ProtectedRoute>
+            <AdminDashboardPage />
+          </ProtectedRoute>
+        ),
+      },
     ],
   },
   {
@@ -125,9 +133,6 @@ const router = createBrowserRouter([
 ]);
 
 function App() {
-  const [splashDone, setSplashDone] = useState(
-    () => sessionStorage.getItem("splash_shown") === "true",
-  );
   const { initTheme, fetchMe } = {
     initTheme: useThemeStore((s) => s.initTheme),
     fetchMe: useAuthStore((s) => s.fetchMe),
@@ -138,17 +143,7 @@ function App() {
     fetchMe();
   }, [initTheme, fetchMe]);
 
-  const handleSplashDone = () => {
-    sessionStorage.setItem("splash_shown", "true");
-    setSplashDone(true);
-  };
-
-  return (
-    <>
-      {!splashDone && <SplashScreen onDone={handleSplashDone} />}
-      <RouterProvider router={router} />
-    </>
-  );
+  return <RouterProvider router={router} />;
 }
 
 export default App;

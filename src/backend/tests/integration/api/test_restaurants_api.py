@@ -104,10 +104,10 @@ class TestRestaurantsAPI:
         with patch(
             "features.restaurants.api.service.get_my_restaurants",
             new_callable=AsyncMock,
-            return_value=[],
+            return_value=([], 0),
         ) as mock_get:
             response = await client.get("/api/v1/restaurants/")
 
         assert response.status_code == 200
-        assert response.json() == []
+        assert response.json()["data"] == []
         mock_get.assert_awaited_once()

@@ -1,22 +1,30 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOrderStore } from "../../store/useOrderStore";
 import EmptyState from "../../components/ui/EmptyState";
 import { ROUTES } from "../../constants/routes";
+import Pagination from "../../components/ui/Pagination";
 
 const STATUS_CONFIG = {
-  pending: { label: "Принят", className: "pending" },
-  preparing: { label: "Готовится", className: "preparing" },
-  ready: { label: "Готов", className: "ready" },
+  PENDING: { label: "Принят", className: "pending" },
+  ACCEPTED: { label: "Подтверждён", className: "pending" },
+  COOKING: { label: "Готовится", className: "preparing" },
+  READY: { label: "Готов", className: "ready" },
+  COMPLETED: { label: "Выдан", className: "ready" },
+  CANCELLED: { label: "Отменён", className: "preparing" },
 };
 
 const OrdersPage = () => {
-  const { orders, fetchMyOrders, ordersLoading } = useOrderStore();
+  const { orders, ordersTotal, fetchMyOrders, ordersLoading } = useOrderStore();
   const navigate = useNavigate();
+  const [page, setPage] = useState(1);
+  const size = 20;
 
   useEffect(() => {
-    fetchMyOrders();
-  }, [fetchMyOrders]);
+    fetchMyOrders({ page, size });
+  }, [fetchMyOrders, page]);
+
+  const totalPages = Math.ceil(ordersTotal / size);
 
   if (ordersLoading) {
     return (
@@ -49,69 +57,78 @@ const OrdersPage = () => {
           }}
         />
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {orders.map((order) => {
-            const cfg = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
-            return (
-              <div
-                key={order.id}
-                id={`order-card-${order.id}`}
-                className="order-card"
-                onClick={() =>
-                  navigate(ROUTES.ORDER_STATUS.replace(":id", order.id))
-                }
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) =>
-                  e.key === "Enter" &&
-                  navigate(ROUTES.ORDER_STATUS.replace(":id", order.id))
-                }
-                aria-label={`Заказ на ${order.total_price} ₽`}
-              >
-                <div style={{ flex: 1 }}>
+        <>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {orders.map((order) => {
+              const cfg = STATUS_CONFIG[order.status] || STATUS_CONFIG.PENDING;
+              return (
+                <div
+                  key={order.id}
+                  id={`order-card-${order.id}`}
+                  className="order-card"
+                  onClick={() =>
+                    navigate(ROUTES.ORDER_STATUS.replace(":id", order.id))
+                  }
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) =>
+                    e.key === "Enter" &&
+                    navigate(ROUTES.ORDER_STATUS.replace(":id", order.id))
+                  }
+                  aria-label={`Заказ на ${order.total_price} ₽`}
+                >
+                  <div style={{ flex: 1 }}>
+                    <div
+                      style={{
+                        fontWeight: 700,
+                        fontSize: "0.95rem",
+                        letterSpacing: "-0.02em",
+                        marginBottom: 4,
+                      }}
+                    >
+                      Заказ #{order.id.slice(0, 8)}
+                    </div>
+                    <div style={{ fontSize: "0.8rem", color: "var(--stone)" }}>
+                      {order.items?.length || 0} позиц.
+                    </div>
+                  </div>
+
                   <div
                     style={{
-                      fontWeight: 700,
-                      fontSize: "0.95rem",
-                      letterSpacing: "-0.02em",
-                      marginBottom: 4,
+                      textAlign: "right",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-end",
+                      gap: 6,
                     }}
                   >
-                    Заказ #{order.id.slice(0, 8)}
+                    <span className={`order-status-badge ${cfg.className}`}>
+                      {cfg.label}
+                    </span>
+                    <span
+                      style={{
+                        fontWeight: 800,
+                        fontSize: "1.05rem",
+                        letterSpacing: "-0.03em",
+                      }}
+                    >
+                      {order.total_price} ₽
+                    </span>
                   </div>
-                  <div style={{ fontSize: "0.8rem", color: "var(--stone)" }}>
-                    {order.items?.length || 0} позиц.
-                  </div>
-                </div>
 
-                <div
-                  style={{
-                    textAlign: "right",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "flex-end",
-                    gap: 6,
-                  }}
-                >
-                  <span className={`order-status-badge ${cfg.className}`}>
-                    {cfg.label}
-                  </span>
-                  <span
-                    style={{
-                      fontWeight: 800,
-                      fontSize: "1.05rem",
-                      letterSpacing: "-0.03em",
-                    }}
-                  >
-                    {order.total_price} ₽
+                  <span style={{ color: "var(--stone)", marginLeft: 8 }}>
+                    ›
                   </span>
                 </div>
-
-                <span style={{ color: "var(--stone)", marginLeft: 8 }}>›</span>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
+        </>
       )}
     </div>
   );

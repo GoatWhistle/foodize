@@ -1,7 +1,6 @@
 import uuid
-from typing import TYPE_CHECKING
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
@@ -9,9 +8,8 @@ from features.menu import service
 from features.menu.schemas import MenuItemCreate, MenuItemResponse, MenuItemUpdate
 from features.vendors.dependencies import get_current_vendor
 from features.vendors.models import VendorProfile
-
-if TYPE_CHECKING:
-    from features.menu.models import MenuItem
+from shared.response import build_list_response
+from shared.schemas.response import SuccessListResponse
 
 router = APIRouter(prefix="/menu", tags=["Menu"])
 
@@ -24,7 +22,7 @@ async def create_menu_item(
     item_in: MenuItemCreate,
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-) -> "MenuItem":
+) -> MenuItemResponse:
     return await service.add_menu_item(
         session=session, restaurant_id=restaurant_id, item_data=item_in, vendor_id=current_vendor.id
     )
@@ -37,7 +35,7 @@ async def update_menu_item(
     item_in: MenuItemUpdate,
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-) -> "MenuItem":
+) -> MenuItemResponse:
     return await service.update_menu_item_for_vendor(
         session=session,
         restaurant_id=restaurant_id,
@@ -62,9 +60,13 @@ async def delete_menu_item(
     )
 
 
-@router.get("/{restaurant_id}", response_model=list[MenuItemResponse])
+@router.get("/{restaurant_id}", response_model=SuccessListResponse[MenuItemResponse])
 async def read_restaurant_menu(
+    request: Request,
     restaurant_id: uuid.UUID,
+    page: int = Query(1, ge=1),
+    size: int = Query(50, ge=1, le=200),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-) -> list["MenuItem"]:
-    return await service.get_menu(session, restaurant_id)
+) -> SuccessListResponse[MenuItemResponse]:
+    data, total = await service.get_menu(session, restaurant_id, page=page, size=size)
+    return build_list_response(data=data, total=total, page=page, size=size, request=request)

@@ -19,6 +19,6 @@ class Review(Base, IdUuidPkMixin, CreatedAtMixin):
     user: Mapped["User"] = relationship(back_populates="reviews")
     restaurant: Mapped["Restaurant"] = relationship(back_populates="reviews")
 
-    __table_args__ = (
+    __table_args__ = (  # type: ignore[assignment]
         UniqueConstraint("user_id", "restaurant_id", name="uq_reviews_user_id_restaurant_id"),
     )

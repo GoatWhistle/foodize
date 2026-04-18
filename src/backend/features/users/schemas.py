@@ -19,3 +19,4 @@ class UserCreate(UserBase):
 
 class UserRead(UserBase):
     id: uuid.UUID
+    user_role: UserRole

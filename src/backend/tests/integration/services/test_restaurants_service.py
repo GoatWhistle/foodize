@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from features.restaurants.schemas import RestaurantCreate, RestaurantUpdate
+from features.restaurants.schemas import RestaurantCreate, RestaurantResponse, RestaurantUpdate
 from features.restaurants.service import (
     create_restaurant_for_vendor,
     get_my_restaurants,
@@ -18,6 +18,8 @@ def make_mock_restaurant(restaurant_id: uuid.UUID = None, vendor_id: uuid.UUID =
     r.vendor_id = vendor_id or uuid.uuid4()
     r.name = "Test Restaurant"
     r.address = "Test Street 1"
+    r.is_hiring = True
+    r.is_open = True
     return r
 
 
@@ -28,13 +30,14 @@ class TestCreateRestaurantForVendor:
         restaurant_data = RestaurantCreate(name="Sushi Bar", address="Lenin St 1")
 
         with patch(
-            "features.restaurants.service.create_restaurant",
+            "features.restaurants.crud.create_restaurant",
             new_callable=AsyncMock,
             return_value=mock_restaurant,
         ) as mock_create:
             result = await create_restaurant_for_vendor(mock_db_session, restaurant_data, vendor_id)
 
-        assert result is mock_restaurant
+        assert isinstance(result, RestaurantResponse)
+        assert result.id == mock_restaurant.id
         mock_create.assert_awaited_once_with(mock_db_session, restaurant_data, vendor_id)
 
 
@@ -52,7 +55,7 @@ class TestUpdateRestaurantForVendor:
                 return_value=mock_restaurant,
             ),
             patch(
-                "features.restaurants.service.update_restaurant",
+                "features.restaurants.crud.update_restaurant",
                 new_callable=AsyncMock,
                 return_value=mock_restaurant,
             ) as mock_update,
@@ -61,7 +64,8 @@ class TestUpdateRestaurantForVendor:
                 mock_db_session, restaurant_id, update_data, vendor_id
             )
 
-        assert result is mock_restaurant
+        assert isinstance(result, RestaurantResponse)
+        assert result.id == mock_restaurant.id
         mock_update.assert_awaited_once_with(mock_db_session, mock_restaurant, update_data)
 
     async def test_update_wrong_vendor_raises(self, mock_db_session):
@@ -84,21 +88,37 @@ class TestGetMyRestaurants:
         vendor_id = uuid.uuid4()
         restaurants = [make_mock_restaurant(vendor_id=vendor_id) for _ in range(2)]
 
-        with patch(
-            "features.restaurants.service.get_vendor_restaurants",
-            new_callable=AsyncMock,
-            return_value=restaurants,
+        with (
+            patch(
+                "features.restaurants.crud.get_vendor_restaurants",
+                new_callable=AsyncMock,
+                return_value=restaurants,
+            ),
+            patch(
+                "features.restaurants.crud.count_vendor_restaurants",
+                new_callable=AsyncMock,
+                return_value=2,
+            ),
         ):
-            result = await get_my_restaurants(mock_db_session, vendor_id)
+            data, total = await get_my_restaurants(mock_db_session, vendor_id)
 
-        assert len(result) == 2
+        assert len(data) == 2
+        assert total == 2
 
     async def test_returns_empty_when_no_restaurants(self, mock_db_session):
-        with patch(
-            "features.restaurants.service.get_vendor_restaurants",
-            new_callable=AsyncMock,
-            return_value=[],
+        with (
+            patch(
+                "features.restaurants.crud.get_vendor_restaurants",
+                new_callable=AsyncMock,
+                return_value=[],
+            ),
+            patch(
+                "features.restaurants.crud.count_vendor_restaurants",
+                new_callable=AsyncMock,
+                return_value=0,
+            ),
         ):
-            result = await get_my_restaurants(mock_db_session, uuid.uuid4())
+            data, total = await get_my_restaurants(mock_db_session, uuid.uuid4())
 
-        assert result == []
+        assert data == []
+        assert total == 0

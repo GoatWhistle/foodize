@@ -5,7 +5,7 @@ import pytest
 from factories import make_user
 
 from features.auth.schemas import TokenResponse, UserLogin
-from features.auth.service import get_current_user, login_user, register_user
+from features.auth.service import get_current_user, login_user, refresh_user_token, register_user
 from features.users.schemas import UserCreate
 from shared.enums.roles import UserRole
 from shared.exceptions.existence import AuthException, InvalidCredentialsException
@@ -22,7 +22,7 @@ class TestRegisterUser:
                 new_callable=AsyncMock,
             ) as mock_ensure,
             patch(
-                "features.auth.service.create_user",
+                "features.users.crud.create_user",
                 new_callable=AsyncMock,
                 return_value=make_user(user_id=user_id, name="Ivan"),
             ) as mock_create,
@@ -151,3 +151,54 @@ class TestGetCurrentUser:
         with patch("features.auth.service.decode_jwt", return_value={"phone": "7900"}):
             with pytest.raises(AuthException):
                 await get_current_user(token="tok", session=mock_db_session)
+
+
+class TestRefreshUserToken:
+    async def test_refresh_success(self, mock_db_session):
+        user = make_user()
+        mock_request = MagicMock()
+        mock_request.cookies = {"refresh_token": "valid_refresh"}
+        mock_response = MagicMock()
+
+        with (
+            patch("features.auth.service.decode_jwt", return_value={"sub": str(user.id)}),
+            patch(
+                "features.auth.service.get_user_by_id_or_404",
+                new_callable=AsyncMock,
+                return_value=user,
+            ),
+            patch("features.auth.service.create_access_token", return_value="new_acc"),
+            patch("features.auth.service.create_refresh_token", return_value="new_ref"),
+        ):
+            result = await refresh_user_token(mock_request, mock_response, mock_db_session)
+
+        assert result.access_token == "new_acc"
+        assert result.refresh_token == "new_ref"
+        assert mock_response.set_cookie.call_count == 2
+
+    async def test_refresh_missing_token_raises(self, mock_db_session):
+        mock_request = MagicMock()
+        mock_request.cookies = {}
+        mock_response = MagicMock()
+
+        with pytest.raises(AuthException) as exc:
+            await refresh_user_token(mock_request, mock_response, mock_db_session)
+        assert "Refresh token missing" in str(exc.value.detail)
+
+    async def test_refresh_invalid_token_raises(self, mock_db_session):
+        mock_request = MagicMock()
+        mock_request.cookies = {"refresh_token": "invalid"}
+        mock_response = MagicMock()
+
+        with patch("features.auth.service.decode_jwt", side_effect=Exception("bad")):
+            with pytest.raises(AuthException):
+                await refresh_user_token(mock_request, mock_response, mock_db_session)
+
+    async def test_refresh_missing_sub_raises(self, mock_db_session):
+        mock_request = MagicMock()
+        mock_request.cookies = {"refresh_token": "no_sub"}
+        mock_response = MagicMock()
+
+        with patch("features.auth.service.decode_jwt", return_value={}):
+            with pytest.raises(AuthException):
+                await refresh_user_token(mock_request, mock_response, mock_db_session)

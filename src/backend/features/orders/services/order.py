@@ -2,18 +2,8 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from features.menu.models import MenuItem
-from features.orders.crud.order import (
-    cancel_order,
-    count_orders_by_restaurant_id,
-    count_orders_by_user_id,
-    create_order_event,
-    get_order_by_id,
-    get_orders_by_restaurant_id,
-    get_orders_by_user_id,
-    update_order_status,
-)
-from features.orders.crud.order_item import get_menu_items_by_ids
+from features.orders.crud import order as order_crud
+from features.orders.crud import order_item as order_item_crud
 from features.orders.exceptions import (
     InvalidStatusTransitionException,
     MenuItemRestaurantMismatchException,
@@ -23,8 +13,9 @@ from features.orders.exceptions import (
     OrderNotFoundException,
 )
 from features.orders.models import Order, OrderItem
-from features.orders.schemas.order import OrderCreate, OrderStatusUpdate
-from features.restaurants.crud import get_restaurant_by_id
+from features.orders.schemas.order import OrderCreate, OrderResponse, OrderStatusUpdate
+from features.orders.schemas.order_event import OrderEventResponse
+from features.restaurants import crud as restaurant_crud
 from features.restaurants.exceptions import RestaurantClosedException, RestaurantNotFoundException
 from features.users.models import User
 from shared.enums.order_status import OrderStatus
@@ -48,15 +39,15 @@ async def place_order(
     session: AsyncSession,
     order_data: OrderCreate,
     user_id: uuid.UUID,
-) -> Order:
-    restaurant = await get_restaurant_by_id(session, order_data.restaurant_id)
+) -> OrderResponse:
+    restaurant = await restaurant_crud.get_restaurant_by_id(session, order_data.restaurant_id)
     if not restaurant:
         raise RestaurantNotFoundException()
     if not restaurant.is_open:
         raise RestaurantClosedException()
 
     menu_item_ids = [item.menu_item_id for item in order_data.items]
-    menu_items = await get_menu_items_by_ids(session, menu_item_ids)
+    menu_items = await order_item_crud.get_menu_items_by_ids(session, menu_item_ids)
 
     if len(menu_items) != len(menu_item_ids):
         raise MenuItemsNotFoundException()
@@ -64,14 +55,15 @@ async def place_order(
     if any(mi.restaurant_id != order_data.restaurant_id for mi in menu_items.values()):
         raise MenuItemRestaurantMismatchException()
 
-    return await _create_order(session, order_data, user_id, menu_items)
+    order = await _create_order(session, order_data, user_id, menu_items)
+    return OrderResponse.model_validate(order)
 
 
 async def _create_order(
     session: AsyncSession,
     order_data: OrderCreate,
     user_id: uuid.UUID,
-    menu_items: dict[uuid.UUID, MenuItem],
+    menu_items: dict,
 ) -> Order:
     total_price = sum(
         menu_items[item.menu_item_id].price * item.quantity for item in order_data.items
@@ -94,8 +86,10 @@ async def _create_order(
         session.add(order_item)
 
     await session.commit()
-    await session.refresh(order)
-    return order
+    # Re-fetch with eagerly loaded relationships to avoid lazy-load errors during serialization.
+    result = await order_crud.get_order_by_id(session, order.id)
+    assert result is not None
+    return result
 
 
 async def get_user_orders(
@@ -104,24 +98,26 @@ async def get_user_orders(
     status: OrderStatus | None = None,
     page: int = 1,
     size: int = 20,
-) -> tuple[list[Order], int]:
+) -> tuple[list[OrderResponse], int]:
     offset = (page - 1) * size
-    data = await get_orders_by_user_id(session, user_id, status=status, offset=offset, limit=size)
-    total = await count_orders_by_user_id(session, user_id, status=status)
-    return data, total
+    data = await order_crud.get_orders_by_user_id(
+        session, user_id, status=status, offset=offset, limit=size
+    )
+    total = await order_crud.count_orders_by_user_id(session, user_id, status=status)
+    return [OrderResponse.model_validate(o) for o in data], total
 
 
-async def get_order_for_user(
+async def get_order(
     session: AsyncSession,
     order_id: uuid.UUID,
     user_id: uuid.UUID,
-) -> Order:
-    order = await get_order_by_id(session, order_id)
+) -> OrderResponse:
+    order = await order_crud.get_order_by_id(session, order_id)
     if not order:
         raise OrderNotFoundException()
     if order.user_id != user_id:
         raise OrderAccessDeniedException()
-    return order
+    return OrderResponse.model_validate(order)
 
 
 async def get_restaurant_orders(
@@ -130,13 +126,13 @@ async def get_restaurant_orders(
     status: OrderStatus | None = None,
     page: int = 1,
     size: int = 20,
-) -> tuple[list[Order], int]:
+) -> tuple[list[OrderResponse], int]:
     offset = (page - 1) * size
-    data = await get_orders_by_restaurant_id(
+    data = await order_crud.get_orders_by_restaurant_id(
         session, restaurant_id, status=status, offset=offset, limit=size
     )
-    total = await count_orders_by_restaurant_id(session, restaurant_id, status=status)
-    return data, total
+    total = await order_crud.count_orders_by_restaurant_id(session, restaurant_id, status=status)
+    return [OrderResponse.model_validate(o) for o in data], total
 
 
 async def change_order_status(
@@ -144,28 +140,40 @@ async def change_order_status(
     order: Order,
     status_data: OrderStatusUpdate,
     actor: User,
-) -> Order:
-    old_status = order.status
+) -> OrderResponse:
+    old_status = OrderStatus(order.status)
     _validate_transition(old_status, status_data.status)
-    updated = await update_order_status(session, order, status_data.status)
-    await create_order_event(
+    updated = await order_crud.update_order_status(session, order, status_data.status)
+    await order_crud.create_order_event(
         session,
         order_id=order.id,
         actor_id=actor.id,
-        actor_role=actor.user_role.value,
+        actor_role=actor.user_role,
         old_status=old_status,
         new_status=status_data.status,
     )
-    return updated
+    return OrderResponse.model_validate(updated)
 
 
-async def cancel_customer_order(
+async def cancel_order(
     session: AsyncSession,
-    order: Order,
+    order_id: uuid.UUID,
     user_id: uuid.UUID,
-) -> Order:
+) -> OrderResponse:
+    order = await order_crud.get_order_by_id(session, order_id)
+    if not order:
+        raise OrderNotFoundException()
     if order.user_id != user_id:
         raise OrderAccessDeniedException()
-    if order.status != OrderStatus.PENDING:
+    if order.status != OrderStatus.PENDING.value:
         raise OrderNotCancellableException()
-    return await cancel_order(session, order)
+    cancelled = await order_crud.cancel_order(session, order)
+    return OrderResponse.model_validate(cancelled)
+
+
+async def get_order_events(
+    session: AsyncSession,
+    order_id: uuid.UUID,
+) -> list[OrderEventResponse]:
+    events = await order_crud.get_events_by_order_id(session, order_id)
+    return [OrderEventResponse.model_validate(e) for e in events]

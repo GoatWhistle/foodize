@@ -7,7 +7,7 @@ export const vendorService = {
     api.patch("/vendors/description", null, {
       params: { new_description: description },
     }),
-  getStaffRequests: () => api.get("/staff/my-requests"),
+  getStaffRequests: (params) => api.get("/staff/my-requests", { params }),
   updateStaffStatus: (requestId, status) =>
     api.patch(`/staff/requests/${requestId}/status`, { status }),
 };

@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from factories import make_user
 
-from features.vendors.schemas import VendorCreate
+from features.vendors.schemas import VendorCreate, VendorResponse
 from features.vendors.service import register_vendor, update_description
 from shared.exceptions.rules import RuleException
 
@@ -25,12 +25,12 @@ class TestRegisterVendor:
 
         with (
             patch(
-                "features.vendors.service.get_vendor_by_user_id",
+                "features.vendors.crud.get_vendor_by_user_id",
                 new_callable=AsyncMock,
                 return_value=None,
             ),
             patch(
-                "features.vendors.service.create_vendor_profile",
+                "features.vendors.crud.create_vendor_profile",
                 new_callable=AsyncMock,
                 return_value=mock_vendor,
             ) as mock_create,
@@ -40,13 +40,14 @@ class TestRegisterVendor:
         mock_create.assert_awaited_once_with(
             session=mock_db_session, user=user, vendor_in=vendor_in
         )
-        assert result is mock_vendor
+        assert isinstance(result, VendorResponse)
+        assert result.user_id == mock_vendor.user_id
 
     async def test_raises_if_vendor_profile_already_exists(self, mock_db_session):
         user = make_user()
 
         with patch(
-            "features.vendors.service.get_vendor_by_user_id",
+            "features.vendors.crud.get_vendor_by_user_id",
             new_callable=AsyncMock,
             return_value=MagicMock(),
         ):
@@ -57,13 +58,15 @@ class TestRegisterVendor:
 class TestUpdateDescription:
     async def test_updates_description(self, mock_db_session):
         mock_vendor = make_mock_vendor()
+        updated_mock = make_mock_vendor(user_id=mock_vendor.user_id, description="New description")
 
         with patch(
-            "features.vendors.service.update_vendor_description",
+            "features.vendors.crud.update_vendor_description",
             new_callable=AsyncMock,
-            return_value=mock_vendor,
+            return_value=updated_mock,
         ) as mock_update:
             result = await update_description(mock_db_session, mock_vendor, "New description")
 
         mock_update.assert_awaited_once_with(mock_db_session, mock_vendor, "New description")
-        assert result is mock_vendor
+        assert isinstance(result, VendorResponse)
+        assert result.description == "New description"

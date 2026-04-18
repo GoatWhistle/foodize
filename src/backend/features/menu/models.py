@@ -16,8 +16,9 @@ if TYPE_CHECKING:
 class MenuItem(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin):
     description: Mapped[str | None]
     price: Mapped[int]
-    category: Mapped[Category] = mapped_column(
-        String, default=Category.SHAURMA, server_default="SHAURMA", nullable=True
+    prep_time_minutes: Mapped[int] = mapped_column(default=15, server_default="15")
+    category: Mapped[str] = mapped_column(
+        String, default=Category.SHAURMA.value, server_default="SHAURMA", nullable=True
     )
     is_available: Mapped[bool] = mapped_column(default=True, server_default="true")
     is_deleted: Mapped[bool] = mapped_column(default=False, server_default="false")

@@ -17,5 +17,5 @@ def make_user(
     user.name = name
     user.phone_number = phone_number
     user.hashed_password = hashed_password
-    user.user_role = user_role
+    user.user_role = user_role.value
     return user

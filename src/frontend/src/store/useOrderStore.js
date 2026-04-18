@@ -75,11 +75,21 @@ export const useOrderStore = create((set, get) => ({
     return res.data;
   },
 
-  fetchMyOrders: async () => {
+  ordersTotal: 0,
+
+  fetchMyOrders: async (params = {}) => {
     set({ ordersLoading: true });
     try {
-      const res = await orderService.getMyOrders();
-      set({ orders: res.data.data, ordersLoading: false });
+      const res = await orderService.getMyOrders({ params });
+      // Backend may return paginated {data: [], total: N} or plain array
+      const orders = Array.isArray(res.data?.data)
+        ? res.data.data
+        : Array.isArray(res.data)
+          ? res.data
+          : [];
+      const ordersTotal = res.data?.total || orders.length;
+
+      set({ orders, ordersTotal, ordersLoading: false });
     } catch {
       set({ ordersLoading: false });
     }

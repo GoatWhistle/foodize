@@ -77,10 +77,10 @@ class TestStaffAPI:
         with patch(
             "features.staff.api.service.get_vendor_staff_requests",
             new_callable=AsyncMock,
-            return_value=[],
+            return_value=([], 0),
         ) as mock_get:
             res = await client.get("/api/v1/staff/my-requests")
 
         assert res.status_code == 200
-        assert res.json() == []
+        assert res.json()["data"] == []
         mock_get.assert_awaited_once()

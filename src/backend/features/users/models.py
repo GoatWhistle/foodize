@@ -18,8 +18,8 @@ class User(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin):
     phone_number: Mapped[str] = mapped_column(unique=True)
     hashed_password: Mapped[str]
     is_active: Mapped[bool] = mapped_column(default=True, server_default="true", nullable=False)
-    user_role: Mapped[UserRole] = mapped_column(
-        String, default=UserRole.CUSTOMER, server_default="CUSTOMER", nullable=False
+    user_role: Mapped[str] = mapped_column(
+        String, default=UserRole.CUSTOMER.value, server_default="CUSTOMER", nullable=False
     )
     vendor_profile: Mapped["VendorProfile | None"] = relationship(back_populates="user")
     orders: Mapped[list["Order"]] = relationship(back_populates="user")

@@ -4,14 +4,14 @@ import OrderStatusBadge from "../../components/ui/OrderStatusBadge";
 
 describe("OrderStatusBadge", () => {
   it("renders pending status with ripple rings", () => {
-    const { container } = render(<OrderStatusBadge status="pending" />);
+    const { container } = render(<OrderStatusBadge status="PENDING" />);
     expect(screen.getByText("Принят")).toBeDefined();
     expect(container.querySelectorAll(".ripple-ring")).toHaveLength(3);
   });
 
-  it("renders preparing status with circle progress", () => {
+  it("renders preparing status with progress circle", () => {
     const { container } = render(
-      <OrderStatusBadge status="preparing" progress={0.5} />,
+      <OrderStatusBadge status="COOKING" progress={0.5} />,
     );
     expect(screen.getByText("Готовится")).toBeDefined();
     const circles = container.querySelectorAll("circle");
@@ -19,7 +19,7 @@ describe("OrderStatusBadge", () => {
   });
 
   it("renders ready status with checkmark", () => {
-    render(<OrderStatusBadge status="ready" />);
+    render(<OrderStatusBadge status="READY" />);
     expect(screen.getByText("Забирай!")).toBeDefined();
     expect(screen.getByText("✅")).toBeDefined();
   });

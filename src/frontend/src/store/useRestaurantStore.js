@@ -10,11 +10,23 @@ export const useRestaurantStore = create((set, get) => ({
   loading: false,
   error: null,
 
+  publicRestaurantsTotal: 0,
+
   fetchPublicRestaurants: async (params = {}) => {
     set({ loading: true, error: null });
     try {
       const res = await restaurantService.getAll(params);
-      set({ publicRestaurants: res.data.data || res.data, loading: false });
+      const list = Array.isArray(res.data?.data)
+        ? res.data.data
+        : Array.isArray(res.data)
+          ? res.data
+          : [];
+      const total = res.data?.total || list.length;
+      set({
+        publicRestaurants: list,
+        publicRestaurantsTotal: total,
+        loading: false,
+      });
     } catch (e) {
       set({ error: e.message, loading: false });
     }
@@ -24,7 +36,12 @@ export const useRestaurantStore = create((set, get) => ({
     set({ loading: true, error: null });
     try {
       const res = await restaurantService.getMy();
-      set({ restaurants: res.data, loading: false });
+      const list = Array.isArray(res.data)
+        ? res.data
+        : Array.isArray(res.data?.data)
+          ? res.data.data
+          : [];
+      set({ restaurants: list, loading: false });
     } catch (e) {
       set({ error: e.message, loading: false });
     }
@@ -35,8 +52,13 @@ export const useRestaurantStore = create((set, get) => ({
     set({ loading: true });
     try {
       const res = await menuService.getMenu(restaurantId);
+      const list = Array.isArray(res.data?.data)
+        ? res.data.data
+        : Array.isArray(res.data)
+          ? res.data
+          : [];
       set((s) => ({
-        menus: { ...s.menus, [restaurantId]: res.data },
+        menus: { ...s.menus, [restaurantId]: list },
         loading: false,
       }));
     } catch (e) {
@@ -54,12 +76,20 @@ export const useRestaurantStore = create((set, get) => ({
 
   addMenuItem: async (restaurantId, data) => {
     const res = await menuService.addItem(restaurantId, data);
-    set((s) => ({
-      menus: {
-        ...s.menus,
-        [restaurantId]: [...(s.menus[restaurantId] || []), res.data],
-      },
-    }));
+    set((s) => {
+      const currentMenu = Array.isArray(s.menus[restaurantId])
+        ? s.menus[restaurantId]
+        : Array.isArray(s.menus[restaurantId]?.data)
+          ? s.menus[restaurantId].data
+          : [];
+
+      return {
+        menus: {
+          ...s.menus,
+          [restaurantId]: [...currentMenu, res.data],
+        },
+      };
+    });
     return res.data;
   },
 }));

@@ -64,12 +64,19 @@ class TestUserCreateSchema:
 class TestUserReadSchema:
     def test_from_dict(self):
         user_id = uuid.uuid4()
-        data = UserRead(id=user_id, name="Ivan", phone_number="79001234567")
+        data = UserRead(
+            id=user_id, name="Ivan", phone_number="79001234567", user_role=UserRole.CUSTOMER
+        )
         assert data.id == user_id
 
     def test_id_must_be_uuid(self):
         with pytest.raises(ValidationError):
-            UserRead(id="not-a-uuid", name="Ivan", phone_number="79001234567")
+            UserRead(
+                id="not-a-uuid",
+                name="Ivan",
+                phone_number="79001234567",
+                user_role=UserRole.CUSTOMER,
+            )
 
 
 class TestTokenResponseSchema:

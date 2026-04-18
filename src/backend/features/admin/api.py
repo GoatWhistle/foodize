@@ -4,15 +4,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
-from features.admin.crud import (
-    count_all_orders,
-    count_all_users,
-    deactivate_user,
-    get_all_orders,
-    get_all_users,
-    get_platform_stats,
-    get_user_by_id,
-)
+from features.admin import crud
 from features.admin.dependencies import require_admin
 from features.admin.schemas import AdminUserResponse, PlatformStats
 from features.orders.schemas.order import OrderResponse
@@ -36,8 +28,8 @@ async def read_users(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessListResponse[AdminUserResponse]:
     offset = (page - 1) * size
-    data = await get_all_users(session, role=role, offset=offset, limit=size)
-    total = await count_all_users(session, role=role)
+    data = await crud.get_all_users(session, role=role, offset=offset, limit=size)
+    total = await crud.count_all_users(session, role=role)
     return build_list_response(data=data, total=total, page=page, size=size, request=request)
 
 
@@ -46,8 +38,8 @@ async def read_user(
     user_id: uuid.UUID,
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-) -> AdminUserResponse:
-    user = await get_user_by_id(session, user_id)
+) -> User:
+    user = await crud.get_user_by_id(session, user_id)
     if not user:
         raise NotFoundException()
     return user
@@ -58,11 +50,11 @@ async def delete_user(
     user_id: uuid.UUID,
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-) -> AdminUserResponse:
-    user = await get_user_by_id(session, user_id)
+) -> User:
+    user = await crud.get_user_by_id(session, user_id)
     if not user:
         raise NotFoundException()
-    return await deactivate_user(session, user)
+    return await crud.deactivate_user(session, user)
 
 
 @router.get("/orders", response_model=SuccessListResponse[OrderResponse])
@@ -77,7 +69,7 @@ async def read_orders(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessListResponse[OrderResponse]:
     offset = (page - 1) * size
-    data = await get_all_orders(
+    data = await crud.get_all_orders(
         session,
         status=status,
         restaurant_id=restaurant_id,
@@ -85,7 +77,7 @@ async def read_orders(
         offset=offset,
         limit=size,
     )
-    total = await count_all_orders(
+    total = await crud.count_all_orders(
         session,
         status=status,
         restaurant_id=restaurant_id,
@@ -98,5 +90,5 @@ async def read_orders(
 async def read_platform_stats(
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-) -> PlatformStats:
-    return await get_platform_stats(session)
+) -> dict:
+    return await crud.get_platform_stats(session)

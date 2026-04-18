@@ -37,4 +37,18 @@ describe("orderService", () => {
     const result = await orderService.getById("123");
     expect(result.data).toEqual(mockData);
   });
+
+  it("cancelOrder sends POST to /orders/{id}/cancel", async () => {
+    mock.onPost("/orders/123/cancel").reply(200);
+
+    const result = await orderService.cancelOrder("123");
+    expect(result.status).toEqual(200);
+  });
+
+  it("getOrderEvents sends GET to /orders/{id}/events", async () => {
+    mock.onGet("/orders/123/events").reply(200, []);
+
+    const result = await orderService.getOrderEvents("123");
+    expect(result.data).toEqual([]);
+  });
 });

@@ -17,8 +17,11 @@ class StaffRequest(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
     restaurant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("restaurants.id"))
 
     message: Mapped[str | None] = mapped_column(String(500))
-    status: Mapped[StaffRequestStatus] = mapped_column(
-        String, default=StaffRequestStatus.PENDING, server_default="PENDING", nullable=False
+    status: Mapped[str] = mapped_column(
+        String,
+        default=StaffRequestStatus.PENDING.value,
+        server_default="PENDING",
+        nullable=False,
     )
     user: Mapped["User"] = relationship(back_populates="staff_requests")
     restaurant: Mapped["Restaurant"] = relationship(back_populates="staff_requests")

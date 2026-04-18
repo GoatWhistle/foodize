@@ -5,7 +5,7 @@ import { ROUTES } from "../../constants/routes";
 import { vendorService } from "../../services/vendorService";
 
 const ProfilePage = () => {
-  const { user, logout } = useAuthStore();
+  const { user, logout, fetchMe } = useAuthStore();
   const navigate = useNavigate();
 
   const [isVendor, setIsVendor] = useState(false);
@@ -29,9 +29,10 @@ const ProfilePage = () => {
     setVendorLoading(true);
     try {
       await vendorService.createProfile({ description: "" });
+      await fetchMe();
       setIsVendor(true);
       navigate(ROUTES.VENDOR_DASHBOARD);
-    } catch (e) {
+    } catch {
       alert("Не удалось стать вендором");
       setVendorLoading(false);
     }
@@ -70,6 +71,17 @@ const ProfilePage = () => {
           <span>📦 Мои заказы</span>
           <span style={{ color: "var(--stone)" }}>›</span>
         </div>
+
+        {user?.user_role === "ADMIN" && (
+          <div
+            id="profile-admin-dashboard-link"
+            className="profile-menu-item"
+            onClick={() => navigate(ROUTES.ADMIN)}
+          >
+            <span>👑 Админ-панель</span>
+            <span style={{ color: "var(--stone)" }}>›</span>
+          </div>
+        )}
 
         {!checkingVendor &&
           (isVendor ? (

@@ -14,7 +14,12 @@ from shared.enums.roles import UserRole
 def make_mock_order(status: OrderStatus) -> MagicMock:
     order = MagicMock()
     order.id = uuid.uuid4()
-    order.status = status
+    order.user_id = uuid.uuid4()
+    order.restaurant_id = uuid.uuid4()
+    order.status = status.value
+    order.total_price = 500
+    order.ready_at = None
+    order.items = []
     return order
 
 
@@ -69,15 +74,16 @@ class TestChangeOrderStatus:
         actor = make_user(user_role=UserRole.VENDOR)
         order = make_mock_order(OrderStatus.PENDING)
         status_data = OrderStatusUpdate(status=OrderStatus.ACCEPTED)
+        updated_order = make_mock_order(OrderStatus.ACCEPTED)
 
         with (
             patch(
-                "features.orders.services.order.update_order_status",
+                "features.orders.crud.order.update_order_status",
                 new_callable=AsyncMock,
-                return_value=order,
+                return_value=updated_order,
             ),
             patch(
-                "features.orders.services.order.create_order_event",
+                "features.orders.crud.order.create_order_event",
                 new_callable=AsyncMock,
             ) as mock_event,
         ):
@@ -106,7 +112,7 @@ class TestChangeOrderStatus:
         status_data = OrderStatusUpdate(status=OrderStatus.PENDING)
 
         with patch(
-            "features.orders.services.order.create_order_event",
+            "features.orders.crud.order.create_order_event",
             new_callable=AsyncMock,
         ) as mock_event:
             with pytest.raises(InvalidStatusTransitionException):

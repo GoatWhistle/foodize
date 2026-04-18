@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 import bcrypt
 import jwt
-from pytz import utc
+from pytz import utc  # type: ignore[import-untyped]
 
 from settings.config.app_config import settings
 

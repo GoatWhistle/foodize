@@ -18,10 +18,19 @@ const MenuItemCard = ({ item, onAdd }) => {
         <div className="menu-item-footer">
           <span className="menu-item-price">{formatPrice(item.price)}</span>
           {item.category && (
-            <span className="tag-pill" style={{ fontSize: "0.7rem" }}>
+            <span
+              className="tag-pill"
+              style={{ fontSize: "0.7rem", whiteSpace: "nowrap" }}
+            >
               {CATEGORY_EMOJI[item.category] || "🍽️"} {item.category}
             </span>
           )}
+          <span
+            className="tag-pill orange"
+            style={{ fontSize: "0.7rem", whiteSpace: "nowrap" }}
+          >
+            ~{item.prep_time_minutes || 15} мин
+          </span>
         </div>
       </div>
 

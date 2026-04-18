@@ -12,7 +12,9 @@ class TestAuthAPI:
     @pytest.mark.asyncio
     async def test_create_registration(self, client: AsyncClient):
         user_id = uuid.uuid4()
-        mock_user_read = UserRead(id=user_id, name="Test Ivan", phone_number="79001234567")
+        mock_user_read = UserRead(
+            id=user_id, name="Test Ivan", phone_number="79001234567", user_role="CUSTOMER"
+        )
 
         with patch(
             "features.auth.service.register_user",

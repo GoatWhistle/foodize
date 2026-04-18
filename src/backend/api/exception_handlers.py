@@ -1,6 +1,7 @@
 from fastapi import Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import IntegrityError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from shared.exceptions.base import AppException
@@ -34,4 +35,20 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     return JSONResponse(
         status_code=exc.status_code,
         content=ErrorSchema(detail=ErrorDescriptionSchema(error=exc.detail)).model_dump(),
+    )
+
+
+async def integrity_error_handler(request: Request, exc: IntegrityError):
+    # Log the full error for internal debugging if needed
+    error_msg = str(exc.orig) if hasattr(exc, "orig") else str(exc)
+
+    friendly_msg = "Duplicate entry: this information already exists."
+    if "uq_restaurants_address" in error_msg:
+        friendly_msg = "A restaurant with this address already exists."
+    elif "uq_users_phone_number" in error_msg:
+        friendly_msg = "A user with this phone number already exists."
+
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content=ErrorSchema(detail=ErrorDescriptionSchema(error=friendly_msg)).model_dump(),
     )

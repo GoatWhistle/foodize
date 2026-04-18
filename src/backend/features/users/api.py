@@ -17,14 +17,12 @@ async def read_user(
     user_id: uuid.UUID,
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> UserRead:
-    return await get_user_by_id_or_404(session=session, user_id=user_id)
+    user = await get_user_by_id_or_404(session=session, user_id=user_id)
+    return UserRead.model_validate(user)
 
 
-@router.get(
-    "/",
-    response_model=UserRead,
-)
+@router.get("/", response_model=UserRead)
 async def read_my_profile(
     current_user: User = Depends(get_current_user),
 ) -> UserRead:
-    return current_user
+    return UserRead.model_validate(current_user)

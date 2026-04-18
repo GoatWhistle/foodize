@@ -65,7 +65,6 @@ const RestaurantCard = ({ restaurant, onClick }) => {
               {emoji} {restaurant.category}
             </span>
           )}
-          <span className="tag-pill orange">~25 мин</span>
         </div>
       </div>
     </div>

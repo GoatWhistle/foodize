@@ -1,8 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useOrderStore } from "../../store/useOrderStore";
 import OrderStatusBadge from "../../components/ui/OrderStatusBadge";
 import { ROUTES } from "../../constants/routes";
+import { orderService } from "../../services/orderService";
 
 const POLL_INTERVAL = 5000; // 5 seconds
 
@@ -11,14 +12,35 @@ const OrderStatusPage = () => {
   const navigate = useNavigate();
   const { fetchOrder, currentOrder } = useOrderStore();
   const intervalRef = useRef(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [events, setEvents] = useState([]);
 
   useEffect(() => {
     fetchOrder(id);
+    const loadEvents = async () => {
+      try {
+        const res = await orderService.getOrderEvents(id);
+        const list = Array.isArray(res.data?.data)
+          ? res.data.data
+          : Array.isArray(res.data)
+            ? res.data
+            : [];
+        setEvents(list);
+      } catch {
+        // ignore network errors during polling
+      }
+    };
+    loadEvents();
 
     // Poll every 5s until order is ready
     intervalRef.current = setInterval(async () => {
       const order = await fetchOrder(id);
-      if (order?.status === "ready") {
+      loadEvents();
+      if (
+        order?.status === "READY" ||
+        order?.status === "CANCELLED" ||
+        order?.status === "COMPLETED"
+      ) {
         clearInterval(intervalRef.current);
       }
     }, POLL_INTERVAL);
@@ -34,13 +56,32 @@ const OrderStatusPage = () => {
     );
   }
 
-  const isReady = currentOrder.status === "ready";
+  const isReady =
+    currentOrder.status === "READY" || currentOrder.status === "COMPLETED";
+  const isCancelled = currentOrder.status === "CANCELLED";
+  const isPending = currentOrder.status === "PENDING";
+
+  const handleCancel = async () => {
+    if (!window.confirm("Вы уверены, что хотите отменить заказ?")) return;
+    setCancelling(true);
+    try {
+      await orderService.cancelOrder(id);
+      await fetchOrder(id);
+    } catch {
+      alert("Не удалось отменить заказ.");
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   return (
     <div
       className={`status-screen page-enter${isReady ? " status-ready-flash" : ""}`}
     >
-      <OrderStatusBadge status={currentOrder.status} progress={0.6} />
+      <OrderStatusBadge
+        status={currentOrder.status}
+        progress={isCancelled ? 0 : 0.6}
+      />
 
       {/* Order details */}
       <div
@@ -67,26 +108,35 @@ const OrderStatusPage = () => {
           Состав заказа
         </div>
 
-        {currentOrder.items?.map((item) => (
-          <div
-            key={item.id}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              padding: "8px 0",
-              borderBottom: "1px solid var(--border)",
-              fontSize: "0.9rem",
-            }}
-          >
-            <span style={{ fontWeight: 600 }}>×{item.quantity}</span>
-            <span
-              style={{ flex: 1, marginLeft: 12, color: "var(--text-primary)" }}
+        {Array.isArray(currentOrder.items) &&
+          currentOrder.items.map((item) => (
+            <div
+              key={item.id}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "8px 0",
+                borderBottom: "1px solid var(--border)",
+                fontSize: "0.9rem",
+              }}
             >
-              Позиция #{item.menu_item_id.slice(0, 6)}
-            </span>
-            <span style={{ fontWeight: 700 }}>{item.price_at_purchase} ₽</span>
-          </div>
-        ))}
+              <span style={{ fontWeight: 600, marginRight: 8 }}>
+                ×{item.quantity}
+              </span>
+              <div style={{ flex: 1 }}>
+                <div style={{ color: "var(--text-primary)", fontWeight: 500 }}>
+                  {item.menu_item_name}
+                </div>
+                <div style={{ fontSize: "0.75rem", color: "var(--stone)" }}>
+                  {item.menu_item_category}
+                </div>
+              </div>
+              <span style={{ fontWeight: 700 }}>
+                {item.price_at_purchase} ₽
+              </span>
+            </div>
+          ))}
 
         <div
           style={{
@@ -105,14 +155,119 @@ const OrderStatusPage = () => {
         </div>
       </div>
 
-      <button
-        className="btn btn-secondary"
-        style={{ marginTop: 24 }}
-        onClick={() => navigate(ROUTES.ORDERS)}
-        id="back-to-orders-btn"
+      <div
+        style={{
+          marginTop: 16,
+          width: "100%",
+          maxWidth: 380,
+          background: "var(--bg-card)",
+          border: "1px solid var(--border)",
+          borderRadius: "var(--radius-lg)",
+          padding: "20px",
+        }}
       >
-        ← Все заказы
-      </button>
+        <div
+          style={{
+            fontWeight: 700,
+            fontSize: "0.75rem",
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            color: "var(--stone)",
+            marginBottom: 14,
+          }}
+        >
+          История заказа
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {(!Array.isArray(events) || events.length === 0) && (
+            <div style={{ fontSize: "0.85rem", color: "var(--stone)" }}>
+              Загрузка событий...
+            </div>
+          )}
+          {Array.isArray(events) &&
+            events.map((ev, i) => (
+              <div key={ev.id} style={{ display: "flex", gap: 12 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      background:
+                        i === events.length - 1
+                          ? "var(--ember-orange)"
+                          : "var(--border)",
+                    }}
+                  />
+                  {i !== events.length - 1 && (
+                    <div
+                      style={{
+                        width: 2,
+                        flex: 1,
+                        background: "var(--border)",
+                        marginTop: 4,
+                        minHeight: 20,
+                      }}
+                    />
+                  )}
+                </div>
+                <div>
+                  <div
+                    style={{
+                      fontSize: "0.85rem",
+                      fontWeight: 700,
+                      textTransform: "capitalize",
+                    }}
+                  >
+                    {ev.new_status}
+                  </div>
+                  <div style={{ fontSize: "0.75rem", color: "var(--stone)" }}>
+                    {new Date(ev.created_at).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}{" "}
+                    • Участник: {ev.actor_role}
+                  </div>
+                </div>
+              </div>
+            ))}
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          gap: "10px",
+          marginTop: 24,
+          width: "100%",
+          maxWidth: 380,
+        }}
+      >
+        {isPending && (
+          <button
+            className="btn btn-secondary"
+            style={{ flex: 1, color: "var(--error)" }}
+            onClick={handleCancel}
+            disabled={cancelling}
+          >
+            {cancelling ? "Отмена..." : "Отменить"}
+          </button>
+        )}
+        <button
+          className="btn btn-primary"
+          style={{ flex: 2 }}
+          onClick={() => navigate(ROUTES.ORDERS)}
+          id="back-to-orders-btn"
+        >
+          ← Закрыть
+        </button>
+      </div>
     </div>
   );
 };

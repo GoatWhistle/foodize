@@ -14,11 +14,19 @@ describe("restaurantService", () => {
     mock.restore();
   });
 
-  it("getAll sends GET to /restaurants/", async () => {
+  it("getAll sends GET to /restaurants/public", async () => {
     const mockData = [{ id: "1", name: "Sushi" }];
-    mock.onGet("/restaurants/").reply(200, mockData);
+    mock.onGet("/restaurants/public").reply(200, mockData);
 
     const result = await restaurantService.getAll();
+    expect(result.data).toEqual(mockData);
+  });
+
+  it("getMy sends GET to /restaurants/", async () => {
+    const mockData = [{ id: "2", name: "My Rest" }];
+    mock.onGet("/restaurants/").reply(200, mockData);
+
+    const result = await restaurantService.getMy();
     expect(result.data).toEqual(mockData);
   });
 

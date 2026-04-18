@@ -10,4 +10,4 @@ class AppConfig(BaseConfig):
     auth: AuthConfig = AuthConfig()
 
 
-settings = AppConfig()
+settings = AppConfig()  # type: ignore[call-arg]

@@ -17,15 +17,15 @@ async def create_vendor(
     vendor_in: VendorCreate,
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-) -> VendorProfile:
+) -> VendorResponse:
     return await service.register_vendor(user=user, session=session, vendor_in=vendor_in)
 
 
 @router.get("/", response_model=VendorResponse)
 async def read_my_vendor_profile(
     current_vendor: VendorProfile = Depends(get_current_vendor),
-) -> VendorProfile:
-    return current_vendor
+) -> VendorResponse:
+    return VendorResponse.model_validate(current_vendor)
 
 
 @router.patch("/description", response_model=VendorResponse)
@@ -33,7 +33,7 @@ async def update_description(
     new_description: str,
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-) -> VendorProfile:
+) -> VendorResponse:
     return await service.update_description(
         new_description=new_description, vendor=current_vendor, session=session
     )

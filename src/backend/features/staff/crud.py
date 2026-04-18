@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import and_, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.restaurants.models import Restaurant
@@ -44,21 +44,36 @@ async def get_request_by_id(session: AsyncSession, request_id: uuid.UUID) -> Sta
 
 
 async def get_requests_by_vendor_id(
-    session: AsyncSession, vendor_id: uuid.UUID
+    session: AsyncSession,
+    vendor_id: uuid.UUID,
+    offset: int = 0,
+    limit: int = 20,
 ) -> list[StaffRequest]:
     result = await session.execute(
         select(StaffRequest)
         .join(Restaurant)
         .where(Restaurant.vendor_id == vendor_id)
         .order_by(StaffRequest.created_at.desc())
+        .offset(offset)
+        .limit(limit)
     )
     return list(result.scalars().all())
+
+
+async def count_requests_by_vendor_id(session: AsyncSession, vendor_id: uuid.UUID) -> int:
+    result = await session.execute(
+        select(func.count())
+        .select_from(StaffRequest)
+        .join(Restaurant)
+        .where(Restaurant.vendor_id == vendor_id)
+    )
+    return result.scalar_one()
 
 
 async def update_request_status(
     session: AsyncSession, request: StaffRequest, new_status: StaffRequestStatus
 ) -> StaffRequest:
-    request.status = new_status
+    request.status = new_status.value
     await session.commit()
     await session.refresh(request)
     return request
@@ -67,7 +82,7 @@ async def update_request_status(
 async def create_staff_profile(
     session: AsyncSession, user_id: uuid.UUID, restaurant_id: uuid.UUID
 ) -> StaffProfile:
-    profile = StaffProfile(user_id=user_id, restaurant_id=restaurant_id, role=StaffRole.COOK)
+    profile = StaffProfile(user_id=user_id, restaurant_id=restaurant_id, role=StaffRole.COOK.value)
     session.add(profile)
     await session.commit()
     return profile

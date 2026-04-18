@@ -62,15 +62,6 @@ async def test_staff_crud_lifecycle(db_session, vendor_and_restaurant, staff_can
     assert request.message == "Hire me please"
     assert request.status == StaffRequestStatus.PENDING
 
-    print(
-        "!!! Request IDS: id=",
-        request.id,
-        "user_id=",
-        request.user_id,
-        "restaurant_id=",
-        request.restaurant_id,
-    )
-
     last_req = await get_last_request(db_session, candidate.id, restaurant.id)
     assert last_req is not None
     assert last_req.id == request.id

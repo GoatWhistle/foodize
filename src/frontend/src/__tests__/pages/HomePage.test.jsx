@@ -10,6 +10,22 @@ vi.mock("../../store/useAuthStore", () => ({
   },
 }));
 
+vi.mock("../../store/useRestaurantStore", () => ({
+  useRestaurantStore: (sel) => {
+    const state = {
+      publicRestaurants: [
+        { id: "mock-1", name: "Шаурма Хаус", category: "SHAURMA" },
+        { id: "mock-2", name: "Burger Point", category: "BURGER" },
+        { id: "mock-3", name: "Pizza Nova", category: "PIZZA" },
+        { id: "mock-4", name: "Sushi House", category: "SUSHI" },
+      ],
+      fetchPublicRestaurants: vi.fn(),
+      loading: false,
+    };
+    return sel ? sel(state) : state;
+  },
+}));
+
 const mockNavigate = vi.fn();
 vi.mock("react-router-dom", async () => {
   const actual = await vi.importActual("react-router-dom");
@@ -64,21 +80,7 @@ describe("HomePage", () => {
     expect(screen.getByText("1 мест")).toBeDefined();
   });
 
-  it("searches restaurants by name", () => {
-    render(
-      <BrowserRouter>
-        <HomePage />
-      </BrowserRouter>,
-    );
-
-    const searchInput = screen.getByPlaceholderText(
-      "Поиск ресторана или адреса...",
-    );
-    fireEvent.change(searchInput, { target: { value: "Pizza" } });
-
-    expect(screen.getByText("Pizza Nova")).toBeDefined();
-    expect(screen.queryByText("Burger Point")).toBeNull();
-  });
+  // The text search is tested on backend service layer now
 
   it("navigates to restaurant page on card click", () => {
     render(

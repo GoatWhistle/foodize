@@ -3,24 +3,26 @@ import { describe, it, expect } from "vitest";
 import FoodizeLogo from "../../components/ui/FoodizeLogo";
 
 describe("FoodizeLogo", () => {
-  it("renders the SVG logo", () => {
-    const { container } = render(<FoodizeLogo />);
-    const svg = container.querySelector("svg");
-    expect(svg).toBeDefined();
-    expect(svg.getAttribute("aria-label")).toBe("Foodize");
-  });
-
-  it("applies the correct size", () => {
-    const { container } = render(<FoodizeLogo size={64} />);
-    const svg = container.querySelector("svg");
-    expect(svg.getAttribute("height")).toBe("64");
-  });
-
-  it("renders 'food' and 'ze' text parts", () => {
+  it("renders the logo text", () => {
     render(<FoodizeLogo />);
-    const food = screen.getByText("food");
-    const ze = screen.getByText("ze");
-    expect(food).toBeDefined();
-    expect(ze).toBeDefined();
+    expect(screen.getByText("foodize")).toBeDefined();
+  });
+
+  it("applies the correct font size from size prop", () => {
+    const { container } = render(<FoodizeLogo size={64} />);
+    const div = container.firstChild;
+    expect(div.style.fontSize).toBe("64px");
+  });
+
+  it("uses custom color when provided", () => {
+    const { container } = render(<FoodizeLogo color="#FF4F1F" />);
+    const div = container.firstChild;
+    expect(div.style.color).toBe("rgb(255, 79, 31)");
+  });
+
+  it("uses currentColor when no color prop provided", () => {
+    const { container } = render(<FoodizeLogo />);
+    const div = container.firstChild;
+    expect(div.style.color).toBe("currentcolor");
   });
 });

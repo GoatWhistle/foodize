@@ -2,11 +2,10 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import RestaurantCard from "../../components/ui/RestaurantCard";
 import EmptyState from "../../components/ui/EmptyState";
+import Pagination from "../../components/ui/Pagination";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useRestaurantStore } from "../../store/useRestaurantStore";
 import { ROUTES } from "../../constants/routes";
-
-
 
 const CATEGORIES = [
   { key: "ALL", label: "Все", emoji: "🍽️" },
@@ -19,16 +18,34 @@ const CATEGORIES = [
 const HomePage = () => {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("ALL");
+  const [onlyOpen, setOnlyOpen] = useState(false);
   const { isAuthenticated } = useAuthStore();
-  const { publicRestaurants, fetchPublicRestaurants, loading } = useRestaurantStore();
+  const {
+    publicRestaurants,
+    publicRestaurantsTotal,
+    fetchPublicRestaurants,
+    loading,
+  } = useRestaurantStore();
   const navigate = useNavigate();
+
+  const [page, setPage] = useState(1);
+  const size = 20;
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, onlyOpen, activeCategory]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
-      fetchPublicRestaurants({ name: search || undefined });
+      fetchPublicRestaurants({
+        name: search || undefined,
+        is_open: onlyOpen ? true : undefined,
+        page,
+        size,
+      });
     }, 400);
     return () => clearTimeout(handler);
-  }, [search, fetchPublicRestaurants]);
+  }, [search, onlyOpen, page, fetchPublicRestaurants]);
 
   const filtered = publicRestaurants.filter((r) => {
     // Backend filters by name, but we can do category client-side
@@ -63,6 +80,17 @@ const HomePage = () => {
             aria-label="Поиск ресторана"
           />
         </div>
+        <label
+          className="form-check"
+          style={{ marginTop: "12px", width: "fit-content" }}
+        >
+          <input
+            type="checkbox"
+            checked={onlyOpen}
+            onChange={(e) => setOnlyOpen(e.target.checked)}
+          />
+          <span className="form-check-label">Только открытые</span>
+        </label>
       </div>
 
       {/* Category chips */}
@@ -114,15 +142,22 @@ const HomePage = () => {
             }}
           />
         ) : (
-          <div className="restaurants-grid">
-            {filtered.map((r) => (
-              <RestaurantCard
-                key={r.id}
-                restaurant={r}
-                onClick={() => handleCardClick(r)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="restaurants-grid">
+              {filtered.map((r) => (
+                <RestaurantCard
+                  key={r.id}
+                  restaurant={r}
+                  onClick={() => handleCardClick(r)}
+                />
+              ))}
+            </div>
+            <Pagination
+              page={page}
+              totalPages={Math.ceil((publicRestaurantsTotal || 1) / size)}
+              onPageChange={setPage}
+            />
+          </>
         )}
       </div>
     </div>

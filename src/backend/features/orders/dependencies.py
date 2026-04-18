@@ -25,12 +25,12 @@ async def _verify_restaurant_access(
     if not restaurant:
         raise NotFoundException(detail="Restaurant not found")
 
-    if current_user.user_role == UserRole.VENDOR:
+    if current_user.user_role == UserRole.VENDOR.value:
         vendor = await get_vendor_by_user_id(session, current_user.id)
         if not vendor or vendor.id != restaurant.vendor_id:
             raise AccessDeniedException()
 
-    elif current_user.user_role == UserRole.STAFF:
+    elif current_user.user_role == UserRole.STAFF.value:
         result = await session.execute(
             select(StaffProfile).where(
                 StaffProfile.user_id == current_user.id,

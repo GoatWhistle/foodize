@@ -36,7 +36,7 @@ class TestOrderEventsAPI:
         app.dependency_overrides[get_order_for_staff_or_vendor] = lambda: mock_order
 
         with patch(
-            "features.orders.api.order.get_events_by_order_id",
+            "features.orders.api.order.service.get_order_events",
             new_callable=AsyncMock,
             return_value=mock_events,
         ) as mock_get:
@@ -61,7 +61,7 @@ class TestOrderEventsAPI:
         app.dependency_overrides[get_order_for_staff_or_vendor] = lambda: mock_order
 
         with patch(
-            "features.orders.api.order.get_events_by_order_id",
+            "features.orders.api.order.service.get_order_events",
             new_callable=AsyncMock,
             return_value=[],
         ):

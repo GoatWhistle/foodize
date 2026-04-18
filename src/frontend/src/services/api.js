@@ -20,11 +20,51 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Normalize nested error structure {"detail": {"error": "..."}} to string
+    const detail = error.response?.data?.detail;
+    if (detail && typeof detail === "object" && detail.error) {
+      error.response.data.detail = detail.error;
+    }
+
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      originalRequest.url !== "/login" &&
+      originalRequest.url !== "/refresh"
+    ) {
+      originalRequest._retry = true;
+      try {
+        const refreshResponse = await axios.post(
+          `${BASE_URL}/refresh`,
+          {},
+          { withCredentials: true },
+        );
+        const { access_token } = refreshResponse.data;
+        localStorage.setItem("access_token", access_token);
+        originalRequest.headers.Authorization = `Bearer ${access_token}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        localStorage.removeItem("access_token");
+        const path = window.location.pathname;
+        if (path !== "/login" && path !== "/register") {
+          window.location.href = "/login";
+        }
+        return Promise.reject(refreshError);
+      }
+    }
+
+    // Pass through 401s if they weren't caught (e.g. login fail)
     if (error.response?.status === 401) {
       localStorage.removeItem("access_token");
-      window.location.href = "/login";
+      const path = window.location.pathname;
+      if (path !== "/login" && path !== "/register") {
+        window.location.href = "/login";
+      }
     }
+
     return Promise.reject(error);
   },
 );

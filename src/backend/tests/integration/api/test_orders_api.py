@@ -1,5 +1,5 @@
 import uuid
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from httpx import AsyncClient
@@ -86,7 +86,7 @@ class TestOrdersAPI:
         }
 
         with patch(
-            "features.orders.api.order.service.get_order_for_user",
+            "features.orders.api.order.service.get_order",
             new_callable=AsyncMock,
             return_value=mock_order,
         ) as mock_get:
@@ -191,18 +191,11 @@ class TestCancelOrderAPI:
             "items": [],
         }
 
-        with (
-            patch(
-                "features.orders.api.order.service.get_order_for_user",
-                new_callable=AsyncMock,
-                return_value=MagicMock(),
-            ),
-            patch(
-                "features.orders.api.order.service.cancel_customer_order",
-                new_callable=AsyncMock,
-                return_value=mock_order,
-            ) as mock_cancel,
-        ):
+        with patch(
+            "features.orders.api.order.service.cancel_order",
+            new_callable=AsyncMock,
+            return_value=mock_order,
+        ) as mock_cancel:
             response = await client.post(f"/api/v1/orders/{order_id}/cancel")
 
         assert response.status_code == 200
@@ -214,7 +207,7 @@ class TestCancelOrderAPI:
         order_id = uuid.uuid4()
 
         with patch(
-            "features.orders.api.order.service.get_order_for_user",
+            "features.orders.api.order.service.cancel_order",
             new_callable=AsyncMock,
             side_effect=OrderNotFoundException(),
         ):
@@ -226,17 +219,10 @@ class TestCancelOrderAPI:
     async def test_update_order_cancel_non_pending(self, client: AsyncClient, as_user):
         order_id = uuid.uuid4()
 
-        with (
-            patch(
-                "features.orders.api.order.service.get_order_for_user",
-                new_callable=AsyncMock,
-                return_value=MagicMock(),
-            ),
-            patch(
-                "features.orders.api.order.service.cancel_customer_order",
-                new_callable=AsyncMock,
-                side_effect=OrderNotCancellableException(),
-            ),
+        with patch(
+            "features.orders.api.order.service.cancel_order",
+            new_callable=AsyncMock,
+            side_effect=OrderNotCancellableException(),
         ):
             response = await client.post(f"/api/v1/orders/{order_id}/cancel")
 

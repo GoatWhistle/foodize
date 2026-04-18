@@ -23,7 +23,7 @@ async def get_orders_by_user_id(
 ) -> list[Order]:
     stmt = select(Order).where(Order.user_id == user_id).options(_items_options())
     if status is not None:
-        stmt = stmt.where(Order.status == status)
+        stmt = stmt.where(Order.status == status.value)
     stmt = stmt.order_by(Order.created_at.desc()).offset(offset).limit(limit)
     result = await session.execute(stmt)
     return list(result.scalars().all())
@@ -50,7 +50,7 @@ async def get_orders_by_restaurant_id(
         .options(_items_options())
     )
     if status is not None:
-        stmt = stmt.where(Order.status == status)
+        stmt = stmt.where(Order.status == status.value)
     stmt = stmt.offset(offset).limit(limit)
     result = await session.execute(stmt)
     return list(result.scalars().all())
@@ -63,7 +63,7 @@ async def count_orders_by_user_id(
 ) -> int:
     stmt = select(func.count()).select_from(Order).where(Order.user_id == user_id)
     if status is not None:
-        stmt = stmt.where(Order.status == status)
+        stmt = stmt.where(Order.status == status.value)
     result = await session.execute(stmt)
     return result.scalar_one()
 
@@ -75,7 +75,7 @@ async def count_orders_by_restaurant_id(
 ) -> int:
     stmt = select(func.count()).select_from(Order).where(Order.restaurant_id == restaurant_id)
     if status is not None:
-        stmt = stmt.where(Order.status == status)
+        stmt = stmt.where(Order.status == status.value)
     result = await session.execute(stmt)
     return result.scalar_one()
 
@@ -83,7 +83,7 @@ async def count_orders_by_restaurant_id(
 async def update_order_status(
     session: AsyncSession, order: Order, new_status: OrderStatus
 ) -> Order:
-    order.status = new_status
+    order.status = new_status.value
     if new_status == OrderStatus.READY:
         order.ready_at = datetime.now(timezone.utc)
     await session.commit()
@@ -103,8 +103,8 @@ async def create_order_event(
         order_id=order_id,
         actor_id=actor_id,
         actor_role=actor_role,
-        old_status=old_status,
-        new_status=new_status,
+        old_status=old_status.value,
+        new_status=new_status.value,
     )
     session.add(event)
     await session.commit()
@@ -120,7 +120,7 @@ async def get_events_by_order_id(session: AsyncSession, order_id: uuid.UUID) -> 
 
 
 async def cancel_order(session: AsyncSession, order: Order) -> Order:
-    order.status = OrderStatus.CANCELLED
+    order.status = OrderStatus.CANCELLED.value
     await session.commit()
     await session.refresh(order)
     return order

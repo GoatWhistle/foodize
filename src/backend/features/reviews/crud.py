@@ -25,14 +25,26 @@ async def create_review(
 
 
 async def get_reviews_by_restaurant(
-    session: AsyncSession, restaurant_id: uuid.UUID
+    session: AsyncSession,
+    restaurant_id: uuid.UUID,
+    offset: int = 0,
+    limit: int = 20,
 ) -> list[Review]:
     result = await session.execute(
         select(Review)
         .where(Review.restaurant_id == restaurant_id)
         .order_by(Review.created_at.desc())
+        .offset(offset)
+        .limit(limit)
     )
     return list(result.scalars().all())
+
+
+async def count_reviews_by_restaurant(session: AsyncSession, restaurant_id: uuid.UUID) -> int:
+    result = await session.execute(
+        select(func.count()).select_from(Review).where(Review.restaurant_id == restaurant_id)
+    )
+    return result.scalar_one()
 
 
 async def get_user_review_for_restaurant(

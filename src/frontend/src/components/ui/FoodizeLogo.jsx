@@ -1,4 +1,4 @@
-const FoodizeLogo = ({ size = 32, color, animated = false }) => {
+const FoodizeLogo = ({ size = 32, color }) => {
   const textColor = color || "currentColor";
 
   return (

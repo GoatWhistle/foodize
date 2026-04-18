@@ -18,8 +18,8 @@ if TYPE_CHECKING:
 class Order(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
     restaurant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("restaurants.id"))
-    status: Mapped[OrderStatus] = mapped_column(
-        String, default=OrderStatus.PENDING, server_default="PENDING", nullable=False
+    status: Mapped[str] = mapped_column(
+        String, default=OrderStatus.PENDING.value, server_default="PENDING", nullable=False
     )
     total_price: Mapped[int]
     ready_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

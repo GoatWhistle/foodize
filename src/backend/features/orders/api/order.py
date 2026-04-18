@@ -5,12 +5,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
 from features.auth.service import get_current_user
-from features.orders.crud.order import get_events_by_order_id
 from features.orders.dependencies import (
     get_order_for_staff_or_vendor,
     get_restaurant_staff_or_vendor,
 )
-from features.orders.models import Order, OrderEvent
+from features.orders.models import Order
 from features.orders.schemas.order import OrderCreate, OrderResponse, OrderStatusUpdate
 from features.orders.schemas.order_event import OrderEventResponse
 from features.orders.services import order as service
@@ -28,7 +27,7 @@ async def create_order(
     order_in: OrderCreate,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-) -> Order:
+) -> OrderResponse:
     return await service.place_order(session=session, order_data=order_in, user_id=current_user.id)
 
 
@@ -68,7 +67,7 @@ async def update_order_status(
     order: Order = Depends(get_order_for_staff_or_vendor),
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-) -> Order:
+) -> OrderResponse:
     return await service.change_order_status(
         session=session, order=order, status_data=status_in, actor=current_user
     )
@@ -78,22 +77,17 @@ async def update_order_status(
 async def read_order_events(
     order: Order = Depends(get_order_for_staff_or_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-) -> list[OrderEvent]:
-    return await get_events_by_order_id(session=session, order_id=order.id)
+) -> list[OrderEventResponse]:
+    return await service.get_order_events(session=session, order_id=order.id)
 
 
 @router.post("/{order_id}/cancel", response_model=OrderResponse)
-async def update_order_cancel(
+async def cancel_order(
     order_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-) -> Order:
-    order = await service.get_order_for_user(
-        session=session, order_id=order_id, user_id=current_user.id
-    )
-    return await service.cancel_customer_order(
-        session=session, order=order, user_id=current_user.id
-    )
+) -> OrderResponse:
+    return await service.cancel_order(session=session, order_id=order_id, user_id=current_user.id)
 
 
 @router.get("/{order_id}", response_model=OrderResponse)
@@ -101,7 +95,5 @@ async def read_order(
     order_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-) -> Order:
-    return await service.get_order_for_user(
-        session=session, order_id=order_id, user_id=current_user.id
-    )
+) -> OrderResponse:
+    return await service.get_order(session=session, order_id=order_id, user_id=current_user.id)

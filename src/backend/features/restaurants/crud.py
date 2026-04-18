@@ -26,11 +26,27 @@ async def update_restaurant(
     return restaurant
 
 
-async def get_vendor_restaurants(session: AsyncSession, vendor_id: uuid.UUID) -> list[Restaurant]:
+async def get_vendor_restaurants(
+    session: AsyncSession,
+    vendor_id: uuid.UUID,
+    offset: int = 0,
+    limit: int = 20,
+) -> list[Restaurant]:
     result = await session.execute(
-        select(Restaurant).where(Restaurant.vendor_id == vendor_id).order_by(Restaurant.id)
+        select(Restaurant)
+        .where(Restaurant.vendor_id == vendor_id)
+        .order_by(Restaurant.id)
+        .offset(offset)
+        .limit(limit)
     )
     return list(result.scalars().all())
+
+
+async def count_vendor_restaurants(session: AsyncSession, vendor_id: uuid.UUID) -> int:
+    result = await session.execute(
+        select(func.count()).select_from(Restaurant).where(Restaurant.vendor_id == vendor_id)
+    )
+    return result.scalar_one()
 
 
 async def get_restaurant_by_id(

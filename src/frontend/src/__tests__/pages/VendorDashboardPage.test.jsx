@@ -111,6 +111,6 @@ describe("VendorDashboardPage", () => {
 
     fireEvent.click(screen.getByText("My Resto"));
 
-    expect(screen.getByText(/Меню — My Resto/)).toBeDefined();
+    expect(screen.getByText(/Позиции меню/)).toBeDefined();
   });
 });
