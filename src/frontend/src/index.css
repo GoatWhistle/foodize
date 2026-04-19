@@ -1604,3 +1604,81 @@ select.form-input option {
   justify-content: center;
   animation: fade-in 0.3s var(--ease-out);
 }
+/* Изящная модалка */
+.modal-content {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  border-radius: 28px !important; /* Больше скругления */
+}
+
+/* Эффект при наведении на отзыв */
+.review-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--ember-orange) !important;
+}
+
+/* Скроллбар делаем тонким и красивым */
+.modal-content div::-webkit-scrollbar {
+  width: 4px;
+}
+
+.modal-content div::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+}
+
+/* Анимация появления модалки */
+@keyframes modalAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-content {
+  animation: modalAppear 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.staff-fab {
+  position: fixed;
+  left: 24px; /* Четко в правом углу */
+  bottom: 24px;
+  width: 64px; /* Сделали побольше */
+  height: 64px;
+  background: var(--ember-orange) !important;
+  color: white !important;
+  border: none;
+  border-radius: 50%; /* Идеальный круг */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(255, 79, 31, 0.4);
+  cursor: pointer;
+  z-index: 1000;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.staff-fab:hover {
+  transform: scale(1.1) translateY(-5px);
+  background: var(--ember-light) !important;
+  box-shadow: 0 12px 28px rgba(255, 79, 31, 0.5);
+}
+
+.staff-fab svg {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+/* На мобилках чуть уменьшим, чтоб не перекрывала контент */
+@media (max-width: 768px) {
+  .staff-fab {
+    right: 16px;
+    bottom: 16px;
+    width: 56px;
+    height: 56px;
+  }
+}

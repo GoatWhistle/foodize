@@ -1,21 +1,52 @@
 import { useState, useEffect } from "react";
+import {
+  ChartLineUp,
+  UsersThree,
+  Package,
+  Storefront,
+  Trash,
+  Info,
+  X,
+  UserCircle,
+  Clock,
+  CheckCircle,
+  CookingPot,
+  HandPalm,
+  Prohibit,
+} from "@phosphor-icons/react";
 import { adminService } from "../../services/adminService";
 import Pagination from "../../components/ui/Pagination";
 
+const STATUS_MAP = {
+  PENDING: { label: "Принят", className: "pending", icon: <Clock /> },
+  ACCEPTED: {
+    label: "Подтверждён",
+    className: "pending",
+    icon: <CheckCircle />,
+  },
+  COOKING: { label: "Готовится", className: "preparing", icon: <CookingPot /> },
+  READY: { label: "Готов", className: "ready", icon: <HandPalm /> },
+  COMPLETED: {
+    label: "Выдан",
+    className: "ready",
+    icon: <CheckCircle weight="fill" />,
+  },
+  CANCELLED: { label: "Отменён", className: "preparing", icon: <Prohibit /> },
+};
+
 const AdminDashboardPage = () => {
   const [activeTab, setActiveTab] = useState("stats");
-
-  // Stats State
   const [stats, setStats] = useState(null);
-
-  // Users State
   const [users, setUsers] = useState([]);
   const [usersPage, setUsersPage] = useState(1);
   const [usersTotal, setUsersTotal] = useState(0);
   const [usersLoading, setUsersLoading] = useState(false);
-
   const [selectedUser, setSelectedUser] = useState(null);
   const [userDetailsLoading, setUserDetailsLoading] = useState(false);
+  const [orders, setOrders] = useState([]);
+  const [ordersPage, setOrdersPage] = useState(1);
+  const [ordersTotal, setOrdersTotal] = useState(0);
+  const [ordersLoading, setOrdersLoading] = useState(false);
 
   const loadUserDetails = async (id) => {
     setUserDetailsLoading(true);
@@ -29,13 +60,6 @@ const AdminDashboardPage = () => {
     }
   };
 
-  // Orders State
-  const [orders, setOrders] = useState([]);
-  const [ordersPage, setOrdersPage] = useState(1);
-  const [ordersTotal, setOrdersTotal] = useState(0);
-  const [ordersLoading, setOrdersLoading] = useState(false);
-
-  // Fetch Stats
   useEffect(() => {
     if (activeTab === "stats" && !stats) {
       adminService
@@ -45,7 +69,6 @@ const AdminDashboardPage = () => {
     }
   }, [activeTab, stats]);
 
-  // Load Users
   useEffect(() => {
     if (activeTab === "users") {
       setUsersLoading(true);
@@ -70,7 +93,6 @@ const AdminDashboardPage = () => {
     }
   };
 
-  // Load Orders
   useEffect(() => {
     if (activeTab === "orders") {
       setOrdersLoading(true);
@@ -90,31 +112,57 @@ const AdminDashboardPage = () => {
       className="page-enter"
       style={{ padding: "80px 20px 100px", maxWidth: 600, margin: "0 auto" }}
     >
-      <h1
+      <div
         style={{
-          fontSize: "1.5rem",
-          fontWeight: 800,
-          marginBottom: 20,
-          letterSpacing: "-0.03em",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          marginBottom: 24,
         }}
       >
-        👑 Панель Администратора
-      </h1>
+        <h1
+          style={{
+            fontSize: "1.5rem",
+            fontWeight: 800,
+            margin: 0,
+            letterSpacing: "-0.03em",
+          }}
+        >
+          Панель Администратора
+        </h1>
+      </div>
 
       <div
-        style={{ display: "flex", gap: 8, marginBottom: 24, overflowX: "auto" }}
+        style={{
+          display: "flex",
+          gap: 8,
+          marginBottom: 24,
+          overflowX: "auto",
+          paddingBottom: 4,
+        }}
       >
-        {["stats", "users", "orders"].map((tab) => (
+        {[
+          { id: "stats", label: "Статистика", icon: <ChartLineUp size={18} /> },
+          {
+            id: "users",
+            label: "Пользователи",
+            icon: <UsersThree size={18} />,
+          },
+          { id: "orders", label: "Заказы", icon: <Package size={18} /> },
+        ].map((tab) => (
           <button
-            key={tab}
-            className={`category-chip ${activeTab === tab ? "active" : ""}`}
-            onClick={() => setActiveTab(tab)}
+            key={tab.id}
+            className={`category-chip ${activeTab === tab.id ? "active" : ""}`}
+            onClick={() => setActiveTab(tab.id)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              whiteSpace: "nowrap",
+            }}
           >
-            {tab === "stats"
-              ? "📊 Статистика"
-              : tab === "users"
-                ? "👥 Пользователи"
-                : "📦 Заказы"}
+            {tab.icon}
+            {tab.label}
           </button>
         ))}
       </div>
@@ -123,24 +171,10 @@ const AdminDashboardPage = () => {
         <div
           style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}
         >
-          <div
-            style={{
-              background: "var(--bg-card)",
-              padding: 16,
-              borderRadius: "var(--radius-md)",
-              border: "1px solid var(--border)",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "0.85rem",
-                color: "var(--stone)",
-                marginBottom: 4,
-              }}
-            >
-              Пользователи
-            </div>
-            <div style={{ fontSize: "1.8rem", fontWeight: 800 }}>
+          <div className="admin-stat-card">
+            <UsersThree size={20} color="var(--stone)" />
+            <div className="admin-stat-label">Пользователи</div>
+            <div className="admin-stat-value">
               {stats.total_users ??
                 Object.values(stats.users_by_role || {}).reduce(
                   (a, b) => a + b,
@@ -148,51 +182,17 @@ const AdminDashboardPage = () => {
                 )}
             </div>
           </div>
-          <div
-            style={{
-              background: "var(--bg-card)",
-              padding: 16,
-              borderRadius: "var(--radius-md)",
-              border: "1px solid var(--border)",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "0.85rem",
-                color: "var(--stone)",
-                marginBottom: 4,
-              }}
-            >
-              Рестораны
-            </div>
-            <div style={{ fontSize: "1.8rem", fontWeight: 800 }}>
-              {stats.total_restaurants}
-            </div>
+          <div className="admin-stat-card">
+            <Storefront size={20} color="var(--stone)" />
+            <div className="admin-stat-label">Рестораны</div>
+            <div className="admin-stat-value">{stats.total_restaurants}</div>
           </div>
-          <div
-            style={{
-              background: "var(--bg-card)",
-              padding: 16,
-              borderRadius: "var(--radius-md)",
-              border: "1px solid var(--border)",
-              gridColumn: "1 / -1",
-            }}
-          >
+          <div className="admin-stat-card" style={{ gridColumn: "1 / -1" }}>
+            <Package size={20} color="var(--ember-orange)" />
+            <div className="admin-stat-label">Всего заказов</div>
             <div
-              style={{
-                fontSize: "0.85rem",
-                color: "var(--stone)",
-                marginBottom: 4,
-              }}
-            >
-              Всего заказов
-            </div>
-            <div
-              style={{
-                fontSize: "1.8rem",
-                fontWeight: 800,
-                color: "var(--ember-orange)",
-              }}
+              className="admin-stat-value"
+              style={{ color: "var(--ember-orange)" }}
             >
               {stats.total_orders ??
                 Object.values(stats.orders_by_status || {}).reduce(
@@ -212,22 +212,14 @@ const AdminDashboardPage = () => {
             </div>
           ) : (
             <>
-              {(Array.isArray(users) ? users : []).map((u) => {
-                return (
+              {users.map((u) => (
+                <div key={u.id} className="admin-list-item">
                   <div
-                    key={u.id}
-                    style={{
-                      background: "var(--bg-card)",
-                      padding: 16,
-                      borderRadius: "var(--radius-md)",
-                      border: "1px solid var(--border)",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
+                    style={{ display: "flex", alignItems: "center", gap: 12 }}
                   >
+                    <UserCircle size={40} weight="thin" color="var(--stone)" />
                     <div>
-                      <div style={{ fontWeight: 700, marginBottom: 4 }}>
+                      <div style={{ fontWeight: 700 }}>
                         {u.name || "Без имени"}
                       </div>
                       <div
@@ -235,38 +227,27 @@ const AdminDashboardPage = () => {
                       >
                         {u.phone_number || "Нет телефона"}
                       </div>
-                      <div
-                        style={{
-                          marginTop: 6,
-                          display: "inline-block",
-                          background: "var(--border)",
-                          padding: "2px 8px",
-                          borderRadius: 12,
-                          fontSize: "0.7rem",
-                          fontWeight: 700,
-                        }}
-                      >
-                        {u.user_role}
-                      </div>
-                    </div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        onClick={() => loadUserDetails(u.id)}
-                      >
-                        Подробнее
-                      </button>
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        style={{ color: "var(--error)" }}
-                        onClick={() => handleDeleteUser(u.id)}
-                      >
-                        ✕
-                      </button>
+                      <span className="role-tag">{u.user_role}</span>
                     </div>
                   </div>
-                );
-              })}
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button
+                      className="btn-icon-sm"
+                      onClick={() => loadUserDetails(u.id)}
+                      title="Подробнее"
+                    >
+                      <Info size={18} />
+                    </button>
+                    <button
+                      className="btn-icon-sm danger"
+                      onClick={() => handleDeleteUser(u.id)}
+                      title="Удалить"
+                    >
+                      <Trash size={18} />
+                    </button>
+                  </div>
+                </div>
+              ))}
               <Pagination
                 page={usersPage}
                 totalPages={Math.ceil(usersTotal / 20)}
@@ -285,54 +266,46 @@ const AdminDashboardPage = () => {
             </div>
           ) : (
             <>
-              {(Array.isArray(orders) ? orders : []).map((o) => {
+              {orders.map((o) => {
+                const cfg = STATUS_MAP[o.status] || {
+                  label: o.status,
+                  className: "pending",
+                  icon: <Package />,
+                };
                 return (
                   <div
                     key={o.id}
+                    className="admin-list-item"
                     style={{
-                      background: "var(--bg-card)",
-                      padding: 16,
-                      borderRadius: "var(--radius-md)",
-                      border: "1px solid var(--border)",
+                      flexDirection: "column",
+                      alignItems: "flex-start",
                     }}
                   >
                     <div
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
+                        width: "100%",
                         marginBottom: 8,
                       }}
                     >
                       <span style={{ fontWeight: 700 }}>
-                        Заказ #{o.id.slice(0, 6)}
+                        #{o.id.slice(0, 8)}
                       </span>
                       <span
-                        className={`order-status-badge ${
-                          o.status === "PENDING" || o.status === "ACCEPTED"
-                            ? "pending"
-                            : o.status === "COOKING"
-                              ? "preparing"
-                              : o.status === "CANCELLED"
-                                ? "preparing"
-                                : "ready"
-                        }`}
+                        className={`order-status-badge ${cfg.className}`}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 4,
+                        }}
                       >
-                        {{
-                          PENDING: "Принят",
-                          ACCEPTED: "Подтверждён",
-                          COOKING: "Готовится",
-                          READY: "Готов",
-                          COMPLETED: "Выдан",
-                          CANCELLED: "Отменён",
-                        }[o.status] ?? o.status}
+                        {cfg.icon} {cfg.label}
                       </span>
                     </div>
                     <div style={{ fontSize: "0.85rem", color: "var(--stone)" }}>
-                      Окончательная цена:{" "}
-                      <span style={{ fontWeight: 800 }}>{o.total_price} ₽</span>
-                    </div>
-                    <div style={{ fontSize: "0.85rem", color: "var(--stone)" }}>
-                      Заведение: {o.restaurant_id.slice(0, 8)}
+                      Сумма: <b>{o.total_price} ₽</b> • ID заведения:{" "}
+                      {o.restaurant_id.slice(0, 8)}
                     </div>
                   </div>
                 );
@@ -346,176 +319,64 @@ const AdminDashboardPage = () => {
           )}
         </div>
       )}
-      {/* User Details Modal */}
+
       {selectedUser && (
         <div className="modal-overlay" onClick={() => setSelectedUser(null)}>
-          <div
-            className="card"
-            style={{
-              padding: 32,
-              width: "100%",
-              maxWidth: 440,
-              background: "var(--bg-card)",
-              position: "relative",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 20,
-              }}
-            >
-              <h3 style={{ fontWeight: 800, fontSize: "1.2rem", margin: 0 }}>
-                Детали профиля
-              </h3>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 style={{ margin: 0 }}>Детали профиля</h3>
               <button
-                className="btn btn-secondary btn-sm"
+                className="close-btn"
                 onClick={() => setSelectedUser(null)}
-                style={{ padding: "4px 8px" }}
               >
-                ✕
+                <X size={20} />
               </button>
             </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {userDetailsLoading ? (
+            {userDetailsLoading ? (
+              <div className="loading-center">
+                <div className="spinner" />
+              </div>
+            ) : (
+              <div className="modal-body">
+                <div className="detail-item">
+                  <label>ID пользователя</label>
+                  <code>{selectedUser.id}</code>
+                </div>
+                <div className="detail-item">
+                  <label>Имя</label>
+                  <div className="detail-value">{selectedUser.name || "—"}</div>
+                </div>
+                <div className="detail-item">
+                  <label>Телефон</label>
+                  <div className="detail-value">
+                    {selectedUser.phone_number}
+                  </div>
+                </div>
                 <div
                   style={{
-                    padding: "40px 0",
                     display: "flex",
-                    justifyContent: "center",
+                    gap: 20,
+                    borderTop: "1px solid var(--border)",
+                    paddingTop: 16,
                   }}
                 >
-                  <div className="spinner" />
+                  <div style={{ flex: 1 }}>
+                    <label>Роль</label>
+                    <div className="order-status-badge pending">
+                      {selectedUser.user_role}
+                    </div>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label>Статус</label>
+                    <div
+                      className={`order-status-badge ${selectedUser.is_active ? "ready" : "preparing"}`}
+                    >
+                      {selectedUser.is_active ? "Активен" : "Заблокирован"}
+                    </div>
+                  </div>
                 </div>
-              ) : (
-                <>
-                  <div>
-                    <span
-                      style={{
-                        fontSize: "0.8rem",
-                        color: "var(--stone)",
-                        display: "block",
-                        marginBottom: 4,
-                      }}
-                    >
-                      ID (UUID)
-                    </span>
-                    <span
-                      style={{
-                        fontFamily: "monospace",
-                        fontSize: "0.85rem",
-                        background: "var(--border)",
-                        padding: "2px 6px",
-                        borderRadius: 4,
-                      }}
-                    >
-                      {selectedUser.id}
-                    </span>
-                  </div>
-                  <div>
-                    <span
-                      style={{
-                        fontSize: "0.8rem",
-                        color: "var(--stone)",
-                        display: "block",
-                        marginBottom: 2,
-                      }}
-                    >
-                      Имя
-                    </span>
-                    <span style={{ fontWeight: 700, fontSize: "1.1rem" }}>
-                      {selectedUser.name || "—"}
-                    </span>
-                  </div>
-                  <div>
-                    <span
-                      style={{
-                        fontSize: "0.8rem",
-                        color: "var(--stone)",
-                        display: "block",
-                        marginBottom: 2,
-                      }}
-                    >
-                      Номер телефона
-                    </span>
-                    <span style={{ fontSize: "1rem", fontWeight: 600 }}>
-                      {selectedUser.phone_number}
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      borderTop: "1px solid var(--border)",
-                      paddingTop: 16,
-                    }}
-                  >
-                    <div>
-                      <span
-                        style={{
-                          fontSize: "0.8rem",
-                          color: "var(--stone)",
-                          display: "block",
-                          marginBottom: 6,
-                        }}
-                      >
-                        Роль в системе
-                      </span>
-                      <span
-                        className="order-status-badge pending"
-                        style={{ display: "inline-block" }}
-                      >
-                        {selectedUser.user_role}
-                      </span>
-                    </div>
-                    <div>
-                      <span
-                        style={{
-                          fontSize: "0.8rem",
-                          color: "var(--stone)",
-                          display: "block",
-                          marginBottom: 6,
-                        }}
-                      >
-                        Статус доступа
-                      </span>
-                      <span
-                        className={`order-status-badge ${selectedUser.is_active ? "ready" : "preparing"}`}
-                        style={{ display: "inline-block" }}
-                      >
-                        {selectedUser.is_active ? "Активный" : "Заблокирован"}
-                      </span>
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      borderTop: "1px solid var(--border)",
-                      paddingTop: 16,
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: "0.8rem",
-                        color: "var(--stone)",
-                        display: "block",
-                        marginBottom: 2,
-                      }}
-                    >
-                      Дата регистрации
-                    </span>
-                    <span>
-                      {new Date(selectedUser.created_at).toLocaleString(
-                        "ru-RU",
-                      )}
-                    </span>
-                  </div>
-                </>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -1,17 +1,50 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  Package,
+  Clock,
+  CheckCircle,
+  Prohibit,
+  CookingPot,
+  CaretRight,
+  HandPalm,
+} from "@phosphor-icons/react";
 import { useOrderStore } from "../../store/useOrderStore";
 import EmptyState from "../../components/ui/EmptyState";
 import { ROUTES } from "../../constants/routes";
 import Pagination from "../../components/ui/Pagination";
 
 const STATUS_CONFIG = {
-  PENDING: { label: "Принят", className: "pending" },
-  ACCEPTED: { label: "Подтверждён", className: "pending" },
-  COOKING: { label: "Готовится", className: "preparing" },
-  READY: { label: "Готов", className: "ready" },
-  COMPLETED: { label: "Выдан", className: "ready" },
-  CANCELLED: { label: "Отменён", className: "preparing" },
+  PENDING: {
+    label: "Принят",
+    className: "pending",
+    icon: <Clock weight="bold" />,
+  },
+  ACCEPTED: {
+    label: "Подтверждён",
+    className: "pending",
+    icon: <CheckCircle weight="bold" />,
+  },
+  COOKING: {
+    label: "Готовится",
+    className: "preparing",
+    icon: <CookingPot weight="bold" />,
+  },
+  READY: {
+    label: "Готов",
+    className: "ready",
+    icon: <HandPalm weight="bold" />,
+  },
+  COMPLETED: {
+    label: "Выдан",
+    className: "ready",
+    icon: <CheckCircle weight="fill" />,
+  },
+  CANCELLED: {
+    label: "Отменён",
+    className: "preparing",
+    icon: <Prohibit weight="bold" />,
+  },
 };
 
 const OrdersPage = () => {
@@ -36,16 +69,26 @@ const OrdersPage = () => {
 
   return (
     <div className="page-enter" style={{ padding: "24px 16px" }}>
-      <h1
+      <div
         style={{
-          fontSize: "1.5rem",
-          fontWeight: 800,
-          letterSpacing: "-0.03em",
-          marginBottom: 20,
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+          marginBottom: "20px",
         }}
       >
-        Мои заказы
-      </h1>
+        <Package size={28} weight="bold" />
+        <h1
+          style={{
+            fontSize: "1.5rem",
+            fontWeight: 800,
+            letterSpacing: "-0.03em",
+            margin: 0,
+          }}
+        >
+          Мои заказы
+        </h1>
+      </div>
 
       {orders.length === 0 ? (
         <EmptyState
@@ -69,13 +112,7 @@ const OrdersPage = () => {
                   onClick={() =>
                     navigate(ROUTES.ORDER_STATUS.replace(":id", order.id))
                   }
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) =>
-                    e.key === "Enter" &&
-                    navigate(ROUTES.ORDER_STATUS.replace(":id", order.id))
-                  }
-                  aria-label={`Заказ на ${order.total_price} ₽`}
+                  style={{ cursor: "pointer" }}
                 >
                   <div style={{ flex: 1 }}>
                     <div
@@ -84,12 +121,23 @@ const OrdersPage = () => {
                         fontSize: "0.95rem",
                         letterSpacing: "-0.02em",
                         marginBottom: 4,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
                       }}
                     >
-                      Заказ #{order.id.slice(0, 8)}
+                      <span>Заказ #{order.id.slice(0, 8)}</span>
                     </div>
-                    <div style={{ fontSize: "0.8rem", color: "var(--stone)" }}>
-                      {order.items?.length || 0} позиц.
+                    <div
+                      style={{
+                        fontSize: "0.8rem",
+                        color: "var(--stone)",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                      }}
+                    >
+                      <span>{order.items?.length || 0} позиций</span>
                     </div>
                   </div>
 
@@ -102,7 +150,15 @@ const OrdersPage = () => {
                       gap: 6,
                     }}
                   >
-                    <span className={`order-status-badge ${cfg.className}`}>
+                    <span
+                      className={`order-status-badge ${cfg.className}`}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                      }}
+                    >
+                      {cfg.icon}
                       {cfg.label}
                     </span>
                     <span
@@ -116,9 +172,11 @@ const OrdersPage = () => {
                     </span>
                   </div>
 
-                  <span style={{ color: "var(--stone)", marginLeft: 8 }}>
-                    ›
-                  </span>
+                  <CaretRight
+                    size={20}
+                    color="var(--stone)"
+                    style={{ marginLeft: 8 }}
+                  />
                 </div>
               );
             })}

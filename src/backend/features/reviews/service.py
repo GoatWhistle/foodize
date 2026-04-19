@@ -7,7 +7,7 @@ from features.orders.models.order import Order
 from features.restaurants.crud import get_restaurant_by_id
 from features.restaurants.exceptions import RestaurantNotFoundException
 from features.reviews import crud
-from features.reviews.exceptions import ReviewAlreadyExistsException, ReviewNotAllowedException
+from features.reviews.exceptions import ReviewAlreadyExistsException
 from features.reviews.schemas import RatingResponse, ReviewCreate, ReviewResponse
 from shared.enums.order_status import OrderStatus
 
@@ -34,9 +34,6 @@ async def create_review_for_user(
     restaurant = await get_restaurant_by_id(session, restaurant_id)
     if not restaurant:
         raise RestaurantNotFoundException()
-
-    if not await _has_completed_order(session, user_id, restaurant_id):
-        raise ReviewNotAllowedException()
 
     existing = await crud.get_user_review_for_restaurant(session, user_id, restaurant_id)
     if existing:

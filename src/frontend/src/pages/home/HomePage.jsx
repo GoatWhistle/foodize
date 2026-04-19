@@ -1,5 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  MagnifyingGlass,
+  List,
+  Fire,
+  Hamburger,
+  Pizza,
+  BowlFood,
+  Storefront,
+} from "@phosphor-icons/react";
 import RestaurantCard from "../../components/ui/RestaurantCard";
 import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/ui/Pagination";
@@ -8,11 +17,11 @@ import { useRestaurantStore } from "../../store/useRestaurantStore";
 import { ROUTES } from "../../constants/routes";
 
 const CATEGORIES = [
-  { key: "ALL", label: "Все", emoji: "🍽️" },
-  { key: "SHAURMA", label: "Шаурма", emoji: "🌯" },
-  { key: "BURGER", label: "Бургеры", emoji: "🍔" },
-  { key: "PIZZA", label: "Пицца", emoji: "🍕" },
-  { key: "SUSHI", label: "Суши", emoji: "🍣" },
+  { key: "ALL", label: "Все", icon: <List /> },
+  { key: "SHAURMA", label: "Шаурма", icon: <Fire /> },
+  { key: "BURGER", label: "Бургеры", icon: <Hamburger /> },
+  { key: "PIZZA", label: "Пицца", icon: <Pizza /> },
+  { key: "SUSHI", label: "Суши", icon: <BowlFood /> },
 ];
 
 const HomePage = () => {
@@ -48,7 +57,6 @@ const HomePage = () => {
   }, [search, onlyOpen, page, fetchPublicRestaurants]);
 
   const filtered = publicRestaurants.filter((r) => {
-    // Backend filters by name, but we can do category client-side
     const matchCategory =
       activeCategory === "ALL" || r.category === activeCategory;
     return matchCategory;
@@ -70,7 +78,7 @@ const HomePage = () => {
       {/* Search bar */}
       <div className="search-bar-wrap">
         <div className="search-bar">
-          <span className="search-icon">🔍</span>
+          <MagnifyingGlass className="search-icon" size={20} weight="bold" />
           <input
             id="restaurant-search"
             type="search"
@@ -82,7 +90,13 @@ const HomePage = () => {
         </div>
         <label
           className="form-check"
-          style={{ marginTop: "12px", width: "fit-content" }}
+          style={{
+            marginTop: "12px",
+            width: "fit-content",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+          }}
         >
           <input
             type="checkbox"
@@ -99,23 +113,29 @@ const HomePage = () => {
         role="list"
         aria-label="Категории кухни"
       >
-        {CATEGORIES.map(({ key, label, emoji }) => (
+        {CATEGORIES.map(({ key, label, icon }) => (
           <button
             key={key}
             role="listitem"
             id={`category-${key.toLowerCase()}`}
             className={`category-chip${activeCategory === key ? " active" : ""}`}
             onClick={() => setActiveCategory(key)}
+            style={{ display: "flex", alignItems: "center", gap: "6px" }}
           >
-            {emoji} {label}
+            {icon}
+            <span>{label}</span>
           </button>
         ))}
       </div>
 
       {/* Restaurants list */}
       <div className="restaurants-section">
-        <div className="section-header">
-          <h1 className="section-title">
+        <div
+          className="section-header"
+          style={{ display: "flex", alignItems: "baseline", gap: "10px" }}
+        >
+          <Storefront size={24} weight="bold" color="var(--primary)" />
+          <h1 className="section-title" style={{ margin: 0 }}>
             {activeCategory === "ALL"
               ? "Все заведения"
               : CATEGORIES.find((c) => c.key === activeCategory)?.label}

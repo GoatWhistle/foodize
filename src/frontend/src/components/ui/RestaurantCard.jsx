@@ -1,11 +1,19 @@
 import { useRef, useEffect } from "react";
+import {
+  Fire,
+  Hamburger,
+  Pizza,
+  BowlFood,
+  Storefront,
+  MapPin,
+} from "@phosphor-icons/react";
 
-const CATEGORY_EMOJI = {
-  SHAURMA: "🌯",
-  BURGER: "🍔",
-  PIZZA: "🍕",
-  SUSHI: "🍣",
-  DEFAULT: "🍽️",
+const CATEGORY_ICONS = {
+  SHAURMA: <Fire weight="fill" />,
+  BURGER: <Hamburger weight="fill" />,
+  PIZZA: <Pizza weight="fill" />,
+  SUSHI: <BowlFood weight="fill" />,
+  DEFAULT: <Storefront weight="fill" />,
 };
 
 const RestaurantCard = ({ restaurant, onClick }) => {
@@ -28,7 +36,9 @@ const RestaurantCard = ({ restaurant, onClick }) => {
     return () => observer.disconnect();
   }, []);
 
-  const emoji = CATEGORY_EMOJI[restaurant.category] || CATEGORY_EMOJI.DEFAULT;
+  const icon =
+    CATEGORY_ICONS[restaurant.category?.toUpperCase()] ||
+    CATEGORY_ICONS.DEFAULT;
 
   return (
     <div
@@ -50,7 +60,12 @@ const RestaurantCard = ({ restaurant, onClick }) => {
             style={{ viewTransitionName: `restaurant-image-${restaurant.id}` }}
           />
         ) : (
-          <div className="card-photo-placeholder">{emoji}</div>
+          <div
+            className="card-photo-placeholder"
+            style={{ fontSize: "40px", color: "var(--stone)" }}
+          >
+            {icon}
+          </div>
         )}
       </div>
 
@@ -59,10 +74,14 @@ const RestaurantCard = ({ restaurant, onClick }) => {
       <div className="card-body">
         <h2 className="card-title">{restaurant.name}</h2>
         <div className="card-tags">
-          <span className="tag-pill">{restaurant.address}</span>
+          <span className="tag-pill">
+            <MapPin size={14} weight="bold" />
+            {restaurant.address}
+          </span>
           {restaurant.category && (
             <span className="tag-pill">
-              {emoji} {restaurant.category}
+              {icon}
+              {restaurant.category}
             </span>
           )}
         </div>

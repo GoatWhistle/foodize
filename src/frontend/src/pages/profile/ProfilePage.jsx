@@ -1,5 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  Package,
+  Crown,
+  Storefront,
+  Sparkle,
+  SignOut,
+  CaretRight,
+  UserCircle,
+} from "@phosphor-icons/react";
 import { useAuthStore } from "../../store/useAuthStore";
 import { ROUTES } from "../../constants/routes";
 import { vendorService } from "../../services/vendorService";
@@ -38,14 +47,16 @@ const ProfilePage = () => {
     }
   };
 
-  const initials = user?.name
-    ? user.name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
-    : "?";
+  const initials = user?.name ? (
+    user.name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
+  ) : (
+    <UserCircle size={32} />
+  );
 
   return (
     <div className="profile-page page-enter">
@@ -68,8 +79,11 @@ const ProfilePage = () => {
           tabIndex={0}
           onKeyDown={(e) => e.key === "Enter" && navigate(ROUTES.ORDERS)}
         >
-          <span>📦 Мои заказы</span>
-          <span style={{ color: "var(--stone)" }}>›</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <Package size={22} weight="bold" />
+            <span>Мои заказы</span>
+          </div>
+          <CaretRight size={18} color="var(--stone)" />
         </div>
 
         {user?.user_role === "ADMIN" && (
@@ -78,8 +92,11 @@ const ProfilePage = () => {
             className="profile-menu-item"
             onClick={() => navigate(ROUTES.ADMIN)}
           >
-            <span>👑 Админ-панель</span>
-            <span style={{ color: "var(--stone)" }}>›</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <Crown size={22} weight="bold" color="#ffb800" />
+              <span>Админ-панель</span>
+            </div>
+            <CaretRight size={18} color="var(--stone)" />
           </div>
         )}
 
@@ -90,8 +107,13 @@ const ProfilePage = () => {
               className="profile-menu-item"
               onClick={() => navigate(ROUTES.VENDOR_DASHBOARD)}
             >
-              <span>🏪 Кабинет вендора</span>
-              <span style={{ color: "var(--stone)" }}>›</span>
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "12px" }}
+              >
+                <Storefront size={22} weight="bold" />
+                <span>Кабинет вендора</span>
+              </div>
+              <CaretRight size={18} color="var(--stone)" />
             </div>
           ) : (
             <div
@@ -100,8 +122,13 @@ const ProfilePage = () => {
               onClick={handleBecomeVendor}
               style={{ pointerEvents: vendorLoading ? "none" : "auto" }}
             >
-              <span>✨ {vendorLoading ? "Загрузка..." : "Стать вендором"}</span>
-              <span style={{ color: "var(--stone)" }}>›</span>
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "12px" }}
+              >
+                <Sparkle size={22} weight="bold" color="var(--primary)" />
+                <span>{vendorLoading ? "Загрузка..." : "Стать вендором"}</span>
+              </div>
+              <CaretRight size={18} color="var(--stone)" />
             </div>
           ))}
 
@@ -115,7 +142,17 @@ const ProfilePage = () => {
           tabIndex={0}
           onKeyDown={(e) => e.key === "Enter" && handleLogout()}
         >
-          <span>↩ Выйти</span>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              color: "red",
+            }}
+          >
+            <SignOut size={22} weight="bold" />
+            <span>Выйти</span>
+          </div>
         </div>
       </div>
     </div>

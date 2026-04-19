@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Check } from "@phosphor-icons/react";
 
 const OrderButton = ({
   onClick,
@@ -14,7 +15,6 @@ const OrderButton = ({
   const handleMouseDown = () => setIsPressed(true);
   const handleMouseUp = () => setIsPressed(false);
   const handleMouseLeave = () => setIsPressed(false);
-
   const handleTouchStart = () => setIsPressed(true);
   const handleTouchEnd = () => setIsPressed(false);
 
@@ -45,7 +45,10 @@ const OrderButton = ({
           Оформление...
         </span>
       ) : isSuccess ? (
-        "Готово! 📍"
+        <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <Check size={20} weight="bold" />
+          Готово!
+        </span>
       ) : (
         children
       )}

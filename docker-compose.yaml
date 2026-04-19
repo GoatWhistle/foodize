@@ -56,14 +56,20 @@ services:
 
   frontend:
     build:
-      dockerfile: Dockerfile
       context: ./src/frontend
+      dockerfile: Dockerfile
+      target: dev
+    container_name: foodize_frontend
     depends_on:
       - backend
     ports:
-      - "80:80"
+      - "5173:5173"
     volumes:
       - ./src/frontend:/frontend
+      - /frontend/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
     networks:
       - foodize-network
 

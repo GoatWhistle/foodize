@@ -1,3 +1,11 @@
+import {
+  MapPin,
+  CookingPot,
+  CheckCircle,
+  XCircle,
+  Smiley,
+} from "@phosphor-icons/react";
+
 const OrderStatusBadge = ({ status, progress = 0.6 }) => {
   if (status === "PENDING" || status === "ACCEPTED") {
     return (
@@ -16,8 +24,10 @@ const OrderStatusBadge = ({ status, progress = 0.6 }) => {
             }}
           />
         ))}
-        <div style={{ position: "relative", zIndex: 1, fontSize: "3.5rem" }}>
-          📍
+        <div
+          style={{ position: "relative", zIndex: 1, color: "var(--primary)" }}
+        >
+          <MapPin size={64} weight="fill" />
         </div>
         <p
           style={{
@@ -44,7 +54,6 @@ const OrderStatusBadge = ({ status, progress = 0.6 }) => {
     return (
       <div className="status-icon-wrap">
         <svg width={120} height={120} viewBox="0 0 120 120">
-          {/* Track */}
           <circle
             cx="60"
             cy="60"
@@ -53,7 +62,6 @@ const OrderStatusBadge = ({ status, progress = 0.6 }) => {
             stroke="var(--border)"
             strokeWidth="6"
           />
-          {/* Progress */}
           <circle
             cx="60"
             cy="60"
@@ -67,15 +75,12 @@ const OrderStatusBadge = ({ status, progress = 0.6 }) => {
             className="progress-arc"
             style={{ transition: "stroke-dashoffset 1s ease" }}
           />
-          <text
-            x="60"
-            y="66"
-            textAnchor="middle"
-            fontSize="24"
-            fill="var(--text-primary)"
-          >
-            🍳
-          </text>
+          {/* Иконка внутри прогресс-бара */}
+          <foreignObject x="42" y="42" width="36" height="36">
+            <div style={{ color: "var(--text-primary)" }}>
+              <CookingPot size={36} weight="bold" />
+            </div>
+          </foreignObject>
         </svg>
         <p
           style={{
@@ -97,7 +102,13 @@ const OrderStatusBadge = ({ status, progress = 0.6 }) => {
   if (status === "READY" || status === "COMPLETED") {
     return (
       <div className="status-icon-wrap status-ready-flash">
-        <div style={{ fontSize: "4rem", marginBottom: 12 }}>✅</div>
+        <div style={{ marginBottom: 12, color: "var(--ready)" }}>
+          {status === "COMPLETED" ? (
+            <Smiley size={80} weight="fill" />
+          ) : (
+            <CheckCircle size={80} weight="fill" />
+          )}
+        </div>
         <p
           className="status-ready-text"
           style={{
@@ -121,7 +132,9 @@ const OrderStatusBadge = ({ status, progress = 0.6 }) => {
   if (status === "CANCELLED") {
     return (
       <div className="status-icon-wrap">
-        <div style={{ fontSize: "4rem", marginBottom: 12 }}>❌</div>
+        <div style={{ marginBottom: 12, color: "var(--error)" }}>
+          <XCircle size={80} weight="fill" />
+        </div>
         <p
           style={{
             fontWeight: 800,

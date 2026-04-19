@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
+import { Plus, Minus, Trash } from "@phosphor-icons/react"; // Добавили иконки
 import { useOrderStore } from "../../store/useOrderStore";
-
 import OrderButton from "./OrderButton";
 
 const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
@@ -41,11 +41,16 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
                   className="qty-btn"
                   onClick={() => removeFromCart(menuItem.id)}
                   aria-label="Уменьшить"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
                 >
-                  −
+                  <Minus size={14} weight="bold" />
                 </button>
                 <span
-                  style={{ fontWeight: 700, minWidth: 16, textAlign: "center" }}
+                  style={{ fontWeight: 700, minWidth: 20, textAlign: "center" }}
                 >
                   {quantity}
                 </span>
@@ -53,8 +58,13 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
                   className="qty-btn"
                   onClick={() => addToCart(menuItem, cartRestaurantId)}
                   aria-label="Увеличить"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
                 >
-                  +
+                  <Plus size={14} weight="bold" />
                 </button>
               </div>
               <span
@@ -87,9 +97,16 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
 
         <button
           className="btn btn-ghost btn-full"
-          style={{ marginTop: 8 }}
+          style={{
+            marginTop: 8,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px",
+          }}
           onClick={clearCart}
         >
+          <Trash size={18} />
           Очистить корзину
         </button>
       </div>

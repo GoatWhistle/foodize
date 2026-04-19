@@ -15,8 +15,8 @@ router = APIRouter(
     prefix=settings.api.v1.prefix,
 )
 
+router.include_router(admin_router)
 
-router.include_router(user_router)
 router.include_router(auth_router)
 router.include_router(staff_router)
 router.include_router(vendor_router)
@@ -24,4 +24,5 @@ router.include_router(restaurant_router)
 router.include_router(menu_router)
 router.include_router(order_router)
 router.include_router(reviews_router)
-router.include_router(admin_router)
+
+router.include_router(user_router)

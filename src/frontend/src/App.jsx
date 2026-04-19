@@ -5,6 +5,9 @@ import {
   Navigate,
 } from "react-router-dom";
 
+// Импортируем контекст и иконки для 404
+import { IconContext, MapPin, ArrowLeft } from "@phosphor-icons/react";
+
 import MainLayout from "./components/layout/MainLayout";
 
 import LoginPage from "./pages/auth/LoginPage";
@@ -31,18 +34,9 @@ const router = createBrowserRouter([
     path: ROUTES.HOME,
     element: <MainLayout />,
     children: [
-      {
-        index: true,
-        element: <HomePage />,
-      },
-      {
-        path: ROUTES.LOGIN,
-        element: <LoginPage />,
-      },
-      {
-        path: ROUTES.REGISTER,
-        element: <RegisterPage />,
-      },
+      { index: true, element: <HomePage /> },
+      { path: ROUTES.LOGIN, element: <LoginPage /> },
+      { path: ROUTES.REGISTER, element: <RegisterPage /> },
       {
         path: ROUTES.RESTAURANT,
         element: (
@@ -107,7 +101,8 @@ const router = createBrowserRouter([
           fontFamily: "Manrope, sans-serif",
         }}
       >
-        <span style={{ fontSize: "3rem" }}>📍</span>
+        {/* Заменили 📍 на MapPin */}
+        <MapPin size={64} weight="bold" color="#FF4F1F" />
         <h1
           style={{
             fontWeight: 800,
@@ -120,12 +115,16 @@ const router = createBrowserRouter([
         <a
           href="/"
           style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
             color: "#FF4F1F",
             fontWeight: 700,
             textDecoration: "none",
           }}
         >
-          ← На главную
+          {/* Заменили стрелку ← на ArrowLeft */}
+          <ArrowLeft weight="bold" /> На главную
         </a>
       </div>
     ),
@@ -143,7 +142,18 @@ function App() {
     fetchMe();
   }, [initTheme, fetchMe]);
 
-  return <RouterProvider router={router} />;
+  return (
+    <IconContext.Provider
+      value={{
+        color: "currentColor",
+        size: 20,
+        weight: "bold",
+        mirrored: false,
+      }}
+    >
+      <RouterProvider router={router} />
+    </IconContext.Provider>
+  );
 }
 
 export default App;
