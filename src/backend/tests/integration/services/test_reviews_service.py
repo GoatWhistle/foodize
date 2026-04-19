@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from features.restaurants.exceptions import RestaurantNotFoundException
-from features.reviews.exceptions import ReviewAlreadyExistsException, ReviewNotAllowedException
+from features.reviews.exceptions import ReviewAlreadyExistsException
 from features.reviews.schemas import ReviewCreate, ReviewResponse
 from features.reviews.service import (
     create_review_for_user,
@@ -14,14 +14,15 @@ from features.reviews.service import (
 
 
 def _mock_review(user_id: uuid.UUID, restaurant_id: uuid.UUID) -> MagicMock:
+    from datetime import datetime, timezone
+
     r = MagicMock()
     r.id = uuid.uuid4()
     r.user_id = user_id
     r.restaurant_id = restaurant_id
     r.rating = 4
     r.text = "Good food"
-    from datetime import datetime, timezone
-
+    r.is_verified_purchase = False
     r.created_at = datetime.now(timezone.utc)
     return r
 
@@ -77,15 +78,29 @@ class TestCreateReviewForUser:
                 self.restaurant_id,
             )
 
-    async def test_no_completed_order_raises(self, mock_db_session):
+    async def test_no_completed_order_sets_unverified(self, mock_db_session):
         self.mock_has_order.return_value = False
-        with pytest.raises(ReviewNotAllowedException):
-            await create_review_for_user(
-                mock_db_session,
-                ReviewCreate(rating=3),
-                self.user_id,
-                self.restaurant_id,
-            )
+        result = await create_review_for_user(
+            mock_db_session,
+            ReviewCreate(rating=3),
+            self.user_id,
+            self.restaurant_id,
+        )
+        assert isinstance(result, ReviewResponse)
+        self.mock_create.assert_awaited_once()
+        _, kwargs = self.mock_create.call_args
+        assert kwargs.get("is_verified_purchase") is False
+
+    async def test_completed_order_sets_verified(self, mock_db_session):
+        result = await create_review_for_user(
+            mock_db_session,
+            ReviewCreate(rating=5),
+            self.user_id,
+            self.restaurant_id,
+        )
+        assert isinstance(result, ReviewResponse)
+        _, kwargs = self.mock_create.call_args
+        assert kwargs.get("is_verified_purchase") is True
 
     async def test_duplicate_review_raises(self, mock_db_session):
         self.mock_get_existing.return_value = MagicMock()

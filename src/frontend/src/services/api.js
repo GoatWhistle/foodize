@@ -23,7 +23,6 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Normalize nested error structure {"detail": {"error": "..."}} to string
     const detail = error.response?.data?.detail;
     if (detail && typeof detail === "object" && detail.error) {
       error.response.data.detail = detail.error;
@@ -56,7 +55,6 @@ api.interceptors.response.use(
       }
     }
 
-    // Pass through 401s if they weren't caught (e.g. login fail)
     if (error.response?.status === 401) {
       localStorage.removeItem("access_token");
       const path = window.location.pathname;

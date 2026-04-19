@@ -49,7 +49,7 @@ async def get_all_restaurants_public(
     is_open: bool | None = None,
     page: int = 1,
     size: int = 20,
-) -> tuple[list[Restaurant], int]:
+) -> tuple[list[RestaurantResponse], int]:
     offset = (page - 1) * size
 
     query = (
@@ -71,18 +71,29 @@ async def get_all_restaurants_public(
 
     result = await session.execute(query.offset(offset).limit(size))
 
-    restaurants_with_ratings = []
-    for row in result.all():
-        res_obj = row[0]
-        res_obj.average_rating = round(float(row[1]), 1)
-        res_obj.review_count = row[2]
-        restaurants_with_ratings.append(res_obj)
+    restaurants = [
+        RestaurantResponse(
+            id=row[0].id,
+            name=row[0].name,
+            address=row[0].address,
+            vendor_id=row[0].vendor_id,
+            is_hiring=row[0].is_hiring,
+            is_open=row[0].is_open,
+            average_rating=round(float(row[1]), 1),
+            review_count=row[2],
+        )
+        for row in result.all()
+    ]
 
     total_query = select(func.count(Restaurant.id))
     if name:
         total_query = total_query.where(Restaurant.name.ilike(f"%{name}%"))
+    if is_hiring is not None:
+        total_query = total_query.where(Restaurant.is_hiring == is_hiring)
+    if is_open is not None:
+        total_query = total_query.where(Restaurant.is_open == is_open)
 
     total_result = await session.execute(total_query)
     total = total_result.scalar_one()
 
-    return restaurants_with_ratings, total
+    return restaurants, total

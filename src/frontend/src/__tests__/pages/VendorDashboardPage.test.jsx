@@ -21,6 +21,7 @@ vi.mock("../../store/useRestaurantStore", () => ({
     const state = {
       restaurants: [{ id: "r1", name: "My Resto", address: "Addr 1" }],
       fetchMyRestaurants: vi.fn(),
+      fetchMenu: vi.fn(),
       createRestaurant: vi.fn(),
       addMenuItem: vi.fn(),
       loading: false,
@@ -54,6 +55,7 @@ describe("VendorDashboardPage", () => {
       const state = {
         restaurants: [{ id: "r1", name: "My Resto", address: "Addr 1" }],
         fetchMyRestaurants: vi.fn(),
+        fetchMenu: vi.fn(),
         createRestaurant: createRestaurantMock,
         addMenuItem: vi.fn(),
         loading: false,
@@ -70,7 +72,7 @@ describe("VendorDashboardPage", () => {
       </BrowserRouter>,
     );
 
-    expect(screen.getByText("🏪 Дашборд вендора")).toBeDefined();
+    expect(screen.getByText("Дашборд вендора")).toBeDefined();
     expect(screen.getByText("My Resto")).toBeDefined();
   });
 
@@ -81,7 +83,7 @@ describe("VendorDashboardPage", () => {
       </BrowserRouter>,
     );
 
-    fireEvent.click(screen.getByText("+ Добавить"));
+    fireEvent.click(screen.getByRole("button", { name: /Добавить/ }));
 
     expect(screen.getByText("Новое заведение")).toBeDefined();
 

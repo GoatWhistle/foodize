@@ -15,6 +15,7 @@ class ReviewResponse(BaseModel):
     restaurant_id: uuid.UUID
     rating: int
     text: str | None = None
+    is_verified_purchase: bool = False
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

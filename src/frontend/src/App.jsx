@@ -5,7 +5,6 @@ import {
   Navigate,
 } from "react-router-dom";
 
-// Импортируем контекст и иконки для 404
 import { IconContext, MapPin, ArrowLeft } from "@phosphor-icons/react";
 
 import MainLayout from "./components/layout/MainLayout";
@@ -101,7 +100,6 @@ const router = createBrowserRouter([
           fontFamily: "Manrope, sans-serif",
         }}
       >
-        {/* Заменили 📍 на MapPin */}
         <MapPin size={64} weight="bold" color="#FF4F1F" />
         <h1
           style={{
@@ -123,7 +121,6 @@ const router = createBrowserRouter([
             textDecoration: "none",
           }}
         >
-          {/* Заменили стрелку ← на ArrowLeft */}
           <ArrowLeft weight="bold" /> На главную
         </a>
       </div>

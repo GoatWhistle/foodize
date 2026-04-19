@@ -20,6 +20,7 @@ const ProfilePage = () => {
   const [isVendor, setIsVendor] = useState(false);
   const [checkingVendor, setCheckingVendor] = useState(true);
   const [vendorLoading, setVendorLoading] = useState(false);
+  const [vendorError, setVendorError] = useState("");
 
   useEffect(() => {
     vendorService
@@ -36,13 +37,14 @@ const ProfilePage = () => {
 
   const handleBecomeVendor = async () => {
     setVendorLoading(true);
+    setVendorError("");
     try {
       await vendorService.createProfile({ description: "" });
       await fetchMe();
       setIsVendor(true);
       navigate(ROUTES.VENDOR_DASHBOARD);
     } catch {
-      alert("Не удалось стать вендором");
+      setVendorError("Не удалось стать вендором");
       setVendorLoading(false);
     }
   };
@@ -60,7 +62,6 @@ const ProfilePage = () => {
 
   return (
     <div className="profile-page page-enter">
-      {/* Header card */}
       <div className="profile-header">
         <div className="profile-avatar">{initials}</div>
         <div>
@@ -69,7 +70,11 @@ const ProfilePage = () => {
         </div>
       </div>
 
-      {/* Menu */}
+      {vendorError && (
+        <div className="form-error" style={{ margin: "12px 0" }}>
+          {vendorError}
+        </div>
+      )}
       <div className="profile-menu">
         <div
           id="profile-orders-link"

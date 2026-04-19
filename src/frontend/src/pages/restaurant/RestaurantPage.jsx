@@ -11,6 +11,7 @@ import {
   BowlFood,
   List,
   Fire,
+  ShoppingBag,
 } from "@phosphor-icons/react";
 import { useRestaurantStore } from "../../store/useRestaurantStore";
 import { useOrderStore } from "../../store/useOrderStore";
@@ -68,37 +69,44 @@ const RestaurantPage = () => {
       .finally(() => setReviewsLoading(false));
   };
 
-  // --- ФУНКЦИЯ ОТПРАВКИ ОТЗЫВА ---
+  const [reviewError, setReviewError] = useState("");
+  const [reviewSuccess, setReviewSuccess] = useState(false);
+
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
-    if (!reviewForm.text.trim()) return alert("Напишите текст отзыва!");
-
+    setReviewError("");
+    setReviewSuccess(false);
+    if (!reviewForm.text.trim()) {
+      setReviewError("Напишите текст отзыва");
+      return;
+    }
     try {
       await reviewService.createReview(id, {
         text: reviewForm.text,
         rating: reviewForm.rating,
       });
-      alert("Отзыв успешно опубликован!");
-      setReviewForm({ rating: 5, text: "" }); // Чистим форму
-      loadReviews(); // Обновляем список, чтобы увидеть свой отзыв
+      setReviewSuccess(true);
+      setReviewForm({ rating: 5, text: "" });
+      loadReviews();
     } catch (err) {
-      alert(
-        "Ошибка: " +
-          (err.response?.data?.detail || "Не удалось отправить отзыв"),
+      setReviewError(
+        err.response?.data?.detail || "Не удалось отправить отзыв",
       );
     }
   };
 
+  const [staffError, setStaffError] = useState("");
+
   const handleStaffSubmit = async (e) => {
     e.preventDefault();
+    setStaffError("");
     setStaffLoading(true);
     try {
       await staffService.createRequest(id, { message: staffMessage });
-      alert("Заявка успешно отправлена!");
       setShowStaffModal(false);
       setStaffMessage("");
     } catch {
-      alert("Ошибка при отправке заявки");
+      setStaffError("Ошибка при отправке заявки");
     } finally {
       setStaffLoading(false);
     }
@@ -118,7 +126,6 @@ const RestaurantPage = () => {
       className="page-enter"
       style={{ position: "relative", minHeight: "100vh" }}
     >
-      {/* Hero Section */}
       <div className="restaurant-hero">
         {restaurant.photo_url ? (
           <img
@@ -175,12 +182,10 @@ const RestaurantPage = () => {
         )}
       </div>
 
-      {/* FAB Кнопка "Работа" */}
       <button className="staff-fab" onClick={() => setShowStaffModal(true)}>
         <Briefcase size={24} weight="fill" />
       </button>
 
-      {/* МОДАЛКА РАБОТЫ */}
       {showStaffModal && (
         <div className="modal-overlay" style={{ zIndex: 3000 }}>
           <div
@@ -252,6 +257,7 @@ const RestaurantPage = () => {
                 required
                 style={{ borderRadius: "16px" }}
               />
+              {staffError && <div className="form-error">{staffError}</div>}
               <button
                 className="btn btn-primary btn-full"
                 type="submit"
@@ -268,7 +274,6 @@ const RestaurantPage = () => {
         </div>
       )}
 
-      {/* МОДАЛКА ОТЗЫВОВ */}
       {showReviewsModal && (
         <div className="modal-overlay" style={{ zIndex: 3000 }}>
           <div
@@ -317,7 +322,6 @@ const RestaurantPage = () => {
             </div>
 
             <div style={{ overflowY: "auto", flex: 1, paddingRight: "8px" }}>
-              {/* Форма ввода */}
               <div
                 style={{
                   background: "var(--bg-surface)",
@@ -351,26 +355,40 @@ const RestaurantPage = () => {
                 <textarea
                   className="form-input"
                   placeholder="Ваш отзыв..."
-                  value={reviewForm.text} // СВЯЗКА СО СТЕЙТОМ
+                  value={reviewForm.text}
                   onChange={(e) =>
                     setReviewForm({ ...reviewForm, text: e.target.value })
-                  } // ОБНОВЛЕНИЕ ТЕКСТА
+                  }
                   style={{
                     borderRadius: "14px",
                     marginBottom: "12px",
                     background: "var(--bg-card)",
                   }}
                 />
+                {reviewError && (
+                  <div className="form-error" style={{ marginBottom: 8 }}>
+                    {reviewError}
+                  </div>
+                )}
+                {reviewSuccess && (
+                  <div
+                    style={{
+                      color: "green",
+                      marginBottom: 8,
+                      fontSize: "0.85rem",
+                    }}
+                  >
+                    Отзыв опубликован
+                  </div>
+                )}
                 <button
                   className="btn btn-primary btn-full"
                   style={{ borderRadius: "14px" }}
-                  onClick={handleReviewSubmit} // ПРИВЯЗКА ФУНКЦИИ
+                  onClick={handleReviewSubmit}
                 >
                   Опубликовать
                 </button>
               </div>
-
-              {/* Список отзывов */}
               <div
                 style={{ display: "flex", flexDirection: "column", gap: 16 }}
               >
@@ -423,14 +441,28 @@ const RestaurantPage = () => {
                           >
                             {r.user_id?.slice(0, 1).toUpperCase() || "U"}
                           </div>
-                          <span
+                          <div
                             style={{
-                              fontWeight: 700,
-                              color: "var(--text-primary)",
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 4,
                             }}
                           >
-                            Клиент #{r.user_id?.slice(0, 4)}
-                          </span>
+                            <span
+                              style={{
+                                fontWeight: 700,
+                                color: "var(--text-primary)",
+                              }}
+                            >
+                              Клиент #{r.user_id?.slice(0, 4)}
+                            </span>
+                            {r.is_verified_purchase && (
+                              <span className="verified-purchase-badge">
+                                <ShoppingBag size={11} weight="fill" />
+                                Подтверждённый заказ
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <div
                           style={{

@@ -6,7 +6,7 @@ import {
   BowlFood,
   Storefront,
   MapPin,
-  Star, // Добавили звезду
+  Star,
 } from "@phosphor-icons/react";
 
 const CATEGORY_ICONS = {
@@ -69,13 +69,12 @@ const RestaurantCard = ({ restaurant, onClick }) => {
           </div>
         )}
 
-        {/* --- ПЛАШКА РЕЙТИНГА ПОВЕРХ ФОТО --- */}
         <div
           style={{
             position: "absolute",
             top: "12px",
             right: "12px",
-            background: "rgba(255, 255, 255, 0.9)", // Белый полупрозрачный фон
+            background: "rgba(255, 255, 255, 0.9)",
             backdropFilter: "blur(4px)",
             padding: "4px 8px",
             borderRadius: "10px",
@@ -89,13 +88,12 @@ const RestaurantCard = ({ restaurant, onClick }) => {
           <Star size={16} weight="fill" color="var(--ember-orange)" />
           <span
             style={{
-              color: "#111", // Текст темный для контраста на белом
+              color: "#111",
               fontWeight: "800",
               fontSize: "0.85rem",
               lineHeight: 1,
             }}
           >
-            {/* Если рейтинга нет, покажем 0.0 или можно скрыть весь блок */}
             {restaurant.average_rating
               ? restaurant.average_rating.toFixed(1)
               : "0.0"}

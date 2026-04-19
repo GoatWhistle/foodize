@@ -31,7 +31,6 @@ const RegisterPage = () => {
         password,
         user_role: role,
       });
-      // Auto-login after register
       await login({ phone_number: phone, password });
       navigate(ROUTES.HOME);
     } catch (err) {
@@ -58,7 +57,6 @@ const RegisterPage = () => {
         )}
 
         <form className="auth-form" onSubmit={handleSubmit} noValidate>
-          {/* Role selector */}
           <div className="form-group">
             <label className="form-label">Я — </label>
             <div className="role-select">

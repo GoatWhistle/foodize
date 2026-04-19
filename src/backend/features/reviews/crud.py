@@ -12,10 +12,12 @@ async def create_review(
     review_data: ReviewCreate,
     user_id: uuid.UUID,
     restaurant_id: uuid.UUID,
+    is_verified_purchase: bool = False,
 ) -> Review:
     review = Review(
         user_id=user_id,
         restaurant_id=restaurant_id,
+        is_verified_purchase=is_verified_purchase,
         **review_data.model_dump(),
     )
     session.add(review)

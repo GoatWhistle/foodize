@@ -34,7 +34,7 @@ const VendorDashboardPage = () => {
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const [staffRequests, setStaffRequests] = useState([]);
   const [staffPage] = useState(1);
-  const [setStaffTotal] = useState(0);
+  const [, setStaffTotal] = useState(0);
 
   const [showAddRestaurant, setShowAddRestaurant] = useState(false);
   const [activeTab, setActiveTab] = useState("menu");
@@ -184,24 +184,29 @@ const VendorDashboardPage = () => {
     }
   };
 
+  const [menuError, setMenuError] = useState("");
+  const [ordersError, setOrdersError] = useState("");
+
   const handleDeleteMenuItem = async (itemId) => {
     if (!window.confirm("Удалить позицию?")) return;
+    setMenuError("");
     try {
       await menuService.deleteItem(selectedRestaurant.id, itemId);
       fetchMenu(selectedRestaurant.id);
     } catch {
-      alert("Не удалось удалить позицию");
+      setMenuError("Не удалось удалить позицию");
     }
   };
 
   const handleOrderChange = async (orderId, status) => {
+    setOrdersError("");
     try {
       await orderService.updateStatus(orderId, status);
       setRestaurantOrders((prev) =>
         prev.map((o) => (o.id === orderId ? { ...o, status } : o)),
       );
     } catch {
-      alert("Не удалось изменить статус заказа");
+      setOrdersError("Не удалось изменить статус заказа");
     }
   };
 
@@ -362,6 +367,11 @@ const VendorDashboardPage = () => {
 
           {activeTab === "menu" && (
             <div>
+              {menuError && (
+                <div className="form-error" style={{ marginBottom: 12 }}>
+                  {menuError}
+                </div>
+              )}
               <div
                 style={{
                   display: "flex",
@@ -391,7 +401,6 @@ const VendorDashboardPage = () => {
                 </button>
               </div>
 
-              {/* ФОРМА ДОБАВЛЕНИЯ/РЕДАКТИРОВАНИЯ (ТО, ЧЕГО НЕ ХВАТАЛО) */}
               {(showAddItem || editingItem) && (
                 <form
                   onSubmit={handleSaveMenuItem}
@@ -555,9 +564,13 @@ const VendorDashboardPage = () => {
             </div>
           )}
 
-          {/* ... разделы orders и settings без изменений ... */}
           {activeTab === "orders" && (
             <div>
+              {ordersError && (
+                <div className="form-error" style={{ marginBottom: 12 }}>
+                  {ordersError}
+                </div>
+              )}
               <div
                 style={{
                   display: "flex",

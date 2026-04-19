@@ -16,6 +16,7 @@ class Review(Base, IdUuidPkMixin, CreatedAtMixin):
     restaurant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("restaurants.id"))
     rating: Mapped[int]
     text: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    is_verified_purchase: Mapped[bool] = mapped_column(default=False, server_default="false")
     user: Mapped["User"] = relationship(back_populates="reviews")
     restaurant: Mapped["Restaurant"] = relationship(back_populates="reviews")
 

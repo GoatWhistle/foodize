@@ -86,9 +86,9 @@ async def _create_order(
         session.add(order_item)
 
     await session.commit()
-    # Re-fetch with eagerly loaded relationships to avoid lazy-load errors during serialization.
     result = await order_crud.get_order_by_id(session, order.id)
-    assert result is not None
+    if result is None:
+        raise OrderNotFoundException()
     return result
 
 

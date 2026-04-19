@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.admin import crud
 from features.users.models import User
+from shared.enums.order_status import OrderStatus
 from shared.enums.roles import UserRole
 from shared.exceptions import NotFoundException
 
@@ -34,13 +35,27 @@ async def set_user_role(session: AsyncSession, user_id: uuid.UUID, role: UserRol
     return user
 
 
-async def get_orders_list(session: AsyncSession, **kwargs):
-    data = await crud.get_all_orders(session, **kwargs)
+async def get_orders_list(
+    session: AsyncSession,
+    status: OrderStatus | None = None,
+    restaurant_id: uuid.UUID | None = None,
+    user_id: uuid.UUID | None = None,
+    offset: int = 0,
+    limit: int = 20,
+):
+    data = await crud.get_all_orders(
+        session,
+        status=status,
+        restaurant_id=restaurant_id,
+        user_id=user_id,
+        offset=offset,
+        limit=limit,
+    )
     total = await crud.count_all_orders(
         session,
-        status=kwargs.get("status"),
-        restaurant_id=kwargs.get("restaurant_id"),
-        user_id=kwargs.get("user_id"),
+        status=status,
+        restaurant_id=restaurant_id,
+        user_id=user_id,
     )
     return data, total
 

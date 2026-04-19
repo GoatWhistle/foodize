@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.menu import crud
 from features.menu.exceptions import MenuItemNotFoundException
+from features.menu.models import MenuItem
 from features.menu.schemas import MenuItemCreate, MenuItemResponse, MenuItemUpdate
 from features.restaurants.dependencies import get_restaurant_and_check_ownership
 
@@ -38,14 +39,14 @@ async def _get_owned_menu_item(
     restaurant_id: uuid.UUID,
     item_id: uuid.UUID,
     vendor_id: uuid.UUID,
-) -> MenuItemResponse:
+) -> MenuItem:
     await get_restaurant_and_check_ownership(
         session=session, restaurant_id=restaurant_id, vendor_id=vendor_id
     )
     item = await crud.get_menu_item_by_id(session, item_id)
     if not item or item.restaurant_id != restaurant_id or item.is_deleted:
         raise MenuItemNotFoundException()
-    return MenuItemResponse.model_validate(item)
+    return item
 
 
 async def update_menu_item_for_vendor(
@@ -55,12 +56,7 @@ async def update_menu_item_for_vendor(
     item_data: MenuItemUpdate,
     vendor_id: uuid.UUID,
 ) -> MenuItemResponse:
-    await get_restaurant_and_check_ownership(
-        session=session, restaurant_id=restaurant_id, vendor_id=vendor_id
-    )
-    item = await crud.get_menu_item_by_id(session, item_id)
-    if not item or item.restaurant_id != restaurant_id or item.is_deleted:
-        raise MenuItemNotFoundException()
+    item = await _get_owned_menu_item(session, restaurant_id, item_id, vendor_id)
     updated = await crud.update_menu_item(session, item, item_data)
     return MenuItemResponse.model_validate(updated)
 
@@ -71,10 +67,5 @@ async def delete_menu_item_for_vendor(
     item_id: uuid.UUID,
     vendor_id: uuid.UUID,
 ) -> None:
-    await get_restaurant_and_check_ownership(
-        session=session, restaurant_id=restaurant_id, vendor_id=vendor_id
-    )
-    item = await crud.get_menu_item_by_id(session, item_id)
-    if not item or item.restaurant_id != restaurant_id or item.is_deleted:
-        raise MenuItemNotFoundException()
+    item = await _get_owned_menu_item(session, restaurant_id, item_id, vendor_id)
     await crud.delete_menu_item(session, item)

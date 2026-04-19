@@ -18,7 +18,7 @@ import { adminService } from "../../services/adminService";
 import Pagination from "../../components/ui/Pagination";
 
 const STATUS_MAP = {
-  PENDING: { label: "Принят", className: "pending", icon: <Clock /> },
+  PENDING: { label: "Ожидает", className: "pending", icon: <Clock /> },
   ACCEPTED: {
     label: "Подтверждён",
     className: "pending",
@@ -31,7 +31,7 @@ const STATUS_MAP = {
     className: "ready",
     icon: <CheckCircle weight="fill" />,
   },
-  CANCELLED: { label: "Отменён", className: "preparing", icon: <Prohibit /> },
+  CANCELLED: { label: "Отменён", className: "cancelled", icon: <Prohibit /> },
 };
 
 const AdminDashboardPage = () => {
@@ -47,14 +47,16 @@ const AdminDashboardPage = () => {
   const [ordersPage, setOrdersPage] = useState(1);
   const [ordersTotal, setOrdersTotal] = useState(0);
   const [ordersLoading, setOrdersLoading] = useState(false);
+  const [actionError, setActionError] = useState("");
 
   const loadUserDetails = async (id) => {
     setUserDetailsLoading(true);
+    setActionError("");
     try {
       const res = await adminService.getUser(id);
       setSelectedUser(res.data);
     } catch {
-      alert("Не удалось загрузить детали пользователя");
+      setActionError("Не удалось загрузить детали пользователя");
     } finally {
       setUserDetailsLoading(false);
     }
@@ -85,11 +87,12 @@ const AdminDashboardPage = () => {
 
   const handleDeleteUser = async (id) => {
     if (!window.confirm("Удалить пользователя навсегда?")) return;
+    setActionError("");
     try {
       await adminService.deleteUser(id);
       setUsers((prev) => prev.filter((u) => u.id !== id));
     } catch {
-      alert("Не удалось удалить пользователя.");
+      setActionError("Не удалось удалить пользователя");
     }
   };
 
@@ -131,6 +134,12 @@ const AdminDashboardPage = () => {
           Панель Администратора
         </h1>
       </div>
+
+      {actionError && (
+        <div className="form-error" style={{ marginBottom: 16 }}>
+          {actionError}
+        </div>
+      )}
 
       <div
         style={{

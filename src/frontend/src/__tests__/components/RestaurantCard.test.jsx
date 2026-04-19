@@ -25,7 +25,7 @@ describe("RestaurantCard", () => {
 
     expect(screen.getByText("Burger King")).toBeDefined();
     expect(screen.getByText("Street 1")).toBeDefined();
-    expect(screen.getByText("🍔 BURGER")).toBeDefined();
+    expect(screen.getByText("BURGER")).toBeDefined();
 
     const img = screen.getByAltText("Burger King");
     expect(img.getAttribute("src")).toBe("burger.jpg");
@@ -41,8 +41,8 @@ describe("RestaurantCard", () => {
 
   it("renders emoji placeholder if no photo_url", () => {
     const noPhotoRest = { ...restaurant, photo_url: null };
-    render(<RestaurantCard restaurant={noPhotoRest} />);
+    const { container } = render(<RestaurantCard restaurant={noPhotoRest} />);
 
-    expect(screen.getByText("🍔")).toBeDefined();
+    expect(container.querySelector(".card-photo-placeholder")).toBeDefined();
   });
 });

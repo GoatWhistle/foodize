@@ -57,8 +57,8 @@ describe("HomePage", () => {
     expect(
       screen.getByPlaceholderText("Поиск ресторана или адреса..."),
     ).toBeDefined();
-    expect(screen.getByText("🌯 Шаурма")).toBeDefined();
-    expect(screen.getByText("🍔 Бургеры")).toBeDefined();
+    expect(screen.getByText("Шаурма")).toBeDefined();
+    expect(screen.getByText("Бургеры")).toBeDefined();
   });
 
   it("filters restaurants by category", () => {
@@ -72,7 +72,7 @@ describe("HomePage", () => {
     expect(screen.getByText("4 мест")).toBeDefined();
 
     // Click Burger category
-    fireEvent.click(screen.getByText("🍔 Бургеры"));
+    fireEvent.click(screen.getByText("Бургеры"));
 
     // Burger Point should remain, Shaurma House should disappear
     expect(screen.getByText("Burger Point")).toBeDefined();

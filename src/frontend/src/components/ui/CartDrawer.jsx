@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Plus, Minus, Trash } from "@phosphor-icons/react"; // Добавили иконки
+import { Plus, Minus, Trash } from "@phosphor-icons/react";
 import { useOrderStore } from "../../store/useOrderStore";
 import OrderButton from "./OrderButton";
 
@@ -10,14 +10,12 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
   const total = useOrderStore((s) => s.cartTotal());
   const drawerRef = useRef(null);
 
-  // Close on overlay click
   const handleOverlayClick = (e) => {
     if (drawerRef.current && !drawerRef.current.contains(e.target)) {
       onClose();
     }
   };
 
-  // Close on Escape
   useEffect(() => {
     const handler = (e) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", handler);

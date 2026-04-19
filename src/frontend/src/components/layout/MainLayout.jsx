@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom"; // Добавили useNavigate
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Outlet } from "react-router-dom";
 import {
   House,
@@ -25,26 +25,23 @@ const NAV_LINKS = [
 
 const MainLayout = () => {
   const location = useLocation();
-  const navigate = useNavigate(); // Для редиректа после заказа
+  const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
 
   const { cart, placeOrder } = useOrderStore();
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  // Состояния для процесса оформления
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
   const cartItemsCount = cart.reduce((total, item) => total + item.quantity, 0);
 
-  // ТА САМАЯ ЛОГИКА ОФОРМЛЕНИЯ
   const handleCheckout = async () => {
     setIsLoading(true);
     setError("");
     try {
-      const order = await placeOrder(); // Вызываем создание заказа из стора
-      setIsCartOpen(false); // Закрываем корзину
-      // Переходим на страницу статуса заказа
+      const order = await placeOrder();
+      setIsCartOpen(false);
       navigate(ROUTES.ORDER_STATUS.replace(":id", order.id));
     } catch (err) {
       setError(err.response?.data?.detail || "Не удалось разместить заказ");
@@ -122,9 +119,9 @@ const MainLayout = () => {
       {isCartOpen && (
         <CartDrawer
           onClose={() => setIsCartOpen(false)}
-          onCheckout={handleCheckout} // Передаем рабочую функцию
-          isLoading={isLoading} // Передаем состояние загрузки
-          error={error} // Передаем ошибку, если она будет
+          onCheckout={handleCheckout}
+          isLoading={isLoading}
+          error={error}
         />
       )}
     </div>

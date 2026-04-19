@@ -7,7 +7,6 @@ export const useOrderStore = create((set, get) => ({
 
   addToCart: (menuItem, restaurantId) => {
     const { cart, cartRestaurantId } = get();
-    // Clear cart if switching restaurant
     if (cartRestaurantId && cartRestaurantId !== restaurantId) {
       set({
         cart: [{ menuItem, quantity: 1 }],
@@ -81,7 +80,6 @@ export const useOrderStore = create((set, get) => ({
     set({ ordersLoading: true });
     try {
       const res = await orderService.getMyOrders({ params });
-      // Backend may return paginated {data: [], total: N} or plain array
       const orders = Array.isArray(res.data?.data)
         ? res.data.data
         : Array.isArray(res.data)

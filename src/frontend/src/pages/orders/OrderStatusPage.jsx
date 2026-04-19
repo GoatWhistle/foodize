@@ -5,7 +5,7 @@ import OrderStatusBadge from "../../components/ui/OrderStatusBadge";
 import { ROUTES } from "../../constants/routes";
 import { orderService } from "../../services/orderService";
 
-const POLL_INTERVAL = 5000; // 5 seconds
+const POLL_INTERVAL = 5000;
 
 const OrderStatusPage = () => {
   const { id } = useParams();
@@ -14,6 +14,7 @@ const OrderStatusPage = () => {
   const intervalRef = useRef(null);
   const [cancelling, setCancelling] = useState(false);
   const [events, setEvents] = useState([]);
+  const [cancelError, setCancelError] = useState("");
 
   useEffect(() => {
     fetchOrder(id);
@@ -27,12 +28,11 @@ const OrderStatusPage = () => {
             : [];
         setEvents(list);
       } catch {
-        // ignore network errors during polling
+        // intentionally ignored — polling errors are non-fatal
       }
     };
     loadEvents();
 
-    // Poll every 5s until order is ready
     intervalRef.current = setInterval(async () => {
       const order = await fetchOrder(id);
       loadEvents();
@@ -64,11 +64,12 @@ const OrderStatusPage = () => {
   const handleCancel = async () => {
     if (!window.confirm("Вы уверены, что хотите отменить заказ?")) return;
     setCancelling(true);
+    setCancelError("");
     try {
       await orderService.cancelOrder(id);
       await fetchOrder(id);
     } catch {
-      alert("Не удалось отменить заказ.");
+      setCancelError("Не удалось отменить заказ");
     } finally {
       setCancelling(false);
     }
@@ -83,7 +84,6 @@ const OrderStatusPage = () => {
         progress={isCancelled ? 0 : 0.6}
       />
 
-      {/* Order details */}
       <div
         style={{
           marginTop: 40,
@@ -240,11 +240,19 @@ const OrderStatusPage = () => {
         </div>
       </div>
 
+      {cancelError && (
+        <div
+          className="form-error"
+          style={{ marginTop: 16, maxWidth: 380, width: "100%" }}
+        >
+          {cancelError}
+        </div>
+      )}
       <div
         style={{
           display: "flex",
           gap: "10px",
-          marginTop: 24,
+          marginTop: 12,
           width: "100%",
           maxWidth: 380,
         }}

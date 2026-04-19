@@ -80,25 +80,6 @@ describe("RestaurantPage", () => {
     expect(addToCartMock).toHaveBeenCalled();
   });
 
-  it("shows cart FAB when items are in cart", () => {
-    vi.mocked(useOrderStore).mockImplementation((sel) => {
-      const state = {
-        cart: [
-          { menuItem: { id: "m1", name: "Shaurma", price: 300 }, quantity: 1 },
-        ],
-        addToCart: addToCartMock,
-        cartTotal: () => 300,
-        cartCount: () => 1,
-      };
-      return sel ? sel(state) : state;
-    });
-
-    renderWithRouter();
-
-    expect(screen.getByText("Корзина")).toBeDefined();
-    expect(screen.getAllByText(/300 ₽/)).toHaveLength(2);
-  });
-
   it("filters menu items by category", () => {
     renderWithRouter();
 

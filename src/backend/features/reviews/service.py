@@ -39,7 +39,10 @@ async def create_review_for_user(
     if existing:
         raise ReviewAlreadyExistsException()
 
-    review = await crud.create_review(session, review_data, user_id, restaurant_id)
+    is_verified = await _has_completed_order(session, user_id, restaurant_id)
+    review = await crud.create_review(
+        session, review_data, user_id, restaurant_id, is_verified_purchase=is_verified
+    )
     return ReviewResponse.model_validate(review)
 
 

@@ -21,6 +21,5 @@ describe("OrderStatusBadge", () => {
   it("renders ready status with checkmark", () => {
     render(<OrderStatusBadge status="READY" />);
     expect(screen.getByText("Забирай!")).toBeDefined();
-    expect(screen.getByText("✅")).toBeDefined();
   });
 });
