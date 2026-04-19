@@ -17,6 +17,8 @@ class RestaurantResponse(BaseModel):
     vendor_id: uuid.UUID
     is_hiring: bool = True
     is_open: bool = True
+    average_rating: float = 0.0
+    review_count: int = 0
 
     model_config = ConfigDict(from_attributes=True)
 

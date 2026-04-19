@@ -1,10 +1,13 @@
 import uuid
 
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.restaurants import crud
 from features.restaurants.dependencies import get_restaurant_and_check_ownership
+from features.restaurants.models import Restaurant
 from features.restaurants.schemas import RestaurantCreate, RestaurantResponse, RestaurantUpdate
+from features.reviews.models import Review
 
 
 async def create_restaurant_for_vendor(
@@ -46,10 +49,40 @@ async def get_all_restaurants_public(
     is_open: bool | None = None,
     page: int = 1,
     size: int = 20,
-) -> tuple[list[RestaurantResponse], int]:
+) -> tuple[list[Restaurant], int]:
     offset = (page - 1) * size
-    data = await crud.get_all_restaurants(
-        session, name=name, is_hiring=is_hiring, is_open=is_open, offset=offset, limit=size
+
+    query = (
+        select(
+            Restaurant,
+            func.coalesce(func.avg(Review.rating), 0).label("average_rating"),
+            func.count(Review.id).label("review_count"),
+        )
+        .outerjoin(Review, Review.restaurant_id == Restaurant.id)
+        .group_by(Restaurant.id)
     )
-    total = await crud.count_restaurants(session, name=name, is_hiring=is_hiring, is_open=is_open)
-    return [RestaurantResponse.model_validate(r) for r in data], total
+
+    if name:
+        query = query.where(Restaurant.name.ilike(f"%{name}%"))
+    if is_hiring is not None:
+        query = query.where(Restaurant.is_hiring == is_hiring)
+    if is_open is not None:
+        query = query.where(Restaurant.is_open == is_open)
+
+    result = await session.execute(query.offset(offset).limit(size))
+
+    restaurants_with_ratings = []
+    for row in result.all():
+        res_obj = row[0]
+        res_obj.average_rating = round(float(row[1]), 1)
+        res_obj.review_count = row[2]
+        restaurants_with_ratings.append(res_obj)
+
+    total_query = select(func.count(Restaurant.id))
+    if name:
+        total_query = total_query.where(Restaurant.name.ilike(f"%{name}%"))
+
+    total_result = await session.execute(total_query)
+    total = total_result.scalar_one()
+
+    return restaurants_with_ratings, total
