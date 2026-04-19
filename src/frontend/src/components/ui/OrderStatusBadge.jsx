@@ -24,9 +24,7 @@ const OrderStatusBadge = ({ status, progress = 0.6 }) => {
             }}
           />
         ))}
-        <div
-          style={{ position: "relative", zIndex: 1, color: "var(--primary)" }}
-        >
+        <div style={{ position: "relative", zIndex: 1, color: "var(--fire)" }}>
           <MapPin size={64} weight="fill" />
         </div>
         <p
@@ -39,7 +37,7 @@ const OrderStatusBadge = ({ status, progress = 0.6 }) => {
         >
           Принят
         </p>
-        <p style={{ color: "var(--stone)", marginTop: 8 }}>
+        <p style={{ color: "var(--text-3)", marginTop: 8 }}>
           Ресторан подтвердил заказ
         </p>
       </div>
@@ -59,7 +57,7 @@ const OrderStatusBadge = ({ status, progress = 0.6 }) => {
             cy="60"
             r={r}
             fill="none"
-            stroke="var(--border)"
+            stroke="var(--border-mid)"
             strokeWidth="6"
           />
           <circle
@@ -67,7 +65,7 @@ const OrderStatusBadge = ({ status, progress = 0.6 }) => {
             cy="60"
             r={r}
             fill="none"
-            stroke="var(--ember-orange)"
+            stroke="var(--fire)"
             strokeWidth="6"
             strokeLinecap="round"
             strokeDasharray={circumference}
@@ -75,9 +73,8 @@ const OrderStatusBadge = ({ status, progress = 0.6 }) => {
             className="progress-arc"
             style={{ transition: "stroke-dashoffset 1s ease" }}
           />
-          {/* Иконка внутри прогресс-бара */}
           <foreignObject x="42" y="42" width="36" height="36">
-            <div style={{ color: "var(--text-primary)" }}>
+            <div style={{ color: "var(--text-1)" }}>
               <CookingPot size={36} weight="bold" />
             </div>
           </foreignObject>
@@ -92,7 +89,7 @@ const OrderStatusBadge = ({ status, progress = 0.6 }) => {
         >
           Готовится
         </p>
-        <p style={{ color: "var(--stone)", marginTop: 8 }}>
+        <p style={{ color: "var(--text-3)", marginTop: 8 }}>
           Повар уже работает над заказом
         </p>
       </div>
@@ -102,7 +99,7 @@ const OrderStatusBadge = ({ status, progress = 0.6 }) => {
   if (status === "READY" || status === "COMPLETED") {
     return (
       <div className="status-icon-wrap status-ready-flash">
-        <div style={{ marginBottom: 12, color: "var(--ready)" }}>
+        <div style={{ marginBottom: 12, color: "#22c55e" }}>
           {status === "COMPLETED" ? (
             <Smiley size={80} weight="fill" />
           ) : (
@@ -115,12 +112,12 @@ const OrderStatusBadge = ({ status, progress = 0.6 }) => {
             fontWeight: 800,
             fontSize: "2.5rem",
             letterSpacing: "-0.04em",
-            color: "var(--ember-orange)",
+            color: "var(--fire)",
           }}
         >
           {status === "COMPLETED" ? "Приятного аппетита!" : "Забирай!"}
         </p>
-        <p style={{ color: "var(--stone)", marginTop: 8, fontWeight: 600 }}>
+        <p style={{ color: "var(--text-3)", marginTop: 8, fontWeight: 600 }}>
           {status === "COMPLETED"
             ? "Заказ уже получен"
             : "Заказ ждёт тебя на кассе"}
@@ -132,7 +129,7 @@ const OrderStatusBadge = ({ status, progress = 0.6 }) => {
   if (status === "CANCELLED") {
     return (
       <div className="status-icon-wrap">
-        <div style={{ marginBottom: 12, color: "var(--error)" }}>
+        <div style={{ marginBottom: 12, color: "#ef4444" }}>
           <XCircle size={80} weight="fill" />
         </div>
         <p
@@ -140,12 +137,12 @@ const OrderStatusBadge = ({ status, progress = 0.6 }) => {
             fontWeight: 800,
             fontSize: "1.6rem",
             letterSpacing: "-0.03em",
-            color: "var(--error, #ef4444)",
+            color: "#ef4444",
           }}
         >
           Заказ отменён
         </p>
-        <p style={{ color: "var(--stone)", marginTop: 8 }}>
+        <p style={{ color: "var(--text-3)", marginTop: 8 }}>
           Средства будут возвращены
         </p>
       </div>

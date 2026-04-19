@@ -18,23 +18,33 @@ import { useOrderStore } from "../../store/useOrderStore";
 import { ROUTES } from "../../constants/routes";
 
 const NAV_LINKS = [
-  { to: ROUTES.HOME, label: "Рестораны", icon: <House size={20} /> },
-  { to: ROUTES.ORDERS, label: "Заказы", icon: <Package size={20} /> },
-  { to: ROUTES.PROFILE, label: "Профиль", icon: <User size={20} /> },
+  {
+    to: ROUTES.HOME,
+    label: "Рестораны",
+    icon: <House size={18} weight="bold" />,
+  },
+  {
+    to: ROUTES.ORDERS,
+    label: "Заказы",
+    icon: <Package size={18} weight="bold" />,
+  },
+  {
+    to: ROUTES.PROFILE,
+    label: "Профиль",
+    icon: <User size={18} weight="bold" />,
+  },
 ];
 
 const MainLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
-
   const { cart, placeOrder } = useOrderStore();
   const [isCartOpen, setIsCartOpen] = useState(false);
-
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const cartItemsCount = cart.reduce((total, item) => total + item.quantity, 0);
+  const cartItemsCount = cart.reduce((t, i) => t + i.quantity, 0);
 
   const handleCheckout = async () => {
     setIsLoading(true);
@@ -54,7 +64,7 @@ const MainLayout = () => {
     <div className="layout">
       <header className="header">
         <Link to={ROUTES.HOME} className="header-logo" aria-label="На главную">
-          <FoodizeLogo size={28} />
+          <FoodizeLogo size={26} />
         </Link>
 
         {isAuthenticated && (
@@ -93,7 +103,7 @@ const MainLayout = () => {
               id="header-login-btn"
               style={{ display: "flex", alignItems: "center", gap: "6px" }}
             >
-              <SignIn size={18} weight="bold" />
+              <SignIn size={16} weight="bold" />
               Войти
             </Link>
           )}
@@ -104,13 +114,35 @@ const MainLayout = () => {
         <Outlet />
       </main>
 
+      {isAuthenticated && (
+        <nav className="bottom-tab-bar" aria-label="Навигация">
+          {NAV_LINKS.map(({ to, label, icon }) => {
+            const isActive =
+              to === ROUTES.HOME
+                ? location.pathname === "/"
+                : location.pathname.startsWith(to);
+            return (
+              <Link
+                key={to}
+                to={to}
+                className={`bottom-tab${isActive ? " active" : ""}`}
+                viewTransition
+              >
+                <span className="bottom-tab-icon">{icon}</span>
+                <span className="bottom-tab-label">{label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      )}
+
       {cartItemsCount > 0 && (
         <button
           className="cart-fab"
           onClick={() => setIsCartOpen(true)}
           aria-label="Открыть корзину"
         >
-          <ShoppingCart size={22} weight="fill" />
+          <ShoppingCart size={20} weight="fill" />
           <span>Корзина</span>
           <span className="cart-badge">{cartItemsCount}</span>
         </button>

@@ -42,7 +42,7 @@ const STATUS_CONFIG = {
   },
   CANCELLED: {
     label: "Отменён",
-    className: "preparing",
+    className: "cancelled",
     icon: <Prohibit weight="bold" />,
   },
 };
@@ -68,22 +68,24 @@ const OrdersPage = () => {
   }
 
   return (
-    <div className="page-enter" style={{ padding: "24px 16px" }}>
+    <div className="page-enter" style={{ padding: "28px var(--gutter, 20px)" }}>
       <div
         style={{
           display: "flex",
           alignItems: "center",
-          gap: "10px",
-          marginBottom: "20px",
+          gap: "12px",
+          marginBottom: "24px",
         }}
       >
-        <Package size={28} weight="bold" />
+        <Package size={24} weight="bold" color="var(--fire)" />
         <h1
           style={{
-            fontSize: "1.5rem",
-            fontWeight: 800,
+            fontFamily: "var(--font-serif)",
+            fontSize: "1.6rem",
+            fontWeight: 700,
             letterSpacing: "-0.03em",
             margin: 0,
+            color: "var(--text-1)",
           }}
         >
           Мои заказы
@@ -101,7 +103,7 @@ const OrdersPage = () => {
         />
       ) : (
         <>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {orders.map((order) => {
               const cfg = STATUS_CONFIG[order.status] || STATUS_CONFIG.PENDING;
               return (
@@ -112,32 +114,23 @@ const OrdersPage = () => {
                   onClick={() =>
                     navigate(ROUTES.ORDER_STATUS.replace(":id", order.id))
                   }
-                  style={{ cursor: "pointer" }}
                 >
                   <div style={{ flex: 1 }}>
                     <div
                       style={{
                         fontWeight: 700,
-                        fontSize: "0.95rem",
+                        fontSize: "0.9rem",
                         letterSpacing: "-0.02em",
                         marginBottom: 4,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
+                        color: "var(--text-1)",
                       }}
                     >
-                      <span>Заказ #{order.id.slice(0, 8)}</span>
+                      Заказ #{order.id.slice(0, 8)}
                     </div>
                     <div
-                      style={{
-                        fontSize: "0.8rem",
-                        color: "var(--stone)",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "4px",
-                      }}
+                      style={{ fontSize: "0.78rem", color: "var(--text-3)" }}
                     >
-                      <span>{order.items?.length || 0} позиций</span>
+                      {order.items?.length || 0} позиций
                     </div>
                   </div>
 
@@ -164,8 +157,9 @@ const OrdersPage = () => {
                     <span
                       style={{
                         fontWeight: 800,
-                        fontSize: "1.05rem",
-                        letterSpacing: "-0.03em",
+                        fontSize: "1rem",
+                        letterSpacing: "-0.02em",
+                        color: "var(--text-1)",
                       }}
                     >
                       {order.total_price} ₽
@@ -173,14 +167,15 @@ const OrdersPage = () => {
                   </div>
 
                   <CaretRight
-                    size={20}
-                    color="var(--stone)"
-                    style={{ marginLeft: 8 }}
+                    size={18}
+                    color="var(--text-3)"
+                    style={{ marginLeft: 4, flexShrink: 0 }}
                   />
                 </div>
               );
             })}
           </div>
+
           <Pagination
             page={page}
             totalPages={totalPages}

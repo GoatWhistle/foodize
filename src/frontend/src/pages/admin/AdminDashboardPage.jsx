@@ -181,7 +181,7 @@ const AdminDashboardPage = () => {
           style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}
         >
           <div className="admin-stat-card">
-            <UsersThree size={20} color="var(--stone)" />
+            <UsersThree size={20} color="var(--text-3)" />
             <div className="admin-stat-label">Пользователи</div>
             <div className="admin-stat-value">
               {stats.total_users ??
@@ -192,17 +192,14 @@ const AdminDashboardPage = () => {
             </div>
           </div>
           <div className="admin-stat-card">
-            <Storefront size={20} color="var(--stone)" />
+            <Storefront size={20} color="var(--text-3)" />
             <div className="admin-stat-label">Рестораны</div>
             <div className="admin-stat-value">{stats.total_restaurants}</div>
           </div>
           <div className="admin-stat-card" style={{ gridColumn: "1 / -1" }}>
-            <Package size={20} color="var(--ember-orange)" />
+            <Package size={20} color="var(--fire)" />
             <div className="admin-stat-label">Всего заказов</div>
-            <div
-              className="admin-stat-value"
-              style={{ color: "var(--ember-orange)" }}
-            >
+            <div className="admin-stat-value" style={{ color: "var(--fire)" }}>
               {stats.total_orders ??
                 Object.values(stats.orders_by_status || {}).reduce(
                   (a, b) => a + b,
@@ -226,13 +223,13 @@ const AdminDashboardPage = () => {
                   <div
                     style={{ display: "flex", alignItems: "center", gap: 12 }}
                   >
-                    <UserCircle size={40} weight="thin" color="var(--stone)" />
+                    <UserCircle size={40} weight="thin" color="var(--text-3)" />
                     <div>
                       <div style={{ fontWeight: 700 }}>
                         {u.name || "Без имени"}
                       </div>
                       <div
-                        style={{ fontSize: "0.8rem", color: "var(--stone)" }}
+                        style={{ fontSize: "0.8rem", color: "var(--text-3)" }}
                       >
                         {u.phone_number || "Нет телефона"}
                       </div>
@@ -312,7 +309,9 @@ const AdminDashboardPage = () => {
                         {cfg.icon} {cfg.label}
                       </span>
                     </div>
-                    <div style={{ fontSize: "0.85rem", color: "var(--stone)" }}>
+                    <div
+                      style={{ fontSize: "0.85rem", color: "var(--text-3)" }}
+                    >
                       Сумма: <b>{o.total_price} ₽</b> • ID заведения:{" "}
                       {o.restaurant_id.slice(0, 8)}
                     </div>

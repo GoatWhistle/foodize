@@ -331,7 +331,7 @@ const VendorDashboardPage = () => {
                   <div className="restaurant-row-name">{r.name}</div>
                   <div className="restaurant-row-addr">{r.address}</div>
                 </div>
-                <span style={{ marginLeft: "auto", color: "var(--stone)" }}>
+                <span style={{ marginLeft: "auto", color: "var(--text-3)" }}>
                   <CaretRight />
                 </span>
               </div>
@@ -522,7 +522,10 @@ const VendorDashboardPage = () => {
                           {item.name}
                         </div>
                         <div
-                          style={{ fontSize: "0.78rem", color: "var(--stone)" }}
+                          style={{
+                            fontSize: "0.78rem",
+                            color: "var(--text-3)",
+                          }}
                         >
                           {item.price} ₽ • {item.category}
                         </div>
@@ -604,7 +607,7 @@ const VendorDashboardPage = () => {
                           Заказ #{order.id.slice(0, 8)}
                         </div>
                         <div
-                          style={{ fontSize: "0.8rem", color: "var(--stone)" }}
+                          style={{ fontSize: "0.8rem", color: "var(--text-3)" }}
                         >
                           {order.items?.length || 0} позиц. •{" "}
                           {order.total_price} ₽
@@ -697,7 +700,7 @@ const VendorDashboardPage = () => {
               >
                 {formError && <div className="form-error">{formError}</div>}
                 <div>
-                  <label style={{ fontSize: "0.8rem", color: "var(--stone)" }}>
+                  <label style={{ fontSize: "0.8rem", color: "var(--text-3)" }}>
                     Название
                   </label>
                   <input
@@ -712,7 +715,7 @@ const VendorDashboardPage = () => {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: "0.8rem", color: "var(--stone)" }}>
+                  <label style={{ fontSize: "0.8rem", color: "var(--text-3)" }}>
                     Адрес
                   </label>
                   <input

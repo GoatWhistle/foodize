@@ -59,7 +59,6 @@ services:
       context: ./src/frontend
       dockerfile: Dockerfile
       target: dev
-    container_name: foodize_frontend
     depends_on:
       - backend
     ports:

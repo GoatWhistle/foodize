@@ -36,7 +36,6 @@ const HomePage = () => {
     loading,
   } = useRestaurantStore();
   const navigate = useNavigate();
-
   const [page, setPage] = useState(1);
   const size = 20;
 
@@ -56,11 +55,9 @@ const HomePage = () => {
     return () => clearTimeout(handler);
   }, [search, onlyOpen, page, fetchPublicRestaurants]);
 
-  const filtered = publicRestaurants.filter((r) => {
-    const matchCategory =
-      activeCategory === "ALL" || r.category === activeCategory;
-    return matchCategory;
-  });
+  const filtered = publicRestaurants.filter(
+    (r) => activeCategory === "ALL" || r.category === activeCategory,
+  );
 
   const handleCardClick = (restaurant) => {
     if (!isAuthenticated) {
@@ -73,12 +70,16 @@ const HomePage = () => {
     });
   };
 
+  const activeCategoryLabel = CATEGORIES.find(
+    (c) => c.key === activeCategory,
+  )?.label;
+
   return (
     <div className="home-page page-enter">
-      {/* Search bar */}
+      {/* Sticky search bar */}
       <div className="search-bar-wrap">
         <div className="search-bar">
-          <MagnifyingGlass className="search-icon" size={20} weight="bold" />
+          <MagnifyingGlass className="search-icon" size={18} weight="bold" />
           <input
             id="restaurant-search"
             type="search"
@@ -90,13 +91,7 @@ const HomePage = () => {
         </div>
         <label
           className="form-check"
-          style={{
-            marginTop: "12px",
-            width: "fit-content",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
+          style={{ marginTop: "10px", width: "fit-content" }}
         >
           <input
             type="checkbox"
@@ -130,18 +125,16 @@ const HomePage = () => {
 
       {/* Restaurants list */}
       <div className="restaurants-section">
-        <div
-          className="section-header"
-          style={{ display: "flex", alignItems: "baseline", gap: "10px" }}
-        >
-          <Storefront size={24} weight="bold" color="var(--primary)" />
-          <h1 className="section-title" style={{ margin: 0 }}>
-            {activeCategory === "ALL"
-              ? "Все заведения"
-              : CATEGORIES.find((c) => c.key === activeCategory)?.label}
+        <div className="section-header">
+          <Storefront size={20} weight="bold" color="var(--fire)" />
+          <h1 className="section-title">
+            {activeCategory === "ALL" ? "Все заведения" : activeCategoryLabel}
           </h1>
-          <span className="text-muted" style={{ fontSize: "0.875rem" }}>
-            {filtered.length} мест
+          <span
+            className="text-muted"
+            style={{ fontSize: "0.8rem", fontWeight: 600 }}
+          >
+            {filtered.length}
           </span>
         </div>
 

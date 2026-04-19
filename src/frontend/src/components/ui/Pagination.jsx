@@ -25,7 +25,7 @@ const Pagination = ({ page, totalPages, onPageChange }) => {
         style={{
           fontSize: "0.85rem",
           fontWeight: 800,
-          color: "var(--text-muted)",
+          color: "var(--text-3)",
           textTransform: "uppercase",
           letterSpacing: "0.05em",
           minWidth: 100,

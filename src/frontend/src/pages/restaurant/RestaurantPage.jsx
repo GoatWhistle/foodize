@@ -43,10 +43,13 @@ const RestaurantPage = () => {
   const [reviewsList, setReviewsList] = useState([]);
   const [reviewForm, setReviewForm] = useState({ rating: 5, text: "" });
   const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewError, setReviewError] = useState("");
+  const [reviewSuccess, setReviewSuccess] = useState(false);
 
   const [showStaffModal, setShowStaffModal] = useState(false);
   const [staffMessage, setStaffMessage] = useState("");
   const [staffLoading, setStaffLoading] = useState(false);
+  const [staffError, setStaffError] = useState("");
 
   const menuItems = menus[id] || [];
 
@@ -68,9 +71,6 @@ const RestaurantPage = () => {
       })
       .finally(() => setReviewsLoading(false));
   };
-
-  const [reviewError, setReviewError] = useState("");
-  const [reviewSuccess, setReviewSuccess] = useState(false);
 
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
@@ -94,8 +94,6 @@ const RestaurantPage = () => {
       );
     }
   };
-
-  const [staffError, setStaffError] = useState("");
 
   const handleStaffSubmit = async (e) => {
     e.preventDefault();
@@ -126,16 +124,18 @@ const RestaurantPage = () => {
       className="page-enter"
       style={{ position: "relative", minHeight: "100vh" }}
     >
+      {/* Hero */}
       <div className="restaurant-hero">
         {restaurant.photo_url ? (
           <img
             className="restaurant-hero-img"
             src={restaurant.photo_url}
             alt={restaurant.name}
+            style={{ viewTransitionName: `restaurant-image-${restaurant.id}` }}
           />
         ) : (
           <div className="restaurant-hero-placeholder">
-            <ForkKnife size={48} color="white" />
+            <ForkKnife size={48} color="rgba(255,255,255,0.3)" />
           </div>
         )}
         <div className="restaurant-hero-overlay" />
@@ -147,13 +147,22 @@ const RestaurantPage = () => {
               setShowReviewsModal(true);
               loadReviews();
             }}
-            style={{ marginTop: 12 }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              background: "rgba(255,255,255,0.12)",
+              backdropFilter: "blur(8px)",
+              border: "1px solid rgba(255,255,255,0.2)",
+              color: "#fff",
+            }}
           >
-            <ChatCircleText size={18} /> Отзывы
+            <ChatCircleText size={16} weight="bold" /> Отзывы
           </button>
         </div>
       </div>
 
+      {/* Menu */}
       <div className="restaurant-content">
         <div className="menu-categories-scroll">
           {categories.map((cat) => (
@@ -161,14 +170,18 @@ const RestaurantPage = () => {
               key={cat}
               className={`category-chip${activeCategory === cat ? " active" : ""}`}
               onClick={() => setActiveCategory(cat)}
+              style={{ display: "flex", alignItems: "center", gap: "6px" }}
             >
-              {cat === "ALL" ? <List /> : CATEGORY_ICONS[cat]}{" "}
+              {cat === "ALL" ? <List size={14} /> : CATEGORY_ICONS[cat]}
               {cat === "ALL" ? "Все" : cat}
             </button>
           ))}
         </div>
+
         {loading ? (
-          <div className="spinner" />
+          <div className="loading-center">
+            <div className="spinner" />
+          </div>
         ) : (
           <div className="menu-list">
             {filtered.map((item) => (
@@ -182,24 +195,23 @@ const RestaurantPage = () => {
         )}
       </div>
 
-      <button className="staff-fab" onClick={() => setShowStaffModal(true)}>
-        <Briefcase size={24} weight="fill" />
+      {/* Staff FAB */}
+      <button
+        className="staff-fab"
+        onClick={() => setShowStaffModal(true)}
+        aria-label="Работа"
+      >
+        <Briefcase size={22} weight="fill" />
       </button>
 
+      {/* Staff Modal */}
       {showStaffModal && (
         <div className="modal-overlay" style={{ zIndex: 3000 }}>
           <div
             className="modal-content"
-            style={{
-              maxWidth: "440px",
-              width: "90%",
-              background: "var(--bg-card)",
-              borderRadius: "28px",
-              padding: "32px",
-            }}
+            style={{ maxWidth: "440px", padding: "36px" }}
           >
             <div
-              className="modal-header"
               style={{
                 display: "flex",
                 justifyContent: "space-between",
@@ -209,9 +221,10 @@ const RestaurantPage = () => {
             >
               <h2
                 style={{
-                  fontSize: "2.4rem",
-                  fontWeight: 800,
-                  color: "var(--text-primary)",
+                  fontFamily: "var(--font-serif)",
+                  fontSize: "1.8rem",
+                  fontWeight: 700,
+                  color: "var(--text-1)",
                   margin: 0,
                 }}
               >
@@ -223,30 +236,32 @@ const RestaurantPage = () => {
                   background: "none",
                   border: "none",
                   cursor: "pointer",
-                  color: "var(--text-primary)",
+                  color: "var(--text-3)",
+                  display: "flex",
                 }}
               >
-                <X size={32} weight="bold" />
+                <X size={28} weight="bold" />
               </button>
             </div>
+
             <p
               style={{
-                fontSize: "1.5rem",
-                color: "var(--text-primary)",
-                marginBottom: "28px",
-                fontWeight: 700,
-                lineHeight: 1.2,
+                fontSize: "1rem",
+                color: "var(--text-2)",
+                marginBottom: "24px",
+                lineHeight: 1.6,
               }}
             >
               Хотите работать в{" "}
-              <span style={{ color: "var(--ember-orange)" }}>
+              <span style={{ color: "var(--fire)", fontWeight: 700 }}>
                 {restaurant.name}
               </span>
               ?
             </p>
+
             <form
               onSubmit={handleStaffSubmit}
-              style={{ display: "flex", flexDirection: "column", gap: 16 }}
+              style={{ display: "flex", flexDirection: "column", gap: 14 }}
             >
               <textarea
                 className="form-input"
@@ -255,17 +270,13 @@ const RestaurantPage = () => {
                 onChange={(e) => setStaffMessage(e.target.value)}
                 rows={5}
                 required
-                style={{ borderRadius: "16px" }}
+                style={{ borderRadius: "var(--r-md)", resize: "vertical" }}
               />
               {staffError && <div className="form-error">{staffError}</div>}
               <button
                 className="btn btn-primary btn-full"
                 type="submit"
-                style={{
-                  borderRadius: "16px",
-                  height: "56px",
-                  fontSize: "1.1rem",
-                }}
+                style={{ borderRadius: "var(--r-md)", height: "52px" }}
               >
                 {staffLoading ? "Отправка..." : "Отправить заявку"}
               </button>
@@ -274,23 +285,20 @@ const RestaurantPage = () => {
         </div>
       )}
 
+      {/* Reviews Modal */}
       {showReviewsModal && (
         <div className="modal-overlay" style={{ zIndex: 3000 }}>
           <div
             className="modal-content"
             style={{
               maxWidth: "500px",
-              width: "95%",
               maxHeight: "85vh",
-              background: "var(--bg-card)",
               display: "flex",
               flexDirection: "column",
-              borderRadius: "28px",
-              padding: "32px",
+              padding: "36px",
             }}
           >
             <div
-              className="modal-header"
               style={{
                 display: "flex",
                 justifyContent: "space-between",
@@ -300,9 +308,10 @@ const RestaurantPage = () => {
             >
               <h2
                 style={{
-                  fontSize: "2.4rem",
-                  fontWeight: 800,
-                  color: "var(--text-primary)",
+                  fontFamily: "var(--font-serif)",
+                  fontSize: "1.8rem",
+                  fontWeight: 700,
+                  color: "var(--text-1)",
                   margin: 0,
                 }}
               >
@@ -314,19 +323,21 @@ const RestaurantPage = () => {
                   background: "none",
                   border: "none",
                   cursor: "pointer",
-                  color: "var(--text-primary)",
+                  color: "var(--text-3)",
+                  display: "flex",
                 }}
               >
-                <X size={32} weight="bold" />
+                <X size={28} weight="bold" />
               </button>
             </div>
 
-            <div style={{ overflowY: "auto", flex: 1, paddingRight: "8px" }}>
+            <div style={{ overflowY: "auto", flex: 1 }}>
+              {/* Write review */}
               <div
                 style={{
                   background: "var(--bg-surface)",
                   padding: "24px",
-                  borderRadius: "20px",
+                  borderRadius: "var(--r-lg)",
                   marginBottom: "24px",
                   border: "1px solid var(--border)",
                 }}
@@ -342,13 +353,18 @@ const RestaurantPage = () => {
                   {[1, 2, 3, 4, 5].map((s) => (
                     <Star
                       key={s}
-                      size={32}
+                      size={30}
                       weight={s <= reviewForm.rating ? "fill" : "regular"}
-                      color="var(--ember-orange)"
+                      color="var(--fire)"
                       onClick={() =>
                         setReviewForm({ ...reviewForm, rating: s })
                       }
-                      style={{ cursor: "pointer" }}
+                      style={{
+                        cursor: "pointer",
+                        transition: "transform 150ms",
+                        transform:
+                          s <= reviewForm.rating ? "scale(1.1)" : "scale(1)",
+                      }}
                     />
                   ))}
                 </div>
@@ -360,9 +376,10 @@ const RestaurantPage = () => {
                     setReviewForm({ ...reviewForm, text: e.target.value })
                   }
                   style={{
-                    borderRadius: "14px",
+                    borderRadius: "var(--r-md)",
                     marginBottom: "12px",
                     background: "var(--bg-card)",
+                    minHeight: "80px",
                   }}
                 />
                 {reviewError && (
@@ -373,9 +390,10 @@ const RestaurantPage = () => {
                 {reviewSuccess && (
                   <div
                     style={{
-                      color: "green",
+                      color: "#22c55e",
                       marginBottom: 8,
                       fontSize: "0.85rem",
+                      fontWeight: 600,
                     }}
                   >
                     Отзыв опубликован
@@ -383,31 +401,43 @@ const RestaurantPage = () => {
                 )}
                 <button
                   className="btn btn-primary btn-full"
-                  style={{ borderRadius: "14px" }}
+                  style={{ borderRadius: "var(--r-md)" }}
                   onClick={handleReviewSubmit}
                 >
                   Опубликовать
                 </button>
               </div>
+
+              {/* Reviews list */}
               <div
-                style={{ display: "flex", flexDirection: "column", gap: 16 }}
+                style={{ display: "flex", flexDirection: "column", gap: 12 }}
               >
                 {reviewsLoading ? (
-                  <div className="spinner" />
+                  <div className="loading-center">
+                    <div className="spinner" />
+                  </div>
                 ) : reviewsList.length === 0 ? (
-                  <p style={{ textAlign: "center", color: "var(--stone)" }}>
+                  <p
+                    style={{
+                      textAlign: "center",
+                      color: "var(--text-3)",
+                      fontSize: "0.875rem",
+                    }}
+                  >
                     Отзывов пока нет
                   </p>
                 ) : (
                   reviewsList.map((r) => (
                     <div
                       key={r.id}
+                      className="review-card"
                       style={{
-                        padding: "20px",
+                        padding: "18px",
                         background: "var(--bg-card)",
                         border: "1px solid var(--border)",
-                        borderRadius: "20px",
-                        boxShadow: "var(--shadow-sm)",
+                        borderRadius: "var(--r-md)",
+                        transition:
+                          "border-color var(--dur-sm), transform var(--dur-sm)",
                       }}
                     >
                       <div
@@ -415,7 +445,7 @@ const RestaurantPage = () => {
                           display: "flex",
                           justifyContent: "space-between",
                           alignItems: "center",
-                          marginBottom: 12,
+                          marginBottom: 10,
                         }}
                       >
                         <div
@@ -427,38 +457,37 @@ const RestaurantPage = () => {
                         >
                           <div
                             style={{
-                              width: 36,
-                              height: 36,
+                              width: 34,
+                              height: 34,
                               borderRadius: "50%",
-                              background: "var(--ember-orange)",
+                              background:
+                                "linear-gradient(135deg, var(--fire), var(--amber))",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
                               color: "#fff",
-                              fontSize: "0.8rem",
+                              fontSize: "0.75rem",
                               fontWeight: 800,
                             }}
                           >
                             {r.user_id?.slice(0, 1).toUpperCase() || "U"}
                           </div>
-                          <div
-                            style={{
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: 4,
-                            }}
-                          >
-                            <span
+                          <div>
+                            <div
                               style={{
                                 fontWeight: 700,
-                                color: "var(--text-primary)",
+                                fontSize: "0.85rem",
+                                color: "var(--text-1)",
                               }}
                             >
                               Клиент #{r.user_id?.slice(0, 4)}
-                            </span>
+                            </div>
                             {r.is_verified_purchase && (
-                              <span className="verified-purchase-badge">
-                                <ShoppingBag size={11} weight="fill" />
+                              <span
+                                className="verified-purchase-badge"
+                                style={{ marginTop: 3 }}
+                              >
+                                <ShoppingBag size={10} weight="fill" />
                                 Подтверждённый заказ
                               </span>
                             )}
@@ -467,13 +496,14 @@ const RestaurantPage = () => {
                         <div
                           style={{
                             display: "flex",
-                            color: "var(--ember-orange)",
+                            gap: 1,
+                            color: "var(--fire)",
                           }}
                         >
                           {[...Array(5)].map((_, i) => (
                             <Star
                               key={i}
-                              size={14}
+                              size={13}
                               weight={i < r.rating ? "fill" : "regular"}
                             />
                           ))}
@@ -481,10 +511,10 @@ const RestaurantPage = () => {
                       </div>
                       <p
                         style={{
-                          color: "var(--text-primary)",
-                          opacity: 0.85,
+                          color: "var(--text-2)",
                           margin: 0,
-                          lineHeight: 1.5,
+                          lineHeight: 1.6,
+                          fontSize: "0.875rem",
                         }}
                       >
                         {r.text}

@@ -69,7 +69,7 @@ describe("HomePage", () => {
     );
 
     // Initial state shows all 4 mock restaurants (from the code)
-    expect(screen.getByText("4 мест")).toBeDefined();
+    expect(screen.getByText("4")).toBeDefined();
 
     // Click Burger category
     fireEvent.click(screen.getByText("Бургеры"));
@@ -77,7 +77,7 @@ describe("HomePage", () => {
     // Burger Point should remain, Shaurma House should disappear
     expect(screen.getByText("Burger Point")).toBeDefined();
     expect(screen.queryByText("Шаурма Хаус")).toBeNull();
-    expect(screen.getByText("1 мест")).toBeDefined();
+    expect(screen.getByText("1")).toBeDefined();
   });
 
   // The text search is tested on backend service layer now

@@ -101,7 +101,7 @@ const OrderStatusPage = () => {
             fontSize: "0.75rem",
             letterSpacing: "0.06em",
             textTransform: "uppercase",
-            color: "var(--stone)",
+            color: "var(--text-3)",
             marginBottom: 14,
           }}
         >
@@ -125,10 +125,10 @@ const OrderStatusPage = () => {
                 ×{item.quantity}
               </span>
               <div style={{ flex: 1 }}>
-                <div style={{ color: "var(--text-primary)", fontWeight: 500 }}>
+                <div style={{ color: "var(--text-1)", fontWeight: 500 }}>
                   {item.menu_item_name}
                 </div>
-                <div style={{ fontSize: "0.75rem", color: "var(--stone)" }}>
+                <div style={{ fontSize: "0.75rem", color: "var(--text-3)" }}>
                   {item.menu_item_category}
                 </div>
               </div>
@@ -149,7 +149,7 @@ const OrderStatusPage = () => {
           }}
         >
           <span>Итого</span>
-          <span style={{ color: "var(--ember-orange)" }}>
+          <span style={{ color: "var(--fire)" }}>
             {currentOrder.total_price} ₽
           </span>
         </div>
@@ -172,7 +172,7 @@ const OrderStatusPage = () => {
             fontSize: "0.75rem",
             letterSpacing: "0.06em",
             textTransform: "uppercase",
-            color: "var(--stone)",
+            color: "var(--text-3)",
             marginBottom: 14,
           }}
         >
@@ -180,7 +180,7 @@ const OrderStatusPage = () => {
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {(!Array.isArray(events) || events.length === 0) && (
-            <div style={{ fontSize: "0.85rem", color: "var(--stone)" }}>
+            <div style={{ fontSize: "0.85rem", color: "var(--text-3)" }}>
               Загрузка событий...
             </div>
           )}
@@ -201,7 +201,7 @@ const OrderStatusPage = () => {
                       borderRadius: "50%",
                       background:
                         i === events.length - 1
-                          ? "var(--ember-orange)"
+                          ? "var(--fire)"
                           : "var(--border)",
                     }}
                   />
@@ -227,7 +227,7 @@ const OrderStatusPage = () => {
                   >
                     {ev.new_status}
                   </div>
-                  <div style={{ fontSize: "0.75rem", color: "var(--stone)" }}>
+                  <div style={{ fontSize: "0.75rem", color: "var(--text-3)" }}>
                     {new Date(ev.created_at).toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",

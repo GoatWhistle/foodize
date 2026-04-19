@@ -31,8 +31,8 @@ describe("MainLayout", () => {
     );
 
     expect(screen.getByLabelText("На главную")).toBeDefined();
-    expect(screen.getByText("Рестораны")).toBeDefined();
-    expect(screen.getByText("Заказы")).toBeDefined();
+    expect(screen.getAllByText("Рестораны").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Заказы").length).toBeGreaterThan(0);
   });
 
   it("shows login button when not authenticated", () => {

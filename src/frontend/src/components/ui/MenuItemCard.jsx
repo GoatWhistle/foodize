@@ -24,6 +24,16 @@ const MenuItemCard = ({ item, onAdd }) => {
 
   return (
     <div className="menu-item">
+      {/* Photo / Placeholder */}
+      <div className="menu-item-img" style={{ minHeight: "90px" }}>
+        {item.photo_url ? (
+          <img src={item.photo_url} alt={item.name} loading="lazy" />
+        ) : (
+          <div className="menu-item-img-placeholder">{icon}</div>
+        )}
+      </div>
+
+      {/* Info */}
       <div className="menu-item-info">
         <div className="menu-item-name">{item.name}</div>
         {item.description && (
@@ -31,48 +41,34 @@ const MenuItemCard = ({ item, onAdd }) => {
         )}
         <div className="menu-item-footer">
           <span className="menu-item-price">{formatPrice(item.price)}</span>
-          {item.category && (
-            <span
-              className="tag-pill"
-              style={{
-                fontSize: "0.7rem",
-                whiteSpace: "nowrap",
-                display: "flex",
-                alignItems: "center",
-                gap: "4px",
-              }}
-            >
-              {icon} {item.category}
-            </span>
-          )}
           <span
-            className="tag-pill orange"
+            className="tag-pill"
             style={{
-              fontSize: "0.7rem",
-              whiteSpace: "nowrap",
+              fontSize: "0.68rem",
+              background: "var(--bg-raised)",
+              color: "var(--text-3)",
+              backdropFilter: "none",
+              border: "1px solid var(--border)",
               display: "flex",
               alignItems: "center",
               gap: "4px",
             }}
           >
-            <Clock size={12} />~{item.prep_time_minutes || 15} мин
+            <Clock size={11} />~{item.prep_time_minutes || 15} мин
           </span>
         </div>
       </div>
 
-      <button
-        className="add-btn"
-        onClick={() => onAdd?.(item)}
-        aria-label={`Добавить ${item.name}`}
-        title="Добавить в корзину"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyItems: "center",
-        }}
-      >
-        <Plus size={20} weight="bold" />
-      </button>
+      {/* Add button */}
+      <div className="menu-item-side">
+        <button
+          className="add-btn"
+          onClick={() => onAdd?.(item)}
+          aria-label={`Добавить ${item.name}`}
+        >
+          <Plus size={18} weight="bold" />
+        </button>
+      </div>
     </div>
   );
 };

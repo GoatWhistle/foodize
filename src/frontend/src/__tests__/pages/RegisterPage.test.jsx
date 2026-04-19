@@ -54,17 +54,32 @@ describe("RegisterPage", () => {
     ).toBeDefined();
   });
 
-  it("switches roles", () => {
+  it("always registers as CUSTOMER", async () => {
+    registerMock.mockResolvedValueOnce();
+    loginMock.mockResolvedValueOnce();
+
     render(
       <BrowserRouter>
         <RegisterPage />
       </BrowserRouter>,
     );
 
-    const vendorOption = screen.getByText("Вендор");
-    fireEvent.click(vendorOption);
+    fireEvent.change(screen.getByLabelText("Имя"), {
+      target: { value: "Test" },
+    });
+    fireEvent.change(screen.getByLabelText("Телефон"), {
+      target: { value: "79991234567" },
+    });
+    fireEvent.change(screen.getByLabelText("Пароль"), {
+      target: { value: "password123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Создать аккаунт" }));
 
-    expect(vendorOption.parentElement.className).toContain("selected");
+    await waitFor(() => {
+      expect(registerMock).toHaveBeenCalledWith(
+        expect.objectContaining({ user_role: "CUSTOMER" }),
+      );
+    });
   });
 
   it("registers and logs in on submit", async () => {

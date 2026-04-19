@@ -75,6 +75,7 @@ const ProfilePage = () => {
           {vendorError}
         </div>
       )}
+
       <div className="profile-menu">
         <div
           id="profile-orders-link"
@@ -84,11 +85,11 @@ const ProfilePage = () => {
           tabIndex={0}
           onKeyDown={(e) => e.key === "Enter" && navigate(ROUTES.ORDERS)}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <Package size={22} weight="bold" />
+          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            <Package size={20} weight="bold" />
             <span>Мои заказы</span>
           </div>
-          <CaretRight size={18} color="var(--stone)" />
+          <CaretRight size={16} color="var(--text-3)" />
         </div>
 
         {user?.user_role === "ADMIN" && (
@@ -97,11 +98,11 @@ const ProfilePage = () => {
             className="profile-menu-item"
             onClick={() => navigate(ROUTES.ADMIN)}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <Crown size={22} weight="bold" color="#ffb800" />
+            <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+              <Crown size={20} weight="bold" color="var(--gold, #e8a200)" />
               <span>Админ-панель</span>
             </div>
-            <CaretRight size={18} color="var(--stone)" />
+            <CaretRight size={16} color="var(--text-3)" />
           </div>
         )}
 
@@ -113,31 +114,34 @@ const ProfilePage = () => {
               onClick={() => navigate(ROUTES.VENDOR_DASHBOARD)}
             >
               <div
-                style={{ display: "flex", alignItems: "center", gap: "12px" }}
+                style={{ display: "flex", alignItems: "center", gap: "14px" }}
               >
-                <Storefront size={22} weight="bold" />
+                <Storefront size={20} weight="bold" />
                 <span>Кабинет вендора</span>
               </div>
-              <CaretRight size={18} color="var(--stone)" />
+              <CaretRight size={16} color="var(--text-3)" />
             </div>
           ) : (
             <div
               id="profile-become-vendor-link"
               className="profile-menu-item"
               onClick={handleBecomeVendor}
-              style={{ pointerEvents: vendorLoading ? "none" : "auto" }}
+              style={{
+                pointerEvents: vendorLoading ? "none" : "auto",
+                opacity: vendorLoading ? 0.6 : 1,
+              }}
             >
               <div
-                style={{ display: "flex", alignItems: "center", gap: "12px" }}
+                style={{ display: "flex", alignItems: "center", gap: "14px" }}
               >
-                <Sparkle size={22} weight="bold" color="var(--primary)" />
+                <Sparkle size={20} weight="bold" color="var(--fire)" />
                 <span>{vendorLoading ? "Загрузка..." : "Стать вендором"}</span>
               </div>
-              <CaretRight size={18} color="var(--stone)" />
+              <CaretRight size={16} color="var(--text-3)" />
             </div>
           ))}
 
-        <div className="divider" />
+        <div className="divider" style={{ margin: "8px 0" }} />
 
         <div
           id="profile-logout-btn"
@@ -147,15 +151,8 @@ const ProfilePage = () => {
           tabIndex={0}
           onKeyDown={(e) => e.key === "Enter" && handleLogout()}
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              color: "red",
-            }}
-          >
-            <SignOut size={22} weight="bold" />
+          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            <SignOut size={20} weight="bold" />
             <span>Выйти</span>
           </div>
         </div>

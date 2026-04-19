@@ -23,7 +23,6 @@ const RestaurantCard = ({ restaurant, onClick }) => {
   useEffect(() => {
     const el = cardRef.current;
     if (!el) return;
-
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -31,7 +30,7 @@ const RestaurantCard = ({ restaurant, onClick }) => {
           observer.unobserve(el);
         }
       },
-      { threshold: 0.15 },
+      { threshold: 0.1 },
     );
     observer.observe(el);
     return () => observer.disconnect();
@@ -40,6 +39,7 @@ const RestaurantCard = ({ restaurant, onClick }) => {
   const icon =
     CATEGORY_ICONS[restaurant.category?.toUpperCase()] ||
     CATEGORY_ICONS.DEFAULT;
+  const rating = restaurant.average_rating;
 
   return (
     <div
@@ -51,6 +51,7 @@ const RestaurantCard = ({ restaurant, onClick }) => {
       onKeyDown={(e) => e.key === "Enter" && onClick?.()}
       aria-label={`Ресторан ${restaurant.name}`}
     >
+      {/* Photo */}
       <div className="card-photo-wrap">
         {restaurant.photo_url ? (
           <img
@@ -61,53 +62,25 @@ const RestaurantCard = ({ restaurant, onClick }) => {
             style={{ viewTransitionName: `restaurant-image-${restaurant.id}` }}
           />
         ) : (
-          <div
-            className="card-photo-placeholder"
-            style={{ fontSize: "40px", color: "var(--stone)" }}
-          >
-            {icon}
-          </div>
+          <div className="card-photo-placeholder">{icon}</div>
         )}
-
-        <div
-          style={{
-            position: "absolute",
-            top: "12px",
-            right: "12px",
-            background: "rgba(255, 255, 255, 0.9)",
-            backdropFilter: "blur(4px)",
-            padding: "4px 8px",
-            borderRadius: "10px",
-            display: "flex",
-            alignItems: "center",
-            gap: "4px",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-            zIndex: 2,
-          }}
-        >
-          <Star size={16} weight="fill" color="var(--ember-orange)" />
-          <span
-            style={{
-              color: "#111",
-              fontWeight: "800",
-              fontSize: "0.85rem",
-              lineHeight: 1,
-            }}
-          >
-            {restaurant.average_rating
-              ? restaurant.average_rating.toFixed(1)
-              : "0.0"}
-          </span>
-        </div>
       </div>
 
-      <div className="card-gradient" />
+      {/* Scrim */}
+      <div className="card-scrim" />
 
+      {/* Rating badge */}
+      <div className="card-rating-badge">
+        <Star size={13} weight="fill" color="var(--fire, #ff4520)" />
+        <span>{rating ? rating.toFixed(1) : "0.0"}</span>
+      </div>
+
+      {/* Content */}
       <div className="card-body">
         <h2 className="card-title">{restaurant.name}</h2>
-        <div className="card-tags">
+        <div className="card-tags card-reveal">
           <span className="tag-pill">
-            <MapPin size={14} weight="bold" />
+            <MapPin size={12} weight="bold" />
             {restaurant.address}
           </span>
           {restaurant.category && (
