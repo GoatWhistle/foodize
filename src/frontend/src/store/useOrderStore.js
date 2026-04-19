@@ -1,37 +1,66 @@
 import { create } from "zustand";
 import { orderService } from "../services/orderService";
+import { cartService } from "../services/cartService";
 
 export const useOrderStore = create((set, get) => ({
   cart: [],
   cartRestaurantId: null,
 
-  addToCart: (menuItem, restaurantId) => {
+  fetchCart: async () => {
+    try {
+      const res = await cartService.getCart();
+      set({
+        cart: res.data.items,
+        cartRestaurantId: res.data.restaurant_id,
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  },
+
+  _syncCart: async () => {
     const { cart, cartRestaurantId } = get();
+    if (!cartRestaurantId) return;
+
+    const payload = {
+      restaurant_id: cartRestaurantId,
+      items: cart.map((i) => ({
+        menu_item_id: i.menuItem.id,
+        quantity: i.quantity,
+      })),
+    };
+    await cartService.updateCart(payload);
+  },
+
+  addToCart: async (menuItem, restaurantId) => {
+    const { cart, cartRestaurantId } = get();
+
     if (cartRestaurantId && cartRestaurantId !== restaurantId) {
       set({
         cart: [{ menuItem, quantity: 1 }],
         cartRestaurantId: restaurantId,
       });
-      return;
-    }
-    const existing = cart.find((i) => i.menuItem.id === menuItem.id);
-    if (existing) {
-      set({
-        cart: cart.map((i) =>
-          i.menuItem.id === menuItem.id
-            ? { ...i, quantity: i.quantity + 1 }
-            : i,
-        ),
-      });
     } else {
-      set({
-        cart: [...cart, { menuItem, quantity: 1 }],
-        cartRestaurantId: restaurantId,
-      });
+      const existing = cart.find((i) => i.menuItem.id === menuItem.id);
+      if (existing) {
+        set({
+          cart: cart.map((i) =>
+            i.menuItem.id === menuItem.id
+              ? { ...i, quantity: i.quantity + 1 }
+              : i,
+          ),
+        });
+      } else {
+        set({
+          cart: [...cart, { menuItem, quantity: 1 }],
+          cartRestaurantId: restaurantId,
+        });
+      }
     }
+    await get()._syncCart();
   },
 
-  removeFromCart: (menuItemId) =>
+  removeFromCart: async (menuItemId) => {
     set((s) => {
       const updated = s.cart
         .map((i) =>
@@ -42,9 +71,14 @@ export const useOrderStore = create((set, get) => ({
         cart: updated,
         cartRestaurantId: updated.length ? s.cartRestaurantId : null,
       };
-    }),
+    });
+    await get()._syncCart();
+  },
 
-  clearCart: () => set({ cart: [], cartRestaurantId: null }),
+  clearCart: async () => {
+    set({ cart: [], cartRestaurantId: null });
+    await cartService.clearCart();
+  },
 
   cartTotal: () =>
     get().cart.reduce((sum, i) => sum + i.menuItem.price * i.quantity, 0),
@@ -71,6 +105,7 @@ export const useOrderStore = create((set, get) => ({
       cart: [],
       cartRestaurantId: null,
     }));
+    await cartService.clearCart();
     return res.data;
   },
 

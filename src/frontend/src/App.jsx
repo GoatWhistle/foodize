@@ -22,6 +22,7 @@ import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import { ROUTES } from "./constants/routes";
 import { useAuthStore } from "./store/useAuthStore";
 import { useThemeStore } from "./store/useThemeStore";
+import { useOrderStore } from "./store/useOrderStore";
 
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -134,10 +135,19 @@ function App() {
     fetchMe: useAuthStore((s) => s.fetchMe),
   };
 
+  const fetchCart = useOrderStore((s) => s.fetchCart);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
   useEffect(() => {
     initTheme();
     fetchMe();
   }, [initTheme, fetchMe]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchCart();
+    }
+  }, [isAuthenticated, fetchCart]);
 
   return (
     <IconContext.Provider
