@@ -47,8 +47,8 @@ export const useRestaurantStore = create((set, get) => ({
     }
   },
 
-  fetchMenu: async (restaurantId) => {
-    if (get().menus[restaurantId]) return; // cached
+  fetchMenu: async (restaurantId, { force = false } = {}) => {
+    if (!force && get().menus[restaurantId]) return;
     set({ loading: true });
     try {
       const res = await menuService.getMenu(restaurantId);

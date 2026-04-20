@@ -15,6 +15,7 @@ router = APIRouter(prefix="/users", tags=["Users"])
 @router.get("/{user_id}", response_model=UserRead)
 async def read_user(
     user_id: uuid.UUID,
+    _current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> UserRead:
     user = await get_user_by_id_or_404(session=session, user_id=user_id)

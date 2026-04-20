@@ -51,12 +51,12 @@ async def delete_user(
 
 
 @router.post("/users/{user_id}/make-admin", response_model=AdminUserResponse)
-@router.post("/me/make-admin", response_model=AdminUserResponse)
-async def promote_me_to_admin(
-    user: User = Depends(get_current_user),
+async def promote_user_to_admin(
+    user_id: uuid.UUID,
+    _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ):
-    return await service.set_user_role(session, user.id, UserRole.ADMIN)
+    return await service.set_user_role(session, user_id, UserRole.ADMIN)
 
 
 @router.post("/me/make-customer", response_model=AdminUserResponse)

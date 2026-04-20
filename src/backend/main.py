@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 import uvicorn
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
@@ -13,19 +15,22 @@ from api.exception_handlers import (
     request_validation_error_handler,
     unhandled_exception_handler,
 )
+from features.notifications.broker import broker
 from settings.config.app_config import settings
 from shared.exceptions.base import AppException
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await broker.connect()
+    yield
+    await broker.disconnect()
+
+
+app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost",
-        "http://localhost:80",
-        "http://127.0.0.1",
-        "http://localhost:3000",
-        "http://localhost:5173",
-    ],
+    allow_origins=settings.cors.allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

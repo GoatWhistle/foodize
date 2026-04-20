@@ -55,7 +55,12 @@ const VendorDashboardPage = () => {
   const [restaurantOrders, setRestaurantOrders] = useState([]);
   const [ordersPage, setOrdersPage] = useState(1);
   const [ordersTotal, setOrdersTotal] = useState(0);
+  const [ordersStatusFilter, setOrdersStatusFilter] = useState("");
   const pollInterval = useRef(null);
+
+  const [vendorDescription, setVendorDescription] = useState("");
+  const [descriptionLoading, setDescriptionLoading] = useState(false);
+  const [descriptionSaved, setDescriptionSaved] = useState(false);
 
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
@@ -63,6 +68,9 @@ const VendorDashboardPage = () => {
 
   useEffect(() => {
     fetchMyRestaurants();
+    vendorService.getMyProfile().then((res) => {
+      setVendorDescription(res.data?.description || "");
+    }).catch(() => {});
   }, [fetchMyRestaurants]);
 
   useEffect(() => {
@@ -92,7 +100,7 @@ const VendorDashboardPage = () => {
         try {
           const res = await orderService.getByRestaurant(
             selectedRestaurant.id,
-            { page: ordersPage, size: 20 },
+            { page: ordersPage, size: 20, status: ordersStatusFilter || undefined },
           );
           const list = Array.isArray(res.data?.data)
             ? res.data.data
@@ -106,12 +114,12 @@ const VendorDashboardPage = () => {
         }
       };
       fetchOrders();
-      if (ordersPage === 1) {
+      if (ordersPage === 1 && !ordersStatusFilter) {
         pollInterval.current = setInterval(fetchOrders, 5000);
       }
     }
     return () => clearInterval(pollInterval.current);
-  }, [selectedRestaurant, activeTab, ordersPage]);
+  }, [selectedRestaurant, activeTab, ordersPage, ordersStatusFilter]);
 
   const handleCreateRestaurant = async (e) => {
     e.preventDefault();
@@ -164,7 +172,7 @@ const VendorDashboardPage = () => {
           editingItem.id,
           payload,
         );
-        fetchMenu(selectedRestaurant.id);
+        fetchMenu(selectedRestaurant.id, { force: true });
         setEditingItem(null);
       } else {
         await addMenuItem(selectedRestaurant.id, payload);
@@ -184,6 +192,20 @@ const VendorDashboardPage = () => {
     }
   };
 
+  const handleSaveDescription = async () => {
+    setDescriptionLoading(true);
+    setDescriptionSaved(false);
+    try {
+      await vendorService.updateDescription(vendorDescription);
+      setDescriptionSaved(true);
+      setTimeout(() => setDescriptionSaved(false), 2000);
+    } catch {
+      /* ignore */
+    } finally {
+      setDescriptionLoading(false);
+    }
+  };
+
   const [menuError, setMenuError] = useState("");
   const [ordersError, setOrdersError] = useState("");
 
@@ -192,7 +214,7 @@ const VendorDashboardPage = () => {
     setMenuError("");
     try {
       await menuService.deleteItem(selectedRestaurant.id, itemId);
-      fetchMenu(selectedRestaurant.id);
+      fetchMenu(selectedRestaurant.id, { force: true });
     } catch {
       setMenuError("Не удалось удалить позицию");
     }
@@ -469,6 +491,10 @@ const VendorDashboardPage = () => {
                       <option value="BURGER">Бургер</option>
                       <option value="PIZZA">Пицца</option>
                       <option value="SUSHI">Суши</option>
+                      <option value="SALAD">Салат</option>
+                      <option value="SNACK">Снек</option>
+                      <option value="DRINK">Напиток</option>
+                      <option value="OTHER">Другое</option>
                     </select>
                   </div>
                   <div style={{ display: "flex", gap: 10 }}>
@@ -574,17 +600,24 @@ const VendorDashboardPage = () => {
                   {ordersError}
                 </div>
               )}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: 16,
-                }}
-              >
-                <h3 style={{ fontWeight: 700, fontSize: "1rem" }}>
-                  Активные заказы
-                </h3>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+                {[
+                  { key: "", label: "Все" },
+                  { key: "PENDING", label: "Новые" },
+                  { key: "COOKING", label: "Готовятся" },
+                  { key: "READY", label: "Готовы" },
+                  { key: "COMPLETED", label: "Выданы" },
+                  { key: "CANCELLED", label: "Отменены" },
+                ].map(({ key, label }) => (
+                  <button
+                    key={key}
+                    className={`category-chip${ordersStatusFilter === key ? " active" : ""}`}
+                    style={{ fontSize: "0.78rem", padding: "4px 12px" }}
+                    onClick={() => { setOrdersStatusFilter(key); setOrdersPage(1); }}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
               {!Array.isArray(restaurantOrders) ||
               restaurantOrders.length === 0 ? (
@@ -632,10 +665,10 @@ const VendorDashboardPage = () => {
                               <button
                                 className="btn btn-primary btn-sm"
                                 onClick={() =>
-                                  handleOrderChange(order.id, "COOKING")
+                                  handleOrderChange(order.id, "ACCEPTED")
                                 }
                               >
-                                <Fire size={16} /> В готовку
+                                <Check size={16} /> Принять
                               </button>
                               <button
                                 className="btn btn-secondary btn-sm"
@@ -647,6 +680,16 @@ const VendorDashboardPage = () => {
                                 <X size={16} />
                               </button>
                             </>
+                          )}
+                          {order.status === "ACCEPTED" && (
+                            <button
+                              className="btn btn-primary btn-sm"
+                              onClick={() =>
+                                handleOrderChange(order.id, "COOKING")
+                              }
+                            >
+                              <Fire size={16} /> В готовку
+                            </button>
                           )}
                           {order.status === "COOKING" && (
                             <button
@@ -746,6 +789,21 @@ const VendorDashboardPage = () => {
                   />
                   <span className="form-check-label">Заведение открыто</span>
                 </label>
+                <label className="form-check">
+                  <input
+                    type="checkbox"
+                    checked={
+                      editRestaurant?.is_hiring ?? selectedRestaurant.is_hiring ?? false
+                    }
+                    onChange={(e) =>
+                      setEditRestaurant({
+                        ...(editRestaurant || selectedRestaurant),
+                        is_hiring: e.target.checked,
+                      })
+                    }
+                  />
+                  <span className="form-check-label">Набор сотрудников</span>
+                </label>
                 <button
                   type="submit"
                   className="btn btn-primary"
@@ -754,6 +812,29 @@ const VendorDashboardPage = () => {
                   Сохранить
                 </button>
               </form>
+
+              {/* Vendor description */}
+              <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--border)" }}>
+                <h4 style={{ fontWeight: 700, fontSize: "0.85rem", color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>
+                  О заведении
+                </h4>
+                <textarea
+                  className="form-input"
+                  placeholder="Расскажите о вашем заведении..."
+                  value={vendorDescription}
+                  onChange={(e) => setVendorDescription(e.target.value)}
+                  rows={4}
+                  style={{ resize: "vertical", marginBottom: 10 }}
+                />
+                <button
+                  className="btn btn-secondary"
+                  onClick={handleSaveDescription}
+                  disabled={descriptionLoading}
+                  style={{ width: "100%" }}
+                >
+                  {descriptionSaved ? "Сохранено ✓" : descriptionLoading ? "Сохранение..." : "Сохранить описание"}
+                </button>
+              </div>
             </div>
           )}
         </div>

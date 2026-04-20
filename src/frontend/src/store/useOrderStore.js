@@ -72,7 +72,12 @@ export const useOrderStore = create((set, get) => ({
         cartRestaurantId: updated.length ? s.cartRestaurantId : null,
       };
     });
-    await get()._syncCart();
+    const { cart } = get();
+    if (cart.length === 0) {
+      await cartService.clearCart();
+    } else {
+      await get()._syncCart();
+    }
   },
 
   clearCart: async () => {

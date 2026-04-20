@@ -14,6 +14,10 @@ def _items_options() -> Any:
     return selectinload(Order.items).selectinload(OrderItem.menu_item)
 
 
+def _full_options() -> tuple[Any, Any]:
+    return _items_options(), selectinload(Order.restaurant)
+
+
 async def get_orders_by_user_id(
     session: AsyncSession,
     user_id: uuid.UUID,
@@ -31,7 +35,7 @@ async def get_orders_by_user_id(
 
 async def get_order_by_id(session: AsyncSession, order_id: uuid.UUID) -> Order | None:
     result = await session.execute(
-        select(Order).where(Order.id == order_id).options(_items_options())
+        select(Order).where(Order.id == order_id).options(*_full_options())
     )
     return result.scalar_one_or_none()
 

@@ -1,13 +1,13 @@
 import uuid
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from shared.enums.category import Category
 
 
 class OrderItemCreate(BaseModel):
     menu_item_id: uuid.UUID
-    quantity: int = 1
+    quantity: int = Field(1, ge=1)
 
 
 class OrderItemResponse(BaseModel):

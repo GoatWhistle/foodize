@@ -8,6 +8,7 @@ from database.mixins.name_str import NameStrMixin
 from shared.enums.roles import UserRole
 
 if TYPE_CHECKING:
+    from features.favorites.models import Favorite
     from features.orders.models import Order
     from features.reviews.models import Review
     from features.staff.models import StaffProfile, StaffRequest
@@ -26,3 +27,4 @@ class User(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin):
     staff_profile: Mapped["StaffProfile | None"] = relationship(back_populates="user")
     staff_requests: Mapped[list["StaffRequest"]] = relationship(back_populates="user")
     reviews: Mapped[list["Review"]] = relationship(back_populates="user")
+    favorites: Mapped[list["Favorite"]] = relationship(back_populates="user")

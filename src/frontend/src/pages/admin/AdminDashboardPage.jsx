@@ -48,6 +48,8 @@ const AdminDashboardPage = () => {
   const [ordersTotal, setOrdersTotal] = useState(0);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [actionError, setActionError] = useState("");
+  const [ordersStatusFilter, setOrdersStatusFilter] = useState("");
+  const [roleActionLoading, setRoleActionLoading] = useState(false);
 
   const loadUserDetails = async (id) => {
     setUserDetailsLoading(true);
@@ -86,7 +88,7 @@ const AdminDashboardPage = () => {
   }, [activeTab, usersPage]);
 
   const handleDeleteUser = async (id) => {
-    if (!window.confirm("Удалить пользователя навсегда?")) return;
+    if (!window.confirm("Заблокировать пользователя?")) return;
     setActionError("");
     try {
       await adminService.deleteUser(id);
@@ -96,11 +98,24 @@ const AdminDashboardPage = () => {
     }
   };
 
+  const handleMakeAdmin = async (userId) => {
+    setRoleActionLoading(true);
+    setActionError("");
+    try {
+      await adminService.makeAdmin(userId);
+      setSelectedUser((prev) => prev ? { ...prev, user_role: "ADMIN" } : prev);
+    } catch {
+      setActionError("Не удалось изменить роль");
+    } finally {
+      setRoleActionLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === "orders") {
       setOrdersLoading(true);
       adminService
-        .getOrders({ page: ordersPage, size: 20 })
+        .getOrders({ page: ordersPage, size: 20, status: ordersStatusFilter || undefined })
         .then((res) => {
           setOrders(res.data.data || []);
           setOrdersTotal(res.data.total || 0);
@@ -108,7 +123,7 @@ const AdminDashboardPage = () => {
         .catch(() => {})
         .finally(() => setOrdersLoading(false));
     }
-  }, [activeTab, ordersPage]);
+  }, [activeTab, ordersPage, ordersStatusFilter]);
 
   return (
     <div
@@ -184,11 +199,7 @@ const AdminDashboardPage = () => {
             <UsersThree size={20} color="var(--text-3)" />
             <div className="admin-stat-label">Пользователи</div>
             <div className="admin-stat-value">
-              {stats.total_users ??
-                Object.values(stats.users_by_role || {}).reduce(
-                  (a, b) => a + b,
-                  0,
-                )}
+              {Object.values(stats.users_by_role || {}).reduce((a, b) => a + b, 0)}
             </div>
           </div>
           <div className="admin-stat-card">
@@ -200,11 +211,7 @@ const AdminDashboardPage = () => {
             <Package size={20} color="var(--fire)" />
             <div className="admin-stat-label">Всего заказов</div>
             <div className="admin-stat-value" style={{ color: "var(--fire)" }}>
-              {stats.total_orders ??
-                Object.values(stats.orders_by_status || {}).reduce(
-                  (a, b) => a + b,
-                  0,
-                )}
+              {Object.values(stats.orders_by_status || {}).reduce((a, b) => a + b, 0)}
             </div>
           </div>
         </div>
@@ -266,6 +273,25 @@ const AdminDashboardPage = () => {
 
       {activeTab === "orders" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 4 }}>
+            {[
+              { key: "", label: "Все" },
+              { key: "PENDING", label: "Новые" },
+              { key: "COOKING", label: "Готовятся" },
+              { key: "READY", label: "Готовы" },
+              { key: "COMPLETED", label: "Выданы" },
+              { key: "CANCELLED", label: "Отменены" },
+            ].map(({ key, label }) => (
+              <button
+                key={key}
+                className={`category-chip${ordersStatusFilter === key ? " active" : ""}`}
+                style={{ fontSize: "0.78rem", padding: "4px 12px" }}
+                onClick={() => { setOrdersStatusFilter(key); setOrdersPage(1); }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           {ordersLoading ? (
             <div className="loading-center">
               <div className="spinner" />
@@ -383,6 +409,16 @@ const AdminDashboardPage = () => {
                     </div>
                   </div>
                 </div>
+                {selectedUser.user_role !== "ADMIN" && (
+                  <button
+                    className="btn btn-secondary"
+                    style={{ marginTop: 12, width: "100%", fontSize: "0.85rem" }}
+                    disabled={roleActionLoading}
+                    onClick={() => handleMakeAdmin(selectedUser.id)}
+                  >
+                    {roleActionLoading ? "Применяю..." : "Сделать администратором"}
+                  </button>
+                )}
               </div>
             )}
           </div>

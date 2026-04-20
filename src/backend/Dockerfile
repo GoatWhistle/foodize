@@ -20,3 +20,6 @@ CMD ["alembic", "upgrade", "head"]
 
 FROM base AS backend
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+FROM base AS worker
+CMD ["python", "-m", "worker.main"]

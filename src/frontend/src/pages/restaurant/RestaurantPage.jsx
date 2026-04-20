@@ -12,6 +12,10 @@ import {
   List,
   Fire,
   ShoppingBag,
+  Leaf,
+  Cookie,
+  Coffee,
+  DotsThree,
 } from "@phosphor-icons/react";
 import { useRestaurantStore } from "../../store/useRestaurantStore";
 import { useOrderStore } from "../../store/useOrderStore";
@@ -24,6 +28,10 @@ const CATEGORY_ICONS = {
   BURGER: <Hamburger />,
   PIZZA: <Pizza />,
   SUSHI: <BowlFood />,
+  SALAD: <Leaf />,
+  SNACK: <Cookie />,
+  DRINK: <Coffee />,
+  OTHER: <DotsThree />,
 };
 
 const RestaurantPage = () => {
@@ -333,7 +341,8 @@ const RestaurantPage = () => {
 
             <div style={{ overflowY: "auto", flex: 1 }}>
               {/* Write review */}
-              <div
+              <form
+                onSubmit={handleReviewSubmit}
                 style={{
                   background: "var(--bg-surface)",
                   padding: "24px",
@@ -400,13 +409,13 @@ const RestaurantPage = () => {
                   </div>
                 )}
                 <button
+                  type="submit"
                   className="btn btn-primary btn-full"
                   style={{ borderRadius: "var(--r-md)" }}
-                  onClick={handleReviewSubmit}
                 >
                   Опубликовать
                 </button>
-              </div>
+              </form>
 
               {/* Reviews list */}
               <div

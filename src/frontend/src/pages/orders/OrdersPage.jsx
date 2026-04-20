@@ -47,15 +47,25 @@ const STATUS_CONFIG = {
   },
 };
 
+const STATUS_FILTERS = [
+  { key: "", label: "Все" },
+  { key: "PENDING", label: "Ожидают" },
+  { key: "COOKING", label: "Готовятся" },
+  { key: "READY", label: "Готовы" },
+  { key: "COMPLETED", label: "Выданы" },
+  { key: "CANCELLED", label: "Отменены" },
+];
+
 const OrdersPage = () => {
   const { orders, ordersTotal, fetchMyOrders, ordersLoading } = useOrderStore();
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState("");
   const size = 20;
 
   useEffect(() => {
-    fetchMyOrders({ page, size });
-  }, [fetchMyOrders, page]);
+    fetchMyOrders({ page, size, status: statusFilter || undefined });
+  }, [fetchMyOrders, page, statusFilter]);
 
   const totalPages = Math.ceil(ordersTotal / size);
 
@@ -90,6 +100,19 @@ const OrdersPage = () => {
         >
           Мои заказы
         </h1>
+      </div>
+
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 20 }}>
+        {STATUS_FILTERS.map(({ key, label }) => (
+          <button
+            key={key}
+            className={`category-chip${statusFilter === key ? " active" : ""}`}
+            style={{ fontSize: "0.8rem" }}
+            onClick={() => { setStatusFilter(key); setPage(1); }}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       {orders.length === 0 ? (

@@ -2,6 +2,8 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from features.notifications.events import OrderPlacedEvent, OrderStatusChangedEvent
+from features.notifications.publisher import publish_order_placed, publish_order_status_changed
 from features.orders.crud import order as order_crud
 from features.orders.crud import order_item as order_item_crud
 from features.orders.exceptions import (
@@ -56,6 +58,16 @@ async def place_order(
         raise MenuItemRestaurantMismatchException()
 
     order = await _create_order(session, order_data, user_id, menu_items)
+    await publish_order_placed(
+        OrderPlacedEvent(
+            order_id=order.id,
+            user_id=order.user_id,
+            restaurant_id=order.restaurant_id,
+            restaurant_name=restaurant.name,
+            total_price=order.total_price,
+            items_count=len(order.items),
+        )
+    )
     return OrderResponse.model_validate(order)
 
 
@@ -152,6 +164,17 @@ async def change_order_status(
         old_status=old_status,
         new_status=status_data.status,
     )
+    await publish_order_status_changed(
+        OrderStatusChangedEvent(
+            order_id=order.id,
+            user_id=order.user_id,
+            restaurant_id=order.restaurant_id,
+            restaurant_name=order.restaurant.name,
+            old_status=old_status,
+            new_status=status_data.status,
+            total_price=order.total_price,
+        )
+    )
     return OrderResponse.model_validate(updated)
 
 
@@ -167,7 +190,27 @@ async def cancel_order(
         raise OrderAccessDeniedException()
     if order.status != OrderStatus.PENDING.value:
         raise OrderNotCancellableException()
+    old_status = OrderStatus(order.status)
     cancelled = await order_crud.cancel_order(session, order)
+    await order_crud.create_order_event(
+        session,
+        order_id=order.id,
+        actor_id=user_id,
+        actor_role="CUSTOMER",
+        old_status=old_status,
+        new_status=OrderStatus.CANCELLED,
+    )
+    await publish_order_status_changed(
+        OrderStatusChangedEvent(
+            order_id=order.id,
+            user_id=order.user_id,
+            restaurant_id=order.restaurant_id,
+            restaurant_name=order.restaurant.name,
+            old_status=old_status,
+            new_status=OrderStatus.CANCELLED,
+            total_price=order.total_price,
+        )
+    )
     return OrderResponse.model_validate(cancelled)
 
 

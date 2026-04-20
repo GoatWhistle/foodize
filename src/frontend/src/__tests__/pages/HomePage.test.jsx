@@ -3,6 +3,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { BrowserRouter } from "react-router-dom";
 import HomePage from "../../pages/home/HomePage";
 
+const fetchPublicRestaurantsMock = vi.fn();
+
 vi.mock("../../store/useAuthStore", () => ({
   useAuthStore: (sel) => {
     const state = { isAuthenticated: true };
@@ -14,12 +16,13 @@ vi.mock("../../store/useRestaurantStore", () => ({
   useRestaurantStore: (sel) => {
     const state = {
       publicRestaurants: [
-        { id: "mock-1", name: "Шаурма Хаус", category: "SHAURMA" },
-        { id: "mock-2", name: "Burger Point", category: "BURGER" },
-        { id: "mock-3", name: "Pizza Nova", category: "PIZZA" },
-        { id: "mock-4", name: "Sushi House", category: "SUSHI" },
+        { id: "mock-1", name: "Шаурма Хаус" },
+        { id: "mock-2", name: "Burger Point" },
+        { id: "mock-3", name: "Pizza Nova" },
+        { id: "mock-4", name: "Sushi House" },
       ],
-      fetchPublicRestaurants: vi.fn(),
+      publicRestaurantsTotal: 4,
+      fetchPublicRestaurants: fetchPublicRestaurantsMock,
       loading: false,
     };
     return sel ? sel(state) : state;
@@ -35,7 +38,6 @@ vi.mock("react-router-dom", async () => {
   };
 });
 
-// Mock IntersectionObserver
 window.IntersectionObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
@@ -47,7 +49,7 @@ describe("HomePage", () => {
     vi.clearAllMocks();
   });
 
-  it("renders search bar and category chips", () => {
+  it("renders search bar and checkboxes", () => {
     render(
       <BrowserRouter>
         <HomePage />
@@ -57,30 +59,21 @@ describe("HomePage", () => {
     expect(
       screen.getByPlaceholderText("Поиск ресторана или адреса..."),
     ).toBeDefined();
-    expect(screen.getByText("Шаурма")).toBeDefined();
-    expect(screen.getByText("Бургеры")).toBeDefined();
+    expect(screen.getByText("Только открытые")).toBeDefined();
+    expect(screen.getByText(/Набор сотрудников/)).toBeDefined();
   });
 
-  it("filters restaurants by category", () => {
+  it("renders all restaurant cards", () => {
     render(
       <BrowserRouter>
         <HomePage />
       </BrowserRouter>,
     );
 
-    // Initial state shows all 4 mock restaurants (from the code)
-    expect(screen.getByText("4")).toBeDefined();
-
-    // Click Burger category
-    fireEvent.click(screen.getByText("Бургеры"));
-
-    // Burger Point should remain, Shaurma House should disappear
+    expect(screen.getByText("Шаурма Хаус")).toBeDefined();
     expect(screen.getByText("Burger Point")).toBeDefined();
-    expect(screen.queryByText("Шаурма Хаус")).toBeNull();
-    expect(screen.getByText("1")).toBeDefined();
+    expect(screen.getByText("4")).toBeDefined();
   });
-
-  // The text search is tested on backend service layer now
 
   it("navigates to restaurant page on card click", () => {
     render(

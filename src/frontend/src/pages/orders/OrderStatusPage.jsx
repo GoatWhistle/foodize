@@ -153,6 +153,13 @@ const OrderStatusPage = () => {
             {currentOrder.total_price} ₽
           </span>
         </div>
+
+        {currentOrder.ready_at && isReady && (
+          <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)", fontSize: "0.85rem", color: "var(--text-2)", display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontWeight: 700, color: "var(--fire)" }}>Готов в</span>
+            {new Date(currentOrder.ready_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+          </div>
+        )}
       </div>
 
       <div

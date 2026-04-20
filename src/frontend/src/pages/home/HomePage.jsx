@@ -2,12 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   MagnifyingGlass,
-  List,
-  Fire,
-  Hamburger,
-  Pizza,
-  BowlFood,
   Storefront,
+  Briefcase,
 } from "@phosphor-icons/react";
 import RestaurantCard from "../../components/ui/RestaurantCard";
 import EmptyState from "../../components/ui/EmptyState";
@@ -16,18 +12,10 @@ import { useAuthStore } from "../../store/useAuthStore";
 import { useRestaurantStore } from "../../store/useRestaurantStore";
 import { ROUTES } from "../../constants/routes";
 
-const CATEGORIES = [
-  { key: "ALL", label: "Все", icon: <List /> },
-  { key: "SHAURMA", label: "Шаурма", icon: <Fire /> },
-  { key: "BURGER", label: "Бургеры", icon: <Hamburger /> },
-  { key: "PIZZA", label: "Пицца", icon: <Pizza /> },
-  { key: "SUSHI", label: "Суши", icon: <BowlFood /> },
-];
-
 const HomePage = () => {
   const [search, setSearch] = useState("");
-  const [activeCategory, setActiveCategory] = useState("ALL");
   const [onlyOpen, setOnlyOpen] = useState(false);
+  const [isHiring, setIsHiring] = useState(false);
   const { isAuthenticated } = useAuthStore();
   const {
     publicRestaurants,
@@ -41,23 +29,20 @@ const HomePage = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [search, onlyOpen, activeCategory]);
+  }, [search, onlyOpen, isHiring]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
       fetchPublicRestaurants({
         name: search || undefined,
         is_open: onlyOpen ? true : undefined,
+        is_hiring: isHiring ? true : undefined,
         page,
         size,
       });
     }, 400);
     return () => clearTimeout(handler);
-  }, [search, onlyOpen, page, fetchPublicRestaurants]);
-
-  const filtered = publicRestaurants.filter(
-    (r) => activeCategory === "ALL" || r.category === activeCategory,
-  );
+  }, [search, onlyOpen, isHiring, page, fetchPublicRestaurants]);
 
   const handleCardClick = (restaurant) => {
     if (!isAuthenticated) {
@@ -70,13 +55,8 @@ const HomePage = () => {
     });
   };
 
-  const activeCategoryLabel = CATEGORIES.find(
-    (c) => c.key === activeCategory,
-  )?.label;
-
   return (
     <div className="home-page page-enter">
-      {/* Sticky search bar */}
       <div className="search-bar-wrap">
         <div className="search-bar">
           <MagnifyingGlass className="search-icon" size={18} weight="bold" />
@@ -89,52 +69,37 @@ const HomePage = () => {
             aria-label="Поиск ресторана"
           />
         </div>
-        <label
-          className="form-check"
-          style={{ marginTop: "10px", width: "fit-content" }}
-        >
-          <input
-            type="checkbox"
-            checked={onlyOpen}
-            onChange={(e) => setOnlyOpen(e.target.checked)}
-          />
-          <span className="form-check-label">Только открытые</span>
-        </label>
+        <div style={{ display: "flex", gap: 16, marginTop: "10px", flexWrap: "wrap" }}>
+          <label className="form-check" style={{ width: "fit-content" }}>
+            <input
+              type="checkbox"
+              checked={onlyOpen}
+              onChange={(e) => setOnlyOpen(e.target.checked)}
+            />
+            <span className="form-check-label">Только открытые</span>
+          </label>
+          <label className="form-check" style={{ width: "fit-content" }}>
+            <input
+              type="checkbox"
+              checked={isHiring}
+              onChange={(e) => setIsHiring(e.target.checked)}
+            />
+            <span className="form-check-label" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <Briefcase size={13} weight="bold" /> Набор сотрудников
+            </span>
+          </label>
+        </div>
       </div>
 
-      {/* Category chips */}
-      <div
-        className="categories-scroll"
-        role="list"
-        aria-label="Категории кухни"
-      >
-        {CATEGORIES.map(({ key, label, icon }) => (
-          <button
-            key={key}
-            role="listitem"
-            id={`category-${key.toLowerCase()}`}
-            className={`category-chip${activeCategory === key ? " active" : ""}`}
-            onClick={() => setActiveCategory(key)}
-            style={{ display: "flex", alignItems: "center", gap: "6px" }}
-          >
-            {icon}
-            <span>{label}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Restaurants list */}
       <div className="restaurants-section">
         <div className="section-header">
           <Storefront size={20} weight="bold" color="var(--fire)" />
-          <h1 className="section-title">
-            {activeCategory === "ALL" ? "Все заведения" : activeCategoryLabel}
-          </h1>
+          <h1 className="section-title">Все заведения</h1>
           <span
             className="text-muted"
             style={{ fontSize: "0.8rem", fontWeight: 600 }}
           >
-            {filtered.length}
+            {publicRestaurants.length}
           </span>
         </div>
 
@@ -142,22 +107,23 @@ const HomePage = () => {
           <div className="loading-center">
             <div className="spinner" />
           </div>
-        ) : filtered.length === 0 ? (
+        ) : publicRestaurants.length === 0 ? (
           <EmptyState
             title="Ничего не найдено"
-            subtitle="Попробуйте другой поиск или категорию"
+            subtitle="Попробуйте другой поиск или фильтр"
             action={{
               label: "Сбросить",
               onClick: () => {
                 setSearch("");
-                setActiveCategory("ALL");
+                setOnlyOpen(false);
+                setIsHiring(false);
               },
             }}
           />
         ) : (
           <>
             <div className="restaurants-grid">
-              {filtered.map((r) => (
+              {publicRestaurants.map((r) => (
                 <RestaurantCard
                   key={r.id}
                   restaurant={r}

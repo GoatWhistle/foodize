@@ -10,6 +10,14 @@ vi.mock("../../services/orderService", () => ({
   },
 }));
 
+vi.mock("../../services/cartService", () => ({
+  cartService: {
+    getCart: vi.fn(),
+    updateCart: vi.fn().mockResolvedValue({ data: {} }),
+    clearCart: vi.fn().mockResolvedValue({}),
+  },
+}));
+
 describe("useOrderStore", () => {
   beforeEach(() => {
     useOrderStore.setState({
