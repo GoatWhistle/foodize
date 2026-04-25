@@ -1,5 +1,7 @@
+from features.favorites.models import Favorite
 from features.menu.models import MenuItem
 from features.orders.models import Order, OrderEvent, OrderItem
+from features.promos.models import Promo
 from features.restaurants.models import Restaurant
 from features.reviews.models import Review
 from features.staff.models import StaffProfile, StaffRequest
@@ -17,4 +19,6 @@ __all__ = [
     "StaffProfile",
     "StaffRequest",
     "Review",
+    "Favorite",
+    "Promo",
 ]

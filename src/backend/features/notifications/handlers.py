@@ -1,9 +1,3 @@
-"""Event handlers — each function receives a parsed event and acts on it.
-
-For now the handlers only log.  Replace the body of each handler with
-real notification logic (Telegram Bot API, email via SMTP, SMS via
-external gateway, etc.) without touching the consumer wiring.
-"""
 import logging
 
 from features.notifications.events import OrderPlacedEvent, OrderStatusChangedEvent

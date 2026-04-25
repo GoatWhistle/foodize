@@ -18,4 +18,5 @@ def make_user(
     user.phone_number = phone_number
     user.hashed_password = hashed_password
     user.user_role = user_role.value
+    user.is_active = True
     return user

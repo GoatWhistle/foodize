@@ -20,6 +20,8 @@ def make_mock_order(status: OrderStatus) -> MagicMock:
     order.total_price = 500
     order.ready_at = None
     order.items = []
+    order.restaurant = MagicMock()
+    order.restaurant.name = "Test Restaurant"
     return order
 
 
@@ -86,6 +88,10 @@ class TestChangeOrderStatus:
                 "features.orders.crud.order.create_order_event",
                 new_callable=AsyncMock,
             ) as mock_event,
+            patch(
+                "features.orders.services.order.publish_order_status_changed",
+                new_callable=AsyncMock,
+            ),
         ):
             await change_order_status(mock_db_session, order, status_data, actor=actor)
 

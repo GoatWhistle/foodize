@@ -7,6 +7,7 @@ import {
   User,
   SignIn,
   ShoppingCart,
+  CookingPot,
 } from "@phosphor-icons/react";
 
 import FoodizeLogo from "../ui/FoodizeLogo";
@@ -38,7 +39,7 @@ const NAV_LINKS = [
 const MainLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const { cart, placeOrder } = useOrderStore();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -46,11 +47,11 @@ const MainLayout = () => {
 
   const cartItemsCount = cart.reduce((t, i) => t + i.quantity, 0);
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (promoCode = null) => {
     setIsLoading(true);
     setError("");
     try {
-      const order = await placeOrder();
+      const order = await placeOrder(promoCode);
       setIsCartOpen(false);
       navigate(ROUTES.ORDER_STATUS.replace(":id", order.id));
     } catch (err) {
@@ -69,7 +70,18 @@ const MainLayout = () => {
 
         {isAuthenticated && (
           <nav className="header-nav" aria-label="Основная навигация">
-            {NAV_LINKS.map(({ to, label, icon }) => {
+            {[
+              ...NAV_LINKS,
+              ...(user?.user_role === "STAFF"
+                ? [
+                    {
+                      to: ROUTES.STAFF_DASHBOARD,
+                      label: "Работа",
+                      icon: <CookingPot size={18} weight="bold" />,
+                    },
+                  ]
+                : []),
+            ].map(({ to, label, icon }) => {
               const isActive =
                 to === ROUTES.HOME
                   ? location.pathname === "/"
@@ -116,7 +128,18 @@ const MainLayout = () => {
 
       {isAuthenticated && (
         <nav className="bottom-tab-bar" aria-label="Навигация">
-          {NAV_LINKS.map(({ to, label, icon }) => {
+          {[
+            ...NAV_LINKS,
+            ...(user?.user_role === "STAFF"
+              ? [
+                  {
+                    to: ROUTES.STAFF_DASHBOARD,
+                    label: "Работа",
+                    icon: <CookingPot size={18} weight="bold" />,
+                  },
+                ]
+              : []),
+          ].map(({ to, label, icon }) => {
             const isActive =
               to === ROUTES.HOME
                 ? location.pathname === "/"

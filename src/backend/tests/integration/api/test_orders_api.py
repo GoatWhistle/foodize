@@ -14,6 +14,20 @@ from features.restaurants.models import Restaurant
 from main import app
 from shared.enums.order_status import OrderStatus
 
+MOCK_CREATED_AT = "2026-01-01T00:00:00"
+
+
+def _make_mock_order_dict(order_id, user_id, restaurant_id, status=OrderStatus.PENDING, items=None):
+    return {
+        "id": str(order_id),
+        "user_id": str(user_id),
+        "restaurant_id": str(restaurant_id),
+        "status": status.value,
+        "total_price": 500,
+        "created_at": MOCK_CREATED_AT,
+        "items": items or [],
+    }
+
 
 class TestOrdersAPI:
     @pytest.mark.asyncio
@@ -22,13 +36,11 @@ class TestOrdersAPI:
         restaurant_id = uuid.uuid4()
         menu_item_id = uuid.uuid4()
 
-        mock_order = {
-            "id": str(order_id),
-            "user_id": str(as_user.id),
-            "restaurant_id": str(restaurant_id),
-            "status": OrderStatus.PENDING.value,
-            "total_price": 500,
-            "items": [
+        mock_order = _make_mock_order_dict(
+            order_id,
+            as_user.id,
+            restaurant_id,
+            items=[
                 {
                     "id": str(uuid.uuid4()),
                     "menu_item_id": str(menu_item_id),
@@ -38,7 +50,7 @@ class TestOrdersAPI:
                     "price_at_purchase": 250,
                 }
             ],
-        }
+        )
 
         with patch(
             "features.orders.api.order.service.place_order",
@@ -54,7 +66,7 @@ class TestOrdersAPI:
             )
 
         assert response.status_code == 201
-        data = response.json()
+        data = response.json()["data"]
         assert data["id"] == str(order_id)
         mock_place.assert_awaited_once()
 
@@ -76,14 +88,7 @@ class TestOrdersAPI:
     @pytest.mark.asyncio
     async def test_read_order_by_id(self, client: AsyncClient, as_user):
         order_id = uuid.uuid4()
-        mock_order = {
-            "id": str(order_id),
-            "user_id": str(as_user.id),
-            "restaurant_id": str(uuid.uuid4()),
-            "status": OrderStatus.PENDING.value,
-            "total_price": 100,
-            "items": [],
-        }
+        mock_order = _make_mock_order_dict(order_id, as_user.id, uuid.uuid4())
 
         with patch(
             "features.orders.api.order.service.get_order",
@@ -93,9 +98,20 @@ class TestOrdersAPI:
             response = await client.get(f"/api/v1/orders/{order_id}")
 
         assert response.status_code == 200
-        data = response.json()
+        data = response.json()["data"]
         assert data["id"] == str(order_id)
         mock_get.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_create_order_requires_auth(self, client: AsyncClient):
+        response = await client.post(
+            "/api/v1/orders/",
+            json={
+                "restaurant_id": str(uuid.uuid4()),
+                "items": [{"menu_item_id": str(uuid.uuid4()), "quantity": 1}],
+            },
+        )
+        assert response.status_code == 401
 
 
 class TestRestaurantOrdersAPI:
@@ -113,16 +129,7 @@ class TestRestaurantOrdersAPI:
         restaurant_id = uuid.uuid4()
         mock_restaurant = self._make_mock_restaurant(restaurant_id)
 
-        mock_orders = [
-            {
-                "id": str(uuid.uuid4()),
-                "user_id": str(uuid.uuid4()),
-                "restaurant_id": str(restaurant_id),
-                "status": OrderStatus.PENDING.value,
-                "total_price": 300,
-                "items": [],
-            }
-        ]
+        mock_orders = [_make_mock_order_dict(uuid.uuid4(), uuid.uuid4(), restaurant_id)]
 
         app.dependency_overrides[get_restaurant_staff_or_vendor] = lambda: mock_restaurant
 
@@ -146,14 +153,9 @@ class TestRestaurantOrdersAPI:
     async def test_update_order_status(self, client: AsyncClient, as_vendor):
         order_id = uuid.uuid4()
         restaurant_id = uuid.uuid4()
-        mock_order_response = {
-            "id": str(order_id),
-            "user_id": str(uuid.uuid4()),
-            "restaurant_id": str(restaurant_id),
-            "status": OrderStatus.ACCEPTED.value,
-            "total_price": 200,
-            "items": [],
-        }
+        mock_order_response = _make_mock_order_dict(
+            order_id, uuid.uuid4(), restaurant_id, OrderStatus.ACCEPTED
+        )
 
         mock_order_obj = Order()
         mock_order_obj.id = order_id
@@ -173,7 +175,7 @@ class TestRestaurantOrdersAPI:
             app.dependency_overrides.pop(get_order_for_staff_or_vendor, None)
 
         assert response.status_code == 200
-        data = response.json()
+        data = response.json()["data"]
         assert data["status"] == OrderStatus.ACCEPTED.value
         mock_change.assert_awaited_once()
 
@@ -182,14 +184,9 @@ class TestCancelOrderAPI:
     @pytest.mark.asyncio
     async def test_update_order_cancel_success(self, client: AsyncClient, as_user):
         order_id = uuid.uuid4()
-        mock_order = {
-            "id": str(order_id),
-            "user_id": str(as_user.id),
-            "restaurant_id": str(uuid.uuid4()),
-            "status": OrderStatus.CANCELLED.value,
-            "total_price": 300,
-            "items": [],
-        }
+        mock_order = _make_mock_order_dict(
+            order_id, as_user.id, uuid.uuid4(), OrderStatus.CANCELLED
+        )
 
         with patch(
             "features.orders.api.order.service.cancel_order",
@@ -199,7 +196,7 @@ class TestCancelOrderAPI:
             response = await client.post(f"/api/v1/orders/{order_id}/cancel")
 
         assert response.status_code == 200
-        assert response.json()["status"] == OrderStatus.CANCELLED.value
+        assert response.json()["data"]["status"] == OrderStatus.CANCELLED.value
         mock_cancel.assert_awaited_once()
 
     @pytest.mark.asyncio

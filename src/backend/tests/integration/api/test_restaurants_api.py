@@ -45,6 +45,18 @@ class TestRestaurantsPublicAPI:
         assert body["data"] == []
         assert body["pagination"]["total"] == 0
 
+    @pytest.mark.asyncio
+    async def test_read_public_restaurants_with_filters(self, client):
+        with patch(
+            "features.restaurants.api.service.get_all_restaurants_public",
+            new_callable=AsyncMock,
+            return_value=([], 0),
+        ) as mock_get:
+            response = await client.get("/api/v1/restaurants/public?is_open=true&is_hiring=true")
+
+        assert response.status_code == 200
+        mock_get.assert_awaited_once()
+
 
 class TestRestaurantsAPI:
     @pytest.mark.asyncio
@@ -68,7 +80,7 @@ class TestRestaurantsAPI:
             )
 
         assert response.status_code == 200
-        data = response.json()
+        data = response.json()["data"]
         assert data["name"] == "New Sushi"
         mock_register.assert_awaited_once()
 
@@ -94,7 +106,7 @@ class TestRestaurantsAPI:
             )
 
         assert response.status_code == 200
-        assert response.json()["name"] == "Updated Sushi"
+        assert response.json()["data"]["name"] == "Updated Sushi"
         mock_update.assert_awaited_once()
 
     @pytest.mark.asyncio
@@ -111,3 +123,10 @@ class TestRestaurantsAPI:
         assert response.status_code == 200
         assert response.json()["data"] == []
         mock_get.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_create_restaurant_requires_auth(self, client):
+        response = await client.post(
+            "/api/v1/restaurants/", json={"name": "Test", "address": "Addr"}
+        )
+        assert response.status_code == 401

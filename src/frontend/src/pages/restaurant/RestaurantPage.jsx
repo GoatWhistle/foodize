@@ -22,6 +22,7 @@ import { useOrderStore } from "../../store/useOrderStore";
 import MenuItemCard from "../../components/ui/MenuItemCard";
 import { reviewService } from "../../services/reviewService";
 import { staffService } from "../../services/staffService";
+import { restaurantService } from "../../services/restaurantService";
 
 const CATEGORY_ICONS = {
   SHAURMA: <Fire />,
@@ -37,11 +38,11 @@ const CATEGORY_ICONS = {
 const RestaurantPage = () => {
   const { id } = useParams();
   const location = useLocation();
-  const restaurant = location.state?.restaurant || {
-    id,
-    name: "Ресторан",
-    address: "",
-  };
+  const [restaurantData, setRestaurantData] = useState(
+    location.state?.restaurant ?? null,
+  );
+  const [rating, setRating] = useState(null);
+  const restaurant = restaurantData ?? { id, name: "Ресторан", address: "" };
 
   const { fetchMenu, menus, loading } = useRestaurantStore();
   const { addToCart } = useOrderStore();
@@ -63,7 +64,20 @@ const RestaurantPage = () => {
 
   useEffect(() => {
     fetchMenu(id);
-  }, [id, fetchMenu]);
+    if (!location.state?.restaurant) {
+      restaurantService
+        .getById(id)
+        .then((res) => setRestaurantData(res.data))
+        .catch(() => {});
+    }
+    reviewService
+      .getRating(id)
+      .then((res) => {
+        const val = res.data?.average_rating ?? res.data?.rating ?? null;
+        setRating(val);
+      })
+      .catch(() => {});
+  }, [id, fetchMenu]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadReviews = () => {
     setReviewsLoading(true);
@@ -149,6 +163,28 @@ const RestaurantPage = () => {
         <div className="restaurant-hero-overlay" />
         <div className="restaurant-hero-info">
           <h1 className="restaurant-hero-name">{restaurant.name}</h1>
+          {rating != null && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                marginBottom: 8,
+              }}
+            >
+              <Star size={14} weight="fill" color="#fbbf24" />
+              <span
+                style={{
+                  fontWeight: 700,
+                  color: "#fff",
+                  fontSize: "0.875rem",
+                  lineHeight: 1,
+                }}
+              >
+                {Number(rating).toFixed(1)}
+              </span>
+            </div>
+          )}
           <button
             className="btn btn-secondary btn-sm"
             onClick={() => {

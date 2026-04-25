@@ -51,6 +51,8 @@ def make_mock_order(
     order.total_price = 500
     order.ready_at = None
     order.items = []
+    order.restaurant = MagicMock()
+    order.restaurant.name = "Test Restaurant"
     return order
 
 
@@ -65,12 +67,14 @@ class TestPlaceOrder:
         )
         mock_order = make_mock_order(uuid.uuid4(), user.id)
         mock_menu_item = make_mock_menu_item(item_id, price=300, restaurant_id=restaurant_id)
+        mock_restaurant = make_mock_restaurant(restaurant_id)
+        mock_restaurant.name = "Test Restaurant"
 
         with (
             patch(
                 "features.restaurants.crud.get_restaurant_by_id",
                 new_callable=AsyncMock,
-                return_value=make_mock_restaurant(restaurant_id),
+                return_value=mock_restaurant,
             ),
             patch(
                 "features.orders.crud.order_item.get_menu_items_by_ids",
@@ -81,6 +85,10 @@ class TestPlaceOrder:
                 "features.orders.services.order._create_order",
                 new_callable=AsyncMock,
                 return_value=mock_order,
+            ),
+            patch(
+                "features.orders.services.order.publish_order_placed",
+                new_callable=AsyncMock,
             ),
         ):
             result = await place_order(mock_db_session, order_data, user.id)
@@ -188,29 +196,8 @@ class TestPlaceOrder:
 
     async def test_place_order_empty_items(self, mock_db_session):
         restaurant_id = uuid.uuid4()
-        order_data = OrderCreate(restaurant_id=restaurant_id, items=[])
-        mock_order = make_mock_order(uuid.uuid4(), uuid.uuid4())
-
-        with (
-            patch(
-                "features.restaurants.crud.get_restaurant_by_id",
-                new_callable=AsyncMock,
-                return_value=make_mock_restaurant(restaurant_id),
-            ),
-            patch(
-                "features.orders.crud.order_item.get_menu_items_by_ids",
-                new_callable=AsyncMock,
-                return_value={},
-            ),
-            patch(
-                "features.orders.services.order._create_order",
-                new_callable=AsyncMock,
-                return_value=mock_order,
-            ),
-        ):
-            result = await place_order(mock_db_session, order_data, uuid.uuid4())
-
-        assert isinstance(result, OrderResponse)
+        with pytest.raises(Exception):  # OrderCreate enforces min_length=1
+            OrderCreate(restaurant_id=restaurant_id, items=[])
 
 
 class TestGetOrder:
@@ -313,6 +300,14 @@ class TestCancelOrder:
                 new_callable=AsyncMock,
                 return_value=cancelled,
             ) as mock_cancel,
+            patch(
+                "features.orders.crud.order.create_order_event",
+                new_callable=AsyncMock,
+            ),
+            patch(
+                "features.orders.services.order.publish_order_status_changed",
+                new_callable=AsyncMock,
+            ),
         ):
             result = await cancel_order(mock_db_session, order_id, user_id)
 

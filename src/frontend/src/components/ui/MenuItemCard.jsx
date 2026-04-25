@@ -33,7 +33,10 @@ const MenuItemCard = ({ item, onAdd }) => {
   const unavailable = item.is_available === false;
 
   return (
-    <div className="menu-item" style={unavailable ? { opacity: 0.45, filter: "grayscale(0.6)" } : {}}>
+    <div
+      className="menu-item"
+      style={unavailable ? { opacity: 0.45, filter: "grayscale(0.6)" } : {}}
+    >
       {/* Photo / Placeholder */}
       <div className="menu-item-img" style={{ minHeight: "90px" }}>
         {item.photo_url ? (
@@ -42,11 +45,22 @@ const MenuItemCard = ({ item, onAdd }) => {
           <div className="menu-item-img-placeholder">{icon}</div>
         )}
         {unavailable && (
-          <div style={{
-            position: "absolute", inset: 0, display: "flex", alignItems: "center",
-            justifyContent: "center", background: "rgba(0,0,0,0.45)", borderRadius: "inherit",
-          }}>
-            <ProhibitInset size={28} color="rgba(255,255,255,0.7)" weight="bold" />
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "rgba(0,0,0,0.45)",
+              borderRadius: "inherit",
+            }}
+          >
+            <ProhibitInset
+              size={28}
+              color="rgba(255,255,255,0.7)"
+              weight="bold"
+            />
           </div>
         )}
       </div>
@@ -60,7 +74,18 @@ const MenuItemCard = ({ item, onAdd }) => {
         <div className="menu-item-footer">
           <span className="menu-item-price">{formatPrice(item.price)}</span>
           {unavailable ? (
-            <span className="tag-pill" style={{ fontSize: "0.68rem", background: "var(--bg-raised)", color: "var(--error)", border: "1px solid var(--error)", display: "flex", alignItems: "center", gap: 4 }}>
+            <span
+              className="tag-pill"
+              style={{
+                fontSize: "0.68rem",
+                background: "var(--bg-raised)",
+                color: "var(--error)",
+                border: "1px solid var(--error)",
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+              }}
+            >
               Недоступно
             </span>
           ) : (

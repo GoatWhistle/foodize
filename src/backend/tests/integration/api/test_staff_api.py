@@ -33,7 +33,7 @@ class TestStaffAPI:
             )
 
         assert res.status_code == 200
-        assert res.json()["id"] == str(req_id)
+        assert res.json()["data"]["id"] == str(req_id)
         mock_create.assert_awaited_once()
 
     @pytest.mark.asyncio
@@ -66,7 +66,7 @@ class TestStaffAPI:
             app.dependency_overrides.pop(get_valid_staff_request, None)
 
         assert res.status_code == 200
-        assert res.json()["status"] == StaffRequestStatus.ACCEPTED.value
+        assert res.json()["data"]["status"] == StaffRequestStatus.ACCEPTED.value
         mock_process.assert_awaited_once_with(
             session=ANY, request=mock_req, new_status=StaffRequestStatus.ACCEPTED
         )
@@ -84,3 +84,10 @@ class TestStaffAPI:
         assert res.status_code == 200
         assert res.json()["data"] == []
         mock_get.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_create_staff_request_requires_auth(self, client: AsyncClient):
+        response = await client.post(
+            f"/api/v1/staff/requests/{uuid.uuid4()}", json={"message": "hi"}
+        )
+        assert response.status_code == 401

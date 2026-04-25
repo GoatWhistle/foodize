@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from features.orders.schemas.order_item import OrderItemCreate, OrderItemResponse
 from shared.enums.order_status import OrderStatus
@@ -9,7 +9,8 @@ from shared.enums.order_status import OrderStatus
 
 class OrderCreate(BaseModel):
     restaurant_id: uuid.UUID
-    items: list[OrderItemCreate]
+    items: list[OrderItemCreate] = Field(..., min_length=1)
+    promo_code: str | None = None
 
 
 class OrderStatusUpdate(BaseModel):
@@ -22,6 +23,7 @@ class OrderResponse(BaseModel):
     restaurant_id: uuid.UUID
     status: OrderStatus
     total_price: int
+    created_at: datetime
     ready_at: datetime | None = None
     items: list[OrderItemResponse]
 

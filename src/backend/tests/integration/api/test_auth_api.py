@@ -32,7 +32,7 @@ class TestAuthAPI:
             )
 
         assert response.status_code == 200
-        data = response.json()
+        data = response.json()["data"]
         assert data["id"] == str(user_id)
         assert data["name"] == "Test Ivan"
         mock_register.assert_awaited_once()
@@ -52,7 +52,7 @@ class TestAuthAPI:
             )
 
         assert response.status_code == 200
-        data = response.json()
+        data = response.json()["data"]
         assert data["access_token"] == "mock_access"
         assert data["refresh_token"] == "mock_refresh"
         mock_login.assert_awaited_once()

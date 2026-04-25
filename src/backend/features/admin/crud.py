@@ -44,6 +44,13 @@ async def deactivate_user(session: AsyncSession, user: User) -> User:
     return user
 
 
+async def activate_user(session: AsyncSession, user: User) -> User:
+    user.is_active = True
+    await session.commit()
+    await session.refresh(user)
+    return user
+
+
 async def get_all_orders(
     session: AsyncSession,
     status: OrderStatus | None = None,

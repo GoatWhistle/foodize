@@ -20,3 +20,13 @@ class UserCreate(UserBase):
 class UserRead(UserBase):
     id: uuid.UUID
     user_role: UserRole
+
+
+class UserUpdate(BaseModel):
+    name: str | None = None
+    phone_number: str | None = None
+
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str = Field(min_length=8)

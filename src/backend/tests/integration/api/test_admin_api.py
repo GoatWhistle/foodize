@@ -7,6 +7,8 @@ from httpx import AsyncClient
 from shared.enums.order_status import OrderStatus
 from shared.enums.roles import UserRole
 
+MOCK_CREATED_AT = "2026-01-01T00:00:00"
+
 
 def _make_admin_user_dict(user_id: uuid.UUID | None = None) -> dict:
     return {
@@ -16,6 +18,18 @@ def _make_admin_user_dict(user_id: uuid.UUID | None = None) -> dict:
         "user_role": UserRole.CUSTOMER.value,
         "is_active": True,
         "created_at": "2026-01-01T00:00:00",
+    }
+
+
+def _make_admin_order_dict() -> dict:
+    return {
+        "id": str(uuid.uuid4()),
+        "user_id": str(uuid.uuid4()),
+        "restaurant_id": str(uuid.uuid4()),
+        "status": OrderStatus.PENDING.value,
+        "total_price": 500,
+        "created_at": MOCK_CREATED_AT,
+        "items": [],
     }
 
 
@@ -92,7 +106,7 @@ class TestAdminUsers:
             response = await client.get(f"/api/v1/admin/users/{user_id}")
 
         assert response.status_code == 200
-        assert response.json()["id"] == str(user_id)
+        assert response.json()["data"]["id"] == str(user_id)
 
     @pytest.mark.asyncio
     async def test_read_user_not_found(self, client: AsyncClient, as_admin):
@@ -126,7 +140,7 @@ class TestAdminUsers:
             response = await client.delete(f"/api/v1/admin/users/{user_id}")
 
         assert response.status_code == 200
-        assert response.json()["is_active"] is False
+        assert response.json()["data"]["is_active"] is False
 
     @pytest.mark.asyncio
     async def test_delete_user_not_found(self, client: AsyncClient, as_admin):
@@ -139,20 +153,50 @@ class TestAdminUsers:
 
         assert response.status_code == 404
 
+    @pytest.mark.asyncio
+    async def test_activate_user(self, client: AsyncClient, as_admin):
+        user_id = uuid.uuid4()
+        mock_user = _make_admin_user_dict(user_id)
+        activated = {**mock_user, "is_active": True}
+
+        with (
+            patch(
+                "features.admin.crud.get_user_by_id",
+                new_callable=AsyncMock,
+                return_value=mock_user,
+            ),
+            patch(
+                "features.admin.crud.activate_user",
+                new_callable=AsyncMock,
+                return_value=activated,
+            ),
+        ):
+            response = await client.post(f"/api/v1/admin/users/{user_id}/activate")
+
+        assert response.status_code == 200
+        assert response.json()["data"]["is_active"] is True
+
+    @pytest.mark.asyncio
+    async def test_make_admin(self, client: AsyncClient, as_admin):
+        user_id = uuid.uuid4()
+        mock_user = _make_admin_user_dict(user_id)
+        promoted = {**mock_user, "user_role": UserRole.ADMIN.value}
+
+        with patch(
+            "features.admin.service.set_user_role",
+            new_callable=AsyncMock,
+            return_value=promoted,
+        ):
+            response = await client.post(f"/api/v1/admin/users/{user_id}/make-admin")
+
+        assert response.status_code == 200
+        assert response.json()["data"]["user_role"] == UserRole.ADMIN.value
+
 
 class TestAdminOrders:
     @pytest.mark.asyncio
     async def test_read_orders(self, client: AsyncClient, as_admin):
-        mock_orders = [
-            {
-                "id": str(uuid.uuid4()),
-                "user_id": str(uuid.uuid4()),
-                "restaurant_id": str(uuid.uuid4()),
-                "status": OrderStatus.PENDING.value,
-                "total_price": 500,
-                "items": [],
-            }
-        ]
+        mock_orders = [_make_admin_order_dict()]
 
         with (
             patch(
@@ -210,7 +254,7 @@ class TestAdminStats:
             response = await client.get("/api/v1/admin/stats")
 
         assert response.status_code == 200
-        data = response.json()
+        data = response.json()["data"]
         assert data["total_restaurants"] == 4
         assert data["users_by_role"]["CUSTOMER"] == 10
         assert data["orders_by_status"]["COMPLETED"] == 20

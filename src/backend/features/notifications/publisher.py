@@ -1,33 +1,25 @@
 import logging
 
-import aio_pika
-
-from features.notifications.broker import broker
 from features.notifications.events import OrderPlacedEvent, OrderStatusChangedEvent
+from infra.messaging.base import MessagePublisher
+from infra.messaging.rabbitmq import get_rabbitmq_publisher
 
 logger = logging.getLogger(__name__)
 
-# Routing key convention: <domain>.<entity>.<event>
 _ROUTING = {
     "order.placed": "order.placed",
     "order.status_changed": "order.status_changed",
 }
 
 
-async def _publish(event: OrderPlacedEvent | OrderStatusChangedEvent) -> None:
+async def _publish(
+    event: OrderPlacedEvent | OrderStatusChangedEvent,
+    publisher: MessagePublisher | None = None,
+) -> None:
+    if publisher is None:
+        publisher = get_rabbitmq_publisher()
     routing_key = _ROUTING.get(event.event_type, event.event_type)
-    body = event.model_dump_json().encode()
-    message = aio_pika.Message(
-        body=body,
-        content_type="application/json",
-        delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
-    )
-    try:
-        await broker.exchange.publish(message, routing_key=routing_key)
-        logger.debug("Published %s (order=%s)", event.event_type, event.order_id)
-    except Exception:
-        # Never let a broker failure break the main request flow.
-        logger.exception("Failed to publish event %s", event.event_type)
+    await publisher.publish(routing_key, event.model_dump_json().encode())
 
 
 async def publish_order_placed(event: OrderPlacedEvent) -> None:

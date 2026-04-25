@@ -8,6 +8,14 @@ vi.mock("../../store/useOrderStore", () => ({
   useOrderStore: vi.fn(),
 }));
 
+vi.mock("../../services/orderService", () => ({
+  orderService: {
+    getOrderEvents: vi.fn().mockResolvedValue({ data: [] }),
+    cancelOrder: vi.fn().mockResolvedValue({}),
+    completeOrder: vi.fn().mockResolvedValue({}),
+  },
+}));
+
 describe("OrderStatusPage", () => {
   const fetchOrderMock = vi.fn();
 

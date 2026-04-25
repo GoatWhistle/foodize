@@ -8,8 +8,8 @@ from features.auth.service import get_current_user
 from features.favorites import service
 from features.favorites.schemas import FavoriteResponse
 from features.users.models import User
-from shared.response import build_list_response
-from shared.schemas.response import SuccessListResponse
+from shared.response import build_list_response, build_response
+from shared.schemas.response import SuccessListResponse, SuccessResponse
 
 router = APIRouter(prefix="/favorites", tags=["Favorites"])
 
@@ -30,17 +30,18 @@ async def get_my_favorites(
 
 @router.post(
     "/{restaurant_id}",
-    response_model=FavoriteResponse,
+    response_model=SuccessResponse[FavoriteResponse],
     status_code=status.HTTP_201_CREATED,
 )
 async def add_favorite(
     restaurant_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-) -> FavoriteResponse:
-    return await service.add_favorite(
+) -> SuccessResponse[FavoriteResponse]:
+    result = await service.add_favorite(
         session=session, user_id=current_user.id, restaurant_id=restaurant_id
     )
+    return build_response(result)
 
 
 @router.delete("/{restaurant_id}", status_code=status.HTTP_204_NO_CONTENT)

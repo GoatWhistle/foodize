@@ -21,3 +21,12 @@ class StaffRequestResponse(BaseModel):
     status: StaffRequestStatus
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class StaffProfileResponse(BaseModel):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    restaurant_id: uuid.UUID
+    role: str
+
+    model_config = ConfigDict(from_attributes=True)

@@ -29,3 +29,13 @@ class OrderNotCancellableException(RuleException):
 class InvalidStatusTransitionException(AppException):
     status_code: int = HTTPStatus.UNPROCESSABLE_ENTITY
     detail: str = "Invalid order status transition"
+
+
+class MenuItemUnavailableException(AppException):
+    status_code: int = HTTPStatus.UNPROCESSABLE_ENTITY
+    detail: str = "One or more menu items are not available"
+
+
+class OrderNotCompletableException(RuleException):
+    status_code: int = HTTPStatus.CONFLICT
+    detail: str = "Order can only be completed when in READY status"

@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from features.restaurants.models import Restaurant
 from features.staff.models import StaffProfile, StaffRequest
 from features.staff.schemas import StaffRequestCreate
+from features.users.models import User
+from shared.enums.roles import UserRole
 from shared.enums.staff_request_status import StaffRequestStatus
 from shared.enums.staff_roles import StaffRole
 
@@ -41,6 +43,18 @@ async def get_staff_profile_by_user_id(
 
 async def get_request_by_id(session: AsyncSession, request_id: uuid.UUID) -> StaffRequest | None:
     return await session.get(StaffRequest, request_id)
+
+
+async def get_last_request_by_user(
+    session: AsyncSession, user_id: uuid.UUID
+) -> StaffRequest | None:
+    result = await session.execute(
+        select(StaffRequest)
+        .where(StaffRequest.user_id == user_id)
+        .order_by(StaffRequest.created_at.desc())
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
 
 
 async def get_requests_by_vendor_id(
@@ -82,6 +96,10 @@ async def update_request_status(
 async def create_staff_profile(
     session: AsyncSession, user_id: uuid.UUID, restaurant_id: uuid.UUID
 ) -> StaffProfile:
+    user = await session.get(User, user_id)
+    if user:
+        user.user_role = UserRole.STAFF.value
+
     profile = StaffProfile(user_id=user_id, restaurant_id=restaurant_id, role=StaffRole.COOK.value)
     session.add(profile)
     await session.commit()

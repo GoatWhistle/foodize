@@ -1,4 +1,10 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { BrowserRouter } from "react-router-dom";
 import VendorDashboardPage from "../../pages/vendor/VendorDashboardPage";
@@ -113,7 +119,9 @@ describe("VendorDashboardPage", () => {
       </BrowserRouter>,
     );
 
-    fireEvent.click(screen.getByText("My Resto"));
+    await act(async () => {
+      fireEvent.click(screen.getByText("My Resto"));
+    });
 
     expect(screen.getByText(/Позиции меню/)).toBeDefined();
   });

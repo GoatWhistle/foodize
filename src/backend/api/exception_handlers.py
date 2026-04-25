@@ -39,7 +39,6 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 
 
 async def integrity_error_handler(request: Request, exc: IntegrityError):
-    # Log the full error for internal debugging if needed
     error_msg = str(exc.orig) if hasattr(exc, "orig") else str(exc)
 
     friendly_msg = "Duplicate entry: this information already exists."

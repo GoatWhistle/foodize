@@ -1,4 +1,3 @@
-import asyncio
 import logging
 
 import aio_pika
@@ -13,13 +12,6 @@ EXCHANGE_TYPE = aio_pika.ExchangeType.TOPIC
 
 
 class RabbitMQBroker:
-    """Manages a single persistent connection + channel to RabbitMQ.
-
-    Designed to be used as a process-level singleton (one instance per
-    backend / worker process).  Call ``connect()`` on startup and
-    ``disconnect()`` on shutdown.
-    """
-
     def __init__(self, url: str) -> None:
         self._url = url
         self._connection: aio_pika.abc.AbstractRobustConnection | None = None

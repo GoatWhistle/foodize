@@ -1,6 +1,10 @@
 from fastapi import Request
 
-from shared.schemas.response import Pagination, SuccessListResponse
+from shared.schemas.response import Meta, Pagination, SuccessListResponse, SuccessResponse
+
+
+def build_response(data) -> SuccessResponse:
+    return SuccessResponse(data=data, meta=Meta())
 
 
 def build_list_response(
@@ -20,6 +24,7 @@ def build_list_response(
 
     return SuccessListResponse(
         data=data,
+        meta=Meta(),
         pagination=Pagination(
             current_page=page,
             per_page=size,

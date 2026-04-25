@@ -13,8 +13,10 @@ const OrderStatusPage = () => {
   const { fetchOrder, currentOrder } = useOrderStore();
   const intervalRef = useRef(null);
   const [cancelling, setCancelling] = useState(false);
+  const [completing, setCompleting] = useState(false);
   const [events, setEvents] = useState([]);
   const [cancelError, setCancelError] = useState("");
+  const [completeError, setCompleteError] = useState("");
 
   useEffect(() => {
     fetchOrder(id);
@@ -72,6 +74,19 @@ const OrderStatusPage = () => {
       setCancelError("Не удалось отменить заказ");
     } finally {
       setCancelling(false);
+    }
+  };
+
+  const handleComplete = async () => {
+    setCompleting(true);
+    setCompleteError("");
+    try {
+      await orderService.completeOrder(id);
+      await fetchOrder(id);
+    } catch {
+      setCompleteError("Не удалось подтвердить получение");
+    } finally {
+      setCompleting(false);
     }
   };
 
@@ -155,9 +170,25 @@ const OrderStatusPage = () => {
         </div>
 
         {currentOrder.ready_at && isReady && (
-          <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--border)", fontSize: "0.85rem", color: "var(--text-2)", display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontWeight: 700, color: "var(--fire)" }}>Готов в</span>
-            {new Date(currentOrder.ready_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+          <div
+            style={{
+              marginTop: 12,
+              paddingTop: 12,
+              borderTop: "1px solid var(--border)",
+              fontSize: "0.85rem",
+              color: "var(--text-2)",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <span style={{ fontWeight: 700, color: "var(--fire)" }}>
+              Готов в
+            </span>
+            {new Date(currentOrder.ready_at).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
           </div>
         )}
       </div>
@@ -247,12 +278,12 @@ const OrderStatusPage = () => {
         </div>
       </div>
 
-      {cancelError && (
+      {(cancelError || completeError) && (
         <div
           className="form-error"
           style={{ marginTop: 16, maxWidth: 380, width: "100%" }}
         >
-          {cancelError}
+          {cancelError || completeError}
         </div>
       )}
       <div
@@ -272,6 +303,25 @@ const OrderStatusPage = () => {
             disabled={cancelling}
           >
             {cancelling ? "Отмена..." : "Отменить"}
+          </button>
+        )}
+        {currentOrder.status === "READY" && (
+          <button
+            className="btn btn-primary"
+            style={{
+              flex: 1,
+              background: "#22c55e",
+              borderColor: "#22c55e",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+            }}
+            onClick={handleComplete}
+            disabled={completing}
+            id="complete-order-btn"
+          >
+            {completing ? "Подтверждение..." : "✓ Получил"}
           </button>
         )}
         <button

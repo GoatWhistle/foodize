@@ -98,5 +98,5 @@ class TestOrderCreateSchema:
         assert order.items[0].quantity == 2
 
     def test_empty_items_list(self):
-        order = OrderCreate(restaurant_id=uuid.uuid4(), items=[])
-        assert order.items == []
+        with pytest.raises(ValidationError):
+            OrderCreate(restaurant_id=uuid.uuid4(), items=[])

@@ -103,9 +103,24 @@ const AdminDashboardPage = () => {
     setActionError("");
     try {
       await adminService.makeAdmin(userId);
-      setSelectedUser((prev) => prev ? { ...prev, user_role: "ADMIN" } : prev);
+      setSelectedUser((prev) =>
+        prev ? { ...prev, user_role: "ADMIN" } : prev,
+      );
     } catch {
       setActionError("Не удалось изменить роль");
+    } finally {
+      setRoleActionLoading(false);
+    }
+  };
+
+  const handleActivateUser = async (userId) => {
+    setRoleActionLoading(true);
+    setActionError("");
+    try {
+      await adminService.activateUser(userId);
+      setSelectedUser((prev) => (prev ? { ...prev, is_active: true } : prev));
+    } catch {
+      setActionError("Не удалось разблокировать пользователя");
     } finally {
       setRoleActionLoading(false);
     }
@@ -115,7 +130,11 @@ const AdminDashboardPage = () => {
     if (activeTab === "orders") {
       setOrdersLoading(true);
       adminService
-        .getOrders({ page: ordersPage, size: 20, status: ordersStatusFilter || undefined })
+        .getOrders({
+          page: ordersPage,
+          size: 20,
+          status: ordersStatusFilter || undefined,
+        })
         .then((res) => {
           setOrders(res.data.data || []);
           setOrdersTotal(res.data.total || 0);
@@ -199,7 +218,10 @@ const AdminDashboardPage = () => {
             <UsersThree size={20} color="var(--text-3)" />
             <div className="admin-stat-label">Пользователи</div>
             <div className="admin-stat-value">
-              {Object.values(stats.users_by_role || {}).reduce((a, b) => a + b, 0)}
+              {Object.values(stats.users_by_role || {}).reduce(
+                (a, b) => a + b,
+                0,
+              )}
             </div>
           </div>
           <div className="admin-stat-card">
@@ -211,7 +233,10 @@ const AdminDashboardPage = () => {
             <Package size={20} color="var(--fire)" />
             <div className="admin-stat-label">Всего заказов</div>
             <div className="admin-stat-value" style={{ color: "var(--fire)" }}>
-              {Object.values(stats.orders_by_status || {}).reduce((a, b) => a + b, 0)}
+              {Object.values(stats.orders_by_status || {}).reduce(
+                (a, b) => a + b,
+                0,
+              )}
             </div>
           </div>
         </div>
@@ -273,7 +298,14 @@ const AdminDashboardPage = () => {
 
       {activeTab === "orders" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 4 }}>
+          <div
+            style={{
+              display: "flex",
+              gap: 6,
+              flexWrap: "wrap",
+              marginBottom: 4,
+            }}
+          >
             {[
               { key: "", label: "Все" },
               { key: "PENDING", label: "Новые" },
@@ -286,7 +318,10 @@ const AdminDashboardPage = () => {
                 key={key}
                 className={`category-chip${ordersStatusFilter === key ? " active" : ""}`}
                 style={{ fontSize: "0.78rem", padding: "4px 12px" }}
-                onClick={() => { setOrdersStatusFilter(key); setOrdersPage(1); }}
+                onClick={() => {
+                  setOrdersStatusFilter(key);
+                  setOrdersPage(1);
+                }}
               >
                 {label}
               </button>
@@ -412,11 +447,33 @@ const AdminDashboardPage = () => {
                 {selectedUser.user_role !== "ADMIN" && (
                   <button
                     className="btn btn-secondary"
-                    style={{ marginTop: 12, width: "100%", fontSize: "0.85rem" }}
+                    style={{
+                      marginTop: 12,
+                      width: "100%",
+                      fontSize: "0.85rem",
+                    }}
                     disabled={roleActionLoading}
                     onClick={() => handleMakeAdmin(selectedUser.id)}
                   >
-                    {roleActionLoading ? "Применяю..." : "Сделать администратором"}
+                    {roleActionLoading
+                      ? "Применяю..."
+                      : "Сделать администратором"}
+                  </button>
+                )}
+                {!selectedUser.is_active && (
+                  <button
+                    className="btn btn-secondary"
+                    style={{
+                      marginTop: 8,
+                      width: "100%",
+                      fontSize: "0.85rem",
+                      borderColor: "#22c55e",
+                      color: "#22c55e",
+                    }}
+                    disabled={roleActionLoading}
+                    onClick={() => handleActivateUser(selectedUser.id)}
+                  >
+                    {roleActionLoading ? "Применяю..." : "Разблокировать"}
                   </button>
                 )}
               </div>

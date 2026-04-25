@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -36,8 +36,6 @@ async def get_favorites_by_user(
 
 
 async def count_favorites_by_user(session: AsyncSession, user_id: uuid.UUID) -> int:
-    from sqlalchemy import func
-
     result = await session.execute(
         select(func.count()).select_from(Favorite).where(Favorite.user_id == user_id)
     )

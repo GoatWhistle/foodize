@@ -31,5 +31,6 @@ class MenuItemResponse(BaseModel):
     restaurant_id: uuid.UUID
     is_available: bool
     prep_time_minutes: int
+    image_url: str | None = None
 
     model_config = ConfigDict(from_attributes=True)

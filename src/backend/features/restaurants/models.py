@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from features.favorites.models import Favorite
     from features.menu.models import MenuItem
     from features.orders.models import Order
+    from features.promos.models import Promo
     from features.reviews.models import Review
     from features.staff.models import StaffProfile, StaffRequest
     from features.vendors.models import VendorProfile
@@ -28,3 +29,4 @@ class Restaurant(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMix
     staff_members: Mapped[list["StaffProfile"]] = relationship(back_populates="restaurant")
     reviews: Mapped[list["Review"]] = relationship(back_populates="restaurant")
     favorited_by: Mapped[list["Favorite"]] = relationship(back_populates="restaurant")
+    promos: Mapped[list["Promo"]] = relationship(back_populates="restaurant")

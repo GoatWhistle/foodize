@@ -17,12 +17,15 @@ import OrdersPage from "./pages/orders/OrdersPage";
 import OrderStatusPage from "./pages/orders/OrderStatusPage";
 import VendorDashboardPage from "./pages/vendor/VendorDashboardPage";
 import ProfilePage from "./pages/profile/ProfilePage";
+import FavoritesPage from "./pages/profile/FavoritesPage";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
+import StaffDashboardPage from "./pages/staff/StaffDashboardPage";
 
 import { ROUTES } from "./constants/routes";
 import { useAuthStore } from "./store/useAuthStore";
 import { useThemeStore } from "./store/useThemeStore";
 import { useOrderStore } from "./store/useOrderStore";
+import { useFavoriteStore } from "./store/useFavoriteStore";
 
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -78,10 +81,26 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: ROUTES.FAVORITES,
+        element: (
+          <ProtectedRoute>
+            <FavoritesPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: ROUTES.ADMIN,
         element: (
           <ProtectedRoute>
             <AdminDashboardPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: ROUTES.STAFF_DASHBOARD,
+        element: (
+          <ProtectedRoute>
+            <StaffDashboardPage />
           </ProtectedRoute>
         ),
       },
@@ -137,6 +156,7 @@ function App() {
 
   const fetchCart = useOrderStore((s) => s.fetchCart);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const loadFavorites = useFavoriteStore((s) => s.loadFavorites);
 
   useEffect(() => {
     initTheme();
@@ -146,8 +166,9 @@ function App() {
   useEffect(() => {
     if (isAuthenticated) {
       fetchCart();
+      loadFavorites();
     }
-  }, [isAuthenticated, fetchCart]);
+  }, [isAuthenticated, fetchCart, loadFavorites]);
 
   return (
     <IconContext.Provider

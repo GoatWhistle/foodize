@@ -1,6 +1,6 @@
 from settings.config.base import BaseConfig
 from settings.config.infra import DbConfig, RabbitMQConfig
-from settings.config.infra.redis_config import RedisConfig
+from settings.config.infra.redis import RedisConfig
 from settings.config.runtime import ApiPrefix, AuthConfig, CorsConfig, RunConfig
 
 

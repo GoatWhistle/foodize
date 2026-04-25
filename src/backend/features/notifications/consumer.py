@@ -1,19 +1,15 @@
-"""RabbitMQ consumer.  Binds queues to the shared topic exchange and
-dispatches incoming messages to the appropriate handler.
-"""
 import asyncio
 import logging
 
 import aio_pika
 import aio_pika.abc
 
-from features.notifications.broker import EXCHANGE_NAME, EXCHANGE_TYPE, broker
+from features.notifications.broker import broker
 from features.notifications.events import OrderPlacedEvent, OrderStatusChangedEvent
-from worker.handlers import handle_order_placed, handle_order_status_changed
+from features.notifications.handlers import handle_order_placed, handle_order_status_changed
 
 logger = logging.getLogger(__name__)
 
-# (queue_name, routing_key, handler)
 _BINDINGS = [
     ("notifications.order.placed", "order.placed", handle_order_placed),
     ("notifications.order.status_changed", "order.status_changed", handle_order_status_changed),
@@ -50,9 +46,7 @@ async def start_consuming() -> None:
     for queue_name, routing_key, _ in _BINDINGS:
         queue = await channel.declare_queue(queue_name, durable=True)
         await queue.bind(exchange, routing_key=routing_key)
-        await queue.consume(
-            lambda msg, rk=routing_key: _process_message(msg, rk)
-        )
+        await queue.consume(lambda msg, rk=routing_key: _process_message(msg, rk))
         logger.info("Consuming queue=%s routing_key=%s", queue_name, routing_key)
 
     logger.info("Worker started. Waiting for messages...")

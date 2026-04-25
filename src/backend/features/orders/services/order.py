@@ -10,17 +10,21 @@ from features.orders.exceptions import (
     InvalidStatusTransitionException,
     MenuItemRestaurantMismatchException,
     MenuItemsNotFoundException,
+    MenuItemUnavailableException,
     OrderAccessDeniedException,
     OrderNotCancellableException,
+    OrderNotCompletableException,
     OrderNotFoundException,
 )
 from features.orders.models import Order, OrderItem
 from features.orders.schemas.order import OrderCreate, OrderResponse, OrderStatusUpdate
 from features.orders.schemas.order_event import OrderEventResponse
+from features.promos import service as promo_service
 from features.restaurants import crud as restaurant_crud
 from features.restaurants.exceptions import RestaurantClosedException, RestaurantNotFoundException
 from features.users.models import User
 from shared.enums.order_status import OrderStatus
+from shared.enums.roles import UserRole
 
 _ALLOWED_TRANSITIONS: dict[OrderStatus, set[OrderStatus]] = {
     OrderStatus.PENDING: {OrderStatus.ACCEPTED, OrderStatus.CANCELLED},
@@ -57,7 +61,20 @@ async def place_order(
     if any(mi.restaurant_id != order_data.restaurant_id for mi in menu_items.values()):
         raise MenuItemRestaurantMismatchException()
 
+    if any(not mi.is_available for mi in menu_items.values()):
+        raise MenuItemUnavailableException()
+
     order = await _create_order(session, order_data, user_id, menu_items)
+
+    if order_data.promo_code:
+        new_total = await promo_service.apply_promo(
+            session, order_data.promo_code, order_data.restaurant_id, order.total_price
+        )
+        if new_total != order.total_price:
+            order.total_price = new_total
+            await session.commit()
+            await session.refresh(order)
+
     await publish_order_placed(
         OrderPlacedEvent(
             order_id=order.id,
@@ -196,7 +213,7 @@ async def cancel_order(
         session,
         order_id=order.id,
         actor_id=user_id,
-        actor_role="CUSTOMER",
+        actor_role=UserRole.CUSTOMER.value,
         old_status=old_status,
         new_status=OrderStatus.CANCELLED,
     )
@@ -212,6 +229,42 @@ async def cancel_order(
         )
     )
     return OrderResponse.model_validate(cancelled)
+
+
+async def complete_order(
+    session: AsyncSession,
+    order_id: uuid.UUID,
+    user_id: uuid.UUID,
+) -> OrderResponse:
+    order = await order_crud.get_order_by_id(session, order_id)
+    if not order:
+        raise OrderNotFoundException()
+    if order.user_id != user_id:
+        raise OrderAccessDeniedException()
+    if order.status != OrderStatus.READY.value:
+        raise OrderNotCompletableException()
+    old_status = OrderStatus(order.status)
+    completed = await order_crud.update_order_status(session, order, OrderStatus.COMPLETED)
+    await order_crud.create_order_event(
+        session,
+        order_id=order.id,
+        actor_id=user_id,
+        actor_role=UserRole.CUSTOMER.value,
+        old_status=old_status,
+        new_status=OrderStatus.COMPLETED,
+    )
+    await publish_order_status_changed(
+        OrderStatusChangedEvent(
+            order_id=order.id,
+            user_id=order.user_id,
+            restaurant_id=order.restaurant_id,
+            restaurant_name=order.restaurant.name,
+            old_status=old_status,
+            new_status=OrderStatus.COMPLETED,
+            total_price=order.total_price,
+        )
+    )
+    return OrderResponse.model_validate(completed)
 
 
 async def get_order_events(

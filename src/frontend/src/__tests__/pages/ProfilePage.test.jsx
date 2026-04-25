@@ -23,6 +23,20 @@ vi.mock("react-router-dom", async () => {
   };
 });
 
+vi.mock("../../services/vendorService", () => ({
+  vendorService: {
+    getMyProfile: vi.fn().mockRejectedValue(new Error("Not a vendor")),
+    createProfile: vi.fn().mockResolvedValue({}),
+  },
+}));
+
+vi.mock("../../services/userService", () => ({
+  userService: {
+    updateMe: vi.fn().mockResolvedValue({}),
+    changePassword: vi.fn().mockResolvedValue({}),
+  },
+}));
+
 describe("ProfilePage", () => {
   const logoutMock = vi.fn();
 

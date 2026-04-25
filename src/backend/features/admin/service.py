@@ -27,6 +27,11 @@ async def deactivate_user_service(session: AsyncSession, user_id: uuid.UUID) -> 
     return await crud.deactivate_user(session, user)
 
 
+async def activate_user_service(session: AsyncSession, user_id: uuid.UUID) -> User:
+    user = await get_user_or_404(session, user_id)
+    return await crud.activate_user(session, user)
+
+
 async def set_user_role(session: AsyncSession, user_id: uuid.UUID, role: UserRole) -> User:
     user = await get_user_or_404(session, user_id)
     user.user_role = role.value

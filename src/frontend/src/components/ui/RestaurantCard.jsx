@@ -7,7 +7,11 @@ import {
   Storefront,
   MapPin,
   Star,
+  Briefcase,
+  Heart,
 } from "@phosphor-icons/react";
+import { useAuthStore } from "../../store/useAuthStore";
+import { useFavoriteStore } from "../../store/useFavoriteStore";
 
 const CATEGORY_ICONS = {
   SHAURMA: <Fire weight="fill" />,
@@ -19,6 +23,9 @@ const CATEGORY_ICONS = {
 
 const RestaurantCard = ({ restaurant, onClick }) => {
   const cardRef = useRef(null);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const { favoriteIds, toggle } = useFavoriteStore();
+  const isFav = favoriteIds.has(restaurant.id);
 
   useEffect(() => {
     const el = cardRef.current;
@@ -68,6 +75,119 @@ const RestaurantCard = ({ restaurant, onClick }) => {
 
       {/* Scrim */}
       <div className="card-scrim" />
+
+      {/* Open / Closed badge */}
+      {restaurant.is_open != null && (
+        <div
+          style={{
+            position: "absolute",
+            top: 14,
+            left: 14,
+            zIndex: 2,
+            display: "flex",
+            alignItems: "center",
+            gap: 5,
+            background: restaurant.is_open
+              ? "rgba(34,197,94,0.18)"
+              : "rgba(107,114,128,0.22)",
+            backdropFilter: "blur(8px)",
+            border: `1px solid ${restaurant.is_open ? "rgba(34,197,94,0.4)" : "rgba(107,114,128,0.3)"}`,
+            borderRadius: "100px",
+            padding: "4px 9px",
+          }}
+        >
+          <span
+            style={{
+              width: 7,
+              height: 7,
+              borderRadius: "50%",
+              background: restaurant.is_open ? "#22c55e" : "#6b7280",
+              flexShrink: 0,
+              boxShadow: restaurant.is_open
+                ? "0 0 6px rgba(34,197,94,0.7)"
+                : "none",
+            }}
+          />
+          <span
+            style={{
+              fontSize: "0.62rem",
+              fontWeight: 800,
+              letterSpacing: "0.05em",
+              color: restaurant.is_open ? "#22c55e" : "#9ca3af",
+            }}
+          >
+            {restaurant.is_open ? "Открыто" : "Закрыто"}
+          </span>
+        </div>
+      )}
+
+      {/* Hiring badge */}
+      {restaurant.is_hiring && (
+        <div
+          style={{
+            position: "absolute",
+            top: restaurant.is_open != null ? 46 : 14,
+            left: 14,
+            zIndex: 2,
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+            background: "rgba(255,140,90,0.15)",
+            backdropFilter: "blur(8px)",
+            border: "1px solid rgba(255,140,90,0.35)",
+            borderRadius: "100px",
+            padding: "4px 9px",
+          }}
+        >
+          <Briefcase size={10} weight="fill" color="var(--amber)" />
+          <span
+            style={{
+              fontSize: "0.62rem",
+              fontWeight: 800,
+              letterSpacing: "0.05em",
+              color: "var(--amber)",
+            }}
+          >
+            Вакансии
+          </span>
+        </div>
+      )}
+
+      {/* Heart / Favourite button */}
+      {isAuthenticated && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            toggle(restaurant.id);
+          }}
+          style={{
+            position: "absolute",
+            bottom: 14,
+            right: 14,
+            zIndex: 3,
+            width: 32,
+            height: 32,
+            borderRadius: "50%",
+            background: isFav ? "rgba(239,68,68,0.18)" : "rgba(0,0,0,0.45)",
+            backdropFilter: "blur(8px)",
+            border: isFav
+              ? "1px solid rgba(239,68,68,0.4)"
+              : "1px solid rgba(255,255,255,0.15)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            transition: "all var(--dur-sm) var(--ease-spring)",
+          }}
+          aria-label={isFav ? "Убрать из избранного" : "Добавить в избранное"}
+        >
+          <Heart
+            size={15}
+            weight={isFav ? "fill" : "regular"}
+            color={isFav ? "#ef4444" : "rgba(255,255,255,0.8)"}
+          />
+        </button>
+      )}
 
       {/* Rating badge */}
       <div className="card-rating-badge">

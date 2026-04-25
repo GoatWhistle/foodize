@@ -102,13 +102,18 @@ const OrdersPage = () => {
         </h1>
       </div>
 
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 20 }}>
+      <div
+        style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 20 }}
+      >
         {STATUS_FILTERS.map(({ key, label }) => (
           <button
             key={key}
             className={`category-chip${statusFilter === key ? " active" : ""}`}
             style={{ fontSize: "0.8rem" }}
-            onClick={() => { setStatusFilter(key); setPage(1); }}
+            onClick={() => {
+              setStatusFilter(key);
+              setPage(1);
+            }}
           >
             {label}
           </button>

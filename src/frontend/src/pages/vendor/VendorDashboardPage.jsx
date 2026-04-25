@@ -13,11 +13,14 @@ import {
   Flag,
   PencilSimple,
   Users,
+  Tag,
+  Trash,
 } from "@phosphor-icons/react";
 import { useRestaurantStore } from "../../store/useRestaurantStore";
 import { vendorService } from "../../services/vendorService";
 import { orderService } from "../../services/orderService";
 import { menuService } from "../../services/menuService";
+import { promoService } from "../../services/promoService";
 import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/ui/Pagination";
 
@@ -66,16 +69,34 @@ const VendorDashboardPage = () => {
   const [formError, setFormError] = useState("");
   const { createRestaurant } = useRestaurantStore();
 
+  // Promos state
+  const [promosList, setPromosList] = useState([]);
+  const [promosLoading, setPromosLoading] = useState(false);
+  const [promosError, setPromosError] = useState("");
+  const [showPromoForm, setShowPromoForm] = useState(false);
+  const [promoForm, setPromoForm] = useState({
+    code: "",
+    discount_type: "PERCENT",
+    discount_value: "",
+    max_uses: "",
+    expires_at: "",
+  });
+  const [promoFormLoading, setPromoFormLoading] = useState(false);
+
   useEffect(() => {
     fetchMyRestaurants();
-    vendorService.getMyProfile().then((res) => {
-      setVendorDescription(res.data?.description || "");
-    }).catch(() => {});
+    vendorService
+      .getMyProfile()
+      .then((res) => {
+        setVendorDescription(res.data?.description || "");
+      })
+      .catch(() => {});
   }, [fetchMyRestaurants]);
 
   useEffect(() => {
     if (selectedRestaurant) {
       fetchMenu(selectedRestaurant.id);
+      setEditRestaurant(null);
     }
   }, [selectedRestaurant, fetchMenu]);
 
@@ -100,7 +121,11 @@ const VendorDashboardPage = () => {
         try {
           const res = await orderService.getByRestaurant(
             selectedRestaurant.id,
-            { page: ordersPage, size: 20, status: ordersStatusFilter || undefined },
+            {
+              page: ordersPage,
+              size: 20,
+              status: ordersStatusFilter || undefined,
+            },
           );
           const list = Array.isArray(res.data?.data)
             ? res.data.data
@@ -121,6 +146,25 @@ const VendorDashboardPage = () => {
     return () => clearInterval(pollInterval.current);
   }, [selectedRestaurant, activeTab, ordersPage, ordersStatusFilter]);
 
+  useEffect(() => {
+    if (activeTab === "promos") {
+      setPromosLoading(true);
+      setPromosError("");
+      promoService
+        .list()
+        .then((res) => {
+          const list = Array.isArray(res.data?.data)
+            ? res.data.data
+            : Array.isArray(res.data)
+              ? res.data
+              : [];
+          setPromosList(list);
+        })
+        .catch(() => setPromosError("Не удалось загрузить промокоды"))
+        .finally(() => setPromosLoading(false));
+    }
+  }, [activeTab]);
+
   const handleCreateRestaurant = async (e) => {
     e.preventDefault();
     setFormLoading(true);
@@ -134,6 +178,57 @@ const VendorDashboardPage = () => {
       setFormError(err.response?.data?.detail || "Ошибка создания");
     } finally {
       setFormLoading(false);
+    }
+  };
+
+  const handleCreatePromo = async (e) => {
+    e.preventDefault();
+    if (!selectedRestaurant) return;
+    setPromoFormLoading(true);
+    setPromosError("");
+    try {
+      const payload = {
+        code: promoForm.code,
+        discount_type: promoForm.discount_type,
+        discount_value: parseInt(promoForm.discount_value, 10),
+        restaurant_id: selectedRestaurant.id,
+        ...(promoForm.max_uses
+          ? { max_uses: parseInt(promoForm.max_uses, 10) }
+          : {}),
+        ...(promoForm.expires_at
+          ? { expires_at: new Date(promoForm.expires_at).toISOString() }
+          : {}),
+      };
+      await promoService.create(payload);
+      setPromoForm({
+        code: "",
+        discount_type: "PERCENT",
+        discount_value: "",
+        max_uses: "",
+        expires_at: "",
+      });
+      setShowPromoForm(false);
+      const res = await promoService.list();
+      const list = Array.isArray(res.data?.data)
+        ? res.data.data
+        : Array.isArray(res.data)
+          ? res.data
+          : [];
+      setPromosList(list);
+    } catch (err) {
+      setPromosError(err.response?.data?.detail || "Ошибка создания промокода");
+    } finally {
+      setPromoFormLoading(false);
+    }
+  };
+
+  const handleDeactivatePromo = async (code) => {
+    setPromosError("");
+    try {
+      await promoService.deactivate(code);
+      setPromosList((prev) => prev.filter((p) => p.code !== code));
+    } catch {
+      setPromosError("Не удалось деактивировать промокод");
     }
   };
 
@@ -375,12 +470,20 @@ const VendorDashboardPage = () => {
             {[
               { id: "menu", label: "Меню", icon: <ForkKnife /> },
               { id: "orders", label: "Заказы", icon: <Package /> },
+              { id: "promos", label: "Промокоды", icon: <Tag /> },
               { id: "settings", label: "Настройки", icon: <Gear /> },
             ].map((tab) => (
               <button
                 key={tab.id}
                 className={`category-chip ${activeTab === tab.id ? "active" : ""}`}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  if (tab.id === "settings" && selectedRestaurant) {
+                    setEditRestaurant(
+                      (prev) => prev ?? { ...selectedRestaurant },
+                    );
+                  }
+                }}
               >
                 {tab.icon} {tab.label}
               </button>
@@ -600,7 +703,14 @@ const VendorDashboardPage = () => {
                   {ordersError}
                 </div>
               )}
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 6,
+                  flexWrap: "wrap",
+                  marginBottom: 12,
+                }}
+              >
                 {[
                   { key: "", label: "Все" },
                   { key: "PENDING", label: "Новые" },
@@ -613,7 +723,10 @@ const VendorDashboardPage = () => {
                     key={key}
                     className={`category-chip${ordersStatusFilter === key ? " active" : ""}`}
                     style={{ fontSize: "0.78rem", padding: "4px 12px" }}
-                    onClick={() => { setOrdersStatusFilter(key); setOrdersPage(1); }}
+                    onClick={() => {
+                      setOrdersStatusFilter(key);
+                      setOrdersPage(1);
+                    }}
                   >
                     {label}
                   </button>
@@ -725,6 +838,250 @@ const VendorDashboardPage = () => {
             </div>
           )}
 
+          {activeTab === "promos" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <span style={{ fontWeight: 700, fontSize: "0.9rem" }}>
+                  Промокоды
+                </span>
+                {selectedRestaurant && (
+                  <button
+                    className="btn btn-primary btn-sm"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      height: 32,
+                    }}
+                    onClick={() => setShowPromoForm((v) => !v)}
+                  >
+                    <Plus size={14} />
+                    Создать
+                  </button>
+                )}
+              </div>
+
+              {promosError && <div className="form-error">{promosError}</div>}
+
+              {showPromoForm && selectedRestaurant && (
+                <form
+                  onSubmit={handleCreatePromo}
+                  style={{
+                    background: "var(--bg-card)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "var(--radius-md)",
+                    padding: 16,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 10,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontWeight: 700,
+                      fontSize: "0.85rem",
+                      marginBottom: 4,
+                    }}
+                  >
+                    Новый промокод
+                  </div>
+                  <input
+                    className="form-input"
+                    placeholder="Код (напр. SAVE20)"
+                    value={promoForm.code}
+                    onChange={(e) =>
+                      setPromoForm((f) => ({
+                        ...f,
+                        code: e.target.value.toUpperCase(),
+                      }))
+                    }
+                    required
+                  />
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: 8,
+                    }}
+                  >
+                    <select
+                      className="form-input"
+                      value={promoForm.discount_type}
+                      onChange={(e) =>
+                        setPromoForm((f) => ({
+                          ...f,
+                          discount_type: e.target.value,
+                        }))
+                      }
+                    >
+                      <option value="PERCENT">% Процент</option>
+                      <option value="FIXED">₽ Фиксированный</option>
+                    </select>
+                    <input
+                      className="form-input"
+                      type="number"
+                      placeholder={
+                        promoForm.discount_type === "PERCENT"
+                          ? "Скидка %"
+                          : "Сумма ₽"
+                      }
+                      min={1}
+                      value={promoForm.discount_value}
+                      onChange={(e) =>
+                        setPromoForm((f) => ({
+                          ...f,
+                          discount_value: e.target.value,
+                        }))
+                      }
+                      required
+                    />
+                  </div>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: 8,
+                    }}
+                  >
+                    <input
+                      className="form-input"
+                      type="number"
+                      placeholder="Макс. использований (не обяз.)"
+                      min={1}
+                      value={promoForm.max_uses}
+                      onChange={(e) =>
+                        setPromoForm((f) => ({
+                          ...f,
+                          max_uses: e.target.value,
+                        }))
+                      }
+                    />
+                    <input
+                      className="form-input"
+                      type="datetime-local"
+                      placeholder="Истекает (не обяз.)"
+                      value={promoForm.expires_at}
+                      onChange={(e) =>
+                        setPromoForm((f) => ({
+                          ...f,
+                          expires_at: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      className="btn btn-primary btn-sm"
+                      type="submit"
+                      disabled={promoFormLoading}
+                      style={{ flex: 1 }}
+                    >
+                      {promoFormLoading ? "Создаю..." : "Создать"}
+                    </button>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      type="button"
+                      onClick={() => setShowPromoForm(false)}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {promosLoading ? (
+                <div className="loading-center">
+                  <div className="spinner" />
+                </div>
+              ) : promosList.length === 0 ? (
+                <EmptyState
+                  icon={<Tag size={36} />}
+                  title="Нет промокодов"
+                  subtitle="Создайте первый промокод для скидки клиентам"
+                />
+              ) : (
+                promosList.map((promo) => (
+                  <div
+                    key={promo.id}
+                    style={{
+                      background: "var(--bg-card)",
+                      border: `1px solid ${promo.is_active ? "var(--border)" : "var(--border-faint, var(--border))"}`,
+                      borderRadius: "var(--radius-md)",
+                      padding: "14px 16px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      opacity: promo.is_active ? 1 : 0.5,
+                    }}
+                  >
+                    <Tag
+                      size={18}
+                      weight="bold"
+                      color={promo.is_active ? "var(--fire)" : "var(--text-3)"}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div
+                        style={{
+                          fontWeight: 800,
+                          fontSize: "0.95rem",
+                          fontFamily: "monospace",
+                        }}
+                      >
+                        {promo.code}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "0.78rem",
+                          color: "var(--text-3)",
+                          marginTop: 2,
+                        }}
+                      >
+                        {promo.discount_type === "PERCENT"
+                          ? `${promo.discount_value}%`
+                          : `${promo.discount_value} ₽`}
+                        {" • "}
+                        {promo.used_count}/{promo.max_uses ?? "∞"} исп.
+                        {promo.expires_at
+                          ? ` • до ${new Date(promo.expires_at).toLocaleDateString()}`
+                          : ""}
+                      </div>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: "0.65rem",
+                        fontWeight: 800,
+                        padding: "3px 8px",
+                        borderRadius: "100px",
+                        background: promo.is_active
+                          ? "rgba(34,197,94,0.12)"
+                          : "rgba(107,114,128,0.12)",
+                        color: promo.is_active ? "#22c55e" : "#6b7280",
+                        border: `1px solid ${promo.is_active ? "rgba(34,197,94,0.3)" : "rgba(107,114,128,0.2)"}`,
+                      }}
+                    >
+                      {promo.is_active ? "Активен" : "Завершён"}
+                    </span>
+                    {promo.is_active && (
+                      <button
+                        className="btn-icon-sm danger"
+                        onClick={() => handleDeactivatePromo(promo.code)}
+                        title="Деактивировать"
+                      >
+                        <Trash size={14} />
+                      </button>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
           {activeTab === "settings" && (
             <div
               style={{
@@ -793,7 +1150,9 @@ const VendorDashboardPage = () => {
                   <input
                     type="checkbox"
                     checked={
-                      editRestaurant?.is_hiring ?? selectedRestaurant.is_hiring ?? false
+                      editRestaurant?.is_hiring ??
+                      selectedRestaurant.is_hiring ??
+                      false
                     }
                     onChange={(e) =>
                       setEditRestaurant({
@@ -807,15 +1166,30 @@ const VendorDashboardPage = () => {
                 <button
                   type="submit"
                   className="btn btn-primary"
-                  disabled={formLoading || !editRestaurant}
+                  disabled={formLoading}
                 >
                   Сохранить
                 </button>
               </form>
 
               {/* Vendor description */}
-              <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--border)" }}>
-                <h4 style={{ fontWeight: 700, fontSize: "0.85rem", color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>
+              <div
+                style={{
+                  marginTop: 20,
+                  paddingTop: 20,
+                  borderTop: "1px solid var(--border)",
+                }}
+              >
+                <h4
+                  style={{
+                    fontWeight: 700,
+                    fontSize: "0.85rem",
+                    color: "var(--text-3)",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                    marginBottom: 10,
+                  }}
+                >
                   О заведении
                 </h4>
                 <textarea
@@ -832,7 +1206,11 @@ const VendorDashboardPage = () => {
                   disabled={descriptionLoading}
                   style={{ width: "100%" }}
                 >
-                  {descriptionSaved ? "Сохранено ✓" : descriptionLoading ? "Сохранение..." : "Сохранить описание"}
+                  {descriptionSaved
+                    ? "Сохранено ✓"
+                    : descriptionLoading
+                      ? "Сохранение..."
+                      : "Сохранить описание"}
                 </button>
               </div>
             </div>

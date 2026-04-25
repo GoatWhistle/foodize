@@ -22,7 +22,7 @@ class TestVendorsAPI:
             response = await client.post("/api/v1/vendors/", json={"description": "Best food here"})
 
         assert response.status_code == 201
-        assert response.json()["description"] == "Best food here"
+        assert response.json()["data"]["description"] == "Best food here"
         mock_add.assert_awaited_once()
 
     @pytest.mark.asyncio
@@ -32,7 +32,7 @@ class TestVendorsAPI:
 
         response = await client.get("/api/v1/vendors/")
         assert response.status_code == 200
-        data = response.json()
+        data = response.json()["data"]
         assert data["description"] == "Test Desc"
 
     @pytest.mark.asyncio
@@ -50,9 +50,20 @@ class TestVendorsAPI:
             return_value=mock_updated,
         ) as mock_update:
             response = await client.patch(
-                "/api/v1/vendors/description", params={"new_description": "New Desc"}
+                "/api/v1/vendors/description",
+                json={"description": "New Desc"},
             )
 
         assert response.status_code == 200
-        assert response.json()["description"] == "New Desc"
+        assert response.json()["data"]["description"] == "New Desc"
         mock_update.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_create_vendor_requires_auth(self, client: AsyncClient):
+        response = await client.post("/api/v1/vendors/", json={"description": "x"})
+        assert response.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_read_my_vendor_requires_auth(self, client: AsyncClient):
+        response = await client.get("/api/v1/vendors/")
+        assert response.status_code == 401

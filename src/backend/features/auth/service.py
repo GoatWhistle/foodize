@@ -67,6 +67,8 @@ async def get_current_user(
     if user_id is None:
         raise AuthException()
     user = await get_user_by_id_or_404(session, uuid.UUID(user_id))
+    if not user.is_active:
+        raise AuthException(detail="Account is deactivated")
     return user
 
 
@@ -91,6 +93,11 @@ async def login_user(
     return TokenResponse(
         access_token=access_token, refresh_token=refresh_token, token_type="bearer"
     )
+
+
+def logout_user(response: Response) -> None:
+    response.delete_cookie("access_token")
+    response.delete_cookie("refresh_token")
 
 
 async def refresh_user_token(

@@ -26,6 +26,9 @@ export const useOrderStore = create((set, get) => ({
       restaurant_id: cartRestaurantId,
       items: cart.map((i) => ({
         menu_item_id: i.menuItem.id,
+        name: i.menuItem.name,
+        price: i.menuItem.price,
+        image_url: i.menuItem.image_url ?? null,
         quantity: i.quantity,
       })),
     };
@@ -94,7 +97,7 @@ export const useOrderStore = create((set, get) => ({
   currentOrder: null,
   ordersLoading: false,
 
-  placeOrder: async () => {
+  placeOrder: async (promoCode = null) => {
     const { cart, cartRestaurantId } = get();
     const payload = {
       restaurant_id: cartRestaurantId,
@@ -102,6 +105,7 @@ export const useOrderStore = create((set, get) => ({
         menu_item_id: i.menuItem.id,
         quantity: i.quantity,
       })),
+      ...(promoCode ? { promo_code: promoCode } : {}),
     };
     const res = await orderService.create(payload);
     set((s) => ({

@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.restaurants import crud
 from features.restaurants.dependencies import get_restaurant_and_check_ownership
+from features.restaurants.exceptions import RestaurantNotFoundException
 from features.restaurants.models import Restaurant
 from features.restaurants.schemas import RestaurantCreate, RestaurantResponse, RestaurantUpdate
 from features.reviews.models import Review
@@ -42,6 +43,55 @@ async def get_my_restaurants(
     return [RestaurantResponse.model_validate(r) for r in data], total
 
 
+def _apply_restaurant_filters(
+    query,
+    name: str | None,
+    is_hiring: bool | None,
+    is_open: bool | None,
+):
+    if name:
+        query = query.where(Restaurant.name.ilike(f"%{name}%"))
+    if is_hiring is not None:
+        query = query.where(Restaurant.is_hiring == is_hiring)
+    if is_open is not None:
+        query = query.where(Restaurant.is_open == is_open)
+    return query
+
+
+async def get_restaurant_public(
+    session: AsyncSession,
+    restaurant_id: uuid.UUID,
+) -> RestaurantResponse:
+    result = await session.execute(
+        _apply_restaurant_filters(
+            select(
+                Restaurant,
+                func.coalesce(func.avg(Review.rating), 0).label("average_rating"),
+                func.count(Review.id).label("review_count"),
+            )
+            .outerjoin(Review, Review.restaurant_id == Restaurant.id)
+            .where(Restaurant.id == restaurant_id)
+            .group_by(Restaurant.id),
+            None,
+            None,
+            None,
+        )
+    )
+    row = result.one_or_none()
+    if not row:
+        raise RestaurantNotFoundException()
+    return RestaurantResponse(
+        id=row[0].id,
+        name=row[0].name,
+        address=row[0].address,
+        vendor_id=row[0].vendor_id,
+        is_hiring=row[0].is_hiring,
+        is_open=row[0].is_open,
+        average_rating=round(float(row[1]), 1),
+        review_count=row[2],
+    )
+
+
 async def get_all_restaurants_public(
     session: AsyncSession,
     name: str | None = None,
@@ -52,25 +102,19 @@ async def get_all_restaurants_public(
 ) -> tuple[list[RestaurantResponse], int]:
     offset = (page - 1) * size
 
-    query = (
+    query = _apply_restaurant_filters(
         select(
             Restaurant,
             func.coalesce(func.avg(Review.rating), 0).label("average_rating"),
             func.count(Review.id).label("review_count"),
         )
         .outerjoin(Review, Review.restaurant_id == Restaurant.id)
-        .group_by(Restaurant.id)
+        .group_by(Restaurant.id),
+        name,
+        is_hiring,
+        is_open,
     )
-
-    if name:
-        query = query.where(Restaurant.name.ilike(f"%{name}%"))
-    if is_hiring is not None:
-        query = query.where(Restaurant.is_hiring == is_hiring)
-    if is_open is not None:
-        query = query.where(Restaurant.is_open == is_open)
-
     result = await session.execute(query.offset(offset).limit(size))
-
     restaurants = [
         RestaurantResponse(
             id=row[0].id,
@@ -85,15 +129,9 @@ async def get_all_restaurants_public(
         for row in result.all()
     ]
 
-    total_query = select(func.count(Restaurant.id))
-    if name:
-        total_query = total_query.where(Restaurant.name.ilike(f"%{name}%"))
-    if is_hiring is not None:
-        total_query = total_query.where(Restaurant.is_hiring == is_hiring)
-    if is_open is not None:
-        total_query = total_query.where(Restaurant.is_open == is_open)
-
-    total_result = await session.execute(total_query)
-    total = total_result.scalar_one()
+    total_query = _apply_restaurant_filters(
+        select(func.count(Restaurant.id)), name, is_hiring, is_open
+    )
+    total = (await session.execute(total_query)).scalar_one()
 
     return restaurants, total

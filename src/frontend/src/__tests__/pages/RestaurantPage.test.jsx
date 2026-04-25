@@ -38,6 +38,28 @@ vi.mock("../../store/useOrderStore", () => ({
   }),
 }));
 
+vi.mock("../../services/restaurantService", () => ({
+  restaurantService: {
+    getById: vi
+      .fn()
+      .mockResolvedValue({ data: { id: "mock-1", name: "Test Restaurant" } }),
+  },
+}));
+
+vi.mock("../../services/reviewService", () => ({
+  reviewService: {
+    getRating: vi.fn().mockResolvedValue({ data: { average_rating: 4.5 } }),
+    getReviews: vi.fn().mockResolvedValue({ data: [] }),
+    createReview: vi.fn().mockResolvedValue({}),
+  },
+}));
+
+vi.mock("../../services/staffService", () => ({
+  staffService: {
+    createRequest: vi.fn().mockResolvedValue({}),
+  },
+}));
+
 describe("RestaurantPage", () => {
   const addToCartMock = vi.fn();
 

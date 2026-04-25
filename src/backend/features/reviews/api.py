@@ -8,15 +8,15 @@ from features.auth.service import get_current_user
 from features.reviews import service
 from features.reviews.schemas import RatingResponse, ReviewCreate, ReviewResponse
 from features.users.models import User
-from shared.response import build_list_response
-from shared.schemas.response import SuccessListResponse
+from shared.response import build_list_response, build_response
+from shared.schemas.response import SuccessListResponse, SuccessResponse
 
 router = APIRouter(prefix="/restaurants", tags=["Reviews"])
 
 
 @router.post(
     "/{restaurant_id}/reviews",
-    response_model=ReviewResponse,
+    response_model=SuccessResponse[ReviewResponse],
     status_code=status.HTTP_201_CREATED,
 )
 async def create_review(
@@ -24,13 +24,14 @@ async def create_review(
     review_in: ReviewCreate,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-) -> ReviewResponse:
-    return await service.create_review_for_user(
+) -> SuccessResponse[ReviewResponse]:
+    result = await service.create_review_for_user(
         session=session,
         review_data=review_in,
         user_id=current_user.id,
         restaurant_id=restaurant_id,
     )
+    return build_response(result)
 
 
 @router.get("/{restaurant_id}/reviews", response_model=SuccessListResponse[ReviewResponse])
@@ -47,9 +48,10 @@ async def read_reviews(
     return build_list_response(data=data, total=total, page=page, size=size, request=request)
 
 
-@router.get("/{restaurant_id}/rating", response_model=RatingResponse)
+@router.get("/{restaurant_id}/rating", response_model=SuccessResponse[RatingResponse])
 async def read_rating(
     restaurant_id: uuid.UUID,
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-) -> RatingResponse:
-    return await service.get_rating_for_restaurant(session=session, restaurant_id=restaurant_id)
+) -> SuccessResponse[RatingResponse]:
+    result = await service.get_rating_for_restaurant(session=session, restaurant_id=restaurant_id)
+    return build_response(result)

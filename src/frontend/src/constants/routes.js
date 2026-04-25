@@ -8,6 +8,8 @@ export const ROUTES = {
   ORDER_STATUS: "/orders/:id",
   ORDER_CONFIRM: "/orders/confirm",
   PROFILE: "/profile",
+  FAVORITES: "/favorites",
   VENDOR_DASHBOARD: "/vendor",
   ADMIN: "/admin",
+  STAFF_DASHBOARD: "/staff",
 };

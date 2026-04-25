@@ -22,6 +22,9 @@ class CartResponse(BaseModel):
 
 class CartItemIn(BaseModel):
     menu_item_id: uuid.UUID
+    name: str
+    price: float
+    image_url: str | None = None
     quantity: int
 
 

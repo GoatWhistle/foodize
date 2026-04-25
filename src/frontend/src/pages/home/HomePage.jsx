@@ -1,10 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  MagnifyingGlass,
-  Storefront,
-  Briefcase,
-} from "@phosphor-icons/react";
+import { MagnifyingGlass, Storefront, Briefcase } from "@phosphor-icons/react";
 import RestaurantCard from "../../components/ui/RestaurantCard";
 import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/ui/Pagination";
@@ -69,7 +65,14 @@ const HomePage = () => {
             aria-label="Поиск ресторана"
           />
         </div>
-        <div style={{ display: "flex", gap: 16, marginTop: "10px", flexWrap: "wrap" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 16,
+            marginTop: "10px",
+            flexWrap: "wrap",
+          }}
+        >
           <label className="form-check" style={{ width: "fit-content" }}>
             <input
               type="checkbox"
@@ -84,7 +87,10 @@ const HomePage = () => {
               checked={isHiring}
               onChange={(e) => setIsHiring(e.target.checked)}
             />
-            <span className="form-check-label" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <span
+              className="form-check-label"
+              style={{ display: "flex", alignItems: "center", gap: 4 }}
+            >
               <Briefcase size={13} weight="bold" /> Набор сотрудников
             </span>
           </label>

@@ -8,10 +8,16 @@ import {
   SignOut,
   CaretRight,
   UserCircle,
+  Heart,
+  PencilSimple,
+  LockKey,
+  Check,
+  X,
 } from "@phosphor-icons/react";
 import { useAuthStore } from "../../store/useAuthStore";
 import { ROUTES } from "../../constants/routes";
 import { vendorService } from "../../services/vendorService";
+import { userService } from "../../services/userService";
 
 const ProfilePage = () => {
   const { user, logout, fetchMe } = useAuthStore();
@@ -21,6 +27,17 @@ const ProfilePage = () => {
   const [checkingVendor, setCheckingVendor] = useState(true);
   const [vendorLoading, setVendorLoading] = useState(false);
   const [vendorError, setVendorError] = useState("");
+
+  const [editMode, setEditMode] = useState(false);
+  const [editForm, setEditForm] = useState({ name: "", phone_number: "" });
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState("");
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [pwForm, setPwForm] = useState({ old_password: "", new_password: "" });
+  const [pwLoading, setPwLoading] = useState(false);
+  const [pwError, setPwError] = useState("");
+  const [pwSuccess, setPwSuccess] = useState(false);
 
   useEffect(() => {
     vendorService
@@ -49,6 +66,45 @@ const ProfilePage = () => {
     }
   };
 
+  const startEdit = () => {
+    setEditForm({
+      name: user?.name ?? "",
+      phone_number: user?.phone_number ?? "",
+    });
+    setEditMode(true);
+    setEditError("");
+  };
+
+  const handleEditSave = async () => {
+    setEditLoading(true);
+    setEditError("");
+    try {
+      await userService.updateMe(editForm);
+      await fetchMe();
+      setEditMode(false);
+    } catch {
+      setEditError("Не удалось сохранить изменения");
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    setPwLoading(true);
+    setPwError("");
+    setPwSuccess(false);
+    try {
+      await userService.changePassword(pwForm);
+      setPwSuccess(true);
+      setPwForm({ old_password: "", new_password: "" });
+    } catch (err) {
+      setPwError(err.response?.data?.detail || "Не удалось сменить пароль");
+    } finally {
+      setPwLoading(false);
+    }
+  };
+
   const initials = user?.name ? (
     user.name
       .split(" ")
@@ -62,12 +118,108 @@ const ProfilePage = () => {
 
   return (
     <div className="profile-page page-enter">
-      <div className="profile-header">
+      {/* Header */}
+      <div className="profile-header" style={{ position: "relative" }}>
         <div className="profile-avatar">{initials}</div>
-        <div>
-          <div className="profile-name">{user?.name || "Пользователь"}</div>
-          <div className="profile-phone">{user?.phone_number || "—"}</div>
-        </div>
+
+        {!editMode ? (
+          <div style={{ flex: 1 }}>
+            <div className="profile-name">{user?.name || "Пользователь"}</div>
+            <div className="profile-phone">{user?.phone_number || "—"}</div>
+          </div>
+        ) : (
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+            }}
+          >
+            <input
+              className="form-input"
+              style={{ fontSize: "0.9rem" }}
+              placeholder="Имя"
+              value={editForm.name}
+              onChange={(e) =>
+                setEditForm((f) => ({ ...f, name: e.target.value }))
+              }
+            />
+            <input
+              className="form-input"
+              style={{ fontSize: "0.9rem" }}
+              placeholder="Телефон"
+              value={editForm.phone_number}
+              onChange={(e) =>
+                setEditForm((f) => ({ ...f, phone_number: e.target.value }))
+              }
+            />
+            {editError && (
+              <div className="form-error" style={{ fontSize: "0.78rem" }}>
+                {editError}
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={handleEditSave}
+                disabled={editLoading}
+                style={{
+                  flex: 1,
+                  height: 36,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                }}
+              >
+                {editLoading ? (
+                  "..."
+                ) : (
+                  <>
+                    <Check size={14} /> Сохранить
+                  </>
+                )}
+              </button>
+              <button
+                className="btn btn-secondary btn-sm"
+                onClick={() => setEditMode(false)}
+                style={{
+                  height: 36,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!editMode && (
+          <button
+            onClick={startEdit}
+            style={{
+              position: "absolute",
+              top: 0,
+              right: 0,
+              width: 32,
+              height: 32,
+              borderRadius: "50%",
+              background: "var(--bg-surface)",
+              border: "1px solid var(--border)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              color: "var(--text-3)",
+            }}
+            aria-label="Редактировать профиль"
+          >
+            <PencilSimple size={14} weight="bold" />
+          </button>
+        )}
       </div>
 
       {vendorError && (
@@ -77,6 +229,7 @@ const ProfilePage = () => {
       )}
 
       <div className="profile-menu">
+        {/* Orders */}
         <div
           id="profile-orders-link"
           className="profile-menu-item"
@@ -92,6 +245,23 @@ const ProfilePage = () => {
           <CaretRight size={16} color="var(--text-3)" />
         </div>
 
+        {/* Favorites */}
+        <div
+          id="profile-favorites-link"
+          className="profile-menu-item"
+          onClick={() => navigate(ROUTES.FAVORITES)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && navigate(ROUTES.FAVORITES)}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            <Heart size={20} weight="bold" color="#ef4444" />
+            <span>Избранное</span>
+          </div>
+          <CaretRight size={16} color="var(--text-3)" />
+        </div>
+
+        {/* Admin */}
         {user?.user_role === "ADMIN" && (
           <div
             id="profile-admin-dashboard-link"
@@ -106,6 +276,7 @@ const ProfilePage = () => {
           </div>
         )}
 
+        {/* Vendor */}
         {!checkingVendor &&
           (isVendor ? (
             <div
@@ -140,6 +311,89 @@ const ProfilePage = () => {
               <CaretRight size={16} color="var(--text-3)" />
             </div>
           ))}
+
+        {/* Change password */}
+        <div
+          className="profile-menu-item"
+          onClick={() => {
+            setShowPassword((p) => !p);
+            setPwError("");
+            setPwSuccess(false);
+          }}
+          role="button"
+          tabIndex={0}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            <LockKey size={20} weight="bold" />
+            <span>Сменить пароль</span>
+          </div>
+          <CaretRight
+            size={16}
+            color="var(--text-3)"
+            style={{
+              transform: showPassword ? "rotate(90deg)" : "none",
+              transition: "transform 200ms",
+            }}
+          />
+        </div>
+
+        {showPassword && (
+          <form
+            onSubmit={handlePasswordChange}
+            style={{
+              padding: "4px 16px 16px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+              borderBottom: "1px solid var(--border)",
+            }}
+          >
+            <input
+              className="form-input"
+              type="password"
+              placeholder="Текущий пароль"
+              value={pwForm.old_password}
+              onChange={(e) =>
+                setPwForm((f) => ({ ...f, old_password: e.target.value }))
+              }
+              required
+            />
+            <input
+              className="form-input"
+              type="password"
+              placeholder="Новый пароль (мин. 8 символов)"
+              value={pwForm.new_password}
+              onChange={(e) =>
+                setPwForm((f) => ({ ...f, new_password: e.target.value }))
+              }
+              minLength={8}
+              required
+            />
+            {pwError && (
+              <div className="form-error" style={{ fontSize: "0.78rem" }}>
+                {pwError}
+              </div>
+            )}
+            {pwSuccess && (
+              <div
+                style={{
+                  color: "#22c55e",
+                  fontSize: "0.78rem",
+                  fontWeight: 700,
+                }}
+              >
+                ✓ Пароль изменён
+              </div>
+            )}
+            <button
+              className="btn btn-primary btn-sm"
+              type="submit"
+              disabled={pwLoading}
+            >
+              {pwLoading ? "..." : "Сохранить пароль"}
+            </button>
+          </form>
+        )}
 
         <div className="divider" style={{ margin: "8px 0" }} />
 
