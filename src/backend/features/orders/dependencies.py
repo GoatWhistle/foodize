@@ -41,7 +41,7 @@ async def _verify_restaurant_access(
             raise AccessDeniedException()
 
     else:
-        raise AccessDeniedException()
+        raise AccessDeniedException("Only VENDOR and STAFF can access orders")
 
     return restaurant
 

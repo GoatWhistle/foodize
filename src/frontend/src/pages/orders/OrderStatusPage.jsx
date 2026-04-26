@@ -7,6 +7,22 @@ import { orderService } from "../../services/orderService";
 
 const POLL_INTERVAL = 5000;
 
+const STATUS_LABEL_RU = {
+  PENDING: "Ожидает",
+  ACCEPTED: "Принят",
+  COOKING: "Готовится",
+  READY: "Готов",
+  COMPLETED: "Выдан",
+  CANCELLED: "Отменён",
+};
+
+const ACTOR_ROLE_RU = {
+  VENDOR: "Вендор",
+  STAFF: "Сотрудник",
+  CUSTOMER: "Клиент",
+  ADMIN: "Администратор",
+};
+
 const OrderStatusPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -29,9 +45,7 @@ const OrderStatusPage = () => {
             ? res.data
             : [];
         setEvents(list);
-      } catch {
-        // intentionally ignored — polling errors are non-fatal
-      }
+      } catch {}
     };
     loadEvents();
 
@@ -260,10 +274,9 @@ const OrderStatusPage = () => {
                     style={{
                       fontSize: "0.85rem",
                       fontWeight: 700,
-                      textTransform: "capitalize",
                     }}
                   >
-                    {ev.new_status}
+                    {STATUS_LABEL_RU[ev.new_status] ?? ev.new_status}
                   </div>
                   <div style={{ fontSize: "0.75rem", color: "var(--text-3)" }}>
                     {new Date(ev.created_at).toLocaleTimeString([], {

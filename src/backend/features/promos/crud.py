@@ -12,13 +12,6 @@ async def get_promo_by_code(session: AsyncSession, code: str) -> Promo | None:
     return result.scalar_one_or_none()
 
 
-async def get_promos_by_restaurant(session: AsyncSession, restaurant_id: uuid.UUID) -> list[Promo]:
-    result = await session.execute(
-        select(Promo).where(Promo.restaurant_id == restaurant_id).order_by(Promo.created_at.desc())
-    )
-    return list(result.scalars().all())
-
-
 async def get_promos_by_restaurant_ids(
     session: AsyncSession,
     restaurant_ids: list[uuid.UUID],

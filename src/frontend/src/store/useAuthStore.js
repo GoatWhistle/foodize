@@ -10,10 +10,10 @@ export const useAuthStore = create(
 
       login: async (credentials) => {
         const response = await authService.login(credentials);
-        const { access_token } = response.data;
+        const { access_token } = response.data.data;
         localStorage.setItem("access_token", access_token);
         const me = await authService.getMe();
-        set({ user: me.data, isAuthenticated: true });
+        set({ user: me.data.data, isAuthenticated: true });
       },
 
       register: async (userData) => {
@@ -32,7 +32,7 @@ export const useAuthStore = create(
       fetchMe: async () => {
         try {
           const me = await authService.getMe();
-          set({ user: me.data, isAuthenticated: true });
+          set({ user: me.data.data, isAuthenticated: true });
         } catch {
           set({ user: null, isAuthenticated: false });
         }

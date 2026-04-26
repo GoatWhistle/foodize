@@ -29,10 +29,7 @@ async def _process_message(
         try:
             model_cls = _EVENT_MODELS[routing_key]
             event = model_cls.model_validate_json(message.body)
-            handler = {
-                "order.placed": handle_order_placed,
-                "order.status_changed": handle_order_status_changed,
-            }[routing_key]
+            _, _, handler = next(b for b in _BINDINGS if b[1] == routing_key)
             await handler(event)  # type: ignore[arg-type]
         except Exception:
             logger.exception("Failed to process message (routing_key=%s)", routing_key)

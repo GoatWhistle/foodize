@@ -103,10 +103,9 @@ const ApplicationStatus = () => {
   if (!application) {
     return (
       <div style={{ padding: "40px 20px", maxWidth: 500, margin: "0 auto" }}>
-        <EmptyState
-          icon={<Package size={48} />}
+              <EmptyState
           title="Нет профиля сотрудника"
-          description="Вы не привязаны ни к одному заведению. Обратитесь к менеджеру."
+          subtitle="Вы не привязаны ни к одному заведению. Обратитесь к менеджеру."
         />
       </div>
     );
@@ -398,7 +397,6 @@ const StaffDashboardPage = () => {
       className="page-enter"
       style={{ padding: "24px 16px", maxWidth: 640, margin: "0 auto" }}
     >
-      {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <div
           style={{
@@ -452,7 +450,6 @@ const StaffDashboardPage = () => {
         </p>
       </div>
 
-      {/* Active summary */}
       <div
         style={{
           display: "grid",
@@ -526,7 +523,6 @@ const StaffDashboardPage = () => {
         })}
       </div>
 
-      {/* Tabs */}
       <div className="menu-categories-scroll" style={{ marginBottom: 16 }}>
         {STATUS_TABS.map((tab) => (
           <button
@@ -542,16 +538,15 @@ const StaffDashboardPage = () => {
         ))}
       </div>
 
-      {/* Orders */}
       {ordersLoading ? (
         <div className="loading-center">
           <div className="spinner" />
         </div>
       ) : orders.length === 0 ? (
-        <EmptyState
+                <EmptyState
           icon={<Package size={40} />}
           title="Заказов нет"
-          description="Здесь появятся заказы для обработки"
+          subtitle="Здесь появятся заказы для обработки"
         />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -566,7 +561,6 @@ const StaffDashboardPage = () => {
         </div>
       )}
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div
           style={{

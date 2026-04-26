@@ -21,8 +21,18 @@ import { vendorService } from "../../services/vendorService";
 import { orderService } from "../../services/orderService";
 import { menuService } from "../../services/menuService";
 import { promoService } from "../../services/promoService";
+import { restaurantService } from "../../services/restaurantService";
 import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/ui/Pagination";
+
+const STATUS_LABEL_RU = {
+  PENDING: "Новый",
+  ACCEPTED: "Принят",
+  COOKING: "Готовится",
+  READY: "Готов",
+  COMPLETED: "Выдан",
+  CANCELLED: "Отменён",
+};
 
 const VendorDashboardPage = () => {
   const {
@@ -69,7 +79,6 @@ const VendorDashboardPage = () => {
   const [formError, setFormError] = useState("");
   const { createRestaurant } = useRestaurantStore();
 
-  // Promos state
   const [promosList, setPromosList] = useState([]);
   const [promosLoading, setPromosLoading] = useState(false);
   const [promosError, setPromosError] = useState("");
@@ -134,9 +143,7 @@ const VendorDashboardPage = () => {
               : [];
           setRestaurantOrders(list);
           setOrdersTotal(res.data?.total || list.length);
-        } catch {
-          /* ignore */
-        }
+        } catch {}
       };
       fetchOrders();
       if (ordersPage === 1 && !ordersStatusFilter) {
@@ -237,8 +244,6 @@ const VendorDashboardPage = () => {
     setFormLoading(true);
     setFormError("");
     try {
-      const { restaurantService } =
-        await import("../../services/restaurantService");
       await restaurantService.update(selectedRestaurant.id, editRestaurant);
       await fetchMyRestaurants();
       setEditRestaurant(null);
@@ -295,7 +300,6 @@ const VendorDashboardPage = () => {
       setDescriptionSaved(true);
       setTimeout(() => setDescriptionSaved(false), 2000);
     } catch {
-      /* ignore */
     } finally {
       setDescriptionLoading(false);
     }
@@ -333,9 +337,7 @@ const VendorDashboardPage = () => {
       setStaffRequests((prev) =>
         prev.map((r) => (r.id === requestId ? { ...r, status } : r)),
       );
-    } catch {
-      /* ignore */
-    }
+    } catch {}
   };
 
   const selectedMenu = selectedRestaurant
@@ -770,7 +772,7 @@ const VendorDashboardPage = () => {
                         <span
                           className={`order-status-badge ${order.status === "PENDING" ? "pending" : "ready"}`}
                         >
-                          {order.status}
+                          {STATUS_LABEL_RU[order.status] ?? order.status}
                         </span>
                         <div style={{ display: "flex", gap: 4 }}>
                           {order.status === "PENDING" && (
@@ -1172,7 +1174,6 @@ const VendorDashboardPage = () => {
                 </button>
               </form>
 
-              {/* Vendor description */}
               <div
                 style={{
                   marginTop: 20,
@@ -1265,3 +1266,4 @@ const VendorDashboardPage = () => {
 };
 
 export default VendorDashboardPage;
+ 

@@ -77,7 +77,7 @@ const RestaurantPage = () => {
         setRating(val);
       })
       .catch(() => {});
-  }, [id, fetchMenu]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [id, fetchMenu]);
 
   const loadReviews = () => {
     setReviewsLoading(true);
@@ -146,7 +146,6 @@ const RestaurantPage = () => {
       className="page-enter"
       style={{ position: "relative", minHeight: "100vh" }}
     >
-      {/* Hero */}
       <div className="restaurant-hero">
         {restaurant.photo_url ? (
           <img
@@ -206,7 +205,6 @@ const RestaurantPage = () => {
         </div>
       </div>
 
-      {/* Menu */}
       <div className="restaurant-content">
         <div className="menu-categories-scroll">
           {categories.map((cat) => (
@@ -239,7 +237,6 @@ const RestaurantPage = () => {
         )}
       </div>
 
-      {/* Staff FAB */}
       <button
         className="staff-fab"
         onClick={() => setShowStaffModal(true)}
@@ -248,7 +245,6 @@ const RestaurantPage = () => {
         <Briefcase size={22} weight="fill" />
       </button>
 
-      {/* Staff Modal */}
       {showStaffModal && (
         <div className="modal-overlay" style={{ zIndex: 3000 }}>
           <div
@@ -329,7 +325,6 @@ const RestaurantPage = () => {
         </div>
       )}
 
-      {/* Reviews Modal */}
       {showReviewsModal && (
         <div className="modal-overlay" style={{ zIndex: 3000 }}>
           <div
@@ -376,7 +371,6 @@ const RestaurantPage = () => {
             </div>
 
             <div style={{ overflowY: "auto", flex: 1 }}>
-              {/* Write review */}
               <form
                 onSubmit={handleReviewSubmit}
                 style={{
@@ -453,7 +447,6 @@ const RestaurantPage = () => {
                 </button>
               </form>
 
-              {/* Reviews list */}
               <div
                 style={{ display: "flex", flexDirection: "column", gap: 12 }}
               >
