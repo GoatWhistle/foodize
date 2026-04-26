@@ -6,9 +6,9 @@ class AppException(Exception):
     detail: str = "Application error"
 
     def __init__(self, status_code: int | None = None, detail: str | None = None):
-        if status_code:
+        if status_code is not None:
             self.status_code = status_code
-        if detail:
+        if detail is not None:
             self.detail = detail
 
 

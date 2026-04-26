@@ -8,6 +8,7 @@ import {
 import { IconContext, MapPin, ArrowLeft } from "@phosphor-icons/react";
 
 import MainLayout from "./components/layout/MainLayout";
+import ErrorBoundary from "./components/ui/ErrorBoundary";
 
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
@@ -171,16 +172,18 @@ function App() {
   }, [isAuthenticated, fetchCart, loadFavorites]);
 
   return (
-    <IconContext.Provider
-      value={{
-        color: "currentColor",
-        size: 20,
-        weight: "bold",
-        mirrored: false,
-      }}
-    >
-      <RouterProvider router={router} />
-    </IconContext.Provider>
+    <ErrorBoundary>
+      <IconContext.Provider
+        value={{
+          color: "currentColor",
+          size: 20,
+          weight: "bold",
+          mirrored: false,
+        }}
+      >
+        <RouterProvider router={router} />
+      </IconContext.Provider>
+    </ErrorBoundary>
   );
 }
 

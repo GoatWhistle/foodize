@@ -33,9 +33,9 @@ describe("authService", () => {
     expect(result.data).toEqual(mockData);
   });
 
-  it("getMe sends GET to /users/", async () => {
+  it("getMe sends GET to /users/me", async () => {
     const mockData = { id: "1", name: "Ivan" };
-    mock.onGet("/users/").reply(200, mockData);
+    mock.onGet("/users/me").reply(200, mockData);
 
     const result = await authService.getMe();
     expect(result.data).toEqual(mockData);

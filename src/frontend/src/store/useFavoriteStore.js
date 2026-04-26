@@ -8,11 +8,7 @@ export const useFavoriteStore = create((set, get) => ({
   loadFavorites: async () => {
     try {
       const res = await favoriteService.getAll({ size: 100 });
-      const list = Array.isArray(res.data?.data)
-        ? res.data.data
-        : Array.isArray(res.data)
-          ? res.data
-          : [];
+      const list = Array.isArray(res.data?.data) ? res.data.data : [];
       set({
         favoriteIds: new Set(list.map((f) => f.restaurant.id)),
         loaded: true,

@@ -35,9 +35,9 @@ describe("useAuthStore", () => {
     const mockUser = { id: "1", name: "Test" };
     const mockToken = "token123";
     authService.login.mockResolvedValueOnce({
-      data: { access_token: mockToken },
+      data: { data: { access_token: mockToken } },
     });
-    authService.getMe.mockResolvedValueOnce({ data: mockUser });
+    authService.getMe.mockResolvedValueOnce({ data: { data: mockUser } });
 
     await useAuthStore
       .getState()

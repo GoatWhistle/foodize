@@ -56,7 +56,7 @@ const AdminDashboardPage = () => {
     setActionError("");
     try {
       const res = await adminService.getUser(id);
-      setSelectedUser(res.data);
+      setSelectedUser(res.data.data);
     } catch {
       setActionError("Не удалось загрузить детали пользователя");
     } finally {
@@ -68,7 +68,7 @@ const AdminDashboardPage = () => {
     if (activeTab === "stats" && !stats) {
       adminService
         .getPlatformStats()
-        .then((res) => setStats(res.data))
+        .then((res) => setStats(res.data.data))
         .catch(() => {});
     }
   }, [activeTab, stats]);
@@ -80,7 +80,7 @@ const AdminDashboardPage = () => {
         .getUsers({ page: usersPage, size: 20 })
         .then((res) => {
           setUsers(res.data.data || []);
-          setUsersTotal(res.data.total || 0);
+          setUsersTotal(res.data.pagination?.total || 0);
         })
         .catch(() => {})
         .finally(() => setUsersLoading(false));
@@ -137,7 +137,7 @@ const AdminDashboardPage = () => {
         })
         .then((res) => {
           setOrders(res.data.data || []);
-          setOrdersTotal(res.data.total || 0);
+          setOrdersTotal(res.data.pagination?.total || 0);
         })
         .catch(() => {})
         .finally(() => setOrdersLoading(false));

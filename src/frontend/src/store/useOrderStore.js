@@ -10,8 +10,8 @@ export const useOrderStore = create((set, get) => ({
     try {
       const res = await cartService.getCart();
       set({
-        cart: res.data.items,
-        cartRestaurantId: res.data.restaurant_id,
+        cart: res.data.data.items ?? [],
+        cartRestaurantId: res.data.data.restaurant_id ?? null,
       });
     } catch (err) {
       console.error(err);
@@ -109,13 +109,13 @@ export const useOrderStore = create((set, get) => ({
     };
     const res = await orderService.create(payload);
     set((s) => ({
-      orders: [res.data, ...s.orders],
-      currentOrder: res.data,
+      orders: [res.data.data, ...s.orders],
+      currentOrder: res.data.data,
       cart: [],
       cartRestaurantId: null,
     }));
     await cartService.clearCart();
-    return res.data;
+    return res.data.data;
   },
 
   ordersTotal: 0,
@@ -124,12 +124,8 @@ export const useOrderStore = create((set, get) => ({
     set({ ordersLoading: true });
     try {
       const res = await orderService.getMyOrders({ params });
-      const orders = Array.isArray(res.data?.data)
-        ? res.data.data
-        : Array.isArray(res.data)
-          ? res.data
-          : [];
-      const ordersTotal = res.data?.total || orders.length;
+      const orders = Array.isArray(res.data?.data) ? res.data.data : [];
+      const ordersTotal = res.data?.pagination?.total || orders.length;
 
       set({ orders, ordersTotal, ordersLoading: false });
     } catch {
@@ -139,7 +135,7 @@ export const useOrderStore = create((set, get) => ({
 
   fetchOrder: async (id) => {
     const res = await orderService.getById(id);
-    set({ currentOrder: res.data });
-    return res.data;
+    set({ currentOrder: res.data.data });
+    return res.data.data;
   },
 }));

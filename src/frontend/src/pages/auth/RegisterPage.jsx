@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/useAuthStore";
 import { ROUTES } from "../../constants/routes";
 import FoodizeLogo from "../../components/ui/FoodizeLogo";
+import { translateApiError } from "../../utils/translateApiError";
 
 const AuthVisual = () => (
   <div className="auth-visual">
@@ -47,7 +48,7 @@ const RegisterPage = () => {
       await login({ phone_number: phone, password });
       navigate(ROUTES.HOME);
     } catch (err) {
-      setError(err.response?.data?.detail || "Ошибка при регистрации");
+      setError(translateApiError(err, "Ошибка при регистрации"));
     } finally {
       setIsLoading(false);
     }

@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/useAuthStore";
 import { ROUTES } from "../../constants/routes";
 import FoodizeLogo from "../../components/ui/FoodizeLogo";
+import { translateApiError } from "../../utils/translateApiError";
 
 const AuthVisual = () => (
   <div className="auth-visual">
@@ -39,7 +40,7 @@ const LoginPage = () => {
       await login({ phone_number: phoneNumber, password });
       navigate(ROUTES.HOME);
     } catch (err) {
-      setError(err.response?.data?.detail || "Неверный телефон или пароль");
+      setError(translateApiError(err, "Неверный телефон или пароль"));
     } finally {
       setIsLoading(false);
     }

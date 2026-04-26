@@ -68,3 +68,21 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+const WS_BASE_URL = (
+  import.meta.env.VITE_API_URL ?? "http://localhost:8000/api/v1"
+)
+  .replace(/^http/, "ws")
+  .replace(/\/api\/v1$/, "");
+
+export function createOrderWebSocket(orderId, onMessage, onClose) {
+  const ws = new WebSocket(`${WS_BASE_URL}/api/v1/ws/orders/${orderId}`);
+  ws.onmessage = (event) => {
+    try {
+      onMessage(JSON.parse(event.data));
+    } catch {}
+  };
+  ws.onclose = () => onClose?.();
+  ws.onerror = () => ws.close();
+  return ws;
+}

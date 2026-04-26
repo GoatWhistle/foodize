@@ -3,6 +3,7 @@ import { Plus, Minus, Trash, Tag, X } from "@phosphor-icons/react";
 import { useOrderStore } from "../../store/useOrderStore";
 import OrderButton from "./OrderButton";
 import { promoService } from "../../services/promoService";
+import { translateApiError } from "../../utils/translateApiError";
 
 const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
   const { cart, cartRestaurantId, removeFromCart, addToCart, clearCart } =
@@ -40,9 +41,9 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
         promoCode.trim(),
         cartRestaurantId,
       );
-      setAppliedPromo({ ...res.data, originalTotal: total });
+      setAppliedPromo({ ...res.data.data, originalTotal: total });
     } catch (err) {
-      setPromoError(err.response?.data?.detail || "Неверный промокод");
+      setPromoError(translateApiError(err, "Неверный промокод"));
       setAppliedPromo(null);
     } finally {
       setPromoLoading(false);

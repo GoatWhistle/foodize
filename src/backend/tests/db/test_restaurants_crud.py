@@ -100,13 +100,11 @@ async def test_get_vendor_restaurants_and_count(db_session):
 async def test_get_all_restaurants_with_filters(db_session):
     vendor_profile = await _make_vendor(db_session, "79001234571")
 
-    # open + hiring
     await create_restaurant(
         db_session,
         RestaurantCreate(name="Sushi Place", address="C", is_open=True, is_hiring=True),
         vendor_profile.id,
     )
-    # closed + not hiring
     await create_restaurant(
         db_session,
         RestaurantCreate(name="Pizza Place", address="D", is_open=False, is_hiring=False),
@@ -116,17 +114,14 @@ async def test_get_all_restaurants_with_filters(db_session):
     all_rests = await get_all_restaurants(db_session)
     assert len(all_rests) == 2
 
-    # filter by is_open=True
     open_rests = await get_all_restaurants(db_session, is_open=True)
     assert len(open_rests) == 1
     assert open_rests[0].name == "Sushi Place"
 
-    # filter by is_hiring=False
     not_hiring = await get_all_restaurants(db_session, is_hiring=False)
     assert len(not_hiring) == 1
     assert not_hiring[0].name == "Pizza Place"
 
-    # filter by name (ilike)
     by_name = await get_all_restaurants(db_session, name="sushi")
     assert len(by_name) == 1
 

@@ -6,14 +6,14 @@ from shared.enums.roles import UserRole
 
 
 class UserBase(BaseModel):
-    name: str
-    phone_number: str
+    name: str = Field(min_length=1, max_length=128)
+    phone_number: str = Field(min_length=7, max_length=16, pattern=r"^\+?[0-9]{7,15}$")
     model_config = ConfigDict(from_attributes=True)
 
 
 class UserCreate(UserBase):
     user_role: UserRole
-    password: str = Field(min_length=8)
+    password: str = Field(min_length=8, max_length=128)
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -23,10 +23,10 @@ class UserRead(UserBase):
 
 
 class UserUpdate(BaseModel):
-    name: str | None = None
-    phone_number: str | None = None
+    name: str | None = Field(None, min_length=1, max_length=128)
+    phone_number: str | None = Field(None, min_length=7, max_length=16, pattern=r"^\+?[0-9]{7,15}$")
 
 
 class ChangePasswordRequest(BaseModel):
     old_password: str
-    new_password: str = Field(min_length=8)
+    new_password: str = Field(min_length=8, max_length=128)

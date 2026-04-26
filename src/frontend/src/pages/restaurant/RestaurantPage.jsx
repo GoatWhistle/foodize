@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useLocation } from "react-router-dom";
+import { translateApiError } from "../../utils/translateApiError";
 import {
   Star,
   ChatCircleText,
@@ -67,13 +68,14 @@ const RestaurantPage = () => {
     if (!location.state?.restaurant) {
       restaurantService
         .getById(id)
-        .then((res) => setRestaurantData(res.data))
+        .then((res) => setRestaurantData(res.data.data))
         .catch(() => {});
     }
     reviewService
       .getRating(id)
       .then((res) => {
-        const val = res.data?.average_rating ?? res.data?.rating ?? null;
+        const val =
+          res.data?.data?.average_rating ?? res.data?.data?.rating ?? null;
         setRating(val);
       })
       .catch(() => {});
@@ -84,11 +86,7 @@ const RestaurantPage = () => {
     reviewService
       .getReviews(id)
       .then((res) => {
-        const list = Array.isArray(res.data?.data)
-          ? res.data.data
-          : Array.isArray(res.data)
-            ? res.data
-            : [];
+        const list = Array.isArray(res.data?.data) ? res.data.data : [];
         setReviewsList(list);
       })
       .finally(() => setReviewsLoading(false));
@@ -111,9 +109,7 @@ const RestaurantPage = () => {
       setReviewForm({ rating: 5, text: "" });
       loadReviews();
     } catch (err) {
-      setReviewError(
-        err.response?.data?.detail || "Не удалось отправить отзыв",
-      );
+      setReviewError(translateApiError(err, "Не удалось отправить отзыв"));
     }
   };
 

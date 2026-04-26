@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Outlet } from "react-router-dom";
+import { translateApiError } from "../../utils/translateApiError";
 import {
   House,
   Package,
@@ -55,7 +56,7 @@ const MainLayout = () => {
       setIsCartOpen(false);
       navigate(ROUTES.ORDER_STATUS.replace(":id", order.id));
     } catch (err) {
-      setError(err.response?.data?.detail || "Не удалось разместить заказ");
+      setError(translateApiError(err, "Не удалось разместить заказ"));
     } finally {
       setIsLoading(false);
     }

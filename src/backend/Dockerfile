@@ -16,10 +16,16 @@ RUN uv pip install --system --no-cache -r pyproject.toml
 COPY . .
 
 FROM base AS migrations
+RUN useradd -m appuser
+USER appuser
 CMD ["alembic", "upgrade", "head"]
 
 FROM base AS backend
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+RUN useradd -m appuser
+USER appuser
+CMD ["gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000", "main:app"]
 
 FROM base AS worker
+RUN useradd -m appuser
+USER appuser
 CMD ["python", "-m", "worker.main"]

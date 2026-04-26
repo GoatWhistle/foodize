@@ -1,8 +1,8 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class PromoCreate(BaseModel):
@@ -12,6 +12,13 @@ class PromoCreate(BaseModel):
     restaurant_id: uuid.UUID
     max_uses: int | None = Field(None, ge=1)
     expires_at: datetime | None = None
+
+    @field_validator("expires_at")
+    @classmethod
+    def expires_at_must_be_future(cls, v: datetime | None) -> datetime | None:
+        if v is not None and v <= datetime.now(timezone.utc):
+            raise ValueError("expires_at must be in the future")
+        return v
 
 
 class PromoResponse(BaseModel):

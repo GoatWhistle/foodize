@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { translateApiError } from "../../utils/translateApiError";
 import {
   Package,
   Crown,
@@ -99,7 +100,7 @@ const ProfilePage = () => {
       setPwSuccess(true);
       setPwForm({ old_password: "", new_password: "" });
     } catch (err) {
-      setPwError(err.response?.data?.detail || "Не удалось сменить пароль");
+      setPwError(translateApiError(err, "Не удалось сменить пароль"));
     } finally {
       setPwLoading(false);
     }

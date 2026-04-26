@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from database import Base, CreatedAtMixin, IdUuidPkMixin, UpdatedAtMixin
+from database import Base, CreatedAtMixin, DeletedAtMixin, IdUuidPkMixin, UpdatedAtMixin
 from database.mixins.name_str import NameStrMixin
 from shared.enums.category import Category
 
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from features.restaurants.models import Restaurant
 
 
-class MenuItem(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin):
+class MenuItem(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin, DeletedAtMixin):
     description: Mapped[str | None]
     price: Mapped[int]
     prep_time_minutes: Mapped[int] = mapped_column(default=15, server_default="15")

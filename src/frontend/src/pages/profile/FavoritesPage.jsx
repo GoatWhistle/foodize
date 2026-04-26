@@ -17,11 +17,7 @@ const FavoritesPage = () => {
     favoriteService
       .getAll({ size: 100 })
       .then((res) => {
-        const list = Array.isArray(res.data?.data)
-          ? res.data.data
-          : Array.isArray(res.data)
-            ? res.data
-            : [];
+        const list = Array.isArray(res.data?.data) ? res.data.data : [];
         setFavorites(list);
       })
       .catch(() => {})

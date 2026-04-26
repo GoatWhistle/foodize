@@ -6,20 +6,20 @@ from shared.enums.category import Category
 
 
 class MenuItemCreate(BaseModel):
-    name: str
-    description: str | None = None
-    price: int = Field(..., le=100000000)
+    name: str = Field(min_length=1, max_length=128)
+    description: str | None = Field(None, max_length=512)
+    price: int = Field(..., ge=1, le=100000000)
     category: Category = Category.SHAURMA
-    prep_time_minutes: int = 15
+    prep_time_minutes: int = Field(15, ge=1, le=300)
 
 
 class MenuItemUpdate(BaseModel):
-    name: str | None = None
-    description: str | None = None
-    price: int | None = Field(None, le=100000000)
+    name: str | None = Field(None, min_length=1, max_length=128)
+    description: str | None = Field(None, max_length=512)
+    price: int | None = Field(None, ge=1, le=100000000)
     category: Category | None = None
     is_available: bool | None = None
-    prep_time_minutes: int | None = None
+    prep_time_minutes: int | None = Field(None, ge=1, le=300)
 
 
 class MenuItemResponse(BaseModel):

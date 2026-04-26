@@ -49,5 +49,5 @@ async def create_refresh(
 
 
 @router.post("/logout", status_code=204)
-async def create_logout(response: Response) -> None:
-    service.logout_user(response)
+async def create_logout(request: Request, response: Response) -> None:
+    await service.logout_user(request=request, response=response)

@@ -1,12 +1,12 @@
 import uuid
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from shared.enums.staff_request_status import StaffRequestStatus
 
 
 class StaffRequestCreate(BaseModel):
-    message: str | None = None
+    message: str | None = Field(None, max_length=512)
 
 
 class StaffRequestStatusUpdate(BaseModel):

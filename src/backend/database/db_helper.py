@@ -25,6 +25,12 @@ class DbHelper:
             echo_pool=echo_pool,
             max_overflow=max_overflow,
             pool_size=pool_size,
+            pool_pre_ping=True,
+            pool_recycle=3600,
+            connect_args={
+                "timeout": 10,
+                "command_timeout": 30,
+            },
         )
         self.session_factory: async_sessionmaker[AsyncSession] = async_sessionmaker(
             bind=self.engine,

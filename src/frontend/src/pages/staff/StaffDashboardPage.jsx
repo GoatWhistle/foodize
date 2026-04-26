@@ -87,7 +87,7 @@ const ApplicationStatus = () => {
   useEffect(() => {
     staffService
       .getMyApplication()
-      .then((res) => setApplication(res.data))
+      .then((res) => setApplication(res.data.data))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -103,7 +103,7 @@ const ApplicationStatus = () => {
   if (!application) {
     return (
       <div style={{ padding: "40px 20px", maxWidth: 500, margin: "0 auto" }}>
-              <EmptyState
+        <EmptyState
           title="Нет профиля сотрудника"
           subtitle="Вы не привязаны ни к одному заведению. Обратитесь к менеджеру."
         />
@@ -315,7 +315,7 @@ const StaffDashboardPage = () => {
   useEffect(() => {
     staffService
       .getMyProfile()
-      .then((res) => setProfile(res.data))
+      .then((res) => setProfile(res.data.data))
       .catch(() => setProfileError("Профиль сотрудника не найден"))
       .finally(() => setProfileLoading(false));
   }, []);
@@ -333,12 +333,8 @@ const StaffDashboardPage = () => {
             status: statusFilter || undefined,
           },
         );
-        const list = Array.isArray(res.data?.data)
-          ? res.data.data
-          : Array.isArray(res.data)
-            ? res.data
-            : [];
-        setTotal(res.data?.total ?? list.length);
+        const list = Array.isArray(res.data?.data) ? res.data.data : [];
+        setTotal(res.data?.pagination?.total ?? list.length);
 
         const incoming = new Set(list.map((o) => o.id));
         if (prevOrderIds.current.size > 0) {
@@ -350,7 +346,6 @@ const StaffDashboardPage = () => {
         prevOrderIds.current = incoming;
         setOrders(list);
       } catch {
-        /* ignore */
       } finally {
         if (!silent) setOrdersLoading(false);
       }
@@ -372,7 +367,6 @@ const StaffDashboardPage = () => {
       await staffService.updateOrderStatus(orderId, newStatus);
       await fetchOrders(true);
     } catch {
-      /* ignore */
     } finally {
       setUpdating(null);
     }
@@ -543,7 +537,7 @@ const StaffDashboardPage = () => {
           <div className="spinner" />
         </div>
       ) : orders.length === 0 ? (
-                <EmptyState
+        <EmptyState
           icon={<Package size={40} />}
           title="Заказов нет"
           subtitle="Здесь появятся заказы для обработки"

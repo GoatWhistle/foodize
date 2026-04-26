@@ -6,6 +6,9 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from shared.exceptions.base import AppException
 from shared.schemas.error import ErrorDescriptionSchema, ErrorSchema
+from utils.logging_setup import get_logger
+
+logger = get_logger()
 
 
 async def request_validation_error_handler(request: Request, exc: RequestValidationError):
@@ -16,18 +19,24 @@ async def request_validation_error_handler(request: Request, exc: RequestValidat
 
 
 async def app_exception_handler(request: Request, exc: AppException):
+    request_id = getattr(request.state, "request_id", None)
+    logger.warning("AppException: %s | request_id=%s", exc.detail, request_id)
     return JSONResponse(
-        status_code=exc.status_code,
+        status_code=int(exc.status_code),
         content=ErrorSchema(detail=ErrorDescriptionSchema(error=exc.detail)).model_dump(),
+        headers={"X-Request-ID": request_id} if request_id else {},
     )
 
 
 async def unhandled_exception_handler(request: Request, exc: Exception):
+    request_id = getattr(request.state, "request_id", None)
+    logger.exception("Unhandled exception | request_id=%s", request_id)
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content=ErrorSchema(
             detail=ErrorDescriptionSchema(error="Internal server error")
         ).model_dump(),
+        headers={"X-Request-ID": request_id} if request_id else {},
     )
 
 
@@ -40,6 +49,8 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 
 async def integrity_error_handler(request: Request, exc: IntegrityError):
     error_msg = str(exc.orig) if hasattr(exc, "orig") else str(exc)
+    request_id = getattr(request.state, "request_id", None)
+    logger.warning("IntegrityError: %s | request_id=%s", error_msg, request_id)
 
     friendly_msg = "Duplicate entry: this information already exists."
     if "uq_restaurants_address" in error_msg:

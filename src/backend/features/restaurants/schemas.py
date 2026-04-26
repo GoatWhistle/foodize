@@ -1,11 +1,11 @@
 import uuid
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class RestaurantCreate(BaseModel):
-    name: str
-    address: str
+    name: str = Field(min_length=1, max_length=128)
+    address: str = Field(min_length=1, max_length=256)
     is_hiring: bool = True
     is_open: bool = True
 
@@ -24,7 +24,7 @@ class RestaurantResponse(BaseModel):
 
 
 class RestaurantUpdate(BaseModel):
-    name: str | None = None
-    address: str | None = None
+    name: str | None = Field(None, min_length=1, max_length=128)
+    address: str | None = Field(None, min_length=1, max_length=256)
     is_hiring: bool | None = None
     is_open: bool | None = None

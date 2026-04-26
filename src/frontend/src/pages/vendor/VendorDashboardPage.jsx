@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { translateApiError } from "../../utils/translateApiError";
 import {
   Storefront,
   House,
@@ -46,8 +47,8 @@ const VendorDashboardPage = () => {
 
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const [staffRequests, setStaffRequests] = useState([]);
-  const [staffPage] = useState(1);
-  const [, setStaffTotal] = useState(0);
+  const [staffPage, setStaffPage] = useState(1);
+  const [staffTotal, setStaffTotal] = useState(0);
 
   const [showAddRestaurant, setShowAddRestaurant] = useState(false);
   const [activeTab, setActiveTab] = useState("menu");
@@ -97,7 +98,7 @@ const VendorDashboardPage = () => {
     vendorService
       .getMyProfile()
       .then((res) => {
-        setVendorDescription(res.data?.description || "");
+        setVendorDescription(res.data?.data?.description || "");
       })
       .catch(() => {});
   }, [fetchMyRestaurants]);
@@ -113,13 +114,9 @@ const VendorDashboardPage = () => {
     vendorService
       .getStaffRequests({ page: staffPage, size: 20 })
       .then((res) => {
-        const list = Array.isArray(res.data?.data)
-          ? res.data.data
-          : Array.isArray(res.data)
-            ? res.data
-            : [];
+        const list = Array.isArray(res.data?.data) ? res.data.data : [];
         setStaffRequests(list);
-        setStaffTotal(res.data?.total || list.length);
+        setStaffTotal(res.data?.pagination?.total || list.length);
       })
       .catch(() => {});
   }, [staffPage]);
@@ -136,13 +133,9 @@ const VendorDashboardPage = () => {
               status: ordersStatusFilter || undefined,
             },
           );
-          const list = Array.isArray(res.data?.data)
-            ? res.data.data
-            : Array.isArray(res.data)
-              ? res.data
-              : [];
+          const list = Array.isArray(res.data?.data) ? res.data.data : [];
           setRestaurantOrders(list);
-          setOrdersTotal(res.data?.total || list.length);
+          setOrdersTotal(res.data?.pagination?.total || list.length);
         } catch {}
       };
       fetchOrders();
@@ -160,11 +153,7 @@ const VendorDashboardPage = () => {
       promoService
         .list()
         .then((res) => {
-          const list = Array.isArray(res.data?.data)
-            ? res.data.data
-            : Array.isArray(res.data)
-              ? res.data
-              : [];
+          const list = Array.isArray(res.data?.data) ? res.data.data : [];
           setPromosList(list);
         })
         .catch(() => setPromosError("Не удалось загрузить промокоды"))
@@ -182,7 +171,7 @@ const VendorDashboardPage = () => {
       setShowAddRestaurant(false);
       setNewRestaurant({ name: "", address: "" });
     } catch (err) {
-      setFormError(err.response?.data?.detail || "Ошибка создания");
+      setFormError(translateApiError(err, "Ошибка создания"));
     } finally {
       setFormLoading(false);
     }
@@ -216,14 +205,10 @@ const VendorDashboardPage = () => {
       });
       setShowPromoForm(false);
       const res = await promoService.list();
-      const list = Array.isArray(res.data?.data)
-        ? res.data.data
-        : Array.isArray(res.data)
-          ? res.data
-          : [];
+      const list = Array.isArray(res.data?.data) ? res.data.data : [];
       setPromosList(list);
     } catch (err) {
-      setPromosError(err.response?.data?.detail || "Ошибка создания промокода");
+      setPromosError(translateApiError(err, "Ошибка создания промокода"));
     } finally {
       setPromoFormLoading(false);
     }
@@ -1260,10 +1245,17 @@ const VendorDashboardPage = () => {
             ))}
           </div>
         )}
+        {staffTotal > 20 && (
+          <Pagination
+            total={staffTotal}
+            page={staffPage}
+            size={20}
+            onChange={setStaffPage}
+          />
+        )}
       </div>
     </div>
   );
 };
 
 export default VendorDashboardPage;
- 

@@ -59,6 +59,7 @@ repos:
         args:
           - "--write"
         files: "^src/frontend/.*\\.(js|jsx|css|html)$"
+        exclude: "^src/frontend/coverage/"
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0

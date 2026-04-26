@@ -4,8 +4,7 @@ import { useOrderStore } from "../../store/useOrderStore";
 import OrderStatusBadge from "../../components/ui/OrderStatusBadge";
 import { ROUTES } from "../../constants/routes";
 import { orderService } from "../../services/orderService";
-
-const POLL_INTERVAL = 5000;
+import { createOrderWebSocket } from "../../services/api";
 
 const STATUS_LABEL_RU = {
   PENDING: "Ожидает",
@@ -23,46 +22,49 @@ const ACTOR_ROLE_RU = {
   ADMIN: "Администратор",
 };
 
+const TERMINAL_STATUSES = new Set(["COMPLETED", "CANCELLED"]);
+
 const OrderStatusPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { fetchOrder, currentOrder } = useOrderStore();
-  const intervalRef = useRef(null);
+  const wsRef = useRef(null);
   const [cancelling, setCancelling] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [events, setEvents] = useState([]);
   const [cancelError, setCancelError] = useState("");
   const [completeError, setCompleteError] = useState("");
 
+  const loadEvents = async () => {
+    try {
+      const res = await orderService.getOrderEvents(id);
+      const list = Array.isArray(res.data?.data) ? res.data.data : [];
+      setEvents(list);
+    } catch {}
+  };
+
   useEffect(() => {
     fetchOrder(id);
-    const loadEvents = async () => {
-      try {
-        const res = await orderService.getOrderEvents(id);
-        const list = Array.isArray(res.data?.data)
-          ? res.data.data
-          : Array.isArray(res.data)
-            ? res.data
-            : [];
-        setEvents(list);
-      } catch {}
-    };
     loadEvents();
 
-    intervalRef.current = setInterval(async () => {
-      const order = await fetchOrder(id);
-      loadEvents();
-      if (
-        order?.status === "READY" ||
-        order?.status === "CANCELLED" ||
-        order?.status === "COMPLETED"
-      ) {
-        clearInterval(intervalRef.current);
-      }
-    }, POLL_INTERVAL);
+    wsRef.current = createOrderWebSocket(
+      id,
+      (data) => {
+        if (data.error) return;
+        useOrderStore.setState({ currentOrder: data });
+        loadEvents();
+      },
+      () => {
+        if (
+          !TERMINAL_STATUSES.has(useOrderStore.getState().currentOrder?.status)
+        ) {
+          fetchOrder(id);
+        }
+      },
+    );
 
-    return () => clearInterval(intervalRef.current);
-  }, [id, fetchOrder]);
+    return () => wsRef.current?.close();
+  }, [id]);
 
   if (!currentOrder) {
     return (
@@ -283,7 +285,7 @@ const OrderStatusPage = () => {
                       hour: "2-digit",
                       minute: "2-digit",
                     })}{" "}
-                    • Участник: {ev.actor_role}
+                    • Участник: {ACTOR_ROLE_RU[ev.actor_role] ?? ev.actor_role}
                   </div>
                 </div>
               </div>
