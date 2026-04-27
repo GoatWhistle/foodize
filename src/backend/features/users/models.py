@@ -18,6 +18,9 @@ if TYPE_CHECKING:
 class User(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin):
     phone_number: Mapped[str] = mapped_column(unique=True)
     hashed_password: Mapped[str]
+    first_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    last_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    email: Mapped[str | None] = mapped_column(String, nullable=True)
     is_active: Mapped[bool] = mapped_column(default=True, server_default="true", nullable=False)
     user_role: Mapped[str] = mapped_column(
         String, default=UserRole.CUSTOMER.value, server_default="CUSTOMER", nullable=False

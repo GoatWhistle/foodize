@@ -7,18 +7,17 @@ import {
   Storefront,
   MapPin,
   Star,
-  Briefcase,
   Heart,
 } from "@phosphor-icons/react";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useFavoriteStore } from "../../store/useFavoriteStore";
 
 const CATEGORY_ICONS = {
-  SHAURMA: <Fire weight="fill" />,
-  BURGER: <Hamburger weight="fill" />,
-  PIZZA: <Pizza weight="fill" />,
-  SUSHI: <BowlFood weight="fill" />,
-  DEFAULT: <Storefront weight="fill" />,
+  SHAURMA: <Fire size={52} weight="fill" />,
+  BURGER: <Hamburger size={52} weight="fill" />,
+  PIZZA: <Pizza size={52} weight="fill" />,
+  SUSHI: <BowlFood size={52} weight="fill" />,
+  DEFAULT: <Storefront size={52} weight="fill" />,
 };
 
 const RestaurantCard = ({ restaurant, onClick }) => {
@@ -121,37 +120,6 @@ const RestaurantCard = ({ restaurant, onClick }) => {
         </div>
       )}
 
-      {/* Hiring badge */}
-      {restaurant.is_hiring && (
-        <div
-          style={{
-            position: "absolute",
-            top: restaurant.is_open != null ? 46 : 14,
-            left: 14,
-            zIndex: 2,
-            display: "flex",
-            alignItems: "center",
-            gap: 4,
-            background: "rgba(255,140,90,0.15)",
-            backdropFilter: "blur(8px)",
-            border: "1px solid rgba(255,140,90,0.35)",
-            borderRadius: "100px",
-            padding: "4px 9px",
-          }}
-        >
-          <Briefcase size={10} weight="fill" color="var(--amber)" />
-          <span
-            style={{
-              fontSize: "0.62rem",
-              fontWeight: 800,
-              letterSpacing: "0.05em",
-              color: "var(--amber)",
-            }}
-          >
-            Вакансии
-          </span>
-        </div>
-      )}
 
       {/* Heart / Favourite button */}
       {isAuthenticated && (
@@ -191,7 +159,7 @@ const RestaurantCard = ({ restaurant, onClick }) => {
 
       {/* Rating badge */}
       <div className="card-rating-badge">
-        <Star size={13} weight="fill" color="var(--fire, #ff4520)" />
+        <Star size={13} weight="fill" color="var(--fire, #f59e0b)" />
         <span>{rating ? rating.toFixed(1) : "0.0"}</span>
       </div>
 

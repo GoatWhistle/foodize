@@ -14,15 +14,15 @@ import {
 } from "@phosphor-icons/react";
 
 const CATEGORY_ICONS = {
-  SHAURMA: <Fire />,
-  BURGER: <Hamburger />,
-  PIZZA: <Pizza />,
-  SUSHI: <BowlFood />,
-  SALAD: <Leaf />,
-  SNACK: <Cookie />,
-  DRINK: <Coffee />,
-  OTHER: <DotsThree />,
-  DEFAULT: <CookingPot />,
+  SHAURMA: <Fire size={36} />,
+  BURGER: <Hamburger size={36} />,
+  PIZZA: <Pizza size={36} />,
+  SUSHI: <BowlFood size={36} />,
+  SALAD: <Leaf size={36} />,
+  SNACK: <Cookie size={36} />,
+  DRINK: <Coffee size={36} />,
+  OTHER: <DotsThree size={36} />,
+  DEFAULT: <CookingPot size={36} />,
 };
 
 const formatPrice = (kopecks) => `${kopecks} ₽`;

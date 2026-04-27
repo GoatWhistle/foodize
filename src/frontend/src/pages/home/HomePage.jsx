@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { MagnifyingGlass, Storefront, Briefcase } from "@phosphor-icons/react";
+import { MagnifyingGlass, Storefront } from "@phosphor-icons/react";
 import RestaurantCard from "../../components/ui/RestaurantCard";
 import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/ui/Pagination";
@@ -11,7 +11,6 @@ import { ROUTES } from "../../constants/routes";
 const HomePage = () => {
   const [search, setSearch] = useState("");
   const [onlyOpen, setOnlyOpen] = useState(false);
-  const [isHiring, setIsHiring] = useState(false);
   const { isAuthenticated } = useAuthStore();
   const {
     publicRestaurants,
@@ -25,20 +24,19 @@ const HomePage = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [search, onlyOpen, isHiring]);
+  }, [search, onlyOpen]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
       fetchPublicRestaurants({
         name: search || undefined,
         is_open: onlyOpen ? true : undefined,
-        is_hiring: isHiring ? true : undefined,
         page,
         size,
       });
     }, 400);
     return () => clearTimeout(handler);
-  }, [search, onlyOpen, isHiring, page, fetchPublicRestaurants]);
+  }, [search, onlyOpen, page, fetchPublicRestaurants]);
 
   const handleCardClick = (restaurant) => {
     if (!isAuthenticated) {
@@ -81,19 +79,6 @@ const HomePage = () => {
             />
             <span className="form-check-label">Только открытые</span>
           </label>
-          <label className="form-check" style={{ width: "fit-content" }}>
-            <input
-              type="checkbox"
-              checked={isHiring}
-              onChange={(e) => setIsHiring(e.target.checked)}
-            />
-            <span
-              className="form-check-label"
-              style={{ display: "flex", alignItems: "center", gap: 4 }}
-            >
-              <Briefcase size={13} weight="bold" /> Набор сотрудников
-            </span>
-          </label>
         </div>
       </div>
 
@@ -122,7 +107,6 @@ const HomePage = () => {
               onClick: () => {
                 setSearch("");
                 setOnlyOpen(false);
-                setIsHiring(false);
               },
             }}
           />

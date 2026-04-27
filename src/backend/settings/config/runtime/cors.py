@@ -6,7 +6,9 @@ from settings.config.base import BaseConfig
 class CorsConfig(BaseConfig):
     allowed_origins: list[str] = [
         "http://localhost:5173",
+        "http://127.0.0.1:5173",
         "http://localhost:3000",
+        "http://127.0.0.1:3000",
     ]
 
     @field_validator("allowed_origins", mode="before")

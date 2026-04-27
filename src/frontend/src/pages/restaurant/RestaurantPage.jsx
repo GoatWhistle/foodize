@@ -128,14 +128,15 @@ const RestaurantPage = () => {
     }
   };
 
+  const availableMenuItems = menuItems.filter((i) => i.is_available !== false);
   const categories = [
     "ALL",
-    ...new Set(menuItems.map((i) => i.category).filter(Boolean)),
+    ...new Set(availableMenuItems.map((i) => i.category).filter(Boolean)),
   ];
   const filtered =
     activeCategory === "ALL"
-      ? menuItems
-      : menuItems.filter((i) => i.category === activeCategory);
+      ? availableMenuItems
+      : availableMenuItems.filter((i) => i.category === activeCategory);
 
   return (
     <div
@@ -231,15 +232,17 @@ const RestaurantPage = () => {
             ))}
           </div>
         )}
-      </div>
 
-      <button
-        className="staff-fab"
-        onClick={() => setShowStaffModal(true)}
-        aria-label="Работа"
-      >
-        <Briefcase size={22} weight="fill" />
-      </button>
+        {restaurant.is_hiring && (
+          <button
+            className="hiring-hint"
+            onClick={() => setShowStaffModal(true)}
+          >
+            <Briefcase size={14} weight="bold" />
+            Заведение ищет сотрудников — откликнуться
+          </button>
+        )}
+      </div>
 
       {showStaffModal && (
         <div className="modal-overlay" style={{ zIndex: 3000 }}>

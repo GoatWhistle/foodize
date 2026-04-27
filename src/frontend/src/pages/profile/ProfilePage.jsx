@@ -30,7 +30,12 @@ const ProfilePage = () => {
   const [vendorError, setVendorError] = useState("");
 
   const [editMode, setEditMode] = useState(false);
-  const [editForm, setEditForm] = useState({ name: "", phone_number: "" });
+  const [editForm, setEditForm] = useState({
+    name: "",
+    first_name: "",
+    last_name: "",
+    email: "",
+  });
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState("");
 
@@ -70,7 +75,9 @@ const ProfilePage = () => {
   const startEdit = () => {
     setEditForm({
       name: user?.name ?? "",
-      phone_number: user?.phone_number ?? "",
+      first_name: user?.first_name ?? "",
+      last_name: user?.last_name ?? "",
+      email: user?.email ?? "",
     });
     setEditMode(true);
     setEditError("");
@@ -106,27 +113,32 @@ const ProfilePage = () => {
     }
   };
 
-  const initials = user?.name ? (
-    user.name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2)
-  ) : (
-    <UserCircle size={32} />
-  );
-
   return (
     <div className="profile-page page-enter">
-      {/* Header */}
       <div className="profile-header" style={{ position: "relative" }}>
-        <div className="profile-avatar">{initials}</div>
+        <div className="profile-avatar">
+          <UserCircle size={36} weight="bold" color="var(--fire-text)" />
+        </div>
 
         {!editMode ? (
           <div style={{ flex: 1 }}>
-            <div className="profile-name">{user?.name || "Пользователь"}</div>
+            <div className="profile-name">
+              {user?.first_name && user?.last_name
+                ? `${user.first_name} ${user.last_name}`
+                : user?.name || "Пользователь"}
+            </div>
             <div className="profile-phone">{user?.phone_number || "—"}</div>
+            {user?.email && (
+              <div
+                style={{
+                  fontSize: "0.8rem",
+                  color: "var(--text-3)",
+                  marginTop: 2,
+                }}
+              >
+                {user.email}
+              </div>
+            )}
           </div>
         ) : (
           <div
@@ -140,20 +152,48 @@ const ProfilePage = () => {
             <input
               className="form-input"
               style={{ fontSize: "0.9rem" }}
-              placeholder="Имя"
+              placeholder="Отображаемое имя"
               value={editForm.name}
               onChange={(e) =>
                 setEditForm((f) => ({ ...f, name: e.target.value }))
               }
             />
+            <div style={{ display: "flex", gap: 8 }}>
+              <input
+                className="form-input"
+                style={{ fontSize: "0.9rem", flex: 1 }}
+                placeholder="Имя"
+                value={editForm.first_name}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, first_name: e.target.value }))
+                }
+              />
+              <input
+                className="form-input"
+                style={{ fontSize: "0.9rem", flex: 1 }}
+                placeholder="Фамилия"
+                value={editForm.last_name}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, last_name: e.target.value }))
+                }
+              />
+            </div>
             <input
               className="form-input"
               style={{ fontSize: "0.9rem" }}
-              placeholder="Телефон"
-              value={editForm.phone_number}
+              placeholder="Email"
+              type="email"
+              value={editForm.email}
               onChange={(e) =>
-                setEditForm((f) => ({ ...f, phone_number: e.target.value }))
+                setEditForm((f) => ({ ...f, email: e.target.value }))
               }
+            />
+            <input
+              className="form-input"
+              style={{ fontSize: "0.9rem", opacity: 0.6 }}
+              placeholder="Телефон"
+              value={user?.phone_number || ""}
+              readOnly
             />
             {editError && (
               <div className="form-error" style={{ fontSize: "0.78rem" }}>

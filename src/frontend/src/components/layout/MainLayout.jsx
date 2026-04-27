@@ -30,12 +30,31 @@ const NAV_LINKS = [
     label: "Заказы",
     icon: <Package size={18} weight="bold" />,
   },
+];
+
+const BOTTOM_NAV_LINKS = [
+  {
+    to: ROUTES.HOME,
+    label: "Рестораны",
+    icon: <House size={18} weight="bold" />,
+  },
+  {
+    to: ROUTES.ORDERS,
+    label: "Заказы",
+    icon: <Package size={18} weight="bold" />,
+  },
   {
     to: ROUTES.PROFILE,
     label: "Профиль",
     icon: <User size={18} weight="bold" />,
   },
 ];
+
+const STAFF_LINK = {
+  to: ROUTES.STAFF_DASHBOARD,
+  label: "Работа",
+  icon: <CookingPot size={18} weight="bold" />,
+};
 
 const MainLayout = () => {
   const location = useLocation();
@@ -73,15 +92,7 @@ const MainLayout = () => {
           <nav className="header-nav" aria-label="Основная навигация">
             {[
               ...NAV_LINKS,
-              ...(user?.user_role === "STAFF"
-                ? [
-                    {
-                      to: ROUTES.STAFF_DASHBOARD,
-                      label: "Работа",
-                      icon: <CookingPot size={18} weight="bold" />,
-                    },
-                  ]
-                : []),
+              ...(user?.user_role === "STAFF" ? [STAFF_LINK] : []),
             ].map(({ to, label, icon }) => {
               const isActive =
                 to === ROUTES.HOME
@@ -107,6 +118,18 @@ const MainLayout = () => {
           </nav>
         )}
 
+        {isAuthenticated && (
+          <Link
+            to={ROUTES.PROFILE}
+            className={`nav-link${location.pathname.startsWith(ROUTES.PROFILE) ? " active" : ""}`}
+            style={{ marginLeft: "4px" }}
+            aria-label="Профиль"
+          >
+            <User size={18} weight="bold" />
+            Профиль
+          </Link>
+        )}
+
         <div className="header-actions">
           <ThemeToggle />
           {!isAuthenticated && (
@@ -130,16 +153,8 @@ const MainLayout = () => {
       {isAuthenticated && (
         <nav className="bottom-tab-bar" aria-label="Навигация">
           {[
-            ...NAV_LINKS,
-            ...(user?.user_role === "STAFF"
-              ? [
-                  {
-                    to: ROUTES.STAFF_DASHBOARD,
-                    label: "Работа",
-                    icon: <CookingPot size={18} weight="bold" />,
-                  },
-                ]
-              : []),
+            ...BOTTOM_NAV_LINKS,
+            ...(user?.user_role === "STAFF" ? [STAFF_LINK] : []),
           ].map(({ to, label, icon }) => {
             const isActive =
               to === ROUTES.HOME

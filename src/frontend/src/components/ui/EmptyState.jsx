@@ -1,7 +1,6 @@
 const EmptyState = ({ title = "Здесь пусто", subtitle, action }) => {
   return (
     <div className="empty-state page-enter">
-      <span style={{ fontSize: "3rem", display: "inline-block" }}>📍</span>
       <p className="empty-title">{title}</p>
       {subtitle && <p className="empty-subtitle">{subtitle}</p>}
       {action && (

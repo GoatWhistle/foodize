@@ -11,7 +11,10 @@ if TYPE_CHECKING:
     from features.users.models import User
 
 
-class Review(Base, IdUuidPkMixin, CreatedAtMixin):
+from database import Base, CreatedAtMixin, DeletedAtMixin, IdUuidPkMixin
+
+
+class Review(Base, IdUuidPkMixin, CreatedAtMixin, DeletedAtMixin):
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
     restaurant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("restaurants.id"))
     rating: Mapped[int]

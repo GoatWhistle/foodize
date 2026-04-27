@@ -28,7 +28,7 @@ const FoodizeLogo = ({ size = 32, color }) => {
           fontFamily: '"Manrope", -apple-system, sans-serif',
           fontWeight: 800,
           fontSize: size * 0.72,
-          color: "var(--fire, #ff4520)",
+          color: "var(--fire, #f59e0b)",
           letterSpacing: "0.02em",
           lineHeight: 1,
           textTransform: "lowercase",

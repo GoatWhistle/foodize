@@ -1,7 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base, CreatedAtMixin, DeletedAtMixin, IdUuidPkMixin, UpdatedAtMixin
@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from features.menu.models import MenuItem
     from features.orders.models import Order
     from features.promos.models import Promo
+    from features.restaurants.working_hours import WorkingHours
     from features.reviews.models import Review
     from features.staff.models import StaffProfile, StaffRequest
     from features.vendors.models import VendorProfile
@@ -23,6 +24,7 @@ class Restaurant(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMix
     is_hiring: Mapped[bool] = mapped_column(default=True, server_default="true")
     is_open: Mapped[bool] = mapped_column(default=True, server_default="true")
     is_active: Mapped[bool] = mapped_column(default=True, server_default="true")
+    photo_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
     vendor: Mapped["VendorProfile"] = relationship(back_populates="restaurants")
     menu_items: Mapped[list["MenuItem"]] = relationship(back_populates="restaurant")
     orders: Mapped[list["Order"]] = relationship(back_populates="restaurant")
@@ -31,3 +33,6 @@ class Restaurant(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMix
     reviews: Mapped[list["Review"]] = relationship(back_populates="restaurant")
     favorited_by: Mapped[list["Favorite"]] = relationship(back_populates="restaurant")
     promos: Mapped[list["Promo"]] = relationship(back_populates="restaurant")
+    working_hours: Mapped[list["WorkingHours"]] = relationship(
+        back_populates="restaurant", cascade="all, delete-orphan"
+    )

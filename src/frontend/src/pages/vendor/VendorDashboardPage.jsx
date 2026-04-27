@@ -16,6 +16,7 @@ import {
   Users,
   Tag,
   Trash,
+  Clock,
 } from "@phosphor-icons/react";
 import { useRestaurantStore } from "../../store/useRestaurantStore";
 import { vendorService } from "../../services/vendorService";
@@ -73,12 +74,15 @@ const VendorDashboardPage = () => {
   const pollInterval = useRef(null);
 
   const [vendorDescription, setVendorDescription] = useState("");
-  const [descriptionLoading, setDescriptionLoading] = useState(false);
-  const [descriptionSaved, setDescriptionSaved] = useState(false);
 
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
   const { createRestaurant } = useRestaurantStore();
+
+  const [workingHours, setWorkingHours] = useState([]);
+  const [workingHoursLoading, setWorkingHoursLoading] = useState(false);
+  const [workingHoursSaved, setWorkingHoursSaved] = useState(false);
+  const [workingHoursError, setWorkingHoursError] = useState("");
 
   const [promosList, setPromosList] = useState([]);
   const [promosLoading, setPromosLoading] = useState(false);
@@ -145,6 +149,74 @@ const VendorDashboardPage = () => {
     }
     return () => clearInterval(pollInterval.current);
   }, [selectedRestaurant, activeTab, ordersPage, ordersStatusFilter]);
+
+  const DAY_NAMES = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+
+  const buildDefaultHours = () =>
+    DAY_NAMES.map((_, i) => ({
+      day_of_week: i,
+      open_time: "09:00",
+      close_time: "22:00",
+      is_closed: false,
+    }));
+
+  useEffect(() => {
+    if (activeTab === "schedule" && selectedRestaurant) {
+      setWorkingHoursLoading(true);
+      setWorkingHoursError("");
+      restaurantService
+        .getWorkingHours(selectedRestaurant.id)
+        .then((res) => {
+          const data = Array.isArray(res.data?.data) ? res.data.data : [];
+          if (data.length === 0) {
+            setWorkingHours(buildDefaultHours());
+          } else {
+            const sorted = [...data].sort((a, b) => a.day_of_week - b.day_of_week);
+            setWorkingHours(sorted);
+          }
+        })
+        .catch((err) => {
+          if (err?.response?.status !== 404) {
+            setWorkingHoursError("Не удалось загрузить расписание");
+          }
+          setWorkingHours(buildDefaultHours());
+        })
+        .finally(() => setWorkingHoursLoading(false));
+    }
+  }, [activeTab, selectedRestaurant]);
+
+  const handleSaveWorkingHours = async () => {
+    if (!selectedRestaurant) return;
+    setWorkingHoursLoading(true);
+    setWorkingHoursError("");
+    setWorkingHoursSaved(false);
+    const toHHMM = (t) => (t ? t.slice(0, 5) : "00:00");
+    const payload = workingHours.map((r) => ({
+      day_of_week: r.day_of_week,
+      open_time: toHHMM(r.open_time),
+      close_time: toHHMM(r.close_time),
+      is_closed: r.is_closed,
+    }));
+    try {
+      const res = await restaurantService.setWorkingHours(
+        selectedRestaurant.id,
+        payload,
+      );
+      const data = Array.isArray(res.data?.data) ? res.data.data : [];
+      if (data.length > 0) {
+        setWorkingHours([...data].sort((a, b) => a.day_of_week - b.day_of_week));
+      }
+      setWorkingHoursSaved(true);
+      setTimeout(() => setWorkingHoursSaved(false), 2000);
+    } catch (err) {
+      const detail = err?.response?.data?.detail;
+      setWorkingHoursError(
+        typeof detail === "string" ? detail : "Не удалось сохранить расписание",
+      );
+    } finally {
+      setWorkingHoursLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (activeTab === "promos") {
@@ -228,9 +300,32 @@ const VendorDashboardPage = () => {
     e.preventDefault();
     setFormLoading(true);
     setFormError("");
+    const patch = editRestaurant ?? selectedRestaurant;
+    if (!patch.name?.trim()) {
+      setFormError("Укажите название заведения");
+      setFormLoading(false);
+      return;
+    }
+    if (!patch.address?.trim()) {
+      setFormError("Укажите адрес заведения");
+      setFormLoading(false);
+      return;
+    }
+    const payload = {
+      name: patch.name.trim(),
+      address: patch.address.trim(),
+      is_open: patch.is_open ?? false,
+      is_hiring: patch.is_hiring ?? false,
+      ...(patch.photo_url != null ? { photo_url: patch.photo_url } : {}),
+    };
     try {
-      await restaurantService.update(selectedRestaurant.id, editRestaurant);
+      const requests = [restaurantService.update(selectedRestaurant.id, payload)];
+      if (vendorDescription.trim()) {
+        requests.push(vendorService.updateDescription(vendorDescription));
+      }
+      await Promise.all(requests);
       await fetchMyRestaurants();
+      setSelectedRestaurant({ ...selectedRestaurant, ...payload });
       setEditRestaurant(null);
     } catch (err) {
       setFormError(err.response?.data?.detail || "Ошибка обновления");
@@ -274,19 +369,6 @@ const VendorDashboardPage = () => {
       setFormError(err.response?.data?.detail || "Ошибка сохранения");
     } finally {
       setFormLoading(false);
-    }
-  };
-
-  const handleSaveDescription = async () => {
-    setDescriptionLoading(true);
-    setDescriptionSaved(false);
-    try {
-      await vendorService.updateDescription(vendorDescription);
-      setDescriptionSaved(true);
-      setTimeout(() => setDescriptionSaved(false), 2000);
-    } catch {
-    } finally {
-      setDescriptionLoading(false);
     }
   };
 
@@ -458,6 +540,8 @@ const VendorDashboardPage = () => {
               { id: "menu", label: "Меню", icon: <ForkKnife /> },
               { id: "orders", label: "Заказы", icon: <Package /> },
               { id: "promos", label: "Промокоды", icon: <Tag /> },
+              { id: "schedule", label: "Расписание", icon: <Clock /> },
+              { id: "staff", label: "Сотрудники", icon: <Users /> },
               { id: "settings", label: "Настройки", icon: <Gear /> },
             ].map((tab) => (
               <button
@@ -466,9 +550,7 @@ const VendorDashboardPage = () => {
                 onClick={() => {
                   setActiveTab(tab.id);
                   if (tab.id === "settings" && selectedRestaurant) {
-                    setEditRestaurant(
-                      (prev) => prev ?? { ...selectedRestaurant },
-                    );
+                    setEditRestaurant({ ...selectedRestaurant });
                   }
                 }}
               >
@@ -1069,6 +1151,183 @@ const VendorDashboardPage = () => {
             </div>
           )}
 
+          {activeTab === "schedule" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <span style={{ fontWeight: 700, fontSize: "0.9rem" }}>
+                  Расписание работы
+                </span>
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={handleSaveWorkingHours}
+                  disabled={workingHoursLoading}
+                >
+                  {workingHoursSaved
+                    ? "Сохранено ✓"
+                    : workingHoursLoading
+                      ? "Сохранение..."
+                      : "Сохранить"}
+                </button>
+              </div>
+
+              {workingHoursError && (
+                <div className="form-error">{workingHoursError}</div>
+              )}
+
+              {workingHoursLoading && workingHours.length === 0 ? (
+                <div className="loading-center">
+                  <div className="spinner" />
+                </div>
+              ) : (
+                <div
+                  style={{
+                    background: "var(--bg-card)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "var(--radius-md)",
+                    overflow: "hidden",
+                  }}
+                >
+                  {workingHours.map((row, idx) => (
+                    <div
+                      key={row.day_of_week}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "40px 1fr 1fr auto",
+                        alignItems: "center",
+                        gap: 10,
+                        padding: "10px 16px",
+                        borderBottom:
+                          idx < workingHours.length - 1
+                            ? "1px solid var(--border)"
+                            : "none",
+                        opacity: row.is_closed ? 0.45 : 1,
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontWeight: 700,
+                          fontSize: "0.85rem",
+                          color: "var(--text-2)",
+                        }}
+                      >
+                        {DAY_NAMES[row.day_of_week]}
+                      </span>
+                      <input
+                        className="form-input"
+                        type="time"
+                        value={row.open_time}
+                        disabled={row.is_closed}
+                        onChange={(e) =>
+                          setWorkingHours((prev) =>
+                            prev.map((r, i) =>
+                              i === idx ? { ...r, open_time: e.target.value } : r,
+                            ),
+                          )
+                        }
+                        style={{ padding: "6px 8px", fontSize: "0.85rem" }}
+                      />
+                      <input
+                        className="form-input"
+                        type="time"
+                        value={row.close_time}
+                        disabled={row.is_closed}
+                        onChange={(e) =>
+                          setWorkingHours((prev) =>
+                            prev.map((r, i) =>
+                              i === idx ? { ...r, close_time: e.target.value } : r,
+                            ),
+                          )
+                        }
+                        style={{ padding: "6px 8px", fontSize: "0.85rem" }}
+                      />
+                      <label
+                        className="form-check"
+                        style={{ margin: 0, whiteSpace: "nowrap" }}
+                        title="Выходной"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={row.is_closed}
+                          onChange={(e) =>
+                            setWorkingHours((prev) =>
+                              prev.map((r, i) =>
+                                i === idx
+                                  ? { ...r, is_closed: e.target.checked }
+                                  : r,
+                              ),
+                            )
+                          }
+                        />
+                        <span
+                          className="form-check-label"
+                          style={{ fontSize: "0.75rem" }}
+                        >
+                          Вых.
+                        </span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === "staff" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <span style={{ fontWeight: 700, fontSize: "0.9rem" }}>
+                Заявки на работу
+              </span>
+              {!Array.isArray(staffRequests) || staffRequests.length === 0 ? (
+                <EmptyState title="Нет заявок" subtitle="Заявки появятся здесь" />
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {staffRequests.map((req) => (
+                    <div key={req.id} className="staff-request-card">
+                      <div className="staff-request-info">
+                        <div style={{ fontWeight: 700 }}>
+                          Пользователь #{req.user_id.slice(0, 8)}
+                        </div>
+                        <span className="order-status-badge pending">
+                          {req.status}
+                        </span>
+                      </div>
+                      {req.status === "PENDING" && (
+                        <div className="staff-request-actions">
+                          <button
+                            className="btn btn-primary btn-sm"
+                            onClick={() => handleStaffDecision(req.id, "ACCEPTED")}
+                          >
+                            <Check size={16} />
+                          </button>
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => handleStaffDecision(req.id, "REJECTED")}
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {staffTotal > 20 && (
+                <Pagination
+                  total={staffTotal}
+                  page={staffPage}
+                  size={20}
+                  onChange={setStaffPage}
+                />
+              )}
+            </div>
+          )}
+
           {activeTab === "settings" && (
             <div
               style={{
@@ -1103,6 +1362,19 @@ const VendorDashboardPage = () => {
                 </div>
                 <div>
                   <label style={{ fontSize: "0.8rem", color: "var(--text-3)" }}>
+                    О заведении
+                  </label>
+                  <textarea
+                    className="form-input"
+                    placeholder="Расскажите о вашем заведении..."
+                    value={vendorDescription}
+                    onChange={(e) => setVendorDescription(e.target.value)}
+                    rows={3}
+                    style={{ resize: "vertical" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.8rem", color: "var(--text-3)" }}>
                     Адрес
                   </label>
                   <input
@@ -1118,11 +1390,11 @@ const VendorDashboardPage = () => {
                     }
                   />
                 </div>
-                <label className="form-check" style={{ marginTop: 8 }}>
+                <label className="form-check" style={{ marginTop: 4 }}>
                   <input
                     type="checkbox"
                     checked={
-                      editRestaurant?.is_open ?? selectedRestaurant.is_open
+                      editRestaurant?.is_open ?? selectedRestaurant.is_open ?? true
                     }
                     onChange={(e) =>
                       setEditRestaurant({
@@ -1158,102 +1430,11 @@ const VendorDashboardPage = () => {
                   Сохранить
                 </button>
               </form>
-
-              <div
-                style={{
-                  marginTop: 20,
-                  paddingTop: 20,
-                  borderTop: "1px solid var(--border)",
-                }}
-              >
-                <h4
-                  style={{
-                    fontWeight: 700,
-                    fontSize: "0.85rem",
-                    color: "var(--text-3)",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    marginBottom: 10,
-                  }}
-                >
-                  О заведении
-                </h4>
-                <textarea
-                  className="form-input"
-                  placeholder="Расскажите о вашем заведении..."
-                  value={vendorDescription}
-                  onChange={(e) => setVendorDescription(e.target.value)}
-                  rows={4}
-                  style={{ resize: "vertical", marginBottom: 10 }}
-                />
-                <button
-                  className="btn btn-secondary"
-                  onClick={handleSaveDescription}
-                  disabled={descriptionLoading}
-                  style={{ width: "100%" }}
-                >
-                  {descriptionSaved
-                    ? "Сохранено ✓"
-                    : descriptionLoading
-                      ? "Сохранение..."
-                      : "Сохранить описание"}
-                </button>
-              </div>
             </div>
           )}
         </div>
       )}
 
-      <div className="vendor-section">
-        <span
-          className="vendor-section-title"
-          style={{ display: "flex", alignItems: "center", gap: "8px" }}
-        >
-          <Users /> Заявки на работу
-        </span>
-        {!Array.isArray(staffRequests) || staffRequests.length === 0 ? (
-          <EmptyState title="Нет заявок" subtitle="Заявки появятся здесь" />
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {staffRequests.map((req) => (
-              <div key={req.id} className="staff-request-card">
-                <div className="staff-request-info">
-                  <div style={{ fontWeight: 700 }}>
-                    Пользователь #{req.user_id.slice(0, 8)}
-                  </div>
-                  <span className="order-status-badge pending">
-                    {req.status}
-                  </span>
-                </div>
-                {req.status === "PENDING" && (
-                  <div className="staff-request-actions">
-                    <button
-                      className="btn btn-primary btn-sm"
-                      onClick={() => handleStaffDecision(req.id, "ACCEPTED")}
-                    >
-                      <Check size={16} />
-                    </button>
-                    <button
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => handleStaffDecision(req.id, "REJECTED")}
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-        {staffTotal > 20 && (
-          <Pagination
-            total={staffTotal}
-            page={staffPage}
-            size={20}
-            onChange={setStaffPage}
-          />
-        )}
-      </div>
     </div>
   );
 };

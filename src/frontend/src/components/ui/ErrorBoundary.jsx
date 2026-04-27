@@ -25,7 +25,6 @@ class ErrorBoundary extends Component {
             textAlign: "center",
           }}
         >
-          <div style={{ fontSize: "2.5rem" }}>⚠️</div>
           <div
             style={{
               fontWeight: 700,

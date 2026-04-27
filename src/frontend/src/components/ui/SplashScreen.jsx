@@ -50,7 +50,7 @@ const SplashScreen = ({ onDone }) => {
         <div
           style={{
             height: "100%",
-            background: "var(--fire, #ff4520)",
+            background: "var(--fire, #f59e0b)",
             animation:
               "splash-bar 1000ms 300ms cubic-bezier(0.16,1,0.3,1) forwards",
             width: "0%",

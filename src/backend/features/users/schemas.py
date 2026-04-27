@@ -20,10 +20,16 @@ class UserCreate(UserBase):
 class UserRead(UserBase):
     id: uuid.UUID
     user_role: UserRole
+    first_name: str | None = None
+    last_name: str | None = None
+    email: str | None = None
 
 
 class UserUpdate(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=128)
+    first_name: str | None = Field(None, min_length=1, max_length=128)
+    last_name: str | None = Field(None, min_length=1, max_length=128)
+    email: str | None = Field(None, max_length=128)
     phone_number: str | None = Field(None, min_length=7, max_length=16, pattern=r"^\+?[0-9]{7,15}$")
 
 

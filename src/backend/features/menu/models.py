@@ -22,6 +22,7 @@ class MenuItem(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin
     )
     is_available: Mapped[bool] = mapped_column(default=True, server_default="true")
     is_deleted: Mapped[bool] = mapped_column(default=False, server_default="false")
+    photo_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
     restaurant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("restaurants.id"))
     restaurant: Mapped["Restaurant"] = relationship(back_populates="menu_items")
     order_items: Mapped[list["OrderItem"]] = relationship(back_populates="menu_item")

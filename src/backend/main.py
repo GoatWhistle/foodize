@@ -24,8 +24,9 @@ from features.notifications.broker import broker
 from infra.cache.redis import close_redis_pool, get_redis_cache
 from middlewares.cache import AutoCacheMiddleware
 from middlewares.limiter import limiter
-from middlewares.logging import RequestLoggingMiddleware
+from middlewares.request_id import RequestIDMiddleware
 from middlewares.security import SecurityHeadersMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
 from settings.config.app_config import settings
 from shared.exceptions.base import AppException
 from utils.logging_setup import configure_logging
@@ -49,8 +50,8 @@ app.state.limiter = limiter
 # 2. CORSMiddleware              — preflight
 # 3. SecurityHeadersMiddleware   — security headers
 # 4. AutoCacheMiddleware         — cache layer (public GET endpoints only)
-# 5. RequestLoggingMiddleware    — timing + request_id
-app.add_middleware(RequestLoggingMiddleware)
+# 5. RequestIDMiddleware         — timing + request_id
+app.add_middleware(RequestIDMiddleware)
 app.add_middleware(AutoCacheMiddleware, ttl=300)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(SlowAPIMiddleware)
@@ -68,6 +69,8 @@ app.add_exception_handler(StarletteHTTPException, http_exception_handler)  # typ
 app.add_exception_handler(IntegrityError, integrity_error_handler)  # type: ignore[arg-type]
 app.add_exception_handler(Exception, unhandled_exception_handler)
 app.include_router(api_router)
+
+Instrumentator().instrument(app).expose(app, include_in_schema=False, should_gzip=True)
 
 
 @app.get("/api/ping")

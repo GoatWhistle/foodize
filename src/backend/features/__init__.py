@@ -3,6 +3,7 @@ from features.menu.models import MenuItem
 from features.orders.models import Order, OrderEvent, OrderItem
 from features.promos.models import Promo
 from features.restaurants.models import Restaurant
+from features.restaurants.working_hours import WorkingHours
 from features.reviews.models import Review
 from features.staff.models import StaffProfile, StaffRequest
 from features.users.models import User
@@ -12,6 +13,7 @@ __all__ = [
     "User",
     "VendorProfile",
     "Restaurant",
+    "WorkingHours",
     "MenuItem",
     "Order",
     "OrderEvent",

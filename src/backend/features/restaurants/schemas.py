@@ -17,6 +17,7 @@ class RestaurantResponse(BaseModel):
     vendor_id: uuid.UUID
     is_hiring: bool = True
     is_open: bool = True
+    photo_url: str | None = None
     average_rating: float = 0.0
     review_count: int = 0
 
@@ -28,3 +29,4 @@ class RestaurantUpdate(BaseModel):
     address: str | None = Field(None, min_length=1, max_length=256)
     is_hiring: bool | None = None
     is_open: bool | None = None
+    photo_url: str | None = Field(None, max_length=512)

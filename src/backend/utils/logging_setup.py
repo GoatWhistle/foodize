@@ -1,54 +1,33 @@
 import logging
-import logging.config
-
+import sys
+import structlog
 from settings.config.app_config import settings
 
 LOGGER_NAME = "foodize"
 
-
 def configure_logging() -> None:
     level = settings.logs.level.upper()
-    logging.config.dictConfig(
-        {
-            "version": 1,
-            "disable_existing_loggers": False,
-            "formatters": {
-                "json": {
-                    "format": (
-                        '{"time": "%(asctime)s", "level": "%(levelname)s", '
-                        '"name": "%(name)s", "message": %(message)s}'
-                    ),
-                    "datefmt": "%Y-%m-%dT%H:%M:%S",
-                },
-            },
-            "handlers": {
-                "default": {
-                    "class": "logging.StreamHandler",
-                    "formatter": "json",
-                    "stream": "ext://sys.stderr",
-                },
-                "access": {
-                    "class": "logging.StreamHandler",
-                    "formatter": "json",
-                    "stream": "ext://sys.stdout",
-                },
-            },
-            "root": {
-                "handlers": ["default"],
-                "level": level,
-            },
-            "loggers": {
-                LOGGER_NAME: {"handlers": ["default"], "level": level, "propagate": False},
-                "foodize.access": {"handlers": ["access"], "level": level, "propagate": False},
-                "uvicorn": {"handlers": ["default"], "level": "INFO", "propagate": False},
-                "uvicorn.access": {"handlers": ["access"], "level": "WARNING", "propagate": False},
-                "uvicorn.error": {"level": "ERROR", "propagate": False},
-                "sqlalchemy.engine": {"level": "WARNING", "propagate": False},
-                "aio_pika": {"level": "ERROR", "propagate": False},
-            },
-        }
+    logging.basicConfig(
+        format="%(message)s",
+        stream=sys.stdout,
+        level=level,
+    )
+    
+    structlog.configure(
+        processors=[
+            structlog.contextvars.merge_contextvars,
+            structlog.stdlib.add_logger_name,
+            structlog.stdlib.add_log_level,
+            structlog.stdlib.PositionalArgumentsFormatter(),
+            structlog.processors.TimeStamper(fmt="iso", key="timestamp"),
+            structlog.processors.StackInfoRenderer(),
+            structlog.processors.format_exc_info,
+            structlog.processors.JSONRenderer(),
+        ],
+        wrapper_class=structlog.stdlib.BoundLogger,
+        logger_factory=structlog.stdlib.LoggerFactory(),
+        cache_logger_on_first_use=True,
     )
 
-
-def get_logger(name: str = LOGGER_NAME) -> logging.Logger:
-    return logging.getLogger(name)
+def get_logger(name: str = LOGGER_NAME) -> structlog.BoundLogger:
+    return structlog.get_logger(name).bind(service="foodize")
