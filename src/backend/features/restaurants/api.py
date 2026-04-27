@@ -26,7 +26,7 @@ async def read_public_restaurant(
 @router.get("/public", response_model=SuccessListResponse[RestaurantResponse])
 async def read_public_restaurants(
     request: Request,
-    name: str | None = Query(None),
+    name: str | None = Query(None, max_length=128),
     is_hiring: bool | None = Query(None),
     is_open: bool | None = Query(None),
     page: int = Query(1, ge=1),

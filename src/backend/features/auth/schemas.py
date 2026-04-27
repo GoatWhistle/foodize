@@ -8,5 +8,5 @@ class TokenResponse(BaseModel):
 
 
 class UserLogin(BaseModel):
-    phone_number: str
-    password: str = Field(min_length=8)
+    phone_number: str = Field(min_length=7, max_length=16, pattern=r"^\+?[0-9]{7,15}$")
+    password: str = Field(min_length=8, max_length=128)

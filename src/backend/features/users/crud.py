@@ -16,7 +16,6 @@ async def create_user(
         hashed_password=hash_password(user_in.password),
     )
     session.add(db_user)
-    await session.flush()
     await session.commit()
     return db_user
 

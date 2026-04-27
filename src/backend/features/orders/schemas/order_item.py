@@ -7,7 +7,7 @@ from shared.enums.category import Category
 
 class OrderItemCreate(BaseModel):
     menu_item_id: uuid.UUID
-    quantity: int = Field(1, ge=1)
+    quantity: int = Field(1, ge=1, le=99)
 
 
 class OrderItemResponse(BaseModel):

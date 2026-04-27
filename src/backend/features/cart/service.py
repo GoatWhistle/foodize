@@ -8,11 +8,13 @@ from infra.cache.redis import get_redis_cache
 
 from .schemas import CartResponse, CartUpdate
 
+_CART_TTL_SECONDS = 86400
+
 
 class CartService:
     def __init__(self, cache: CacheRepository) -> None:
         self._cache = cache
-        self._ttl = 86400
+        self._ttl = _CART_TTL_SECONDS
 
     def _key(self, user_id: uuid.UUID) -> str:
         return f"cart:{user_id}"

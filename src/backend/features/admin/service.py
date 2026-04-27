@@ -3,13 +3,17 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.admin import crud
+from features.admin.schemas import PlatformStats
+from features.orders.schemas.order import OrderResponse
 from features.users.models import User
 from shared.enums.order_status import OrderStatus
 from shared.enums.roles import UserRole
 from shared.exceptions import NotFoundException
 
 
-async def get_users_list(session: AsyncSession, role: UserRole | None, offset: int, limit: int):
+async def get_users_list(
+    session: AsyncSession, role: UserRole | None, offset: int, limit: int
+) -> tuple[list[User], int]:
     data = await crud.get_all_users(session, role=role, offset=offset, limit=limit)
     total = await crud.count_all_users(session, role=role)
     return data, total
@@ -47,7 +51,7 @@ async def get_orders_list(
     user_id: uuid.UUID | None = None,
     offset: int = 0,
     limit: int = 20,
-):
+) -> tuple[list[OrderResponse], int]:
     data = await crud.get_all_orders(
         session,
         status=status,
@@ -65,5 +69,5 @@ async def get_orders_list(
     return data, total
 
 
-async def get_stats(session: AsyncSession) -> dict:
+async def get_stats(session: AsyncSession) -> PlatformStats:
     return await crud.get_platform_stats(session)

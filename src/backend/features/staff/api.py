@@ -66,11 +66,11 @@ async def create_staff_request(
 @router.patch("/requests/{request_id}/status", response_model=SuccessResponse[StaffRequestResponse])
 async def update_staff_status(
     status_update: StaffRequestStatusUpdate,
-    request: StaffRequest = Depends(get_valid_staff_request),
+    staff_request: StaffRequest = Depends(get_valid_staff_request),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[StaffRequestResponse]:
     result = await service.process_staff_request(
-        session=session, request=request, new_status=status_update.status
+        session=session, request=staff_request, new_status=status_update.status
     )
     return build_response(result)
 

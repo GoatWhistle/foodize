@@ -1,6 +1,7 @@
 import time
 import uuid
 
+import jwt
 from fastapi import Depends, Request, Response
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,6 +20,9 @@ from infra.cache.redis import get_redis_cache
 from settings.config.app_config import settings
 from shared.exceptions.existence import AuthException
 from utils.JWT import create_access_token, create_refresh_token, decode_jwt
+from utils.logging_setup import get_logger
+
+logger = get_logger()
 
 _REFRESH_BLACKLIST_PREFIX = "refresh_blacklist:"
 _ACCESS_BLACKLIST_PREFIX = "access_blacklist:"
@@ -69,14 +73,20 @@ async def get_current_user(
     try:
         payload = decode_jwt(token)
         user_id = payload.get("sub")
-    except Exception:
-        raise AuthException()
+    except jwt.ExpiredSignatureError:
+        raise AuthException(detail="Token has expired")
+    except jwt.InvalidTokenError:
+        raise AuthException(detail="Invalid token")
     if user_id is None:
         raise AuthException()
+    try:
+        parsed_user_id = uuid.UUID(user_id)
+    except ValueError:
+        raise AuthException(detail="Invalid token")
     cache = get_redis_cache()
     if await cache.exists(f"{_ACCESS_BLACKLIST_PREFIX}{token}"):
         raise AuthException(detail="Token has been invalidated")
-    user = await get_user_by_id_or_404(session, uuid.UUID(user_id))
+    user = await get_user_by_id_or_404(session, parsed_user_id)
     if not user.is_active:
         raise AuthException(detail="Account is deactivated")
     return user
@@ -101,23 +111,40 @@ async def login_user(
     refresh_token = create_refresh_token(user.id, str(user.phone_number))
     _set_auth_cookies(response, access_token, refresh_token)
     return TokenResponse(
-        access_token=access_token, refresh_token=refresh_token, token_type="bearer"
+        access_token=access_token, refresh_token=refresh_token, token_type="Bearer"
     )
 
 
 async def logout_user(request: Request, response: Response) -> None:
-    token = request.cookies.get("access_token")
-    if token:
+    cache = get_redis_cache()
+    now = int(time.time())
+
+    access_token = request.cookies.get("access_token")
+    if access_token:
         try:
-            payload = decode_jwt(token)
-            ttl = payload.get("exp", 0) - int(time.time())
+            payload = decode_jwt(access_token)
+            ttl = payload.get("exp", 0) - now
             if ttl > 0:
-                cache = get_redis_cache()
-                await cache.set(f"{_ACCESS_BLACKLIST_PREFIX}{token}", "1", ttl=ttl)
-        except Exception:
+                await cache.set(f"{_ACCESS_BLACKLIST_PREFIX}{access_token}", "1", ttl=ttl)
+        except jwt.InvalidTokenError:
             pass
-    response.delete_cookie("access_token")
-    response.delete_cookie("refresh_token")
+        except Exception:
+            logger.warning("logout: failed to blacklist access token")
+
+    refresh_token = request.cookies.get("refresh_token")
+    if refresh_token:
+        try:
+            payload = decode_jwt(refresh_token)
+            ttl = payload.get("exp", 0) - now
+            if ttl > 0:
+                await cache.set(f"{_REFRESH_BLACKLIST_PREFIX}{refresh_token}", "1", ttl=ttl)
+        except jwt.InvalidTokenError:
+            pass
+        except Exception:
+            logger.warning("logout: failed to blacklist refresh token")
+
+    response.delete_cookie("access_token", httponly=True, secure=True, samesite="lax")
+    response.delete_cookie("refresh_token", httponly=True, secure=True, samesite="lax")
 
 
 async def refresh_user_token(
@@ -131,17 +158,23 @@ async def refresh_user_token(
     try:
         payload = decode_jwt(token)
         user_id = payload.get("sub")
-    except Exception:
-        raise AuthException()
+    except jwt.ExpiredSignatureError:
+        raise AuthException(detail="Refresh token has expired")
+    except jwt.InvalidTokenError:
+        raise AuthException(detail="Invalid refresh token")
     if user_id is None:
         raise AuthException()
+    try:
+        parsed_user_id = uuid.UUID(user_id)
+    except ValueError:
+        raise AuthException(detail="Invalid refresh token")
 
     cache = get_redis_cache()
     blacklist_key = f"{_REFRESH_BLACKLIST_PREFIX}{token}"
     if await cache.exists(blacklist_key):
         raise AuthException(detail="Refresh token already used")
 
-    user = await get_user_by_id_or_404(session, uuid.UUID(user_id))
+    user = await get_user_by_id_or_404(session, parsed_user_id)
 
     ttl = payload.get("exp", 0) - int(time.time())
     if ttl > 0:
@@ -151,5 +184,5 @@ async def refresh_user_token(
     new_refresh_token = create_refresh_token(user.id, str(user.phone_number))
     _set_auth_cookies(response, access_token, new_refresh_token)
     return TokenResponse(
-        access_token=access_token, refresh_token=new_refresh_token, token_type="bearer"
+        access_token=access_token, refresh_token=new_refresh_token, token_type="Bearer"
     )

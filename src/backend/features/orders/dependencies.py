@@ -16,7 +16,7 @@ from shared.enums.roles import UserRole
 from shared.exceptions import AccessDeniedException, NotFoundException
 
 
-async def _verify_restaurant_access(
+async def verify_restaurant_access(
     session: AsyncSession,
     restaurant_id: uuid.UUID,
     current_user: User,
@@ -41,7 +41,7 @@ async def _verify_restaurant_access(
             raise AccessDeniedException()
 
     else:
-        raise AccessDeniedException("Only VENDOR and STAFF can access orders")
+        raise AccessDeniedException(detail="Only VENDOR and STAFF can access orders")
 
     return restaurant
 
@@ -51,7 +51,7 @@ async def get_restaurant_staff_or_vendor(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
     current_user: User = Depends(get_current_user),
 ) -> Restaurant:
-    return await _verify_restaurant_access(session, restaurant_id, current_user)
+    return await verify_restaurant_access(session, restaurant_id, current_user)
 
 
 async def get_order_for_staff_or_vendor(
@@ -62,5 +62,5 @@ async def get_order_for_staff_or_vendor(
     order = await get_order_by_id(session, order_id)
     if not order:
         raise NotFoundException(detail="Order not found")
-    await _verify_restaurant_access(session, order.restaurant_id, current_user)
+    await verify_restaurant_access(session, order.restaurant_id, current_user)
     return order

@@ -7,9 +7,9 @@ from database import db_helper
 from features.auth.service import get_current_user
 from features.orders.crud.order import get_order_by_id
 from features.orders.dependencies import (
-    _verify_restaurant_access,
     get_order_for_staff_or_vendor,
     get_restaurant_staff_or_vendor,
+    verify_restaurant_access,
 )
 from features.orders.models import Order
 from features.orders.schemas.order import OrderCreate, OrderResponse, OrderStatusUpdate
@@ -98,7 +98,7 @@ async def read_order_events(
         if order.user_id != current_user.id:
             raise AccessDeniedException()
     else:
-        await _verify_restaurant_access(session, order.restaurant_id, current_user)
+        await verify_restaurant_access(session, order.restaurant_id, current_user)
 
     events = await service.get_order_events(session=session, order_id=order.id)
     return build_list_response(
@@ -134,5 +134,14 @@ async def read_order(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[OrderResponse]:
-    result = await service.get_order(session=session, order_id=order_id, user_id=current_user.id)
-    return build_response(result)
+    order = await get_order_by_id(session, order_id)
+    if not order:
+        raise NotFoundException(detail="Order not found")
+
+    if current_user.user_role == UserRole.CUSTOMER.value:
+        if order.user_id != current_user.id:
+            raise AccessDeniedException()
+    else:
+        await verify_restaurant_access(session, order.restaurant_id, current_user)
+
+    return build_response(OrderResponse.model_validate(order))

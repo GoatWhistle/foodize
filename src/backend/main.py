@@ -1,14 +1,12 @@
 from contextlib import asynccontextmanager
 
-import redis.asyncio as aioredis
 import uvicorn
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
-from slowapi.util import get_remote_address
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -23,6 +21,9 @@ from api.exception_handlers import (
 )
 from database import db_helper
 from features.notifications.broker import broker
+from infra.cache.redis import close_redis_pool, get_redis_cache
+from middlewares.cache import AutoCacheMiddleware
+from middlewares.limiter import limiter
 from middlewares.logging import RequestLoggingMiddleware
 from middlewares.security import SecurityHeadersMiddleware
 from settings.config.app_config import settings
@@ -31,21 +32,28 @@ from utils.logging_setup import configure_logging
 
 configure_logging()
 
-limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await broker.connect()
     yield
     await broker.disconnect()
+    await close_redis_pool()
 
 
 app = FastAPI(lifespan=lifespan)
 app.state.limiter = limiter
-app.add_middleware(SlowAPIMiddleware)
-app.add_middleware(SecurityHeadersMiddleware)
+
+# Middleware execution order (outermost → innermost):
+# 1. SlowAPIMiddleware           — rate limiting
+# 2. CORSMiddleware              — preflight
+# 3. SecurityHeadersMiddleware   — security headers
+# 4. AutoCacheMiddleware         — cache layer (public GET endpoints only)
+# 5. RequestLoggingMiddleware    — timing + request_id
 app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(AutoCacheMiddleware, ttl=300)
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(SlowAPIMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors.allowed_origins,
@@ -79,9 +87,8 @@ async def health():
         checks["db"] = "error"
 
     try:
-        r = aioredis.from_url(settings.redis.url, decode_responses=True)
-        await r.ping()
-        await r.aclose()
+        cache = get_redis_cache()
+        await cache.exists("health")
         checks["redis"] = "ok"
     except Exception:
         checks["redis"] = "error"

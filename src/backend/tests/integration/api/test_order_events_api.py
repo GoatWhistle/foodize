@@ -43,7 +43,7 @@ class TestOrderEventsAPI:
                 new_callable=AsyncMock,
                 return_value=mock_order,
             ),
-            patch("features.orders.api.order._verify_restaurant_access", new_callable=AsyncMock),
+            patch("features.orders.api.order.verify_restaurant_access", new_callable=AsyncMock),
             patch(
                 "features.orders.api.order.service.get_order_events",
                 new_callable=AsyncMock,
@@ -70,7 +70,7 @@ class TestOrderEventsAPI:
                 new_callable=AsyncMock,
                 return_value=mock_order,
             ),
-            patch("features.orders.api.order._verify_restaurant_access", new_callable=AsyncMock),
+            patch("features.orders.api.order.verify_restaurant_access", new_callable=AsyncMock),
             patch(
                 "features.orders.api.order.service.get_order_events",
                 new_callable=AsyncMock,

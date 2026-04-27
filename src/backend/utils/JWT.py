@@ -7,24 +7,23 @@ from pytz import utc  # type: ignore[import-untyped]
 
 from settings.config.app_config import settings
 
+_private_key: str = settings.auth.private_key_path.read_text()
+_public_key: str = settings.auth.public_key_path.read_text()
+
 
 def encode_jwt(
     payload: dict,
-    private_key: str | None = None,
+    private_key: str = _private_key,
     algorithm: str = settings.auth.algorithm,
 ):
-    if private_key is None:
-        private_key = settings.auth.private_key_path.read_text()
     return jwt.encode(payload, private_key, algorithm=algorithm)
 
 
 def decode_jwt(
     token: str,
-    public_key: str | None = None,
+    public_key: str = _public_key,
     algorithm: str = settings.auth.algorithm,
 ) -> dict:
-    if public_key is None:
-        public_key = settings.auth.public_key_path.read_text()
     return jwt.decode(token, public_key, algorithms=[algorithm])
 
 

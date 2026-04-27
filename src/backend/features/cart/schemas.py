@@ -1,12 +1,12 @@
 import uuid
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class MenuItemShort(BaseModel):
     id: uuid.UUID
     name: str
-    price: float
+    price: int
     image_url: str | None = None
 
 
@@ -23,9 +23,9 @@ class CartResponse(BaseModel):
 class CartItemIn(BaseModel):
     menu_item_id: uuid.UUID
     name: str
-    price: float
+    price: int = Field(..., ge=0)
     image_url: str | None = None
-    quantity: int
+    quantity: int = Field(..., ge=1, le=99)
 
 
 class CartUpdate(BaseModel):

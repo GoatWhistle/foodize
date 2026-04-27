@@ -9,8 +9,8 @@ from shared.enums.order_status import OrderStatus
 
 class OrderCreate(BaseModel):
     restaurant_id: uuid.UUID
-    items: list[OrderItemCreate] = Field(..., min_length=1)
-    promo_code: str | None = None
+    items: list[OrderItemCreate] = Field(..., min_length=1, max_length=50)
+    promo_code: str | None = Field(None, min_length=3, max_length=64)
 
 
 class OrderStatusUpdate(BaseModel):

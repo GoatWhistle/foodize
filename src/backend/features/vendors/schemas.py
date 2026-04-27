@@ -1,14 +1,14 @@
 import uuid
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class VendorCreate(BaseModel):
-    description: str | None = None
+    description: str | None = Field(None, max_length=2000)
 
 
 class VendorDescriptionUpdate(BaseModel):
-    description: str
+    description: str = Field(..., min_length=1, max_length=2000)
 
 
 class VendorResponse(BaseModel):

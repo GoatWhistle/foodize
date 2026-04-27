@@ -1,3 +1,5 @@
+import json
+
 from fastapi import Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -20,7 +22,16 @@ async def request_validation_error_handler(request: Request, exc: RequestValidat
 
 async def app_exception_handler(request: Request, exc: AppException):
     request_id = getattr(request.state, "request_id", None)
-    logger.warning("AppException: %s | request_id=%s", exc.detail, request_id)
+    logger.warning(
+        json.dumps(
+            {
+                "event": "AppException",
+                "error": exc.detail,
+                "request_id": request_id,
+                "path": str(request.url.path),
+            }
+        )
+    )
     return JSONResponse(
         status_code=int(exc.status_code),
         content=ErrorSchema(detail=ErrorDescriptionSchema(error=exc.detail)).model_dump(),
@@ -30,7 +41,16 @@ async def app_exception_handler(request: Request, exc: AppException):
 
 async def unhandled_exception_handler(request: Request, exc: Exception):
     request_id = getattr(request.state, "request_id", None)
-    logger.exception("Unhandled exception | request_id=%s", request_id)
+    logger.exception(
+        json.dumps(
+            {
+                "event": "Exception",
+                "error": str(exc),
+                "request_id": request_id,
+                "path": str(request.url.path),
+            }
+        )
+    )
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content=ErrorSchema(
@@ -50,7 +70,16 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 async def integrity_error_handler(request: Request, exc: IntegrityError):
     error_msg = str(exc.orig) if hasattr(exc, "orig") else str(exc)
     request_id = getattr(request.state, "request_id", None)
-    logger.warning("IntegrityError: %s | request_id=%s", error_msg, request_id)
+    logger.warning(
+        json.dumps(
+            {
+                "event": "IntegrityError",
+                "error": error_msg,
+                "request_id": request_id,
+                "path": str(request.url.path),
+            }
+        )
+    )
 
     friendly_msg = "Duplicate entry: this information already exists."
     if "uq_restaurants_address" in error_msg:

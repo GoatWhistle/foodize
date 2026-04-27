@@ -13,28 +13,23 @@ def configure_logging() -> None:
             "version": 1,
             "disable_existing_loggers": False,
             "formatters": {
-                "default": {
-                    "()": "uvicorn.logging.DefaultFormatter",
-                    "fmt": "%(levelprefix)s %(asctime)s | %(name)s | %(message)s",
-                    "datefmt": "%Y-%m-%d %H:%M:%S",
-                    "use_colors": True,
-                },
-                "access": {
-                    "()": "uvicorn.logging.DefaultFormatter",
-                    "fmt": "%(levelprefix)s %(asctime)s | %(message)s",
-                    "datefmt": "%Y-%m-%d %H:%M:%S",
-                    "use_colors": True,
+                "json": {
+                    "format": (
+                        '{"time": "%(asctime)s", "level": "%(levelname)s", '
+                        '"name": "%(name)s", "message": %(message)s}'
+                    ),
+                    "datefmt": "%Y-%m-%dT%H:%M:%S",
                 },
             },
             "handlers": {
                 "default": {
                     "class": "logging.StreamHandler",
-                    "formatter": "default",
+                    "formatter": "json",
                     "stream": "ext://sys.stderr",
                 },
                 "access": {
                     "class": "logging.StreamHandler",
-                    "formatter": "access",
+                    "formatter": "json",
                     "stream": "ext://sys.stdout",
                 },
             },

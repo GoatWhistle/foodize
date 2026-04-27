@@ -4,6 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from features.admin.schemas import PlatformStats
 from features.orders.models import Order, OrderItem
 from features.restaurants.models import Restaurant
 from features.users.models import User
@@ -93,7 +94,7 @@ async def count_all_orders(
     return result.scalar_one()
 
 
-async def get_platform_stats(session: AsyncSession) -> dict:
+async def get_platform_stats(session: AsyncSession) -> PlatformStats:
     users_by_role_rows = await session.execute(
         select(User.user_role, func.count()).group_by(User.user_role)
     )
@@ -107,8 +108,8 @@ async def get_platform_stats(session: AsyncSession) -> dict:
     total_restaurants_result = await session.execute(select(func.count()).select_from(Restaurant))
     total_restaurants = total_restaurants_result.scalar_one()
 
-    return {
-        "users_by_role": users_by_role,
-        "orders_by_status": orders_by_status,
-        "total_restaurants": total_restaurants,
-    }
+    return PlatformStats(
+        users_by_role=users_by_role,
+        orders_by_status=orders_by_status,
+        total_restaurants=total_restaurants,
+    )

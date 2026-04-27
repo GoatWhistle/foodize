@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from features.orders.dependencies import _verify_restaurant_access, get_order_for_staff_or_vendor
+from features.orders.dependencies import get_order_for_staff_or_vendor, verify_restaurant_access
 from shared.enums.roles import UserRole
 from shared.exceptions import AccessDeniedException, NotFoundException
 
@@ -40,7 +40,7 @@ class TestVerifyRestaurantAccess:
             new_callable=AsyncMock,
             return_value=vendor_mock,
         ):
-            result = await _verify_restaurant_access(session, restaurant.id, user)
+            result = await verify_restaurant_access(session, restaurant.id, user)
             assert result == restaurant
 
     @pytest.mark.asyncio
@@ -60,7 +60,7 @@ class TestVerifyRestaurantAccess:
             return_value=vendor_mock,
         ):
             with pytest.raises(AccessDeniedException):
-                await _verify_restaurant_access(session, restaurant.id, user)
+                await verify_restaurant_access(session, restaurant.id, user)
 
     @pytest.mark.asyncio
     async def test_staff_at_correct_restaurant(self):
@@ -77,7 +77,7 @@ class TestVerifyRestaurantAccess:
         session.get = AsyncMock(return_value=restaurant)
         session.execute = AsyncMock(return_value=mock_result)
 
-        result = await _verify_restaurant_access(session, restaurant_id, user)
+        result = await verify_restaurant_access(session, restaurant_id, user)
         assert result == restaurant
 
     @pytest.mark.asyncio
@@ -95,7 +95,7 @@ class TestVerifyRestaurantAccess:
         session.execute = AsyncMock(return_value=mock_result)
 
         with pytest.raises(AccessDeniedException):
-            await _verify_restaurant_access(session, restaurant_id, user)
+            await verify_restaurant_access(session, restaurant_id, user)
 
     @pytest.mark.asyncio
     async def test_other_role_denied(self):
@@ -106,7 +106,7 @@ class TestVerifyRestaurantAccess:
         session.get = AsyncMock(return_value=restaurant)
 
         with pytest.raises(AccessDeniedException):
-            await _verify_restaurant_access(session, restaurant.id, user)
+            await verify_restaurant_access(session, restaurant.id, user)
 
     @pytest.mark.asyncio
     async def test_restaurant_not_found(self):
@@ -116,7 +116,7 @@ class TestVerifyRestaurantAccess:
         session.get = AsyncMock(return_value=None)
 
         with pytest.raises(NotFoundException):
-            await _verify_restaurant_access(session, uuid.uuid4(), user)
+            await verify_restaurant_access(session, uuid.uuid4(), user)
 
 
 class TestGetOrderForStaffOrVendor:

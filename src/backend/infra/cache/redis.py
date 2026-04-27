@@ -27,6 +27,21 @@ class RedisCache(CacheRepository):
     async def exists(self, key: str) -> bool:
         return bool(await self._client.exists(key))
 
+    async def sadd(self, key: str, *values: str) -> None:
+        await self._client.sadd(key, *values)
+
+    async def smembers(self, key: str):
+        result = await self._client.smembers(key)
+        return set(result)
+
+    async def delete_many(self, *keys: str) -> None:
+        if keys:
+            await self._client.delete(*keys)
+
 
 def get_redis_cache() -> RedisCache:
     return RedisCache(_get_client())
+
+
+async def close_redis_pool() -> None:
+    await _pool.aclose()

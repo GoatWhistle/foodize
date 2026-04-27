@@ -1,10 +1,18 @@
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.promos.models import Promo
 from features.promos.schemas import PromoCreate
+from features.restaurants.models import Restaurant
+
+
+async def get_restaurant_ids_by_vendor(
+    session: AsyncSession, vendor_id: uuid.UUID
+) -> list[uuid.UUID]:
+    result = await session.execute(select(Restaurant.id).where(Restaurant.vendor_id == vendor_id))
+    return [row[0] for row in result.fetchall()]
 
 
 async def get_promo_by_code(session: AsyncSession, code: str) -> Promo | None:
@@ -33,8 +41,6 @@ async def get_promos_by_restaurant_ids(
 async def count_promos_by_restaurant_ids(
     session: AsyncSession, restaurant_ids: list[uuid.UUID]
 ) -> int:
-    from sqlalchemy import func
-
     if not restaurant_ids:
         return 0
     result = await session.execute(
