@@ -16,6 +16,25 @@ vi.mock("../../store/useRestaurantStore", () => ({
             name: "Classic Shaurma",
             price: 300,
             category: "SHAURMA",
+            option_groups: [
+              {
+                id: "g1",
+                name: "Добавки",
+                selection_type: "multiple",
+                is_required: false,
+                min_selected: 0,
+                max_selected: 2,
+                is_active: true,
+                options: [
+                  {
+                    id: "o1",
+                    name: "Добавить мясо",
+                    price_delta: 80,
+                    is_available: true,
+                  },
+                ],
+              },
+            ],
           },
           { id: "m2", name: "Veggie Burger", price: 400, category: "BURGER" },
         ],
@@ -98,8 +117,14 @@ describe("RestaurantPage", () => {
 
     const addBtns = screen.getAllByRole("button", { name: /Добавить/ });
     fireEvent.click(addBtns[0]);
+    fireEvent.click(screen.getByText("Добавить мясо"));
+    fireEvent.click(screen.getByText("Добавить за 380 ₽"));
 
-    expect(addToCartMock).toHaveBeenCalled();
+    expect(addToCartMock).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "m1" }),
+      "mock-1",
+      [expect.objectContaining({ id: "o1" })],
+    );
   });
 
   it("filters menu items by category", () => {

@@ -10,9 +10,17 @@ class MenuItemShort(BaseModel):
     image_url: str | None = None
 
 
+class CartSelectedOption(BaseModel):
+    option_id: uuid.UUID
+    name: str
+    price_delta: int = Field(..., ge=0)
+
+
 class CartItemResponse(BaseModel):
     menuItem: MenuItemShort
     quantity: int
+    selected_option_ids: list[uuid.UUID] = []
+    selected_options: list[CartSelectedOption] = []
 
 
 class CartResponse(BaseModel):
@@ -26,6 +34,8 @@ class CartItemIn(BaseModel):
     price: int = Field(..., ge=0)
     image_url: str | None = None
     quantity: int = Field(..., ge=1, le=99)
+    selected_option_ids: list[uuid.UUID] = Field(default_factory=list, max_length=50)
+    selected_options: list[CartSelectedOption] = Field(default_factory=list, max_length=50)
 
 
 class CartUpdate(BaseModel):

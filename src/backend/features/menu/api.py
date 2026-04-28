@@ -5,7 +5,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
 from features.menu import service
-from features.menu.schemas import MenuItemCreate, MenuItemResponse, MenuItemUpdate
+from features.menu.schemas import (
+    MenuItemCreate,
+    MenuItemOptionCreate,
+    MenuItemOptionGroupCreate,
+    MenuItemOptionGroupResponse,
+    MenuItemOptionGroupUpdate,
+    MenuItemOptionResponse,
+    MenuItemOptionUpdate,
+    MenuItemResponse,
+    MenuItemUpdate,
+)
 from features.vendors.dependencies import get_current_vendor
 from features.vendors.models import VendorProfile
 from shared.response import build_list_response, build_response
@@ -60,6 +70,142 @@ async def delete_menu_item(
         session=session,
         restaurant_id=restaurant_id,
         item_id=item_id,
+        vendor_id=current_vendor.id,
+    )
+
+
+@router.post(
+    "/{restaurant_id}/items/{item_id}/option-groups",
+    response_model=SuccessResponse[MenuItemOptionGroupResponse],
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_option_group(
+    restaurant_id: uuid.UUID,
+    item_id: uuid.UUID,
+    group_in: MenuItemOptionGroupCreate,
+    current_vendor: VendorProfile = Depends(get_current_vendor),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> SuccessResponse[MenuItemOptionGroupResponse]:
+    result = await service.create_option_group_for_vendor(
+        session=session,
+        restaurant_id=restaurant_id,
+        item_id=item_id,
+        data=group_in,
+        vendor_id=current_vendor.id,
+    )
+    return build_response(result)
+
+
+@router.patch(
+    "/{restaurant_id}/items/{item_id}/option-groups/{group_id}",
+    response_model=SuccessResponse[MenuItemOptionGroupResponse],
+)
+async def update_option_group(
+    restaurant_id: uuid.UUID,
+    item_id: uuid.UUID,
+    group_id: uuid.UUID,
+    group_in: MenuItemOptionGroupUpdate,
+    current_vendor: VendorProfile = Depends(get_current_vendor),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> SuccessResponse[MenuItemOptionGroupResponse]:
+    result = await service.update_option_group_for_vendor(
+        session=session,
+        restaurant_id=restaurant_id,
+        item_id=item_id,
+        group_id=group_id,
+        data=group_in,
+        vendor_id=current_vendor.id,
+    )
+    return build_response(result)
+
+
+@router.delete(
+    "/{restaurant_id}/items/{item_id}/option-groups/{group_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_option_group(
+    restaurant_id: uuid.UUID,
+    item_id: uuid.UUID,
+    group_id: uuid.UUID,
+    current_vendor: VendorProfile = Depends(get_current_vendor),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> None:
+    await service.delete_option_group_for_vendor(
+        session=session,
+        restaurant_id=restaurant_id,
+        item_id=item_id,
+        group_id=group_id,
+        vendor_id=current_vendor.id,
+    )
+
+
+@router.post(
+    "/{restaurant_id}/items/{item_id}/option-groups/{group_id}/options",
+    response_model=SuccessResponse[MenuItemOptionResponse],
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_option(
+    restaurant_id: uuid.UUID,
+    item_id: uuid.UUID,
+    group_id: uuid.UUID,
+    option_in: MenuItemOptionCreate,
+    current_vendor: VendorProfile = Depends(get_current_vendor),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> SuccessResponse[MenuItemOptionResponse]:
+    result = await service.create_option_for_vendor(
+        session=session,
+        restaurant_id=restaurant_id,
+        item_id=item_id,
+        group_id=group_id,
+        data=option_in,
+        vendor_id=current_vendor.id,
+    )
+    return build_response(result)
+
+
+@router.patch(
+    "/{restaurant_id}/items/{item_id}/option-groups/{group_id}/options/{option_id}",
+    response_model=SuccessResponse[MenuItemOptionResponse],
+)
+async def update_option(
+    restaurant_id: uuid.UUID,
+    item_id: uuid.UUID,
+    group_id: uuid.UUID,
+    option_id: uuid.UUID,
+    option_in: MenuItemOptionUpdate,
+    current_vendor: VendorProfile = Depends(get_current_vendor),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> SuccessResponse[MenuItemOptionResponse]:
+    result = await service.update_option_for_vendor(
+        session=session,
+        restaurant_id=restaurant_id,
+        item_id=item_id,
+        group_id=group_id,
+        option_id=option_id,
+        data=option_in,
+        vendor_id=current_vendor.id,
+    )
+    return build_response(result)
+
+
+@router.delete(
+    "/{restaurant_id}/items/{item_id}/option-groups/{group_id}/options/{option_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_option(
+    restaurant_id: uuid.UUID,
+    item_id: uuid.UUID,
+    group_id: uuid.UUID,
+    option_id: uuid.UUID,
+    current_vendor: VendorProfile = Depends(get_current_vendor),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> None:
+    await service.delete_option_for_vendor(
+        session=session,
+        restaurant_id=restaurant_id,
+        item_id=item_id,
+        group_id=group_id,
+        option_id=option_id,
         vendor_id=current_vendor.id,
     )
 

@@ -38,6 +38,8 @@ class CartService:
                     "image_url": i.get("image_url"),
                 },
                 "quantity": i["quantity"],
+                "selected_option_ids": i.get("selected_option_ids", []),
+                "selected_options": i.get("selected_options", []),
             }
             for i in cart_dict.get("items", [])
         ]

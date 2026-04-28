@@ -61,6 +61,21 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
       ? appliedPromo.discounted_amount
       : total;
 
+  const getSelectedOptionIds = (item) =>
+    item.selectedOptionIds ??
+    item.selected_option_ids ??
+    getSelectedOptions(item).map((option) => option.id ?? option.option_id);
+
+  const getSelectedOptions = (item) =>
+    item.selectedOptions ?? item.selected_options ?? [];
+
+  const getLinePrice = (item) =>
+    (Number(item.menuItem.price) || 0) +
+    getSelectedOptions(item).reduce(
+      (sum, option) => sum + (Number(option.price_delta) || 0),
+      0,
+    );
+
   if (!cart.length) return null;
 
   return (
@@ -72,50 +87,84 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
           <h2 className="cart-title">Корзина</h2>
 
           <div className="cart-items">
-            {cart.map(({ menuItem, quantity }) => (
-              <div key={menuItem.id} className="cart-item">
-                <span className="cart-item-name">{menuItem.name}</span>
+            {cart.map((cartItem) => {
+              const { menuItem, quantity } = cartItem;
+              const selectedOptions = getSelectedOptions(cartItem);
+              const selectedOptionIds = getSelectedOptionIds(cartItem);
+              const lineKey = `${menuItem.id}:${selectedOptionIds.join(",")}`;
 
-                <div className="cart-item-controls">
-                  <button
-                    className="qty-btn"
-                    onClick={() => removeFromCart(menuItem.id)}
-                    aria-label="Уменьшить"
-                  >
-                    <Minus size={12} weight="bold" />
-                  </button>
+              return (
+                <div key={lineKey} className="cart-item">
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <span className="cart-item-name">{menuItem.name}</span>
+                    {selectedOptions.length > 0 && (
+                      <div
+                        style={{
+                          marginTop: 3,
+                          fontSize: "0.72rem",
+                          lineHeight: 1.35,
+                          color: "var(--text-3)",
+                        }}
+                      >
+                        {selectedOptions
+                          .map(
+                            (option) =>
+                              `${option.name}${
+                                option.price_delta
+                                  ? ` +${option.price_delta} ₽`
+                                  : ""
+                              }`,
+                          )
+                          .join(", ")}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="cart-item-controls">
+                    <button
+                      className="qty-btn"
+                      onClick={() =>
+                        removeFromCart(menuItem.id, selectedOptionIds)
+                      }
+                      aria-label="Уменьшить"
+                    >
+                      <Minus size={12} weight="bold" />
+                    </button>
+                    <span
+                      style={{
+                        fontWeight: 700,
+                        minWidth: 20,
+                        textAlign: "center",
+                        fontSize: "0.9rem",
+                      }}
+                    >
+                      {quantity}
+                    </span>
+                    <button
+                      className="qty-btn"
+                      onClick={() =>
+                        addToCart(menuItem, cartRestaurantId, selectedOptions)
+                      }
+                      aria-label="Увеличить"
+                    >
+                      <Plus size={12} weight="bold" />
+                    </button>
+                  </div>
+
                   <span
                     style={{
                       fontWeight: 700,
-                      minWidth: 20,
-                      textAlign: "center",
+                      minWidth: 64,
+                      textAlign: "right",
                       fontSize: "0.9rem",
+                      color: "var(--text-1)",
                     }}
                   >
-                    {quantity}
+                    {getLinePrice(cartItem) * quantity} ₽
                   </span>
-                  <button
-                    className="qty-btn"
-                    onClick={() => addToCart(menuItem, cartRestaurantId)}
-                    aria-label="Увеличить"
-                  >
-                    <Plus size={12} weight="bold" />
-                  </button>
                 </div>
-
-                <span
-                  style={{
-                    fontWeight: 700,
-                    minWidth: 64,
-                    textAlign: "right",
-                    fontSize: "0.9rem",
-                    color: "var(--text-1)",
-                  }}
-                >
-                  {menuItem.price * quantity} ₽
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Promo code */}

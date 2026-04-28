@@ -162,6 +162,27 @@ const OrderStatusPage = () => {
                 <div style={{ fontSize: "0.75rem", color: "var(--text-3)" }}>
                   {item.menu_item_category}
                 </div>
+                {item.selected_options?.length > 0 && (
+                  <div
+                    style={{
+                      marginTop: 3,
+                      fontSize: "0.72rem",
+                      color: "var(--text-3)",
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    {item.selected_options
+                      .map(
+                        (option) =>
+                          `${option.name}${
+                            option.price_delta
+                              ? ` +${option.price_delta} ₽`
+                              : ""
+                          }`,
+                      )
+                      .join(", ")}
+                  </div>
+                )}
               </div>
               <span style={{ fontWeight: 700 }}>
                 {item.price_at_purchase} ₽

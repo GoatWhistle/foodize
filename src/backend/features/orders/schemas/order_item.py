@@ -8,6 +8,28 @@ from shared.enums.category import Category
 class OrderItemCreate(BaseModel):
     menu_item_id: uuid.UUID
     quantity: int = Field(1, ge=1, le=99)
+    selected_option_ids: list[uuid.UUID] = Field(default_factory=list, max_length=50)
+
+
+class OrderItemOptionResponse(BaseModel):
+    id: uuid.UUID
+    option_id: uuid.UUID | None
+    name: str
+    price_delta: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode="before")
+    @classmethod
+    def flatten_option_snapshot(cls, data):
+        if hasattr(data, "name_snapshot"):
+            return {
+                "id": data.id,
+                "option_id": data.option_id,
+                "name": data.name_snapshot,
+                "price_delta": data.price_delta_snapshot,
+            }
+        return data
 
 
 class OrderItemResponse(BaseModel):
@@ -17,6 +39,7 @@ class OrderItemResponse(BaseModel):
     menu_item_category: Category
     quantity: int
     price_at_purchase: int
+    selected_options: list[OrderItemOptionResponse] = []
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -32,5 +55,6 @@ class OrderItemResponse(BaseModel):
                 "menu_item_category": mi.category,
                 "quantity": data.quantity,
                 "price_at_purchase": data.price_at_purchase,
+                "selected_options": data.selected_options,
             }
         return data

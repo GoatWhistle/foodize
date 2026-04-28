@@ -3,12 +3,25 @@ import pytest
 from features.menu.crud import (
     count_menu_items,
     create_menu_item,
+    create_option,
+    create_option_group,
     delete_menu_item,
+    delete_option,
+    delete_option_group,
     get_menu_item_by_id,
     get_menu_items,
     update_menu_item,
+    update_option,
+    update_option_group,
 )
-from features.menu.schemas import MenuItemCreate, MenuItemUpdate
+from features.menu.schemas import (
+    MenuItemCreate,
+    MenuItemOptionCreate,
+    MenuItemOptionGroupCreate,
+    MenuItemOptionGroupUpdate,
+    MenuItemOptionUpdate,
+    MenuItemUpdate,
+)
 from features.restaurants.crud import create_restaurant
 from features.restaurants.schemas import RestaurantCreate
 from features.users.crud import create_user
@@ -95,3 +108,56 @@ async def test_delete_menu_item_soft_deletes(db_session, restaurant):
     fetched = await get_menu_item_by_id(db_session, item.id)
     assert fetched is not None
     assert fetched.is_deleted is True
+
+
+@pytest.mark.asyncio
+async def test_menu_item_option_group_crud(db_session, restaurant):
+    item = await create_menu_item(
+        db_session,
+        MenuItemCreate(name="Burger", price=300, category=Category.SHAURMA),
+        restaurant.id,
+    )
+
+    group = await create_option_group(
+        db_session,
+        item,
+        MenuItemOptionGroupCreate(
+            name="Add-ons",
+            selection_type="multiple",
+            max_selected=2,
+            options=[
+                MenuItemOptionCreate(name="Cheese", price_delta=50),
+                MenuItemOptionCreate(name="Double meat", price_delta=180),
+            ],
+        ),
+    )
+
+    assert group.id is not None
+    assert len(group.options) == 2
+    assert group.options[0].name == "Cheese"
+
+    updated_group = await update_option_group(
+        db_session,
+        group,
+        MenuItemOptionGroupUpdate(name="Extras", max_selected=3),
+    )
+    assert updated_group.name == "Extras"
+    assert updated_group.max_selected == 3
+
+    option = await create_option(
+        db_session,
+        group,
+        MenuItemOptionCreate(name="Hot sauce", price_delta=30),
+    )
+    updated_option = await update_option(
+        db_session,
+        option,
+        MenuItemOptionUpdate(price_delta=40),
+    )
+    assert updated_option.price_delta == 40
+
+    await delete_option(db_session, updated_option)
+    assert updated_option.is_available is False
+
+    await delete_option_group(db_session, updated_group)
+    assert updated_group.is_active is False

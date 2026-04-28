@@ -11,11 +11,14 @@ from shared.enums.order_status import OrderStatus
 
 
 def _items_options() -> Any:
-    return selectinload(Order.items).selectinload(OrderItem.menu_item)
+    return (
+        selectinload(Order.items).selectinload(OrderItem.menu_item),
+        selectinload(Order.items).selectinload(OrderItem.selected_options),
+    )
 
 
 def _full_options() -> tuple[Any, Any]:
-    return _items_options(), selectinload(Order.restaurant)
+    return *_items_options(), selectinload(Order.restaurant)
 
 
 async def get_orders_by_user_id(
@@ -25,7 +28,7 @@ async def get_orders_by_user_id(
     offset: int = 0,
     limit: int = 20,
 ) -> list[Order]:
-    stmt = select(Order).where(Order.user_id == user_id).options(_items_options())
+    stmt = select(Order).where(Order.user_id == user_id).options(*_items_options())
     if status is not None:
         stmt = stmt.where(Order.status == status.value)
     stmt = stmt.order_by(Order.created_at.desc()).offset(offset).limit(limit)
@@ -51,7 +54,7 @@ async def get_orders_by_restaurant_id(
         select(Order)
         .where(Order.restaurant_id == restaurant_id)
         .order_by(Order.created_at.desc())
-        .options(_items_options())
+        .options(*_items_options())
     )
     if status is not None:
         stmt = stmt.where(Order.status == status.value)

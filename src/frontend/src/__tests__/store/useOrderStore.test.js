@@ -80,16 +80,31 @@ describe("useOrderStore", () => {
     });
 
     const mockOrder = { id: "order-1", total_price: 200 };
-    orderService.create.mockResolvedValueOnce({ data: mockOrder });
+    orderService.create.mockResolvedValueOnce({ data: { data: mockOrder } });
 
     await useOrderStore.getState().placeOrder();
 
     expect(orderService.create).toHaveBeenCalledWith({
       restaurant_id: "rest-1",
-      items: [{ menu_item_id: "1", quantity: 2 }],
+      items: [{ menu_item_id: "1", quantity: 2, selected_option_ids: [] }],
     });
     const state = useOrderStore.getState();
     expect(state.cart).toHaveLength(0);
     expect(state.orders[0]).toEqual(mockOrder);
+  });
+
+  it("keeps the same menu item with different options as separate cart lines", async () => {
+    const item = { id: "1", name: "Shaurma", price: 300 };
+    const meatOption = { id: "opt-meat", name: "Extra meat", price_delta: 80 };
+
+    await useOrderStore.getState().addToCart(item, "rest-1", []);
+    await useOrderStore.getState().addToCart(item, "rest-1", [meatOption]);
+    await useOrderStore.getState().addToCart(item, "rest-1", [meatOption]);
+
+    const state = useOrderStore.getState();
+    expect(state.cart).toHaveLength(2);
+    expect(state.cart[0].quantity).toBe(1);
+    expect(state.cart[1].quantity).toBe(2);
+    expect(state.cartTotal()).toBe(1060);
   });
 });

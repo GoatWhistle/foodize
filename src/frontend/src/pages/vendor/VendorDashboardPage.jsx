@@ -36,6 +36,34 @@ const STATUS_LABEL_RU = {
   CANCELLED: "Отменён",
 };
 
+const createOptionDraft = () => ({
+  draftId: `${Date.now()}-${Math.random()}`,
+  name: "",
+  price_delta: "",
+});
+
+const createOptionGroupDraft = () => ({
+  draftId: `${Date.now()}-${Math.random()}`,
+  name: "",
+  selection_type: "multiple",
+  is_required: false,
+  min_selected: 0,
+  max_selected: "",
+  options: [createOptionDraft()],
+});
+
+const normalizeOptionGroups = (groups = []) =>
+  groups.map((group) => ({
+    ...group,
+    draftId: group.id || `${Date.now()}-${Math.random()}`,
+    max_selected: group.max_selected ?? "",
+    options: (group.options || []).map((option) => ({
+      ...option,
+      draftId: option.id || `${Date.now()}-${Math.random()}`,
+      price_delta: option.price_delta?.toString?.() ?? "0",
+    })),
+  }));
+
 const VendorDashboardPage = () => {
   const {
     restaurants,
@@ -65,6 +93,7 @@ const VendorDashboardPage = () => {
     price: "",
     category: "SHAURMA",
     prep_time_minutes: 15,
+    option_groups: [],
   });
 
   const [restaurantOrders, setRestaurantOrders] = useState([]);
@@ -171,7 +200,9 @@ const VendorDashboardPage = () => {
           if (data.length === 0) {
             setWorkingHours(buildDefaultHours());
           } else {
-            const sorted = [...data].sort((a, b) => a.day_of_week - b.day_of_week);
+            const sorted = [...data].sort(
+              (a, b) => a.day_of_week - b.day_of_week,
+            );
             setWorkingHours(sorted);
           }
         })
@@ -204,7 +235,9 @@ const VendorDashboardPage = () => {
       );
       const data = Array.isArray(res.data?.data) ? res.data.data : [];
       if (data.length > 0) {
-        setWorkingHours([...data].sort((a, b) => a.day_of_week - b.day_of_week));
+        setWorkingHours(
+          [...data].sort((a, b) => a.day_of_week - b.day_of_week),
+        );
       }
       setWorkingHoursSaved(true);
       setTimeout(() => setWorkingHoursSaved(false), 2000);
@@ -319,7 +352,9 @@ const VendorDashboardPage = () => {
       ...(patch.photo_url != null ? { photo_url: patch.photo_url } : {}),
     };
     try {
-      const requests = [restaurantService.update(selectedRestaurant.id, payload)];
+      const requests = [
+        restaurantService.update(selectedRestaurant.id, payload),
+      ];
       if (vendorDescription.trim()) {
         requests.push(vendorService.updateDescription(vendorDescription));
       }
@@ -341,34 +376,95 @@ const VendorDashboardPage = () => {
     setFormError("");
 
     try {
+      const { option_groups: optionGroups, ...baseForm } = menuItemForm;
       const payload = {
-        ...menuItemForm,
-        price: parseInt(menuItemForm.price, 10),
-        prep_time_minutes: parseInt(menuItemForm.prep_time_minutes, 10) || 15,
+        ...baseForm,
+        price: parseInt(baseForm.price, 10),
+        prep_time_minutes: parseInt(baseForm.prep_time_minutes, 10) || 15,
       };
+      let savedItem = editingItem;
       if (editingItem) {
-        await menuService.updateItem(
+        const res = await menuService.updateItem(
           selectedRestaurant.id,
           editingItem.id,
           payload,
         );
-        fetchMenu(selectedRestaurant.id, { force: true });
+        savedItem = res.data.data;
         setEditingItem(null);
       } else {
-        await addMenuItem(selectedRestaurant.id, payload);
+        savedItem = await addMenuItem(selectedRestaurant.id, payload);
         setShowAddItem(false);
       }
+      await syncOptionGroups(savedItem, optionGroups);
+      fetchMenu(selectedRestaurant.id, { force: true });
       setMenuItemForm({
         name: "",
         description: "",
         price: "",
         category: "SHAURMA",
         prep_time_minutes: 15,
+        option_groups: [],
       });
     } catch (err) {
       setFormError(err.response?.data?.detail || "Ошибка сохранения");
     } finally {
       setFormLoading(false);
+    }
+  };
+
+  const syncOptionGroups = async (item, groups) => {
+    if (!item?.id) return;
+    if (editingItem?.option_groups?.length) {
+      await Promise.all(
+        editingItem.option_groups.map((group) =>
+          menuService.deleteOptionGroup(
+            selectedRestaurant.id,
+            item.id,
+            group.id,
+          ),
+        ),
+      );
+    }
+
+    const cleanGroups = groups
+      .map((group, groupIndex) => {
+        const cleanOptions = (group.options || [])
+          .filter((option) => option.name.trim())
+          .map((option, optionIndex) => ({
+            name: option.name.trim(),
+            price_delta: parseInt(option.price_delta, 10) || 0,
+            sort_order: optionIndex,
+          }));
+
+        if (!group.name.trim() || cleanOptions.length === 0) return null;
+
+        const maxSelected =
+          group.selection_type === "single"
+            ? 1
+            : group.max_selected
+              ? parseInt(group.max_selected, 10)
+              : null;
+
+        return {
+          name: group.name.trim(),
+          selection_type: group.selection_type,
+          is_required: Boolean(group.is_required),
+          min_selected: group.is_required
+            ? Math.max(1, parseInt(group.min_selected, 10) || 1)
+            : parseInt(group.min_selected, 10) || 0,
+          max_selected: maxSelected,
+          sort_order: groupIndex,
+          options: cleanOptions,
+        };
+      })
+      .filter(Boolean);
+
+    for (const group of cleanGroups) {
+      await menuService.createOptionGroup(
+        selectedRestaurant.id,
+        item.id,
+        group,
+      );
     }
   };
 
@@ -587,6 +683,7 @@ const VendorDashboardPage = () => {
                       price: "",
                       category: "SHAURMA",
                       prep_time_minutes: 15,
+                      option_groups: [],
                     });
                     setShowAddItem(!showAddItem);
                   }}
@@ -669,6 +766,291 @@ const VendorDashboardPage = () => {
                       <option value="OTHER">Другое</option>
                     </select>
                   </div>
+                  <div
+                    style={{
+                      border: "1px solid var(--border)",
+                      borderRadius: "var(--radius-md)",
+                      padding: 12,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 10,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        gap: 10,
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: "0.86rem" }}>
+                          Опции блюда
+                        </div>
+                        <div
+                          style={{
+                            color: "var(--text-3)",
+                            fontSize: "0.74rem",
+                          }}
+                        >
+                          Например: убрать лук, добавить мясо
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={() =>
+                          setMenuItemForm((form) => ({
+                            ...form,
+                            option_groups: [
+                              ...form.option_groups,
+                              createOptionGroupDraft(),
+                            ],
+                          }))
+                        }
+                      >
+                        <Plus size={14} /> Группа
+                      </button>
+                    </div>
+
+                    {menuItemForm.option_groups.map((group, groupIndex) => (
+                      <div
+                        key={group.draftId}
+                        style={{
+                          background: "var(--bg-surface)",
+                          border: "1px solid var(--border)",
+                          borderRadius: "var(--radius-md)",
+                          padding: 12,
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 8,
+                        }}
+                      >
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <input
+                            className="form-input"
+                            placeholder="Название группы"
+                            value={group.name}
+                            onChange={(e) =>
+                              setMenuItemForm((form) => ({
+                                ...form,
+                                option_groups: form.option_groups.map((g, i) =>
+                                  i === groupIndex
+                                    ? { ...g, name: e.target.value }
+                                    : g,
+                                ),
+                              }))
+                            }
+                            style={{ flex: 1 }}
+                          />
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            style={{ color: "var(--error)" }}
+                            onClick={() =>
+                              setMenuItemForm((form) => ({
+                                ...form,
+                                option_groups: form.option_groups.filter(
+                                  (_, i) => i !== groupIndex,
+                                ),
+                              }))
+                            }
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "1fr 1fr",
+                            gap: 8,
+                          }}
+                        >
+                          <select
+                            className="form-input"
+                            value={group.selection_type}
+                            onChange={(e) =>
+                              setMenuItemForm((form) => ({
+                                ...form,
+                                option_groups: form.option_groups.map((g, i) =>
+                                  i === groupIndex
+                                    ? {
+                                        ...g,
+                                        selection_type: e.target.value,
+                                        max_selected:
+                                          e.target.value === "single"
+                                            ? 1
+                                            : g.max_selected,
+                                      }
+                                    : g,
+                                ),
+                              }))
+                            }
+                          >
+                            <option value="multiple">Несколько</option>
+                            <option value="single">Один вариант</option>
+                          </select>
+                          <input
+                            className="form-input"
+                            type="number"
+                            min="1"
+                            placeholder="Макс. выборов"
+                            value={group.max_selected}
+                            disabled={group.selection_type === "single"}
+                            onChange={(e) =>
+                              setMenuItemForm((form) => ({
+                                ...form,
+                                option_groups: form.option_groups.map((g, i) =>
+                                  i === groupIndex
+                                    ? { ...g, max_selected: e.target.value }
+                                    : g,
+                                ),
+                              }))
+                            }
+                          />
+                        </div>
+
+                        <label
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                            color: "var(--text-2)",
+                            fontSize: "0.8rem",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={group.is_required}
+                            onChange={(e) =>
+                              setMenuItemForm((form) => ({
+                                ...form,
+                                option_groups: form.option_groups.map((g, i) =>
+                                  i === groupIndex
+                                    ? {
+                                        ...g,
+                                        is_required: e.target.checked,
+                                        min_selected: e.target.checked ? 1 : 0,
+                                      }
+                                    : g,
+                                ),
+                              }))
+                            }
+                          />
+                          Обязательный выбор
+                        </label>
+
+                        {group.options.map((option, optionIndex) => (
+                          <div
+                            key={option.draftId}
+                            style={{ display: "flex", gap: 8 }}
+                          >
+                            <input
+                              className="form-input"
+                              placeholder="Опция"
+                              value={option.name}
+                              onChange={(e) =>
+                                setMenuItemForm((form) => ({
+                                  ...form,
+                                  option_groups: form.option_groups.map(
+                                    (g, i) =>
+                                      i === groupIndex
+                                        ? {
+                                            ...g,
+                                            options: g.options.map((o, j) =>
+                                              j === optionIndex
+                                                ? { ...o, name: e.target.value }
+                                                : o,
+                                            ),
+                                          }
+                                        : g,
+                                  ),
+                                }))
+                              }
+                              style={{ flex: 1 }}
+                            />
+                            <input
+                              className="form-input"
+                              type="number"
+                              min="0"
+                              placeholder="+₽"
+                              value={option.price_delta}
+                              onChange={(e) =>
+                                setMenuItemForm((form) => ({
+                                  ...form,
+                                  option_groups: form.option_groups.map(
+                                    (g, i) =>
+                                      i === groupIndex
+                                        ? {
+                                            ...g,
+                                            options: g.options.map((o, j) =>
+                                              j === optionIndex
+                                                ? {
+                                                    ...o,
+                                                    price_delta: e.target.value,
+                                                  }
+                                                : o,
+                                            ),
+                                          }
+                                        : g,
+                                  ),
+                                }))
+                              }
+                              style={{ width: 96 }}
+                            />
+                            <button
+                              type="button"
+                              className="btn btn-secondary btn-sm"
+                              style={{ color: "var(--error)" }}
+                              onClick={() =>
+                                setMenuItemForm((form) => ({
+                                  ...form,
+                                  option_groups: form.option_groups.map(
+                                    (g, i) =>
+                                      i === groupIndex
+                                        ? {
+                                            ...g,
+                                            options: g.options.filter(
+                                              (_, j) => j !== optionIndex,
+                                            ),
+                                          }
+                                        : g,
+                                  ),
+                                }))
+                              }
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        ))}
+
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={() =>
+                            setMenuItemForm((form) => ({
+                              ...form,
+                              option_groups: form.option_groups.map((g, i) =>
+                                i === groupIndex
+                                  ? {
+                                      ...g,
+                                      options: [
+                                        ...g.options,
+                                        createOptionDraft(),
+                                      ],
+                                    }
+                                  : g,
+                              ),
+                            }))
+                          }
+                        >
+                          <Plus size={14} /> Опция
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                   <div style={{ display: "flex", gap: 10 }}>
                     <button
                       type="submit"
@@ -684,6 +1066,14 @@ const VendorDashboardPage = () => {
                       onClick={() => {
                         setShowAddItem(false);
                         setEditingItem(null);
+                        setMenuItemForm({
+                          name: "",
+                          description: "",
+                          price: "",
+                          category: "SHAURMA",
+                          prep_time_minutes: 15,
+                          option_groups: [],
+                        });
                       }}
                       style={{ flex: 1 }}
                     >
@@ -727,6 +1117,31 @@ const VendorDashboardPage = () => {
                         >
                           {item.price} ₽ • {item.category}
                         </div>
+                        {item.option_groups?.length > 0 && (
+                          <div
+                            style={{
+                              marginTop: 6,
+                              display: "flex",
+                              flexWrap: "wrap",
+                              gap: 6,
+                            }}
+                          >
+                            {item.option_groups.map((group) => (
+                              <span
+                                key={group.id}
+                                className="tag-pill"
+                                style={{
+                                  fontSize: "0.68rem",
+                                  background: "var(--bg-raised)",
+                                  color: "var(--text-3)",
+                                  border: "1px solid var(--border)",
+                                }}
+                              >
+                                {group.name}: {group.options?.length || 0}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <div
                         style={{
@@ -745,6 +1160,9 @@ const VendorDashboardPage = () => {
                               price: item.price.toString(),
                               category: item.category,
                               prep_time_minutes: item.prep_time_minutes,
+                              option_groups: normalizeOptionGroups(
+                                item.option_groups || [],
+                              ),
                             });
                           }}
                         >
@@ -827,6 +1245,41 @@ const VendorDashboardPage = () => {
                           {order.items?.length || 0} позиц. •{" "}
                           {order.total_price} ₽
                         </div>
+                        {order.items?.length > 0 && (
+                          <div
+                            style={{
+                              marginTop: 8,
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 4,
+                              color: "var(--text-2)",
+                              fontSize: "0.78rem",
+                            }}
+                          >
+                            {order.items.map((item) => (
+                              <div key={item.id}>
+                                ×{item.quantity} {item.menu_item_name}
+                                {item.selected_options?.length > 0 && (
+                                  <span style={{ color: "var(--text-3)" }}>
+                                    {" "}
+                                    (
+                                    {item.selected_options
+                                      .map(
+                                        (option) =>
+                                          `${option.name}${
+                                            option.price_delta
+                                              ? ` +${option.price_delta} ₽`
+                                              : ""
+                                          }`,
+                                      )
+                                      .join(", ")}
+                                    )
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <div
                         style={{
@@ -1226,7 +1679,9 @@ const VendorDashboardPage = () => {
                         onChange={(e) =>
                           setWorkingHours((prev) =>
                             prev.map((r, i) =>
-                              i === idx ? { ...r, open_time: e.target.value } : r,
+                              i === idx
+                                ? { ...r, open_time: e.target.value }
+                                : r,
                             ),
                           )
                         }
@@ -1240,7 +1695,9 @@ const VendorDashboardPage = () => {
                         onChange={(e) =>
                           setWorkingHours((prev) =>
                             prev.map((r, i) =>
-                              i === idx ? { ...r, close_time: e.target.value } : r,
+                              i === idx
+                                ? { ...r, close_time: e.target.value }
+                                : r,
                             ),
                           )
                         }
@@ -1284,9 +1741,14 @@ const VendorDashboardPage = () => {
                 Заявки на работу
               </span>
               {!Array.isArray(staffRequests) || staffRequests.length === 0 ? (
-                <EmptyState title="Нет заявок" subtitle="Заявки появятся здесь" />
+                <EmptyState
+                  title="Нет заявок"
+                  subtitle="Заявки появятся здесь"
+                />
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 10 }}
+                >
                   {staffRequests.map((req) => (
                     <div key={req.id} className="staff-request-card">
                       <div className="staff-request-info">
@@ -1301,13 +1763,17 @@ const VendorDashboardPage = () => {
                         <div className="staff-request-actions">
                           <button
                             className="btn btn-primary btn-sm"
-                            onClick={() => handleStaffDecision(req.id, "ACCEPTED")}
+                            onClick={() =>
+                              handleStaffDecision(req.id, "ACCEPTED")
+                            }
                           >
                             <Check size={16} />
                           </button>
                           <button
                             className="btn btn-secondary btn-sm"
-                            onClick={() => handleStaffDecision(req.id, "REJECTED")}
+                            onClick={() =>
+                              handleStaffDecision(req.id, "REJECTED")
+                            }
                           >
                             <X size={16} />
                           </button>
@@ -1394,7 +1860,9 @@ const VendorDashboardPage = () => {
                   <input
                     type="checkbox"
                     checked={
-                      editRestaurant?.is_open ?? selectedRestaurant.is_open ?? true
+                      editRestaurant?.is_open ??
+                      selectedRestaurant.is_open ??
+                      true
                     }
                     onChange={(e) =>
                       setEditRestaurant({
@@ -1434,7 +1902,6 @@ const VendorDashboardPage = () => {
           )}
         </div>
       )}
-
     </div>
   );
 };

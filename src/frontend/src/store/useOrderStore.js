@@ -2,6 +2,26 @@ import { create } from "zustand";
 import { orderService } from "../services/orderService";
 import { cartService } from "../services/cartService";
 
+const getOptionIds = (item) =>
+  item.selectedOptionIds ??
+  item.selected_option_ids ??
+  getSelectedOptions(item).map((option) => option.id ?? option.option_id);
+
+const getSelectedOptions = (item) =>
+  item.selectedOptions ?? item.selected_options ?? [];
+
+const getOptionsTotal = (item) =>
+  getSelectedOptions(item).reduce(
+    (sum, option) => sum + (Number(option.price_delta) || 0),
+    0,
+  );
+
+const getLinePrice = (item) =>
+  (Number(item.menuItem.price) || 0) + getOptionsTotal(item);
+
+const getLineKey = (menuItemId, selectedOptionIds = []) =>
+  `${menuItemId}:${[...selectedOptionIds].sort().join(",")}`;
+
 export const useOrderStore = create((set, get) => ({
   cart: [],
   cartRestaurantId: null,
@@ -30,32 +50,52 @@ export const useOrderStore = create((set, get) => ({
         price: i.menuItem.price,
         image_url: i.menuItem.image_url ?? null,
         quantity: i.quantity,
+        selected_option_ids: getOptionIds(i),
+        selected_options: getSelectedOptions(i),
       })),
     };
     await cartService.updateCart(payload);
   },
 
-  addToCart: async (menuItem, restaurantId) => {
+  addToCart: async (menuItem, restaurantId, selectedOptions = []) => {
     const { cart, cartRestaurantId } = get();
+    const selectedOptionIds = selectedOptions.map(
+      (option) => option.id ?? option.option_id,
+    );
+    const lineKey = getLineKey(menuItem.id, selectedOptionIds);
+    const nextItem = {
+      menuItem,
+      quantity: 1,
+      selectedOptionIds,
+      selectedOptions: selectedOptions.map((option) => ({
+        option_id: option.id ?? option.option_id,
+        id: option.id ?? option.option_id,
+        name: option.name,
+        price_delta: option.price_delta,
+      })),
+      lineKey,
+    };
 
     if (cartRestaurantId && cartRestaurantId !== restaurantId) {
       set({
-        cart: [{ menuItem, quantity: 1 }],
+        cart: [nextItem],
         cartRestaurantId: restaurantId,
       });
     } else {
-      const existing = cart.find((i) => i.menuItem.id === menuItem.id);
+      const existing = cart.find(
+        (i) => getLineKey(i.menuItem.id, getOptionIds(i)) === lineKey,
+      );
       if (existing) {
         set({
           cart: cart.map((i) =>
-            i.menuItem.id === menuItem.id
+            getLineKey(i.menuItem.id, getOptionIds(i)) === lineKey
               ? { ...i, quantity: i.quantity + 1 }
               : i,
           ),
         });
       } else {
         set({
-          cart: [...cart, { menuItem, quantity: 1 }],
+          cart: [...cart, nextItem],
           cartRestaurantId: restaurantId,
         });
       }
@@ -63,11 +103,14 @@ export const useOrderStore = create((set, get) => ({
     await get()._syncCart();
   },
 
-  removeFromCart: async (menuItemId) => {
+  removeFromCart: async (menuItemId, selectedOptionIds = []) => {
+    const lineKey = getLineKey(menuItemId, selectedOptionIds);
     set((s) => {
       const updated = s.cart
         .map((i) =>
-          i.menuItem.id === menuItemId ? { ...i, quantity: i.quantity - 1 } : i,
+          getLineKey(i.menuItem.id, getOptionIds(i)) === lineKey
+            ? { ...i, quantity: i.quantity - 1 }
+            : i,
         )
         .filter((i) => i.quantity > 0);
       return {
@@ -89,7 +132,7 @@ export const useOrderStore = create((set, get) => ({
   },
 
   cartTotal: () =>
-    get().cart.reduce((sum, i) => sum + i.menuItem.price * i.quantity, 0),
+    get().cart.reduce((sum, i) => sum + getLinePrice(i) * i.quantity, 0),
 
   cartCount: () => get().cart.reduce((sum, i) => sum + i.quantity, 0),
 
@@ -104,6 +147,7 @@ export const useOrderStore = create((set, get) => ({
       items: cart.map((i) => ({
         menu_item_id: i.menuItem.id,
         quantity: i.quantity,
+        selected_option_ids: getOptionIds(i),
       })),
       ...(promoCode ? { promo_code: promoCode } : {}),
     };

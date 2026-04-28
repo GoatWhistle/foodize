@@ -2,6 +2,7 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from features.menu.models import MenuItem, MenuItemOption
 from features.notifications.events import OrderPlacedEvent, OrderStatusChangedEvent
 from features.notifications.publisher import publish_order_placed, publish_order_status_changed
 from features.orders.crud import order as order_crud
@@ -16,7 +17,7 @@ from features.orders.exceptions import (
     OrderNotCompletableException,
     OrderNotFoundException,
 )
-from features.orders.models import Order, OrderItem
+from features.orders.models import Order, OrderItem, OrderItemOption
 from features.orders.schemas.order import OrderCreate, OrderResponse, OrderStatusUpdate
 from features.orders.schemas.order_event import OrderEventResponse
 from features.promos import service as promo_service
@@ -25,6 +26,7 @@ from features.restaurants.exceptions import RestaurantClosedException, Restauran
 from features.users.models import User
 from shared.enums.order_status import OrderStatus
 from shared.enums.roles import UserRole
+from shared.exceptions import BadRequestException
 
 _ALLOWED_TRANSITIONS: dict[OrderStatus, set[OrderStatus]] = {
     OrderStatus.PENDING: {OrderStatus.ACCEPTED, OrderStatus.CANCELLED},
@@ -39,6 +41,46 @@ _ALLOWED_TRANSITIONS: dict[OrderStatus, set[OrderStatus]] = {
 def _validate_transition(old: OrderStatus, new: OrderStatus) -> None:
     if new not in _ALLOWED_TRANSITIONS.get(old, set()):
         raise InvalidStatusTransitionException()
+
+
+def _validate_item_options(
+    item_data,
+    menu_item: MenuItem,
+    options_by_id: dict[uuid.UUID, MenuItemOption],
+) -> list[MenuItemOption]:
+    selected_ids = item_data.selected_option_ids
+    if len(selected_ids) != len(set(selected_ids)):
+        raise BadRequestException(detail="Duplicate options selected")
+
+    selected_options: list[MenuItemOption] = []
+    selected_by_group: dict[uuid.UUID, int] = {}
+
+    for option_id in selected_ids:
+        option = options_by_id.get(option_id)
+        if not option:
+            raise BadRequestException(detail="Selected option not found")
+        if option.group.menu_item_id != menu_item.id:
+            raise BadRequestException(detail="Selected option does not belong to menu item")
+        if not option.group.is_active or not option.is_available:
+            raise BadRequestException(detail="Selected option is not available")
+        selected_options.append(option)
+        selected_by_group[option.group_id] = selected_by_group.get(option.group_id, 0) + 1
+
+    for group in menu_item.option_groups:
+        if not group.is_active:
+            continue
+        selected_count = selected_by_group.get(group.id, 0)
+        min_selected = group.min_selected
+        if group.is_required:
+            min_selected = max(1, min_selected)
+        if selected_count < min_selected:
+            raise BadRequestException(detail=f"Not enough options selected for {group.name}")
+        if group.max_selected is not None and selected_count > group.max_selected:
+            raise BadRequestException(detail=f"Too many options selected for {group.name}")
+        if group.selection_type == "single" and selected_count > 1:
+            raise BadRequestException(detail=f"Only one option can be selected for {group.name}")
+
+    return selected_options
 
 
 async def place_order(
@@ -64,7 +106,17 @@ async def place_order(
     if any(not mi.is_available for mi in menu_items.values()):
         raise MenuItemUnavailableException()
 
-    order = await _create_order(session, order_data, user_id, menu_items)
+    selected_option_ids = [
+        option_id for item in order_data.items for option_id in item.selected_option_ids
+    ]
+    options_by_id = await order_item_crud.get_options_by_ids(session, selected_option_ids)
+
+    selected_options_by_item = {
+        index: _validate_item_options(item, menu_items[item.menu_item_id], options_by_id)
+        for index, item in enumerate(order_data.items)
+    }
+
+    order = await _create_order(session, order_data, user_id, menu_items, selected_options_by_item)
 
     if order_data.promo_code:
         new_total = await promo_service.apply_promo(
@@ -93,9 +145,15 @@ async def _create_order(
     order_data: OrderCreate,
     user_id: uuid.UUID,
     menu_items: dict,
+    selected_options_by_item: dict[int, list[MenuItemOption]],
 ) -> Order:
     total_price = sum(
-        menu_items[item.menu_item_id].price * item.quantity for item in order_data.items
+        (
+            menu_items[item.menu_item_id].price
+            + sum(option.price_delta for option in selected_options_by_item[index])
+        )
+        * item.quantity
+        for index, item in enumerate(order_data.items)
     )
     order = Order(
         user_id=user_id,
@@ -105,7 +163,7 @@ async def _create_order(
     session.add(order)
     await session.flush()
 
-    for item_data in order_data.items:
+    for index, item_data in enumerate(order_data.items):
         order_item = OrderItem(
             order_id=order.id,
             menu_item_id=item_data.menu_item_id,
@@ -113,6 +171,16 @@ async def _create_order(
             price_at_purchase=menu_items[item_data.menu_item_id].price,
         )
         session.add(order_item)
+        await session.flush()
+        for option in selected_options_by_item[index]:
+            session.add(
+                OrderItemOption(
+                    order_item_id=order_item.id,
+                    option_id=option.id,
+                    name_snapshot=option.name,
+                    price_delta_snapshot=option.price_delta,
+                )
+            )
 
     await session.commit()
     result = await order_crud.get_order_by_id(session, order.id)
