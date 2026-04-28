@@ -12,6 +12,7 @@ import {
 } from "@phosphor-icons/react";
 import { staffService } from "../../services/staffService";
 import EmptyState from "../../components/ui/EmptyState";
+import OrderDetailsModal from "../../components/ui/OrderDetailsModal";
 
 const STATUS_LABEL = {
   PENDING: "Новый",
@@ -171,13 +172,14 @@ const ApplicationStatus = () => {
   );
 };
 
-const OrderCard = ({ order, onStatusChange, updating }) => {
+const OrderCard = ({ order, onStatusChange, updating, onOpen }) => {
   const nextStatus = NEXT_STATUS[order.status];
   const isTerminal =
     order.status === "COMPLETED" || order.status === "CANCELLED";
 
   return (
     <div
+      onClick={() => onOpen(order)}
       style={{
         background: "var(--bg-card)",
         border: `1px solid var(--border)`,
@@ -187,6 +189,7 @@ const OrderCard = ({ order, onStatusChange, updating }) => {
         display: "flex",
         flexDirection: "column",
         gap: 12,
+        cursor: "pointer",
       }}
     >
       <div
@@ -302,7 +305,16 @@ const OrderCard = ({ order, onStatusChange, updating }) => {
             borderColor: STATUS_COLOR[order.status],
           }}
           disabled={updating === order.id}
-          onClick={() => onStatusChange(order.id, nextStatus)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onStatusChange(
+              order.id,
+              nextStatus,
+              nextStatus === "ACCEPTED"
+                ? { estimated_ready_in_minutes: 15 }
+                : {},
+            );
+          }}
         >
           {updating === order.id ? (
             <Spinner
@@ -332,6 +344,7 @@ const StaffDashboardPage = () => {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [updating, setUpdating] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
   const [newOrderAlert, setNewOrderAlert] = useState(false);
   const prevOrderIds = useRef(new Set());
   const pollRef = useRef(null);
@@ -385,10 +398,25 @@ const StaffDashboardPage = () => {
     return () => clearInterval(pollRef.current);
   }, [fetchOrders, profile?.restaurant_id]);
 
-  const handleStatusChange = async (orderId, newStatus) => {
+  const handleStatusChange = async (orderId, newStatus, data = {}) => {
     setUpdating(orderId);
     try {
-      await staffService.updateOrderStatus(orderId, newStatus);
+      await staffService.updateOrderStatus(orderId, newStatus, data);
+      setSelectedOrder((current) =>
+        current?.id === orderId
+          ? {
+              ...current,
+              status: newStatus,
+              ...(data.estimated_ready_in_minutes
+                ? {
+                    estimated_ready_at: new Date(
+                      Date.now() + data.estimated_ready_in_minutes * 60000,
+                    ).toISOString(),
+                  }
+                : {}),
+            }
+          : current,
+      );
       await fetchOrders(true);
     } catch {
     } finally {
@@ -574,6 +602,7 @@ const StaffDashboardPage = () => {
               order={order}
               onStatusChange={handleStatusChange}
               updating={updating}
+              onOpen={setSelectedOrder}
             />
           ))}
         </div>
@@ -612,6 +641,16 @@ const StaffDashboardPage = () => {
             Вперёд
           </button>
         </div>
+      )}
+      {selectedOrder && (
+        <OrderDetailsModal
+          order={selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+          nextStatus={NEXT_STATUS}
+          nextLabel={NEXT_LABEL}
+          onStatusChange={handleStatusChange}
+          updating={updating}
+        />
       )}
     </div>
   );

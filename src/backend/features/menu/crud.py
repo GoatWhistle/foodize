@@ -29,8 +29,10 @@ async def create_menu_item(
     new_item = MenuItem(**data, restaurant_id=restaurant_id)
     session.add(new_item)
     await session.commit()
-    await session.refresh(new_item)
-    return new_item
+    loaded = await get_menu_item_by_id(session, new_item.id)
+    if loaded is None:
+        raise RuntimeError("Created menu item was not found")
+    return loaded
 
 
 async def get_menu_item_by_id(session: AsyncSession, item_id: uuid.UUID) -> MenuItem | None:
@@ -82,8 +84,10 @@ async def update_menu_item(
     for key, value in update_data.items():
         setattr(item, key, value)
     await session.commit()
-    await session.refresh(item)
-    return item
+    loaded = await get_menu_item_by_id(session, item.id)
+    if loaded is None:
+        raise RuntimeError("Updated menu item was not found")
+    return loaded
 
 
 async def delete_menu_item(session: AsyncSession, item: MenuItem) -> None:

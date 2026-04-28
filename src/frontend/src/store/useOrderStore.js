@@ -140,8 +140,9 @@ export const useOrderStore = create((set, get) => ({
   currentOrder: null,
   ordersLoading: false,
 
-  placeOrder: async (promoCode = null) => {
+  placeOrder: async (promoCode = null, comment = "") => {
     const { cart, cartRestaurantId } = get();
+    const trimmedComment = comment.trim();
     const payload = {
       restaurant_id: cartRestaurantId,
       items: cart.map((i) => ({
@@ -150,6 +151,7 @@ export const useOrderStore = create((set, get) => ({
         selected_option_ids: getOptionIds(i),
       })),
       ...(promoCode ? { promo_code: promoCode } : {}),
+      ...(trimmedComment ? { comment: trimmedComment } : {}),
     };
     const res = await orderService.create(payload);
     set((s) => ({

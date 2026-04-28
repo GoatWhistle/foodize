@@ -15,6 +15,7 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
   const [appliedPromo, setAppliedPromo] = useState(null);
   const [promoError, setPromoError] = useState("");
   const [promoLoading, setPromoLoading] = useState(false);
+  const [comment, setComment] = useState("");
 
   const handleOverlayClick = (e) => {
     if (drawerRef.current && !drawerRef.current.contains(e.target)) onClose();
@@ -30,6 +31,7 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
     setAppliedPromo(null);
     setPromoCode("");
     setPromoError("");
+    setComment("");
   }, [cartRestaurantId]);
 
   const handleApplyPromo = async () => {
@@ -274,9 +276,24 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
             </span>
           </div>
 
+          <textarea
+            className="form-input"
+            placeholder="Комментарий к заказу: побольше соуса, без острого..."
+            value={comment}
+            maxLength={500}
+            onChange={(e) => setComment(e.target.value)}
+            style={{
+              marginTop: 14,
+              minHeight: 72,
+              resize: "vertical",
+              fontSize: "0.82rem",
+              lineHeight: 1.45,
+            }}
+          />
+
           <OrderButton
             className="btn-full"
-            onClick={() => onCheckout(appliedPromo?.code ?? null)}
+            onClick={() => onCheckout(appliedPromo?.code ?? null, comment)}
             isLoading={isLoading}
           >
             Оформить заказ

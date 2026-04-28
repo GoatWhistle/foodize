@@ -26,6 +26,7 @@ import { promoService } from "../../services/promoService";
 import { restaurantService } from "../../services/restaurantService";
 import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/ui/Pagination";
+import OrderDetailsModal from "../../components/ui/OrderDetailsModal";
 
 const STATUS_LABEL_RU = {
   PENDING: "Новый",
@@ -116,6 +117,7 @@ const VendorDashboardPage = () => {
   const [ordersStatusFilter, setOrdersStatusFilter] = useState("");
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [updatingOrderId, setUpdatingOrderId] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
   const pollInterval = useRef(null);
 
   const [vendorDescription, setVendorDescription] = useState("");
@@ -522,11 +524,26 @@ const VendorDashboardPage = () => {
     }
   };
 
-  const handleOrderChange = async (orderId, status) => {
+  const handleOrderChange = async (orderId, status, data = {}) => {
     setOrdersError("");
     setUpdatingOrderId(orderId);
     try {
-      await orderService.updateStatus(orderId, status);
+      await orderService.updateStatus(orderId, status, data);
+      setSelectedOrder((current) =>
+        current?.id === orderId
+          ? {
+              ...current,
+              status,
+              ...(data.estimated_ready_in_minutes
+                ? {
+                    estimated_ready_at: new Date(
+                      Date.now() + data.estimated_ready_in_minutes * 60000,
+                    ).toISOString(),
+                  }
+                : {}),
+            }
+          : current,
+      );
       await fetchVendorOrders({ silent: true });
     } catch (err) {
       setOrdersError(
@@ -1317,7 +1334,8 @@ const VendorDashboardPage = () => {
                     <div
                       key={order.id}
                       className="order-card"
-                      style={{ cursor: "default" }}
+                      style={{ cursor: "pointer" }}
+                      onClick={() => setSelectedOrder(order)}
                     >
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 700, marginBottom: 4 }}>
@@ -1391,12 +1409,16 @@ const VendorDashboardPage = () => {
                             <button
                               className="btn btn-primary btn-sm"
                               disabled={updatingOrderId === order.id}
-                              onClick={() =>
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 handleOrderChange(
                                   order.id,
                                   NEXT_ORDER_STATUS[order.status],
-                                )
-                              }
+                                  NEXT_ORDER_STATUS[order.status] === "ACCEPTED"
+                                    ? { estimated_ready_in_minutes: 15 }
+                                    : {},
+                                );
+                              }}
                             >
                               {order.status === "COOKING" ||
                               order.status === "READY" ? (
@@ -1414,9 +1436,10 @@ const VendorDashboardPage = () => {
                               className="btn btn-secondary btn-sm"
                               style={{ color: "var(--error)" }}
                               disabled={updatingOrderId === order.id}
-                              onClick={() =>
-                                handleOrderChange(order.id, "CANCELLED")
-                              }
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOrderChange(order.id, "CANCELLED");
+                              }}
                             >
                               <X size={16} />
                             </button>
@@ -1433,6 +1456,18 @@ const VendorDashboardPage = () => {
                 </div>
               )}
             </div>
+          )}
+
+          {selectedOrder && (
+            <OrderDetailsModal
+              order={selectedOrder}
+              onClose={() => setSelectedOrder(null)}
+              nextStatus={NEXT_ORDER_STATUS}
+              nextLabel={NEXT_ORDER_LABEL_RU}
+              onStatusChange={handleOrderChange}
+              updating={updatingOrderId}
+              allowCancel
+            />
           )}
 
           {activeTab === "promos" && (

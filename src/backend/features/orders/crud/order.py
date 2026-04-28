@@ -14,6 +14,7 @@ def _items_options() -> Any:
     return (
         selectinload(Order.items).selectinload(OrderItem.menu_item),
         selectinload(Order.items).selectinload(OrderItem.selected_options),
+        selectinload(Order.user),
     )
 
 

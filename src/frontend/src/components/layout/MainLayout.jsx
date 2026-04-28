@@ -67,11 +67,11 @@ const MainLayout = () => {
 
   const cartItemsCount = cart.reduce((t, i) => t + i.quantity, 0);
 
-  const handleCheckout = async (promoCode = null) => {
+  const handleCheckout = async (promoCode = null, comment = "") => {
     setIsLoading(true);
     setError("");
     try {
-      const order = await placeOrder(promoCode);
+      const order = await placeOrder(promoCode, comment);
       setIsCartOpen(false);
       navigate(ROUTES.ORDER_STATUS.replace(":id", order.id));
     } catch (err) {

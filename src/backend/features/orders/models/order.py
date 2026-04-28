@@ -22,6 +22,10 @@ class Order(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
         String, default=OrderStatus.PENDING.value, server_default="PENDING", nullable=False
     )
     total_price: Mapped[int]
+    comment: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    estimated_ready_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     ready_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     user: Mapped["User"] = relationship(back_populates="orders")
     restaurant: Mapped["Restaurant"] = relationship(back_populates="orders")

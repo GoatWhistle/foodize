@@ -10,6 +10,6 @@ export const staffService = {
   getRestaurantOrders: (restaurantId, params = {}) =>
     api.get(`/orders/restaurant/${restaurantId}`, { params }),
 
-  updateOrderStatus: (orderId, status) =>
-    api.patch(`/orders/${orderId}/status`, { status }),
+  updateOrderStatus: (orderId, status, data = {}) =>
+    api.patch(`/orders/${orderId}/status`, { status, ...data }),
 };

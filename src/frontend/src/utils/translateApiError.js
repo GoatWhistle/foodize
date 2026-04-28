@@ -30,6 +30,17 @@ const ERROR_MAP = {
     "Подтвердить получение можно только в статусе «Готов»",
   "Restaurant not found": "Ресторан не найден",
   "Restaurant is currently closed": "Ресторан сейчас закрыт",
+  "Duplicate options selected": "Одна и та же опция выбрана дважды",
+  "Selected option not found":
+    "Одна из выбранных опций больше недоступна. Обновите меню и попробуйте снова",
+  "Selected option does not belong to menu item":
+    "Одна из выбранных опций не относится к этому блюду",
+  "Selected option is not available":
+    "Одна из выбранных опций сейчас недоступна",
+  "Not enough options selected": "Выберите обязательные опции блюда",
+  "Too many options selected": "Выбрано слишком много опций для блюда",
+  "Only one option can be selected":
+    "В этой группе можно выбрать только одну опцию",
   "User already has a vendor profile": "У вас уже есть профиль вендора",
   "User with this phone number already exists":
     "Пользователь с таким номером телефона уже существует",
@@ -48,7 +59,10 @@ const ERROR_MAP = {
 export function translateApiError(err, fallback) {
   const detail = err?.response?.data?.detail;
   if (detail && typeof detail === "string") {
-    return ERROR_MAP[detail] ?? detail;
+    const exact = ERROR_MAP[detail];
+    if (exact) return exact;
+    const prefix = Object.keys(ERROR_MAP).find((key) => detail.startsWith(key));
+    return prefix ? ERROR_MAP[prefix] : detail;
   }
   return fallback;
 }

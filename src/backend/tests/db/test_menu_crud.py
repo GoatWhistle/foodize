@@ -20,6 +20,7 @@ from features.menu.schemas import (
     MenuItemOptionGroupCreate,
     MenuItemOptionGroupUpdate,
     MenuItemOptionUpdate,
+    MenuItemResponse,
     MenuItemUpdate,
 )
 from features.restaurants.crud import create_restaurant
@@ -68,6 +69,9 @@ async def test_create_and_get_menu_item(db_session, restaurant):
 
     count = await count_menu_items(db_session, restaurant.id)
     assert count == 1
+
+    response = MenuItemResponse.model_validate(new_item)
+    assert response.option_groups == []
 
 
 @pytest.mark.asyncio

@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -159,6 +160,7 @@ async def _create_order(
         user_id=user_id,
         restaurant_id=order_data.restaurant_id,
         total_price=total_price,
+        comment=order_data.comment,
     )
     session.add(order)
     await session.flush()
@@ -240,6 +242,13 @@ async def change_order_status(
 ) -> OrderResponse:
     old_status = OrderStatus(order.status)
     _validate_transition(old_status, status_data.status)
+    if status_data.status == OrderStatus.ACCEPTED:
+        if status_data.estimated_ready_at:
+            order.estimated_ready_at = status_data.estimated_ready_at
+        else:
+            minutes = status_data.estimated_ready_in_minutes
+            if minutes:
+                order.estimated_ready_at = datetime.now(timezone.utc) + timedelta(minutes=minutes)
     updated = await order_crud.update_order_status(session, order, status_data.status)
     await order_crud.create_order_event(
         session,

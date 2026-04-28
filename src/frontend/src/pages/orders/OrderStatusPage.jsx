@@ -206,6 +206,29 @@ const OrderStatusPage = () => {
           </span>
         </div>
 
+        {currentOrder.estimated_ready_at && !isReady && !isCancelled && (
+          <div
+            style={{
+              marginTop: 12,
+              paddingTop: 12,
+              borderTop: "1px solid var(--border)",
+              fontSize: "0.85rem",
+              color: "var(--text-2)",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <span style={{ fontWeight: 700, color: "var(--fire)" }}>
+              Ожидаем к
+            </span>
+            {new Date(currentOrder.estimated_ready_at).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </div>
+        )}
+
         {currentOrder.ready_at && isReady && (
           <div
             style={{

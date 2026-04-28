@@ -6,7 +6,8 @@ export const orderService = {
   getById: (id) => api.get(`/orders/${id}`),
   getByRestaurant: (restaurantId, params) =>
     api.get(`/orders/restaurant/${restaurantId}`, { params }),
-  updateStatus: (id, status) => api.patch(`/orders/${id}/status`, { status }),
+  updateStatus: (id, status, data = {}) =>
+    api.patch(`/orders/${id}/status`, { status, ...data }),
   cancelOrder: (id) => api.post(`/orders/${id}/cancel`),
   completeOrder: (id) => api.post(`/orders/${id}/complete`),
   getOrderEvents: (id) => api.get(`/orders/${id}/events`),
