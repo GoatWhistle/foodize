@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { translateApiError } from "../../utils/translateApiError";
 import {
   Storefront,
@@ -11,12 +11,12 @@ import {
   Fire,
   X,
   Check,
-  Flag,
   PencilSimple,
   Users,
   Tag,
   Trash,
   Clock,
+  ArrowsClockwise,
 } from "@phosphor-icons/react";
 import { useRestaurantStore } from "../../store/useRestaurantStore";
 import { vendorService } from "../../services/vendorService";
@@ -34,6 +34,20 @@ const STATUS_LABEL_RU = {
   READY: "Готов",
   COMPLETED: "Выдан",
   CANCELLED: "Отменён",
+};
+
+const NEXT_ORDER_STATUS = {
+  PENDING: "ACCEPTED",
+  ACCEPTED: "COOKING",
+  COOKING: "READY",
+  READY: "COMPLETED",
+};
+
+const NEXT_ORDER_LABEL_RU = {
+  PENDING: "Принять",
+  ACCEPTED: "В готовку",
+  COOKING: "Готов",
+  READY: "Выдан",
 };
 
 const createOptionDraft = () => ({
@@ -100,6 +114,8 @@ const VendorDashboardPage = () => {
   const [ordersPage, setOrdersPage] = useState(1);
   const [ordersTotal, setOrdersTotal] = useState(0);
   const [ordersStatusFilter, setOrdersStatusFilter] = useState("");
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [updatingOrderId, setUpdatingOrderId] = useState(null);
   const pollInterval = useRef(null);
 
   const [vendorDescription, setVendorDescription] = useState("");
@@ -153,31 +169,6 @@ const VendorDashboardPage = () => {
       })
       .catch(() => {});
   }, [staffPage]);
-
-  useEffect(() => {
-    if (selectedRestaurant && activeTab === "orders") {
-      const fetchOrders = async () => {
-        try {
-          const res = await orderService.getByRestaurant(
-            selectedRestaurant.id,
-            {
-              page: ordersPage,
-              size: 20,
-              status: ordersStatusFilter || undefined,
-            },
-          );
-          const list = Array.isArray(res.data?.data) ? res.data.data : [];
-          setRestaurantOrders(list);
-          setOrdersTotal(res.data?.pagination?.total || list.length);
-        } catch {}
-      };
-      fetchOrders();
-      if (ordersPage === 1 && !ordersStatusFilter) {
-        pollInterval.current = setInterval(fetchOrders, 5000);
-      }
-    }
-    return () => clearInterval(pollInterval.current);
-  }, [selectedRestaurant, activeTab, ordersPage, ordersStatusFilter]);
 
   const DAY_NAMES = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
@@ -471,6 +462,55 @@ const VendorDashboardPage = () => {
   const [menuError, setMenuError] = useState("");
   const [ordersError, setOrdersError] = useState("");
 
+  const fetchVendorOrders = useCallback(
+    async ({ silent = false } = {}) => {
+      if (!selectedRestaurant) return;
+      if (!silent) setOrdersLoading(true);
+      setOrdersError("");
+      try {
+        const res = await orderService.getByRestaurant(selectedRestaurant.id, {
+          page: ordersPage,
+          size: 20,
+          status: ordersStatusFilter || undefined,
+        });
+        const list = Array.isArray(res.data?.data) ? res.data.data : [];
+        setRestaurantOrders(list);
+        setOrdersTotal(res.data?.pagination?.total || list.length);
+      } catch (err) {
+        setRestaurantOrders([]);
+        setOrdersTotal(0);
+        setOrdersError(
+          translateApiError(
+            err,
+            "Не удалось загрузить заказы. Проверьте, что аккаунт вендора имеет доступ к этому заведению.",
+          ),
+        );
+      } finally {
+        if (!silent) setOrdersLoading(false);
+      }
+    },
+    [selectedRestaurant, ordersPage, ordersStatusFilter],
+  );
+
+  useEffect(() => {
+    if (selectedRestaurant && activeTab === "orders") {
+      fetchVendorOrders();
+      if (ordersPage === 1 && !ordersStatusFilter) {
+        pollInterval.current = setInterval(
+          () => fetchVendorOrders({ silent: true }),
+          5000,
+        );
+      }
+    }
+    return () => clearInterval(pollInterval.current);
+  }, [
+    selectedRestaurant,
+    activeTab,
+    ordersPage,
+    ordersStatusFilter,
+    fetchVendorOrders,
+  ]);
+
   const handleDeleteMenuItem = async (itemId) => {
     if (!window.confirm("Удалить позицию?")) return;
     setMenuError("");
@@ -484,13 +524,16 @@ const VendorDashboardPage = () => {
 
   const handleOrderChange = async (orderId, status) => {
     setOrdersError("");
+    setUpdatingOrderId(orderId);
     try {
       await orderService.updateStatus(orderId, status);
-      setRestaurantOrders((prev) =>
-        prev.map((o) => (o.id === orderId ? { ...o, status } : o)),
+      await fetchVendorOrders({ silent: true });
+    } catch (err) {
+      setOrdersError(
+        translateApiError(err, "Не удалось изменить статус заказа"),
       );
-    } catch {
-      setOrdersError("Не удалось изменить статус заказа");
+    } finally {
+      setUpdatingOrderId(null);
     }
   };
 
@@ -1193,6 +1236,39 @@ const VendorDashboardPage = () => {
               <div
                 style={{
                   display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 12,
+                  marginBottom: 12,
+                }}
+              >
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: "0.95rem" }}>
+                    Заказы заведения
+                  </div>
+                  <div style={{ color: "var(--text-3)", fontSize: "0.76rem" }}>
+                    Новые заказы обновляются автоматически
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => fetchVendorOrders()}
+                  disabled={ordersLoading}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <ArrowsClockwise size={14} />
+                  {ordersLoading ? "..." : "Обновить"}
+                </button>
+              </div>
+              <div
+                style={{
+                  display: "flex",
                   gap: 6,
                   flexWrap: "wrap",
                   marginBottom: 12,
@@ -1219,11 +1295,19 @@ const VendorDashboardPage = () => {
                   </button>
                 ))}
               </div>
-              {!Array.isArray(restaurantOrders) ||
-              restaurantOrders.length === 0 ? (
+              {ordersLoading ? (
+                <div className="loading-center">
+                  <div className="spinner" />
+                </div>
+              ) : !Array.isArray(restaurantOrders) ||
+                restaurantOrders.length === 0 ? (
                 <EmptyState
                   title="Нет заказов"
-                  subtitle="Пока никто не сделал заказ"
+                  subtitle={
+                    ordersStatusFilter
+                      ? "В этом статусе заказов нет"
+                      : "Пока никто не сделал заказ"
+                  }
                 />
               ) : (
                 <div
@@ -1290,60 +1374,51 @@ const VendorDashboardPage = () => {
                         }}
                       >
                         <span
-                          className={`order-status-badge ${order.status === "PENDING" ? "pending" : "ready"}`}
+                          className={`order-status-badge ${
+                            order.status === "PENDING"
+                              ? "pending"
+                              : order.status === "COOKING"
+                                ? "preparing"
+                                : order.status === "CANCELLED"
+                                  ? "cancelled"
+                                  : "ready"
+                          }`}
                         >
                           {STATUS_LABEL_RU[order.status] ?? order.status}
                         </span>
                         <div style={{ display: "flex", gap: 4 }}>
-                          {order.status === "PENDING" && (
-                            <>
-                              <button
-                                className="btn btn-primary btn-sm"
-                                onClick={() =>
-                                  handleOrderChange(order.id, "ACCEPTED")
-                                }
-                              >
-                                <Check size={16} /> Принять
-                              </button>
-                              <button
-                                className="btn btn-secondary btn-sm"
-                                style={{ color: "var(--error)" }}
-                                onClick={() =>
-                                  handleOrderChange(order.id, "CANCELLED")
-                                }
-                              >
-                                <X size={16} />
-                              </button>
-                            </>
-                          )}
-                          {order.status === "ACCEPTED" && (
+                          {NEXT_ORDER_STATUS[order.status] && (
                             <button
                               className="btn btn-primary btn-sm"
+                              disabled={updatingOrderId === order.id}
                               onClick={() =>
-                                handleOrderChange(order.id, "COOKING")
+                                handleOrderChange(
+                                  order.id,
+                                  NEXT_ORDER_STATUS[order.status],
+                                )
                               }
                             >
-                              <Fire size={16} /> В готовку
+                              {order.status === "COOKING" ||
+                              order.status === "READY" ? (
+                                <Check size={16} />
+                              ) : (
+                                <Fire size={16} />
+                              )}
+                              {updatingOrderId === order.id
+                                ? "..."
+                                : NEXT_ORDER_LABEL_RU[order.status]}
                             </button>
                           )}
-                          {order.status === "COOKING" && (
+                          {["PENDING", "ACCEPTED"].includes(order.status) && (
                             <button
-                              className="btn btn-primary btn-sm"
+                              className="btn btn-secondary btn-sm"
+                              style={{ color: "var(--error)" }}
+                              disabled={updatingOrderId === order.id}
                               onClick={() =>
-                                handleOrderChange(order.id, "READY")
+                                handleOrderChange(order.id, "CANCELLED")
                               }
                             >
-                              <Check size={16} /> Готов
-                            </button>
-                          )}
-                          {order.status === "READY" && (
-                            <button
-                              className="btn btn-primary btn-sm"
-                              onClick={() =>
-                                handleOrderChange(order.id, "COMPLETED")
-                              }
-                            >
-                              <Flag size={16} /> Выдан
+                              <X size={16} />
                             </button>
                           )}
                         </div>

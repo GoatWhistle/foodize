@@ -245,21 +245,45 @@ const OrderCard = ({ order, onStatusChange, updating }) => {
         }}
       >
         {order.items?.map((item) => (
-          <div
-            key={item.id}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              fontSize: "0.875rem",
-              color: "var(--text-2)",
-            }}
-          >
-            <span>
-              {item.name ?? `Позиция #${item.menu_item_id?.slice(0, 6)}`}
-            </span>
-            <span style={{ fontWeight: 600, color: "var(--text-1)" }}>
-              ×{item.quantity}
-            </span>
+          <div key={item.id}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 12,
+                fontSize: "0.875rem",
+                color: "var(--text-2)",
+              }}
+            >
+              <span>
+                {item.menu_item_name ??
+                  item.name ??
+                  `Позиция #${item.menu_item_id?.slice(0, 6)}`}
+              </span>
+              <span style={{ fontWeight: 600, color: "var(--text-1)" }}>
+                ×{item.quantity}
+              </span>
+            </div>
+            {item.selected_options?.length > 0 && (
+              <div
+                style={{
+                  marginTop: 2,
+                  paddingLeft: 2,
+                  fontSize: "0.72rem",
+                  color: "var(--text-3)",
+                  lineHeight: 1.35,
+                }}
+              >
+                {item.selected_options
+                  .map(
+                    (option) =>
+                      `${option.name}${
+                        option.price_delta ? ` +${option.price_delta} ₽` : ""
+                      }`,
+                  )
+                  .join(", ")}
+              </div>
+            )}
           </div>
         ))}
       </div>

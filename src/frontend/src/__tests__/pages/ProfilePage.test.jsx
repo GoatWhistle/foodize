@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { BrowserRouter } from "react-router-dom";
 import ProfilePage from "../../pages/profile/ProfilePage";
 import { useAuthStore } from "../../store/useAuthStore";
+import { staffService } from "../../services/staffService";
 
 vi.mock("../../store/useAuthStore", () => ({
   useAuthStore: vi.fn((sel) => {
@@ -30,6 +31,12 @@ vi.mock("../../services/vendorService", () => ({
   },
 }));
 
+vi.mock("../../services/staffService", () => ({
+  staffService: {
+    getMyProfile: vi.fn().mockRejectedValue(new Error("Not a staff member")),
+  },
+}));
+
 vi.mock("../../services/userService", () => ({
   userService: {
     updateMe: vi.fn().mockResolvedValue({}),
@@ -42,6 +49,9 @@ describe("ProfilePage", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    staffService.getMyProfile.mockRejectedValue(
+      new Error("Not a staff member"),
+    );
     vi.mocked(useAuthStore).mockImplementation((sel) => {
       const state = {
         user: { name: "Ivan Ivanov", phone_number: "+7999" },
@@ -51,7 +61,7 @@ describe("ProfilePage", () => {
     });
   });
 
-  it("renders user info and initials", () => {
+  it("renders user info and edit action", () => {
     render(
       <BrowserRouter>
         <ProfilePage />
@@ -60,7 +70,7 @@ describe("ProfilePage", () => {
 
     expect(screen.getByText("Ivan Ivanov")).toBeDefined();
     expect(screen.getByText("+7999")).toBeDefined();
-    expect(screen.getByText("II")).toBeDefined(); // Initials
+    expect(screen.getByLabelText("Редактировать профиль")).toBeDefined();
   });
 
   it("calls logout and navigates on click", async () => {
@@ -86,5 +96,22 @@ describe("ProfilePage", () => {
 
     fireEvent.click(screen.getByText(/Мои заказы/));
     expect(mockNavigate).toHaveBeenCalledWith("/orders");
+  });
+
+  it("shows staff dashboard link for staff users", async () => {
+    staffService.getMyProfile.mockResolvedValueOnce({
+      data: { data: { id: "staff-1", restaurant_id: "rest-1", role: "COOK" } },
+    });
+
+    render(
+      <BrowserRouter>
+        <ProfilePage />
+      </BrowserRouter>,
+    );
+
+    expect(await screen.findByText("Кабинет сотрудника")).toBeDefined();
+
+    fireEvent.click(screen.getByText("Кабинет сотрудника"));
+    expect(mockNavigate).toHaveBeenCalledWith("/staff");
   });
 });

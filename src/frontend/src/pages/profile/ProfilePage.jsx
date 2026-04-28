@@ -5,6 +5,7 @@ import {
   Package,
   Crown,
   Storefront,
+  CookingPot,
   Sparkle,
   SignOut,
   CaretRight,
@@ -18,6 +19,7 @@ import {
 import { useAuthStore } from "../../store/useAuthStore";
 import { ROUTES } from "../../constants/routes";
 import { vendorService } from "../../services/vendorService";
+import { staffService } from "../../services/staffService";
 import { userService } from "../../services/userService";
 
 const ProfilePage = () => {
@@ -26,6 +28,8 @@ const ProfilePage = () => {
 
   const [isVendor, setIsVendor] = useState(false);
   const [checkingVendor, setCheckingVendor] = useState(true);
+  const [isStaff, setIsStaff] = useState(false);
+  const [checkingStaff, setCheckingStaff] = useState(true);
   const [vendorLoading, setVendorLoading] = useState(false);
   const [vendorError, setVendorError] = useState("");
 
@@ -51,6 +55,12 @@ const ProfilePage = () => {
       .then(() => setIsVendor(true))
       .catch(() => setIsVendor(false))
       .finally(() => setCheckingVendor(false));
+
+    staffService
+      .getMyProfile()
+      .then(() => setIsStaff(true))
+      .catch(() => setIsStaff(false))
+      .finally(() => setCheckingStaff(false));
   }, []);
 
   const handleLogout = async () => {
@@ -312,6 +322,26 @@ const ProfilePage = () => {
             <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
               <Crown size={20} weight="bold" color="var(--gold, #e8a200)" />
               <span>Админ-панель</span>
+            </div>
+            <CaretRight size={16} color="var(--text-3)" />
+          </div>
+        )}
+
+        {/* Staff */}
+        {!checkingStaff && isStaff && (
+          <div
+            id="profile-staff-dashboard-link"
+            className="profile-menu-item"
+            onClick={() => navigate(ROUTES.STAFF_DASHBOARD)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) =>
+              e.key === "Enter" && navigate(ROUTES.STAFF_DASHBOARD)
+            }
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+              <CookingPot size={20} weight="bold" color="var(--fire)" />
+              <span>Кабинет сотрудника</span>
             </div>
             <CaretRight size={16} color="var(--text-3)" />
           </div>
