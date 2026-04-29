@@ -5,7 +5,6 @@ import {
   Clock,
   ArrowRight,
   Package,
-  Spinner,
   Bell,
   HourglassMedium,
   XCircle,
@@ -80,6 +79,8 @@ const APPLICATION_STATUS_CONFIG = {
     bg: "#ef444422",
   },
 };
+
+const getOrderDisplayId = (order) => order.display_id ?? order.id.slice(0, 8);
 
 const ApplicationStatus = () => {
   const [application, setApplication] = useState(null);
@@ -172,8 +173,7 @@ const ApplicationStatus = () => {
   );
 };
 
-const OrderCard = ({ order, onStatusChange, updating, onOpen }) => {
-  const nextStatus = NEXT_STATUS[order.status];
+const OrderCard = ({ order, onOpen }) => {
   const isTerminal =
     order.status === "COMPLETED" || order.status === "CANCELLED";
 
@@ -209,7 +209,7 @@ const OrderCard = ({ order, onStatusChange, updating, onOpen }) => {
               textTransform: "uppercase",
             }}
           >
-            Заказ #{order.id.slice(0, 8)}
+            Заказ #{getOrderDisplayId(order)}
           </span>
           <div
             style={{
@@ -291,9 +291,9 @@ const OrderCard = ({ order, onStatusChange, updating, onOpen }) => {
         ))}
       </div>
 
-      {!isTerminal && nextStatus && (
+      {!isTerminal && NEXT_STATUS[order.status] && (
         <button
-          className="btn btn-primary"
+          className="btn btn-secondary"
           style={{
             width: "100%",
             display: "flex",
@@ -301,32 +301,14 @@ const OrderCard = ({ order, onStatusChange, updating, onOpen }) => {
             justifyContent: "center",
             gap: 8,
             height: 44,
-            background: STATUS_COLOR[order.status],
-            borderColor: STATUS_COLOR[order.status],
           }}
-          disabled={updating === order.id}
           onClick={(e) => {
             e.stopPropagation();
-            onStatusChange(
-              order.id,
-              nextStatus,
-              nextStatus === "ACCEPTED"
-                ? { estimated_ready_in_minutes: 15 }
-                : {},
-            );
+            onOpen(order);
           }}
         >
-          {updating === order.id ? (
-            <Spinner
-              size={16}
-              style={{ animation: "spin 1s linear infinite" }}
-            />
-          ) : (
-            <>
-              {NEXT_LABEL[order.status]}
-              <ArrowRight size={16} weight="bold" />
-            </>
-          )}
+          Открыть детали
+          <ArrowRight size={16} weight="bold" />
         </button>
       )}
     </div>
@@ -413,6 +395,9 @@ const StaffDashboardPage = () => {
                       Date.now() + data.estimated_ready_in_minutes * 60000,
                     ).toISOString(),
                   }
+                : {}),
+              ...(data.estimated_ready_at
+                ? { estimated_ready_at: data.estimated_ready_at }
                 : {}),
             }
           : current,
@@ -597,13 +582,7 @@ const StaffDashboardPage = () => {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {orders.map((order) => (
-            <OrderCard
-              key={order.id}
-              order={order}
-              onStatusChange={handleStatusChange}
-              updating={updating}
-              onOpen={setSelectedOrder}
-            />
+            <OrderCard key={order.id} order={order} onOpen={setSelectedOrder} />
           ))}
         </div>
       )}
@@ -650,6 +629,7 @@ const StaffDashboardPage = () => {
           nextLabel={NEXT_LABEL}
           onStatusChange={handleStatusChange}
           updating={updating}
+          allowCancel
         />
       )}
     </div>

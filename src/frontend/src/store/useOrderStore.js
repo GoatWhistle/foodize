@@ -3,9 +3,13 @@ import { orderService } from "../services/orderService";
 import { cartService } from "../services/cartService";
 
 const getOptionIds = (item) =>
-  item.selectedOptionIds ??
-  item.selected_option_ids ??
-  getSelectedOptions(item).map((option) => option.id ?? option.option_id);
+  [
+    ...new Set(
+      item.selectedOptionIds ??
+        item.selected_option_ids ??
+        getSelectedOptions(item).map((option) => option.id ?? option.option_id),
+    ),
+  ].filter(Boolean);
 
 const getSelectedOptions = (item) =>
   item.selectedOptions ?? item.selected_options ?? [];
@@ -21,6 +25,16 @@ const getLinePrice = (item) =>
 
 const getLineKey = (menuItemId, selectedOptionIds = []) =>
   `${menuItemId}:${[...selectedOptionIds].sort().join(",")}`;
+
+const uniqueOptions = (options = []) => {
+  const seen = new Set();
+  return options.filter((option) => {
+    const id = option.id ?? option.option_id;
+    if (!id || seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+};
 
 export const useOrderStore = create((set, get) => ({
   cart: [],
@@ -51,7 +65,7 @@ export const useOrderStore = create((set, get) => ({
         image_url: i.menuItem.image_url ?? null,
         quantity: i.quantity,
         selected_option_ids: getOptionIds(i),
-        selected_options: getSelectedOptions(i),
+        selected_options: uniqueOptions(getSelectedOptions(i)),
       })),
     };
     await cartService.updateCart(payload);
@@ -59,7 +73,8 @@ export const useOrderStore = create((set, get) => ({
 
   addToCart: async (menuItem, restaurantId, selectedOptions = []) => {
     const { cart, cartRestaurantId } = get();
-    const selectedOptionIds = selectedOptions.map(
+    const normalizedOptions = uniqueOptions(selectedOptions);
+    const selectedOptionIds = normalizedOptions.map(
       (option) => option.id ?? option.option_id,
     );
     const lineKey = getLineKey(menuItem.id, selectedOptionIds);
@@ -67,7 +82,7 @@ export const useOrderStore = create((set, get) => ({
       menuItem,
       quantity: 1,
       selectedOptionIds,
-      selectedOptions: selectedOptions.map((option) => ({
+      selectedOptions: normalizedOptions.map((option) => ({
         option_id: option.id ?? option.option_id,
         id: option.id ?? option.option_id,
         name: option.name,

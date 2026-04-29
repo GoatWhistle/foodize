@@ -22,6 +22,7 @@ class OrderStatusUpdate(BaseModel):
 
 class OrderResponse(BaseModel):
     id: uuid.UUID
+    display_id: int
     user_id: uuid.UUID
     customer_name: str | None = None
     customer_phone: str | None = None
@@ -46,6 +47,7 @@ class OrderResponse(BaseModel):
             ).strip()
             return {
                 "id": data.id,
+                "display_id": data.display_id,
                 "user_id": data.user_id,
                 "customer_name": first_last or user.name,
                 "customer_phone": user.phone_number,

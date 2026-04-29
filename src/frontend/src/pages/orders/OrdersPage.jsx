@@ -56,6 +56,8 @@ const STATUS_FILTERS = [
   { key: "CANCELLED", label: "Отменены" },
 ];
 
+const getOrderDisplayId = (order) => order.display_id ?? order.id.slice(0, 8);
+
 const OrdersPage = () => {
   const { orders, ordersTotal, fetchMyOrders, ordersLoading } = useOrderStore();
   const navigate = useNavigate();
@@ -153,7 +155,7 @@ const OrdersPage = () => {
                         color: "var(--text-1)",
                       }}
                     >
-                      Заказ #{order.id.slice(0, 8)}
+                      Заказ #{getOrderDisplayId(order)}
                     </div>
                     <div
                       style={{ fontSize: "0.78rem", color: "var(--text-3)" }}

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy import DateTime, ForeignKey, Identity, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base, CreatedAtMixin, IdUuidPkMixin, UpdatedAtMixin
@@ -16,6 +16,9 @@ if TYPE_CHECKING:
 
 
 class Order(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
+    display_id: Mapped[int] = mapped_column(
+        Integer, Identity(always=False), unique=True, index=True
+    )
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
     restaurant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("restaurants.id"))
     status: Mapped[str] = mapped_column(

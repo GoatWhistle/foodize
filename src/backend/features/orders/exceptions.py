@@ -39,3 +39,8 @@ class MenuItemUnavailableException(AppException):
 class OrderNotCompletableException(RuleException):
     status_code: int = HTTPStatus.CONFLICT
     detail: str = "Order can only be completed when in READY status"
+
+
+class OrderReadyTimeRequiredException(AppException):
+    status_code: int = HTTPStatus.UNPROCESSABLE_ENTITY
+    detail: str = "Ready time is required to accept an order"

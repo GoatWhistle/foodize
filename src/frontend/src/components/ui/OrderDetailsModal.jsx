@@ -11,6 +11,8 @@ const STATUS_LABEL_RU = {
   CANCELLED: "Отменён",
 };
 
+const STATUS_FLOW = ["PENDING", "ACCEPTED", "COOKING", "READY", "COMPLETED"];
+
 const formatDateTime = (value) => {
   if (!value) return "—";
   return new Date(value).toLocaleString("ru-RU", {
@@ -48,6 +50,45 @@ const buildReadyAtIso = (timeValue) => {
   return readyAt.toISOString();
 };
 
+const getOrderDisplayId = (order) => order.display_id ?? order.id.slice(0, 8);
+
+const getOrderStages = (order, events) => {
+  const eventByStatus = new Map(
+    (events || []).map((event) => [event.new_status, event]),
+  );
+  const currentIndex = STATUS_FLOW.indexOf(order.status);
+
+  if (order.status === "CANCELLED") {
+    return [
+      ...STATUS_FLOW.slice(0, Math.max(currentIndex, 0) + 1),
+      "CANCELLED",
+    ].map((status) => ({
+      status,
+      event: eventByStatus.get(status),
+      at:
+        status === "PENDING"
+          ? order.created_at
+          : eventByStatus.get(status)?.created_at,
+      state: status === "CANCELLED" ? "current" : "done",
+    }));
+  }
+
+  return STATUS_FLOW.map((status, index) => ({
+    status,
+    event: eventByStatus.get(status),
+    at:
+      status === "PENDING"
+        ? order.created_at
+        : eventByStatus.get(status)?.created_at,
+    state:
+      index < currentIndex
+        ? "done"
+        : index === currentIndex
+          ? "current"
+          : "next",
+  }));
+};
+
 const OrderDetailsModal = ({
   order,
   onClose,
@@ -60,7 +101,7 @@ const OrderDetailsModal = ({
   const [events, setEvents] = useState([]);
   const [eventsLoading, setEventsLoading] = useState(false);
   const [eventsError, setEventsError] = useState("");
-  const [etaMinutes, setEtaMinutes] = useState(15);
+  const [etaMinutes, setEtaMinutes] = useState(null);
   const [manualEtaTime, setManualEtaTime] = useState("");
 
   useEffect(() => {
@@ -87,8 +128,16 @@ const OrderDetailsModal = ({
     if (manualReadyAt) {
       return { estimated_ready_at: manualReadyAt };
     }
-    return { estimated_ready_in_minutes: etaMinutes };
+    if (etaMinutes) {
+      return { estimated_ready_in_minutes: etaMinutes };
+    }
+    return null;
   };
+  const acceptingRequiresTime = next === "ACCEPTED";
+  const submitPayload = next === "ACCEPTED" ? etaPayload() : {};
+  const canSubmitNext =
+    updating !== order.id && (!acceptingRequiresTime || Boolean(submitPayload));
+  const stages = getOrderStages(order, events);
 
   return (
     <div
@@ -132,7 +181,7 @@ const OrderDetailsModal = ({
                 marginBottom: 4,
               }}
             >
-              Заказ #{order.id.slice(0, 8)}
+              Заказ #{getOrderDisplayId(order)}
             </div>
             <h3 style={{ fontSize: "1.15rem", fontWeight: 900, margin: 0 }}>
               {order.total_price} ₽
@@ -410,7 +459,10 @@ const OrderDetailsModal = ({
                 <input
                   type="time"
                   value={manualEtaTime}
-                  onChange={(event) => setManualEtaTime(event.target.value)}
+                  onChange={(event) => {
+                    setManualEtaTime(event.target.value);
+                    setEtaMinutes(null);
+                  }}
                   style={{
                     width: "100%",
                     border: "1px solid var(--border)",
@@ -437,7 +489,70 @@ const OrderDetailsModal = ({
               }}
             >
               <Clock size={18} color="var(--fire)" />
-              История статусов
+              Этапы заказа
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {stages.map((stage) => (
+                <div
+                  key={stage.status}
+                  style={{
+                    background:
+                      stage.state === "current"
+                        ? "rgba(255, 107, 53, 0.1)"
+                        : "var(--bg-surface)",
+                    border: `1px solid ${
+                      stage.state === "current"
+                        ? "var(--fire)"
+                        : "var(--border)"
+                    }`,
+                    borderRadius: "var(--radius-md)",
+                    padding: "10px 12px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    opacity: stage.state === "next" ? 0.62 : 1,
+                  }}
+                >
+                  <div style={{ fontSize: "0.82rem", fontWeight: 800 }}>
+                    {STATUS_LABEL_RU[stage.status] ?? stage.status}
+                    {stage.state === "current" && (
+                      <span
+                        style={{
+                          marginLeft: 8,
+                          color: "var(--fire)",
+                          fontSize: "0.72rem",
+                        }}
+                      >
+                        текущий
+                      </span>
+                    )}
+                  </div>
+                  <div
+                    style={{
+                      color: "var(--text-3)",
+                      fontSize: "0.72rem",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {stage.at ? formatDateTime(stage.at) : "—"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                fontWeight: 800,
+                marginBottom: 10,
+              }}
+            >
+              <Clock size={18} color="var(--fire)" />
+              Журнал изменений
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {eventsLoading && (
@@ -504,14 +619,8 @@ const OrderDetailsModal = ({
             {next && (
               <button
                 className="btn btn-primary"
-                disabled={updating === order.id}
-                onClick={() =>
-                  onStatusChange(
-                    order.id,
-                    next,
-                    next === "ACCEPTED" ? etaPayload() : {},
-                  )
-                }
+                disabled={!canSubmitNext}
+                onClick={() => onStatusChange(order.id, next, submitPayload)}
                 style={{ flex: 1 }}
               >
                 {updating === order.id
@@ -526,7 +635,7 @@ const OrderDetailsModal = ({
                 onClick={() => onStatusChange(order.id, "CANCELLED")}
                 style={{ color: "var(--error)" }}
               >
-                Отменить
+                {order.status === "PENDING" ? "Отклонить" : "Отменить"}
               </button>
             )}
           </div>

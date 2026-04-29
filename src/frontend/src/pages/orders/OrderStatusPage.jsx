@@ -15,14 +15,45 @@ const STATUS_LABEL_RU = {
   CANCELLED: "Отменён",
 };
 
-const ACTOR_ROLE_RU = {
-  VENDOR: "Вендор",
-  STAFF: "Сотрудник",
-  CUSTOMER: "Клиент",
-  ADMIN: "Администратор",
-};
-
 const TERMINAL_STATUSES = new Set(["COMPLETED", "CANCELLED"]);
+const STATUS_FLOW = ["PENDING", "ACCEPTED", "COOKING", "READY", "COMPLETED"];
+
+const getOrderDisplayId = (order) => order.display_id ?? order.id.slice(0, 8);
+
+const getOrderStages = (order, events) => {
+  const eventByStatus = new Map(
+    (events || []).map((event) => [event.new_status, event]),
+  );
+  const currentIndex = STATUS_FLOW.indexOf(order.status);
+
+  if (order.status === "CANCELLED") {
+    return [
+      ...STATUS_FLOW.slice(0, Math.max(currentIndex, 0) + 1),
+      "CANCELLED",
+    ].map((status) => ({
+      status,
+      at:
+        status === "PENDING"
+          ? order.created_at
+          : eventByStatus.get(status)?.created_at,
+      state: status === "CANCELLED" ? "current" : "done",
+    }));
+  }
+
+  return STATUS_FLOW.map((status, index) => ({
+    status,
+    at:
+      status === "PENDING"
+        ? order.created_at
+        : eventByStatus.get(status)?.created_at,
+    state:
+      index < currentIndex
+        ? "done"
+        : index === currentIndex
+          ? "current"
+          : "next",
+  }));
+};
 
 const OrderStatusPage = () => {
   const { id } = useParams();
@@ -78,6 +109,7 @@ const OrderStatusPage = () => {
     currentOrder.status === "READY" || currentOrder.status === "COMPLETED";
   const isCancelled = currentOrder.status === "CANCELLED";
   const isPending = currentOrder.status === "PENDING";
+  const stages = getOrderStages(currentOrder, events);
 
   const handleCancel = async () => {
     if (!window.confirm("Вы уверены, что хотите отменить заказ?")) return;
@@ -114,6 +146,16 @@ const OrderStatusPage = () => {
         status={currentOrder.status}
         progress={isCancelled ? 0 : 0.6}
       />
+
+      <div
+        style={{
+          marginTop: 18,
+          fontWeight: 800,
+          color: "var(--text-2)",
+        }}
+      >
+        Заказ #{getOrderDisplayId(currentOrder)}
+      </div>
 
       <div
         style={{
@@ -274,66 +316,72 @@ const OrderStatusPage = () => {
             marginBottom: 14,
           }}
         >
-          История заказа
+          Этапы заказа
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {(!Array.isArray(events) || events.length === 0) && (
-            <div style={{ fontSize: "0.85rem", color: "var(--text-3)" }}>
-              Загрузка событий...
-            </div>
-          )}
-          {Array.isArray(events) &&
-            events.map((ev, i) => (
-              <div key={ev.id} style={{ display: "flex", gap: 12 }}>
+          {stages.map((stage, i) => (
+            <div key={stage.status} style={{ display: "flex", gap: 12 }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                }}
+              >
                 <div
                   style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
+                    width: 10,
+                    height: 10,
+                    borderRadius: "50%",
+                    background:
+                      stage.state === "current"
+                        ? "var(--fire)"
+                        : stage.state === "done"
+                          ? "#22c55e"
+                          : "var(--border)",
                   }}
-                >
+                />
+                {i !== stages.length - 1 && (
                   <div
                     style={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: "50%",
-                      background:
-                        i === events.length - 1
-                          ? "var(--fire)"
-                          : "var(--border)",
+                      width: 2,
+                      flex: 1,
+                      background: "var(--border)",
+                      marginTop: 4,
+                      minHeight: 20,
                     }}
                   />
-                  {i !== events.length - 1 && (
-                    <div
-                      style={{
-                        width: 2,
-                        flex: 1,
-                        background: "var(--border)",
-                        marginTop: 4,
-                        minHeight: 20,
-                      }}
-                    />
+                )}
+              </div>
+              <div>
+                <div
+                  style={{
+                    fontSize: "0.85rem",
+                    fontWeight: 700,
+                    color:
+                      stage.state === "next"
+                        ? "var(--text-3)"
+                        : "var(--text-1)",
+                  }}
+                >
+                  {STATUS_LABEL_RU[stage.status] ?? stage.status}
+                  {stage.state === "current" && (
+                    <span style={{ color: "var(--fire)", marginLeft: 8 }}>
+                      сейчас
+                    </span>
                   )}
                 </div>
-                <div>
-                  <div
-                    style={{
-                      fontSize: "0.85rem",
-                      fontWeight: 700,
-                    }}
-                  >
-                    {STATUS_LABEL_RU[ev.new_status] ?? ev.new_status}
-                  </div>
-                  <div style={{ fontSize: "0.75rem", color: "var(--text-3)" }}>
-                    {new Date(ev.created_at).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}{" "}
-                    • Участник: {ACTOR_ROLE_RU[ev.actor_role] ?? ev.actor_role}
-                  </div>
+                <div style={{ fontSize: "0.75rem", color: "var(--text-3)" }}>
+                  {stage.at
+                    ? new Date(stage.at).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "ожидается"}
                 </div>
               </div>
-            ))}
+            </div>
+          ))}
         </div>
       </div>
 

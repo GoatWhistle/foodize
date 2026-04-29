@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from shared.enums.category import Category
 
@@ -9,6 +9,13 @@ class OrderItemCreate(BaseModel):
     menu_item_id: uuid.UUID
     quantity: int = Field(1, ge=1, le=99)
     selected_option_ids: list[uuid.UUID] = Field(default_factory=list, max_length=50)
+
+    @field_validator("selected_option_ids")
+    @classmethod
+    def selected_option_ids_must_be_unique(cls, value: list[uuid.UUID]) -> list[uuid.UUID]:
+        if len(value) != len(set(value)):
+            raise ValueError("Duplicate options selected")
+        return value
 
 
 class OrderItemOptionResponse(BaseModel):

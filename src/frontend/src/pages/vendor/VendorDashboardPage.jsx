@@ -8,7 +8,6 @@ import {
   ForkKnife,
   Package,
   Gear,
-  Fire,
   X,
   Check,
   PencilSimple,
@@ -50,6 +49,8 @@ const NEXT_ORDER_LABEL_RU = {
   COOKING: "Готов",
   READY: "Выдан",
 };
+
+const getOrderDisplayId = (order) => order.display_id ?? order.id.slice(0, 8);
 
 const createOptionDraft = () => ({
   draftId: `${Date.now()}-${Math.random()}`,
@@ -540,6 +541,9 @@ const VendorDashboardPage = () => {
                       Date.now() + data.estimated_ready_in_minutes * 60000,
                     ).toISOString(),
                   }
+                : {}),
+              ...(data.estimated_ready_at
+                ? { estimated_ready_at: data.estimated_ready_at }
                 : {}),
             }
           : current,
@@ -1339,7 +1343,7 @@ const VendorDashboardPage = () => {
                     >
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 700, marginBottom: 4 }}>
-                          Заказ #{order.id.slice(0, 8)}
+                          Заказ #{getOrderDisplayId(order)}
                         </div>
                         <div
                           style={{ fontSize: "0.8rem", color: "var(--text-3)" }}
@@ -1404,47 +1408,19 @@ const VendorDashboardPage = () => {
                         >
                           {STATUS_LABEL_RU[order.status] ?? order.status}
                         </span>
-                        <div style={{ display: "flex", gap: 4 }}>
-                          {NEXT_ORDER_STATUS[order.status] && (
-                            <button
-                              className="btn btn-primary btn-sm"
-                              disabled={updatingOrderId === order.id}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOrderChange(
-                                  order.id,
-                                  NEXT_ORDER_STATUS[order.status],
-                                  NEXT_ORDER_STATUS[order.status] === "ACCEPTED"
-                                    ? { estimated_ready_in_minutes: 15 }
-                                    : {},
-                                );
-                              }}
-                            >
-                              {order.status === "COOKING" ||
-                              order.status === "READY" ? (
-                                <Check size={16} />
-                              ) : (
-                                <Fire size={16} />
-                              )}
-                              {updatingOrderId === order.id
-                                ? "..."
-                                : NEXT_ORDER_LABEL_RU[order.status]}
-                            </button>
-                          )}
-                          {["PENDING", "ACCEPTED"].includes(order.status) && (
-                            <button
-                              className="btn btn-secondary btn-sm"
-                              style={{ color: "var(--error)" }}
-                              disabled={updatingOrderId === order.id}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOrderChange(order.id, "CANCELLED");
-                              }}
-                            >
-                              <X size={16} />
-                            </button>
-                          )}
-                        </div>
+                        {NEXT_ORDER_STATUS[order.status] && (
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            disabled={updatingOrderId === order.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedOrder(order);
+                            }}
+                          >
+                            Детали
+                            <CaretRight size={16} />
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}

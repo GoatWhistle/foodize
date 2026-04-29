@@ -17,6 +17,7 @@ from features.orders.exceptions import (
     OrderNotCancellableException,
     OrderNotCompletableException,
     OrderNotFoundException,
+    OrderReadyTimeRequiredException,
 )
 from features.orders.models import Order, OrderItem, OrderItemOption
 from features.orders.schemas.order import OrderCreate, OrderResponse, OrderStatusUpdate
@@ -249,6 +250,8 @@ async def change_order_status(
             minutes = status_data.estimated_ready_in_minutes
             if minutes:
                 order.estimated_ready_at = datetime.now(timezone.utc) + timedelta(minutes=minutes)
+            else:
+                raise OrderReadyTimeRequiredException()
     updated = await order_crud.update_order_status(session, order, status_data.status)
     await order_crud.create_order_event(
         session,
