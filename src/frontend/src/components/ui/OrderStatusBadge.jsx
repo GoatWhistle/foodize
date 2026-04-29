@@ -110,9 +110,9 @@ const OrderStatusBadge = ({ status, progress = 0.6 }) => {
           className="status-ready-text"
           style={{
             fontWeight: 800,
-            fontSize: "2.5rem",
+            fontSize: "2rem",
             letterSpacing: "-0.04em",
-            color: "var(--fire)",
+            color: "#22c55e",
           }}
         >
           {status === "COMPLETED" ? "Приятного аппетита!" : "Забирай!"}

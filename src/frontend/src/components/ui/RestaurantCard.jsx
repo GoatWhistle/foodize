@@ -87,11 +87,11 @@ const RestaurantCard = ({ restaurant, onClick }) => {
             alignItems: "center",
             gap: 5,
             background: restaurant.is_open
-              ? "rgba(34,197,94,0.18)"
-              : "rgba(107,114,128,0.22)",
+              ? "rgba(255,255,255,0.88)"
+              : "rgba(255,255,255,0.78)",
             backdropFilter: "blur(8px)",
             border: `1px solid ${restaurant.is_open ? "rgba(34,197,94,0.4)" : "rgba(107,114,128,0.3)"}`,
-            borderRadius: "100px",
+            borderRadius: "var(--r-xs)",
             padding: "4px 9px",
           }}
         >
@@ -120,7 +120,6 @@ const RestaurantCard = ({ restaurant, onClick }) => {
         </div>
       )}
 
-
       {/* Heart / Favourite button */}
       {isAuthenticated && (
         <button
@@ -135,7 +134,7 @@ const RestaurantCard = ({ restaurant, onClick }) => {
             zIndex: 3,
             width: 32,
             height: 32,
-            borderRadius: "50%",
+            borderRadius: "var(--r-xs)",
             background: isFav ? "rgba(239,68,68,0.18)" : "rgba(0,0,0,0.45)",
             backdropFilter: "blur(8px)",
             border: isFav
@@ -172,10 +171,7 @@ const RestaurantCard = ({ restaurant, onClick }) => {
             {restaurant.address}
           </span>
           {restaurant.category && (
-            <span className="tag-pill">
-              {icon}
-              {restaurant.category}
-            </span>
+            <span className="tag-pill">{restaurant.category}</span>
           )}
         </div>
       </div>

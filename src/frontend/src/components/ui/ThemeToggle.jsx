@@ -17,7 +17,7 @@ const ThemeToggle = () => {
         alignItems: "center",
         justifyContent: "center",
         padding: "8px",
-        borderRadius: "50%",
+        borderRadius: "var(--r-sm)",
         border: "1px solid var(--border)",
         background: "var(--bg-card)",
         cursor: "pointer",

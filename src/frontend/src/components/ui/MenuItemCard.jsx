@@ -80,7 +80,7 @@ const MenuItemCard = ({ item, onAdd }) => {
                 fontSize: "0.68rem",
                 background: "var(--bg-raised)",
                 color: "var(--error)",
-                border: "1px solid var(--error)",
+                border: "1px solid var(--color-error-border)",
                 display: "flex",
                 alignItems: "center",
                 gap: 4,
