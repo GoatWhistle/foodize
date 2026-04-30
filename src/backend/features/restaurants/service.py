@@ -49,12 +49,14 @@ def _apply_restaurant_filters(
     is_hiring: bool | None,
     is_open: bool | None,
 ):
+    query = query.where(Restaurant.is_active.is_(True))
     if name:
         query = query.where(Restaurant.name.ilike(f"%{name}%"))
     if is_hiring is not None:
         query = query.where(Restaurant.is_hiring == is_hiring)
     if is_open is not None:
         query = query.where(Restaurant.is_open == is_open)
+    query = query.where(Restaurant.moderation_status == "APPROVED")
     return query
 
 

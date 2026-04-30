@@ -141,7 +141,7 @@ const OrderDetailsModal = ({
 
   return (
     <div
-      className="modal-overlay"
+      className="modal-overlay order-details-overlay"
       style={{ zIndex: 4000 }}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) {

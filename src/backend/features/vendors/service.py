@@ -1,5 +1,9 @@
+from datetime import date
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from features.admin.crud import get_finance_analytics
+from features.admin.schemas import FinanceAnalytics
 from features.users.models import User
 from features.vendors import crud
 from features.vendors.exceptions import VendorAlreadyExistsException
@@ -21,3 +25,17 @@ async def update_description(
 ) -> VendorResponse:
     updated = await crud.update_vendor_description(session, vendor, new_description)
     return VendorResponse.model_validate(updated)
+
+
+async def get_vendor_finance(
+    session: AsyncSession,
+    vendor: VendorProfile,
+    date_from: date | None = None,
+    date_to: date | None = None,
+) -> FinanceAnalytics:
+    return await get_finance_analytics(
+        session,
+        date_from=date_from,
+        date_to=date_to,
+        vendor_id=vendor.id,
+    )

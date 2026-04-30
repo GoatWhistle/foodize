@@ -6,14 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from features.users.models import User
 from features.vendors.models import VendorProfile
 from features.vendors.schemas import VendorCreate
-from shared.enums.roles import UserRole
 from shared.exceptions import NotFoundException
 
 
 async def create_vendor_profile(
     session: AsyncSession, user: User, vendor_in: VendorCreate
 ) -> VendorProfile:
-    user.user_role = UserRole.VENDOR.value
     vendor = VendorProfile(user=user, user_id=user.id, **vendor_in.model_dump())
     session.add(vendor)
     await session.commit()

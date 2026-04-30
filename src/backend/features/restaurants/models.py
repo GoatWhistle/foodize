@@ -25,6 +25,10 @@ class Restaurant(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMix
     is_open: Mapped[bool] = mapped_column(default=True, server_default="true")
     is_active: Mapped[bool] = mapped_column(default=True, server_default="true")
     photo_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    moderation_status: Mapped[str] = mapped_column(
+        String, default="PENDING", server_default="PENDING", nullable=False
+    )
+    rejection_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
     vendor: Mapped["VendorProfile"] = relationship(back_populates="restaurants")
     menu_items: Mapped[list["MenuItem"]] = relationship(back_populates="restaurant")
     orders: Mapped[list["Order"]] = relationship(back_populates="restaurant")

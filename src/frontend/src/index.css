@@ -1875,6 +1875,17 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
   width: 100%;
 }
 
+.order-details-overlay {
+  align-items: center;
+  padding: 24px;
+}
+
+.order-details-overlay .modal-content {
+  border-radius: var(--r-lg);
+  max-height: min(90vh, 760px);
+  width: min(560px, calc(100vw - 32px));
+}
+
 @keyframes modal-appear {
   from {
     opacity: 0;
@@ -2047,6 +2058,17 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
     border-radius: var(--r-lg) var(--r-lg) 0 0;
     max-height: 92vh;
     width: 100%;
+  }
+
+  .order-details-overlay {
+    align-items: center;
+    padding: 16px;
+  }
+
+  .order-details-overlay .modal-content {
+    border-radius: var(--r-lg);
+    max-height: min(90vh, 760px);
+    width: min(560px, calc(100vw - 32px));
   }
 
   .staff-fab {

@@ -24,6 +24,7 @@ def _make_admin_user_dict(user_id: uuid.UUID | None = None) -> dict:
 def _make_admin_order_dict() -> dict:
     return {
         "id": str(uuid.uuid4()),
+        "display_id": 1001,
         "user_id": str(uuid.uuid4()),
         "restaurant_id": str(uuid.uuid4()),
         "status": OrderStatus.PENDING.value,
@@ -244,6 +245,13 @@ class TestAdminStats:
             "users_by_role": {"CUSTOMER": 10, "VENDOR": 3, "ADMIN": 1},
             "orders_by_status": {"PENDING": 5, "COMPLETED": 20},
             "total_restaurants": 4,
+            "total_vendors": 3,
+            "growth": {
+                "users": [{"date": "2026-01-01", "count": 2}],
+                "restaurants": [{"date": "2026-01-01", "count": 1}],
+                "orders": [{"date": "2026-01-01", "count": 5}],
+                "vendors": [{"date": "2026-01-01", "count": 1}],
+            },
         }
 
         with patch(
@@ -256,5 +264,6 @@ class TestAdminStats:
         assert response.status_code == 200
         data = response.json()["data"]
         assert data["total_restaurants"] == 4
+        assert data["total_vendors"] == 3
         assert data["users_by_role"]["CUSTOMER"] == 10
         assert data["orders_by_status"]["COMPLETED"] == 20

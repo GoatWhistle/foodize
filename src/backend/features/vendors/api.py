@@ -1,7 +1,10 @@
-from fastapi import APIRouter, Depends, status
+from datetime import date
+
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
+from features.admin.schemas import FinanceAnalytics
 from features.auth.service import get_current_user
 from features.users.models import User
 from features.vendors import service
@@ -41,5 +44,21 @@ async def update_description(
 ) -> SuccessResponse[VendorResponse]:
     result = await service.update_description(
         new_description=body.description, vendor=current_vendor, session=session
+    )
+    return build_response(result)
+
+
+@router.get("/finance", response_model=SuccessResponse[FinanceAnalytics])
+async def read_vendor_finance(
+    date_from: date | None = Query(None),
+    date_to: date | None = Query(None),
+    current_vendor: VendorProfile = Depends(get_current_vendor),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> SuccessResponse[FinanceAnalytics]:
+    result = await service.get_vendor_finance(
+        session=session,
+        vendor=current_vendor,
+        date_from=date_from,
+        date_to=date_to,
     )
     return build_response(result)

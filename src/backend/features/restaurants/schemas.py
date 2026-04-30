@@ -20,6 +20,8 @@ class RestaurantResponse(BaseModel):
     photo_url: str | None = None
     average_rating: float = 0.0
     review_count: int = 0
+    moderation_status: str = "PENDING"
+    rejection_reason: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

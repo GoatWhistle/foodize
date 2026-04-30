@@ -1,7 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base, CreatedAtMixin, IdUuidPkMixin, UpdatedAtMixin
@@ -14,5 +14,9 @@ if TYPE_CHECKING:
 class VendorProfile(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), unique=True)
     description: Mapped[str | None]
+    approval_status: Mapped[str] = mapped_column(
+        String, default="PENDING", server_default="PENDING", nullable=False
+    )
+    rejection_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
     user: Mapped["User"] = relationship(back_populates="vendor_profile")
     restaurants: Mapped[list["Restaurant"]] = relationship(back_populates="vendor")

@@ -36,8 +36,15 @@ describe("vendorService", () => {
 
     const result = await vendorService.updateDescription(newDesc);
     expect(result.data.description).toBe(newDesc);
-    // Check params
-    expect(mock.history.patch[0].params.new_description).toBe(newDesc);
+    expect(JSON.parse(mock.history.patch[0].data).description).toBe(newDesc);
+  });
+
+  it("getFinance sends GET to /vendors/finance", async () => {
+    const mockData = { average_check: 500 };
+    mock.onGet("/vendors/finance").reply(200, mockData);
+
+    const result = await vendorService.getFinance();
+    expect(result.data).toEqual(mockData);
   });
 
   it("getStaffRequests sends GET to /staff/my-requests", async () => {

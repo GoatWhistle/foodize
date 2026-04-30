@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   ChartLineUp,
   UsersThree,
   Package,
   Storefront,
   Trash,
-  Info,
   X,
+  Star,
   UserCircle,
   Clock,
   CheckCircle,
@@ -15,7 +15,11 @@ import {
   Prohibit,
 } from "@phosphor-icons/react";
 import { adminService } from "../../services/adminService";
+import EmptyState from "../../components/ui/EmptyState";
+import OrderDetailsModal from "../../components/ui/OrderDetailsModal";
 import Pagination from "../../components/ui/Pagination";
+
+const PAGE_SIZE = 50;
 
 const STATUS_MAP = {
   PENDING: { label: "Ожидает", className: "pending", icon: <Clock /> },
@@ -34,22 +38,650 @@ const STATUS_MAP = {
   CANCELLED: { label: "Отменён", className: "cancelled", icon: <Prohibit /> },
 };
 
+const formatDateTime = (value) => {
+  if (!value) return "—";
+  return new Date(value).toLocaleString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const shortId = (value) => (value ? value.slice(0, 8) : "—");
+const orderTitle = (order) => order.display_id ?? shortId(order.id);
+
+const cardStyle = {
+  background: "var(--bg-card)",
+  border: "1px solid var(--border)",
+  borderRadius: "var(--r-md)",
+  boxShadow: "var(--shadow-sm)",
+};
+
+const filterGridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
+  gap: 8,
+  alignItems: "center",
+};
+
+const wideFilterGridStyle = {
+  ...filterGridStyle,
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+};
+
+const filterControlStyle = {
+  minWidth: 0,
+  height: 48,
+  paddingTop: 11,
+  paddingBottom: 11,
+  fontSize: "0.86rem",
+  lineHeight: 1.2,
+};
+
+const selectFilterStyle = {
+  ...filterControlStyle,
+  paddingRight: 34,
+  backgroundPosition: "right 10px center",
+};
+
+const DetailField = ({ label, children, mono = false }) => (
+  <div
+    style={{
+      background: "var(--bg-surface)",
+      border: "1px solid var(--border)",
+      borderRadius: "var(--r-sm)",
+      padding: 12,
+      minWidth: 0,
+    }}
+  >
+    <div
+      style={{
+        color: "var(--text-3)",
+        fontSize: "0.7rem",
+        fontWeight: 800,
+        letterSpacing: "0.08em",
+        textTransform: "uppercase",
+        marginBottom: 6,
+      }}
+    >
+      {label}
+    </div>
+    <div
+      style={{
+        color: "var(--text-1)",
+        fontWeight: 800,
+        fontSize: mono ? "0.78rem" : "0.9rem",
+        fontFamily: mono ? "monospace" : "inherit",
+        overflowWrap: "anywhere",
+      }}
+    >
+      {children ?? "—"}
+    </div>
+  </div>
+);
+
+const DetailModal = ({ title, subtitle, onClose, loading, children }) => (
+  <div
+    className="modal-overlay"
+    onMouseDown={(event) => {
+      if (event.target === event.currentTarget) onClose();
+    }}
+  >
+    <div
+      className="modal-content"
+      style={{
+        maxWidth: 620,
+        overflow: "hidden",
+        maxHeight: "90vh",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <div
+        style={{
+          padding: "20px 22px",
+          borderBottom: "1px solid var(--border)",
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 16,
+        }}
+      >
+        <div>
+          <div
+            style={{
+              color: "var(--text-3)",
+              fontSize: "0.78rem",
+              fontWeight: 800,
+            }}
+          >
+            {subtitle}
+          </div>
+          <h3
+            style={{
+              margin: "4px 0 0",
+              color: "var(--text-1)",
+              fontSize: "1.18rem",
+            }}
+          >
+            {title}
+          </h3>
+        </div>
+        <button
+          className="btn btn-secondary btn-sm"
+          onClick={onClose}
+          aria-label="Закрыть"
+        >
+          <X size={16} />
+        </button>
+      </div>
+      <div style={{ padding: 22, overflowY: "auto" }}>
+        {loading ? (
+          <div className="loading-center">
+            <div className="spinner" />
+          </div>
+        ) : (
+          children
+        )}
+      </div>
+    </div>
+  </div>
+);
+
+const ConfirmDialog = ({ dialog, loading, onCancel, onConfirm }) => {
+  if (!dialog) return null;
+
+  return (
+    <div
+      className="modal-overlay"
+      style={{ zIndex: 5000 }}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !loading) onCancel();
+      }}
+    >
+      <div
+        className="modal-content"
+        style={{
+          maxWidth: 440,
+          padding: 22,
+          display: "flex",
+          flexDirection: "column",
+          gap: 18,
+        }}
+      >
+        <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+          <div
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: "var(--r-sm)",
+              background: "rgba(239, 68, 68, 0.1)",
+              color: "var(--error)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <Trash size={20} />
+          </div>
+          <div>
+            <h3
+              style={{ color: "var(--text-1)", fontSize: "1.05rem", margin: 0 }}
+            >
+              {dialog.title}
+            </h3>
+            <p
+              style={{
+                color: "var(--text-3)",
+                fontSize: "0.88rem",
+                lineHeight: 1.55,
+                margin: "8px 0 0",
+              }}
+            >
+              {dialog.message}
+            </p>
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            justifyContent: "flex-end",
+            flexWrap: "wrap",
+          }}
+        >
+          <button
+            className="btn btn-secondary"
+            disabled={loading}
+            onClick={onCancel}
+          >
+            Отмена
+          </button>
+          <button
+            className="btn btn-primary"
+            disabled={loading}
+            onClick={onConfirm}
+            style={{
+              background: dialog.danger ? "var(--error)" : "var(--fire)",
+            }}
+          >
+            {loading ? "Выполняю..." : dialog.confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ReasonDialog = ({ dialog, loading, onCancel, onConfirm }) => {
+  const [reason, setReason] = useState("");
+
+  useEffect(() => {
+    setReason("");
+  }, [dialog]);
+
+  if (!dialog) return null;
+
+  const trimmedReason = reason.trim();
+
+  return (
+    <div
+      className="modal-overlay"
+      style={{ zIndex: 5000 }}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !loading) onCancel();
+      }}
+    >
+      <div
+        className="modal-content"
+        style={{
+          maxWidth: 480,
+          padding: 22,
+          display: "flex",
+          flexDirection: "column",
+          gap: 16,
+        }}
+      >
+        <div>
+          <h3
+            style={{ color: "var(--text-1)", fontSize: "1.05rem", margin: 0 }}
+          >
+            {dialog.title}
+          </h3>
+          <p
+            style={{
+              color: "var(--text-3)",
+              fontSize: "0.88rem",
+              lineHeight: 1.55,
+              margin: "8px 0 0",
+            }}
+          >
+            {dialog.message}
+          </p>
+        </div>
+
+        <textarea
+          className="form-input"
+          value={reason}
+          onChange={(event) => setReason(event.target.value)}
+          placeholder="Напишите причину отклонения"
+          rows={4}
+          style={{ minHeight: 112, resize: "vertical" }}
+          autoFocus
+        />
+
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            justifyContent: "flex-end",
+            flexWrap: "wrap",
+          }}
+        >
+          <button
+            className="btn btn-secondary"
+            disabled={loading}
+            onClick={onCancel}
+          >
+            Отмена
+          </button>
+          <button
+            className="btn btn-primary"
+            disabled={loading || !trimmedReason}
+            onClick={() => onConfirm(trimmedReason)}
+            style={{ background: "var(--error)" }}
+          >
+            {loading ? "Выполняю..." : dialog.confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const sumValues = (valueMap = {}) =>
+  Object.values(valueMap).reduce((a, b) => a + b, 0);
+
+const Sparkline = ({ points = [], color = "var(--fire)" }) => {
+  const values = points.map((point) => point.count || 0);
+  const max = Math.max(...values, 1);
+  const width = 220;
+  const height = 76;
+  const step = values.length > 1 ? width / (values.length - 1) : width;
+  const line = values
+    .map((value, index) => {
+      const x = index * step;
+      const y = height - 10 - (value / max) * (height - 20);
+      return `${x},${y}`;
+    })
+    .join(" ");
+  const area = line ? `0,${height} ${line} ${width},${height}` : "";
+
+  return (
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      role="img"
+      aria-hidden="true"
+      style={{ width: "100%", height: 76, display: "block", marginTop: 14 }}
+    >
+      <polyline points={area} fill="rgba(255, 107, 53, 0.1)" stroke="none" />
+      <polyline
+        points={line}
+        fill="none"
+        stroke={color}
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {values.map((value, index) => {
+        const x = index * step;
+        const y = height - 10 - (value / max) * (height - 20);
+        return (
+          <circle key={`${index}-${value}`} cx={x} cy={y} r="3" fill={color} />
+        );
+      })}
+    </svg>
+  );
+};
+
+const StatCard = ({ label, value, icon, growth, onClick }) => {
+  const totalGrowth = (growth || []).reduce(
+    (sum, point) => sum + (point.count || 0),
+    0,
+  );
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        ...cardStyle,
+        padding: 18,
+        textAlign: "left",
+        width: "100%",
+        minHeight: 190,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+      }}
+    >
+      <div
+        style={{ display: "flex", justifyContent: "space-between", gap: 12 }}
+      >
+        <div>
+          <div
+            style={{
+              color: "var(--text-3)",
+              fontSize: "0.72rem",
+              fontWeight: 900,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+            }}
+          >
+            {label}
+          </div>
+          <div
+            style={{
+              color: "var(--text-1)",
+              fontSize: "2rem",
+              fontWeight: 950,
+              lineHeight: 1.1,
+              marginTop: 8,
+            }}
+          >
+            {value}
+          </div>
+        </div>
+        <div
+          style={{
+            width: 42,
+            height: 42,
+            borderRadius: "var(--r-sm)",
+            background: "var(--fire-subtle)",
+            color: "var(--fire)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          {icon}
+        </div>
+      </div>
+      <Sparkline points={growth} />
+      <div
+        style={{ color: "var(--text-3)", fontSize: "0.78rem", fontWeight: 700 }}
+      >
+        +{totalGrowth} за последние 14 дней
+      </div>
+    </button>
+  );
+};
+
 const AdminDashboardPage = () => {
   const [activeTab, setActiveTab] = useState("stats");
   const [stats, setStats] = useState(null);
+  const [actionError, setActionError] = useState("");
+
   const [users, setUsers] = useState([]);
   const [usersPage, setUsersPage] = useState(1);
   const [usersTotal, setUsersTotal] = useState(0);
   const [usersLoading, setUsersLoading] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [userDetailsLoading, setUserDetailsLoading] = useState(false);
+  const [roleActionLoading, setRoleActionLoading] = useState(false);
+
   const [orders, setOrders] = useState([]);
   const [ordersPage, setOrdersPage] = useState(1);
   const [ordersTotal, setOrdersTotal] = useState(0);
   const [ordersLoading, setOrdersLoading] = useState(false);
-  const [actionError, setActionError] = useState("");
-  const [ordersStatusFilter, setOrdersStatusFilter] = useState("");
-  const [roleActionLoading, setRoleActionLoading] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+
+  const [restaurants, setRestaurants] = useState([]);
+  const [restaurantsPage, setRestaurantsPage] = useState(1);
+  const [restaurantsTotal, setRestaurantsTotal] = useState(0);
+  const [restaurantsLoading, setRestaurantsLoading] = useState(false);
+  const [selectedRestaurant, setSelectedRestaurant] = useState(null);
+  const [restaurantDetailsLoading, setRestaurantDetailsLoading] =
+    useState(false);
+
+  const [vendors, setVendors] = useState([]);
+  const [vendorsPage, setVendorsPage] = useState(1);
+  const [vendorsTotal, setVendorsTotal] = useState(0);
+  const [vendorsLoading, setVendorsLoading] = useState(false);
+  const [selectedVendor, setSelectedVendor] = useState(null);
+  const [vendorDetailsLoading, setVendorDetailsLoading] = useState(false);
+
+  const [reviews, setReviews] = useState([]);
+  const [reviewsPage, setReviewsPage] = useState(1);
+  const [reviewsTotal, setReviewsTotal] = useState(0);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [finance, setFinance] = useState(null);
+  const [financeLoading, setFinanceLoading] = useState(false);
+  const [userFilters, setUserFilters] = useState({ search: "", role: "" });
+  const [orderFilters, setOrderFilters] = useState({
+    search: "",
+    status: "",
+    date_from: "",
+    date_to: "",
+  });
+  const [restaurantFilters, setRestaurantFilters] = useState({
+    search: "",
+    vendor_search: "",
+    is_open: "",
+    moderation_status: "",
+    min_rating: "",
+  });
+  const [vendorFilters, setVendorFilters] = useState({
+    search: "",
+    approval_status: "",
+  });
+  const [reviewFilters, setReviewFilters] = useState({ rating: "" });
+  const [confirmDialog, setConfirmDialog] = useState(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+  const [reasonDialog, setReasonDialog] = useState(null);
+  const [reasonLoading, setReasonLoading] = useState(false);
+
+  const requestConfirm = (dialog) => setConfirmDialog(dialog);
+  const requestReason = (dialog) => setReasonDialog(dialog);
+
+  const runConfirmAction = async () => {
+    if (!confirmDialog?.onConfirm) return;
+    setConfirmLoading(true);
+    try {
+      await confirmDialog.onConfirm();
+      setConfirmDialog(null);
+    } finally {
+      setConfirmLoading(false);
+    }
+  };
+
+  const runReasonAction = async (reason) => {
+    if (!reasonDialog?.onConfirm) return;
+    setReasonLoading(true);
+    try {
+      await reasonDialog.onConfirm(reason);
+      setReasonDialog(null);
+    } finally {
+      setReasonLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "stats" && !stats) {
+      adminService
+        .getPlatformStats()
+        .then((res) => setStats(res.data.data))
+        .catch(() => setActionError("Не удалось загрузить статистику"));
+    }
+  }, [activeTab, stats]);
+
+  useEffect(() => {
+    if (activeTab !== "users") return;
+    setUsersLoading(true);
+    adminService
+      .getUsers({
+        page: usersPage,
+        size: PAGE_SIZE,
+        search: userFilters.search || undefined,
+        role: userFilters.role || undefined,
+      })
+      .then((res) => {
+        setUsers(res.data.data || []);
+        setUsersTotal(res.data.pagination?.total || 0);
+      })
+      .catch(() => setActionError("Не удалось загрузить пользователей"))
+      .finally(() => setUsersLoading(false));
+  }, [activeTab, usersPage, userFilters]);
+
+  useEffect(() => {
+    if (activeTab !== "orders") return;
+    setOrdersLoading(true);
+    adminService
+      .getOrders({
+        page: ordersPage,
+        size: PAGE_SIZE,
+        status: orderFilters.status || undefined,
+        search: orderFilters.search || undefined,
+        date_from: orderFilters.date_from || undefined,
+        date_to: orderFilters.date_to || undefined,
+      })
+      .then((res) => {
+        setOrders(res.data.data || []);
+        setOrdersTotal(res.data.pagination?.total || 0);
+      })
+      .catch(() => setActionError("Не удалось загрузить заказы"))
+      .finally(() => setOrdersLoading(false));
+  }, [activeTab, ordersPage, orderFilters]);
+
+  useEffect(() => {
+    if (activeTab !== "restaurants") return;
+    setRestaurantsLoading(true);
+    adminService
+      .getRestaurants({
+        page: restaurantsPage,
+        size: PAGE_SIZE,
+        search: restaurantFilters.search || undefined,
+        vendor_search: restaurantFilters.vendor_search || undefined,
+        is_open: restaurantFilters.is_open || undefined,
+        moderation_status: restaurantFilters.moderation_status || undefined,
+        min_rating: restaurantFilters.min_rating || undefined,
+      })
+      .then((res) => {
+        setRestaurants(res.data.data || []);
+        setRestaurantsTotal(res.data.pagination?.total || 0);
+      })
+      .catch(() => setActionError("Не удалось загрузить рестораны"))
+      .finally(() => setRestaurantsLoading(false));
+  }, [activeTab, restaurantsPage, restaurantFilters]);
+
+  useEffect(() => {
+    if (activeTab !== "vendors") return;
+    setVendorsLoading(true);
+    adminService
+      .getVendors({
+        page: vendorsPage,
+        size: PAGE_SIZE,
+        search: vendorFilters.search || undefined,
+        approval_status: vendorFilters.approval_status || undefined,
+      })
+      .then((res) => {
+        setVendors(res.data.data || []);
+        setVendorsTotal(res.data.pagination?.total || 0);
+      })
+      .catch(() => setActionError("Не удалось загрузить вендоров"))
+      .finally(() => setVendorsLoading(false));
+  }, [activeTab, vendorsPage, vendorFilters]);
+
+  useEffect(() => {
+    if (activeTab !== "reviews") return;
+    setReviewsLoading(true);
+    adminService
+      .getReviews({
+        page: reviewsPage,
+        size: PAGE_SIZE,
+        rating: reviewFilters.rating || undefined,
+      })
+      .then((res) => {
+        setReviews(res.data.data || []);
+        setReviewsTotal(res.data.pagination?.total || 0);
+      })
+      .catch(() => setActionError("Не удалось загрузить отзывы"))
+      .finally(() => setReviewsLoading(false));
+  }, [activeTab, reviewsPage, reviewFilters]);
+
+  useEffect(() => {
+    if (activeTab !== "finance") return;
+    setFinanceLoading(true);
+    adminService
+      .getFinance()
+      .then((res) => setFinance(res.data.data))
+      .catch(() => setActionError("Не удалось загрузить финансовую аналитику"))
+      .finally(() => setFinanceLoading(false));
+  }, [activeTab]);
 
   const loadUserDetails = async (id) => {
     setUserDetailsLoading(true);
@@ -64,53 +696,207 @@ const AdminDashboardPage = () => {
     }
   };
 
-  useEffect(() => {
-    if (activeTab === "stats" && !stats) {
-      adminService
-        .getPlatformStats()
-        .then((res) => setStats(res.data.data))
-        .catch(() => {});
-    }
-  }, [activeTab, stats]);
-
-  useEffect(() => {
-    if (activeTab === "users") {
-      setUsersLoading(true);
-      adminService
-        .getUsers({ page: usersPage, size: 20 })
-        .then((res) => {
-          setUsers(res.data.data || []);
-          setUsersTotal(res.data.pagination?.total || 0);
-        })
-        .catch(() => {})
-        .finally(() => setUsersLoading(false));
-    }
-  }, [activeTab, usersPage]);
-
-  const handleDeleteUser = async (id) => {
-    if (!window.confirm("Заблокировать пользователя?")) return;
+  const loadRestaurantDetails = async (id) => {
+    setRestaurantDetailsLoading(true);
     setActionError("");
     try {
-      await adminService.deleteUser(id);
-      setUsers((prev) => prev.filter((u) => u.id !== id));
+      const res = await adminService.getRestaurant(id);
+      setSelectedRestaurant(res.data.data);
     } catch {
-      setActionError("Не удалось удалить пользователя");
+      setActionError("Не удалось загрузить детали ресторана");
+    } finally {
+      setRestaurantDetailsLoading(false);
     }
   };
 
-  const handleMakeAdmin = async (userId) => {
-    setRoleActionLoading(true);
+  const loadVendorDetails = async (id) => {
+    setVendorDetailsLoading(true);
     setActionError("");
     try {
-      await adminService.makeAdmin(userId);
-      setSelectedUser((prev) =>
-        prev ? { ...prev, user_role: "ADMIN" } : prev,
-      );
+      const res = await adminService.getVendor(id);
+      setSelectedVendor(res.data.data);
     } catch {
-      setActionError("Не удалось изменить роль");
+      setActionError("Не удалось загрузить детали вендора");
     } finally {
-      setRoleActionLoading(false);
+      setVendorDetailsLoading(false);
     }
+  };
+
+  const handleDeleteUser = async (id) => {
+    requestConfirm({
+      title: "Заблокировать пользователя?",
+      message:
+        "Пользователь больше не сможет пользоваться аккаунтом, пока вы его не разблокируете.",
+      confirmLabel: "Заблокировать",
+      danger: true,
+      onConfirm: async () => {
+        setActionError("");
+        try {
+          await adminService.deleteUser(id);
+          setUsers((prev) =>
+            prev.map((u) => (u.id === id ? { ...u, is_active: false } : u)),
+          );
+          setSelectedUser((prev) =>
+            prev?.id === id ? { ...prev, is_active: false } : prev,
+          );
+        } catch {
+          setActionError("Не удалось заблокировать пользователя");
+        }
+      },
+    });
+  };
+
+  const handleMakeAdmin = async (userId) => {
+    requestConfirm({
+      title: "Сделать пользователя админом?",
+      message:
+        "Точно ли вы хотите дать этому пользователю права администратора?",
+      confirmLabel: "Сделать админом",
+      onConfirm: async () => {
+        setRoleActionLoading(true);
+        setActionError("");
+        try {
+          await adminService.makeAdmin(userId);
+          setSelectedUser((prev) =>
+            prev ? { ...prev, user_role: "ADMIN" } : prev,
+          );
+        } catch {
+          setActionError("Не удалось изменить роль");
+        } finally {
+          setRoleActionLoading(false);
+        }
+      },
+    });
+  };
+
+  const handleDeleteRestaurant = async (restaurantId) => {
+    requestConfirm({
+      title: "Удалить ресторан?",
+      message:
+        "Точно ли вы хотите удалить ресторан? Он пропадёт из активных списков и будет закрыт.",
+      confirmLabel: "Удалить ресторан",
+      danger: true,
+      onConfirm: async () => {
+        setActionError("");
+        try {
+          await adminService.deleteRestaurant(restaurantId);
+          setRestaurants((prev) =>
+            prev.filter((item) => item.id !== restaurantId),
+          );
+          setSelectedRestaurant(null);
+          setStats(null);
+        } catch {
+          setActionError("Не удалось удалить ресторан");
+        }
+      },
+    });
+  };
+
+  const handleDeleteVendor = async (vendorId) => {
+    requestConfirm({
+      title: "Удалить вендора?",
+      message:
+        "Точно ли вы хотите удалить вендора? Его рестораны будут скрыты.",
+      confirmLabel: "Удалить вендора",
+      danger: true,
+      onConfirm: async () => {
+        setActionError("");
+        try {
+          await adminService.deleteVendor(vendorId);
+          setVendors((prev) => prev.filter((item) => item.id !== vendorId));
+          setSelectedVendor(null);
+          setStats(null);
+        } catch {
+          setActionError("Не удалось удалить вендора");
+        }
+      },
+    });
+  };
+
+  const handleDeleteReview = async (reviewId) => {
+    requestConfirm({
+      title: "Удалить отзыв?",
+      message:
+        "Точно ли вы хотите удалить отзыв? Он исчезнет из карточки ресторана.",
+      confirmLabel: "Удалить отзыв",
+      danger: true,
+      onConfirm: async () => {
+        setActionError("");
+        try {
+          await adminService.deleteReview(reviewId);
+          setReviews((prev) => prev.filter((item) => item.id !== reviewId));
+          setReviewsTotal((prev) => Math.max(0, prev - 1));
+        } catch {
+          setActionError("Не удалось удалить отзыв");
+        }
+      },
+    });
+  };
+
+  const refreshSelectedRestaurant = (data) => {
+    setSelectedRestaurant(data);
+    setRestaurants((prev) =>
+      prev.map((item) => (item.id === data.id ? data : item)),
+    );
+  };
+
+  const refreshSelectedVendor = (data) => {
+    setSelectedVendor(data);
+    setVendors((prev) =>
+      prev.map((item) => (item.id === data.id ? data : item)),
+    );
+  };
+
+  const handleApproveRestaurant = async (restaurantId) => {
+    try {
+      const res = await adminService.approveRestaurant(restaurantId);
+      refreshSelectedRestaurant(res.data.data);
+    } catch {
+      setActionError("Не удалось одобрить ресторан");
+    }
+  };
+
+  const handleRejectRestaurant = (restaurantId) => {
+    requestReason({
+      title: "Отклонить ресторан",
+      message:
+        "Укажите причину. Вендор увидит, что нужно исправить перед повторной проверкой.",
+      confirmLabel: "Отклонить",
+      onConfirm: async (reason) => {
+        try {
+          const res = await adminService.rejectRestaurant(restaurantId, reason);
+          refreshSelectedRestaurant(res.data.data);
+        } catch {
+          setActionError("Не удалось отклонить ресторан");
+        }
+      },
+    });
+  };
+
+  const handleApproveVendor = async (vendorId) => {
+    try {
+      const res = await adminService.approveVendor(vendorId);
+      refreshSelectedVendor(res.data.data);
+    } catch {
+      setActionError("Не удалось одобрить вендора");
+    }
+  };
+
+  const handleRejectVendor = (vendorId) => {
+    requestReason({
+      title: "Отклонить вендора",
+      message:
+        "Укажите причину отказа, чтобы заявка не выглядела как молчаливый отказ.",
+      confirmLabel: "Отклонить",
+      onConfirm: async (reason) => {
+        try {
+          const res = await adminService.rejectVendor(vendorId, reason);
+          refreshSelectedVendor(res.data.data);
+        } catch {
+          setActionError("Не удалось отклонить вендора");
+        }
+      },
+    });
   };
 
   const handleActivateUser = async (userId) => {
@@ -119,6 +905,9 @@ const AdminDashboardPage = () => {
     try {
       await adminService.activateUser(userId);
       setSelectedUser((prev) => (prev ? { ...prev, is_active: true } : prev));
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, is_active: true } : u)),
+      );
     } catch {
       setActionError("Не удалось разблокировать пользователя");
     } finally {
@@ -126,48 +915,24 @@ const AdminDashboardPage = () => {
     }
   };
 
-  useEffect(() => {
-    if (activeTab === "orders") {
-      setOrdersLoading(true);
-      adminService
-        .getOrders({
-          page: ordersPage,
-          size: 20,
-          status: ordersStatusFilter || undefined,
-        })
-        .then((res) => {
-          setOrders(res.data.data || []);
-          setOrdersTotal(res.data.pagination?.total || 0);
-        })
-        .catch(() => {})
-        .finally(() => setOrdersLoading(false));
-    }
-  }, [activeTab, ordersPage, ordersStatusFilter]);
+  const tabs = [
+    { id: "stats", label: "Статистика", icon: <ChartLineUp size={18} /> },
+    { id: "users", label: "Пользователи", icon: <UsersThree size={18} /> },
+    { id: "orders", label: "Заказы", icon: <Package size={18} /> },
+    { id: "restaurants", label: "Рестораны", icon: <Storefront size={18} /> },
+    { id: "vendors", label: "Вендоры", icon: <UsersThree size={18} /> },
+    { id: "reviews", label: "Отзывы", icon: <Star size={18} /> },
+    { id: "finance", label: "Финансы", icon: <ChartLineUp size={18} /> },
+  ];
 
   return (
     <div
       className="page-enter"
-      style={{ padding: "80px 20px 100px", maxWidth: 600, margin: "0 auto" }}
+      style={{ padding: "80px 20px 100px", maxWidth: 980, margin: "0 auto" }}
     >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          marginBottom: 24,
-        }}
-      >
-        <h1
-          style={{
-            fontSize: "1.5rem",
-            fontWeight: 800,
-            margin: 0,
-            letterSpacing: "-0.03em",
-          }}
-        >
-          Панель Администратора
-        </h1>
-      </div>
+      <h1 style={{ fontSize: "1.55rem", fontWeight: 900, margin: "0 0 20px" }}>
+        Панель администратора
+      </h1>
 
       {actionError && (
         <div className="form-error" style={{ marginBottom: 16 }}>
@@ -184,15 +949,7 @@ const AdminDashboardPage = () => {
           paddingBottom: 4,
         }}
       >
-        {[
-          { id: "stats", label: "Статистика", icon: <ChartLineUp size={18} /> },
-          {
-            id: "users",
-            label: "Пользователи",
-            icon: <UsersThree size={18} />,
-          },
-          { id: "orders", label: "Заказы", icon: <Package size={18} /> },
-        ].map((tab) => (
+        {tabs.map((tab) => (
           <button
             key={tab.id}
             className={`category-chip ${activeTab === tab.id ? "active" : ""}`}
@@ -212,92 +969,293 @@ const AdminDashboardPage = () => {
 
       {activeTab === "stats" && stats && (
         <div
-          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: 12,
+          }}
         >
-          <div className="admin-stat-card">
-            <UsersThree size={20} color="var(--text-3)" />
-            <div className="admin-stat-label">Пользователи</div>
-            <div className="admin-stat-value">
-              {Object.values(stats.users_by_role || {}).reduce(
-                (a, b) => a + b,
-                0,
-              )}
-            </div>
-          </div>
-          <div className="admin-stat-card">
-            <Storefront size={20} color="var(--text-3)" />
-            <div className="admin-stat-label">Рестораны</div>
-            <div className="admin-stat-value">{stats.total_restaurants}</div>
-          </div>
-          <div className="admin-stat-card" style={{ gridColumn: "1 / -1" }}>
-            <Package size={20} color="var(--fire)" />
-            <div className="admin-stat-label">Всего заказов</div>
-            <div className="admin-stat-value" style={{ color: "var(--fire)" }}>
-              {Object.values(stats.orders_by_status || {}).reduce(
-                (a, b) => a + b,
-                0,
-              )}
-            </div>
-          </div>
+          <StatCard
+            label="Пользователи"
+            value={sumValues(stats.users_by_role)}
+            icon={<UsersThree size={22} />}
+            growth={stats.growth?.users}
+            onClick={() => setActiveTab("users")}
+          />
+          <StatCard
+            label="Рестораны"
+            value={stats.total_restaurants || 0}
+            icon={<Storefront size={22} />}
+            growth={stats.growth?.restaurants}
+            onClick={() => setActiveTab("restaurants")}
+          />
+          <StatCard
+            label="Заказы"
+            value={sumValues(stats.orders_by_status)}
+            icon={<Package size={22} />}
+            growth={stats.growth?.orders}
+            onClick={() => setActiveTab("orders")}
+          />
+          <StatCard
+            label="Вендоры"
+            value={stats.total_vendors || 0}
+            icon={<UsersThree size={22} />}
+            growth={stats.growth?.vendors}
+            onClick={() => setActiveTab("vendors")}
+          />
         </div>
+      )}
+
+      {activeTab === "finance" && (
+        <ListSection
+          loading={financeLoading}
+          emptyTitle="Финансовых данных пока нет"
+        >
+          {finance && (
+            <>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                  gap: 12,
+                }}
+              >
+                <DetailField label="Средний чек">
+                  {finance.average_check} ₽
+                </DetailField>
+                <DetailField label="Всего заказов">
+                  {finance.total_orders}
+                </DetailField>
+                <DetailField label="Выдано">
+                  {finance.completed_orders}
+                </DetailField>
+                <DetailField label="Отменено">
+                  {finance.cancelled_orders}
+                </DetailField>
+                <DetailField label="Конверсия">
+                  {finance.conversion_percent}%
+                </DetailField>
+              </div>
+              <div style={{ ...cardStyle, padding: 18 }}>
+                <div style={{ color: "var(--text-1)", fontWeight: 900 }}>
+                  Выручка по дням
+                </div>
+                <Sparkline
+                  points={(finance.revenue_by_day || []).map((point) => ({
+                    count: point.value,
+                  }))}
+                />
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 12,
+                }}
+              >
+                <div style={{ ...cardStyle, padding: 18 }}>
+                  <div
+                    style={{
+                      color: "var(--text-1)",
+                      fontWeight: 900,
+                      marginBottom: 12,
+                    }}
+                  >
+                    Топ ресторанов
+                  </div>
+                  {(finance.top_restaurants || []).map((item) => (
+                    <div
+                      key={item.restaurant_id}
+                      style={{ color: "var(--text-2)", marginBottom: 8 }}
+                    >
+                      {item.name}: <b>{item.revenue} ₽</b> · {item.orders_count}{" "}
+                      заказов
+                    </div>
+                  ))}
+                </div>
+                <div style={{ ...cardStyle, padding: 18 }}>
+                  <div
+                    style={{
+                      color: "var(--text-1)",
+                      fontWeight: 900,
+                      marginBottom: 12,
+                    }}
+                  >
+                    Топ блюд
+                  </div>
+                  {(finance.top_items || []).map((item) => (
+                    <div
+                      key={item.menu_item_id}
+                      style={{ color: "var(--text-2)", marginBottom: 8 }}
+                    >
+                      {item.name}: <b>{item.quantity} шт.</b> · {item.revenue} ₽
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+        </ListSection>
       )}
 
       {activeTab === "users" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {usersLoading ? (
-            <div className="loading-center">
-              <div className="spinner" />
-            </div>
-          ) : (
-            <>
-              {users.map((u) => (
-                <div key={u.id} className="admin-list-item">
-                  <div
-                    style={{ display: "flex", alignItems: "center", gap: 12 }}
-                  >
-                    <UserCircle size={40} weight="thin" color="var(--text-3)" />
-                    <div>
-                      <div style={{ fontWeight: 700 }}>
-                        {u.name || "Без имени"}
-                      </div>
-                      <div
-                        style={{ fontSize: "0.8rem", color: "var(--text-3)" }}
-                      >
-                        {u.phone_number || "Нет телефона"}
-                      </div>
-                      <span className="role-tag">{u.user_role}</span>
-                    </div>
+        <ListSection loading={usersLoading} emptyTitle="Пользователей пока нет">
+          <div style={wideFilterGridStyle}>
+            <input
+              className="form-input"
+              style={filterControlStyle}
+              placeholder="Поиск по имени или телефону"
+              value={userFilters.search}
+              onChange={(event) => {
+                setUsersPage(1);
+                setUserFilters((prev) => ({
+                  ...prev,
+                  search: event.target.value,
+                }));
+              }}
+            />
+            <select
+              className="form-input"
+              style={selectFilterStyle}
+              value={userFilters.role}
+              onChange={(event) => {
+                setUsersPage(1);
+                setUserFilters((prev) => ({
+                  ...prev,
+                  role: event.target.value,
+                }));
+              }}
+            >
+              <option value="">Все роли</option>
+              <option value="CUSTOMER">CUSTOMER</option>
+              <option value="VENDOR">VENDOR</option>
+              <option value="STAFF">STAFF</option>
+              <option value="ADMIN">ADMIN</option>
+            </select>
+          </div>
+          {users.map((u) => (
+            <div
+              key={u.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => loadUserDetails(u.id)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  loadUserDetails(u.id);
+                }
+              }}
+              style={{
+                ...cardStyle,
+                padding: 16,
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 14,
+                alignItems: "center",
+                cursor: "pointer",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  minWidth: 0,
+                }}
+              >
+                <UserCircle size={40} weight="thin" color="var(--text-3)" />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 800, color: "var(--text-1)" }}>
+                    {u.name || "Без имени"}
                   </div>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <button
-                      className="btn-icon-sm"
-                      onClick={() => loadUserDetails(u.id)}
-                      title="Подробнее"
+                  <div style={{ fontSize: "0.8rem", color: "var(--text-3)" }}>
+                    {u.phone_number || "Нет телефона"}
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 6,
+                      marginTop: 6,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <span className="order-status-badge pending">
+                      {u.user_role}
+                    </span>
+                    <span
+                      className={`order-status-badge ${u.is_active ? "ready" : "cancelled"}`}
                     >
-                      <Info size={18} />
-                    </button>
-                    <button
-                      className="btn-icon-sm danger"
-                      onClick={() => handleDeleteUser(u.id)}
-                      title="Удалить"
-                    >
-                      <Trash size={18} />
-                    </button>
+                      {u.is_active ? "Активен" : "Заблокирован"}
+                    </span>
                   </div>
                 </div>
-              ))}
-              <Pagination
-                page={usersPage}
-                totalPages={Math.ceil(usersTotal / 20)}
-                onPageChange={setUsersPage}
-              />
-            </>
-          )}
-        </div>
+              </div>
+              <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    handleDeleteUser(u.id);
+                  }}
+                  title="Заблокировать"
+                  style={{ color: "var(--error)" }}
+                >
+                  <Trash size={16} />
+                </button>
+              </div>
+            </div>
+          ))}
+          <Pagination
+            page={usersPage}
+            totalPages={Math.ceil(usersTotal / PAGE_SIZE)}
+            onPageChange={setUsersPage}
+          />
+        </ListSection>
       )}
 
       {activeTab === "orders" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <ListSection loading={ordersLoading} emptyTitle="Заказов пока нет">
+          <div style={wideFilterGridStyle}>
+            <input
+              className="form-input"
+              style={filterControlStyle}
+              placeholder="Клиент, телефон или ресторан"
+              value={orderFilters.search}
+              onChange={(event) => {
+                setOrdersPage(1);
+                setOrderFilters((prev) => ({
+                  ...prev,
+                  search: event.target.value,
+                }));
+              }}
+            />
+            <input
+              className="form-input"
+              style={filterControlStyle}
+              type="date"
+              value={orderFilters.date_from}
+              onChange={(event) => {
+                setOrdersPage(1);
+                setOrderFilters((prev) => ({
+                  ...prev,
+                  date_from: event.target.value,
+                }));
+              }}
+            />
+            <input
+              className="form-input"
+              style={filterControlStyle}
+              type="date"
+              value={orderFilters.date_to}
+              onChange={(event) => {
+                setOrdersPage(1);
+                setOrderFilters((prev) => ({
+                  ...prev,
+                  date_to: event.target.value,
+                }));
+              }}
+            />
+          </div>
           <div
             style={{
               display: "flex",
@@ -307,19 +1265,20 @@ const AdminDashboardPage = () => {
             }}
           >
             {[
-              { key: "", label: "Все" },
-              { key: "PENDING", label: "Новые" },
-              { key: "COOKING", label: "Готовятся" },
-              { key: "READY", label: "Готовы" },
-              { key: "COMPLETED", label: "Выданы" },
-              { key: "CANCELLED", label: "Отменены" },
-            ].map(({ key, label }) => (
+              ["", "Все"],
+              ["PENDING", "Новые"],
+              ["ACCEPTED", "Принятые"],
+              ["COOKING", "Готовятся"],
+              ["READY", "Готовы"],
+              ["COMPLETED", "Выданы"],
+              ["CANCELLED", "Отменены"],
+            ].map(([key, label]) => (
               <button
                 key={key}
-                className={`category-chip${ordersStatusFilter === key ? " active" : ""}`}
-                style={{ fontSize: "0.78rem", padding: "4px 12px" }}
+                className={`category-chip${orderFilters.status === key ? " active" : ""}`}
+                style={{ fontSize: "0.78rem", padding: "6px 12px" }}
                 onClick={() => {
-                  setOrdersStatusFilter(key);
+                  setOrderFilters((prev) => ({ ...prev, status: key }));
                   setOrdersPage(1);
                 }}
               >
@@ -327,160 +1286,704 @@ const AdminDashboardPage = () => {
               </button>
             ))}
           </div>
-          {ordersLoading ? (
-            <div className="loading-center">
-              <div className="spinner" />
-            </div>
-          ) : (
-            <>
-              {orders.map((o) => {
-                const cfg = STATUS_MAP[o.status] || {
-                  label: o.status,
-                  className: "pending",
-                  icon: <Package />,
-                };
-                return (
-                  <div
-                    key={o.id}
-                    className="admin-list-item"
-                    style={{
-                      flexDirection: "column",
-                      alignItems: "flex-start",
-                    }}
-                  >
+          {orders.map((o) => {
+            const cfg = STATUS_MAP[o.status] || {
+              label: o.status,
+              className: "pending",
+              icon: <Package />,
+            };
+            return (
+              <button
+                key={o.id}
+                type="button"
+                onClick={() => setSelectedOrder(o)}
+                style={{
+                  ...cardStyle,
+                  padding: 16,
+                  textAlign: "left",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                  width: "100%",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    alignItems: "flex-start",
+                  }}
+                >
+                  <div>
                     <div
                       style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        width: "100%",
-                        marginBottom: 8,
+                        color: "var(--text-3)",
+                        fontSize: "0.74rem",
+                        fontWeight: 800,
                       }}
                     >
-                      <span style={{ fontWeight: 700 }}>
-                        #{o.id.slice(0, 8)}
-                      </span>
-                      <span
-                        className={`order-status-badge ${cfg.className}`}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 4,
-                        }}
-                      >
-                        {cfg.icon} {cfg.label}
-                      </span>
+                      Заказ #{orderTitle(o)}
                     </div>
                     <div
-                      style={{ fontSize: "0.85rem", color: "var(--text-3)" }}
+                      style={{
+                        color: "var(--text-1)",
+                        fontWeight: 900,
+                        fontSize: "1.05rem",
+                        marginTop: 2,
+                      }}
                     >
-                      Сумма: <b>{o.total_price} ₽</b> • ID заведения:{" "}
-                      {o.restaurant_id.slice(0, 8)}
+                      {o.total_price} ₽
                     </div>
                   </div>
-                );
-              })}
-              <Pagination
-                page={ordersPage}
-                totalPages={Math.ceil(ordersTotal / 20)}
-                onPageChange={setOrdersPage}
-              />
-            </>
-          )}
-        </div>
+                  <span className={`order-status-badge ${cfg.className}`}>
+                    {cfg.icon} {cfg.label}
+                  </span>
+                </div>
+                <div style={{ color: "var(--text-3)", fontSize: "0.84rem" }}>
+                  Клиент:{" "}
+                  <b style={{ color: "var(--text-2)" }}>
+                    {o.customer_name || o.customer_phone || shortId(o.user_id)}
+                  </b>{" "}
+                  · Заведение: {shortId(o.restaurant_id)}
+                </div>
+                {o.items?.length > 0 && (
+                  <div style={{ color: "var(--text-3)", fontSize: "0.78rem" }}>
+                    {o.items
+                      .slice(0, 3)
+                      .map(
+                        (item) =>
+                          `${item.menu_item_name ?? "Позиция"} ×${item.quantity}`,
+                      )
+                      .join(", ")}
+                    {o.items.length > 3 ? "..." : ""}
+                  </div>
+                )}
+              </button>
+            );
+          })}
+          <Pagination
+            page={ordersPage}
+            totalPages={Math.ceil(ordersTotal / PAGE_SIZE)}
+            onPageChange={setOrdersPage}
+          />
+        </ListSection>
       )}
 
-      {selectedUser && (
-        <div className="modal-overlay" onClick={() => setSelectedUser(null)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 style={{ margin: 0 }}>Детали профиля</h3>
-              <button
-                className="close-btn"
-                onClick={() => setSelectedUser(null)}
-              >
-                <X size={20} />
-              </button>
-            </div>
-            {userDetailsLoading ? (
-              <div className="loading-center">
-                <div className="spinner" />
-              </div>
-            ) : (
-              <div className="modal-body">
-                <div className="detail-item">
-                  <label>ID пользователя</label>
-                  <code>{selectedUser.id}</code>
+      {activeTab === "restaurants" && (
+        <ListSection
+          loading={restaurantsLoading}
+          emptyTitle="Ресторанов пока нет"
+        >
+          <div style={filterGridStyle}>
+            <input
+              className="form-input"
+              style={filterControlStyle}
+              placeholder="Ресторан"
+              value={restaurantFilters.search}
+              onChange={(event) => {
+                setRestaurantsPage(1);
+                setRestaurantFilters((prev) => ({
+                  ...prev,
+                  search: event.target.value,
+                }));
+              }}
+            />
+            <input
+              className="form-input"
+              style={filterControlStyle}
+              placeholder="Вендор или телефон"
+              value={restaurantFilters.vendor_search}
+              onChange={(event) => {
+                setRestaurantsPage(1);
+                setRestaurantFilters((prev) => ({
+                  ...prev,
+                  vendor_search: event.target.value,
+                }));
+              }}
+            />
+            <select
+              className="form-input"
+              style={selectFilterStyle}
+              value={restaurantFilters.is_open}
+              onChange={(event) => {
+                setRestaurantsPage(1);
+                setRestaurantFilters((prev) => ({
+                  ...prev,
+                  is_open: event.target.value,
+                }));
+              }}
+            >
+              <option value="">Любой статус</option>
+              <option value="true">Открыт</option>
+              <option value="false">Закрыт</option>
+            </select>
+            <select
+              className="form-input"
+              style={selectFilterStyle}
+              value={restaurantFilters.moderation_status}
+              onChange={(event) => {
+                setRestaurantsPage(1);
+                setRestaurantFilters((prev) => ({
+                  ...prev,
+                  moderation_status: event.target.value,
+                }));
+              }}
+            >
+              <option value="">Модерация</option>
+              <option value="PENDING">На проверке</option>
+              <option value="APPROVED">Одобрен</option>
+              <option value="REJECTED">Отклонён</option>
+            </select>
+            <select
+              className="form-input"
+              style={selectFilterStyle}
+              value={restaurantFilters.min_rating}
+              onChange={(event) => {
+                setRestaurantsPage(1);
+                setRestaurantFilters((prev) => ({
+                  ...prev,
+                  min_rating: event.target.value,
+                }));
+              }}
+            >
+              <option value="">Любой рейтинг</option>
+              <option value="4">★ от 4</option>
+              <option value="3">★ от 3</option>
+              <option value="2">★ от 2</option>
+            </select>
+          </div>
+          {restaurants.map((restaurant) => (
+            <button
+              key={restaurant.id}
+              type="button"
+              onClick={() => loadRestaurantDetails(restaurant.id)}
+              style={{
+                ...cardStyle,
+                padding: 16,
+                width: "100%",
+                textAlign: "left",
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 14,
+              }}
+            >
+              <div>
+                <div style={{ color: "var(--text-1)", fontWeight: 900 }}>
+                  {restaurant.name}
                 </div>
-                <div className="detail-item">
-                  <label>Имя</label>
-                  <div className="detail-value">{selectedUser.name || "—"}</div>
-                </div>
-                <div className="detail-item">
-                  <label>Телефон</label>
-                  <div className="detail-value">
-                    {selectedUser.phone_number}
-                  </div>
+                <div
+                  style={{
+                    color: "var(--text-3)",
+                    fontSize: "0.84rem",
+                    marginTop: 4,
+                  }}
+                >
+                  {restaurant.address}
                 </div>
                 <div
                   style={{
                     display: "flex",
-                    gap: 20,
-                    borderTop: "1px solid var(--border)",
-                    paddingTop: 16,
+                    gap: 6,
+                    marginTop: 8,
+                    flexWrap: "wrap",
                   }}
                 >
-                  <div style={{ flex: 1 }}>
-                    <label>Роль</label>
-                    <div className="order-status-badge pending">
-                      {selectedUser.user_role}
-                    </div>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <label>Статус</label>
-                    <div
-                      className={`order-status-badge ${selectedUser.is_active ? "ready" : "preparing"}`}
-                    >
-                      {selectedUser.is_active ? "Активен" : "Заблокирован"}
-                    </div>
-                  </div>
+                  <span
+                    className={`order-status-badge ${restaurant.is_open ? "ready" : "cancelled"}`}
+                  >
+                    {restaurant.is_open ? "Открыт" : "Закрыт"}
+                  </span>
+                  <span
+                    className={`order-status-badge ${restaurant.is_hiring ? "pending" : "cancelled"}`}
+                  >
+                    {restaurant.is_hiring ? "Нанимает" : "Не нанимает"}
+                  </span>
                 </div>
-                {selectedUser.user_role !== "ADMIN" && (
-                  <button
-                    className="btn btn-secondary"
+              </div>
+              <div
+                style={{
+                  color: "var(--text-3)",
+                  fontSize: "0.82rem",
+                  textAlign: "right",
+                }}
+              >
+                {restaurant.orders_count || 0} заказов
+                <br />★ {restaurant.average_rating || 0}
+              </div>
+            </button>
+          ))}
+          <Pagination
+            page={restaurantsPage}
+            totalPages={Math.ceil(restaurantsTotal / PAGE_SIZE)}
+            onPageChange={setRestaurantsPage}
+          />
+        </ListSection>
+      )}
+
+      {activeTab === "vendors" && (
+        <ListSection loading={vendorsLoading} emptyTitle="Вендоров пока нет">
+          <div style={wideFilterGridStyle}>
+            <input
+              className="form-input"
+              style={filterControlStyle}
+              placeholder="Вендор или телефон"
+              value={vendorFilters.search}
+              onChange={(event) => {
+                setVendorsPage(1);
+                setVendorFilters((prev) => ({
+                  ...prev,
+                  search: event.target.value,
+                }));
+              }}
+            />
+            <select
+              className="form-input"
+              style={selectFilterStyle}
+              value={vendorFilters.approval_status}
+              onChange={(event) => {
+                setVendorsPage(1);
+                setVendorFilters((prev) => ({
+                  ...prev,
+                  approval_status: event.target.value,
+                }));
+              }}
+            >
+              <option value="">Все статусы</option>
+              <option value="PENDING">На проверке</option>
+              <option value="APPROVED">Одобрен</option>
+              <option value="REJECTED">Отклонён</option>
+            </select>
+          </div>
+          {vendors.map((vendor) => (
+            <button
+              key={vendor.id}
+              type="button"
+              onClick={() => loadVendorDetails(vendor.id)}
+              style={{
+                ...cardStyle,
+                padding: 16,
+                width: "100%",
+                textAlign: "left",
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 14,
+              }}
+            >
+              <div>
+                <div style={{ color: "var(--text-1)", fontWeight: 900 }}>
+                  {vendor.name || "Вендор без имени"}
+                </div>
+                <div
+                  style={{
+                    color: "var(--text-3)",
+                    fontSize: "0.84rem",
+                    marginTop: 4,
+                  }}
+                >
+                  {vendor.phone_number || "Нет телефона"}
+                </div>
+                {vendor.description && (
+                  <div
                     style={{
-                      marginTop: 12,
-                      width: "100%",
-                      fontSize: "0.85rem",
-                    }}
-                    disabled={roleActionLoading}
-                    onClick={() => handleMakeAdmin(selectedUser.id)}
-                  >
-                    {roleActionLoading
-                      ? "Применяю..."
-                      : "Сделать администратором"}
-                  </button>
-                )}
-                {!selectedUser.is_active && (
-                  <button
-                    className="btn btn-secondary"
-                    style={{
+                      color: "var(--text-3)",
+                      fontSize: "0.78rem",
                       marginTop: 8,
-                      width: "100%",
-                      fontSize: "0.85rem",
-                      borderColor: "#22c55e",
-                      color: "#22c55e",
+                      maxWidth: 540,
                     }}
-                    disabled={roleActionLoading}
-                    onClick={() => handleActivateUser(selectedUser.id)}
                   >
-                    {roleActionLoading ? "Применяю..." : "Разблокировать"}
-                  </button>
+                    {vendor.description}
+                  </div>
                 )}
               </div>
+              <span className="order-status-badge pending">
+                {vendor.restaurants_count || 0} заведений
+              </span>
+            </button>
+          ))}
+          <Pagination
+            page={vendorsPage}
+            totalPages={Math.ceil(vendorsTotal / PAGE_SIZE)}
+            onPageChange={setVendorsPage}
+          />
+        </ListSection>
+      )}
+
+      {activeTab === "reviews" && (
+        <ListSection loading={reviewsLoading} emptyTitle="Отзывов пока нет">
+          <select
+            className="form-input"
+            style={{ ...selectFilterStyle, maxWidth: 220 }}
+            value={reviewFilters.rating}
+            onChange={(event) => {
+              setReviewsPage(1);
+              setReviewFilters({ rating: event.target.value });
+            }}
+          >
+            <option value="">Любой рейтинг</option>
+            {[5, 4, 3, 2, 1].map((rating) => (
+              <option key={rating} value={rating}>
+                ★ {rating}
+              </option>
+            ))}
+          </select>
+          {reviews.map((review) => (
+            <div
+              key={review.id}
+              style={{
+                ...cardStyle,
+                padding: 16,
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 14,
+                alignItems: "flex-start",
+              }}
+            >
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <span style={{ color: "var(--text-1)", fontWeight: 900 }}>
+                    {review.restaurant_name || shortId(review.restaurant_id)}
+                  </span>
+                  <span className="order-status-badge pending">
+                    ★ {review.rating}
+                  </span>
+                  {review.is_verified_purchase && (
+                    <span className="order-status-badge ready">
+                      Покупка подтверждена
+                    </span>
+                  )}
+                </div>
+                <div
+                  style={{
+                    color: "var(--text-3)",
+                    fontSize: "0.82rem",
+                    marginTop: 6,
+                  }}
+                >
+                  {review.user_name ||
+                    review.user_phone ||
+                    shortId(review.user_id)}{" "}
+                  · {formatDateTime(review.created_at)}
+                </div>
+                <div
+                  style={{
+                    color: "var(--text-2)",
+                    fontSize: "0.9rem",
+                    marginTop: 10,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {review.text || "Без текста"}
+                </div>
+              </div>
+              <button
+                className="btn btn-secondary btn-sm"
+                onClick={() => handleDeleteReview(review.id)}
+                title="Удалить отзыв"
+                style={{ color: "var(--error)", flexShrink: 0 }}
+              >
+                <Trash size={16} />
+              </button>
+            </div>
+          ))}
+          <Pagination
+            page={reviewsPage}
+            totalPages={Math.ceil(reviewsTotal / PAGE_SIZE)}
+            onPageChange={setReviewsPage}
+          />
+        </ListSection>
+      )}
+
+      {selectedUser && (
+        <DetailModal
+          title={selectedUser.name || "Пользователь"}
+          subtitle="Детали профиля"
+          loading={userDetailsLoading}
+          onClose={() => setSelectedUser(null)}
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+              gap: 10,
+            }}
+          >
+            <DetailField label="ID" mono>
+              {selectedUser.id}
+            </DetailField>
+            <DetailField label="Имя">{selectedUser.name}</DetailField>
+            <DetailField label="Телефон">
+              {selectedUser.phone_number}
+            </DetailField>
+            <DetailField label="Создан">
+              {formatDateTime(selectedUser.created_at)}
+            </DetailField>
+            <DetailField label="Роль">
+              <span className="order-status-badge pending">
+                {selectedUser.user_role}
+              </span>
+            </DetailField>
+            <DetailField label="Статус">
+              <span
+                className={`order-status-badge ${selectedUser.is_active ? "ready" : "cancelled"}`}
+              >
+                {selectedUser.is_active ? "Активен" : "Заблокирован"}
+              </span>
+            </DetailField>
+          </div>
+          <div
+            style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}
+          >
+            {selectedUser.user_role !== "ADMIN" && (
+              <button
+                className="btn btn-secondary"
+                disabled={roleActionLoading}
+                onClick={() => handleMakeAdmin(selectedUser.id)}
+              >
+                {roleActionLoading ? "Применяю..." : "Сделать администратором"}
+              </button>
+            )}
+            {!selectedUser.is_active && (
+              <button
+                className="btn btn-secondary"
+                disabled={roleActionLoading}
+                onClick={() => handleActivateUser(selectedUser.id)}
+                style={{ color: "#22c55e" }}
+              >
+                {roleActionLoading ? "Применяю..." : "Разблокировать"}
+              </button>
             )}
           </div>
-        </div>
+        </DetailModal>
       )}
+
+      {selectedRestaurant && (
+        <DetailModal
+          title={selectedRestaurant.name}
+          subtitle="Детали ресторана"
+          loading={restaurantDetailsLoading}
+          onClose={() => setSelectedRestaurant(null)}
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+              gap: 10,
+            }}
+          >
+            <DetailField label="ID" mono>
+              {selectedRestaurant.id}
+            </DetailField>
+            <DetailField label="Адрес">
+              {selectedRestaurant.address}
+            </DetailField>
+            <DetailField label="Вендор">
+              {selectedRestaurant.vendor_name ||
+                shortId(selectedRestaurant.vendor_id)}
+            </DetailField>
+            <DetailField label="Телефон вендора">
+              {selectedRestaurant.vendor_phone}
+            </DetailField>
+            <DetailField label="Заказы">
+              {selectedRestaurant.orders_count}
+            </DetailField>
+            <DetailField label="Отзывы">
+              {selectedRestaurant.review_count}
+            </DetailField>
+            <DetailField label="Рейтинг">
+              ★ {selectedRestaurant.average_rating || 0}
+            </DetailField>
+            <DetailField label="Создан">
+              {formatDateTime(selectedRestaurant.created_at)}
+            </DetailField>
+            <DetailField label="Модерация">
+              <span className="order-status-badge pending">
+                {selectedRestaurant.moderation_status}
+              </span>
+            </DetailField>
+            <DetailField label="Работа">
+              <span
+                className={`order-status-badge ${selectedRestaurant.is_open ? "ready" : "cancelled"}`}
+              >
+                {selectedRestaurant.is_open ? "Открыт" : "Закрыт"}
+              </span>
+            </DetailField>
+            <DetailField label="Найм">
+              <span
+                className={`order-status-badge ${selectedRestaurant.is_hiring ? "pending" : "cancelled"}`}
+              >
+                {selectedRestaurant.is_hiring ? "Нанимает" : "Не нанимает"}
+              </span>
+            </DetailField>
+          </div>
+          {selectedRestaurant.rejection_reason && (
+            <div style={{ marginTop: 10 }}>
+              <DetailField label="Причина отклонения">
+                {selectedRestaurant.rejection_reason}
+              </DetailField>
+            </div>
+          )}
+          <div
+            style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}
+          >
+            <button
+              className="btn btn-secondary"
+              onClick={() => handleApproveRestaurant(selectedRestaurant.id)}
+            >
+              <CheckCircle size={16} />
+              Одобрить
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => handleRejectRestaurant(selectedRestaurant.id)}
+              style={{ color: "var(--error)" }}
+            >
+              <Prohibit size={16} />
+              Отклонить
+            </button>
+          </div>
+          <button
+            className="btn btn-secondary"
+            style={{ marginTop: 16, color: "var(--error)" }}
+            onClick={() => handleDeleteRestaurant(selectedRestaurant.id)}
+          >
+            <Trash size={16} />
+            Удалить ресторан
+          </button>
+        </DetailModal>
+      )}
+
+      {selectedVendor && (
+        <DetailModal
+          title={selectedVendor.name || "Вендор"}
+          subtitle="Детали вендора"
+          loading={vendorDetailsLoading}
+          onClose={() => setSelectedVendor(null)}
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+              gap: 10,
+            }}
+          >
+            <DetailField label="ID профиля" mono>
+              {selectedVendor.id}
+            </DetailField>
+            <DetailField label="ID пользователя" mono>
+              {selectedVendor.user_id}
+            </DetailField>
+            <DetailField label="Имя">{selectedVendor.name}</DetailField>
+            <DetailField label="Телефон">
+              {selectedVendor.phone_number}
+            </DetailField>
+            <DetailField label="Рестораны">
+              {selectedVendor.restaurants_count}
+            </DetailField>
+            <DetailField label="Модерация">
+              <span className="order-status-badge pending">
+                {selectedVendor.approval_status}
+              </span>
+            </DetailField>
+            <DetailField label="Создан">
+              {formatDateTime(selectedVendor.created_at)}
+            </DetailField>
+          </div>
+          <div style={{ marginTop: 10 }}>
+            <DetailField label="Описание">
+              {selectedVendor.description || "Описание не заполнено"}
+            </DetailField>
+          </div>
+          {selectedVendor.rejection_reason && (
+            <div style={{ marginTop: 10 }}>
+              <DetailField label="Причина отклонения">
+                {selectedVendor.rejection_reason}
+              </DetailField>
+            </div>
+          )}
+          <div
+            style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}
+          >
+            <button
+              className="btn btn-secondary"
+              onClick={() => handleApproveVendor(selectedVendor.id)}
+            >
+              <CheckCircle size={16} />
+              Одобрить
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => handleRejectVendor(selectedVendor.id)}
+              style={{ color: "var(--error)" }}
+            >
+              <Prohibit size={16} />
+              Отклонить
+            </button>
+          </div>
+          <button
+            className="btn btn-secondary"
+            style={{ marginTop: 16, color: "var(--error)" }}
+            onClick={() => handleDeleteVendor(selectedVendor.id)}
+          >
+            <Trash size={16} />
+            Удалить вендора
+          </button>
+        </DetailModal>
+      )}
+
+      {selectedOrder && (
+        <OrderDetailsModal
+          order={selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+          updating={null}
+        />
+      )}
+      <ConfirmDialog
+        dialog={confirmDialog}
+        loading={confirmLoading}
+        onCancel={() => setConfirmDialog(null)}
+        onConfirm={runConfirmAction}
+      />
+      <ReasonDialog
+        dialog={reasonDialog}
+        loading={reasonLoading}
+        onCancel={() => setReasonDialog(null)}
+        onConfirm={runReasonAction}
+      />
+    </div>
+  );
+};
+
+const ListSection = ({ loading, emptyTitle, children }) => {
+  const content = Array.isArray(children) ? children.filter(Boolean) : children;
+
+  if (loading) {
+    return (
+      <div className="loading-center">
+        <div className="spinner" />
+      </div>
+    );
+  }
+
+  if (Array.isArray(content) && content.length === 0) {
+    return (
+      <EmptyState
+        title={emptyTitle}
+        subtitle="Данные появятся здесь после создания записей."
+      />
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {children}
     </div>
   );
 };
