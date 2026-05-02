@@ -30,7 +30,12 @@ class TestCartService:
         cart_data = {
             "restaurant_id": str(uuid.uuid4()),
             "items": [
-                {"menu_item_id": str(uuid.uuid4()), "name": "Pizza", "price": 1000, "quantity": 2}
+                {
+                    "menu_item_id": str(uuid.uuid4()),
+                    "name": "Pizza",
+                    "price": 1000,
+                    "quantity": 2,
+                }
             ],
         }
         mock_cache.get.return_value = json.dumps(cart_data)

@@ -122,6 +122,8 @@ class TestChangeOrderStatus:
             new_callable=AsyncMock,
         ) as mock_event:
             with pytest.raises(InvalidStatusTransitionException):
-                await change_order_status(mock_db_session, order, status_data, actor=actor)
+                await change_order_status(
+                    mock_db_session, order, status_data, actor=actor
+                )
 
         mock_event.assert_not_awaited()

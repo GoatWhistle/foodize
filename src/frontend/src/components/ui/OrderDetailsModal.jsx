@@ -1,15 +1,21 @@
 import { useEffect, useState } from "react";
-import { Clock, Package, UserCircle, X } from "@phosphor-icons/react";
+import {
+  Clock,
+  Package,
+  UserCircle,
+  X,
+  Storefront,
+} from "@phosphor-icons/react";
 import { orderService } from "../../services/orderService";
 
-const STATUS_LABEL_RU = {
-  PENDING: "Новый",
-  ACCEPTED: "Принят",
-  COOKING: "Готовится",
-  READY: "Готов",
-  COMPLETED: "Выдан",
-  CANCELLED: "Отменён",
-};
+import {
+  ORDER_STATUS_RU,
+  ROLE_RU,
+  CATEGORY_RU,
+  translate,
+} from "../../utils/locales";
+
+const STATUS_LABEL_RU = ORDER_STATUS_RU;
 
 const STATUS_FLOW = ["PENDING", "ACCEPTED", "COOKING", "READY", "COMPLETED"];
 
@@ -281,12 +287,43 @@ const OrderDetailsModal = ({
                 {order.customer_phone}
               </div>
             )}
-            <div style={{ color: "var(--text-3)", fontSize: "0.8rem" }}>
+            <div
+              style={{
+                color: "var(--text-3)",
+                fontSize: "0.8rem",
+                marginBottom: 12,
+              }}
+            >
               ID: {order.user_id}
             </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Storefront size={18} color="var(--fire)" />
+              <span style={{ fontWeight: 800 }}>Заведение</span>
+            </div>
+            {order.restaurant_name && (
+              <div style={{ fontWeight: 800, fontSize: "0.9rem" }}>
+                {order.restaurant_name}
+              </div>
+            )}
+            {order.restaurant_address && (
+              <div style={{ color: "var(--text-2)", fontSize: "0.82rem" }}>
+                {order.restaurant_address}
+              </div>
+            )}
+            <div
+              style={{
+                color: "var(--text-3)",
+                fontSize: "0.8rem",
+                marginBottom: 12,
+              }}
+            >
+              ID: {order.restaurant_id}
+            </div>
+
             {order.estimated_ready_at && (
               <div style={{ color: "var(--text-3)", fontSize: "0.8rem" }}>
-                ETA: {formatDateTime(order.estimated_ready_at)}
+                Ожидается к: {formatDateTime(order.estimated_ready_at)}
               </div>
             )}
             {order.ready_at && (
@@ -338,7 +375,9 @@ const OrderDetailsModal = ({
                           marginTop: 2,
                         }}
                       >
-                        {item.menu_item_category ?? "—"}
+                        {item.menu_item_category
+                          ? translate(CATEGORY_RU, item.menu_item_category)
+                          : "—"}
                       </div>
                     </div>
                     <div style={{ textAlign: "right", fontWeight: 800 }}>
@@ -589,7 +628,7 @@ const OrderDetailsModal = ({
                         marginTop: 2,
                       }}
                     >
-                      {event.actor_role}
+                      {translate(ROLE_RU, event.actor_role)}
                     </div>
                   </div>
                   <div

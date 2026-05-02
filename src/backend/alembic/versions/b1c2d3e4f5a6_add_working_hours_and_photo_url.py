@@ -27,10 +27,14 @@ def upgrade() -> None:
         sa.Column("open_time", sa.String(5), nullable=False),
         sa.Column("close_time", sa.String(5), nullable=False),
         sa.Column("is_closed", sa.Boolean(), server_default="false", nullable=False),
-        sa.ForeignKeyConstraint(["restaurant_id"], ["restaurants.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(
+            ["restaurant_id"], ["restaurants.id"], ondelete="CASCADE"
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index("ix_working_hours_restaurant_id", "working_hours", ["restaurant_id"])
+    op.create_index(
+        "ix_working_hours_restaurant_id", "working_hours", ["restaurant_id"]
+    )
 
     op.add_column("restaurants", sa.Column("photo_url", sa.String(512), nullable=True))
     op.add_column("menu_items", sa.Column("photo_url", sa.String(512), nullable=True))

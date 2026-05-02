@@ -4,16 +4,11 @@ import { useOrderStore } from "../../store/useOrderStore";
 import OrderStatusBadge from "../../components/ui/OrderStatusBadge";
 import { ROUTES } from "../../constants/routes";
 import { orderService } from "../../services/orderService";
+import { useModalStore } from "../../store/useModalStore";
 import { createOrderWebSocket } from "../../services/api";
+import { ORDER_STATUS_RU } from "../../utils/locales";
 
-const STATUS_LABEL_RU = {
-  PENDING: "Ожидает",
-  ACCEPTED: "Принят",
-  COOKING: "Готовится",
-  READY: "Готов",
-  COMPLETED: "Выдан",
-  CANCELLED: "Отменён",
-};
+const STATUS_LABEL_RU = ORDER_STATUS_RU;
 
 const TERMINAL_STATUSES = new Set(["COMPLETED", "CANCELLED"]);
 const STATUS_FLOW = ["PENDING", "ACCEPTED", "COOKING", "READY", "COMPLETED"];
@@ -55,10 +50,18 @@ const getOrderStages = (order, events) => {
   }));
 };
 
+import { useShallow } from "zustand/react/shallow";
+
 const OrderStatusPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { fetchOrder, currentOrder } = useOrderStore();
+  const requestConfirm = useModalStore((s) => s.requestConfirm);
+  const { fetchOrder, currentOrder } = useOrderStore(
+    useShallow((s) => ({
+      fetchOrder: s.fetchOrder,
+      currentOrder: s.currentOrder,
+    })),
+  );
   const wsRef = useRef(null);
   const [cancelling, setCancelling] = useState(false);
   const [completing, setCompleting] = useState(false);
@@ -95,7 +98,7 @@ const OrderStatusPage = () => {
     );
 
     return () => wsRef.current?.close();
-  }, [id]);
+  }, [id, fetchOrder, loadEvents]);
 
   if (!currentOrder) {
     return (
@@ -112,17 +115,25 @@ const OrderStatusPage = () => {
   const stages = getOrderStages(currentOrder, events);
 
   const handleCancel = async () => {
-    if (!window.confirm("Вы уверены, что хотите отменить заказ?")) return;
-    setCancelling(true);
-    setCancelError("");
-    try {
-      await orderService.cancelOrder(id);
-      await fetchOrder(id);
-    } catch {
-      setCancelError("Не удалось отменить заказ");
-    } finally {
-      setCancelling(false);
-    }
+    requestConfirm({
+      title: "Отменить заказ?",
+      message:
+        "Вы уверены, что хотите отменить этот заказ? Это действие необратимо.",
+      confirmLabel: "Отменить заказ",
+      danger: true,
+      onConfirm: async () => {
+        setCancelling(true);
+        setCancelError("");
+        try {
+          await orderService.cancelOrder(id);
+          await fetchOrder(id);
+        } catch {
+          setCancelError("Не удалось отменить заказ");
+        } finally {
+          setCancelling(false);
+        }
+      },
+    });
   };
 
   const handleComplete = async () => {
@@ -431,8 +442,23 @@ const OrderStatusPage = () => {
             {completing ? "Подтверждение..." : "✓ Получил"}
           </button>
         )}
+        {["COMPLETED", "CANCELLED"].includes(currentOrder.status) && (
+          <button
+            className="btn btn-primary"
+            style={{ flex: 1, background: "var(--fire)" }}
+            onClick={async () => {
+              const repeat = useOrderStore.getState().repeatOrder;
+              await repeat(currentOrder);
+              navigate(
+                ROUTES.RESTAURANT.replace(":id", currentOrder.restaurant_id),
+              );
+            }}
+          >
+            Повторить заказ
+          </button>
+        )}
         <button
-          className="btn btn-primary"
+          className="btn btn-secondary"
           style={{ flex: 2 }}
           onClick={() => navigate(ROUTES.ORDERS)}
           id="back-to-orders-btn"

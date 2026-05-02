@@ -127,10 +127,14 @@ async def update_option_group_for_vendor(
     data: MenuItemOptionGroupUpdate,
     vendor_id: uuid.UUID,
 ) -> MenuItemOptionGroupResponse:
-    group = await _get_owned_option_group(session, restaurant_id, item_id, group_id, vendor_id)
+    group = await _get_owned_option_group(
+        session, restaurant_id, item_id, group_id, vendor_id
+    )
     if data.max_selected is not None and data.min_selected is not None:
         if data.min_selected > data.max_selected:
-            raise BadRequestException(detail="min_selected cannot be greater than max_selected")
+            raise BadRequestException(
+                detail="min_selected cannot be greater than max_selected"
+            )
     updated = await crud.update_option_group(session, group, data)
     return MenuItemOptionGroupResponse.model_validate(updated)
 
@@ -142,7 +146,9 @@ async def delete_option_group_for_vendor(
     group_id: uuid.UUID,
     vendor_id: uuid.UUID,
 ) -> None:
-    group = await _get_owned_option_group(session, restaurant_id, item_id, group_id, vendor_id)
+    group = await _get_owned_option_group(
+        session, restaurant_id, item_id, group_id, vendor_id
+    )
     await crud.delete_option_group(session, group)
 
 
@@ -154,7 +160,9 @@ async def create_option_for_vendor(
     data: MenuItemOptionCreate,
     vendor_id: uuid.UUID,
 ) -> MenuItemOptionResponse:
-    group = await _get_owned_option_group(session, restaurant_id, item_id, group_id, vendor_id)
+    group = await _get_owned_option_group(
+        session, restaurant_id, item_id, group_id, vendor_id
+    )
     option = await crud.create_option(session, group, data)
     return MenuItemOptionResponse.model_validate(option)
 

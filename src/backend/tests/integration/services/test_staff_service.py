@@ -40,7 +40,9 @@ class TestCreateStaffRequest:
             return_value=None,
         ).start()
         self.mock_get_last = patch(
-            "features.staff.crud.get_last_request", new_callable=AsyncMock, return_value=None
+            "features.staff.crud.get_last_request",
+            new_callable=AsyncMock,
+            return_value=None,
         ).start()
         self.mock_create = patch(
             "features.staff.crud.create_staff_request",
@@ -54,7 +56,9 @@ class TestCreateStaffRequest:
 
     async def test_success(self, mock_db_session):
         data = StaffRequestCreate(message="Hire me")
-        res = await create_staff_request(mock_db_session, uuid.uuid4(), uuid.uuid4(), data)
+        res = await create_staff_request(
+            mock_db_session, uuid.uuid4(), uuid.uuid4(), data
+        )
         assert res is not None
         self.mock_create.assert_awaited_once()
 
@@ -73,7 +77,9 @@ class TestCreateStaffRequest:
             )
 
     async def test_active_request_exists(self, mock_db_session):
-        self.mock_get_last.return_value = mock_staff_request(status=StaffRequestStatus.PENDING)
+        self.mock_get_last.return_value = mock_staff_request(
+            status=StaffRequestStatus.PENDING
+        )
         with pytest.raises(StaffRequestActiveExistsException):
             await create_staff_request(
                 mock_db_session, uuid.uuid4(), uuid.uuid4(), StaffRequestCreate()
@@ -117,11 +123,15 @@ class TestProcessStaffRequest:
         patch.stopall()
 
     async def test_not_found(self, mock_db_session):
-        res = await process_staff_request(mock_db_session, None, StaffRequestStatus.ACCEPTED)
+        res = await process_staff_request(
+            mock_db_session, None, StaffRequestStatus.ACCEPTED
+        )
         assert res is None
 
     async def test_accepted_creates_profile(self, mock_db_session):
-        await process_staff_request(mock_db_session, self.req, StaffRequestStatus.ACCEPTED)
+        await process_staff_request(
+            mock_db_session, self.req, StaffRequestStatus.ACCEPTED
+        )
         self.mock_create_profile.assert_awaited_once_with(
             mock_db_session, self.req.user_id, self.req.restaurant_id
         )
@@ -130,7 +140,9 @@ class TestProcessStaffRequest:
         )
 
     async def test_rejected_no_profile(self, mock_db_session):
-        await process_staff_request(mock_db_session, self.req, StaffRequestStatus.REJECTED)
+        await process_staff_request(
+            mock_db_session, self.req, StaffRequestStatus.REJECTED
+        )
         self.mock_create_profile.assert_not_called()
         self.mock_update.assert_awaited_once_with(
             mock_db_session, self.req, StaffRequestStatus.REJECTED
@@ -139,7 +151,9 @@ class TestProcessStaffRequest:
     async def test_accepted_already_staff_raises(self, mock_db_session):
         self.mock_get_profile.return_value = MagicMock()
         with pytest.raises(AlreadyStaffException):
-            await process_staff_request(mock_db_session, self.req, StaffRequestStatus.ACCEPTED)
+            await process_staff_request(
+                mock_db_session, self.req, StaffRequestStatus.ACCEPTED
+            )
 
         self.mock_update.assert_awaited_once_with(
             mock_db_session, self.req, StaffRequestStatus.REJECTED

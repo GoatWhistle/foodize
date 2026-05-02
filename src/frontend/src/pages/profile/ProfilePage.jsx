@@ -11,10 +11,8 @@ import {
   CaretRight,
   UserCircle,
   Heart,
-  PencilSimple,
-  LockKey,
-  Check,
-  X,
+  GearSix,
+  CaretDown,
 } from "@phosphor-icons/react";
 import { useAuthStore } from "../../store/useAuthStore";
 import { ROUTES } from "../../constants/routes";
@@ -22,8 +20,16 @@ import { vendorService } from "../../services/vendorService";
 import { staffService } from "../../services/staffService";
 import { userService } from "../../services/userService";
 
+import { useShallow } from "zustand/react/shallow";
+
 const ProfilePage = () => {
-  const { user, logout, fetchMe } = useAuthStore();
+  const { user, logout, fetchMe } = useAuthStore(
+    useShallow((s) => ({
+      user: s.user,
+      logout: s.logout,
+      fetchMe: s.fetchMe,
+    })),
+  );
   const navigate = useNavigate();
 
   const [isVendor, setIsVendor] = useState(false);
@@ -33,17 +39,19 @@ const ProfilePage = () => {
   const [vendorLoading, setVendorLoading] = useState(false);
   const [vendorError, setVendorError] = useState("");
 
-  const [editMode, setEditMode] = useState(false);
+  const [settingsTab, setSettingsTab] = useState("profile");
+  const [showSettingsInline, setShowSettingsInline] = useState(false);
+
   const [editForm, setEditForm] = useState({
     name: "",
     first_name: "",
     last_name: "",
-    email: "",
+    middle_name: "",
   });
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState("");
+  const [editSuccess, setEditSuccess] = useState(false);
 
-  const [showPassword, setShowPassword] = useState(false);
   const [pwForm, setPwForm] = useState({ old_password: "", new_password: "" });
   const [pwLoading, setPwLoading] = useState(false);
   const [pwError, setPwError] = useState("");
@@ -82,24 +90,32 @@ const ProfilePage = () => {
     }
   };
 
-  const startEdit = () => {
-    setEditForm({
-      name: user?.name ?? "",
-      first_name: user?.first_name ?? "",
-      last_name: user?.last_name ?? "",
-      email: user?.email ?? "",
-    });
-    setEditMode(true);
-    setEditError("");
+  const openSettings = () => {
+    if (!showSettingsInline) {
+      setEditForm({
+        name: user?.name ?? "",
+        first_name: user?.first_name ?? "",
+        last_name: user?.last_name ?? "",
+        middle_name: user?.middle_name ?? "",
+      });
+      setEditError("");
+      setEditSuccess(false);
+      setPwForm({ old_password: "", new_password: "" });
+      setPwError("");
+      setPwSuccess(false);
+      setSettingsTab("profile");
+    }
+    setShowSettingsInline((v) => !v);
   };
 
   const handleEditSave = async () => {
     setEditLoading(true);
     setEditError("");
+    setEditSuccess(false);
     try {
       await userService.updateMe(editForm);
       await fetchMe();
-      setEditMode(false);
+      setEditSuccess(true);
     } catch {
       setEditError("Не удалось сохранить изменения");
     } finally {
@@ -125,152 +141,30 @@ const ProfilePage = () => {
 
   return (
     <div className="profile-page page-enter">
-      <div className="profile-header" style={{ position: "relative" }}>
+      <div className="profile-header">
         <div className="profile-avatar">
           <UserCircle size={36} weight="bold" color="var(--fire-text)" />
         </div>
 
-        {!editMode ? (
-          <div style={{ flex: 1 }}>
-            <div className="profile-name">
-              {user?.first_name && user?.last_name
-                ? `${user.first_name} ${user.last_name}`
-                : user?.name || "Пользователь"}
-            </div>
-            <div className="profile-phone">{user?.phone_number || "—"}</div>
-            {user?.email && (
-              <div
-                style={{
-                  fontSize: "0.8rem",
-                  color: "var(--text-3)",
-                  marginTop: 2,
-                }}
-              >
-                {user.email}
-              </div>
-            )}
+        <div style={{ flex: 1 }}>
+          <div className="profile-name">
+            {user?.first_name && user?.last_name
+              ? `${user.first_name} ${user.last_name}`
+              : user?.name || "Пользователь"}
           </div>
-        ) : (
-          <div
-            style={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
-            }}
-          >
-            <input
-              className="form-input"
-              style={{ fontSize: "0.9rem" }}
-              placeholder="Отображаемое имя"
-              value={editForm.name}
-              onChange={(e) =>
-                setEditForm((f) => ({ ...f, name: e.target.value }))
-              }
-            />
-            <div style={{ display: "flex", gap: 8 }}>
-              <input
-                className="form-input"
-                style={{ fontSize: "0.9rem", flex: 1 }}
-                placeholder="Имя"
-                value={editForm.first_name}
-                onChange={(e) =>
-                  setEditForm((f) => ({ ...f, first_name: e.target.value }))
-                }
-              />
-              <input
-                className="form-input"
-                style={{ fontSize: "0.9rem", flex: 1 }}
-                placeholder="Фамилия"
-                value={editForm.last_name}
-                onChange={(e) =>
-                  setEditForm((f) => ({ ...f, last_name: e.target.value }))
-                }
-              />
+          <div className="profile-phone">{user?.phone_number || "—"}</div>
+          {user?.email && (
+            <div
+              style={{
+                fontSize: "0.8rem",
+                color: "var(--text-3)",
+                marginTop: 2,
+              }}
+            >
+              {user.email}
             </div>
-            <input
-              className="form-input"
-              style={{ fontSize: "0.9rem" }}
-              placeholder="Email"
-              type="email"
-              value={editForm.email}
-              onChange={(e) =>
-                setEditForm((f) => ({ ...f, email: e.target.value }))
-              }
-            />
-            <input
-              className="form-input"
-              style={{ fontSize: "0.9rem", opacity: 0.6 }}
-              placeholder="Телефон"
-              value={user?.phone_number || ""}
-              readOnly
-            />
-            {editError && (
-              <div className="form-error" style={{ fontSize: "0.78rem" }}>
-                {editError}
-              </div>
-            )}
-            <div style={{ display: "flex", gap: 8 }}>
-              <button
-                className="btn btn-primary btn-sm"
-                onClick={handleEditSave}
-                disabled={editLoading}
-                style={{
-                  flex: 1,
-                  height: 36,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 6,
-                }}
-              >
-                {editLoading ? (
-                  "..."
-                ) : (
-                  <>
-                    <Check size={14} /> Сохранить
-                  </>
-                )}
-              </button>
-              <button
-                className="btn btn-secondary btn-sm"
-                onClick={() => setEditMode(false)}
-                style={{
-                  height: 36,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <X size={14} />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {!editMode && (
-          <button
-            onClick={startEdit}
-            style={{
-              position: "absolute",
-              top: 0,
-              right: 0,
-              width: 32,
-              height: 32,
-              borderRadius: "50%",
-              background: "var(--bg-surface)",
-              border: "1px solid var(--border)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              color: "var(--text-3)",
-            }}
-            aria-label="Редактировать профиль"
-          >
-            <PencilSimple size={14} weight="bold" />
-          </button>
-        )}
+          )}
+        </div>
       </div>
 
       {vendorError && (
@@ -383,87 +277,207 @@ const ProfilePage = () => {
             </div>
           ))}
 
-        {/* Change password */}
         <div
           className="profile-menu-item"
-          onClick={() => {
-            setShowPassword((p) => !p);
-            setPwError("");
-            setPwSuccess(false);
-          }}
+          onClick={openSettings}
           role="button"
           tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && openSettings()}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-            <LockKey size={20} weight="bold" />
-            <span>Сменить пароль</span>
+            <GearSix size={20} weight="bold" />
+            <span>Настройки</span>
           </div>
-          <CaretRight
-            size={16}
-            color="var(--text-3)"
-            style={{
-              transform: showPassword ? "rotate(90deg)" : "none",
-              transition: "transform 200ms",
-            }}
-          />
+          {showSettingsInline ? (
+            <CaretDown size={16} color="var(--text-3)" />
+          ) : (
+            <CaretRight size={16} color="var(--text-3)" />
+          )}
         </div>
 
-        {showPassword && (
-          <form
-            onSubmit={handlePasswordChange}
-            style={{
-              padding: "4px 16px 16px",
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
-              borderBottom: "1px solid var(--border)",
-            }}
-          >
-            <input
-              className="form-input"
-              type="password"
-              placeholder="Текущий пароль"
-              value={pwForm.old_password}
-              onChange={(e) =>
-                setPwForm((f) => ({ ...f, old_password: e.target.value }))
-              }
-              required
-            />
-            <input
-              className="form-input"
-              type="password"
-              placeholder="Новый пароль (мин. 8 символов)"
-              value={pwForm.new_password}
-              onChange={(e) =>
-                setPwForm((f) => ({ ...f, new_password: e.target.value }))
-              }
-              minLength={8}
-              required
-            />
-            {pwError && (
-              <div className="form-error" style={{ fontSize: "0.78rem" }}>
-                {pwError}
-              </div>
-            )}
-            {pwSuccess && (
-              <div
-                style={{
-                  color: "#22c55e",
-                  fontSize: "0.78rem",
-                  fontWeight: 700,
-                }}
-              >
-                ✓ Пароль изменён
-              </div>
-            )}
-            <button
-              className="btn btn-primary btn-sm"
-              type="submit"
-              disabled={pwLoading}
+        {showSettingsInline && (
+          <div style={{ padding: "8px 0 4px" }}>
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                marginBottom: 16,
+                borderBottom: "1px solid var(--border)",
+                paddingBottom: 12,
+              }}
             >
-              {pwLoading ? "..." : "Сохранить пароль"}
-            </button>
-          </form>
+              <button
+                className={`btn btn-sm ${settingsTab === "profile" ? "btn-primary" : "btn-secondary"}`}
+                onClick={() => setSettingsTab("profile")}
+              >
+                Данные профиля
+              </button>
+              <button
+                className={`btn btn-sm ${settingsTab === "password" ? "btn-primary" : "btn-secondary"}`}
+                onClick={() => setSettingsTab("password")}
+              >
+                Пароль
+              </button>
+            </div>
+
+            {settingsTab === "profile" && (
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: 10 }}
+              >
+                <label
+                  style={{
+                    fontSize: "0.78rem",
+                    color: "var(--text-3)",
+                    fontWeight: 700,
+                  }}
+                >
+                  Отображаемое имя
+                </label>
+                <input
+                  className="form-input"
+                  placeholder="Отображаемое имя"
+                  value={editForm.name}
+                  onChange={(e) =>
+                    setEditForm((f) => ({ ...f, name: e.target.value }))
+                  }
+                />
+                <label
+                  style={{
+                    fontSize: "0.78rem",
+                    color: "var(--text-3)",
+                    fontWeight: 700,
+                    marginTop: 4,
+                  }}
+                >
+                  ФИО
+                </label>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    className="form-input"
+                    style={{ flex: 1 }}
+                    placeholder="Имя"
+                    value={editForm.first_name}
+                    onChange={(e) =>
+                      setEditForm((f) => ({ ...f, first_name: e.target.value }))
+                    }
+                  />
+                  <input
+                    className="form-input"
+                    style={{ flex: 1 }}
+                    placeholder="Фамилия"
+                    value={editForm.last_name}
+                    onChange={(e) =>
+                      setEditForm((f) => ({ ...f, last_name: e.target.value }))
+                    }
+                  />
+                </div>
+                <input
+                  className="form-input"
+                  placeholder="Отчество"
+                  value={editForm.middle_name}
+                  onChange={(e) =>
+                    setEditForm((f) => ({ ...f, middle_name: e.target.value }))
+                  }
+                />
+                {editError && (
+                  <div className="form-error" style={{ fontSize: "0.78rem" }}>
+                    {editError}
+                  </div>
+                )}
+                {editSuccess && (
+                  <div
+                    style={{
+                      color: "#22c55e",
+                      fontSize: "0.78rem",
+                      fontWeight: 700,
+                    }}
+                  >
+                    ✓ Данные сохранены
+                  </div>
+                )}
+                <button
+                  className="btn btn-primary"
+                  onClick={handleEditSave}
+                  disabled={editLoading}
+                  style={{ marginTop: 4 }}
+                >
+                  {editLoading ? "..." : "Сохранить"}
+                </button>
+              </div>
+            )}
+
+            {settingsTab === "password" && (
+              <form
+                onSubmit={handlePasswordChange}
+                style={{ display: "flex", flexDirection: "column", gap: 10 }}
+              >
+                <label
+                  style={{
+                    fontSize: "0.78rem",
+                    color: "var(--text-3)",
+                    fontWeight: 700,
+                  }}
+                >
+                  Текущий пароль
+                </label>
+                <input
+                  className="form-input"
+                  type="password"
+                  placeholder="Текущий пароль"
+                  value={pwForm.old_password}
+                  onChange={(e) =>
+                    setPwForm((f) => ({ ...f, old_password: e.target.value }))
+                  }
+                  required
+                />
+                <label
+                  style={{
+                    fontSize: "0.78rem",
+                    color: "var(--text-3)",
+                    fontWeight: 700,
+                    marginTop: 4,
+                  }}
+                >
+                  Новый пароль
+                </label>
+                <input
+                  className="form-input"
+                  type="password"
+                  placeholder="Минимум 8 символов"
+                  value={pwForm.new_password}
+                  onChange={(e) =>
+                    setPwForm((f) => ({ ...f, new_password: e.target.value }))
+                  }
+                  minLength={8}
+                  required
+                />
+                {pwError && (
+                  <div className="form-error" style={{ fontSize: "0.78rem" }}>
+                    {pwError}
+                  </div>
+                )}
+                {pwSuccess && (
+                  <div
+                    style={{
+                      color: "#22c55e",
+                      fontSize: "0.78rem",
+                      fontWeight: 700,
+                    }}
+                  >
+                    ✓ Пароль изменён
+                  </div>
+                )}
+                <button
+                  className="btn btn-primary"
+                  type="submit"
+                  disabled={pwLoading}
+                  style={{ marginTop: 4 }}
+                >
+                  {pwLoading ? "..." : "Сменить пароль"}
+                </button>
+              </form>
+            )}
+          </div>
         )}
 
         <div className="divider" style={{ margin: "8px 0" }} />

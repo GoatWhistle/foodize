@@ -43,10 +43,14 @@ class CartService:
             }
             for i in cart_dict.get("items", [])
         ]
-        return CartResponse(restaurant_id=cart_dict.get("restaurant_id"), items=enriched)
+        return CartResponse(
+            restaurant_id=cart_dict.get("restaurant_id"), items=enriched
+        )
 
     async def update_cart(self, user_id: uuid.UUID, cart_data: CartUpdate) -> None:
-        await self._cache.set(self._key(user_id), cart_data.model_dump_json(), ttl=self._ttl)
+        await self._cache.set(
+            self._key(user_id), cart_data.model_dump_json(), ttl=self._ttl
+        )
 
     async def clear_cart(self, user_id: uuid.UUID) -> None:
         await self._cache.delete(self._key(user_id))

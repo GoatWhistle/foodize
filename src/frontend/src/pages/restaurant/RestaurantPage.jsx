@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import { translateApiError } from "../../utils/translateApiError";
+import { CATEGORY_RU } from "../../utils/locales";
 import {
   Star,
   ChatCircleText,
@@ -21,9 +22,11 @@ import {
 import { useRestaurantStore } from "../../store/useRestaurantStore";
 import { useOrderStore } from "../../store/useOrderStore";
 import MenuItemCard from "../../components/ui/MenuItemCard";
+import EmptyState from "../../components/ui/EmptyState";
 import { reviewService } from "../../services/reviewService";
 import { staffService } from "../../services/staffService";
 import { restaurantService } from "../../services/restaurantService";
+import { useShallow } from "zustand/react/shallow";
 
 const CATEGORY_ICONS = {
   SHAURMA: <Fire />,
@@ -45,8 +48,18 @@ const RestaurantPage = () => {
   const [rating, setRating] = useState(null);
   const restaurant = restaurantData ?? { id, name: "Ресторан", address: "" };
 
-  const { fetchMenu, menus, loading } = useRestaurantStore();
-  const { addToCart } = useOrderStore();
+  const { fetchMenu, menus, loading } = useRestaurantStore(
+    useShallow((s) => ({
+      fetchMenu: s.fetchMenu,
+      menus: s.menus,
+      loading: s.loading,
+    })),
+  );
+  const { addToCart } = useOrderStore(
+    useShallow((s) => ({
+      addToCart: s.addToCart,
+    })),
+  );
 
   const [activeCategory, setActiveCategory] = useState("ALL");
   const [showReviewsModal, setShowReviewsModal] = useState(false);
@@ -55,6 +68,7 @@ const RestaurantPage = () => {
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewError, setReviewError] = useState("");
   const [reviewSuccess, setReviewSuccess] = useState(false);
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
   const [showStaffModal, setShowStaffModal] = useState(false);
   const [staffMessage, setStaffMessage] = useState("");
@@ -82,7 +96,7 @@ const RestaurantPage = () => {
         setRating(val);
       })
       .catch(() => {});
-  }, [id, fetchMenu]);
+  }, [id, fetchMenu, location.state]);
 
   const loadReviews = () => {
     setReviewsLoading(true);
@@ -109,10 +123,29 @@ const RestaurantPage = () => {
         rating: reviewForm.rating,
       });
       setReviewSuccess(true);
+      setReviewSubmitted(true);
       setReviewForm({ rating: 5, text: "" });
       loadReviews();
+      reviewService
+        .getRating(id)
+        .then((res) => {
+          const val =
+            res.data?.data?.average_rating ?? res.data?.data?.rating ?? null;
+          setRating(val);
+        })
+        .catch(() => {});
     } catch (err) {
-      setReviewError(translateApiError(err, "Не удалось отправить отзыв"));
+      const detail = err?.response?.data?.detail ?? "";
+      const isDuplicate =
+        detail.includes("already reviewed") ||
+        detail.includes("Duplicate entry");
+      if (isDuplicate) {
+        setReviewSubmitted(true);
+        setReviewError("");
+        loadReviews();
+      } else {
+        setReviewError(translateApiError(err, "Не удалось отправить отзыв"));
+      }
     }
   };
 
@@ -255,6 +288,18 @@ const RestaurantPage = () => {
         <div className="restaurant-hero-overlay" />
         <div className="restaurant-hero-info">
           <h1 className="restaurant-hero-name">{restaurant.name}</h1>
+          {restaurant.description && (
+            <p
+              style={{
+                color: "rgba(255,255,255,0.85)",
+                fontSize: "0.875rem",
+                margin: "4px 0 8px",
+                lineHeight: 1.4,
+              }}
+            >
+              {restaurant.description}
+            </p>
+          )}
           {rating != null && (
             <div
               style={{
@@ -281,6 +326,8 @@ const RestaurantPage = () => {
             className="btn btn-secondary btn-sm"
             onClick={() => {
               setShowReviewsModal(true);
+              setReviewSubmitted(false);
+              setReviewError("");
               loadReviews();
             }}
             style={{
@@ -308,7 +355,7 @@ const RestaurantPage = () => {
               style={{ display: "flex", alignItems: "center", gap: "6px" }}
             >
               {cat === "ALL" ? <List size={14} /> : CATEGORY_ICONS[cat]}
-              {cat === "ALL" ? "Все" : cat}
+              {cat === "ALL" ? "Все" : CATEGORY_RU[cat] || cat}
             </button>
           ))}
         </div>
@@ -466,81 +513,83 @@ const RestaurantPage = () => {
             </div>
 
             <div style={{ overflowY: "auto", flex: 1 }}>
-              <form
-                onSubmit={handleReviewSubmit}
-                style={{
-                  background: "var(--bg-surface)",
-                  padding: "24px",
-                  borderRadius: "var(--r-lg)",
-                  marginBottom: "24px",
-                  border: "1px solid var(--border)",
-                }}
-              >
-                <div
+              {!reviewSubmitted && (
+                <form
+                  onSubmit={handleReviewSubmit}
                   style={{
-                    display: "flex",
-                    gap: 8,
-                    justifyContent: "center",
-                    marginBottom: 16,
+                    background: "var(--bg-surface)",
+                    padding: "24px",
+                    borderRadius: "var(--r-lg)",
+                    marginBottom: "24px",
+                    border: "1px solid var(--border)",
                   }}
                 >
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Star
-                      key={s}
-                      size={30}
-                      weight={s <= reviewForm.rating ? "fill" : "regular"}
-                      color="var(--fire)"
-                      onClick={() =>
-                        setReviewForm({ ...reviewForm, rating: s })
-                      }
-                      style={{
-                        cursor: "pointer",
-                        transition: "transform 150ms",
-                        transform:
-                          s <= reviewForm.rating ? "scale(1.1)" : "scale(1)",
-                      }}
-                    />
-                  ))}
-                </div>
-                <textarea
-                  className="form-input"
-                  placeholder="Ваш отзыв..."
-                  value={reviewForm.text}
-                  onChange={(e) =>
-                    setReviewForm({ ...reviewForm, text: e.target.value })
-                  }
-                  style={{
-                    borderRadius: "var(--r-md)",
-                    marginBottom: "12px",
-                    background: "var(--bg-card)",
-                    minHeight: "80px",
-                  }}
-                />
-                {reviewError && (
-                  <div className="form-error" style={{ marginBottom: 8 }}>
-                    {reviewError}
-                  </div>
-                )}
-                {reviewSuccess && (
                   <div
                     style={{
-                      color: "#22c55e",
-                      marginBottom: 8,
-                      fontSize: "0.85rem",
-                      fontWeight: 600,
+                      display: "flex",
+                      gap: 8,
+                      justifyContent: "center",
+                      marginBottom: 16,
                     }}
                   >
-                    Отзыв опубликован
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Star
+                        key={s}
+                        size={30}
+                        weight={s <= reviewForm.rating ? "fill" : "regular"}
+                        color="var(--fire)"
+                        onClick={() =>
+                          setReviewForm({ ...reviewForm, rating: s })
+                        }
+                        style={{
+                          cursor: "pointer",
+                          transition: "transform 150ms",
+                          transform:
+                            s <= reviewForm.rating ? "scale(1.1)" : "scale(1)",
+                        }}
+                      />
+                    ))}
                   </div>
-                )}
-                <button
-                  type="submit"
-                  className="btn btn-primary btn-full"
-                  style={{ borderRadius: "var(--r-md)" }}
-                >
-                  Опубликовать
-                </button>
-              </form>
+                  <textarea
+                    className="form-input"
+                    placeholder="Ваш отзыв..."
+                    value={reviewForm.text}
+                    onChange={(e) =>
+                      setReviewForm({ ...reviewForm, text: e.target.value })
+                    }
+                    style={{
+                      borderRadius: "var(--r-md)",
+                      marginBottom: "12px",
+                      background: "var(--bg-card)",
+                      minHeight: "80px",
+                    }}
+                  />
+                  {reviewError && (
+                    <div className="form-error" style={{ marginBottom: 8 }}>
+                      {reviewError}
+                    </div>
+                  )}
+                  {reviewSuccess && (
+                    <div
+                      style={{
+                        color: "#22c55e",
+                        marginBottom: 8,
+                        fontSize: "0.85rem",
+                        fontWeight: 600,
+                      }}
+                    >
+                      Отзыв опубликован
+                    </div>
+                  )}
+                  <button
+                    type="submit"
+                    className="btn btn-primary btn-full"
+                    style={{ borderRadius: "var(--r-md)" }}
+                  >
+                    Опубликовать
+                  </button>
+                </form>
+              )}
 
               <div
                 style={{ display: "flex", flexDirection: "column", gap: 12 }}
@@ -550,15 +599,10 @@ const RestaurantPage = () => {
                     <div className="spinner" />
                   </div>
                 ) : reviewsList.length === 0 ? (
-                  <p
-                    style={{
-                      textAlign: "center",
-                      color: "var(--text-3)",
-                      fontSize: "0.875rem",
-                    }}
-                  >
-                    Отзывов пока нет
-                  </p>
+                  <EmptyState
+                    title="Отзывов пока нет"
+                    subtitle="Будьте первым, кто оставит отзыв!"
+                  />
                 ) : (
                   reviewsList.map((r) => (
                     <div

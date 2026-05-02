@@ -35,7 +35,9 @@ async def create_review_for_user(
     if not restaurant:
         raise RestaurantNotFoundException()
 
-    existing = await crud.get_user_review_for_restaurant(session, user_id, restaurant_id)
+    existing = await crud.get_user_review_for_restaurant(
+        session, user_id, restaurant_id
+    )
     if existing:
         raise ReviewAlreadyExistsException()
 
@@ -43,6 +45,13 @@ async def create_review_for_user(
     review = await crud.create_review(
         session, review_data, user_id, restaurant_id, is_verified_purchase=is_verified
     )
+
+    avg, count = await crud.get_restaurant_avg_rating(session, restaurant_id)
+    restaurant.average_rating = avg or 0.0
+    restaurant.review_count = count
+    session.add(restaurant)
+    await session.commit()
+
     return ReviewResponse.model_validate(review)
 
 
@@ -53,7 +62,9 @@ async def list_reviews_for_restaurant(
     size: int = 20,
 ) -> tuple[list[ReviewResponse], int]:
     offset = (page - 1) * size
-    data = await crud.get_reviews_by_restaurant(session, restaurant_id, offset=offset, limit=size)
+    data = await crud.get_reviews_by_restaurant(
+        session, restaurant_id, offset=offset, limit=size
+    )
     total = await crud.count_reviews_by_restaurant(session, restaurant_id)
     return [ReviewResponse.model_validate(r) for r in data], total
 
@@ -61,5 +72,11 @@ async def list_reviews_for_restaurant(
 async def get_rating_for_restaurant(
     session: AsyncSession, restaurant_id: uuid.UUID
 ) -> RatingResponse:
-    avg, count = await crud.get_restaurant_avg_rating(session, restaurant_id)
-    return RatingResponse(restaurant_id=restaurant_id, average_rating=avg, review_count=count)
+    restaurant = await get_restaurant_by_id(session, restaurant_id)
+    if not restaurant:
+        raise RestaurantNotFoundException()
+    return RatingResponse(
+        restaurant_id=restaurant_id,
+        average_rating=restaurant.average_rating,
+        review_count=restaurant.review_count,
+    )

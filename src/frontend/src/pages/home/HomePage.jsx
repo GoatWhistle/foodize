@@ -5,19 +5,29 @@ import RestaurantCard from "../../components/ui/RestaurantCard";
 import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/ui/Pagination";
 import { useAuthStore } from "../../store/useAuthStore";
+import { useShallow } from "zustand/react/shallow";
 import { useRestaurantStore } from "../../store/useRestaurantStore";
 import { ROUTES } from "../../constants/routes";
 
 const HomePage = () => {
   const [search, setSearch] = useState("");
   const [onlyOpen, setOnlyOpen] = useState(false);
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated } = useAuthStore(
+    useShallow((s) => ({ isAuthenticated: s.isAuthenticated })),
+  );
   const {
     publicRestaurants,
     publicRestaurantsTotal,
     fetchPublicRestaurants,
     loading,
-  } = useRestaurantStore();
+  } = useRestaurantStore(
+    useShallow((s) => ({
+      publicRestaurants: s.publicRestaurants,
+      publicRestaurantsTotal: s.publicRestaurantsTotal,
+      fetchPublicRestaurants: s.fetchPublicRestaurants,
+      loading: s.loading,
+    })),
+  );
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const size = 20;

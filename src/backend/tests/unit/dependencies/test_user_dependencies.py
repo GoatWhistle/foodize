@@ -27,7 +27,9 @@ class TestUserDependencies:
     @pytest.mark.asyncio
     async def test_get_by_id_404(self):
         with patch(
-            "features.users.dependencies.get_user_by_id", new_callable=AsyncMock, return_value=None
+            "features.users.dependencies.get_user_by_id",
+            new_callable=AsyncMock,
+            return_value=None,
         ):
             with pytest.raises(NotFoundException):
                 await get_user_by_id_or_404(MagicMock(), uuid.uuid4())

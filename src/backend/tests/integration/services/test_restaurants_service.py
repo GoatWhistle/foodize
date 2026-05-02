@@ -3,7 +3,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from features.restaurants.schemas import RestaurantCreate, RestaurantResponse, RestaurantUpdate
+from features.restaurants.schemas import (
+    RestaurantCreate,
+    RestaurantResponse,
+    RestaurantUpdate,
+)
 from features.restaurants.service import (
     create_restaurant_for_vendor,
     get_my_restaurants,
@@ -34,11 +38,15 @@ class TestCreateRestaurantForVendor:
             new_callable=AsyncMock,
             return_value=mock_restaurant,
         ) as mock_create:
-            result = await create_restaurant_for_vendor(mock_db_session, restaurant_data, vendor_id)
+            result = await create_restaurant_for_vendor(
+                mock_db_session, restaurant_data, vendor_id
+            )
 
         assert isinstance(result, RestaurantResponse)
         assert result.id == mock_restaurant.id
-        mock_create.assert_awaited_once_with(mock_db_session, restaurant_data, vendor_id)
+        mock_create.assert_awaited_once_with(
+            mock_db_session, restaurant_data, vendor_id
+        )
 
 
 class TestUpdateRestaurantForVendor:
@@ -66,7 +74,9 @@ class TestUpdateRestaurantForVendor:
 
         assert isinstance(result, RestaurantResponse)
         assert result.id == mock_restaurant.id
-        mock_update.assert_awaited_once_with(mock_db_session, mock_restaurant, update_data)
+        mock_update.assert_awaited_once_with(
+            mock_db_session, mock_restaurant, update_data
+        )
 
     async def test_update_wrong_vendor_raises(self, mock_db_session):
         with patch(

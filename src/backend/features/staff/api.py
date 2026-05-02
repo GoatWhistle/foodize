@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
@@ -10,6 +10,7 @@ from features.staff.crud import get_last_request_by_user, get_staff_profile_by_u
 from features.staff.dependencies import get_valid_staff_request
 from features.staff.models import StaffRequest
 from features.staff.schemas import (
+    StaffMemberResponse,
     StaffProfileResponse,
     StaffRequestCreate,
     StaffRequestResponse,
@@ -36,7 +37,9 @@ async def get_my_staff_profile(
     return build_response(StaffProfileResponse.model_validate(profile))
 
 
-@router.get("/my-application", response_model=SuccessResponse[StaffRequestResponse] | None)
+@router.get(
+    "/my-application", response_model=SuccessResponse[StaffRequestResponse] | None
+)
 async def get_my_application(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
@@ -47,7 +50,9 @@ async def get_my_application(
     return build_response(StaffRequestResponse.model_validate(req))
 
 
-@router.post("/requests/{restaurant_id}", response_model=SuccessResponse[StaffRequestResponse])
+@router.post(
+    "/requests/{restaurant_id}", response_model=SuccessResponse[StaffRequestResponse]
+)
 async def create_staff_request(
     restaurant_id: uuid.UUID,
     request_in: StaffRequestCreate,
@@ -63,7 +68,10 @@ async def create_staff_request(
     return build_response(result)
 
 
-@router.patch("/requests/{request_id}/status", response_model=SuccessResponse[StaffRequestResponse])
+@router.patch(
+    "/requests/{request_id}/status",
+    response_model=SuccessResponse[StaffRequestResponse],
+)
 async def update_staff_status(
     status_update: StaffRequestStatusUpdate,
     staff_request: StaffRequest = Depends(get_valid_staff_request),
@@ -86,4 +94,33 @@ async def get_vendor_requests(
     data, total = await service.get_vendor_staff_requests(
         session=session, vendor_id=current_vendor.id, page=page, size=size
     )
-    return build_list_response(data=data, total=total, page=page, size=size, request=request)
+    return build_list_response(
+        data=data, total=total, page=page, size=size, request=request
+    )
+
+
+@router.get("/my-members", response_model=SuccessListResponse[StaffMemberResponse])
+async def get_vendor_members(
+    request: Request,
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
+    current_vendor: VendorProfile = Depends(get_current_vendor),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> SuccessListResponse[StaffMemberResponse]:
+    data, total = await service.get_vendor_staff_members(
+        session=session, vendor_id=current_vendor.id, page=page, size=size
+    )
+    return build_list_response(
+        data=data, total=total, page=page, size=size, request=request
+    )
+
+
+@router.delete("/members/{profile_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_staff_member(
+    profile_id: uuid.UUID,
+    current_vendor: VendorProfile = Depends(get_current_vendor),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> None:
+    await service.remove_staff_member(
+        session=session, profile_id=profile_id, vendor_id=current_vendor.id
+    )

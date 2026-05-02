@@ -11,6 +11,7 @@ import {
 } from "@phosphor-icons/react";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useFavoriteStore } from "../../store/useFavoriteStore";
+import { useShallow } from "zustand/react/shallow";
 
 const CATEGORY_ICONS = {
   SHAURMA: <Fire size={52} weight="fill" />,
@@ -23,7 +24,12 @@ const CATEGORY_ICONS = {
 const RestaurantCard = ({ restaurant, onClick }) => {
   const cardRef = useRef(null);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const { favoriteIds, toggle } = useFavoriteStore();
+  const { favoriteIds, toggle } = useFavoriteStore(
+    useShallow((s) => ({
+      favoriteIds: s.favoriteIds,
+      toggle: s.toggle,
+    })),
+  );
   const isFav = favoriteIds.has(restaurant.id);
 
   useEffect(() => {

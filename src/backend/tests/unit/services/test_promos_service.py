@@ -42,7 +42,10 @@ class TestCreatePromo:
         from features.restaurants.exceptions import RestaurantNotFoundException
 
         data = PromoCreate(
-            code="CODE1", discount_type="PERCENT", discount_value=10, restaurant_id=uuid.uuid4()
+            code="CODE1",
+            discount_type="PERCENT",
+            discount_value=10,
+            restaurant_id=uuid.uuid4(),
         )
         with pytest.raises(RestaurantNotFoundException):
             await create_promo(MagicMock(), data, [])
@@ -54,7 +57,10 @@ class TestCreatePromo:
 
         restaurant_id = uuid.uuid4()
         data = PromoCreate(
-            code="EXIST", discount_type="PERCENT", discount_value=10, restaurant_id=restaurant_id
+            code="EXIST",
+            discount_type="PERCENT",
+            discount_value=10,
+            restaurant_id=restaurant_id,
         )
 
         with patch(
@@ -71,16 +77,25 @@ class TestCreatePromo:
 
         restaurant_id = uuid.uuid4()
         data = PromoCreate(
-            code="NEW10", discount_type="PERCENT", discount_value=10, restaurant_id=restaurant_id
+            code="NEW10",
+            discount_type="PERCENT",
+            discount_value=10,
+            restaurant_id=restaurant_id,
         )
         promo = _make_promo()
         promo.restaurant_id = restaurant_id
 
         with (
             patch(
-                "features.promos.crud.get_promo_by_code", new_callable=AsyncMock, return_value=None
+                "features.promos.crud.get_promo_by_code",
+                new_callable=AsyncMock,
+                return_value=None,
             ),
-            patch("features.promos.crud.create_promo", new_callable=AsyncMock, return_value=promo),
+            patch(
+                "features.promos.crud.create_promo",
+                new_callable=AsyncMock,
+                return_value=promo,
+            ),
         ):
             result = await create_promo(MagicMock(), data, [restaurant_id])
             assert result.code == promo.code
@@ -132,7 +147,9 @@ class TestDeactivatePromo:
         from features.promos.exceptions import PromoNotFoundException
 
         with patch(
-            "features.promos.crud.get_promo_by_code", new_callable=AsyncMock, return_value=None
+            "features.promos.crud.get_promo_by_code",
+            new_callable=AsyncMock,
+            return_value=None,
         ):
             with pytest.raises(PromoNotFoundException):
                 await deactivate_promo(MagicMock(), "NOCODE", [uuid.uuid4()])
@@ -143,7 +160,9 @@ class TestDeactivatePromo:
 
         promo = _make_promo()
         with patch(
-            "features.promos.crud.get_promo_by_code", new_callable=AsyncMock, return_value=promo
+            "features.promos.crud.get_promo_by_code",
+            new_callable=AsyncMock,
+            return_value=promo,
         ):
             with pytest.raises(PromoNotFoundException):
                 await deactivate_promo(MagicMock(), "TEST10", [uuid.uuid4()])
@@ -156,7 +175,9 @@ class TestDeactivatePromo:
 
         with (
             patch(
-                "features.promos.crud.get_promo_by_code", new_callable=AsyncMock, return_value=promo
+                "features.promos.crud.get_promo_by_code",
+                new_callable=AsyncMock,
+                return_value=promo,
             ),
             patch(
                 "features.promos.crud.deactivate_promo",
@@ -164,7 +185,9 @@ class TestDeactivatePromo:
                 return_value=updated,
             ),
         ):
-            result = await deactivate_promo(MagicMock(), "TEST10", [promo.restaurant_id])
+            result = await deactivate_promo(
+                MagicMock(), "TEST10", [promo.restaurant_id]
+            )
             assert result.is_active is False
 
 
@@ -174,7 +197,9 @@ class TestValidatePromo:
         from features.promos.exceptions import PromoNotFoundException
 
         with patch(
-            "features.promos.crud.get_promo_by_code", new_callable=AsyncMock, return_value=None
+            "features.promos.crud.get_promo_by_code",
+            new_callable=AsyncMock,
+            return_value=None,
         ):
             with pytest.raises(PromoNotFoundException):
                 await validate_promo(MagicMock(), "NOCODE", uuid.uuid4())
@@ -185,7 +210,9 @@ class TestValidatePromo:
 
         promo = _make_promo()
         with patch(
-            "features.promos.crud.get_promo_by_code", new_callable=AsyncMock, return_value=promo
+            "features.promos.crud.get_promo_by_code",
+            new_callable=AsyncMock,
+            return_value=promo,
         ):
             with pytest.raises(PromoRestaurantMismatchException):
                 await validate_promo(MagicMock(), "TEST10", uuid.uuid4())
@@ -196,7 +223,9 @@ class TestValidatePromo:
 
         promo = _make_promo(is_active=False)
         with patch(
-            "features.promos.crud.get_promo_by_code", new_callable=AsyncMock, return_value=promo
+            "features.promos.crud.get_promo_by_code",
+            new_callable=AsyncMock,
+            return_value=promo,
         ):
             with pytest.raises(PromoNotActiveException):
                 await validate_promo(MagicMock(), "TEST10", promo.restaurant_id)
@@ -207,7 +236,9 @@ class TestValidatePromo:
 
         promo = _make_promo(expires_at=datetime.now(timezone.utc) - timedelta(hours=1))
         with patch(
-            "features.promos.crud.get_promo_by_code", new_callable=AsyncMock, return_value=promo
+            "features.promos.crud.get_promo_by_code",
+            new_callable=AsyncMock,
+            return_value=promo,
         ):
             with pytest.raises(PromoNotActiveException):
                 await validate_promo(MagicMock(), "TEST10", promo.restaurant_id)
@@ -218,7 +249,9 @@ class TestValidatePromo:
 
         promo = _make_promo(max_uses=5, used_count=5)
         with patch(
-            "features.promos.crud.get_promo_by_code", new_callable=AsyncMock, return_value=promo
+            "features.promos.crud.get_promo_by_code",
+            new_callable=AsyncMock,
+            return_value=promo,
         ):
             with pytest.raises(PromoUsageLimitException):
                 await validate_promo(MagicMock(), "TEST10", promo.restaurant_id)
@@ -227,7 +260,9 @@ class TestValidatePromo:
     async def test_percent_discount(self):
         promo = _make_promo(discount_type="PERCENT", discount_value=10)
         with patch(
-            "features.promos.crud.get_promo_by_code", new_callable=AsyncMock, return_value=promo
+            "features.promos.crud.get_promo_by_code",
+            new_callable=AsyncMock,
+            return_value=promo,
         ):
             result = await validate_promo(
                 MagicMock(), "TEST10", promo.restaurant_id, order_total=1000
@@ -238,7 +273,9 @@ class TestValidatePromo:
     async def test_flat_discount(self):
         promo = _make_promo(discount_type="FIXED", discount_value=200)
         with patch(
-            "features.promos.crud.get_promo_by_code", new_callable=AsyncMock, return_value=promo
+            "features.promos.crud.get_promo_by_code",
+            new_callable=AsyncMock,
+            return_value=promo,
         ):
             result = await validate_promo(
                 MagicMock(), "TEST10", promo.restaurant_id, order_total=1000
@@ -249,7 +286,9 @@ class TestValidatePromo:
     async def test_no_order_total(self):
         promo = _make_promo()
         with patch(
-            "features.promos.crud.get_promo_by_code", new_callable=AsyncMock, return_value=promo
+            "features.promos.crud.get_promo_by_code",
+            new_callable=AsyncMock,
+            return_value=promo,
         ):
             result = await validate_promo(MagicMock(), "TEST10", promo.restaurant_id)
             assert result.discounted_amount is None
@@ -261,7 +300,9 @@ class TestApplyPromo:
         from features.promos.exceptions import PromoNotFoundException
 
         with patch(
-            "features.promos.crud.get_promo_by_code", new_callable=AsyncMock, return_value=None
+            "features.promos.crud.get_promo_by_code",
+            new_callable=AsyncMock,
+            return_value=None,
         ):
             with pytest.raises(PromoNotFoundException):
                 await apply_promo(MagicMock(), "NOCODE", uuid.uuid4(), 1000)
@@ -271,7 +312,9 @@ class TestApplyPromo:
         promo = _make_promo(discount_type="PERCENT", discount_value=20)
         with (
             patch(
-                "features.promos.crud.get_promo_by_code", new_callable=AsyncMock, return_value=promo
+                "features.promos.crud.get_promo_by_code",
+                new_callable=AsyncMock,
+                return_value=promo,
             ),
             patch("features.promos.crud.increment_used_count", new_callable=AsyncMock),
         ):
@@ -283,7 +326,9 @@ class TestApplyPromo:
         promo = _make_promo(discount_type="FIXED", discount_value=300)
         with (
             patch(
-                "features.promos.crud.get_promo_by_code", new_callable=AsyncMock, return_value=promo
+                "features.promos.crud.get_promo_by_code",
+                new_callable=AsyncMock,
+                return_value=promo,
             ),
             patch("features.promos.crud.increment_used_count", new_callable=AsyncMock),
         ):
@@ -295,7 +340,9 @@ class TestApplyPromo:
         promo = _make_promo(discount_type="FIXED", discount_value=9999)
         with (
             patch(
-                "features.promos.crud.get_promo_by_code", new_callable=AsyncMock, return_value=promo
+                "features.promos.crud.get_promo_by_code",
+                new_callable=AsyncMock,
+                return_value=promo,
             ),
             patch("features.promos.crud.increment_used_count", new_callable=AsyncMock),
         ):

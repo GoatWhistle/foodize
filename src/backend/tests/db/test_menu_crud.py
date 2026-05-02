@@ -42,7 +42,9 @@ async def restaurant(db_session):
         user_role=UserRole.VENDOR,
     )
     vendor_user = await create_user(db_session, vendor_data)
-    vendor_profile = await create_vendor_profile(db_session, vendor_user, VendorCreate())
+    vendor_profile = await create_vendor_profile(
+        db_session, vendor_user, VendorCreate()
+    )
     rest_data = RestaurantCreate(name="Rest3", address="Addr3")
     return await create_restaurant(db_session, rest_data, vendor_profile.id)
 

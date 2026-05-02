@@ -15,8 +15,16 @@ class TestMenuService:
     @pytest.mark.asyncio
     async def test_get_menu(self):
         with (
-            patch("features.menu.crud.get_menu_items", new_callable=AsyncMock, return_value=[]),
-            patch("features.menu.crud.count_menu_items", new_callable=AsyncMock, return_value=0),
+            patch(
+                "features.menu.crud.get_menu_items",
+                new_callable=AsyncMock,
+                return_value=[],
+            ),
+            patch(
+                "features.menu.crud.count_menu_items",
+                new_callable=AsyncMock,
+                return_value=0,
+            ),
         ):
             data, total = await get_menu(MagicMock(), uuid.uuid4())
             assert data == []
@@ -39,8 +47,16 @@ class TestMenuService:
         item.prep_time_minutes = 15
 
         with (
-            patch("features.menu.crud.get_menu_items", new_callable=AsyncMock, return_value=[item]),
-            patch("features.menu.crud.count_menu_items", new_callable=AsyncMock, return_value=1),
+            patch(
+                "features.menu.crud.get_menu_items",
+                new_callable=AsyncMock,
+                return_value=[item],
+            ),
+            patch(
+                "features.menu.crud.count_menu_items",
+                new_callable=AsyncMock,
+                return_value=1,
+            ),
         ):
             data, total = await get_menu(MagicMock(), restaurant_id)
             assert len(data) == 1
@@ -67,11 +83,18 @@ class TestMenuService:
 
         with (
             patch(
-                "features.menu.service.get_restaurant_and_check_ownership", new_callable=AsyncMock
+                "features.menu.service.get_restaurant_and_check_ownership",
+                new_callable=AsyncMock,
             ),
-            patch("features.menu.crud.create_menu_item", new_callable=AsyncMock, return_value=item),
+            patch(
+                "features.menu.crud.create_menu_item",
+                new_callable=AsyncMock,
+                return_value=item,
+            ),
         ):
-            result = await add_menu_item(MagicMock(), restaurant_id, item_data, vendor_id)
+            result = await add_menu_item(
+                MagicMock(), restaurant_id, item_data, vendor_id
+            )
             assert result.name == "Burger"
 
     @pytest.mark.asyncio
@@ -109,10 +132,13 @@ class TestMenuService:
 
         with (
             patch(
-                "features.menu.service.get_restaurant_and_check_ownership", new_callable=AsyncMock
+                "features.menu.service.get_restaurant_and_check_ownership",
+                new_callable=AsyncMock,
             ),
             patch(
-                "features.menu.crud.get_menu_item_by_id", new_callable=AsyncMock, return_value=item
+                "features.menu.crud.get_menu_item_by_id",
+                new_callable=AsyncMock,
+                return_value=item,
             ),
             patch(
                 "features.menu.crud.update_menu_item",
@@ -134,14 +160,19 @@ class TestMenuService:
 
         with (
             patch(
-                "features.menu.service.get_restaurant_and_check_ownership", new_callable=AsyncMock
+                "features.menu.service.get_restaurant_and_check_ownership",
+                new_callable=AsyncMock,
             ),
             patch(
-                "features.menu.crud.get_menu_item_by_id", new_callable=AsyncMock, return_value=item
+                "features.menu.crud.get_menu_item_by_id",
+                new_callable=AsyncMock,
+                return_value=item,
             ),
             patch("features.menu.crud.delete_menu_item", new_callable=AsyncMock),
         ):
-            await delete_menu_item_for_vendor(MagicMock(), restaurant_id, item_id, vendor_id)
+            await delete_menu_item_for_vendor(
+                MagicMock(), restaurant_id, item_id, vendor_id
+            )
 
     @pytest.mark.asyncio
     async def test_delete_menu_item_not_found(self):
@@ -153,11 +184,16 @@ class TestMenuService:
 
         with (
             patch(
-                "features.menu.service.get_restaurant_and_check_ownership", new_callable=AsyncMock
+                "features.menu.service.get_restaurant_and_check_ownership",
+                new_callable=AsyncMock,
             ),
             patch(
-                "features.menu.crud.get_menu_item_by_id", new_callable=AsyncMock, return_value=None
+                "features.menu.crud.get_menu_item_by_id",
+                new_callable=AsyncMock,
+                return_value=None,
             ),
         ):
             with pytest.raises(MenuItemNotFoundException):
-                await delete_menu_item_for_vendor(MagicMock(), restaurant_id, item_id, vendor_id)
+                await delete_menu_item_for_vendor(
+                    MagicMock(), restaurant_id, item_id, vendor_id
+                )

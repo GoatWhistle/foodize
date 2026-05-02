@@ -16,8 +16,11 @@ import {
   Trash,
   Clock,
   ArrowsClockwise,
+  ChartLineUp,
 } from "@phosphor-icons/react";
 import { useRestaurantStore } from "../../store/useRestaurantStore";
+import { useModalStore } from "../../store/useModalStore";
+import { useShallow } from "zustand/react/shallow";
 import { vendorService } from "../../services/vendorService";
 import { orderService } from "../../services/orderService";
 import { menuService } from "../../services/menuService";
@@ -26,15 +29,20 @@ import { restaurantService } from "../../services/restaurantService";
 import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/ui/Pagination";
 import OrderDetailsModal from "../../components/ui/OrderDetailsModal";
+import {
+  RevenueChart,
+  HourlyLoadChart,
+  CategoryRevenueChart,
+  AOVDynamicsChart,
+} from "../../components/dashboard/DashboardCharts";
+import {
+  ORDER_STATUS_RU,
+  STAFF_STATUS_RU,
+  CATEGORY_RU,
+  translate,
+} from "../../utils/locales";
 
-const STATUS_LABEL_RU = {
-  PENDING: "Новый",
-  ACCEPTED: "Принят",
-  COOKING: "Готовится",
-  READY: "Готов",
-  COMPLETED: "Выдан",
-  CANCELLED: "Отменён",
-};
+const STATUS_LABEL_RU = ORDER_STATUS_RU;
 
 const NEXT_ORDER_STATUS = {
   PENDING: "ACCEPTED",
@@ -80,6 +88,16 @@ const normalizeOptionGroups = (groups = []) =>
     })),
   }));
 
+const DAY_NAMES = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+
+const buildDefaultHours = () =>
+  DAY_NAMES.map((_, i) => ({
+    day_of_week: i,
+    open_time: "09:00",
+    close_time: "22:00",
+    is_closed: false,
+  }));
+
 const VendorDashboardPage = () => {
   const {
     restaurants,
@@ -88,12 +106,27 @@ const VendorDashboardPage = () => {
     loading,
     addMenuItem,
     menus,
-  } = useRestaurantStore();
+  } = useRestaurantStore(
+    useShallow((s) => ({
+      restaurants: s.restaurants,
+      fetchMyRestaurants: s.fetchMyRestaurants,
+      fetchMenu: s.fetchMenu,
+      loading: s.loading,
+      addMenuItem: s.addMenuItem,
+      menus: s.menus,
+    })),
+  );
 
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const [staffRequests, setStaffRequests] = useState([]);
   const [staffPage, setStaffPage] = useState(1);
   const [staffTotal, setStaffTotal] = useState(0);
+
+  const [staffMembers, setStaffMembers] = useState([]);
+  const [staffMembersPage, setStaffMembersPage] = useState(1);
+  const [staffMembersTotal, setStaffMembersTotal] = useState(0);
+  const [staffSubTab, setStaffSubTab] = useState("members");
+  const [staffMemberRemoving, setStaffMemberRemoving] = useState(null);
 
   const [showAddRestaurant, setShowAddRestaurant] = useState(false);
   const [activeTab, setActiveTab] = useState("menu");
@@ -125,7 +158,10 @@ const VendorDashboardPage = () => {
 
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
-  const { createRestaurant } = useRestaurantStore();
+  const { createRestaurant } = useRestaurantStore(
+    useShallow((s) => ({ createRestaurant: s.createRestaurant })),
+  );
+  const requestConfirm = useModalStore((s) => s.requestConfirm);
 
   const [workingHours, setWorkingHours] = useState([]);
   const [workingHoursLoading, setWorkingHoursLoading] = useState(false);
@@ -145,11 +181,24 @@ const VendorDashboardPage = () => {
   });
   const [promoFormLoading, setPromoFormLoading] = useState(false);
 
+  const [vendorProfile, setVendorProfile] = useState(null);
+
+  const [finance, setFinance] = useState(null);
+  const [financeLoading, setFinanceLoading] = useState(false);
+  const [advancedAnalytics, setAdvancedAnalytics] = useState(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [financeFilters, setFinanceFilters] = useState({
+    date_from: "",
+    date_to: "",
+  });
+  const [activePreset, setActivePreset] = useState(null);
+
   useEffect(() => {
     fetchMyRestaurants();
     vendorService
       .getMyProfile()
       .then((res) => {
+        setVendorProfile(res.data?.data || null);
         setVendorDescription(res.data?.data?.description || "");
       })
       .catch(() => {});
@@ -173,15 +222,16 @@ const VendorDashboardPage = () => {
       .catch(() => {});
   }, [staffPage]);
 
-  const DAY_NAMES = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
-
-  const buildDefaultHours = () =>
-    DAY_NAMES.map((_, i) => ({
-      day_of_week: i,
-      open_time: "09:00",
-      close_time: "22:00",
-      is_closed: false,
-    }));
+  useEffect(() => {
+    vendorService
+      .getStaffMembers({ page: staffMembersPage, size: 20 })
+      .then((res) => {
+        const list = Array.isArray(res.data?.data) ? res.data.data : [];
+        setStaffMembers(list);
+        setStaffMembersTotal(res.data?.pagination?.total || list.length);
+      })
+      .catch(() => {});
+  }, [staffMembersPage]);
 
   useEffect(() => {
     if (activeTab === "schedule" && selectedRestaurant) {
@@ -341,6 +391,7 @@ const VendorDashboardPage = () => {
     const payload = {
       name: patch.name.trim(),
       address: patch.address.trim(),
+      description: patch.description?.trim() || null,
       is_open: patch.is_open ?? false,
       is_hiring: patch.is_hiring ?? false,
       ...(patch.photo_url != null ? { photo_url: patch.photo_url } : {}),
@@ -515,14 +566,21 @@ const VendorDashboardPage = () => {
   ]);
 
   const handleDeleteMenuItem = async (itemId) => {
-    if (!window.confirm("Удалить позицию?")) return;
-    setMenuError("");
-    try {
-      await menuService.deleteItem(selectedRestaurant.id, itemId);
-      fetchMenu(selectedRestaurant.id, { force: true });
-    } catch {
-      setMenuError("Не удалось удалить позицию");
-    }
+    requestConfirm({
+      title: "Удалить позицию?",
+      message: "Вы уверены, что хотите удалить эту позицию из меню?",
+      confirmLabel: "Удалить",
+      danger: true,
+      onConfirm: async () => {
+        setMenuError("");
+        try {
+          await menuService.deleteItem(selectedRestaurant.id, itemId);
+          fetchMenu(selectedRestaurant.id, { force: true });
+        } catch {
+          setMenuError("Не удалось удалить позицию");
+        }
+      },
+    });
   };
 
   const handleOrderChange = async (orderId, status, data = {}) => {
@@ -564,12 +622,106 @@ const VendorDashboardPage = () => {
       setStaffRequests((prev) =>
         prev.map((r) => (r.id === requestId ? { ...r, status } : r)),
       );
+      if (status === "ACCEPTED") {
+        vendorService
+          .getStaffMembers({ page: 1, size: 20 })
+          .then((res) => {
+            const list = Array.isArray(res.data?.data) ? res.data.data : [];
+            setStaffMembers(list);
+            setStaffMembersTotal(res.data?.pagination?.total || list.length);
+          })
+          .catch(() => {});
+      }
     } catch {}
+  };
+
+  const handleRemoveStaffMember = async (profileId) => {
+    if (!window.confirm("Уволить сотрудника?")) return;
+    setStaffMemberRemoving(profileId);
+    try {
+      await vendorService.removeStaffMember(profileId);
+      setStaffMembers((prev) => prev.filter((m) => m.id !== profileId));
+      setStaffMembersTotal((t) => t - 1);
+    } catch {}
+    setStaffMemberRemoving(null);
   };
 
   const selectedMenu = selectedRestaurant
     ? menus[selectedRestaurant.id] || []
     : [];
+
+  const fetchAnalytics = useCallback(async () => {
+    if (!selectedRestaurant) return;
+    setFinanceLoading(true);
+    setAnalyticsLoading(true);
+    try {
+      // Strip empty strings so backend date parser doesn't receive ""
+      const rawParams = {
+        ...financeFilters,
+        restaurant_id: selectedRestaurant.id,
+      };
+      const params = Object.fromEntries(
+        Object.entries(rawParams).filter(([, v]) => v !== "" && v != null),
+      );
+      const [finRes, advRes] = await Promise.all([
+        vendorService.getFinance(params),
+        vendorService.getAdvancedAnalytics(params),
+      ]);
+      setFinance(finRes.data.data);
+      setAdvancedAnalytics(advRes.data.data);
+    } catch (err) {
+      console.error("Analytics fetch error:", err?.response?.data || err);
+    } finally {
+      setFinanceLoading(false);
+      setAnalyticsLoading(false);
+    }
+  }, [selectedRestaurant, financeFilters]);
+
+  useEffect(() => {
+    if (activeTab === "analytics") {
+      fetchAnalytics();
+    }
+  }, [activeTab, fetchAnalytics]);
+
+  const DetailField = ({ label, children }) => (
+    <div
+      style={{
+        background: "var(--bg-surface)",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--r-sm)",
+        padding: 12,
+      }}
+    >
+      <div
+        style={{
+          color: "var(--text-3)",
+          fontSize: "0.75rem",
+          fontWeight: 700,
+          textTransform: "uppercase",
+          marginBottom: 4,
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{ color: "var(--text-1)", fontSize: "1.1rem", fontWeight: 900 }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+
+  const ListSection = ({ loading, children }) => (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {loading ? (
+        <div className="loading-center">
+          <div className="spinner" />
+        </div>
+      ) : (
+        children
+      )}
+    </div>
+  );
 
   return (
     <div className="vendor-page page-enter">
@@ -581,11 +733,56 @@ const VendorDashboardPage = () => {
           fontSize: "1.5rem",
           fontWeight: 800,
           letterSpacing: "-0.03em",
-          marginBottom: 28,
+          marginBottom: 16,
         }}
       >
         <Storefront /> Дашборд вендора
       </h1>
+
+      {vendorProfile && vendorProfile.approval_status !== "APPROVED" && (
+        <div
+          style={{
+            padding: 16,
+            background:
+              vendorProfile.approval_status === "PENDING"
+                ? "var(--bg-card)"
+                : "rgba(239, 68, 68, 0.1)",
+            border: `1px solid ${vendorProfile.approval_status === "PENDING" ? "var(--border)" : "var(--error)"}`,
+            borderRadius: "var(--radius-md)",
+            marginBottom: 28,
+          }}
+        >
+          <div
+            style={{ fontWeight: 800, color: "var(--text-1)", marginBottom: 4 }}
+          >
+            {vendorProfile.approval_status === "PENDING"
+              ? "Профиль на модерации"
+              : "Профиль отклонён"}
+          </div>
+          <div
+            style={{
+              fontSize: "0.85rem",
+              color: "var(--text-3)",
+              marginBottom: vendorProfile.rejection_reason ? 8 : 0,
+            }}
+          >
+            {vendorProfile.approval_status === "PENDING"
+              ? "Ваш профиль проверяется администратором. Ваши заведения пока не видны покупателям."
+              : "К сожалению, ваш профиль не прошел модерацию."}
+          </div>
+          {vendorProfile.rejection_reason && (
+            <div
+              style={{
+                fontSize: "0.85rem",
+                color: "var(--error)",
+                fontWeight: 500,
+              }}
+            >
+              Причина: {vendorProfile.rejection_reason}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="vendor-section">
         <div
@@ -674,7 +871,28 @@ const VendorDashboardPage = () => {
                 onClick={() => setSelectedRestaurant(r)}
               >
                 <div>
-                  <div className="restaurant-row-name">{r.name}</div>
+                  <div
+                    className="restaurant-row-name"
+                    style={{ display: "flex", alignItems: "center", gap: 8 }}
+                  >
+                    {r.name}
+                    {r.moderation_status === "PENDING" && (
+                      <span
+                        className="order-status-badge pending"
+                        style={{ fontSize: "0.6rem" }}
+                      >
+                        На модерации
+                      </span>
+                    )}
+                    {r.moderation_status === "REJECTED" && (
+                      <span
+                        className="order-status-badge cancelled"
+                        style={{ fontSize: "0.6rem" }}
+                      >
+                        Отклонён
+                      </span>
+                    )}
+                  </div>
                   <div className="restaurant-row-addr">{r.address}</div>
                 </div>
                 <span style={{ marginLeft: "auto", color: "var(--text-3)" }}>
@@ -687,382 +905,275 @@ const VendorDashboardPage = () => {
       </div>
 
       {selectedRestaurant && (
-        <div className="vendor-section">
+        <div
+          style={{
+            display: "flex",
+            gap: 24,
+            alignItems: "flex-start",
+            marginTop: 24,
+          }}
+        >
+          {/* Vendor Sidebar */}
           <div
+            className="admin-sidebar"
             style={{
+              width: 220,
+              flexShrink: 0,
+              position: "sticky",
+              top: 80,
               display: "flex",
-              gap: 8,
-              marginBottom: 16,
-              overflowX: "auto",
+              flexDirection: "column",
+              gap: 6,
+              background: "var(--bg-card)",
+              padding: 16,
+              borderRadius: "var(--r-md)",
+              border: "1px solid var(--border)",
             }}
           >
+            <div
+              style={{
+                fontWeight: 800,
+                fontSize: "1rem",
+                marginBottom: 12,
+                color: "var(--text-1)",
+              }}
+            >
+              {selectedRestaurant.name}
+            </div>
             {[
-              { id: "menu", label: "Меню", icon: <ForkKnife /> },
-              { id: "orders", label: "Заказы", icon: <Package /> },
-              { id: "promos", label: "Промокоды", icon: <Tag /> },
-              { id: "schedule", label: "Расписание", icon: <Clock /> },
-              { id: "staff", label: "Сотрудники", icon: <Users /> },
-              { id: "settings", label: "Настройки", icon: <Gear /> },
+              { id: "menu", label: "Меню", icon: <ForkKnife size={18} /> },
+              { id: "orders", label: "Заказы", icon: <Package size={18} /> },
+              {
+                id: "analytics",
+                label: "Аналитика",
+                icon: <ChartLineUp size={18} />,
+              },
+              { id: "promos", label: "Промокоды", icon: <Tag size={18} /> },
+              {
+                id: "schedule",
+                label: "Расписание",
+                icon: <Clock size={18} />,
+              },
+              { id: "staff", label: "Сотрудники", icon: <Users size={18} /> },
+              { id: "settings", label: "Настройки", icon: <Gear size={18} /> },
             ].map((tab) => (
               <button
                 key={tab.id}
-                className={`category-chip ${activeTab === tab.id ? "active" : ""}`}
+                className={`btn ${activeTab === tab.id ? "btn-primary" : "btn-secondary"}`}
                 onClick={() => {
                   setActiveTab(tab.id);
                   if (tab.id === "settings" && selectedRestaurant) {
                     setEditRestaurant({ ...selectedRestaurant });
                   }
                 }}
+                style={{
+                  justifyContent: "flex-start",
+                  border: "none",
+                  padding: "10px 14px",
+                  gap: 10,
+                  fontSize: "0.9rem",
+                  fontWeight: activeTab === tab.id ? 700 : 500,
+                }}
               >
-                {tab.icon} {tab.label}
+                {tab.icon}
+                {tab.label}
               </button>
             ))}
           </div>
 
-          {activeTab === "menu" && (
-            <div>
-              {menuError && (
-                <div className="form-error" style={{ marginBottom: 12 }}>
-                  {menuError}
-                </div>
-              )}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginBottom: 16,
-                }}
-              >
-                <h3 style={{ fontWeight: 700, fontSize: "1rem" }}>
-                  Позиции меню
-                </h3>
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={() => {
-                    setEditingItem(null);
-                    setMenuItemForm({
-                      name: "",
-                      description: "",
-                      price: "",
-                      category: "SHAURMA",
-                      prep_time_minutes: 15,
-                      option_groups: [],
-                    });
-                    setShowAddItem(!showAddItem);
-                  }}
-                >
-                  <Plus size={16} /> Позиция
-                </button>
-              </div>
-
-              {(showAddItem || editingItem) && (
-                <form
-                  onSubmit={handleSaveMenuItem}
-                  style={{
-                    background: "var(--bg-card)",
-                    border: "1px solid var(--border)",
-                    borderRadius: "var(--radius-md)",
-                    padding: 16,
-                    marginBottom: 16,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 10,
-                  }}
-                >
-                  <h3 style={{ fontWeight: 700, fontSize: "0.9rem" }}>
-                    {editingItem ? "Редактировать" : "Новая позиция"}
-                  </h3>
-                  {formError && <div className="form-error">{formError}</div>}
-                  <input
-                    className="form-input"
-                    placeholder="Название"
-                    value={menuItemForm.name}
-                    onChange={(e) =>
-                      setMenuItemForm({ ...menuItemForm, name: e.target.value })
-                    }
-                    required
-                  />
-                  <textarea
-                    className="form-input"
-                    placeholder="Описание"
-                    value={menuItemForm.description}
-                    onChange={(e) =>
-                      setMenuItemForm({
-                        ...menuItemForm,
-                        description: e.target.value,
-                      })
-                    }
-                  />
-                  <div style={{ display: "flex", gap: 10 }}>
-                    <input
-                      className="form-input"
-                      type="number"
-                      placeholder="Цена"
-                      value={menuItemForm.price}
-                      onChange={(e) =>
-                        setMenuItemForm({
-                          ...menuItemForm,
-                          price: e.target.value,
-                        })
-                      }
-                      required
-                      style={{ flex: 1 }}
-                    />
-                    <select
-                      className="form-input"
-                      value={menuItemForm.category}
-                      onChange={(e) =>
-                        setMenuItemForm({
-                          ...menuItemForm,
-                          category: e.target.value,
-                        })
-                      }
-                      style={{ flex: 1 }}
-                    >
-                      <option value="SHAURMA">Шаурма</option>
-                      <option value="BURGER">Бургер</option>
-                      <option value="PIZZA">Пицца</option>
-                      <option value="SUSHI">Суши</option>
-                      <option value="SALAD">Салат</option>
-                      <option value="SNACK">Снек</option>
-                      <option value="DRINK">Напиток</option>
-                      <option value="OTHER">Другое</option>
-                    </select>
+          <div
+            className="vendor-section"
+            style={{ flex: 1, minWidth: 0, margin: 0 }}
+          >
+            {activeTab === "menu" && (
+              <div>
+                {menuError && (
+                  <div className="form-error" style={{ marginBottom: 12 }}>
+                    {menuError}
                   </div>
-                  <div
+                )}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    marginBottom: 16,
+                  }}
+                >
+                  <h3 style={{ fontWeight: 700, fontSize: "1rem" }}>
+                    Позиции меню
+                  </h3>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={() => {
+                      setEditingItem(null);
+                      setMenuItemForm({
+                        name: "",
+                        description: "",
+                        price: "",
+                        category: "SHAURMA",
+                        prep_time_minutes: 15,
+                        option_groups: [],
+                      });
+                      setShowAddItem(!showAddItem);
+                    }}
+                  >
+                    <Plus size={16} /> Позиция
+                  </button>
+                </div>
+
+                {(showAddItem || editingItem) && (
+                  <form
+                    onSubmit={handleSaveMenuItem}
                     style={{
+                      background: "var(--bg-card)",
                       border: "1px solid var(--border)",
                       borderRadius: "var(--radius-md)",
-                      padding: 12,
+                      padding: 16,
+                      marginBottom: 16,
                       display: "flex",
                       flexDirection: "column",
                       gap: 10,
                     }}
                   >
+                    <h3 style={{ fontWeight: 700, fontSize: "0.9rem" }}>
+                      {editingItem ? "Редактировать" : "Новая позиция"}
+                    </h3>
+                    {formError && <div className="form-error">{formError}</div>}
+                    <input
+                      className="form-input"
+                      placeholder="Название"
+                      value={menuItemForm.name}
+                      onChange={(e) =>
+                        setMenuItemForm({
+                          ...menuItemForm,
+                          name: e.target.value,
+                        })
+                      }
+                      required
+                    />
+                    <textarea
+                      className="form-input"
+                      placeholder="Описание"
+                      value={menuItemForm.description}
+                      onChange={(e) =>
+                        setMenuItemForm({
+                          ...menuItemForm,
+                          description: e.target.value,
+                        })
+                      }
+                    />
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <input
+                        className="form-input"
+                        type="number"
+                        placeholder="Цена"
+                        value={menuItemForm.price}
+                        onChange={(e) =>
+                          setMenuItemForm({
+                            ...menuItemForm,
+                            price: e.target.value,
+                          })
+                        }
+                        required
+                        style={{ flex: 1 }}
+                      />
+                      <select
+                        className="form-input"
+                        value={menuItemForm.category}
+                        onChange={(e) =>
+                          setMenuItemForm({
+                            ...menuItemForm,
+                            category: e.target.value,
+                          })
+                        }
+                        style={{ flex: 1 }}
+                      >
+                        {Object.entries(CATEGORY_RU).map(([val, label]) => (
+                          <option key={val} value={val}>
+                            {label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                     <div
                       style={{
+                        border: "1px solid var(--border)",
+                        borderRadius: "var(--radius-md)",
+                        padding: 12,
                         display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
+                        flexDirection: "column",
                         gap: 10,
                       }}
                     >
-                      <div>
-                        <div style={{ fontWeight: 800, fontSize: "0.86rem" }}>
-                          Опции блюда
-                        </div>
-                        <div
-                          style={{
-                            color: "var(--text-3)",
-                            fontSize: "0.74rem",
-                          }}
-                        >
-                          Например: убрать лук, добавить мясо
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-sm"
-                        onClick={() =>
-                          setMenuItemForm((form) => ({
-                            ...form,
-                            option_groups: [
-                              ...form.option_groups,
-                              createOptionGroupDraft(),
-                            ],
-                          }))
-                        }
-                      >
-                        <Plus size={14} /> Группа
-                      </button>
-                    </div>
-
-                    {menuItemForm.option_groups.map((group, groupIndex) => (
                       <div
-                        key={group.draftId}
                         style={{
-                          background: "var(--bg-surface)",
-                          border: "1px solid var(--border)",
-                          borderRadius: "var(--radius-md)",
-                          padding: 12,
                           display: "flex",
-                          flexDirection: "column",
-                          gap: 8,
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          gap: 10,
                         }}
                       >
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <input
-                            className="form-input"
-                            placeholder="Название группы"
-                            value={group.name}
-                            onChange={(e) =>
-                              setMenuItemForm((form) => ({
-                                ...form,
-                                option_groups: form.option_groups.map((g, i) =>
-                                  i === groupIndex
-                                    ? { ...g, name: e.target.value }
-                                    : g,
-                                ),
-                              }))
-                            }
-                            style={{ flex: 1 }}
-                          />
-                          <button
-                            type="button"
-                            className="btn btn-secondary btn-sm"
-                            style={{ color: "var(--error)" }}
-                            onClick={() =>
-                              setMenuItemForm((form) => ({
-                                ...form,
-                                option_groups: form.option_groups.filter(
-                                  (_, i) => i !== groupIndex,
-                                ),
-                              }))
-                            }
-                          >
-                            <X size={14} />
-                          </button>
-                        </div>
-
-                        <div
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns: "1fr 1fr",
-                            gap: 8,
-                          }}
-                        >
-                          <select
-                            className="form-input"
-                            value={group.selection_type}
-                            onChange={(e) =>
-                              setMenuItemForm((form) => ({
-                                ...form,
-                                option_groups: form.option_groups.map((g, i) =>
-                                  i === groupIndex
-                                    ? {
-                                        ...g,
-                                        selection_type: e.target.value,
-                                        max_selected:
-                                          e.target.value === "single"
-                                            ? 1
-                                            : g.max_selected,
-                                      }
-                                    : g,
-                                ),
-                              }))
-                            }
-                          >
-                            <option value="multiple">Несколько</option>
-                            <option value="single">Один вариант</option>
-                          </select>
-                          <input
-                            className="form-input"
-                            type="number"
-                            min="1"
-                            placeholder="Макс. выборов"
-                            value={group.max_selected}
-                            disabled={group.selection_type === "single"}
-                            onChange={(e) =>
-                              setMenuItemForm((form) => ({
-                                ...form,
-                                option_groups: form.option_groups.map((g, i) =>
-                                  i === groupIndex
-                                    ? { ...g, max_selected: e.target.value }
-                                    : g,
-                                ),
-                              }))
-                            }
-                          />
-                        </div>
-
-                        <label
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 8,
-                            color: "var(--text-2)",
-                            fontSize: "0.8rem",
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={group.is_required}
-                            onChange={(e) =>
-                              setMenuItemForm((form) => ({
-                                ...form,
-                                option_groups: form.option_groups.map((g, i) =>
-                                  i === groupIndex
-                                    ? {
-                                        ...g,
-                                        is_required: e.target.checked,
-                                        min_selected: e.target.checked ? 1 : 0,
-                                      }
-                                    : g,
-                                ),
-                              }))
-                            }
-                          />
-                          Обязательный выбор
-                        </label>
-
-                        {group.options.map((option, optionIndex) => (
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: "0.86rem" }}>
+                            Опции блюда
+                          </div>
                           <div
-                            key={option.draftId}
-                            style={{ display: "flex", gap: 8 }}
+                            style={{
+                              color: "var(--text-3)",
+                              fontSize: "0.74rem",
+                            }}
                           >
+                            Например: убрать лук, добавить мясо
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          onClick={() =>
+                            setMenuItemForm((form) => ({
+                              ...form,
+                              option_groups: [
+                                ...form.option_groups,
+                                createOptionGroupDraft(),
+                              ],
+                            }))
+                          }
+                        >
+                          <Plus size={14} /> Группа
+                        </button>
+                      </div>
+
+                      {menuItemForm.option_groups.map((group, groupIndex) => (
+                        <div
+                          key={group.draftId}
+                          style={{
+                            background: "var(--bg-surface)",
+                            border: "1px solid var(--border)",
+                            borderRadius: "var(--radius-md)",
+                            padding: 12,
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 8,
+                          }}
+                        >
+                          <div style={{ display: "flex", gap: 8 }}>
                             <input
                               className="form-input"
-                              placeholder="Опция"
-                              value={option.name}
+                              placeholder="Название группы"
+                              value={group.name}
                               onChange={(e) =>
                                 setMenuItemForm((form) => ({
                                   ...form,
                                   option_groups: form.option_groups.map(
                                     (g, i) =>
                                       i === groupIndex
-                                        ? {
-                                            ...g,
-                                            options: g.options.map((o, j) =>
-                                              j === optionIndex
-                                                ? { ...o, name: e.target.value }
-                                                : o,
-                                            ),
-                                          }
+                                        ? { ...g, name: e.target.value }
                                         : g,
                                   ),
                                 }))
                               }
                               style={{ flex: 1 }}
-                            />
-                            <input
-                              className="form-input"
-                              type="number"
-                              min="0"
-                              placeholder="+₽"
-                              value={option.price_delta}
-                              onChange={(e) =>
-                                setMenuItemForm((form) => ({
-                                  ...form,
-                                  option_groups: form.option_groups.map(
-                                    (g, i) =>
-                                      i === groupIndex
-                                        ? {
-                                            ...g,
-                                            options: g.options.map((o, j) =>
-                                              j === optionIndex
-                                                ? {
-                                                    ...o,
-                                                    price_delta: e.target.value,
-                                                  }
-                                                : o,
-                                            ),
-                                          }
-                                        : g,
-                                  ),
-                                }))
-                              }
-                              style={{ width: 96 }}
                             />
                             <button
                               type="button"
@@ -1071,16 +1182,8 @@ const VendorDashboardPage = () => {
                               onClick={() =>
                                 setMenuItemForm((form) => ({
                                   ...form,
-                                  option_groups: form.option_groups.map(
-                                    (g, i) =>
-                                      i === groupIndex
-                                        ? {
-                                            ...g,
-                                            options: g.options.filter(
-                                              (_, j) => j !== optionIndex,
-                                            ),
-                                          }
-                                        : g,
+                                  option_groups: form.option_groups.filter(
+                                    (_, i) => i !== groupIndex,
                                   ),
                                 }))
                               }
@@ -1088,904 +1191,1423 @@ const VendorDashboardPage = () => {
                               <X size={14} />
                             </button>
                           </div>
-                        ))}
 
-                        <button
-                          type="button"
-                          className="btn btn-secondary btn-sm"
-                          onClick={() =>
-                            setMenuItemForm((form) => ({
-                              ...form,
-                              option_groups: form.option_groups.map((g, i) =>
-                                i === groupIndex
-                                  ? {
-                                      ...g,
-                                      options: [
-                                        ...g.options,
-                                        createOptionDraft(),
-                                      ],
-                                    }
-                                  : g,
-                              ),
-                            }))
-                          }
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "1fr 1fr",
+                              gap: 8,
+                            }}
+                          >
+                            <select
+                              className="form-input"
+                              value={group.selection_type}
+                              onChange={(e) =>
+                                setMenuItemForm((form) => ({
+                                  ...form,
+                                  option_groups: form.option_groups.map(
+                                    (g, i) =>
+                                      i === groupIndex
+                                        ? {
+                                            ...g,
+                                            selection_type: e.target.value,
+                                            max_selected:
+                                              e.target.value === "single"
+                                                ? 1
+                                                : g.max_selected,
+                                          }
+                                        : g,
+                                  ),
+                                }))
+                              }
+                            >
+                              <option value="multiple">Несколько</option>
+                              <option value="single">Один вариант</option>
+                            </select>
+                            <input
+                              className="form-input"
+                              type="number"
+                              min="1"
+                              placeholder="Макс. выборов"
+                              value={group.max_selected}
+                              disabled={group.selection_type === "single"}
+                              onChange={(e) =>
+                                setMenuItemForm((form) => ({
+                                  ...form,
+                                  option_groups: form.option_groups.map(
+                                    (g, i) =>
+                                      i === groupIndex
+                                        ? { ...g, max_selected: e.target.value }
+                                        : g,
+                                  ),
+                                }))
+                              }
+                            />
+                          </div>
+
+                          <label
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                              color: "var(--text-2)",
+                              fontSize: "0.8rem",
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={group.is_required}
+                              onChange={(e) =>
+                                setMenuItemForm((form) => ({
+                                  ...form,
+                                  option_groups: form.option_groups.map(
+                                    (g, i) =>
+                                      i === groupIndex
+                                        ? {
+                                            ...g,
+                                            is_required: e.target.checked,
+                                            min_selected: e.target.checked
+                                              ? 1
+                                              : 0,
+                                          }
+                                        : g,
+                                  ),
+                                }))
+                              }
+                            />
+                            Обязательный выбор
+                          </label>
+
+                          {group.options.map((option, optionIndex) => (
+                            <div
+                              key={option.draftId}
+                              style={{ display: "flex", gap: 8 }}
+                            >
+                              <input
+                                className="form-input"
+                                placeholder="Опция"
+                                value={option.name}
+                                onChange={(e) =>
+                                  setMenuItemForm((form) => ({
+                                    ...form,
+                                    option_groups: form.option_groups.map(
+                                      (g, i) =>
+                                        i === groupIndex
+                                          ? {
+                                              ...g,
+                                              options: g.options.map((o, j) =>
+                                                j === optionIndex
+                                                  ? {
+                                                      ...o,
+                                                      name: e.target.value,
+                                                    }
+                                                  : o,
+                                              ),
+                                            }
+                                          : g,
+                                    ),
+                                  }))
+                                }
+                                style={{ flex: 1 }}
+                              />
+                              <input
+                                className="form-input"
+                                type="number"
+                                min="0"
+                                placeholder="+₽"
+                                value={option.price_delta}
+                                onChange={(e) =>
+                                  setMenuItemForm((form) => ({
+                                    ...form,
+                                    option_groups: form.option_groups.map(
+                                      (g, i) =>
+                                        i === groupIndex
+                                          ? {
+                                              ...g,
+                                              options: g.options.map((o, j) =>
+                                                j === optionIndex
+                                                  ? {
+                                                      ...o,
+                                                      price_delta:
+                                                        e.target.value,
+                                                    }
+                                                  : o,
+                                              ),
+                                            }
+                                          : g,
+                                    ),
+                                  }))
+                                }
+                                style={{ width: 96 }}
+                              />
+                              <button
+                                type="button"
+                                className="btn btn-secondary btn-sm"
+                                style={{ color: "var(--error)" }}
+                                onClick={() =>
+                                  setMenuItemForm((form) => ({
+                                    ...form,
+                                    option_groups: form.option_groups.map(
+                                      (g, i) =>
+                                        i === groupIndex
+                                          ? {
+                                              ...g,
+                                              options: g.options.filter(
+                                                (_, j) => j !== optionIndex,
+                                              ),
+                                            }
+                                          : g,
+                                    ),
+                                  }))
+                                }
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          ))}
+
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm"
+                            onClick={() =>
+                              setMenuItemForm((form) => ({
+                                ...form,
+                                option_groups: form.option_groups.map((g, i) =>
+                                  i === groupIndex
+                                    ? {
+                                        ...g,
+                                        options: [
+                                          ...g.options,
+                                          createOptionDraft(),
+                                        ],
+                                      }
+                                    : g,
+                                ),
+                              }))
+                            }
+                          >
+                            <Plus size={14} /> Опция
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <button
+                        type="submit"
+                        className="btn btn-primary"
+                        style={{ flex: 1 }}
+                        disabled={formLoading}
+                      >
+                        Сохранить
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => {
+                          setShowAddItem(false);
+                          setEditingItem(null);
+                          setMenuItemForm({
+                            name: "",
+                            description: "",
+                            price: "",
+                            category: "SHAURMA",
+                            prep_time_minutes: 15,
+                            option_groups: [],
+                          });
+                        }}
+                        style={{ flex: 1 }}
+                      >
+                        Отмена
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {selectedMenu.length === 0 ? (
+                  <EmptyState
+                    title="Меню пустое"
+                    subtitle="Добавьте первую позицию"
+                  />
+                ) : (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 10,
+                    }}
+                  >
+                    {selectedMenu.map((item) => (
+                      <div
+                        key={item.id}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "12px 16px",
+                          background: "var(--bg-card)",
+                          border: "1px solid var(--border)",
+                          borderRadius: "var(--radius-md)",
+                        }}
+                      >
+                        <div style={{ opacity: item.is_available ? 1 : 0.5 }}>
+                          <div
+                            style={{
+                              fontWeight: 700,
+                              fontSize: "0.9rem",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 6,
+                            }}
+                          >
+                            <span
+                              style={{
+                                textDecoration: item.is_available
+                                  ? "none"
+                                  : "line-through",
+                              }}
+                            >
+                              {item.name}
+                            </span>
+                            {!item.is_available && (
+                              <span
+                                className="order-status-badge cancelled"
+                                style={{
+                                  fontSize: "0.6rem",
+                                  padding: "2px 6px",
+                                }}
+                              >
+                                СТОП
+                              </span>
+                            )}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: "0.78rem",
+                              color: "var(--text-3)",
+                            }}
+                          >
+                            {item.price} ₽ •{" "}
+                            {translate(CATEGORY_RU, item.category)}
+                          </div>
+                          {item.option_groups?.length > 0 && (
+                            <div
+                              style={{
+                                marginTop: 6,
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: 6,
+                              }}
+                            >
+                              {item.option_groups.map((group) => (
+                                <span
+                                  key={group.id}
+                                  className="tag-pill"
+                                  style={{
+                                    fontSize: "0.68rem",
+                                    background: "var(--bg-raised)",
+                                    color: "var(--text-3)",
+                                    border: "1px solid var(--border)",
+                                  }}
+                                >
+                                  {group.name}: {group.options?.length || 0}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 12,
+                          }}
                         >
-                          <Plus size={14} /> Опция
-                        </button>
+                          <button
+                            className="btn btn-sm"
+                            title={
+                              item.is_available
+                                ? "Доступно (сделать недоступным)"
+                                : "Недоступно (сделать доступным)"
+                            }
+                            style={{
+                              padding: "4px 12px",
+                              height: 28,
+                              minWidth: 56,
+                              borderRadius: "20px",
+                              border: "1px solid var(--border)",
+                              background: item.is_available
+                                ? "var(--fire-subtle)"
+                                : "var(--bg-raised)",
+                              color: item.is_available
+                                ? "var(--fire)"
+                                : "var(--text-3)",
+                              transition: "all 0.2s ease",
+                            }}
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              // Optimistic update — flip locally right away
+                              const newVal = !item.is_available;
+                              const restId = selectedRestaurant.id;
+                              const { menus: currentMenus } =
+                                useRestaurantStore.getState();
+                              const optimistic = (
+                                currentMenus[restId] || []
+                              ).map((m) =>
+                                m.id === item.id
+                                  ? { ...m, is_available: newVal }
+                                  : m,
+                              );
+                              useRestaurantStore.setState((s) => ({
+                                menus: { ...s.menus, [restId]: optimistic },
+                              }));
+                              try {
+                                await menuService.updateItem(restId, item.id, {
+                                  is_available: newVal,
+                                });
+                              } catch {
+                                // Revert on failure
+                                useRestaurantStore.setState((s) => ({
+                                  menus: {
+                                    ...s.menus,
+                                    [restId]: currentMenus[restId],
+                                  },
+                                }));
+                                setMenuError(
+                                  "Не удалось изменить статус блюда",
+                                );
+                              }
+                            }}
+                          >
+                            <span
+                              style={{ fontSize: "0.72rem", fontWeight: 800 }}
+                            >
+                              {item.is_available ? "ВКЛ" : "ВЫКЛ"}
+                            </span>
+                          </button>
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => {
+                              setEditingItem(item);
+                              setMenuItemForm({
+                                name: item.name,
+                                description: item.description,
+                                price: item.price.toString(),
+                                category: item.category,
+                                prep_time_minutes: item.prep_time_minutes,
+                                option_groups: normalizeOptionGroups(
+                                  item.option_groups || [],
+                                ),
+                              });
+                            }}
+                          >
+                            <PencilSimple size={16} />
+                          </button>
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            style={{ color: "var(--error)" }}
+                            onClick={() => handleDeleteMenuItem(item.id)}
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
-                  <div style={{ display: "flex", gap: 10 }}>
-                    <button
-                      type="submit"
-                      className="btn btn-primary"
-                      style={{ flex: 1 }}
-                      disabled={formLoading}
-                    >
-                      Сохранить
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      onClick={() => {
-                        setShowAddItem(false);
-                        setEditingItem(null);
-                        setMenuItemForm({
-                          name: "",
-                          description: "",
-                          price: "",
-                          category: "SHAURMA",
-                          prep_time_minutes: 15,
-                          option_groups: [],
-                        });
-                      }}
-                      style={{ flex: 1 }}
-                    >
-                      Отмена
-                    </button>
-                  </div>
-                </form>
-              )}
+                )}
+              </div>
+            )}
 
-              {selectedMenu.length === 0 ? (
-                <EmptyState
-                  title="Меню пустое"
-                  subtitle="Добавьте первую позицию"
-                />
-              ) : (
+            {activeTab === "orders" && (
+              <div>
+                {ordersError && (
+                  <div className="form-error" style={{ marginBottom: 12 }}>
+                    {ordersError}
+                  </div>
+                )}
                 <div
-                  style={{ display: "flex", flexDirection: "column", gap: 10 }}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 12,
+                    marginBottom: 12,
+                  }}
                 >
-                  {selectedMenu.map((item) => (
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: "0.95rem" }}>
+                      Заказы заведения
+                    </div>
                     <div
-                      key={item.id}
+                      style={{ color: "var(--text-3)", fontSize: "0.76rem" }}
+                    >
+                      Новые заказы обновляются автоматически
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => fetchVendorOrders()}
+                    disabled={ordersLoading}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    <ArrowsClockwise size={14} />
+                    {ordersLoading ? "..." : "Обновить"}
+                  </button>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 6,
+                    flexWrap: "wrap",
+                    marginBottom: 12,
+                  }}
+                >
+                  {[
+                    { key: "", label: "Все" },
+                    { key: "PENDING", label: "Новые" },
+                    { key: "COOKING", label: "Готовятся" },
+                    { key: "READY", label: "Готовы" },
+                    { key: "COMPLETED", label: "Выданы" },
+                    { key: "CANCELLED", label: "Отменены" },
+                  ].map(({ key, label }) => (
+                    <button
+                      key={key}
+                      className={`category-chip${ordersStatusFilter === key ? " active" : ""}`}
+                      style={{ fontSize: "0.78rem", padding: "4px 12px" }}
+                      onClick={() => {
+                        setOrdersStatusFilter(key);
+                        setOrdersPage(1);
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                {ordersLoading ? (
+                  <div className="loading-center">
+                    <div className="spinner" />
+                  </div>
+                ) : !Array.isArray(restaurantOrders) ||
+                  restaurantOrders.length === 0 ? (
+                  <EmptyState
+                    title="Нет заказов"
+                    subtitle={
+                      ordersStatusFilter
+                        ? "В этом статусе заказов нет"
+                        : "Пока никто не сделал заказ"
+                    }
+                  />
+                ) : (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 12,
+                    }}
+                  >
+                    {restaurantOrders.map((order) => (
+                      <div
+                        key={order.id}
+                        className="order-card"
+                        style={{ cursor: "pointer" }}
+                        onClick={() => setSelectedOrder(order)}
+                      >
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 700, marginBottom: 4 }}>
+                            Заказ #{getOrderDisplayId(order)}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: "0.8rem",
+                              color: "var(--text-3)",
+                            }}
+                          >
+                            {order.items?.length || 0} позиц. •{" "}
+                            {order.total_price} ₽
+                          </div>
+                          {order.items?.length > 0 && (
+                            <div
+                              style={{
+                                marginTop: 8,
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 4,
+                                color: "var(--text-2)",
+                                fontSize: "0.78rem",
+                              }}
+                            >
+                              {order.items.map((item) => (
+                                <div key={item.id}>
+                                  ×{item.quantity} {item.menu_item_name}
+                                  {item.selected_options?.length > 0 && (
+                                    <span style={{ color: "var(--text-3)" }}>
+                                      {" "}
+                                      (
+                                      {item.selected_options
+                                        .map(
+                                          (option) =>
+                                            `${option.name}${
+                                              option.price_delta
+                                                ? ` +${option.price_delta} ₽`
+                                                : ""
+                                            }`,
+                                        )
+                                        .join(", ")}
+                                      )
+                                    </span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "flex-end",
+                            gap: 6,
+                          }}
+                        >
+                          <span
+                            className={`order-status-badge ${
+                              order.status === "PENDING"
+                                ? "pending"
+                                : order.status === "COOKING"
+                                  ? "preparing"
+                                  : order.status === "CANCELLED"
+                                    ? "cancelled"
+                                    : "ready"
+                            }`}
+                          >
+                            {STATUS_LABEL_RU[order.status] ?? order.status}
+                          </span>
+                          {NEXT_ORDER_STATUS[order.status] && (
+                            <button
+                              className="btn btn-secondary btn-sm"
+                              disabled={updatingOrderId === order.id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedOrder(order);
+                              }}
+                            >
+                              Детали
+                              <CaretRight size={16} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    <Pagination
+                      page={ordersPage}
+                      totalPages={Math.ceil(ordersTotal / 20)}
+                      onPageChange={setOrdersPage}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {selectedOrder && (
+              <OrderDetailsModal
+                order={selectedOrder}
+                onClose={() => setSelectedOrder(null)}
+                nextStatus={NEXT_ORDER_STATUS}
+                nextLabel={NEXT_ORDER_LABEL_RU}
+                onStatusChange={handleOrderChange}
+                updating={updatingOrderId}
+                allowCancel
+              />
+            )}
+
+            {activeTab === "promos" && (
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: 12 }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <span style={{ fontWeight: 700, fontSize: "0.9rem" }}>
+                    Промокоды
+                  </span>
+                  {selectedRestaurant && (
+                    <button
+                      className="btn btn-primary btn-sm"
                       style={{
                         display: "flex",
-                        justifyContent: "space-between",
                         alignItems: "center",
-                        padding: "12px 16px",
-                        background: "var(--bg-card)",
-                        border: "1px solid var(--border)",
-                        borderRadius: "var(--radius-md)",
+                        gap: 6,
+                        height: 32,
+                      }}
+                      onClick={() => setShowPromoForm((v) => !v)}
+                    >
+                      <Plus size={14} />
+                      Создать
+                    </button>
+                  )}
+                </div>
+
+                {promosError && <div className="form-error">{promosError}</div>}
+
+                {showPromoForm && selectedRestaurant && (
+                  <form
+                    onSubmit={handleCreatePromo}
+                    style={{
+                      background: "var(--bg-card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "var(--radius-md)",
+                      padding: 16,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 10,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontWeight: 700,
+                        fontSize: "0.85rem",
+                        marginBottom: 4,
                       }}
                     >
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: "0.9rem" }}>
-                          {item.name}
+                      Новый промокод
+                    </div>
+                    <input
+                      className="form-input"
+                      placeholder="Код (напр. SAVE20)"
+                      value={promoForm.code}
+                      onChange={(e) =>
+                        setPromoForm((f) => ({
+                          ...f,
+                          code: e.target.value.toUpperCase(),
+                        }))
+                      }
+                      required
+                    />
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        gap: 8,
+                      }}
+                    >
+                      <select
+                        className="form-input"
+                        value={promoForm.discount_type}
+                        onChange={(e) =>
+                          setPromoForm((f) => ({
+                            ...f,
+                            discount_type: e.target.value,
+                          }))
+                        }
+                      >
+                        <option value="PERCENT">% Процент</option>
+                        <option value="FIXED">₽ Фиксированный</option>
+                      </select>
+                      <input
+                        className="form-input"
+                        type="number"
+                        placeholder={
+                          promoForm.discount_type === "PERCENT"
+                            ? "Скидка %"
+                            : "Сумма ₽"
+                        }
+                        min={1}
+                        value={promoForm.discount_value}
+                        onChange={(e) =>
+                          setPromoForm((f) => ({
+                            ...f,
+                            discount_value: e.target.value,
+                          }))
+                        }
+                        required
+                      />
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        gap: 8,
+                      }}
+                    >
+                      <input
+                        className="form-input"
+                        type="number"
+                        placeholder="Макс. использований (не обяз.)"
+                        min={1}
+                        value={promoForm.max_uses}
+                        onChange={(e) =>
+                          setPromoForm((f) => ({
+                            ...f,
+                            max_uses: e.target.value,
+                          }))
+                        }
+                      />
+                      <input
+                        className="form-input"
+                        type="datetime-local"
+                        placeholder="Истекает (не обяз.)"
+                        value={promoForm.expires_at}
+                        onChange={(e) =>
+                          setPromoForm((f) => ({
+                            ...f,
+                            expires_at: e.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        className="btn btn-primary btn-sm"
+                        type="submit"
+                        disabled={promoFormLoading}
+                        style={{ flex: 1 }}
+                      >
+                        {promoFormLoading ? "Создаю..." : "Создать"}
+                      </button>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        type="button"
+                        onClick={() => setShowPromoForm(false)}
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {promosLoading ? (
+                  <div className="loading-center">
+                    <div className="spinner" />
+                  </div>
+                ) : promosList.length === 0 ? (
+                  <EmptyState
+                    icon={<Tag size={36} />}
+                    title="Нет промокодов"
+                    subtitle="Создайте первый промокод для скидки клиентам"
+                  />
+                ) : (
+                  promosList.map((promo) => (
+                    <div
+                      key={promo.id}
+                      style={{
+                        background: "var(--bg-card)",
+                        border: `1px solid ${promo.is_active ? "var(--border)" : "var(--border-faint, var(--border))"}`,
+                        borderRadius: "var(--radius-md)",
+                        padding: "14px 16px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        opacity: promo.is_active ? 1 : 0.5,
+                      }}
+                    >
+                      <Tag
+                        size={18}
+                        weight="bold"
+                        color={
+                          promo.is_active ? "var(--fire)" : "var(--text-3)"
+                        }
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div
+                          style={{
+                            fontWeight: 800,
+                            fontSize: "0.95rem",
+                            fontFamily: "monospace",
+                          }}
+                        >
+                          {promo.code}
                         </div>
                         <div
                           style={{
                             fontSize: "0.78rem",
                             color: "var(--text-3)",
+                            marginTop: 2,
                           }}
                         >
-                          {item.price} ₽ • {item.category}
+                          {promo.discount_type === "PERCENT"
+                            ? `${promo.discount_value}%`
+                            : `${promo.discount_value} ₽`}
+                          {" • "}
+                          {promo.used_count}/{promo.max_uses ?? "∞"} исп.
+                          {promo.expires_at
+                            ? ` • до ${new Date(promo.expires_at).toLocaleDateString()}`
+                            : ""}
                         </div>
-                        {item.option_groups?.length > 0 && (
-                          <div
-                            style={{
-                              marginTop: 6,
-                              display: "flex",
-                              flexWrap: "wrap",
-                              gap: 6,
-                            }}
-                          >
-                            {item.option_groups.map((group) => (
-                              <span
-                                key={group.id}
-                                className="tag-pill"
-                                style={{
-                                  fontSize: "0.68rem",
-                                  background: "var(--bg-raised)",
-                                  color: "var(--text-3)",
-                                  border: "1px solid var(--border)",
-                                }}
-                              >
-                                {group.name}: {group.options?.length || 0}
-                              </span>
-                            ))}
-                          </div>
-                        )}
                       </div>
-                      <div
+                      <span
                         style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 12,
+                          fontSize: "0.65rem",
+                          fontWeight: 800,
+                          padding: "3px 8px",
+                          borderRadius: "100px",
+                          background: promo.is_active
+                            ? "rgba(34,197,94,0.12)"
+                            : "rgba(107,114,128,0.12)",
+                          color: promo.is_active ? "#22c55e" : "#6b7280",
+                          border: `1px solid ${promo.is_active ? "rgba(34,197,94,0.3)" : "rgba(107,114,128,0.2)"}`,
                         }}
                       >
+                        {promo.is_active ? "Активен" : "Завершён"}
+                      </span>
+                      {promo.is_active && (
                         <button
-                          className="btn btn-secondary btn-sm"
-                          onClick={() => {
-                            setEditingItem(item);
-                            setMenuItemForm({
-                              name: item.name,
-                              description: item.description,
-                              price: item.price.toString(),
-                              category: item.category,
-                              prep_time_minutes: item.prep_time_minutes,
-                              option_groups: normalizeOptionGroups(
-                                item.option_groups || [],
-                              ),
-                            });
-                          }}
+                          className="btn-icon-sm danger"
+                          onClick={() => handleDeactivatePromo(promo.code)}
+                          title="Деактивировать"
                         >
-                          <PencilSimple size={16} />
+                          <Trash size={14} />
                         </button>
-                        <button
-                          className="btn btn-secondary btn-sm"
-                          style={{ color: "var(--error)" }}
-                          onClick={() => handleDeleteMenuItem(item.id)}
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+                  ))
+                )}
+              </div>
+            )}
 
-          {activeTab === "orders" && (
-            <div>
-              {ordersError && (
-                <div className="form-error" style={{ marginBottom: 12 }}>
-                  {ordersError}
-                </div>
-              )}
+            {activeTab === "schedule" && (
               <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: 12,
-                  marginBottom: 12,
-                }}
+                style={{ display: "flex", flexDirection: "column", gap: 12 }}
               >
-                <div>
-                  <div style={{ fontWeight: 800, fontSize: "0.95rem" }}>
-                    Заказы заведения
-                  </div>
-                  <div style={{ color: "var(--text-3)", fontSize: "0.76rem" }}>
-                    Новые заказы обновляются автоматически
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => fetchVendorOrders()}
-                  disabled={ordersLoading}
+                <div
                   style={{
                     display: "flex",
+                    justifyContent: "space-between",
                     alignItems: "center",
-                    gap: 6,
-                    whiteSpace: "nowrap",
                   }}
                 >
-                  <ArrowsClockwise size={14} />
-                  {ordersLoading ? "..." : "Обновить"}
-                </button>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  gap: 6,
-                  flexWrap: "wrap",
-                  marginBottom: 12,
-                }}
-              >
-                {[
-                  { key: "", label: "Все" },
-                  { key: "PENDING", label: "Новые" },
-                  { key: "COOKING", label: "Готовятся" },
-                  { key: "READY", label: "Готовы" },
-                  { key: "COMPLETED", label: "Выданы" },
-                  { key: "CANCELLED", label: "Отменены" },
-                ].map(({ key, label }) => (
+                  <span style={{ fontWeight: 700, fontSize: "0.9rem" }}>
+                    Расписание работы
+                  </span>
                   <button
-                    key={key}
-                    className={`category-chip${ordersStatusFilter === key ? " active" : ""}`}
-                    style={{ fontSize: "0.78rem", padding: "4px 12px" }}
-                    onClick={() => {
-                      setOrdersStatusFilter(key);
-                      setOrdersPage(1);
+                    className="btn btn-primary btn-sm"
+                    onClick={handleSaveWorkingHours}
+                    disabled={workingHoursLoading}
+                  >
+                    {workingHoursSaved
+                      ? "Сохранено ✓"
+                      : workingHoursLoading
+                        ? "Сохранение..."
+                        : "Сохранить"}
+                  </button>
+                </div>
+
+                {workingHoursError && (
+                  <div className="form-error">{workingHoursError}</div>
+                )}
+
+                {workingHoursLoading && workingHours.length === 0 ? (
+                  <div className="loading-center">
+                    <div className="spinner" />
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      background: "var(--bg-card)",
+                      border: "1px solid var(--border)",
+                      borderRadius: "var(--radius-md)",
+                      overflow: "hidden",
                     }}
                   >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              {ordersLoading ? (
-                <div className="loading-center">
-                  <div className="spinner" />
-                </div>
-              ) : !Array.isArray(restaurantOrders) ||
-                restaurantOrders.length === 0 ? (
-                <EmptyState
-                  title="Нет заказов"
-                  subtitle={
-                    ordersStatusFilter
-                      ? "В этом статусе заказов нет"
-                      : "Пока никто не сделал заказ"
-                  }
-                />
-              ) : (
-                <div
-                  style={{ display: "flex", flexDirection: "column", gap: 12 }}
-                >
-                  {restaurantOrders.map((order) => (
-                    <div
-                      key={order.id}
-                      className="order-card"
-                      style={{ cursor: "pointer" }}
-                      onClick={() => setSelectedOrder(order)}
-                    >
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 700, marginBottom: 4 }}>
-                          Заказ #{getOrderDisplayId(order)}
-                        </div>
-                        <div
-                          style={{ fontSize: "0.8rem", color: "var(--text-3)" }}
-                        >
-                          {order.items?.length || 0} позиц. •{" "}
-                          {order.total_price} ₽
-                        </div>
-                        {order.items?.length > 0 && (
-                          <div
-                            style={{
-                              marginTop: 8,
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: 4,
-                              color: "var(--text-2)",
-                              fontSize: "0.78rem",
-                            }}
-                          >
-                            {order.items.map((item) => (
-                              <div key={item.id}>
-                                ×{item.quantity} {item.menu_item_name}
-                                {item.selected_options?.length > 0 && (
-                                  <span style={{ color: "var(--text-3)" }}>
-                                    {" "}
-                                    (
-                                    {item.selected_options
-                                      .map(
-                                        (option) =>
-                                          `${option.name}${
-                                            option.price_delta
-                                              ? ` +${option.price_delta} ₽`
-                                              : ""
-                                          }`,
-                                      )
-                                      .join(", ")}
-                                    )
-                                  </span>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                    {workingHours.map((row, idx) => (
                       <div
+                        key={row.day_of_week}
                         style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "flex-end",
-                          gap: 6,
+                          display: "grid",
+                          gridTemplateColumns: "40px 1fr 1fr auto",
+                          alignItems: "center",
+                          gap: 10,
+                          padding: "10px 16px",
+                          borderBottom:
+                            idx < workingHours.length - 1
+                              ? "1px solid var(--border)"
+                              : "none",
+                          opacity: row.is_closed ? 0.45 : 1,
                         }}
                       >
                         <span
-                          className={`order-status-badge ${
-                            order.status === "PENDING"
-                              ? "pending"
-                              : order.status === "COOKING"
-                                ? "preparing"
-                                : order.status === "CANCELLED"
-                                  ? "cancelled"
-                                  : "ready"
-                          }`}
+                          style={{
+                            fontWeight: 700,
+                            fontSize: "0.85rem",
+                            color: "var(--text-2)",
+                          }}
                         >
-                          {STATUS_LABEL_RU[order.status] ?? order.status}
+                          {DAY_NAMES[row.day_of_week]}
                         </span>
-                        {NEXT_ORDER_STATUS[order.status] && (
-                          <button
-                            className="btn btn-secondary btn-sm"
-                            disabled={updatingOrderId === order.id}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedOrder(order);
-                            }}
-                          >
-                            Детали
-                            <CaretRight size={16} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  <Pagination
-                    page={ordersPage}
-                    totalPages={Math.ceil(ordersTotal / 20)}
-                    onPageChange={setOrdersPage}
-                  />
-                </div>
-              )}
-            </div>
-          )}
-
-          {selectedOrder && (
-            <OrderDetailsModal
-              order={selectedOrder}
-              onClose={() => setSelectedOrder(null)}
-              nextStatus={NEXT_ORDER_STATUS}
-              nextLabel={NEXT_ORDER_LABEL_RU}
-              onStatusChange={handleOrderChange}
-              updating={updatingOrderId}
-              allowCancel
-            />
-          )}
-
-          {activeTab === "promos" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <span style={{ fontWeight: 700, fontSize: "0.9rem" }}>
-                  Промокоды
-                </span>
-                {selectedRestaurant && (
-                  <button
-                    className="btn btn-primary btn-sm"
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 6,
-                      height: 32,
-                    }}
-                    onClick={() => setShowPromoForm((v) => !v)}
-                  >
-                    <Plus size={14} />
-                    Создать
-                  </button>
-                )}
-              </div>
-
-              {promosError && <div className="form-error">{promosError}</div>}
-
-              {showPromoForm && selectedRestaurant && (
-                <form
-                  onSubmit={handleCreatePromo}
-                  style={{
-                    background: "var(--bg-card)",
-                    border: "1px solid var(--border)",
-                    borderRadius: "var(--radius-md)",
-                    padding: 16,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 10,
-                  }}
-                >
-                  <div
-                    style={{
-                      fontWeight: 700,
-                      fontSize: "0.85rem",
-                      marginBottom: 4,
-                    }}
-                  >
-                    Новый промокод
-                  </div>
-                  <input
-                    className="form-input"
-                    placeholder="Код (напр. SAVE20)"
-                    value={promoForm.code}
-                    onChange={(e) =>
-                      setPromoForm((f) => ({
-                        ...f,
-                        code: e.target.value.toUpperCase(),
-                      }))
-                    }
-                    required
-                  />
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: 8,
-                    }}
-                  >
-                    <select
-                      className="form-input"
-                      value={promoForm.discount_type}
-                      onChange={(e) =>
-                        setPromoForm((f) => ({
-                          ...f,
-                          discount_type: e.target.value,
-                        }))
-                      }
-                    >
-                      <option value="PERCENT">% Процент</option>
-                      <option value="FIXED">₽ Фиксированный</option>
-                    </select>
-                    <input
-                      className="form-input"
-                      type="number"
-                      placeholder={
-                        promoForm.discount_type === "PERCENT"
-                          ? "Скидка %"
-                          : "Сумма ₽"
-                      }
-                      min={1}
-                      value={promoForm.discount_value}
-                      onChange={(e) =>
-                        setPromoForm((f) => ({
-                          ...f,
-                          discount_value: e.target.value,
-                        }))
-                      }
-                      required
-                    />
-                  </div>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: 8,
-                    }}
-                  >
-                    <input
-                      className="form-input"
-                      type="number"
-                      placeholder="Макс. использований (не обяз.)"
-                      min={1}
-                      value={promoForm.max_uses}
-                      onChange={(e) =>
-                        setPromoForm((f) => ({
-                          ...f,
-                          max_uses: e.target.value,
-                        }))
-                      }
-                    />
-                    <input
-                      className="form-input"
-                      type="datetime-local"
-                      placeholder="Истекает (не обяз.)"
-                      value={promoForm.expires_at}
-                      onChange={(e) =>
-                        setPromoForm((f) => ({
-                          ...f,
-                          expires_at: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button
-                      className="btn btn-primary btn-sm"
-                      type="submit"
-                      disabled={promoFormLoading}
-                      style={{ flex: 1 }}
-                    >
-                      {promoFormLoading ? "Создаю..." : "Создать"}
-                    </button>
-                    <button
-                      className="btn btn-secondary btn-sm"
-                      type="button"
-                      onClick={() => setShowPromoForm(false)}
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {promosLoading ? (
-                <div className="loading-center">
-                  <div className="spinner" />
-                </div>
-              ) : promosList.length === 0 ? (
-                <EmptyState
-                  icon={<Tag size={36} />}
-                  title="Нет промокодов"
-                  subtitle="Создайте первый промокод для скидки клиентам"
-                />
-              ) : (
-                promosList.map((promo) => (
-                  <div
-                    key={promo.id}
-                    style={{
-                      background: "var(--bg-card)",
-                      border: `1px solid ${promo.is_active ? "var(--border)" : "var(--border-faint, var(--border))"}`,
-                      borderRadius: "var(--radius-md)",
-                      padding: "14px 16px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 12,
-                      opacity: promo.is_active ? 1 : 0.5,
-                    }}
-                  >
-                    <Tag
-                      size={18}
-                      weight="bold"
-                      color={promo.is_active ? "var(--fire)" : "var(--text-3)"}
-                    />
-                    <div style={{ flex: 1 }}>
-                      <div
-                        style={{
-                          fontWeight: 800,
-                          fontSize: "0.95rem",
-                          fontFamily: "monospace",
-                        }}
-                      >
-                        {promo.code}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: "0.78rem",
-                          color: "var(--text-3)",
-                          marginTop: 2,
-                        }}
-                      >
-                        {promo.discount_type === "PERCENT"
-                          ? `${promo.discount_value}%`
-                          : `${promo.discount_value} ₽`}
-                        {" • "}
-                        {promo.used_count}/{promo.max_uses ?? "∞"} исп.
-                        {promo.expires_at
-                          ? ` • до ${new Date(promo.expires_at).toLocaleDateString()}`
-                          : ""}
-                      </div>
-                    </div>
-                    <span
-                      style={{
-                        fontSize: "0.65rem",
-                        fontWeight: 800,
-                        padding: "3px 8px",
-                        borderRadius: "100px",
-                        background: promo.is_active
-                          ? "rgba(34,197,94,0.12)"
-                          : "rgba(107,114,128,0.12)",
-                        color: promo.is_active ? "#22c55e" : "#6b7280",
-                        border: `1px solid ${promo.is_active ? "rgba(34,197,94,0.3)" : "rgba(107,114,128,0.2)"}`,
-                      }}
-                    >
-                      {promo.is_active ? "Активен" : "Завершён"}
-                    </span>
-                    {promo.is_active && (
-                      <button
-                        className="btn-icon-sm danger"
-                        onClick={() => handleDeactivatePromo(promo.code)}
-                        title="Деактивировать"
-                      >
-                        <Trash size={14} />
-                      </button>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-
-          {activeTab === "schedule" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <span style={{ fontWeight: 700, fontSize: "0.9rem" }}>
-                  Расписание работы
-                </span>
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={handleSaveWorkingHours}
-                  disabled={workingHoursLoading}
-                >
-                  {workingHoursSaved
-                    ? "Сохранено ✓"
-                    : workingHoursLoading
-                      ? "Сохранение..."
-                      : "Сохранить"}
-                </button>
-              </div>
-
-              {workingHoursError && (
-                <div className="form-error">{workingHoursError}</div>
-              )}
-
-              {workingHoursLoading && workingHours.length === 0 ? (
-                <div className="loading-center">
-                  <div className="spinner" />
-                </div>
-              ) : (
-                <div
-                  style={{
-                    background: "var(--bg-card)",
-                    border: "1px solid var(--border)",
-                    borderRadius: "var(--radius-md)",
-                    overflow: "hidden",
-                  }}
-                >
-                  {workingHours.map((row, idx) => (
-                    <div
-                      key={row.day_of_week}
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "40px 1fr 1fr auto",
-                        alignItems: "center",
-                        gap: 10,
-                        padding: "10px 16px",
-                        borderBottom:
-                          idx < workingHours.length - 1
-                            ? "1px solid var(--border)"
-                            : "none",
-                        opacity: row.is_closed ? 0.45 : 1,
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontWeight: 700,
-                          fontSize: "0.85rem",
-                          color: "var(--text-2)",
-                        }}
-                      >
-                        {DAY_NAMES[row.day_of_week]}
-                      </span>
-                      <input
-                        className="form-input"
-                        type="time"
-                        value={row.open_time}
-                        disabled={row.is_closed}
-                        onChange={(e) =>
-                          setWorkingHours((prev) =>
-                            prev.map((r, i) =>
-                              i === idx
-                                ? { ...r, open_time: e.target.value }
-                                : r,
-                            ),
-                          )
-                        }
-                        style={{ padding: "6px 8px", fontSize: "0.85rem" }}
-                      />
-                      <input
-                        className="form-input"
-                        type="time"
-                        value={row.close_time}
-                        disabled={row.is_closed}
-                        onChange={(e) =>
-                          setWorkingHours((prev) =>
-                            prev.map((r, i) =>
-                              i === idx
-                                ? { ...r, close_time: e.target.value }
-                                : r,
-                            ),
-                          )
-                        }
-                        style={{ padding: "6px 8px", fontSize: "0.85rem" }}
-                      />
-                      <label
-                        className="form-check"
-                        style={{ margin: 0, whiteSpace: "nowrap" }}
-                        title="Выходной"
-                      >
                         <input
-                          type="checkbox"
-                          checked={row.is_closed}
+                          className="form-input"
+                          type="time"
+                          value={row.open_time}
+                          disabled={row.is_closed}
                           onChange={(e) =>
                             setWorkingHours((prev) =>
                               prev.map((r, i) =>
                                 i === idx
-                                  ? { ...r, is_closed: e.target.checked }
+                                  ? { ...r, open_time: e.target.value }
                                   : r,
                               ),
                             )
                           }
+                          style={{ padding: "6px 8px", fontSize: "0.85rem" }}
                         />
-                        <span
-                          className="form-check-label"
-                          style={{ fontSize: "0.75rem" }}
+                        <input
+                          className="form-input"
+                          type="time"
+                          value={row.close_time}
+                          disabled={row.is_closed}
+                          onChange={(e) =>
+                            setWorkingHours((prev) =>
+                              prev.map((r, i) =>
+                                i === idx
+                                  ? { ...r, close_time: e.target.value }
+                                  : r,
+                              ),
+                            )
+                          }
+                          style={{ padding: "6px 8px", fontSize: "0.85rem" }}
+                        />
+                        <label
+                          className="form-check"
+                          style={{ margin: 0, whiteSpace: "nowrap" }}
+                          title="Выходной"
                         >
-                          Вых.
-                        </span>
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === "staff" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <span style={{ fontWeight: 700, fontSize: "0.9rem" }}>
-                Заявки на работу
-              </span>
-              {!Array.isArray(staffRequests) || staffRequests.length === 0 ? (
-                <EmptyState
-                  title="Нет заявок"
-                  subtitle="Заявки появятся здесь"
-                />
-              ) : (
-                <div
-                  style={{ display: "flex", flexDirection: "column", gap: 10 }}
-                >
-                  {staffRequests.map((req) => (
-                    <div key={req.id} className="staff-request-card">
-                      <div className="staff-request-info">
-                        <div style={{ fontWeight: 700 }}>
-                          Пользователь #{req.user_id.slice(0, 8)}
-                        </div>
-                        <span className="order-status-badge pending">
-                          {req.status}
-                        </span>
+                          <input
+                            type="checkbox"
+                            checked={row.is_closed}
+                            onChange={(e) =>
+                              setWorkingHours((prev) =>
+                                prev.map((r, i) =>
+                                  i === idx
+                                    ? { ...r, is_closed: e.target.checked }
+                                    : r,
+                                ),
+                              )
+                            }
+                          />
+                          <span
+                            className="form-check-label"
+                            style={{ fontSize: "0.75rem" }}
+                          >
+                            Вых.
+                          </span>
+                        </label>
                       </div>
-                      {req.status === "PENDING" && (
-                        <div className="staff-request-actions">
-                          <button
-                            className="btn btn-primary btn-sm"
-                            onClick={() =>
-                              handleStaffDecision(req.id, "ACCEPTED")
-                            }
-                          >
-                            <Check size={16} />
-                          </button>
-                          <button
-                            className="btn btn-secondary btn-sm"
-                            onClick={() =>
-                              handleStaffDecision(req.id, "REJECTED")
-                            }
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-              {staffTotal > 20 && (
-                <Pagination
-                  total={staffTotal}
-                  page={staffPage}
-                  size={20}
-                  onChange={setStaffPage}
-                />
-              )}
-            </div>
-          )}
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
-          {activeTab === "settings" && (
-            <div
-              style={{
-                padding: 16,
-                background: "var(--bg-card)",
-                border: "1px solid var(--border)",
-                borderRadius: "var(--radius-md)",
-              }}
-            >
-              <h3 style={{ fontWeight: 700, marginBottom: 12 }}>
-                Настройки ресторана
-              </h3>
-              <form
-                onSubmit={handleUpdateRestaurant}
+            {activeTab === "staff" && (
+              <div
                 style={{ display: "flex", flexDirection: "column", gap: 10 }}
               >
-                {formError && <div className="form-error">{formError}</div>}
-                <div>
-                  <label style={{ fontSize: "0.8rem", color: "var(--text-3)" }}>
-                    Название
-                  </label>
+                <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
+                  <button
+                    className={`btn btn-sm ${staffSubTab === "members" ? "btn-primary" : "btn-secondary"}`}
+                    onClick={() => setStaffSubTab("members")}
+                  >
+                    Сотрудники
+                  </button>
+                  <button
+                    className={`btn btn-sm ${staffSubTab === "requests" ? "btn-primary" : "btn-secondary"}`}
+                    onClick={() => setStaffSubTab("requests")}
+                  >
+                    Заявки
+                  </button>
+                </div>
+
+                {staffSubTab === "members" && (
+                  <>
+                    {staffMembers.length === 0 ? (
+                      <EmptyState
+                        title="Нет сотрудников"
+                        subtitle="Принятые сотрудники появятся здесь"
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 10,
+                        }}
+                      >
+                        {staffMembers.map((m) => (
+                          <div key={m.id} className="staff-request-card">
+                            <div className="staff-request-info">
+                              <div style={{ fontWeight: 700 }}>
+                                {m.user_name || `ID: ${m.user_id.slice(0, 8)}`}
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: "0.8rem",
+                                  color: "var(--text-3)",
+                                }}
+                              >
+                                {m.user_phone || "Нет телефона"}
+                                {m.restaurant_name && ` · ${m.restaurant_name}`}
+                              </div>
+                            </div>
+                            <div className="staff-request-actions">
+                              <button
+                                className="btn btn-secondary btn-sm"
+                                style={{ color: "var(--error)" }}
+                                disabled={staffMemberRemoving === m.id}
+                                onClick={() => handleRemoveStaffMember(m.id)}
+                              >
+                                {staffMemberRemoving === m.id ? (
+                                  "..."
+                                ) : (
+                                  <Trash size={16} />
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {staffMembersTotal > 20 && (
+                      <Pagination
+                        total={staffMembersTotal}
+                        page={staffMembersPage}
+                        size={20}
+                        onChange={setStaffMembersPage}
+                      />
+                    )}
+                  </>
+                )}
+
+                {staffSubTab === "requests" && (
+                  <>
+                    {!Array.isArray(staffRequests) ||
+                    staffRequests.length === 0 ? (
+                      <EmptyState
+                        title="Нет заявок"
+                        subtitle="Заявки появятся здесь"
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 10,
+                        }}
+                      >
+                        {staffRequests.map((req) => (
+                          <div key={req.id} className="staff-request-card">
+                            <div className="staff-request-info">
+                              <div style={{ fontWeight: 700 }}>
+                                Пользователь #{req.user_id.slice(0, 8)}
+                              </div>
+                              <span className="order-status-badge pending">
+                                {translate(STAFF_STATUS_RU, req.status)}
+                              </span>
+                            </div>
+                            {req.status === "PENDING" && (
+                              <div className="staff-request-actions">
+                                <button
+                                  className="btn btn-primary btn-sm"
+                                  onClick={() =>
+                                    handleStaffDecision(req.id, "ACCEPTED")
+                                  }
+                                >
+                                  <Check size={16} />
+                                </button>
+                                <button
+                                  className="btn btn-secondary btn-sm"
+                                  onClick={() =>
+                                    handleStaffDecision(req.id, "REJECTED")
+                                  }
+                                >
+                                  <X size={16} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {staffTotal > 20 && (
+                      <Pagination
+                        total={staffTotal}
+                        page={staffPage}
+                        size={20}
+                        onChange={setStaffPage}
+                      />
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
+            {activeTab === "analytics" && (
+              <ListSection
+                loading={financeLoading || analyticsLoading}
+                emptyTitle="Данных пока нет"
+              >
+                <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
                   <input
                     className="form-input"
-                    value={editRestaurant?.name ?? selectedRestaurant.name}
-                    onChange={(e) =>
-                      setEditRestaurant({
-                        ...(editRestaurant || selectedRestaurant),
-                        name: e.target.value,
-                      })
-                    }
+                    type="date"
+                    value={financeFilters.date_from}
+                    onChange={(e) => {
+                      setActivePreset(null);
+                      setFinanceFilters((f) => ({
+                        ...f,
+                        date_from: e.target.value,
+                      }));
+                    }}
                   />
-                </div>
-                <div>
-                  <label style={{ fontSize: "0.8rem", color: "var(--text-3)" }}>
-                    О заведении
-                  </label>
-                  <textarea
-                    className="form-input"
-                    placeholder="Расскажите о вашем заведении..."
-                    value={vendorDescription}
-                    onChange={(e) => setVendorDescription(e.target.value)}
-                    rows={3}
-                    style={{ resize: "vertical" }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: "0.8rem", color: "var(--text-3)" }}>
-                    Адрес
-                  </label>
                   <input
                     className="form-input"
-                    value={
-                      editRestaurant?.address ?? selectedRestaurant.address
-                    }
-                    onChange={(e) =>
-                      setEditRestaurant({
-                        ...(editRestaurant || selectedRestaurant),
-                        address: e.target.value,
-                      })
-                    }
+                    type="date"
+                    value={financeFilters.date_to}
+                    onChange={(e) => {
+                      setActivePreset(null);
+                      setFinanceFilters((f) => ({
+                        ...f,
+                        date_to: e.target.value,
+                      }));
+                    }}
                   />
                 </div>
-                <label className="form-check" style={{ marginTop: 4 }}>
-                  <input
-                    type="checkbox"
-                    checked={
-                      editRestaurant?.is_open ??
-                      selectedRestaurant.is_open ??
-                      true
-                    }
-                    onChange={(e) =>
-                      setEditRestaurant({
-                        ...(editRestaurant || selectedRestaurant),
-                        is_open: e.target.checked,
-                      })
-                    }
-                  />
-                  <span className="form-check-label">Заведение открыто</span>
-                </label>
-                <label className="form-check">
-                  <input
-                    type="checkbox"
-                    checked={
-                      editRestaurant?.is_hiring ??
-                      selectedRestaurant.is_hiring ??
-                      false
-                    }
-                    onChange={(e) =>
-                      setEditRestaurant({
-                        ...(editRestaurant || selectedRestaurant),
-                        is_hiring: e.target.checked,
-                      })
-                    }
-                  />
-                  <span className="form-check-label">Набор сотрудников</span>
-                </label>
-                <button
-                  type="submit"
-                  className="btn btn-primary"
-                  disabled={formLoading}
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    overflowX: "auto",
+                    marginBottom: 20,
+                  }}
                 >
-                  Сохранить
-                </button>
-              </form>
-            </div>
-          )}
+                  {[
+                    { label: "Сегодня", days: 0 },
+                    { label: "3 дня", days: 3 },
+                    { label: "7 дней", days: 7 },
+                    { label: "30 дней", days: 30 },
+                    { label: "Полгода", days: 180 },
+                    { label: "Год", days: 365 },
+                    { label: "Сбросить", days: null },
+                  ].map((preset) => (
+                    <button
+                      key={preset.label}
+                      className={`btn btn-sm ${activePreset === preset.days ? "btn-primary" : "btn-secondary"}`}
+                      style={{ whiteSpace: "nowrap" }}
+                      onClick={() => {
+                        setActivePreset(preset.days);
+                        if (preset.days === null) {
+                          setFinanceFilters((prev) => ({
+                            ...prev,
+                            date_from: "",
+                            date_to: "",
+                          }));
+                        } else {
+                          const to = new Date();
+                          const from = new Date();
+                          from.setDate(to.getDate() - preset.days);
+                          const fmt = (d) => {
+                            const m = String(d.getMonth() + 1).padStart(2, "0");
+                            const day = String(d.getDate()).padStart(2, "0");
+                            return `${d.getFullYear()}-${m}-${day}`;
+                          };
+                          setFinanceFilters((prev) => ({
+                            ...prev,
+                            date_from: fmt(from),
+                            date_to: fmt(to),
+                          }));
+                        }
+                      }}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+                {finance && (
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fit, minmax(180px, 1fr))",
+                      gap: 12,
+                      marginBottom: 20,
+                    }}
+                  >
+                    <DetailField label="Средний чек">
+                      {finance.average_check} ₽
+                    </DetailField>
+                    <DetailField label="Всего заказов">
+                      {finance.total_orders}
+                    </DetailField>
+                    <DetailField label="Выдано">
+                      {finance.completed_orders}
+                    </DetailField>
+                    <DetailField label="Конверсия">
+                      {finance.conversion_percent}%
+                    </DetailField>
+                  </div>
+                )}
+                {finance && (
+                  <RevenueChart data={finance.revenue_by_day || []} />
+                )}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))",
+                    gap: 20,
+                    marginTop: 20,
+                  }}
+                >
+                  {advancedAnalytics && (
+                    <>
+                      <HourlyLoadChart
+                        data={advancedAnalytics.hourly_load || []}
+                      />
+                      <CategoryRevenueChart
+                        data={(advancedAnalytics.category_revenue || []).map(
+                          (item) => ({
+                            ...item,
+                            label: translate(CATEGORY_RU, item.label),
+                          }),
+                        )}
+                      />
+                      <AOVDynamicsChart
+                        data={advancedAnalytics.aov_dynamics || []}
+                      />
+                    </>
+                  )}
+                </div>
+              </ListSection>
+            )}
+
+            {activeTab === "settings" && (
+              <div
+                style={{
+                  padding: 16,
+                  background: "var(--bg-card)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--radius-md)",
+                }}
+              >
+                <h3 style={{ fontWeight: 700, marginBottom: 12 }}>
+                  Настройки ресторана
+                </h3>
+                <form
+                  onSubmit={handleUpdateRestaurant}
+                  style={{ display: "flex", flexDirection: "column", gap: 10 }}
+                >
+                  {formError && <div className="form-error">{formError}</div>}
+                  <div>
+                    <label
+                      style={{ fontSize: "0.8rem", color: "var(--text-3)" }}
+                    >
+                      Название
+                    </label>
+                    <input
+                      className="form-input"
+                      value={editRestaurant?.name ?? selectedRestaurant.name}
+                      onChange={(e) =>
+                        setEditRestaurant({
+                          ...(editRestaurant || selectedRestaurant),
+                          name: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label
+                      style={{ fontSize: "0.8rem", color: "var(--text-3)" }}
+                    >
+                      Описание ресторана
+                    </label>
+                    <textarea
+                      className="form-input"
+                      placeholder="Краткое описание заведения для посетителей..."
+                      value={
+                        editRestaurant?.description ??
+                        selectedRestaurant.description ??
+                        ""
+                      }
+                      onChange={(e) =>
+                        setEditRestaurant({
+                          ...(editRestaurant || selectedRestaurant),
+                          description: e.target.value,
+                        })
+                      }
+                      rows={3}
+                      style={{ resize: "vertical" }}
+                    />
+                  </div>
+                  <div>
+                    <label
+                      style={{ fontSize: "0.8rem", color: "var(--text-3)" }}
+                    >
+                      Адрес
+                    </label>
+                    <input
+                      className="form-input"
+                      value={
+                        editRestaurant?.address ?? selectedRestaurant.address
+                      }
+                      onChange={(e) =>
+                        setEditRestaurant({
+                          ...(editRestaurant || selectedRestaurant),
+                          address: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <label className="form-check" style={{ marginTop: 4 }}>
+                    <input
+                      type="checkbox"
+                      checked={
+                        editRestaurant?.is_open ??
+                        selectedRestaurant.is_open ??
+                        true
+                      }
+                      onChange={(e) =>
+                        setEditRestaurant({
+                          ...(editRestaurant || selectedRestaurant),
+                          is_open: e.target.checked,
+                        })
+                      }
+                    />
+                    <span className="form-check-label">Заведение открыто</span>
+                  </label>
+                  <label className="form-check">
+                    <input
+                      type="checkbox"
+                      checked={
+                        editRestaurant?.is_hiring ??
+                        selectedRestaurant.is_hiring ??
+                        false
+                      }
+                      onChange={(e) =>
+                        setEditRestaurant({
+                          ...(editRestaurant || selectedRestaurant),
+                          is_hiring: e.target.checked,
+                        })
+                      }
+                    />
+                    <span className="form-check-label">Набор сотрудников</span>
+                  </label>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={formLoading}
+                  >
+                    Сохранить
+                  </button>
+                </form>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

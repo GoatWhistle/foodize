@@ -21,7 +21,8 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     """Upgrade schema."""
     op.add_column(
-        "restaurants", sa.Column("is_hiring", sa.Boolean(), server_default="true", nullable=False)
+        "restaurants",
+        sa.Column("is_hiring", sa.Boolean(), server_default="true", nullable=False),
     )
     # ### end Alembic commands ###
 

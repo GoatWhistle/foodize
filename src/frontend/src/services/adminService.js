@@ -6,6 +6,7 @@ export const adminService = {
   deleteUser: (id) => api.delete(`/admin/users/${id}`),
   activateUser: (id) => api.post(`/admin/users/${id}/activate`),
   makeAdmin: (id) => api.post(`/admin/users/${id}/make-admin`),
+  setRole: (id, role) => api.post(`/admin/users/${id}/role`, { role }),
   makeCustomer: () => api.post("/admin/me/make-customer"),
   getOrders: (params) => api.get("/admin/orders", { params }),
   getRestaurants: (params) => api.get("/admin/restaurants", { params }),
@@ -24,4 +25,5 @@ export const adminService = {
   deleteReview: (id) => api.delete(`/admin/reviews/${id}`),
   getPlatformStats: () => api.get("/admin/stats"),
   getFinance: (params) => api.get("/admin/finance", { params }),
+  getAdvancedAnalytics: (params) => api.get("/admin/analytics", { params }),
 };

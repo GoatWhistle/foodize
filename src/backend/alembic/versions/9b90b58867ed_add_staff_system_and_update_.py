@@ -49,9 +49,12 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_staff_requests")),
     )
-    op.create_index(op.f("ix_staff_requests_id"), "staff_requests", ["id"], unique=False)
+    op.create_index(
+        op.f("ix_staff_requests_id"), "staff_requests", ["id"], unique=False
+    )
     op.add_column(
-        "staff_profiles", sa.Column("role", sa.String(), server_default="COOK", nullable=False)
+        "staff_profiles",
+        sa.Column("role", sa.String(), server_default="COOK", nullable=False),
     )
     op.drop_column("staff_profiles", "is_on_shift")
     # ### end Alembic commands ###

@@ -1,6 +1,11 @@
 from fastapi import Request
 
-from shared.schemas.response import Meta, Pagination, SuccessListResponse, SuccessResponse
+from shared.schemas.response import (
+    Meta,
+    Pagination,
+    SuccessListResponse,
+    SuccessResponse,
+)
 
 
 def build_response(data) -> SuccessResponse:
@@ -19,7 +24,9 @@ def build_list_response(
     base_url = str(request.url.remove_query_params(["page", "size"]))
     sep = "&" if "?" in base_url else "?"
 
-    next_url = f"{base_url}{sep}page={page + 1}&size={size}" if page < total_pages else None
+    next_url = (
+        f"{base_url}{sep}page={page + 1}&size={size}" if page < total_pages else None
+    )
     prev_url = f"{base_url}{sep}page={page - 1}&size={size}" if page > 1 else None
 
     return SuccessListResponse(

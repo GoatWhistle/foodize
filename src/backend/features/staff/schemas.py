@@ -30,3 +30,15 @@ class StaffProfileResponse(BaseModel):
     role: str
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class StaffMemberResponse(BaseModel):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    restaurant_id: uuid.UUID
+    restaurant_name: str | None
+    role: str
+    user_name: str | None
+    user_phone: str | None
+
+    model_config = ConfigDict(from_attributes=True)

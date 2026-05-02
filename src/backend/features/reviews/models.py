@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from features.users.models import User
 
 
-from database import Base, CreatedAtMixin, DeletedAtMixin, IdUuidPkMixin
+from database import DeletedAtMixin
 
 
 class Review(Base, IdUuidPkMixin, CreatedAtMixin, DeletedAtMixin):
@@ -19,10 +19,14 @@ class Review(Base, IdUuidPkMixin, CreatedAtMixin, DeletedAtMixin):
     restaurant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("restaurants.id"))
     rating: Mapped[int]
     text: Mapped[str | None] = mapped_column(String(1000), nullable=True)
-    is_verified_purchase: Mapped[bool] = mapped_column(default=False, server_default="false")
+    is_verified_purchase: Mapped[bool] = mapped_column(
+        default=False, server_default="false"
+    )
     user: Mapped["User"] = relationship(back_populates="reviews")
     restaurant: Mapped["Restaurant"] = relationship(back_populates="reviews")
 
     __table_args__ = (  # type: ignore[assignment]
-        UniqueConstraint("user_id", "restaurant_id", name="uq_reviews_user_id_restaurant_id"),
+        UniqueConstraint(
+            "user_id", "restaurant_id", name="uq_reviews_user_id_restaurant_id"
+        ),
     )

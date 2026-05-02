@@ -1,7 +1,7 @@
 import time
 import uuid
-import structlog
 
+import structlog
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
@@ -10,14 +10,15 @@ from utils.logging_setup import get_logger
 
 logger = get_logger("foodize.access")
 
+
 class RequestIDMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         request_id = str(uuid.uuid4())
         request.state.request_id = request_id
-        
+
         structlog.contextvars.clear_contextvars()
         structlog.contextvars.bind_contextvars(request_id=request_id)
-        
+
         # If user is present (e.g. injected by auth middleware earlier)
         if hasattr(request.state, "user") and request.state.user:
             structlog.contextvars.bind_contextvars(user_id=request.state.user.id)

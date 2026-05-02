@@ -4,6 +4,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -26,7 +27,6 @@ from middlewares.cache import AutoCacheMiddleware
 from middlewares.limiter import limiter
 from middlewares.request_id import RequestIDMiddleware
 from middlewares.security import SecurityHeadersMiddleware
-from prometheus_fastapi_instrumentator import Instrumentator
 from settings.config.app_config import settings
 from shared.exceptions.base import AppException
 from utils.logging_setup import configure_logging

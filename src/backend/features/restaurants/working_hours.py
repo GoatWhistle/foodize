@@ -1,7 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Integer, String, Time
+from sqlalchemy import ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base, IdUuidPkMixin
@@ -13,7 +13,9 @@ if TYPE_CHECKING:
 class WorkingHours(Base, IdUuidPkMixin):
     __tablename__ = "working_hours"
 
-    restaurant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("restaurants.id"), nullable=False)
+    restaurant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("restaurants.id"), nullable=False
+    )
     day_of_week: Mapped[int] = mapped_column(Integer, nullable=False)
     open_time: Mapped[str] = mapped_column(String(5), nullable=False)
     close_time: Mapped[str] = mapped_column(String(5), nullable=False)

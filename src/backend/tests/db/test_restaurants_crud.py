@@ -64,7 +64,9 @@ async def test_update_restaurant(db_session):
     vendor_profile = await _make_vendor(db_session, "79001234569")
 
     restaurant = await create_restaurant(
-        db_session, RestaurantCreate(name="Old Name", address="Old Addr"), vendor_profile.id
+        db_session,
+        RestaurantCreate(name="Old Name", address="Old Addr"),
+        vendor_profile.id,
     )
 
     updated = await update_restaurant(
@@ -107,7 +109,9 @@ async def test_get_all_restaurants_with_filters(db_session):
     )
     await create_restaurant(
         db_session,
-        RestaurantCreate(name="Pizza Place", address="D", is_open=False, is_hiring=False),
+        RestaurantCreate(
+            name="Pizza Place", address="D", is_open=False, is_hiring=False
+        ),
         vendor_profile.id,
     )
 

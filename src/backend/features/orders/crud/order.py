@@ -29,7 +29,7 @@ async def get_orders_by_user_id(
     offset: int = 0,
     limit: int = 20,
 ) -> list[Order]:
-    stmt = select(Order).where(Order.user_id == user_id).options(*_items_options())
+    stmt = select(Order).where(Order.user_id == user_id).options(*_full_options())
     if status is not None:
         stmt = stmt.where(Order.status == status.value)
     stmt = stmt.order_by(Order.created_at.desc()).offset(offset).limit(limit)
@@ -55,7 +55,7 @@ async def get_orders_by_restaurant_id(
         select(Order)
         .where(Order.restaurant_id == restaurant_id)
         .order_by(Order.created_at.desc())
-        .options(*_items_options())
+        .options(*_full_options())
     )
     if status is not None:
         stmt = stmt.where(Order.status == status.value)
@@ -81,7 +81,11 @@ async def count_orders_by_restaurant_id(
     restaurant_id: uuid.UUID,
     status: OrderStatus | None = None,
 ) -> int:
-    stmt = select(func.count()).select_from(Order).where(Order.restaurant_id == restaurant_id)
+    stmt = (
+        select(func.count())
+        .select_from(Order)
+        .where(Order.restaurant_id == restaurant_id)
+    )
     if status is not None:
         stmt = stmt.where(Order.status == status.value)
     result = await session.execute(stmt)
@@ -120,9 +124,13 @@ async def create_order_event(
     return event
 
 
-async def get_events_by_order_id(session: AsyncSession, order_id: uuid.UUID) -> list[OrderEvent]:
+async def get_events_by_order_id(
+    session: AsyncSession, order_id: uuid.UUID
+) -> list[OrderEvent]:
     result = await session.execute(
-        select(OrderEvent).where(OrderEvent.order_id == order_id).order_by(OrderEvent.created_at)
+        select(OrderEvent)
+        .where(OrderEvent.order_id == order_id)
+        .order_by(OrderEvent.created_at)
     )
     return list(result.scalars().all())
 

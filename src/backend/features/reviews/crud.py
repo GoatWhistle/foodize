@@ -1,4 +1,5 @@
 import uuid
+from datetime import UTC, datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -36,7 +37,7 @@ async def get_reviews_by_restaurant(
         select(Review)
         .where(
             Review.restaurant_id == restaurant_id,
-            Review.deleted_at == None,
+            Review.deleted_at is None,
         )
         .order_by(Review.created_at.desc())
         .offset(offset)
@@ -45,13 +46,15 @@ async def get_reviews_by_restaurant(
     return list(result.scalars().all())
 
 
-async def count_reviews_by_restaurant(session: AsyncSession, restaurant_id: uuid.UUID) -> int:
+async def count_reviews_by_restaurant(
+    session: AsyncSession, restaurant_id: uuid.UUID
+) -> int:
     result = await session.execute(
         select(func.count())
         .select_from(Review)
         .where(
             Review.restaurant_id == restaurant_id,
-            Review.deleted_at == None,
+            Review.deleted_at is None,
         )
     )
     return result.scalar_one()
@@ -64,7 +67,7 @@ async def get_user_review_for_restaurant(
         select(Review).where(
             Review.user_id == user_id,
             Review.restaurant_id == restaurant_id,
-            Review.deleted_at == None,
+            Review.deleted_at is None,
         )
     )
     return result.scalar_one_or_none()
@@ -76,7 +79,7 @@ async def get_restaurant_avg_rating(
     result = await session.execute(
         select(func.avg(Review.rating), func.count(Review.id)).where(
             Review.restaurant_id == restaurant_id,
-            Review.deleted_at == None,
+            Review.deleted_at is None,
         )
     )
     avg, count = result.one()
@@ -84,7 +87,5 @@ async def get_restaurant_avg_rating(
 
 
 async def delete_review(session: AsyncSession, review: Review) -> None:
-    import datetime
-
-    review.deleted_at = datetime.datetime.now(datetime.timezone.utc)
+    review.deleted_at = datetime.now(UTC)
     await session.commit()

@@ -66,7 +66,9 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id", name=op.f("pk_vendor_profiles")),
         sa.UniqueConstraint("user_id", name=op.f("uq_vendor_profiles_user_id")),
     )
-    op.create_index(op.f("ix_vendor_profiles_id"), "vendor_profiles", ["id"], unique=False)
+    op.create_index(
+        op.f("ix_vendor_profiles_id"), "vendor_profiles", ["id"], unique=False
+    )
     op.create_table(
         "restaurants",
         sa.Column("address", sa.String(), nullable=False),
@@ -142,9 +144,13 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.ForeignKeyConstraint(
-            ["restaurant_id"], ["restaurants.id"], name=op.f("fk_orders_restaurant_id_restaurants")
+            ["restaurant_id"],
+            ["restaurants.id"],
+            name=op.f("fk_orders_restaurant_id_restaurants"),
         ),
-        sa.ForeignKeyConstraint(["user_id"], ["users.id"], name=op.f("fk_orders_user_id_users")),
+        sa.ForeignKeyConstraint(
+            ["user_id"], ["users.id"], name=op.f("fk_orders_user_id_users")
+        ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_orders")),
     )
     op.create_index(op.f("ix_orders_id"), "orders", ["id"], unique=False)
@@ -177,7 +183,9 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id", name=op.f("pk_staff_profiles")),
         sa.UniqueConstraint("user_id", name=op.f("uq_staff_profiles_user_id")),
     )
-    op.create_index(op.f("ix_staff_profiles_id"), "staff_profiles", ["id"], unique=False)
+    op.create_index(
+        op.f("ix_staff_profiles_id"), "staff_profiles", ["id"], unique=False
+    )
     op.create_table(
         "order_items",
         sa.Column("order_id", sa.UUID(), nullable=False),
@@ -192,7 +200,9 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.ForeignKeyConstraint(
-            ["menu_item_id"], ["menu_items.id"], name=op.f("fk_order_items_menu_item_id_menu_items")
+            ["menu_item_id"],
+            ["menu_items.id"],
+            name=op.f("fk_order_items_menu_item_id_menu_items"),
         ),
         sa.ForeignKeyConstraint(
             ["order_id"], ["orders.id"], name=op.f("fk_order_items_order_id_orders")

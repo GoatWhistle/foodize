@@ -6,13 +6,20 @@ import aio_pika.abc
 
 from features.notifications.broker import broker
 from features.notifications.events import OrderPlacedEvent, OrderStatusChangedEvent
-from features.notifications.handlers import handle_order_placed, handle_order_status_changed
+from features.notifications.handlers import (
+    handle_order_placed,
+    handle_order_status_changed,
+)
 
 logger = logging.getLogger(__name__)
 
 _BINDINGS = [
     ("notifications.order.placed", "order.placed", handle_order_placed),
-    ("notifications.order.status_changed", "order.status_changed", handle_order_status_changed),
+    (
+        "notifications.order.status_changed",
+        "order.status_changed",
+        handle_order_status_changed,
+    ),
 ]
 
 _EVENT_MODELS = {

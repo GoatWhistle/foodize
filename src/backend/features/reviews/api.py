@@ -34,7 +34,9 @@ async def create_review(
     return build_response(result)
 
 
-@router.get("/{restaurant_id}/reviews", response_model=SuccessListResponse[ReviewResponse])
+@router.get(
+    "/{restaurant_id}/reviews", response_model=SuccessListResponse[ReviewResponse]
+)
 async def read_reviews(
     request: Request,
     restaurant_id: uuid.UUID,
@@ -45,7 +47,9 @@ async def read_reviews(
     data, total = await service.list_reviews_for_restaurant(
         session=session, restaurant_id=restaurant_id, page=page, size=size
     )
-    return build_list_response(data=data, total=total, page=page, size=size, request=request)
+    return build_list_response(
+        data=data, total=total, page=page, size=size, request=request
+    )
 
 
 @router.get("/{restaurant_id}/rating", response_model=SuccessResponse[RatingResponse])
@@ -53,5 +57,7 @@ async def read_rating(
     restaurant_id: uuid.UUID,
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[RatingResponse]:
-    result = await service.get_rating_for_restaurant(session=session, restaurant_id=restaurant_id)
+    result = await service.get_rating_for_restaurant(
+        session=session, restaurant_id=restaurant_id
+    )
     return build_response(result)

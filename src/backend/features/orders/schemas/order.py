@@ -27,6 +27,8 @@ class OrderResponse(BaseModel):
     customer_name: str | None = None
     customer_phone: str | None = None
     restaurant_id: uuid.UUID
+    restaurant_name: str | None = None
+    restaurant_address: str | None = None
     status: OrderStatus
     total_price: int
     comment: str | None = None
@@ -39,25 +41,36 @@ class OrderResponse(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def flatten_customer(cls, data):
-        if hasattr(data, "user") and data.user is not None:
-            user = data.user
+    def flatten_relations(cls, data):
+        # If already a plain dict (e.g. from JSON or nested validation), pass through
+        if isinstance(data, dict):
+            return data
+
+        result = {
+            "id": data.id,
+            "display_id": data.display_id,
+            "user_id": data.user_id,
+            "restaurant_id": data.restaurant_id,
+            "status": data.status,
+            "total_price": data.total_price,
+            "comment": data.comment,
+            "created_at": data.created_at,
+            "estimated_ready_at": getattr(data, "estimated_ready_at", None),
+            "ready_at": getattr(data, "ready_at", None),
+            "items": data.items,
+        }
+
+        user = getattr(data, "user", None)
+        if user is not None:
             first_last = " ".join(
                 part for part in [user.first_name, user.last_name] if part
             ).strip()
-            return {
-                "id": data.id,
-                "display_id": data.display_id,
-                "user_id": data.user_id,
-                "customer_name": first_last or user.name,
-                "customer_phone": user.phone_number,
-                "restaurant_id": data.restaurant_id,
-                "status": data.status,
-                "total_price": data.total_price,
-                "comment": data.comment,
-                "created_at": data.created_at,
-                "estimated_ready_at": data.estimated_ready_at,
-                "ready_at": data.ready_at,
-                "items": data.items,
-            }
-        return data
+            result["customer_name"] = first_last or user.name
+            result["customer_phone"] = user.phone_number
+
+        restaurant = getattr(data, "restaurant", None)
+        if restaurant is not None:
+            result["restaurant_name"] = restaurant.name
+            result["restaurant_address"] = restaurant.address
+
+        return result

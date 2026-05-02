@@ -32,7 +32,9 @@ async def create_login(
     user_in: UserLogin,
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[TokenResponse]:
-    result = await service.login_user(session=session, user_data=user_in, response=response)
+    result = await service.login_user(
+        session=session, user_data=user_in, response=response
+    )
     return build_response(result)
 
 
@@ -42,7 +44,9 @@ async def create_refresh(
     response: Response,
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[TokenResponse]:
-    result = await service.refresh_user_token(request=request, response=response, session=session)
+    result = await service.refresh_user_token(
+        request=request, response=response, session=session
+    )
     return build_response(result)
 
 

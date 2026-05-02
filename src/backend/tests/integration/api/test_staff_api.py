@@ -29,7 +29,8 @@ class TestStaffAPI:
             return_value=mock_response,
         ) as mock_create:
             res = await client.post(
-                f"/api/v1/staff/requests/{restaurant_id}", json={"message": "Hire me pls"}
+                f"/api/v1/staff/requests/{restaurant_id}",
+                json={"message": "Hire me pls"},
             )
 
         assert res.status_code == 200

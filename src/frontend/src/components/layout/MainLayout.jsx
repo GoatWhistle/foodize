@@ -17,6 +17,7 @@ import CartDrawer from "../ui/CartDrawer";
 
 import { useAuthStore } from "../../store/useAuthStore";
 import { useOrderStore } from "../../store/useOrderStore";
+import { useShallow } from "zustand/react/shallow";
 import { ROUTES } from "../../constants/routes";
 
 const NAV_LINKS = [
@@ -59,8 +60,19 @@ const STAFF_LINK = {
 const MainLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuthStore();
-  const { cart, placeOrder } = useOrderStore();
+
+  const { isAuthenticated, user } = useAuthStore(
+    useShallow((s) => ({
+      isAuthenticated: s.isAuthenticated,
+      user: s.user,
+    })),
+  );
+  const { cart, placeOrder } = useOrderStore(
+    useShallow((s) => ({
+      cart: s.cart,
+      placeOrder: s.placeOrder,
+    })),
+  );
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");

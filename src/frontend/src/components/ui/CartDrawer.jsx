@@ -1,13 +1,22 @@
 import { useEffect, useRef, useState } from "react";
 import { Plus, Minus, Trash, Tag, X } from "@phosphor-icons/react";
 import { useOrderStore } from "../../store/useOrderStore";
+import { useShallow } from "zustand/react/shallow";
 import OrderButton from "./OrderButton";
 import { promoService } from "../../services/promoService";
 import { translateApiError } from "../../utils/translateApiError";
 
 const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
   const { cart, cartRestaurantId, removeFromCart, addToCart, clearCart } =
-    useOrderStore();
+    useOrderStore(
+      useShallow((s) => ({
+        cart: s.cart,
+        cartRestaurantId: s.cartRestaurantId,
+        removeFromCart: s.removeFromCart,
+        addToCart: s.addToCart,
+        clearCart: s.clearCart,
+      })),
+    );
   const total = useOrderStore((s) => s.cartTotal());
   const drawerRef = useRef(null);
 

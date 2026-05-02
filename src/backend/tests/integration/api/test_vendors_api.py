@@ -19,7 +19,9 @@ class TestVendorsAPI:
             new_callable=AsyncMock,
             return_value=mock_vendor,
         ) as mock_add:
-            response = await client.post("/api/v1/vendors/", json={"description": "Best food here"})
+            response = await client.post(
+                "/api/v1/vendors/", json={"description": "Best food here"}
+            )
 
         assert response.status_code == 201
         assert response.json()["data"]["description"] == "Best food here"

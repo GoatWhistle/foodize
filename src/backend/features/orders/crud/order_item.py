@@ -13,7 +13,11 @@ async def get_menu_items_by_ids(
     result = await session.execute(
         select(MenuItem)
         .where(MenuItem.id.in_(ids))
-        .options(selectinload(MenuItem.option_groups).selectinload(MenuItemOptionGroup.options))
+        .options(
+            selectinload(MenuItem.option_groups).selectinload(
+                MenuItemOptionGroup.options
+            )
+        )
     )
     return {mi.id: mi for mi in result.scalars().all()}
 

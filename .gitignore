@@ -15,3 +15,5 @@ certs/
 
 .vite
 coverage/
+
+setting.local.json

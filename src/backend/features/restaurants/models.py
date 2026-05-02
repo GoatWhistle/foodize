@@ -18,8 +18,11 @@ if TYPE_CHECKING:
     from features.vendors.models import VendorProfile
 
 
-class Restaurant(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin, DeletedAtMixin):
+class Restaurant(
+    Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin, DeletedAtMixin
+):
     address: Mapped[str] = mapped_column(unique=True)
+    description: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     vendor_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("vendor_profiles.id"))
     is_hiring: Mapped[bool] = mapped_column(default=True, server_default="true")
     is_open: Mapped[bool] = mapped_column(default=True, server_default="true")
@@ -29,11 +32,17 @@ class Restaurant(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMix
         String, default="PENDING", server_default="PENDING", nullable=False
     )
     rejection_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    average_rating: Mapped[float] = mapped_column(default=0.0, server_default="0.0")
+    review_count: Mapped[int] = mapped_column(default=0, server_default="0")
     vendor: Mapped["VendorProfile"] = relationship(back_populates="restaurants")
     menu_items: Mapped[list["MenuItem"]] = relationship(back_populates="restaurant")
     orders: Mapped[list["Order"]] = relationship(back_populates="restaurant")
-    staff_requests: Mapped[list["StaffRequest"]] = relationship(back_populates="restaurant")
-    staff_members: Mapped[list["StaffProfile"]] = relationship(back_populates="restaurant")
+    staff_requests: Mapped[list["StaffRequest"]] = relationship(
+        back_populates="restaurant"
+    )
+    staff_members: Mapped[list["StaffProfile"]] = relationship(
+        back_populates="restaurant"
+    )
     reviews: Mapped[list["Review"]] = relationship(back_populates="restaurant")
     favorited_by: Mapped[list["Favorite"]] = relationship(back_populates="restaurant")
     promos: Mapped[list["Promo"]] = relationship(back_populates="restaurant")

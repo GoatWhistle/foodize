@@ -21,7 +21,9 @@ async def test_get_menu_items_by_ids(db_session):
         user_role=UserRole.VENDOR,
     )
     vendor_user = await create_user(db_session, vendor_data)
-    vendor_profile = await create_vendor_profile(db_session, vendor_user, VendorCreate())
+    vendor_profile = await create_vendor_profile(
+        db_session, vendor_user, VendorCreate()
+    )
 
     rest_data = RestaurantCreate(name="Rest2", address="Addr2")
     restaurant = await create_restaurant(db_session, rest_data, vendor_profile.id)

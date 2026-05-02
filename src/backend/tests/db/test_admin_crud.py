@@ -33,7 +33,9 @@ async def seeded_db(db_session):
             user_role=UserRole.VENDOR,
         ),
     )
-    vendor_profile = await create_vendor_profile(db_session, vendor_user, VendorCreate())
+    vendor_profile = await create_vendor_profile(
+        db_session, vendor_user, VendorCreate()
+    )
 
     customer = await create_user(
         db_session,
@@ -46,7 +48,9 @@ async def seeded_db(db_session):
     )
 
     restaurant = await create_restaurant(
-        db_session, RestaurantCreate(name="Admin Test Rest", address="X"), vendor_profile.id
+        db_session,
+        RestaurantCreate(name="Admin Test Rest", address="X"),
+        vendor_profile.id,
     )
 
     menu_item = MenuItem(

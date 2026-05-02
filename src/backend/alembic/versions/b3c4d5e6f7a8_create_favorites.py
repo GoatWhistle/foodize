@@ -30,10 +30,14 @@ def upgrade() -> None:
             server_default=sa.text("now()"),
             nullable=False,
         ),
-        sa.ForeignKeyConstraint(["restaurant_id"], ["restaurants.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(
+            ["restaurant_id"], ["restaurants.id"], ondelete="CASCADE"
+        ),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("user_id", "restaurant_id", name="uq_favorites_user_restaurant"),
+        sa.UniqueConstraint(
+            "user_id", "restaurant_id", name="uq_favorites_user_restaurant"
+        ),
     )
     op.create_index("ix_favorites_user_id", "favorites", ["user_id"])
 

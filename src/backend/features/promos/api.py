@@ -40,8 +40,12 @@ async def list_promos(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessListResponse[PromoResponse]:
     restaurant_ids = await promos_crud.get_restaurant_ids_by_vendor(session, vendor.id)
-    data, total = await service.get_vendor_promos(session, restaurant_ids, page=page, size=size)
-    return build_list_response(data=data, total=total, page=page, size=size, request=request)
+    data, total = await service.get_vendor_promos(
+        session, restaurant_ids, page=page, size=size
+    )
+    return build_list_response(
+        data=data, total=total, page=page, size=size, request=request
+    )
 
 
 @router.delete("/{code}", status_code=204)

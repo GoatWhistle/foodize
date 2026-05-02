@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Heart, MapPin, ArrowLeft, Briefcase } from "@phosphor-icons/react";
+import { Heart, MapPin, ArrowLeft } from "@phosphor-icons/react";
 import { favoriteService } from "../../services/favoriteService";
 import { useFavoriteStore } from "../../store/useFavoriteStore";
 import { ROUTES } from "../../constants/routes";
@@ -204,21 +204,6 @@ const FavoritesPage = () => {
                 >
                   {restaurant.is_open ? "Открыто" : "Закрыто"}
                 </span>
-                {restaurant.is_hiring && (
-                  <span
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 3,
-                      fontSize: "0.65rem",
-                      fontWeight: 700,
-                      color: "var(--amber)",
-                    }}
-                  >
-                    <Briefcase size={10} weight="fill" />
-                    Вакансии
-                  </span>
-                )}
               </div>
 
               {/* Unfavorite button */}

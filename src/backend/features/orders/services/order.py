@@ -5,7 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.menu.models import MenuItem, MenuItemOption
 from features.notifications.events import OrderPlacedEvent, OrderStatusChangedEvent
-from features.notifications.publisher import publish_order_placed, publish_order_status_changed
+from features.notifications.publisher import (
+    publish_order_placed,
+    publish_order_status_changed,
+)
 from features.orders.crud import order as order_crud
 from features.orders.crud import order_item as order_item_crud
 from features.orders.exceptions import (
@@ -24,8 +27,12 @@ from features.orders.schemas.order import OrderCreate, OrderResponse, OrderStatu
 from features.orders.schemas.order_event import OrderEventResponse
 from features.promos import service as promo_service
 from features.restaurants import crud as restaurant_crud
-from features.restaurants.exceptions import RestaurantClosedException, RestaurantNotFoundException
+from features.restaurants.exceptions import (
+    RestaurantClosedException,
+    RestaurantNotFoundException,
+)
 from features.users.models import User
+from infra.cache.redis import get_redis_cache
 from shared.enums.order_status import OrderStatus
 from shared.enums.roles import UserRole
 from shared.exceptions import BadRequestException
@@ -62,11 +69,15 @@ def _validate_item_options(
         if not option:
             raise BadRequestException(detail="Selected option not found")
         if option.group.menu_item_id != menu_item.id:
-            raise BadRequestException(detail="Selected option does not belong to menu item")
+            raise BadRequestException(
+                detail="Selected option does not belong to menu item"
+            )
         if not option.group.is_active or not option.is_available:
             raise BadRequestException(detail="Selected option is not available")
         selected_options.append(option)
-        selected_by_group[option.group_id] = selected_by_group.get(option.group_id, 0) + 1
+        selected_by_group[option.group_id] = (
+            selected_by_group.get(option.group_id, 0) + 1
+        )
 
     for group in menu_item.option_groups:
         if not group.is_active:
@@ -76,11 +87,17 @@ def _validate_item_options(
         if group.is_required:
             min_selected = max(1, min_selected)
         if selected_count < min_selected:
-            raise BadRequestException(detail=f"Not enough options selected for {group.name}")
+            raise BadRequestException(
+                detail=f"Not enough options selected for {group.name}"
+            )
         if group.max_selected is not None and selected_count > group.max_selected:
-            raise BadRequestException(detail=f"Too many options selected for {group.name}")
+            raise BadRequestException(
+                detail=f"Too many options selected for {group.name}"
+            )
         if group.selection_type == "single" and selected_count > 1:
-            raise BadRequestException(detail=f"Only one option can be selected for {group.name}")
+            raise BadRequestException(
+                detail=f"Only one option can be selected for {group.name}"
+            )
 
     return selected_options
 
@@ -90,7 +107,9 @@ async def place_order(
     order_data: OrderCreate,
     user_id: uuid.UUID,
 ) -> OrderResponse:
-    restaurant = await restaurant_crud.get_restaurant_by_id(session, order_data.restaurant_id)
+    restaurant = await restaurant_crud.get_restaurant_by_id(
+        session, order_data.restaurant_id
+    )
     if not restaurant:
         raise RestaurantNotFoundException()
     if not restaurant.is_open:
@@ -111,14 +130,20 @@ async def place_order(
     selected_option_ids = [
         option_id for item in order_data.items for option_id in item.selected_option_ids
     ]
-    options_by_id = await order_item_crud.get_options_by_ids(session, selected_option_ids)
+    options_by_id = await order_item_crud.get_options_by_ids(
+        session, selected_option_ids
+    )
 
     selected_options_by_item = {
-        index: _validate_item_options(item, menu_items[item.menu_item_id], options_by_id)
+        index: _validate_item_options(
+            item, menu_items[item.menu_item_id], options_by_id
+        )
         for index, item in enumerate(order_data.items)
     }
 
-    order = await _create_order(session, order_data, user_id, menu_items, selected_options_by_item)
+    order = await _create_order(
+        session, order_data, user_id, menu_items, selected_options_by_item
+    )
 
     if order_data.promo_code:
         new_total = await promo_service.apply_promo(
@@ -231,7 +256,9 @@ async def get_restaurant_orders(
     data = await order_crud.get_orders_by_restaurant_id(
         session, restaurant_id, status=status, offset=offset, limit=size
     )
-    total = await order_crud.count_orders_by_restaurant_id(session, restaurant_id, status=status)
+    total = await order_crud.count_orders_by_restaurant_id(
+        session, restaurant_id, status=status
+    )
     return [OrderResponse.model_validate(o) for o in data], total
 
 
@@ -249,7 +276,9 @@ async def change_order_status(
         else:
             minutes = status_data.estimated_ready_in_minutes
             if minutes:
-                order.estimated_ready_at = datetime.now(timezone.utc) + timedelta(minutes=minutes)
+                order.estimated_ready_at = datetime.now(timezone.utc) + timedelta(
+                    minutes=minutes
+                )
             else:
                 raise OrderReadyTimeRequiredException()
     updated = await order_crud.update_order_status(session, order, status_data.status)
@@ -271,6 +300,9 @@ async def change_order_status(
             new_status=status_data.status,
             total_price=order.total_price,
         )
+    )
+    await get_redis_cache().publish(
+        f"order_status:{order.id}", status_data.status.value
     )
     return OrderResponse.model_validate(updated)
 
@@ -308,6 +340,9 @@ async def cancel_order(
             total_price=order.total_price,
         )
     )
+    await get_redis_cache().publish(
+        f"order_status:{order.id}", OrderStatus.CANCELLED.value
+    )
     return OrderResponse.model_validate(cancelled)
 
 
@@ -324,7 +359,9 @@ async def complete_order(
     if order.status != OrderStatus.READY.value:
         raise OrderNotCompletableException()
     old_status = OrderStatus(order.status)
-    completed = await order_crud.update_order_status(session, order, OrderStatus.COMPLETED)
+    completed = await order_crud.update_order_status(
+        session, order, OrderStatus.COMPLETED
+    )
     await order_crud.create_order_event(
         session,
         order_id=order.id,
@@ -343,6 +380,9 @@ async def complete_order(
             new_status=OrderStatus.COMPLETED,
             total_price=order.total_price,
         )
+    )
+    await get_redis_cache().publish(
+        f"order_status:{order.id}", OrderStatus.COMPLETED.value
     )
     return OrderResponse.model_validate(completed)
 

@@ -38,6 +38,12 @@ class RedisCache(CacheRepository):
         if keys:
             await self._client.delete(*keys)
 
+    async def publish(self, channel: str, message: str) -> None:
+        await self._client.publish(channel, message)
+
+    def get_raw_client(self) -> Redis:
+        return self._client
+
 
 def get_redis_cache() -> RedisCache:
     return RedisCache(_get_client())

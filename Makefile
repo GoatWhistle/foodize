@@ -2,6 +2,8 @@ SHELL := /bin/bash
 
 BACKEND_DIR := $(CURDIR)/src/backend
 FRONTEND_DIR := $(CURDIR)/src/frontend
+MINIAPP_DIR := $(CURDIR)/src/telegram-miniapp
+BOT_DIR := $(CURDIR)/src/telegram-bot
 CERTS_DIR := $(BACKEND_DIR)/certs
 
 .PHONY: help sync lint test build up down stop logs run
@@ -23,6 +25,9 @@ help:
 
 sync:
 	cd $(BACKEND_DIR) && pip install uv && uv sync
+	cd $(BOT_DIR) && pip install uv && uv sync
+	cd $(FRONTEND_DIR) && npm install --silent
+	cd $(MINIAPP_DIR) && npm install --silent
 	@echo " "
 	@echo "Dependencies synced!"
 

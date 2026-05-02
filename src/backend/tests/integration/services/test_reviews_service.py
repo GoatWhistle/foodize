@@ -130,7 +130,9 @@ class TestListReviewsForRestaurant:
                 return_value=3,
             ),
         ):
-            data, total = await list_reviews_for_restaurant(mock_db_session, restaurant_id)
+            data, total = await list_reviews_for_restaurant(
+                mock_db_session, restaurant_id
+            )
 
         assert len(data) == 3
         assert total == 3
@@ -149,7 +151,9 @@ class TestListReviewsForRestaurant:
                 return_value=0,
             ),
         ):
-            data, total = await list_reviews_for_restaurant(mock_db_session, uuid.uuid4())
+            data, total = await list_reviews_for_restaurant(
+                mock_db_session, uuid.uuid4()
+            )
 
         assert data == []
         assert total == 0

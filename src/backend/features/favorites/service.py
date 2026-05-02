@@ -3,7 +3,10 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.favorites import crud as favorites_crud
-from features.favorites.exceptions import AlreadyFavoritedException, FavoriteNotFoundException
+from features.favorites.exceptions import (
+    AlreadyFavoritedException,
+    FavoriteNotFoundException,
+)
 from features.favorites.schemas import FavoriteResponse
 from features.restaurants import crud as restaurant_crud
 from features.restaurants.exceptions import RestaurantNotFoundException
@@ -43,6 +46,8 @@ async def get_my_favorites(
     size: int = 20,
 ) -> tuple[list[FavoriteResponse], int]:
     offset = (page - 1) * size
-    items = await favorites_crud.get_favorites_by_user(session, user_id, offset=offset, limit=size)
+    items = await favorites_crud.get_favorites_by_user(
+        session, user_id, offset=offset, limit=size
+    )
     total = await favorites_crud.count_favorites_by_user(session, user_id)
     return [FavoriteResponse.model_validate(f) for f in items], total

@@ -1,10 +1,19 @@
+import logging
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from features.notifications.consumer import _process_message
 from features.notifications.events import OrderPlacedEvent, OrderStatusChangedEvent
-from features.notifications.handlers import handle_order_placed, handle_order_status_changed
+from features.notifications.handlers import (
+    handle_order_placed,
+    handle_order_status_changed,
+)
+from features.notifications.publisher import (
+    publish_order_placed,
+    publish_order_status_changed,
+)
 from shared.enums.order_status import OrderStatus
 
 
@@ -34,8 +43,6 @@ def _make_status_event() -> OrderStatusChangedEvent:
 class TestHandlers:
     @pytest.mark.asyncio
     async def test_handle_order_placed_logs(self, caplog):
-        import logging
-
         event = _make_placed_event()
         with caplog.at_level(logging.INFO, logger="features.notifications.handlers"):
             await handle_order_placed(event)
@@ -43,8 +50,6 @@ class TestHandlers:
 
     @pytest.mark.asyncio
     async def test_handle_order_status_changed_logs(self, caplog):
-        import logging
-
         event = _make_status_event()
         with caplog.at_level(logging.INFO, logger="features.notifications.handlers"):
             await handle_order_status_changed(event)
@@ -54,13 +59,12 @@ class TestHandlers:
 class TestPublisher:
     @pytest.mark.asyncio
     async def test_publish_order_placed_calls_publish(self):
-        from features.notifications.publisher import publish_order_placed
-
         event = _make_placed_event()
         mock_publisher = AsyncMock()
 
         with patch(
-            "features.notifications.publisher.get_rabbitmq_publisher", return_value=mock_publisher
+            "features.notifications.publisher.get_rabbitmq_publisher",
+            return_value=mock_publisher,
         ):
             await publish_order_placed(event)
 
@@ -70,13 +74,12 @@ class TestPublisher:
 
     @pytest.mark.asyncio
     async def test_publish_order_status_changed_calls_publish(self):
-        from features.notifications.publisher import publish_order_status_changed
-
         event = _make_status_event()
         mock_publisher = AsyncMock()
 
         with patch(
-            "features.notifications.publisher.get_rabbitmq_publisher", return_value=mock_publisher
+            "features.notifications.publisher.get_rabbitmq_publisher",
+            return_value=mock_publisher,
         ):
             await publish_order_status_changed(event)
 
@@ -88,10 +91,6 @@ class TestPublisher:
 class TestConsumer:
     @pytest.mark.asyncio
     async def test_process_message_valid_order_placed(self, caplog):
-        import logging
-
-        from features.notifications.consumer import _process_message
-
         event = _make_placed_event()
         message = MagicMock()
         message.body = event.model_dump_json().encode()
@@ -105,10 +104,6 @@ class TestConsumer:
 
     @pytest.mark.asyncio
     async def test_process_message_valid_order_status_changed(self, caplog):
-        import logging
-
-        from features.notifications.consumer import _process_message
-
         event = _make_status_event()
         message = MagicMock()
         message.body = event.model_dump_json().encode()
@@ -122,8 +117,6 @@ class TestConsumer:
 
     @pytest.mark.asyncio
     async def test_process_message_unknown_routing_key_no_crash(self):
-        from features.notifications.consumer import _process_message
-
         message = MagicMock()
         message.body = b"{}"
         message.process = MagicMock(
@@ -134,8 +127,6 @@ class TestConsumer:
 
     @pytest.mark.asyncio
     async def test_process_message_handler_raises_no_crash(self):
-        from features.notifications.consumer import _process_message
-
         event = _make_placed_event()
         message = MagicMock()
         message.body = event.model_dump_json().encode()

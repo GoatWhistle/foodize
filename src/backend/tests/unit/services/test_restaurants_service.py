@@ -92,7 +92,9 @@ class TestGetAllRestaurantsPublic:
         session = AsyncMock()
         session.execute = AsyncMock(side_effect=[mock_result, mock_count_result])
 
-        data, total = await get_all_restaurants_public(session, is_hiring=True, is_open=False)
+        data, total = await get_all_restaurants_public(
+            session, is_hiring=True, is_open=False
+        )
         assert data == []
         assert total == 0
 

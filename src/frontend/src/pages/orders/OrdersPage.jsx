@@ -56,10 +56,19 @@ const STATUS_FILTERS = [
   { key: "CANCELLED", label: "Отменены" },
 ];
 
+import { useShallow } from "zustand/react/shallow";
+
 const getOrderDisplayId = (order) => order.display_id ?? order.id.slice(0, 8);
 
 const OrdersPage = () => {
-  const { orders, ordersTotal, fetchMyOrders, ordersLoading } = useOrderStore();
+  const { orders, ordersTotal, fetchMyOrders, ordersLoading } = useOrderStore(
+    useShallow((s) => ({
+      orders: s.orders,
+      ordersTotal: s.ordersTotal,
+      fetchMyOrders: s.fetchMyOrders,
+      ordersLoading: s.ordersLoading,
+    })),
+  );
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("");
@@ -124,12 +133,22 @@ const OrdersPage = () => {
 
       {orders.length === 0 ? (
         <EmptyState
-          title="Заказов пока нет"
-          subtitle="Сделайте первый заказ — это займёт меньше минуты"
-          action={{
-            label: "Выбрать заведение",
-            onClick: () => navigate(ROUTES.HOME),
-          }}
+          title={
+            statusFilter ? "Заказов с таким статусом нет" : "Заказов пока нет"
+          }
+          subtitle={
+            statusFilter
+              ? "Попробуйте выбрать другую категорию"
+              : "Сделайте первый заказ — это займёт меньше минуты"
+          }
+          action={
+            !statusFilter
+              ? {
+                  label: "Выбрать заведение",
+                  onClick: () => navigate(ROUTES.HOME),
+                }
+              : undefined
+          }
         />
       ) : (
         <>

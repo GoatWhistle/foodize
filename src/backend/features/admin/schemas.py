@@ -8,7 +8,11 @@ from shared.enums.roles import UserRole
 
 class AdminUserResponse(BaseModel):
     id: uuid.UUID
-    name: str
+    name: str | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+    email: str | None = None
+    telegram_username: str | None = None
     phone_number: str
     user_role: UserRole
     is_active: bool
@@ -59,6 +63,24 @@ class FinanceAnalytics(BaseModel):
     conversion_percent: float
 
 
+class AnalyticsPoint(BaseModel):
+    label: str
+    value: float | int
+
+
+class CohortPoint(BaseModel):
+    cohort: str  # e.g. "2024-05"
+    day: int  # 0, 1, 7, 30
+    retention: float
+
+
+class AdvancedAnalytics(BaseModel):
+    hourly_load: list[AnalyticsPoint]
+    category_revenue: list[AnalyticsPoint]
+    aov_dynamics: list[FinanceSeriesPoint]
+    retention: list[CohortPoint]
+
+
 class ModerationDecision(BaseModel):
     reason: str | None = None
 
@@ -100,12 +122,16 @@ class AdminVendorResponse(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def flatten_user(cls, data):
-        if hasattr(data, "user") and data.user is not None:
+        if isinstance(data, dict):
+            return data
+
+        user = getattr(data, "user", None)
+        if user is not None:
             return {
                 "id": data.id,
                 "user_id": data.user_id,
-                "name": data.user.name,
-                "phone_number": data.user.phone_number,
+                "name": user.name,
+                "phone_number": user.phone_number,
                 "description": data.description,
                 "restaurants_count": len(data.restaurants or []),
                 "approval_status": data.approval_status,

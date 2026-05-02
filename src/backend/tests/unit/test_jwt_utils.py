@@ -77,7 +77,9 @@ class TestCreateJwtToken:
             return "mocked-token"
 
         with patch("utils.JWT.encode_jwt", side_effect=fake_encode):
-            token = create_jwt_token(user_id=user_id, phone_number=phone, lifetime_seconds=3600)
+            token = create_jwt_token(
+                user_id=user_id, phone_number=phone, lifetime_seconds=3600
+            )
 
         assert token == "mocked-token"
         assert captured["sub"] == str(user_id)
@@ -94,7 +96,9 @@ class TestCreateJwtToken:
             return "tok"
 
         with patch("utils.JWT.encode_jwt", side_effect=fake_encode):
-            create_jwt_token(user_id=user_id, phone_number="79001112233", lifetime_seconds=60)
+            create_jwt_token(
+                user_id=user_id, phone_number="79001112233", lifetime_seconds=60
+            )
 
         now = datetime.now(timezone.utc)
         assert captured["exp"] > now

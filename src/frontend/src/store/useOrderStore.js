@@ -146,6 +146,41 @@ export const useOrderStore = create((set, get) => ({
     await cartService.clearCart();
   },
 
+  repeatOrder: async (order) => {
+    const payload = {
+      restaurant_id: order.restaurant_id,
+      items: order.items.map((i) => {
+        const optionIds =
+          i.selected_options?.map((o) => o.option_id ?? o.id) || [];
+        const optionsTotal = (i.selected_options || []).reduce(
+          (sum, o) => sum + (Number(o.price_delta) || 0),
+          0,
+        );
+        const basePrice = Math.max(
+          0,
+          (Number(i.price_at_purchase) || 0) - optionsTotal,
+        );
+
+        return {
+          menu_item_id: i.menu_item_id,
+          name: i.menu_item_name,
+          price: basePrice,
+          image_url: null,
+          quantity: i.quantity,
+          selected_option_ids: optionIds,
+          selected_options: (i.selected_options || []).map((o) => ({
+            id: o.option_id ?? o.id,
+            option_id: o.option_id ?? o.id,
+            name: o.name,
+            price_delta: o.price_delta,
+          })),
+        };
+      }),
+    };
+    await cartService.updateCart(payload);
+    await get().fetchCart();
+  },
+
   cartTotal: () =>
     get().cart.reduce((sum, i) => sum + getLinePrice(i) * i.quantity, 0),
 

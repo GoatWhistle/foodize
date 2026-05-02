@@ -121,15 +121,24 @@ class TestPlaceOrderExtended:
             patch(
                 "features.orders.crud.order_item.get_menu_items_by_ids",
                 new_callable=AsyncMock,
-                return_value={item_id: make_mock_menu_item(item_id, restaurant_id=restaurant_id)},
+                return_value={
+                    item_id: make_mock_menu_item(item_id, restaurant_id=restaurant_id)
+                },
             ),
             patch(
                 "features.orders.services.order._create_order",
                 new_callable=AsyncMock,
                 return_value=mock_order,
             ),
-            patch("features.promos.service.apply_promo", new_callable=AsyncMock, return_value=900),
-            patch("features.orders.services.order.publish_order_placed", new_callable=AsyncMock),
+            patch(
+                "features.promos.service.apply_promo",
+                new_callable=AsyncMock,
+                return_value=900,
+            ),
+            patch(
+                "features.orders.services.order.publish_order_placed",
+                new_callable=AsyncMock,
+            ),
         ):
             session.commit = AsyncMock()
             session.refresh = AsyncMock(side_effect=lambda o: None)
@@ -192,13 +201,17 @@ class TestChangeOrderStatus:
                 new_callable=AsyncMock,
                 return_value=updated_order,
             ),
-            patch("features.orders.crud.order.create_order_event", new_callable=AsyncMock),
+            patch(
+                "features.orders.crud.order.create_order_event", new_callable=AsyncMock
+            ),
             patch(
                 "features.orders.services.order.publish_order_status_changed",
                 new_callable=AsyncMock,
             ),
         ):
-            result = await change_order_status(mock_db_session, order, status_data, user)
+            result = await change_order_status(
+                mock_db_session, order, status_data, user
+            )
             assert result.status == OrderStatus.ACCEPTED
 
     async def test_invalid_transition_raises(self, mock_db_session):
@@ -229,7 +242,9 @@ class TestCompleteOrder:
                 new_callable=AsyncMock,
                 return_value=completed_order,
             ),
-            patch("features.orders.crud.order.create_order_event", new_callable=AsyncMock),
+            patch(
+                "features.orders.crud.order.create_order_event", new_callable=AsyncMock
+            ),
             patch(
                 "features.orders.services.order.publish_order_status_changed",
                 new_callable=AsyncMock,
@@ -243,14 +258,18 @@ class TestCompleteOrder:
         order = make_mock_order(user_id=user_id, status=OrderStatus.PENDING.value)
 
         with patch(
-            "features.orders.crud.order.get_order_by_id", new_callable=AsyncMock, return_value=order
+            "features.orders.crud.order.get_order_by_id",
+            new_callable=AsyncMock,
+            return_value=order,
         ):
             with pytest.raises(OrderNotCompletableException):
                 await complete_order(mock_db_session, order.id, user_id)
 
     async def test_not_found(self, mock_db_session):
         with patch(
-            "features.orders.crud.order.get_order_by_id", new_callable=AsyncMock, return_value=None
+            "features.orders.crud.order.get_order_by_id",
+            new_callable=AsyncMock,
+            return_value=None,
         ):
             with pytest.raises(OrderNotFoundException):
                 await complete_order(mock_db_session, uuid.uuid4(), uuid.uuid4())
@@ -260,7 +279,9 @@ class TestCompleteOrder:
         order = make_mock_order(user_id=uuid.uuid4(), status=OrderStatus.READY.value)
 
         with patch(
-            "features.orders.crud.order.get_order_by_id", new_callable=AsyncMock, return_value=order
+            "features.orders.crud.order.get_order_by_id",
+            new_callable=AsyncMock,
+            return_value=order,
         ):
             with pytest.raises(OrderAccessDeniedException):
                 await complete_order(mock_db_session, order.id, user_id)
@@ -292,7 +313,9 @@ class TestCreateOrder:
             new_callable=AsyncMock,
             return_value=saved_order,
         ):
-            result = await _create_order(session, order_data, user_id, {item_id: menu_item_mock})
+            result = await _create_order(
+                session, order_data, user_id, {item_id: menu_item_mock}
+            )
             assert result == saved_order
 
     async def test_order_not_found_after_commit(self, mock_db_session):
@@ -319,7 +342,9 @@ class TestCreateOrder:
             return_value=None,
         ):
             with pytest.raises(OrderNotFoundException):
-                await _create_order(session, order_data, user_id, {item_id: menu_item_mock})
+                await _create_order(
+                    session, order_data, user_id, {item_id: menu_item_mock}
+                )
 
 
 class TestGetOrderEvents:

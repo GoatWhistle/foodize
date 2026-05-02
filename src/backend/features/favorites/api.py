@@ -25,7 +25,9 @@ async def get_my_favorites(
     data, total = await service.get_my_favorites(
         session=session, user_id=current_user.id, page=page, size=size
     )
-    return build_list_response(data=data, total=total, page=page, size=size, request=request)
+    return build_list_response(
+        data=data, total=total, page=page, size=size, request=request
+    )
 
 
 @router.post(

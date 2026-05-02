@@ -36,7 +36,9 @@ async def _make_vendor_and_restaurant(db_session):
             user_role=UserRole.VENDOR,
         ),
     )
-    vendor_profile = await create_vendor_profile(db_session, vendor_user, VendorCreate())
+    vendor_profile = await create_vendor_profile(
+        db_session, vendor_user, VendorCreate()
+    )
     restaurant = await create_restaurant(
         db_session, RestaurantCreate(name="Rest", address="Addr"), vendor_profile.id
     )
@@ -131,7 +133,9 @@ async def test_update_order_status(db_session):
     db_session.add(menu_item)
     await db_session.commit()
 
-    order = await _place_raw_order(db_session, customer, restaurant, menu_item, quantity=1)
+    order = await _place_raw_order(
+        db_session, customer, restaurant, menu_item, quantity=1
+    )
     assert order.status == OrderStatus.PENDING.value
 
     updated = await update_order_status(db_session, order, OrderStatus.ACCEPTED)
@@ -153,7 +157,9 @@ async def test_cancel_order(db_session):
     db_session.add(menu_item)
     await db_session.commit()
 
-    order = await _place_raw_order(db_session, customer, restaurant, menu_item, quantity=1)
+    order = await _place_raw_order(
+        db_session, customer, restaurant, menu_item, quantity=1
+    )
     cancelled = await cancel_order(db_session, order)
     assert cancelled.status == OrderStatus.CANCELLED.value
 
@@ -173,7 +179,9 @@ async def test_create_and_get_order_events(db_session):
     db_session.add(menu_item)
     await db_session.commit()
 
-    order = await _place_raw_order(db_session, customer, restaurant, menu_item, quantity=1)
+    order = await _place_raw_order(
+        db_session, customer, restaurant, menu_item, quantity=1
+    )
 
     event = await create_order_event(
         db_session,
@@ -207,12 +215,24 @@ async def test_count_filters_by_status(db_session):
     db_session.add(menu_item)
     await db_session.commit()
 
-    order = await _place_raw_order(db_session, customer, restaurant, menu_item, quantity=1)
+    order = await _place_raw_order(
+        db_session, customer, restaurant, menu_item, quantity=1
+    )
 
-    assert await count_orders_by_user_id(db_session, customer.id, OrderStatus.PENDING) == 1
-    assert await count_orders_by_user_id(db_session, customer.id, OrderStatus.ACCEPTED) == 0
+    assert (
+        await count_orders_by_user_id(db_session, customer.id, OrderStatus.PENDING) == 1
+    )
+    assert (
+        await count_orders_by_user_id(db_session, customer.id, OrderStatus.ACCEPTED)
+        == 0
+    )
 
     await update_order_status(db_session, order, OrderStatus.ACCEPTED)
 
-    assert await count_orders_by_user_id(db_session, customer.id, OrderStatus.ACCEPTED) == 1
-    assert await count_orders_by_user_id(db_session, customer.id, OrderStatus.PENDING) == 0
+    assert (
+        await count_orders_by_user_id(db_session, customer.id, OrderStatus.ACCEPTED)
+        == 1
+    )
+    assert (
+        await count_orders_by_user_id(db_session, customer.id, OrderStatus.PENDING) == 0
+    )

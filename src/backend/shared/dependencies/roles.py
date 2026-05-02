@@ -14,5 +14,7 @@ class RoleChecker:
 
     def __call__(self, user: User = Depends(get_current_user)) -> User:
         if user.user_role not in {r.value for r in self.allowed_roles}:
-            raise RuleException(detail="Insufficient permissions to perform this action")
+            raise RuleException(
+                detail="Insufficient permissions to perform this action"
+            )
         return user

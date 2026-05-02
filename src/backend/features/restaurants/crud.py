@@ -44,7 +44,9 @@ async def get_vendor_restaurants(
 
 async def count_vendor_restaurants(session: AsyncSession, vendor_id: uuid.UUID) -> int:
     result = await session.execute(
-        select(func.count()).select_from(Restaurant).where(Restaurant.vendor_id == vendor_id)
+        select(func.count())
+        .select_from(Restaurant)
+        .where(Restaurant.vendor_id == vendor_id)
     )
     return result.scalar_one()
 

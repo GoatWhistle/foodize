@@ -81,7 +81,9 @@ def upgrade() -> None:
         sa.Column("order_item_id", sa.UUID(), nullable=False),
         sa.Column("option_id", sa.UUID(), nullable=True),
         sa.Column("name_snapshot", sa.String(length=128), nullable=False),
-        sa.Column("price_delta_snapshot", sa.Integer(), server_default="0", nullable=False),
+        sa.Column(
+            "price_delta_snapshot", sa.Integer(), server_default="0", nullable=False
+        ),
         sa.Column("id", sa.UUID(), nullable=False),
         sa.Column(
             "created_at",
@@ -93,11 +95,15 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["order_item_id"], ["order_items.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index("ix_order_item_options_order_item_id", "order_item_options", ["order_item_id"])
+    op.create_index(
+        "ix_order_item_options_order_item_id", "order_item_options", ["order_item_id"]
+    )
 
 
 def downgrade() -> None:
-    op.drop_index("ix_order_item_options_order_item_id", table_name="order_item_options")
+    op.drop_index(
+        "ix_order_item_options_order_item_id", table_name="order_item_options"
+    )
     op.drop_table("order_item_options")
     op.drop_index("ix_menu_item_options_group_id", table_name="menu_item_options")
     op.drop_table("menu_item_options")

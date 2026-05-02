@@ -4,6 +4,7 @@ import { useAuthStore } from "../../store/useAuthStore";
 import { ROUTES } from "../../constants/routes";
 import FoodizeLogo from "../../components/ui/FoodizeLogo";
 import { translateApiError } from "../../utils/translateApiError";
+import { useShallow } from "zustand/react/shallow";
 
 const AuthVisual = () => (
   <div className="auth-visual">
@@ -30,8 +31,12 @@ const RegisterPage = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-
-  const { register, login } = useAuthStore();
+  const { register, login } = useAuthStore(
+    useShallow((s) => ({
+      register: s.register,
+      login: s.login,
+    })),
+  );
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {

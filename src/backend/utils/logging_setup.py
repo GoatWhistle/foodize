@@ -1,9 +1,12 @@
 import logging
 import sys
+
 import structlog
+
 from settings.config.app_config import settings
 
 LOGGER_NAME = "foodize"
+
 
 def configure_logging() -> None:
     level = settings.logs.level.upper()
@@ -12,7 +15,7 @@ def configure_logging() -> None:
         stream=sys.stdout,
         level=level,
     )
-    
+
     structlog.configure(
         processors=[
             structlog.contextvars.merge_contextvars,
@@ -28,6 +31,7 @@ def configure_logging() -> None:
         logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
     )
+
 
 def get_logger(name: str = LOGGER_NAME) -> structlog.BoundLogger:
     return structlog.get_logger(name).bind(service="foodize")

@@ -37,7 +37,9 @@ def upgrade() -> None:
             ["restaurants.id"],
             name=op.f("fk_reviews_restaurant_id_restaurants"),
         ),
-        sa.ForeignKeyConstraint(["user_id"], ["users.id"], name=op.f("fk_reviews_user_id_users")),
+        sa.ForeignKeyConstraint(
+            ["user_id"], ["users.id"], name=op.f("fk_reviews_user_id_users")
+        ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_reviews")),
         sa.UniqueConstraint(
             "user_id", "restaurant_id", name=op.f("uq_reviews_user_id_restaurant_id")

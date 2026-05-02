@@ -7,8 +7,11 @@ from features.restaurants import crud
 from features.restaurants.dependencies import get_restaurant_and_check_ownership
 from features.restaurants.exceptions import RestaurantNotFoundException
 from features.restaurants.models import Restaurant
-from features.restaurants.schemas import RestaurantCreate, RestaurantResponse, RestaurantUpdate
-from features.reviews.models import Review
+from features.restaurants.schemas import (
+    RestaurantCreate,
+    RestaurantResponse,
+    RestaurantUpdate,
+)
 
 
 async def create_restaurant_for_vendor(
@@ -38,7 +41,9 @@ async def get_my_restaurants(
     size: int = 20,
 ) -> tuple[list[RestaurantResponse], int]:
     offset = (page - 1) * size
-    data = await crud.get_vendor_restaurants(session, vendor_id, offset=offset, limit=size)
+    data = await crud.get_vendor_restaurants(
+        session, vendor_id, offset=offset, limit=size
+    )
     total = await crud.count_vendor_restaurants(session, vendor_id)
     return [RestaurantResponse.model_validate(r) for r in data], total
 
@@ -66,32 +71,16 @@ async def get_restaurant_public(
 ) -> RestaurantResponse:
     result = await session.execute(
         _apply_restaurant_filters(
-            select(
-                Restaurant,
-                func.coalesce(func.avg(Review.rating), 0).label("average_rating"),
-                func.count(Review.id).label("review_count"),
-            )
-            .outerjoin(Review, Review.restaurant_id == Restaurant.id)
-            .where(Restaurant.id == restaurant_id)
-            .group_by(Restaurant.id),
+            select(Restaurant).where(Restaurant.id == restaurant_id),
             None,
             None,
             None,
         )
     )
-    row = result.one_or_none()
-    if not row:
+    restaurant = result.scalar_one_or_none()
+    if not restaurant:
         raise RestaurantNotFoundException()
-    return RestaurantResponse(
-        id=row[0].id,
-        name=row[0].name,
-        address=row[0].address,
-        vendor_id=row[0].vendor_id,
-        is_hiring=row[0].is_hiring,
-        is_open=row[0].is_open,
-        average_rating=round(float(row[1]), 1),
-        review_count=row[2],
-    )
+    return RestaurantResponse.model_validate(restaurant)
 
 
 async def get_all_restaurants_public(
@@ -105,31 +94,13 @@ async def get_all_restaurants_public(
     offset = (page - 1) * size
 
     query = _apply_restaurant_filters(
-        select(
-            Restaurant,
-            func.coalesce(func.avg(Review.rating), 0).label("average_rating"),
-            func.count(Review.id).label("review_count"),
-        )
-        .outerjoin(Review, Review.restaurant_id == Restaurant.id)
-        .group_by(Restaurant.id),
+        select(Restaurant),
         name,
         is_hiring,
         is_open,
     )
     result = await session.execute(query.offset(offset).limit(size))
-    restaurants = [
-        RestaurantResponse(
-            id=row[0].id,
-            name=row[0].name,
-            address=row[0].address,
-            vendor_id=row[0].vendor_id,
-            is_hiring=row[0].is_hiring,
-            is_open=row[0].is_open,
-            average_rating=round(float(row[1]), 1),
-            review_count=row[2],
-        )
-        for row in result.all()
-    ]
+    restaurants = [RestaurantResponse.model_validate(r) for r in result.scalars().all()]
 
     total_query = _apply_restaurant_filters(
         select(func.count(Restaurant.id)), name, is_hiring, is_open

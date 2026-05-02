@@ -14,6 +14,7 @@ class RestaurantResponse(BaseModel):
     id: uuid.UUID
     name: str
     address: str
+    description: str | None = None
     vendor_id: uuid.UUID
     is_hiring: bool = True
     is_open: bool = True
@@ -29,6 +30,7 @@ class RestaurantResponse(BaseModel):
 class RestaurantUpdate(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=128)
     address: str | None = Field(None, min_length=1, max_length=256)
+    description: str | None = Field(None, max_length=1000)
     is_hiring: bool | None = None
     is_open: bool | None = None
     photo_url: str | None = Field(None, max_length=512)

@@ -2,7 +2,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from features.auth.service import OAuth2PasswordBearerWithCookie, get_current_user, logout_user
+from features.auth.service import (
+    OAuth2PasswordBearerWithCookie,
+    get_current_user,
+    logout_user,
+)
 from shared.exceptions.existence import AuthException
 
 

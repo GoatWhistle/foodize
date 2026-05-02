@@ -52,7 +52,9 @@ class TestRestaurantsPublicAPI:
             new_callable=AsyncMock,
             return_value=([], 0),
         ) as mock_get:
-            response = await client.get("/api/v1/restaurants/public?is_open=true&is_hiring=true")
+            response = await client.get(
+                "/api/v1/restaurants/public?is_open=true&is_hiring=true"
+            )
 
         assert response.status_code == 200
         mock_get.assert_awaited_once()
@@ -76,7 +78,8 @@ class TestRestaurantsAPI:
             return_value=mock_restaurant,
         ) as mock_register:
             response = await client.post(
-                "/api/v1/restaurants/", json={"name": "New Sushi", "address": "Street 1"}
+                "/api/v1/restaurants/",
+                json={"name": "New Sushi", "address": "Street 1"},
             )
 
         assert response.status_code == 200

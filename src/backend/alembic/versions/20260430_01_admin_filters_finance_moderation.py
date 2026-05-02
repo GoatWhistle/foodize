@@ -20,7 +20,9 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     op.add_column(
         "vendor_profiles",
-        sa.Column("approval_status", sa.String(), server_default="APPROVED", nullable=False),
+        sa.Column(
+            "approval_status", sa.String(), server_default="APPROVED", nullable=False
+        ),
     )
     op.add_column(
         "vendor_profiles",
@@ -28,7 +30,9 @@ def upgrade() -> None:
     )
     op.add_column(
         "restaurants",
-        sa.Column("moderation_status", sa.String(), server_default="APPROVED", nullable=False),
+        sa.Column(
+            "moderation_status", sa.String(), server_default="APPROVED", nullable=False
+        ),
     )
     op.add_column(
         "restaurants",

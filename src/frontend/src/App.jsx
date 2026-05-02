@@ -9,6 +9,7 @@ import { IconContext, MapPin, ArrowLeft } from "@phosphor-icons/react";
 
 import MainLayout from "./components/layout/MainLayout";
 import ErrorBoundary from "./components/ui/ErrorBoundary";
+import ConfirmDialog from "./components/ui/ConfirmDialog";
 
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
@@ -182,6 +183,7 @@ function App() {
         }}
       >
         <RouterProvider router={router} />
+        <ConfirmDialog />
       </IconContext.Provider>
     </ErrorBoundary>
   );

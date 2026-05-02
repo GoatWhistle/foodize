@@ -28,7 +28,9 @@ _REFRESH_BLACKLIST_PREFIX = "refresh_blacklist:"
 _ACCESS_BLACKLIST_PREFIX = "access_blacklist:"
 
 
-def _set_auth_cookies(response: Response, access_token: str, refresh_token: str) -> None:
+def _set_auth_cookies(
+    response: Response, access_token: str, refresh_token: str
+) -> None:
     response.set_cookie(
         key="access_token",
         value=access_token,
@@ -125,7 +127,9 @@ async def logout_user(request: Request, response: Response) -> None:
             payload = decode_jwt(access_token)
             ttl = payload.get("exp", 0) - now
             if ttl > 0:
-                await cache.set(f"{_ACCESS_BLACKLIST_PREFIX}{access_token}", "1", ttl=ttl)
+                await cache.set(
+                    f"{_ACCESS_BLACKLIST_PREFIX}{access_token}", "1", ttl=ttl
+                )
         except jwt.InvalidTokenError:
             pass
         except Exception:
@@ -137,7 +141,9 @@ async def logout_user(request: Request, response: Response) -> None:
             payload = decode_jwt(refresh_token)
             ttl = payload.get("exp", 0) - now
             if ttl > 0:
-                await cache.set(f"{_REFRESH_BLACKLIST_PREFIX}{refresh_token}", "1", ttl=ttl)
+                await cache.set(
+                    f"{_REFRESH_BLACKLIST_PREFIX}{refresh_token}", "1", ttl=ttl
+                )
         except jwt.InvalidTokenError:
             pass
         except Exception:

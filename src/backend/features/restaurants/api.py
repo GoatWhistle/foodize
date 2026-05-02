@@ -6,9 +6,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import db_helper
 from features.restaurants import service
 from features.restaurants.models import Restaurant
-from features.restaurants.schemas import RestaurantCreate, RestaurantResponse, RestaurantUpdate
+from features.restaurants.schemas import (
+    RestaurantCreate,
+    RestaurantResponse,
+    RestaurantUpdate,
+)
 from features.restaurants.working_hours_crud import get_working_hours, set_working_hours
-from features.restaurants.working_hours_schemas import WorkingHoursBulkSet, WorkingHoursRead
+from features.restaurants.working_hours_schemas import (
+    WorkingHoursBulkSet,
+    WorkingHoursRead,
+)
 from features.vendors.dependencies import get_current_vendor
 from features.vendors.models import VendorProfile
 from shared.exceptions.existence import NotFoundException
@@ -19,12 +26,16 @@ from shared.schemas.response import SuccessListResponse, SuccessResponse
 router = APIRouter(prefix="/restaurants", tags=["Restaurants"])
 
 
-@router.get("/public/{restaurant_id}", response_model=SuccessResponse[RestaurantResponse])
+@router.get(
+    "/public/{restaurant_id}", response_model=SuccessResponse[RestaurantResponse]
+)
 async def read_public_restaurant(
     restaurant_id: uuid.UUID,
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[RestaurantResponse]:
-    result = await service.get_restaurant_public(session=session, restaurant_id=restaurant_id)
+    result = await service.get_restaurant_public(
+        session=session, restaurant_id=restaurant_id
+    )
     return build_response(result)
 
 
@@ -39,9 +50,16 @@ async def read_public_restaurants(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessListResponse[RestaurantResponse]:
     data, total = await service.get_all_restaurants_public(
-        session=session, name=name, is_hiring=is_hiring, is_open=is_open, page=page, size=size
+        session=session,
+        name=name,
+        is_hiring=is_hiring,
+        is_open=is_open,
+        page=page,
+        size=size,
     )
-    return build_list_response(data=data, total=total, page=page, size=size, request=request)
+    return build_list_response(
+        data=data, total=total, page=page, size=size, request=request
+    )
 
 
 @router.post("/", response_model=SuccessResponse[RestaurantResponse])
@@ -83,10 +101,15 @@ async def read_my_restaurants(
     data, total = await service.get_my_restaurants(
         session=session, vendor_id=current_vendor.id, page=page, size=size
     )
-    return build_list_response(data=data, total=total, page=page, size=size, request=request)
+    return build_list_response(
+        data=data, total=total, page=page, size=size, request=request
+    )
 
 
-@router.get("/{restaurant_id}/working-hours", response_model=SuccessResponse[list[WorkingHoursRead]])
+@router.get(
+    "/{restaurant_id}/working-hours",
+    response_model=SuccessResponse[list[WorkingHoursRead]],
+)
 async def read_working_hours(
     restaurant_id: uuid.UUID,
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
@@ -95,7 +118,10 @@ async def read_working_hours(
     return build_response([WorkingHoursRead.model_validate(r) for r in rows])
 
 
-@router.put("/{restaurant_id}/working-hours", response_model=SuccessResponse[list[WorkingHoursRead]])
+@router.put(
+    "/{restaurant_id}/working-hours",
+    response_model=SuccessResponse[list[WorkingHoursRead]],
+)
 async def set_working_hours_endpoint(
     restaurant_id: uuid.UUID,
     body: WorkingHoursBulkSet,

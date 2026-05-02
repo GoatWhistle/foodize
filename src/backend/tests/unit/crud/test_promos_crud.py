@@ -50,7 +50,9 @@ class TestGetPromosByRestaurantIds:
     async def test_with_ids(self):
         promo = MagicMock()
         mock_result = MagicMock()
-        mock_result.scalars = MagicMock(return_value=MagicMock(all=MagicMock(return_value=[promo])))
+        mock_result.scalars = MagicMock(
+            return_value=MagicMock(all=MagicMock(return_value=[promo]))
+        )
 
         session = AsyncMock()
         session.execute = AsyncMock(return_value=mock_result)

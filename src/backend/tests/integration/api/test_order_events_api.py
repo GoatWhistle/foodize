@@ -43,7 +43,10 @@ class TestOrderEventsAPI:
                 new_callable=AsyncMock,
                 return_value=mock_order,
             ),
-            patch("features.orders.api.order.verify_restaurant_access", new_callable=AsyncMock),
+            patch(
+                "features.orders.api.order.verify_restaurant_access",
+                new_callable=AsyncMock,
+            ),
             patch(
                 "features.orders.api.order.service.get_order_events",
                 new_callable=AsyncMock,
@@ -70,7 +73,10 @@ class TestOrderEventsAPI:
                 new_callable=AsyncMock,
                 return_value=mock_order,
             ),
-            patch("features.orders.api.order.verify_restaurant_access", new_callable=AsyncMock),
+            patch(
+                "features.orders.api.order.verify_restaurant_access",
+                new_callable=AsyncMock,
+            ),
             patch(
                 "features.orders.api.order.service.get_order_events",
                 new_callable=AsyncMock,
@@ -88,7 +94,9 @@ class TestOrderEventsAPI:
         assert response.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_read_order_events_customer_denied(self, client: AsyncClient, as_user):
+    async def test_read_order_events_customer_denied(
+        self, client: AsyncClient, as_user
+    ):
         order_id = uuid.uuid4()
         mock_order = _make_mock_order(order_id, user_id=uuid.uuid4())
 
@@ -104,7 +112,9 @@ class TestOrderEventsAPI:
     @pytest.mark.asyncio
     async def test_read_order_events_not_found(self, client: AsyncClient, as_vendor):
         with patch(
-            "features.orders.api.order.get_order_by_id", new_callable=AsyncMock, return_value=None
+            "features.orders.api.order.get_order_by_id",
+            new_callable=AsyncMock,
+            return_value=None,
         ):
             response = await client.get(f"/api/v1/orders/{uuid.uuid4()}/events")
 
@@ -128,7 +138,8 @@ class TestUpdateOrderStatusWithTransitionValidation:
             side_effect=InvalidStatusTransitionException(),
         ):
             response = await client.patch(
-                f"/api/v1/orders/{order_id}/status", json={"status": OrderStatus.COMPLETED.value}
+                f"/api/v1/orders/{order_id}/status",
+                json={"status": OrderStatus.COMPLETED.value},
             )
 
         app.dependency_overrides.pop(get_order_for_staff_or_vendor, None)

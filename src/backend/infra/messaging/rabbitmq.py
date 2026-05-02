@@ -2,6 +2,7 @@ import logging
 
 import aio_pika
 
+from features.notifications.broker import broker
 from infra.messaging.base import MessagePublisher
 
 logger = logging.getLogger(__name__)
@@ -25,6 +26,4 @@ class RabbitMQPublisher(MessagePublisher):
 
 
 def get_rabbitmq_publisher() -> RabbitMQPublisher:
-    from features.notifications.broker import broker
-
     return RabbitMQPublisher(broker)
