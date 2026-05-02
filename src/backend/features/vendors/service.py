@@ -23,13 +23,6 @@ async def register_vendor(
     return VendorResponse.model_validate(vendor)
 
 
-async def update_description(
-    session: AsyncSession, vendor: VendorProfile, new_description: str
-) -> VendorResponse:
-    updated = await crud.update_vendor_description(session, vendor, new_description)
-    return VendorResponse.model_validate(updated)
-
-
 async def get_vendor_finance(
     session: AsyncSession,
     vendor: VendorProfile,

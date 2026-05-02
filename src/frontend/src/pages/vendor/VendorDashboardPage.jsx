@@ -154,8 +154,6 @@ const VendorDashboardPage = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const pollInterval = useRef(null);
 
-  const [vendorDescription, setVendorDescription] = useState("");
-
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
   const { createRestaurant } = useRestaurantStore(
@@ -199,7 +197,6 @@ const VendorDashboardPage = () => {
       .getMyProfile()
       .then((res) => {
         setVendorProfile(res.data?.data || null);
-        setVendorDescription(res.data?.data?.description || "");
       })
       .catch(() => {});
   }, [fetchMyRestaurants]);
@@ -400,9 +397,6 @@ const VendorDashboardPage = () => {
       const requests = [
         restaurantService.update(selectedRestaurant.id, payload),
       ];
-      if (vendorDescription.trim()) {
-        requests.push(vendorService.updateDescription(vendorDescription));
-      }
       await Promise.all(requests);
       await fetchMyRestaurants();
       setSelectedRestaurant({ ...selectedRestaurant, ...payload });

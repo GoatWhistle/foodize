@@ -1733,18 +1733,6 @@ const AdminDashboardPage = () => {
                   >
                     {vendor.phone_number || "Нет телефона"}
                   </div>
-                  {vendor.description && (
-                    <div
-                      style={{
-                        color: "var(--text-3)",
-                        fontSize: "0.78rem",
-                        marginTop: 8,
-                        maxWidth: 540,
-                      }}
-                    >
-                      {vendor.description}
-                    </div>
-                  )}
                 </div>
                 <span className="order-status-badge pending">
                   {vendor.restaurants_count || 0} заведений
@@ -2176,11 +2164,6 @@ const AdminDashboardPage = () => {
               </DetailField>
               <DetailField label="Создан">
                 {formatDateTime(selectedVendor.created_at)}
-              </DetailField>
-            </div>
-            <div style={{ marginTop: 10 }}>
-              <DetailField label="Описание">
-                {selectedVendor.description || "Описание не заполнено"}
               </DetailField>
             </div>
             {selectedVendor.rejection_reason && (

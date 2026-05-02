@@ -12,7 +12,7 @@ from shared.exceptions import NotFoundException
 async def create_vendor_profile(
     session: AsyncSession, user: User, vendor_in: VendorCreate
 ) -> VendorProfile:
-    vendor = VendorProfile(user=user, user_id=user.id, **vendor_in.model_dump())
+    vendor = VendorProfile(user=user, user_id=user.id)
     session.add(vendor)
     await session.commit()
     return vendor
@@ -33,12 +33,4 @@ async def get_vendor_by_user_id_or_404(
     vendor = await get_vendor_by_user_id(session, user_id)
     if not vendor:
         raise NotFoundException()
-    return vendor
-
-
-async def update_vendor_description(
-    session: AsyncSession, vendor: VendorProfile, new_description: str
-) -> VendorProfile:
-    vendor.description = new_description
-    await session.commit()
     return vendor

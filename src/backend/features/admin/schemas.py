@@ -111,7 +111,6 @@ class AdminVendorResponse(BaseModel):
     user_id: uuid.UUID
     name: str | None = None
     phone_number: str | None = None
-    description: str | None = None
     restaurants_count: int = 0
     approval_status: str = "PENDING"
     rejection_reason: str | None = None
@@ -132,7 +131,6 @@ class AdminVendorResponse(BaseModel):
                 "user_id": data.user_id,
                 "name": user.name,
                 "phone_number": user.phone_number,
-                "description": data.description,
                 "restaurants_count": len(data.restaurants or []),
                 "approval_status": data.approval_status,
                 "rejection_reason": data.rejection_reason,
