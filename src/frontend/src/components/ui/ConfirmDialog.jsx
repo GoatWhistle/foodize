@@ -38,7 +38,7 @@ const ConfirmDialog = () => {
               width: 42,
               height: 42,
               borderRadius: "var(--r-sm)",
-              background: "rgba(239, 68, 68, 0.1)",
+              background: "var(--color-error-bg)",
               color: "var(--error)",
               display: "flex",
               alignItems: "center",

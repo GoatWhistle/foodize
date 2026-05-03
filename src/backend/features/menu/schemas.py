@@ -22,6 +22,10 @@ class MenuItemUpdate(BaseModel):
     prep_time_minutes: int | None = Field(None, ge=1, le=300)
 
 
+class AvailabilityUpdate(BaseModel):
+    is_available: bool
+
+
 class MenuItemOptionCreate(BaseModel):
     name: str = Field(min_length=1, max_length=128)
     price_delta: int = Field(0, ge=0, le=100000000)

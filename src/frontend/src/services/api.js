@@ -86,3 +86,27 @@ export function createOrderWebSocket(orderId, onMessage, onClose) {
   ws.onerror = () => ws.close();
   return ws;
 }
+
+export function createRestaurantOrdersWebSocket(restaurantId, onMessage, onClose) {
+  const ws = new WebSocket(`${WS_BASE_URL}/api/v1/ws/restaurants/${restaurantId}/orders`);
+  ws.onmessage = (event) => {
+    try {
+      onMessage(JSON.parse(event.data));
+    } catch {}
+  };
+  ws.onclose = () => onClose?.();
+  ws.onerror = () => ws.close();
+  return ws;
+}
+
+export function createNotificationWebSocket(userId, onMessage, onClose) {
+  const ws = new WebSocket(`${WS_BASE_URL}/api/v1/ws/users/${userId}/notifications`);
+  ws.onmessage = (event) => {
+    try {
+      onMessage(JSON.parse(event.data));
+    } catch {}
+  };
+  ws.onclose = () => onClose?.();
+  ws.onerror = () => ws.close();
+  return ws;
+}

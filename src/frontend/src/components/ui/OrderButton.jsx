@@ -29,9 +29,9 @@ const OrderButton = ({
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       style={{
-        transform: isPressed ? "scale(0.95)" : "scale(1)",
+        transform: isPressed ? "scale(0.96)" : "scale(1)",
         transition:
-          "transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s",
+          "transform 0.12s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s",
         ...props.style,
       }}
       {...props}

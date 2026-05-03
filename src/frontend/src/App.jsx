@@ -122,7 +122,7 @@ const router = createBrowserRouter([
           fontFamily: "Manrope, sans-serif",
         }}
       >
-        <MapPin size={64} weight="bold" color="#FF4F1F" />
+        <MapPin size={64} weight="bold" color="var(--fire)" />
         <h1
           style={{
             fontWeight: 800,
@@ -138,7 +138,7 @@ const router = createBrowserRouter([
             display: "flex",
             alignItems: "center",
             gap: "8px",
-            color: "#FF4F1F",
+            color: "var(--fire)",
             fontWeight: 700,
             textDecoration: "none",
           }}

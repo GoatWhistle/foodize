@@ -8,6 +8,7 @@ from features.reviews.models import Review
 from features.staff.models import StaffProfile, StaffRequest
 from features.users.models import User
 from features.vendors.models import VendorProfile
+from features.notifications.models import Notification
 
 __all__ = [
     "User",
@@ -26,4 +27,5 @@ __all__ = [
     "Review",
     "Favorite",
     "Promo",
+    "Notification",
 ]

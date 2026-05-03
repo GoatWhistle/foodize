@@ -33,4 +33,8 @@ export const menuService = {
     api.delete(
       `/menu/${restaurantId}/items/${itemId}/option-groups/${groupId}/options/${optionId}`,
     ),
+  toggleAvailability: (restaurantId, itemId, isAvailable) =>
+    api.patch(`/menu/${restaurantId}/items/${itemId}/availability`, {
+      is_available: isAvailable,
+    }),
 };

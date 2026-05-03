@@ -27,19 +27,8 @@ const OrderStatusBadge = ({ status, progress = 0.6 }) => {
         <div style={{ position: "relative", zIndex: 1, color: "var(--fire)" }}>
           <MapPin size={64} weight="fill" />
         </div>
-        <p
-          style={{
-            marginTop: 20,
-            fontWeight: 800,
-            fontSize: "1.4rem",
-            letterSpacing: "-0.03em",
-          }}
-        >
-          Принят
-        </p>
-        <p style={{ color: "var(--text-3)", marginTop: 8 }}>
-          Ресторан подтвердил заказ
-        </p>
+        <p className="status-heading">Принят</p>
+        <p className="status-sub">Ресторан подтвердил заказ</p>
       </div>
     );
   }
@@ -79,19 +68,8 @@ const OrderStatusBadge = ({ status, progress = 0.6 }) => {
             </div>
           </foreignObject>
         </svg>
-        <p
-          style={{
-            marginTop: 16,
-            fontWeight: 800,
-            fontSize: "1.4rem",
-            letterSpacing: "-0.03em",
-          }}
-        >
-          Готовится
-        </p>
-        <p style={{ color: "var(--text-3)", marginTop: 8 }}>
-          Повар уже работает над заказом
-        </p>
+        <p className="status-heading">Готовится</p>
+        <p className="status-sub">Повар уже работает над заказом</p>
       </div>
     );
   }
@@ -99,7 +77,7 @@ const OrderStatusBadge = ({ status, progress = 0.6 }) => {
   if (status === "READY" || status === "COMPLETED") {
     return (
       <div className="status-icon-wrap status-ready-flash">
-        <div style={{ marginBottom: 12, color: "#22c55e" }}>
+        <div style={{ marginBottom: 12, color: "var(--color-success)" }}>
           {status === "COMPLETED" ? (
             <Smiley size={80} weight="fill" />
           ) : (
@@ -107,17 +85,12 @@ const OrderStatusBadge = ({ status, progress = 0.6 }) => {
           )}
         </div>
         <p
-          className="status-ready-text"
-          style={{
-            fontWeight: 800,
-            fontSize: "2rem",
-            letterSpacing: "-0.04em",
-            color: "#22c55e",
-          }}
+          className="status-ready-text status-heading"
+          style={{ color: "var(--color-success)" }}
         >
           {status === "COMPLETED" ? "Приятного аппетита!" : "Забирай!"}
         </p>
-        <p style={{ color: "var(--text-3)", marginTop: 8, fontWeight: 600 }}>
+        <p className="status-sub" style={{ fontWeight: 600 }}>
           {status === "COMPLETED"
             ? "Заказ уже получен"
             : "Заказ ждёт тебя на кассе"}
@@ -129,22 +102,16 @@ const OrderStatusBadge = ({ status, progress = 0.6 }) => {
   if (status === "CANCELLED") {
     return (
       <div className="status-icon-wrap">
-        <div style={{ marginBottom: 12, color: "#ef4444" }}>
+        <div style={{ marginBottom: 12, color: "var(--color-error)" }}>
           <XCircle size={80} weight="fill" />
         </div>
         <p
-          style={{
-            fontWeight: 800,
-            fontSize: "1.6rem",
-            letterSpacing: "-0.03em",
-            color: "#ef4444",
-          }}
+          className="status-heading"
+          style={{ color: "var(--color-error)" }}
         >
           Заказ отменён
         </p>
-        <p style={{ color: "var(--text-3)", marginTop: 8 }}>
-          Средства будут возвращены
-        </p>
+        <p className="status-sub">Средства будут возвращены</p>
       </div>
     );
   }

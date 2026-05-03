@@ -1,5 +1,4 @@
 import json
-import uuid
 
 from fastapi import Depends
 
@@ -16,11 +15,11 @@ class CartService:
         self._cache = cache
         self._ttl = _CART_TTL_SECONDS
 
-    def _key(self, user_id: uuid.UUID) -> str:
-        return f"cart:{user_id}"
+    def _key(self, identifier: str) -> str:
+        return f"cart:{identifier}"
 
-    async def get_cart(self, user_id: uuid.UUID) -> CartResponse:
-        raw = await self._cache.get(self._key(user_id))
+    async def get_cart(self, identifier: str) -> CartResponse:
+        raw = await self._cache.get(self._key(identifier))
         if not raw:
             return CartResponse(restaurant_id=None, items=[])
 
@@ -47,13 +46,13 @@ class CartService:
             restaurant_id=cart_dict.get("restaurant_id"), items=enriched
         )
 
-    async def update_cart(self, user_id: uuid.UUID, cart_data: CartUpdate) -> None:
+    async def update_cart(self, identifier: str, cart_data: CartUpdate) -> None:
         await self._cache.set(
-            self._key(user_id), cart_data.model_dump_json(), ttl=self._ttl
+            self._key(identifier), cart_data.model_dump_json(), ttl=self._ttl
         )
 
-    async def clear_cart(self, user_id: uuid.UUID) -> None:
-        await self._cache.delete(self._key(user_id))
+    async def clear_cart(self, identifier: str) -> None:
+        await self._cache.delete(self._key(identifier))
 
 
 def get_cart_service(cache: CacheRepository = Depends(get_redis_cache)) -> CartService:

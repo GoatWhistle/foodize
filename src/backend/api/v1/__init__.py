@@ -12,6 +12,8 @@ from features.reviews.api import router as reviews_router
 from features.staff.api import router as staff_router
 from features.telegram.api import router as telegram_router
 from features.users.api import router as user_router
+from features.notifications.api import router as notifications_router
+from features.notifications.ws import router as notifications_ws_router
 from features.vendors.api import router as vendor_router
 from settings.config.app_config import settings
 
@@ -32,3 +34,5 @@ router.include_router(order_router)
 router.include_router(reviews_router)
 router.include_router(telegram_router)
 router.include_router(user_router)
+router.include_router(notifications_router)
+router.include_router(notifications_ws_router)

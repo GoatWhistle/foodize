@@ -14,6 +14,7 @@ import {
 import FoodizeLogo from "../ui/FoodizeLogo";
 import ThemeToggle from "../ui/ThemeToggle";
 import CartDrawer from "../ui/CartDrawer";
+import NotificationBell from "../ui/NotificationBell";
 
 import { useAuthStore } from "../../store/useAuthStore";
 import { useOrderStore } from "../../store/useOrderStore";
@@ -148,6 +149,7 @@ const MainLayout = () => {
         )}
 
         <div className="header-actions">
+          {isAuthenticated && <NotificationBell />}
           <ThemeToggle />
           {!isAuthenticated && (
             <Link

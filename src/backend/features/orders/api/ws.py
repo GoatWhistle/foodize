@@ -62,3 +62,30 @@ async def order_status_ws(
         pass
     finally:
         await pubsub.unsubscribe(channel)
+
+
+@router.websocket("/ws/restaurants/{restaurant_id}/orders")
+async def restaurant_orders_ws(
+    restaurant_id: uuid.UUID,
+    websocket: WebSocket,
+) -> None:
+    await websocket.accept()
+    redis_client = get_redis_cache().get_raw_client()
+    pubsub = redis_client.pubsub()
+    channel = f"restaurant_orders:{restaurant_id}"
+    await pubsub.subscribe(channel)
+
+    try:
+        while True:
+            message = await pubsub.get_message(
+                ignore_subscribe_messages=True, timeout=1.0
+            )
+            if message is not None:
+                data_str = message["data"]
+                if isinstance(data_str, bytes):
+                    data_str = data_str.decode("utf-8")
+                await websocket.send_text(json.dumps({"event": data_str}))
+    except WebSocketDisconnect:
+        pass
+    finally:
+        await pubsub.unsubscribe(channel)

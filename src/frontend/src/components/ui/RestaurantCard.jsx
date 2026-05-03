@@ -84,43 +84,10 @@ const RestaurantCard = ({ restaurant, onClick }) => {
       {/* Open / Closed badge */}
       {restaurant.is_open != null && (
         <div
-          style={{
-            position: "absolute",
-            top: 14,
-            left: 14,
-            zIndex: 2,
-            display: "flex",
-            alignItems: "center",
-            gap: 5,
-            background: restaurant.is_open
-              ? "rgba(255,255,255,0.88)"
-              : "rgba(255,255,255,0.78)",
-            backdropFilter: "blur(8px)",
-            border: `1px solid ${restaurant.is_open ? "rgba(34,197,94,0.4)" : "rgba(107,114,128,0.3)"}`,
-            borderRadius: "var(--r-xs)",
-            padding: "4px 9px",
-          }}
+          className={`card-status-badge card-status-badge--${restaurant.is_open ? "open" : "closed"}`}
         >
-          <span
-            style={{
-              width: 7,
-              height: 7,
-              borderRadius: "50%",
-              background: restaurant.is_open ? "#22c55e" : "#6b7280",
-              flexShrink: 0,
-              boxShadow: restaurant.is_open
-                ? "0 0 6px rgba(34,197,94,0.7)"
-                : "none",
-            }}
-          />
-          <span
-            style={{
-              fontSize: "0.62rem",
-              fontWeight: 800,
-              letterSpacing: "0.05em",
-              color: restaurant.is_open ? "#22c55e" : "#9ca3af",
-            }}
-          >
+          <span className="card-status-dot" />
+          <span className="card-status-label">
             {restaurant.is_open ? "Открыто" : "Закрыто"}
           </span>
         </div>
@@ -133,38 +100,20 @@ const RestaurantCard = ({ restaurant, onClick }) => {
             e.stopPropagation();
             toggle(restaurant.id);
           }}
-          style={{
-            position: "absolute",
-            bottom: 14,
-            right: 14,
-            zIndex: 3,
-            width: 32,
-            height: 32,
-            borderRadius: "var(--r-xs)",
-            background: isFav ? "rgba(239,68,68,0.18)" : "rgba(0,0,0,0.45)",
-            backdropFilter: "blur(8px)",
-            border: isFav
-              ? "1px solid rgba(239,68,68,0.4)"
-              : "1px solid rgba(255,255,255,0.15)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-            transition: "all var(--dur-sm) var(--ease-spring)",
-          }}
+          className={`card-fav-btn${isFav ? " card-fav-btn--active" : ""}`}
           aria-label={isFav ? "Убрать из избранного" : "Добавить в избранное"}
+          aria-pressed={isFav}
         >
           <Heart
             size={15}
             weight={isFav ? "fill" : "regular"}
-            color={isFav ? "#ef4444" : "rgba(255,255,255,0.8)"}
           />
         </button>
       )}
 
       {/* Rating badge */}
       <div className="card-rating-badge">
-        <Star size={13} weight="fill" color="var(--fire, #f59e0b)" />
+        <Star size={13} weight="fill" color="var(--fire)" />
         <span>{rating ? rating.toFixed(1) : "0.0"}</span>
       </div>
 

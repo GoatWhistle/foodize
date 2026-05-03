@@ -12,6 +12,7 @@ import {
 import { staffService } from "../../services/staffService";
 import EmptyState from "../../components/ui/EmptyState";
 import OrderDetailsModal from "../../components/ui/OrderDetailsModal";
+import { createRestaurantOrdersWebSocket } from "../../services/api";
 
 const STATUS_LABEL = {
   PENDING: "Новый",
@@ -327,9 +328,13 @@ const StaffDashboardPage = () => {
   const [total, setTotal] = useState(0);
   const [updating, setUpdating] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [newOrderAlert, setNewOrderAlert] = useState(false);
+  const [activeTab, setActiveTab] = useState("orders");
+  const [menuItems, setMenuItems] = useState([]);
+  const [menuLoading, setMenuLoading] = useState(false);
+  const [menuError, setMenuError] = useState("");
+  
   const prevOrderIds = useRef(new Set());
-  const pollRef = useRef(null);
+  const wsRef = useRef(null);
 
   useEffect(() => {
     staffService
@@ -372,12 +377,41 @@ const StaffDashboardPage = () => {
     [profile?.restaurant_id, page, statusFilter],
   );
 
+  const fetchMenu = useCallback(async () => {
+    if (!profile?.restaurant_id) return;
+    setMenuLoading(true);
+    setMenuError("");
+    try {
+      const res = await staffService.getMenu(profile.restaurant_id);
+      setMenuItems(Array.isArray(res.data?.data) ? res.data.data : []);
+    } catch {
+      setMenuError("Не удалось загрузить меню");
+    } finally {
+      setMenuLoading(false);
+    }
+  }, [profile?.restaurant_id]);
+
   useEffect(() => {
     if (profile?.restaurant_id) {
-      fetchOrders();
-      pollRef.current = setInterval(() => fetchOrders(true), 5000);
+      if (activeTab === "orders") {
+        fetchOrders();
+      } else if (activeTab === "menu") {
+        fetchMenu();
+      }
+      
+      if (activeTab === "orders") {
+        wsRef.current = createRestaurantOrdersWebSocket(
+          profile.restaurant_id,
+          (msg) => fetchOrders(true)
+        );
+      }
     }
-    return () => clearInterval(pollRef.current);
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+    };
   }, [fetchOrders, profile?.restaurant_id]);
 
   const handleStatusChange = async (orderId, newStatus, data = {}) => {
@@ -406,6 +440,27 @@ const StaffDashboardPage = () => {
     } catch {
     } finally {
       setUpdating(null);
+    }
+  };
+
+  const handleToggleAvailability = async (item) => {
+    const newVal = !item.is_available;
+    // Optimistic
+    setMenuItems((prev) =>
+      prev.map((i) => (i.id === item.id ? { ...i, is_available: newVal } : i)),
+    );
+    try {
+      await staffService.toggleMenuItemAvailability(
+        profile.restaurant_id,
+        item.id,
+        newVal,
+      );
+    } catch {
+      // Revert
+      setMenuItems((prev) =>
+        prev.map((i) => (i.id === item.id ? { ...i, is_available: !newVal } : i)),
+      );
+      alert("Не удалось изменить статус блюда");
     }
   };
 
@@ -483,12 +538,47 @@ const StaffDashboardPage = () => {
 
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr",
-          gap: 10,
+          display: "flex",
+          gap: 16,
+          borderBottom: "1px solid var(--border)",
           marginBottom: 20,
         }}
       >
+        {[
+          { id: "orders", label: "Заказы" },
+          { id: "menu", label: "Стоп-лист" },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            style={{
+              padding: "10px 4px",
+              background: "none",
+              border: "none",
+              borderBottom:
+                activeTab === tab.id ? "2px solid var(--fire)" : "none",
+              color: activeTab === tab.id ? "var(--text-1)" : "var(--text-3)",
+              fontWeight: activeTab === tab.id ? 700 : 500,
+              fontSize: "0.9rem",
+              cursor: "pointer",
+              transition: "all 0.2s",
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "orders" && (
+        <>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr 1fr",
+              gap: 10,
+              marginBottom: 20,
+            }}
+          >
         {[
           {
             label: "Новых",
@@ -586,8 +676,66 @@ const StaffDashboardPage = () => {
           ))}
         </div>
       )}
+    </>
+  )}
 
-      {totalPages > 1 && (
+      {activeTab === "menu" && (
+        <div>
+          {menuLoading ? (
+            <div className="loading-center">
+              <div className="spinner" />
+            </div>
+          ) : menuError ? (
+            <div className="form-error">{menuError}</div>
+          ) : menuItems.length === 0 ? (
+            <EmptyState title="Меню пусто" subtitle="В этом ресторане пока нет блюд" />
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {menuItems.map((item) => (
+                <div
+                  key={item.id}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "12px 16px",
+                    background: "var(--bg-card)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "var(--r-md)",
+                    opacity: item.is_available ? 1 : 0.6,
+                  }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--text-1)" }}>
+                      {item.name}
+                    </div>
+                    <div style={{ fontSize: "0.75rem", color: "var(--text-3)" }}>
+                      {item.price} ₽
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleToggleAvailability(item)}
+                    style={{
+                      padding: "6px 12px",
+                      borderRadius: "20px",
+                      border: "1px solid var(--border)",
+                      background: item.is_available ? "var(--fire-subtle)" : "var(--bg-raised)",
+                      color: item.is_available ? "var(--fire)" : "var(--text-3)",
+                      fontSize: "0.7rem",
+                      fontWeight: 800,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {item.is_available ? "ВКЛ" : "ВЫКЛ"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === "orders" && totalPages > 1 && (
         <div
           style={{
             display: "flex",

@@ -11,6 +11,7 @@ import {
   Coffee,
   DotsThree,
   ProhibitInset,
+  Star,
 } from "@phosphor-icons/react";
 
 const CATEGORY_ICONS = {
@@ -31,10 +32,11 @@ const MenuItemCard = ({ item, onAdd }) => {
   const icon =
     CATEGORY_ICONS[item.category?.toUpperCase()] || CATEGORY_ICONS.DEFAULT;
   const unavailable = item.is_available === false;
+  const featured = item.is_popular === true;
 
   return (
     <div
-      className="menu-item"
+      className={`menu-item${featured ? " menu-item--featured" : ""}`}
       style={unavailable ? { opacity: 0.45, filter: "grayscale(0.6)" } : {}}
     >
       {/* Photo / Placeholder */}
@@ -52,13 +54,13 @@ const MenuItemCard = ({ item, onAdd }) => {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              background: "rgba(0,0,0,0.45)",
+              background: "oklch(0% 0 0 / 0.45)",
               borderRadius: "inherit",
             }}
           >
             <ProhibitInset
               size={28}
-              color="rgba(255,255,255,0.7)"
+              color="oklch(100% 0 0 / 0.7)"
               weight="bold"
             />
           </div>
@@ -67,7 +69,15 @@ const MenuItemCard = ({ item, onAdd }) => {
 
       {/* Info */}
       <div className="menu-item-info">
-        <div className="menu-item-name">{item.name}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+          <div className="menu-item-name">{item.name}</div>
+          {featured && (
+            <span className="menu-item-popular-badge">
+              <Star size={9} weight="fill" />
+              Хит
+            </span>
+          )}
+        </div>
         {item.description && (
           <div className="menu-item-desc">{item.description}</div>
         )}

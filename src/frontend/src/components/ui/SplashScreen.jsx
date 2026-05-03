@@ -23,17 +23,17 @@ const SplashScreen = ({ onDone }) => {
       style={{
         flexDirection: "column",
         gap: "32px",
-        background: "var(--ink, #0d0d0d)",
+        background: "var(--ink)",
         transition: "opacity 500ms cubic-bezier(0.16,1,0.3,1)",
         opacity: phase === "out" ? 0 : 1,
       }}
     >
       <div
         style={{
-          animation: "splash-logo-in 700ms cubic-bezier(0.34,1.56,0.64,1) both",
+          animation: "splash-logo-in 600ms cubic-bezier(0.16,1,0.3,1) both",
         }}
       >
-        <FoodizeLogo size={44} color="#ffffff" />
+        <FoodizeLogo size={44} color="var(--fire-text)" />
       </div>
 
       <div
@@ -41,18 +41,17 @@ const SplashScreen = ({ onDone }) => {
           width: 32,
           height: 2,
           borderRadius: 2,
-          background: "rgba(255,255,255,0.15)",
+          background: "oklch(96% 0 0 / 0.15)",
           overflow: "hidden",
-          animation:
-            "splash-logo-in 700ms 200ms cubic-bezier(0.34,1.56,0.64,1) both",
+          animation: "splash-logo-in 600ms 120ms cubic-bezier(0.16,1,0.3,1) both",
         }}
       >
         <div
           style={{
             height: "100%",
-            background: "var(--fire, #f59e0b)",
+            background: "var(--fire)",
             animation:
-              "splash-bar 1000ms 300ms cubic-bezier(0.16,1,0.3,1) forwards",
+              "splash-bar 900ms 300ms cubic-bezier(0.16,1,0.3,1) forwards",
             width: "0%",
           }}
         />
@@ -60,7 +59,7 @@ const SplashScreen = ({ onDone }) => {
 
       <style>{`
         @keyframes splash-logo-in {
-          from { opacity: 0; transform: translateY(12px); }
+          from { opacity: 0; transform: translateY(10px); }
           to   { opacity: 1; transform: translateY(0); }
         }
         @keyframes splash-bar {

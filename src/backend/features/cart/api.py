@@ -17,7 +17,7 @@ async def get_cart(
     current_user: User = Depends(require_permission(Permission.CART_MANAGE)),
     service: CartService = Depends(get_cart_service),
 ) -> SuccessResponse[CartResponse]:
-    result = await service.get_cart(current_user.id)
+    result = await service.get_cart(str(current_user.id))
     return build_response(result)
 
 
@@ -27,8 +27,8 @@ async def update_cart(
     current_user: User = Depends(require_permission(Permission.CART_MANAGE)),
     service: CartService = Depends(get_cart_service),
 ) -> SuccessResponse[CartResponse]:
-    await service.update_cart(current_user.id, cart_in)
-    result = await service.get_cart(current_user.id)
+    await service.update_cart(str(current_user.id), cart_in)
+    result = await service.get_cart(str(current_user.id))
     return build_response(result)
 
 
@@ -37,4 +37,4 @@ async def clear_cart(
     current_user: User = Depends(require_permission(Permission.CART_MANAGE)),
     service: CartService = Depends(get_cart_service),
 ) -> None:
-    await service.clear_cart(current_user.id)
+    await service.clear_cart(str(current_user.id))

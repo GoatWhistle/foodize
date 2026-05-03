@@ -5,6 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
 from features.auth.service import get_current_user
+from features.menu import service as menu_service
+from features.menu.schemas import AvailabilityUpdate, MenuItemResponse
 from features.staff import service
 from features.staff.crud import get_last_request_by_user, get_staff_profile_by_user_id
 from features.staff.dependencies import get_valid_staff_request
@@ -129,3 +131,28 @@ async def remove_staff_member(
     await service.remove_staff_member(
         session=session, profile_id=profile_id, vendor_id=current_vendor.id
     )
+
+
+@router.patch(
+    "/menu/{restaurant_id}/items/{item_id}/availability",
+    response_model=SuccessResponse[MenuItemResponse],
+    tags=["Menu"],
+)
+async def staff_toggle_item_availability(
+    restaurant_id: uuid.UUID,
+    item_id: uuid.UUID,
+    data: AvailabilityUpdate,
+    current_user: User = Depends(require_permission(Permission.STAFF_PROFILE_READ)),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> SuccessResponse[MenuItemResponse]:
+    staff_profile = await get_staff_profile_by_user_id(session, current_user.id)
+    if not staff_profile or str(staff_profile.restaurant_id) != str(restaurant_id):
+        from shared.exceptions import ForbiddenException
+        raise ForbiddenException(detail="Not authorized to manage this restaurant's menu")
+    result = await menu_service.toggle_item_availability_for_staff(
+        session=session,
+        restaurant_id=restaurant_id,
+        item_id=item_id,
+        is_available=data.is_available,
+    )
+    return build_response(result)

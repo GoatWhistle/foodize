@@ -193,3 +193,32 @@ async def delete_option_for_vendor(
     await _get_owned_option_group(session, restaurant_id, item_id, group_id, vendor_id)
     option = await _get_owned_option(session, group_id, option_id)
     await crud.delete_option(session, option)
+
+
+async def toggle_item_availability_for_vendor(
+    session: AsyncSession,
+    restaurant_id: uuid.UUID,
+    item_id: uuid.UUID,
+    is_available: bool,
+    vendor_id: uuid.UUID,
+) -> MenuItemResponse:
+    item = await _get_owned_menu_item(session, restaurant_id, item_id, vendor_id)
+    item.is_available = is_available
+    await session.commit()
+    loaded = await crud.get_menu_item_by_id(session, item.id)
+    return MenuItemResponse.model_validate(loaded)
+
+
+async def toggle_item_availability_for_staff(
+    session: AsyncSession,
+    restaurant_id: uuid.UUID,
+    item_id: uuid.UUID,
+    is_available: bool,
+) -> MenuItemResponse:
+    item = await crud.get_menu_item_by_id(session, item_id)
+    if not item or item.restaurant_id != restaurant_id or item.is_deleted:
+        raise MenuItemNotFoundException()
+    item.is_available = is_available
+    await session.commit()
+    loaded = await crud.get_menu_item_by_id(session, item.id)
+    return MenuItemResponse.model_validate(loaded)

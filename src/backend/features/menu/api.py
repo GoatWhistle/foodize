@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import db_helper
 from features.menu import service
 from features.menu.schemas import (
+    AvailabilityUpdate,
     MenuItemCreate,
     MenuItemOptionCreate,
     MenuItemOptionGroupCreate,
@@ -85,6 +86,28 @@ async def delete_menu_item(
         item_id=item_id,
         vendor_id=current_vendor.id,
     )
+
+
+@router.patch(
+    "/{restaurant_id}/items/{item_id}/availability",
+    response_model=SuccessResponse[MenuItemResponse],
+)
+async def toggle_item_availability(
+    restaurant_id: uuid.UUID,
+    item_id: uuid.UUID,
+    data: AvailabilityUpdate,
+    _user: User = Depends(require_permission(Permission.MENU_MANAGE)),
+    current_vendor: VendorProfile = Depends(get_current_vendor),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> SuccessResponse[MenuItemResponse]:
+    result = await service.toggle_item_availability_for_vendor(
+        session=session,
+        restaurant_id=restaurant_id,
+        item_id=item_id,
+        is_available=data.is_available,
+        vendor_id=current_vendor.id,
+    )
+    return build_response(result)
 
 
 @router.post(

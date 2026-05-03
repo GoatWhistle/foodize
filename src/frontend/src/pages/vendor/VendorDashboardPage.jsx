@@ -26,6 +26,7 @@ import { orderService } from "../../services/orderService";
 import { menuService } from "../../services/menuService";
 import { promoService } from "../../services/promoService";
 import { restaurantService } from "../../services/restaurantService";
+import { createRestaurantOrdersWebSocket } from "../../services/api";
 import EmptyState from "../../components/ui/EmptyState";
 import Pagination from "../../components/ui/Pagination";
 import OrderDetailsModal from "../../components/ui/OrderDetailsModal";
@@ -207,7 +208,7 @@ const VendorDashboardPage = () => {
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [updatingOrderId, setUpdatingOrderId] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const pollInterval = useRef(null);
+  const wsRef = useRef(null);
 
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
@@ -601,13 +602,20 @@ const VendorDashboardPage = () => {
     if (selectedRestaurant && activeTab === "orders") {
       fetchVendorOrders();
       if (ordersPage === 1 && !ordersStatusFilter && !ordersDateFilter) {
-        pollInterval.current = setInterval(
-          () => fetchVendorOrders({ silent: true }),
-          5000,
+        wsRef.current = createRestaurantOrdersWebSocket(
+          selectedRestaurant.id,
+          (msg) => {
+            fetchVendorOrders({ silent: true });
+          }
         );
       }
     }
-    return () => clearInterval(pollInterval.current);
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+    };
   }, [
     selectedRestaurant,
     activeTab,

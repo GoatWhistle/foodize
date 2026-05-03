@@ -164,6 +164,9 @@ async def place_order(
             items_count=len(order.items),
         )
     )
+    await get_redis_cache().publish(
+        f"restaurant_orders:{order.restaurant_id}", "new_order"
+    )
     return OrderResponse.model_validate(order)
 
 
@@ -316,6 +319,9 @@ async def change_order_status(
     await get_redis_cache().publish(
         f"order_status:{order.id}", status_data.status.value
     )
+    await get_redis_cache().publish(
+        f"restaurant_orders:{order.restaurant_id}", f"status_changed:{status_data.status.value}"
+    )
     return OrderResponse.model_validate(updated)
 
 
@@ -354,6 +360,9 @@ async def cancel_order(
     )
     await get_redis_cache().publish(
         f"order_status:{order.id}", OrderStatus.CANCELLED.value
+    )
+    await get_redis_cache().publish(
+        f"restaurant_orders:{order.restaurant_id}", f"status_changed:{OrderStatus.CANCELLED.value}"
     )
     return OrderResponse.model_validate(cancelled)
 
@@ -395,6 +404,9 @@ async def complete_order(
     )
     await get_redis_cache().publish(
         f"order_status:{order.id}", OrderStatus.COMPLETED.value
+    )
+    await get_redis_cache().publish(
+        f"restaurant_orders:{order.restaurant_id}", f"status_changed:{OrderStatus.COMPLETED.value}"
     )
     return OrderResponse.model_validate(completed)
 
