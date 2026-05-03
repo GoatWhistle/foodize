@@ -24,19 +24,24 @@ from features.reviews.models import Review
 from features.users.models import User
 from features.vendors.models import VendorProfile
 from shared.enums.order_status import OrderStatus
-from shared.enums.roles import UserRole
+from shared.enums.permissions import Permission
+from shared.permissions import (
+    VENDOR_PERMISSIONS,
+    has_permission,
+    permissions_with,
+    permissions_without,
+    serialize_permissions,
+)
 
 
 async def get_all_users(
     session: AsyncSession,
-    role: UserRole | None = None,
+    permission: Permission | None = None,
     search: str | None = None,
     offset: int = 0,
     limit: int = 20,
 ) -> list[User]:
-    stmt = select(User).order_by(User.created_at.desc()).offset(offset).limit(limit)
-    if role is not None:
-        stmt = stmt.where(User.user_role == role.value)
+    stmt = select(User).order_by(User.created_at.desc())
     if search:
         pattern = f"%{search}%"
         stmt = stmt.where(
@@ -46,17 +51,18 @@ async def get_all_users(
             | (User.last_name.ilike(pattern))
         )
     result = await session.execute(stmt)
-    return list(result.scalars().all())
+    users = list(result.scalars().all())
+    if permission is not None:
+        users = [user for user in users if has_permission(user.permissions, permission)]
+    return users[offset : offset + limit]
 
 
 async def count_all_users(
     session: AsyncSession,
-    role: UserRole | None = None,
+    permission: Permission | None = None,
     search: str | None = None,
 ) -> int:
-    stmt = select(func.count()).select_from(User)
-    if role is not None:
-        stmt = stmt.where(User.user_role == role.value)
+    stmt = select(User)
     if search:
         pattern = f"%{search}%"
         stmt = stmt.where(
@@ -66,7 +72,10 @@ async def count_all_users(
             | (User.last_name.ilike(pattern))
         )
     result = await session.execute(stmt)
-    return result.scalar_one()
+    users = list(result.scalars().all())
+    if permission is not None:
+        users = [user for user in users if has_permission(user.permissions, permission)]
+    return len(users)
 
 
 async def get_user_by_id(session: AsyncSession, user_id: uuid.UUID) -> User | None:
@@ -394,7 +403,10 @@ async def deactivate_restaurant(
 async def deactivate_vendor(
     session: AsyncSession, vendor: VendorProfile
 ) -> VendorProfile:
-    vendor.user.user_role = UserRole.CUSTOMER.value
+    if not has_permission(vendor.user.permissions, Permission.ADMIN_ACCESS):
+        vendor.user.permissions = permissions_without(
+            vendor.user.permissions, VENDOR_PERMISSIONS
+        )
     for restaurant in vendor.restaurants or []:
         restaurant.is_active = False
         restaurant.is_open = False
@@ -413,7 +425,14 @@ async def set_vendor_moderation(
     vendor.approval_status = status
     vendor.rejection_reason = reason if status == "REJECTED" else None
     if status == "APPROVED":
-        vendor.user.user_role = UserRole.VENDOR.value
+        if not has_permission(vendor.user.permissions, Permission.ADMIN_ACCESS):
+            vendor.user.permissions = permissions_with(
+                vendor.user.permissions, VENDOR_PERMISSIONS
+            )
+        else:
+            for restaurant in vendor.restaurants or []:
+                restaurant.moderation_status = "APPROVED"
+                restaurant.rejection_reason = None
     await session.commit()
     await session.refresh(vendor)
     return vendor
@@ -664,10 +683,11 @@ async def get_finance_analytics(
 
 
 async def get_platform_stats(session: AsyncSession) -> PlatformStats:
-    users_by_role_rows = await session.execute(
-        select(User.user_role, func.count()).group_by(User.user_role)
-    )
-    users_by_role = {row[0]: row[1] for row in users_by_role_rows.all()}
+    users_result = await session.execute(select(User.permissions))
+    users_by_permission: dict[str, int] = {}
+    for permissions in users_result.scalars().all():
+        for permission in serialize_permissions(permissions):
+            users_by_permission[permission] = users_by_permission.get(permission, 0) + 1
 
     orders_by_status_rows = await session.execute(
         select(Order.status, func.count()).group_by(Order.status)
@@ -684,8 +704,7 @@ async def get_platform_stats(session: AsyncSession) -> PlatformStats:
     total_vendors_result = await session.execute(
         select(func.count())
         .select_from(VendorProfile)
-        .join(User, User.id == VendorProfile.user_id)
-        .where(User.user_role == UserRole.VENDOR.value)
+        .where(VendorProfile.approval_status == "APPROVED")
     )
     total_vendors = total_vendors_result.scalar_one()
 
@@ -697,7 +716,7 @@ async def get_platform_stats(session: AsyncSession) -> PlatformStats:
     vendors_growth = await _count_by_day(session, VendorProfile.created_at, start_date)
 
     return PlatformStats(
-        users_by_role=users_by_role,
+        users_by_permission=users_by_permission,
         orders_by_status=orders_by_status,
         total_restaurants=total_restaurants,
         total_vendors=total_vendors,

@@ -9,12 +9,14 @@ from features.vendors.dependencies import (
     get_vendor_or_404,
 )
 from features.vendors.exceptions import VendorAlreadyExistsException
-from shared.exceptions import NotFoundException
+from shared.enums.roles import UserRole
+from shared.exceptions import AccessDeniedException, NotFoundException
 
 
 class TestVendorDependencies:
     @pytest.mark.asyncio
     async def test_get_current_vendor(self):
+        current_user = MagicMock(id=uuid.uuid4(), user_role=UserRole.VENDOR.value)
         mock_user = MagicMock()
         mock_user.vendor_profile = "PROFILE"
         mock_result = MagicMock()
@@ -22,8 +24,15 @@ class TestVendorDependencies:
         mock_session = AsyncMock()
         mock_session.execute.return_value = mock_result
 
-        res = await get_current_vendor(mock_session, MagicMock(id=uuid.uuid4()))
+        res = await get_current_vendor(mock_session, current_user)
         assert res == "PROFILE"
+
+    @pytest.mark.asyncio
+    async def test_get_current_vendor_requires_permission(self):
+        current_user = MagicMock(id=uuid.uuid4(), user_role=UserRole.CUSTOMER.value)
+
+        with pytest.raises(AccessDeniedException):
+            await get_current_vendor(AsyncMock(), current_user)
 
     @pytest.mark.asyncio
     async def test_ensure_no_vendor_profile_raises(self):

@@ -31,7 +31,9 @@ describe("useRestaurantStore", () => {
 
   it("fetchMyRestaurants updates state on success", async () => {
     const mockRestaurants = [{ id: "1", name: "R1" }];
-    restaurantService.getMy.mockResolvedValueOnce({ data: mockRestaurants });
+    restaurantService.getMy.mockResolvedValueOnce({
+      data: { data: mockRestaurants },
+    });
 
     await useRestaurantStore.getState().fetchMyRestaurants();
 
@@ -43,7 +45,7 @@ describe("useRestaurantStore", () => {
   it("fetchMenu caches the menu", async () => {
     const restId = "1";
     const mockMenu = [{ id: "m1", name: "Dish" }];
-    menuService.getMenu.mockResolvedValueOnce({ data: mockMenu });
+    menuService.getMenu.mockResolvedValueOnce({ data: { data: mockMenu } });
 
     await useRestaurantStore.getState().fetchMenu(restId);
 
@@ -56,7 +58,7 @@ describe("useRestaurantStore", () => {
 
   it("createRestaurant adds to the list", async () => {
     const newRest = { id: "2", name: "R2" };
-    restaurantService.create.mockResolvedValueOnce({ data: newRest });
+    restaurantService.create.mockResolvedValueOnce({ data: { data: newRest } });
 
     await useRestaurantStore.getState().createRestaurant({ name: "R2" });
 

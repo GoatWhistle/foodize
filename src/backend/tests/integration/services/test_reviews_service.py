@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from features.restaurants.exceptions import RestaurantNotFoundException
-from features.reviews.exceptions import ReviewAlreadyExistsException
+from features.reviews.exceptions import ReviewLimitExceededException
 from features.reviews.schemas import ReviewCreate, ReviewResponse
 from features.reviews.service import (
     create_review_for_user,
@@ -45,10 +45,10 @@ class TestCreateReviewForUser:
             new_callable=AsyncMock,
             return_value=True,
         ).start()
-        self.mock_get_existing = patch(
-            "features.reviews.crud.get_user_review_for_restaurant",
+        self.mock_count_user_reviews = patch(
+            "features.reviews.crud.count_user_reviews_for_restaurant",
             new_callable=AsyncMock,
-            return_value=None,
+            return_value=0,
         ).start()
         self.mock_create = patch(
             "features.reviews.crud.create_review",
@@ -102,15 +102,16 @@ class TestCreateReviewForUser:
         _, kwargs = self.mock_create.call_args
         assert kwargs.get("is_verified_purchase") is True
 
-    async def test_duplicate_review_raises(self, mock_db_session):
-        self.mock_get_existing.return_value = MagicMock()
-        with pytest.raises(ReviewAlreadyExistsException):
+    async def test_review_limit_raises(self, mock_db_session):
+        self.mock_count_user_reviews.return_value = 5
+        with pytest.raises(ReviewLimitExceededException):
             await create_review_for_user(
                 mock_db_session,
                 ReviewCreate(rating=5),
                 self.user_id,
                 self.restaurant_id,
             )
+        self.mock_create.assert_not_awaited()
 
 
 class TestListReviewsForRestaurant:

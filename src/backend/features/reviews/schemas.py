@@ -12,6 +12,7 @@ class ReviewCreate(BaseModel):
 class ReviewResponse(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID
+    user_name: str | None = None
     restaurant_id: uuid.UUID
     rating: int
     text: str | None = None

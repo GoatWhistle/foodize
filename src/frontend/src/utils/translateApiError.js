@@ -1,6 +1,8 @@
 const ERROR_MAP = {
   "You have already reviewed this restaurant":
     "Вы уже оставили отзыв на этот ресторан",
+  "You can publish up to 5 reviews for one restaurant":
+    "Можно опубликовать до 5 отзывов на один ресторан",
   "Duplicate entry: this information already exists":
     "Вы уже оставили отзыв на этот ресторан",
   "You can only review restaurants where you have a completed order":

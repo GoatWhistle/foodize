@@ -28,11 +28,20 @@ import {
 } from "../../components/dashboard/DashboardCharts";
 import {
   ORDER_STATUS_RU,
-  ROLE_RU,
   APPROVAL_STATUS_RU,
   CATEGORY_RU,
   translate,
 } from "../../utils/locales";
+import {
+  ADMIN_PERMISSIONS,
+  CUSTOMER_PERMISSIONS,
+  hasPermission,
+  PERMISSION_PRESET_RU,
+  PERMISSION_PRESETS,
+  PERMISSION_RU,
+  permissionPresetLabel,
+  PERMISSIONS,
+} from "../../utils/permissions";
 
 const PAGE_SIZE = 50;
 
@@ -430,6 +439,7 @@ const AdminDashboardPage = () => {
   const [activeTab, setActiveTab] = useState("stats");
   const [stats, setStats] = useState(null);
   const [actionError, setActionError] = useState("");
+  const [actionSuccess, setActionSuccess] = useState("");
 
   const [users, setUsers] = useState([]);
   const [usersPage, setUsersPage] = useState(1);
@@ -437,7 +447,7 @@ const AdminDashboardPage = () => {
   const [usersLoading, setUsersLoading] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [userDetailsLoading, setUserDetailsLoading] = useState(false);
-  const [roleActionLoading, setRoleActionLoading] = useState(false);
+  const [permissionActionLoading, setPermissionActionLoading] = useState(false);
 
   const [orders, setOrders] = useState([]);
   const [ordersPage, setOrdersPage] = useState(1);
@@ -475,7 +485,10 @@ const AdminDashboardPage = () => {
 
   const [advancedAnalytics, setAdvancedAnalytics] = useState(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
-  const [userFilters, setUserFilters] = useState({ search: "", role: "" });
+  const [userFilters, setUserFilters] = useState({
+    search: "",
+    permission: "",
+  });
   const [orderFilters, setOrderFilters] = useState({
     search: "",
     status: "",
@@ -528,7 +541,7 @@ const AdminDashboardPage = () => {
         page: usersPage,
         size: PAGE_SIZE,
         search: userFilters.search || undefined,
-        role: userFilters.role || undefined,
+        permission: userFilters.permission || undefined,
       })
       .then((res) => {
         setUsers(res.data.data || []);
@@ -712,47 +725,48 @@ const AdminDashboardPage = () => {
         "Точно ли вы хотите дать этому пользователю права администратора?",
       confirmLabel: "Сделать админом",
       onConfirm: async () => {
-        setRoleActionLoading(true);
+        setPermissionActionLoading(true);
         setActionError("");
         try {
-          await adminService.makeAdmin(userId);
+          await adminService.grantAdmin(userId);
           setSelectedUser((prev) =>
-            prev ? { ...prev, user_role: "ADMIN" } : prev,
+            prev ? { ...prev, permissions: ADMIN_PERMISSIONS } : prev,
           );
           setUsers((prev) =>
             prev.map((u) =>
-              u.id === userId ? { ...u, user_role: "ADMIN" } : u,
+              u.id === userId ? { ...u, permissions: ADMIN_PERMISSIONS } : u,
             ),
           );
         } catch {
           setActionError("Не удалось изменить роль");
         } finally {
-          setRoleActionLoading(false);
+          setPermissionActionLoading(false);
         }
       },
     });
   };
 
-  const handleSetRole = async (userId, role) => {
+  const handleSetPermissionPreset = async (userId, preset) => {
+    const permissions = PERMISSION_PRESETS[preset] || CUSTOMER_PERMISSIONS;
     requestConfirm({
-      title: `Сделать ${translate(ROLE_RU, role)}?`,
-      message: `Точно ли вы хотите изменить роль пользователя на ${translate(ROLE_RU, role)}?`,
+      title: `Set permissions preset: ${PERMISSION_PRESET_RU[preset]}?`,
+      message: `Replace this user's permissions with ${PERMISSION_PRESET_RU[preset]} preset?`,
       confirmLabel: "Изменить",
       onConfirm: async () => {
-        setRoleActionLoading(true);
+        setPermissionActionLoading(true);
         setActionError("");
         try {
-          await adminService.setRole(userId, role);
+          await adminService.setPermissions(userId, permissions);
           setSelectedUser((prev) =>
-            prev ? { ...prev, user_role: role } : prev,
+            prev ? { ...prev, permissions } : prev,
           );
           setUsers((prev) =>
-            prev.map((u) => (u.id === userId ? { ...u, user_role: role } : u)),
+            prev.map((u) => (u.id === userId ? { ...u, permissions } : u)),
           );
         } catch {
           setActionError("Не удалось изменить роль");
         } finally {
-          setRoleActionLoading(false);
+          setPermissionActionLoading(false);
         }
       },
     });
@@ -836,10 +850,17 @@ const AdminDashboardPage = () => {
     );
   };
 
+  const showActionSuccess = (message) => {
+    setActionError("");
+    setActionSuccess(message);
+    window.setTimeout(() => setActionSuccess(""), 4000);
+  };
+
   const handleApproveRestaurant = async (restaurantId) => {
     try {
       const res = await adminService.approveRestaurant(restaurantId);
       refreshSelectedRestaurant(res.data.data);
+      showActionSuccess("Ресторан одобрен");
     } catch {
       setActionError("Не удалось одобрить ресторан");
     }
@@ -855,6 +876,7 @@ const AdminDashboardPage = () => {
         try {
           const res = await adminService.rejectRestaurant(restaurantId, reason);
           refreshSelectedRestaurant(res.data.data);
+          showActionSuccess("Ресторан отклонён");
         } catch {
           setActionError("Не удалось отклонить ресторан");
         }
@@ -862,13 +884,24 @@ const AdminDashboardPage = () => {
     });
   };
 
-  const handleApproveVendor = async (vendorId) => {
-    try {
-      const res = await adminService.approveVendor(vendorId);
-      refreshSelectedVendor(res.data.data);
-    } catch {
-      setActionError("Не удалось одобрить вендора");
-    }
+  const handleApproveVendor = (vendorId) => {
+    requestConfirm({
+      title: "Одобрить вендора?",
+      message:
+        "После одобрения вендор сможет работать в кабинете и управлять заведениями.",
+      confirmLabel: "Одобрить",
+      onConfirm: async () => {
+        setActionError("");
+        setActionSuccess("");
+        try {
+          const res = await adminService.approveVendor(vendorId);
+          refreshSelectedVendor(res.data.data);
+          showActionSuccess("Вендор одобрен");
+        } catch {
+          setActionError("Не удалось одобрить вендора");
+        }
+      },
+    });
   };
 
   const handleRejectVendor = (vendorId) => {
@@ -881,6 +914,7 @@ const AdminDashboardPage = () => {
         try {
           const res = await adminService.rejectVendor(vendorId, reason);
           refreshSelectedVendor(res.data.data);
+          showActionSuccess("Вендор отклонён");
         } catch {
           setActionError("Не удалось отклонить вендора");
         }
@@ -889,7 +923,7 @@ const AdminDashboardPage = () => {
   };
 
   const handleActivateUser = async (userId) => {
-    setRoleActionLoading(true);
+    setPermissionActionLoading(true);
     setActionError("");
     try {
       await adminService.activateUser(userId);
@@ -900,7 +934,7 @@ const AdminDashboardPage = () => {
     } catch {
       setActionError("Не удалось разблокировать пользователя");
     } finally {
-      setRoleActionLoading(false);
+      setPermissionActionLoading(false);
     }
   };
 
@@ -971,6 +1005,22 @@ const AdminDashboardPage = () => {
             {actionError}
           </div>
         )}
+        {actionSuccess && (
+          <div
+            style={{
+              marginBottom: 16,
+              padding: "10px 12px",
+              borderRadius: "var(--r-sm)",
+              border: "1px solid rgba(34, 197, 94, 0.35)",
+              background: "rgba(34, 197, 94, 0.1)",
+              color: "#16a34a",
+              fontSize: "0.86rem",
+              fontWeight: 700,
+            }}
+          >
+            {actionSuccess}
+          </div>
+        )}
         {activeTab === "stats" && stats && (
           <div
             style={{
@@ -981,7 +1031,7 @@ const AdminDashboardPage = () => {
           >
             <StatCard
               label="Пользователи"
-              value={sumValues(stats.users_by_role)}
+              value={sumValues(stats.users_by_permission)}
               icon={<UsersThree size={22} />}
               growth={stats.growth?.users}
               onClick={() => setActiveTab("users")}
@@ -1241,17 +1291,17 @@ const AdminDashboardPage = () => {
               <select
                 className="form-input"
                 style={selectFilterStyle}
-                value={userFilters.role}
+                value={userFilters.permission}
                 onChange={(event) => {
                   setUsersPage(1);
                   setUserFilters((prev) => ({
                     ...prev,
-                    role: event.target.value,
+                    permission: event.target.value,
                   }));
                 }}
               >
                 <option value="">Все роли</option>
-                {Object.entries(ROLE_RU).map(([val, label]) => (
+                {Object.entries(PERMISSION_RU).map(([val, label]) => (
                   <option key={val} value={val}>
                     {label}
                   </option>
@@ -1305,7 +1355,7 @@ const AdminDashboardPage = () => {
                       }}
                     >
                       <span className="order-status-badge pending">
-                        {translate(ROLE_RU, u.user_role)}
+                        {permissionPresetLabel(u.permissions)}
                       </span>
                       <span
                         className={`order-status-badge ${u.is_active ? "ready" : "cancelled"}`}
@@ -1316,7 +1366,8 @@ const AdminDashboardPage = () => {
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                  {u.id !== currentUser?.id && u.user_role !== "ADMIN" && (
+                  {u.id !== currentUser?.id &&
+                    !hasPermission(u, PERMISSIONS.ADMIN_ACCESS) && (
                     <button
                       className="btn btn-secondary btn-sm"
                       onClick={(event) => {
@@ -1898,7 +1949,7 @@ const AdminDashboardPage = () => {
               </DetailField>
               <DetailField label="Роль">
                 <span className="order-status-badge pending">
-                  {selectedUser.user_role}
+                  {permissionPresetLabel(selectedUser.permissions)}
                 </span>
               </DetailField>
               <DetailField label="Статус">
@@ -1919,7 +1970,7 @@ const AdminDashboardPage = () => {
               }}
             >
               {selectedUser.id !== currentUser?.id &&
-                selectedUser.user_role !== "ADMIN" && (
+                !hasPermission(selectedUser, PERMISSIONS.ADMIN_ACCESS) && (
                   <div style={{ marginBottom: 8 }}>
                     <div style={{ fontWeight: 800, marginBottom: 8 }}>
                       Управление ролью
@@ -1927,22 +1978,23 @@ const AdminDashboardPage = () => {
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                       {["CUSTOMER", "VENDOR", "STAFF"].map(
                         (role) =>
-                          selectedUser.user_role !== role && (
+                          permissionPresetLabel(selectedUser.permissions) !==
+                            PERMISSION_PRESET_RU[role] && (
                             <button
                               key={role}
                               className="btn btn-secondary btn-sm"
-                              disabled={roleActionLoading}
+                              disabled={permissionActionLoading}
                               onClick={() =>
-                                handleSetRole(selectedUser.id, role)
+                                handleSetPermissionPreset(selectedUser.id, role)
                               }
                             >
-                              {translate(ROLE_RU, role)}
+                              {PERMISSION_PRESET_RU[role]}
                             </button>
                           ),
                       )}
                       <button
                         className="btn btn-secondary btn-sm"
-                        disabled={roleActionLoading}
+                        disabled={permissionActionLoading}
                         onClick={() => handleMakeAdmin(selectedUser.id)}
                         style={{ color: "var(--error)" }}
                       >
@@ -1956,19 +2008,19 @@ const AdminDashboardPage = () => {
                 {!selectedUser.is_active && (
                   <button
                     className="btn btn-secondary"
-                    disabled={roleActionLoading}
+                    disabled={permissionActionLoading}
                     onClick={() => handleActivateUser(selectedUser.id)}
                     style={{ color: "#22c55e" }}
                   >
-                    {roleActionLoading ? "Применяю..." : "Разблокировать"}
+                    {permissionActionLoading ? "Применяю..." : "Разблокировать"}
                   </button>
                 )}
                 {selectedUser.is_active &&
                   selectedUser.id !== currentUser?.id &&
-                  selectedUser.user_role !== "ADMIN" && (
+                  !hasPermission(selectedUser, PERMISSIONS.ADMIN_ACCESS) && (
                     <button
                       className="btn btn-secondary"
-                      disabled={roleActionLoading}
+                      disabled={permissionActionLoading}
                       onClick={() => handleDeleteUser(selectedUser.id)}
                       style={{ color: "var(--error)" }}
                     >
@@ -2181,21 +2233,25 @@ const AdminDashboardPage = () => {
                 flexWrap: "wrap",
               }}
             >
-              <button
-                className="btn btn-secondary"
-                onClick={() => handleApproveVendor(selectedVendor.id)}
-              >
-                <CheckCircle size={16} />
-                Одобрить
-              </button>
-              <button
-                className="btn btn-secondary"
-                onClick={() => handleRejectVendor(selectedVendor.id)}
-                style={{ color: "var(--error)" }}
-              >
-                <Prohibit size={16} />
-                Отклонить
-              </button>
+              {selectedVendor.approval_status !== "APPROVED" && (
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => handleApproveVendor(selectedVendor.id)}
+                >
+                  <CheckCircle size={16} />
+                  Одобрить
+                </button>
+              )}
+              {selectedVendor.approval_status !== "REJECTED" && (
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => handleRejectVendor(selectedVendor.id)}
+                  style={{ color: "var(--error)" }}
+                >
+                  <Prohibit size={16} />
+                  Отклонить
+                </button>
+              )}
             </div>
             <button
               className="btn btn-secondary"
@@ -2250,3 +2306,4 @@ const ListSection = ({ loading, emptyTitle, items, children }) => {
 };
 
 export default AdminDashboardPage;
+

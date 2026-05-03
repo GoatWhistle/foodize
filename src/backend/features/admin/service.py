@@ -16,21 +16,22 @@ from features.orders.schemas.order import OrderResponse
 from features.restaurants.models import Restaurant
 from features.users.models import User
 from shared.enums.order_status import OrderStatus
-from shared.enums.roles import UserRole
+from shared.enums.permissions import Permission
 from shared.exceptions import NotFoundException
+from shared.permissions import serialize_permissions
 
 
 async def get_users_list(
     session: AsyncSession,
-    role: UserRole | None,
+    permission: Permission | None,
     offset: int,
     limit: int,
     search: str | None = None,
 ) -> tuple[list[User], int]:
     data = await crud.get_all_users(
-        session, role=role, search=search, offset=offset, limit=limit
+        session, permission=permission, search=search, offset=offset, limit=limit
     )
-    total = await crud.count_all_users(session, role=role, search=search)
+    total = await crud.count_all_users(session, permission=permission, search=search)
     return data, total
 
 
@@ -51,11 +52,11 @@ async def activate_user_service(session: AsyncSession, user_id: uuid.UUID) -> Us
     return await crud.activate_user(session, user)
 
 
-async def set_user_role(
-    session: AsyncSession, user_id: uuid.UUID, role: UserRole
+async def set_user_permissions(
+    session: AsyncSession, user_id: uuid.UUID, permissions: list[Permission | str]
 ) -> User:
     user = await get_user_or_404(session, user_id)
-    user.user_role = role.value
+    user.permissions = serialize_permissions(permissions)
     await session.commit()
     await session.refresh(user)
     return user

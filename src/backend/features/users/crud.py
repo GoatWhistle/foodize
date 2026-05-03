@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.users.models import User
 from features.users.schemas import UserCreate, UserUpdate
+from shared.permissions import CUSTOMER_PERMISSIONS, serialize_permissions
 from utils.JWT import hash_password
 
 
@@ -9,10 +10,10 @@ async def create_user(
     session: AsyncSession,
     user_in: UserCreate,
 ) -> User:
-    user_data = user_in.model_dump(exclude={"password", "user_role"})
+    user_data = user_in.model_dump(exclude={"password"})
     db_user = User(
         **user_data,
-        user_role=user_in.user_role.value,
+        permissions=serialize_permissions(CUSTOMER_PERMISSIONS),
         hashed_password=hash_password(user_in.password),
     )
     session.add(db_user)

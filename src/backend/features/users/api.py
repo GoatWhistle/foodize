@@ -9,9 +9,10 @@ from features.users import crud
 from features.users.dependencies import get_user_by_id_or_404
 from features.users.models import User
 from features.users.schemas import ChangePasswordRequest, UserRead, UserUpdate
-from shared.enums.roles import UserRole
+from shared.enums.permissions import Permission
 from shared.exceptions.existence import AuthException
 from shared.exceptions.rules import AccessDeniedException
+from shared.permissions import has_permission
 from shared.response import build_response
 from shared.schemas.response import SuccessResponse
 from utils.JWT import validate_password
@@ -53,7 +54,9 @@ async def read_user(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[UserRead]:
-    if current_user.id != user_id and current_user.user_role != UserRole.ADMIN.value:
+    if current_user.id != user_id and not has_permission(
+        current_user.permissions, Permission.USERS_READ
+    ):
         raise AccessDeniedException()
     user = await get_user_by_id_or_404(session=session, user_id=user_id)
     return build_response(UserRead.model_validate(user))

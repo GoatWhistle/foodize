@@ -48,7 +48,6 @@ const RegisterPage = () => {
         name,
         phone_number: phone,
         password,
-        user_role: "CUSTOMER",
       });
       await login({ phone_number: phone, password });
       navigate(ROUTES.HOME);

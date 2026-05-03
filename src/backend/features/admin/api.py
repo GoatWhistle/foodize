@@ -21,13 +21,14 @@ from features.admin.schemas import (
 from features.orders.schemas.order import OrderResponse
 from features.users.models import User
 from shared.enums.order_status import OrderStatus
-from shared.enums.roles import UserRole
+from shared.enums.permissions import Permission
+from shared.permissions import ADMIN_PERMISSIONS, CUSTOMER_PERMISSIONS, serialize_permissions
 from shared.response import build_list_response, build_response
 from shared.schemas.response import SuccessListResponse, SuccessResponse
 
 
-class SetRoleRequest(BaseModel):
-    role: UserRole
+class SetPermissionsRequest(BaseModel):
+    permissions: list[Permission]
 
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
@@ -36,7 +37,7 @@ router = APIRouter(prefix="/admin", tags=["Admin"])
 @router.get("/users", response_model=SuccessListResponse[AdminUserResponse])
 async def read_users(
     request: Request,
-    role: UserRole | None = Query(None),
+    permission: Permission | None = Query(None),
     search: str | None = Query(None, max_length=128),
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
@@ -45,7 +46,7 @@ async def read_users(
 ) -> SuccessListResponse[AdminUserResponse]:
     offset = (page - 1) * size
     data, total = await service.get_users_list(
-        session, role, offset, size, search=search
+        session, permission, offset, size, search=search
     )
     return build_list_response(
         data=data, total=total, page=page, size=size, request=request
@@ -85,34 +86,40 @@ async def activate_user(
 
 
 @router.post(
-    "/users/{user_id}/make-admin", response_model=SuccessResponse[AdminUserResponse]
+    "/users/{user_id}/grant-admin", response_model=SuccessResponse[AdminUserResponse]
 )
-async def promote_user_to_admin(
+async def grant_admin_permissions(
     user_id: uuid.UUID,
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminUserResponse]:
-    result = await service.set_user_role(session, user_id, UserRole.ADMIN)
+    result = await service.set_user_permissions(
+        session, user_id, serialize_permissions(ADMIN_PERMISSIONS)
+    )
     return build_response(result)
 
 
-@router.post("/users/{user_id}/role", response_model=SuccessResponse[AdminUserResponse])
-async def change_user_role(
+@router.post(
+    "/users/{user_id}/permissions", response_model=SuccessResponse[AdminUserResponse]
+)
+async def change_user_permissions(
     user_id: uuid.UUID,
-    body: SetRoleRequest,
+    body: SetPermissionsRequest,
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminUserResponse]:
-    result = await service.set_user_role(session, user_id, body.role)
+    result = await service.set_user_permissions(session, user_id, body.permissions)
     return build_response(result)
 
 
-@router.post("/me/make-customer", response_model=SuccessResponse[AdminUserResponse])
-async def demote_me_to_customer(
+@router.post("/me/reset-permissions", response_model=SuccessResponse[AdminUserResponse])
+async def reset_my_permissions(
     user: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminUserResponse]:
-    result = await service.set_user_role(session, user.id, UserRole.CUSTOMER)
+    result = await service.set_user_permissions(
+        session, user.id, serialize_permissions(CUSTOMER_PERMISSIONS)
+    )
     return build_response(result)
 
 

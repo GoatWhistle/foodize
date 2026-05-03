@@ -41,6 +41,8 @@ vi.mock("../../services/vendorService", () => ({
   vendorService: {
     getStaffRequests: vi.fn().mockResolvedValue({ data: [] }),
     updateStaffStatus: vi.fn(),
+    getStaffMembers: vi.fn().mockResolvedValue({ data: { data: [] } }),
+    removeStaffMember: vi.fn().mockResolvedValue({}),
     getMyProfile: vi.fn().mockResolvedValue({ data: {} }),
   },
 }));

@@ -16,8 +16,11 @@ from features.menu.schemas import (
     MenuItemResponse,
     MenuItemUpdate,
 )
+from features.users.models import User
 from features.vendors.dependencies import get_current_vendor
 from features.vendors.models import VendorProfile
+from shared.dependencies import require_permission
+from shared.enums.permissions import Permission
 from shared.response import build_list_response, build_response
 from shared.schemas.response import SuccessListResponse, SuccessResponse
 
@@ -32,6 +35,7 @@ router = APIRouter(prefix="/menu", tags=["Menu"])
 async def create_menu_item(
     restaurant_id: uuid.UUID,
     item_in: MenuItemCreate,
+    _user: User = Depends(require_permission(Permission.MENU_MANAGE)),
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[MenuItemResponse]:
@@ -51,6 +55,7 @@ async def update_menu_item(
     restaurant_id: uuid.UUID,
     item_id: uuid.UUID,
     item_in: MenuItemUpdate,
+    _user: User = Depends(require_permission(Permission.MENU_MANAGE)),
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[MenuItemResponse]:
@@ -70,6 +75,7 @@ async def update_menu_item(
 async def delete_menu_item(
     restaurant_id: uuid.UUID,
     item_id: uuid.UUID,
+    _user: User = Depends(require_permission(Permission.MENU_MANAGE)),
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> None:
@@ -90,6 +96,7 @@ async def create_option_group(
     restaurant_id: uuid.UUID,
     item_id: uuid.UUID,
     group_in: MenuItemOptionGroupCreate,
+    _user: User = Depends(require_permission(Permission.MENU_MANAGE)),
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[MenuItemOptionGroupResponse]:
@@ -112,6 +119,7 @@ async def update_option_group(
     item_id: uuid.UUID,
     group_id: uuid.UUID,
     group_in: MenuItemOptionGroupUpdate,
+    _user: User = Depends(require_permission(Permission.MENU_MANAGE)),
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[MenuItemOptionGroupResponse]:
@@ -134,6 +142,7 @@ async def delete_option_group(
     restaurant_id: uuid.UUID,
     item_id: uuid.UUID,
     group_id: uuid.UUID,
+    _user: User = Depends(require_permission(Permission.MENU_MANAGE)),
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> None:
@@ -156,6 +165,7 @@ async def create_option(
     item_id: uuid.UUID,
     group_id: uuid.UUID,
     option_in: MenuItemOptionCreate,
+    _user: User = Depends(require_permission(Permission.MENU_MANAGE)),
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[MenuItemOptionResponse]:
@@ -180,6 +190,7 @@ async def update_option(
     group_id: uuid.UUID,
     option_id: uuid.UUID,
     option_in: MenuItemOptionUpdate,
+    _user: User = Depends(require_permission(Permission.MENU_MANAGE)),
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[MenuItemOptionResponse]:
@@ -204,6 +215,7 @@ async def delete_option(
     item_id: uuid.UUID,
     group_id: uuid.UUID,
     option_id: uuid.UUID,
+    _user: User = Depends(require_permission(Permission.MENU_MANAGE)),
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> None:

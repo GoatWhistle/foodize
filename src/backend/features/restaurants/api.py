@@ -16,8 +16,11 @@ from features.restaurants.working_hours_schemas import (
     WorkingHoursBulkSet,
     WorkingHoursRead,
 )
+from features.users.models import User
 from features.vendors.dependencies import get_current_vendor
 from features.vendors.models import VendorProfile
+from shared.dependencies import require_permission
+from shared.enums.permissions import Permission
 from shared.exceptions.existence import NotFoundException
 from shared.exceptions.rules import AccessDeniedException
 from shared.response import build_list_response, build_response
@@ -65,6 +68,7 @@ async def read_public_restaurants(
 @router.post("/", response_model=SuccessResponse[RestaurantResponse])
 async def create_restaurant(
     restaurant_in: RestaurantCreate,
+    _user: User = Depends(require_permission(Permission.RESTAURANTS_CREATE)),
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[RestaurantResponse]:
@@ -78,6 +82,7 @@ async def create_restaurant(
 async def update_restaurant(
     restaurant_id: uuid.UUID,
     update_in: RestaurantUpdate,
+    _user: User = Depends(require_permission(Permission.RESTAURANTS_UPDATE)),
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[RestaurantResponse]:
@@ -125,6 +130,7 @@ async def read_working_hours(
 async def set_working_hours_endpoint(
     restaurant_id: uuid.UUID,
     body: WorkingHoursBulkSet,
+    _user: User = Depends(require_permission(Permission.RESTAURANTS_UPDATE)),
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[list[WorkingHoursRead]]:

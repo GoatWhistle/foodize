@@ -9,8 +9,11 @@ from features.restaurants.models import Restaurant
 from features.staff import crud
 from features.staff.exceptions import StaffRequestNotFoundException
 from features.staff.models import StaffRequest
+from features.users.models import User
 from features.vendors.dependencies import get_current_vendor
 from features.vendors.models import VendorProfile
+from shared.dependencies import require_permission
+from shared.enums.permissions import Permission
 from shared.exceptions import AccessDeniedException, NotFoundException
 
 
@@ -18,6 +21,7 @@ async def get_valid_staff_request(
     request_id: uuid.UUID,
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
     current_vendor: VendorProfile = Depends(get_current_vendor),
+    _user: User = Depends(require_permission(Permission.STAFF_REQUESTS_MANAGE)),
 ) -> StaffRequest:
     request = await crud.get_request_by_id(session, request_id)
 

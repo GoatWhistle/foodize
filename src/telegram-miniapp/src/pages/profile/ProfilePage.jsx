@@ -16,6 +16,7 @@ import {
   UserCircle,
 } from "@phosphor-icons/react";
 import { useAuthStore } from "../../store/useAuthStore";
+import { hasPermission, PERMISSIONS } from "../../utils/permissions";
 import { useShallow } from "zustand/react/shallow";
 import { BackButton } from "../../telegram/sdk";
 import { userService } from "../../services/userService";
@@ -325,7 +326,7 @@ const ProfilePage = () => {
         </div>
 
         {/* Admin */}
-        {user?.user_role === "ADMIN" && (
+        {hasPermission(user, PERMISSIONS.ADMIN_ACCESS) && (
           <div
             className="profile-menu-item"
             onClick={() =>

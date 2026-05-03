@@ -3,9 +3,9 @@ from http import HTTPStatus
 from shared.exceptions import RuleException
 
 
-class ReviewAlreadyExistsException(RuleException):
+class ReviewLimitExceededException(RuleException):
     status_code: int = HTTPStatus.CONFLICT
-    detail: str = "You have already reviewed this restaurant"
+    detail: str = "You can publish up to 5 reviews for one restaurant"
 
 
 class ReviewNotAllowedException(RuleException):

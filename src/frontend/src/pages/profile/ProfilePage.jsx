@@ -19,6 +19,7 @@ import { ROUTES } from "../../constants/routes";
 import { vendorService } from "../../services/vendorService";
 import { staffService } from "../../services/staffService";
 import { userService } from "../../services/userService";
+import { hasPermission, PERMISSIONS } from "../../utils/permissions";
 
 import { useShallow } from "zustand/react/shallow";
 
@@ -207,7 +208,7 @@ const ProfilePage = () => {
         </div>
 
         {/* Admin */}
-        {user?.user_role === "ADMIN" && (
+        {hasPermission(user, PERMISSIONS.ADMIN_ACCESS) && (
           <div
             id="profile-admin-dashboard-link"
             className="profile-menu-item"

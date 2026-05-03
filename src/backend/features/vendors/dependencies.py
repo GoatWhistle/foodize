@@ -7,14 +7,23 @@ from database import db_helper
 from features.auth.service import get_current_user
 from features.users.models import User
 from features.vendors.crud import get_vendor_by_user_id
+from features.vendors.exceptions import VendorAlreadyExistsException
 from features.vendors.models import VendorProfile
+from shared.enums.permissions import Permission
 from shared.exceptions import NotFoundException
+from shared.exceptions.rules import AccessDeniedException
+from shared.permissions import has_permission
 
 
 async def get_current_vendor(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
     user: User = Depends(get_current_user),
 ) -> VendorProfile:
+    if not has_permission(user.permissions, Permission.VENDORS_READ_OWN):
+        raise AccessDeniedException(
+            detail="Insufficient permissions to access vendor profile"
+        )
+
     stmt = (
         select(User)
         .where(User.id == user.id)
@@ -32,3 +41,10 @@ async def get_vendor_or_404(user: User, session: AsyncSession) -> VendorProfile:
     if not vendor:
         raise NotFoundException()
     return vendor
+
+
+async def ensure_no_vendor_profile(user: User, session: AsyncSession) -> User:
+    vendor = await get_vendor_by_user_id(session, user.id)
+    if vendor:
+        raise VendorAlreadyExistsException()
+    return user

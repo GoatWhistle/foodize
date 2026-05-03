@@ -2,6 +2,7 @@ import uuid
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from features.restaurants import crud
 from features.restaurants.dependencies import get_restaurant_and_check_ownership
@@ -12,12 +13,27 @@ from features.restaurants.schemas import (
     RestaurantResponse,
     RestaurantUpdate,
 )
+from features.vendors.models import VendorProfile
+from shared.enums.permissions import Permission
+from shared.permissions import has_permission
 
 
 async def create_restaurant_for_vendor(
     session: AsyncSession, restaurant_data: RestaurantCreate, vendor_id: uuid.UUID
 ) -> RestaurantResponse:
     restaurant = await crud.create_restaurant(session, restaurant_data, vendor_id)
+    vendor = (
+        await session.execute(
+            select(VendorProfile)
+            .where(VendorProfile.id == vendor_id)
+            .options(selectinload(VendorProfile.user))
+        )
+    ).scalar_one_or_none()
+    if vendor and has_permission(vendor.user.permissions, Permission.RESTAURANTS_MODERATE):
+        restaurant.moderation_status = "APPROVED"
+        restaurant.rejection_reason = None
+        await session.commit()
+        await session.refresh(restaurant)
     return RestaurantResponse.model_validate(restaurant)
 
 

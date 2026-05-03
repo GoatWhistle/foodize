@@ -54,7 +54,7 @@ describe("RegisterPage", () => {
     ).toBeDefined();
   });
 
-  it("always registers as CUSTOMER", async () => {
+  it("registers without client-side role assignment", async () => {
     registerMock.mockResolvedValueOnce();
     loginMock.mockResolvedValueOnce();
 
@@ -77,8 +77,13 @@ describe("RegisterPage", () => {
 
     await waitFor(() => {
       expect(registerMock).toHaveBeenCalledWith(
-        expect.objectContaining({ user_role: "CUSTOMER" }),
+        expect.objectContaining({
+          name: "Test",
+          phone_number: "79991234567",
+          password: "password123",
+        }),
       );
+      expect(registerMock.mock.calls[0][0]).not.toHaveProperty("user_role");
     });
   });
 
@@ -109,9 +114,10 @@ describe("RegisterPage", () => {
         expect.objectContaining({
           name: "Ivan",
           phone_number: "111",
-          user_role: "CUSTOMER",
+          password: "pw123456",
         }),
       );
+      expect(registerMock.mock.calls[0][0]).not.toHaveProperty("user_role");
       expect(loginMock).toHaveBeenCalled();
       expect(mockNavigate).toHaveBeenCalledWith("/");
     });

@@ -6,7 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
 from features.admin.schemas import AdvancedAnalytics, FinanceAnalytics
-from features.auth.service import get_current_user
 from features.users.models import User
 from features.vendors import service
 from features.vendors.dependencies import get_current_vendor
@@ -15,6 +14,8 @@ from features.vendors.schemas import (
     VendorCreate,
     VendorResponse,
 )
+from shared.dependencies import require_permission
+from shared.enums.permissions import Permission
 from shared.response import build_response
 from shared.schemas.response import SuccessResponse
 
@@ -28,7 +29,7 @@ router = APIRouter(prefix="/vendors", tags=["Vendors"])
 )
 async def create_vendor(
     vendor_in: VendorCreate,
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_permission(Permission.VENDORS_CREATE)),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[VendorResponse]:
     result = await service.register_vendor(
@@ -49,6 +50,7 @@ async def read_vendor_finance(
     date_from: date | None = Query(None),
     date_to: date | None = Query(None),
     restaurant_id: uuid.UUID | None = Query(None),
+    _user: User = Depends(require_permission(Permission.VENDORS_ANALYTICS_READ)),
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[FinanceAnalytics]:
@@ -67,6 +69,7 @@ async def read_vendor_analytics(
     date_from: date | None = Query(None),
     date_to: date | None = Query(None),
     restaurant_id: uuid.UUID | None = Query(None),
+    _user: User = Depends(require_permission(Permission.VENDORS_ANALYTICS_READ)),
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdvancedAnalytics]:

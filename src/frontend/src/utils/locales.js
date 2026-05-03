@@ -1,10 +1,3 @@
-export const ROLE_RU = {
-  CUSTOMER: "Клиент",
-  VENDOR: "Вендор",
-  ADMIN: "Администратор",
-  STAFF: "Персонал",
-};
-
 export const ORDER_STATUS_RU = {
   PENDING: "Новый",
   ACCEPTED: "Принят",

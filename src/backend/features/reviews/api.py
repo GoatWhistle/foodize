@@ -4,10 +4,11 @@ from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
-from features.auth.service import get_current_user
 from features.reviews import service
 from features.reviews.schemas import RatingResponse, ReviewCreate, ReviewResponse
 from features.users.models import User
+from shared.dependencies import require_permission
+from shared.enums.permissions import Permission
 from shared.response import build_list_response, build_response
 from shared.schemas.response import SuccessListResponse, SuccessResponse
 
@@ -22,12 +23,31 @@ router = APIRouter(prefix="/restaurants", tags=["Reviews"])
 async def create_review(
     restaurant_id: uuid.UUID,
     review_in: ReviewCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission(Permission.REVIEWS_CREATE)),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[ReviewResponse]:
     result = await service.create_review_for_user(
         session=session,
         review_data=review_in,
+        user_id=current_user.id,
+        restaurant_id=restaurant_id,
+    )
+    return build_response(result)
+
+
+@router.delete(
+    "/{restaurant_id}/reviews/{review_id}",
+    response_model=SuccessResponse[ReviewResponse],
+)
+async def delete_my_review(
+    restaurant_id: uuid.UUID,
+    review_id: uuid.UUID,
+    current_user: User = Depends(require_permission(Permission.REVIEWS_CREATE)),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> SuccessResponse[ReviewResponse]:
+    result = await service.delete_review_for_user(
+        session=session,
+        review_id=review_id,
         user_id=current_user.id,
         restaurant_id=restaurant_id,
     )

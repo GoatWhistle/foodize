@@ -5,9 +5,10 @@ export const adminService = {
   getUser: (id) => api.get(`/admin/users/${id}`),
   deleteUser: (id) => api.delete(`/admin/users/${id}`),
   activateUser: (id) => api.post(`/admin/users/${id}/activate`),
-  makeAdmin: (id) => api.post(`/admin/users/${id}/make-admin`),
-  setRole: (id, role) => api.post(`/admin/users/${id}/role`, { role }),
-  makeCustomer: () => api.post("/admin/me/make-customer"),
+  grantAdmin: (id) => api.post(`/admin/users/${id}/grant-admin`),
+  setPermissions: (id, permissions) =>
+    api.post(`/admin/users/${id}/permissions`, { permissions }),
+  resetMyPermissions: () => api.post("/admin/me/reset-permissions"),
   getOrders: (params) => api.get("/admin/orders", { params }),
   getRestaurants: (params) => api.get("/admin/restaurants", { params }),
   getRestaurant: (id) => api.get(`/admin/restaurants/${id}`),

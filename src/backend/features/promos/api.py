@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
-from features.auth.service import get_current_user
 from features.promos import crud as promos_crud
 from features.promos import service
 from features.promos.schemas import (
@@ -14,6 +13,8 @@ from features.promos.schemas import (
 from features.users.models import User
 from features.vendors.dependencies import get_current_vendor
 from features.vendors.models import VendorProfile
+from shared.dependencies import require_permission
+from shared.enums.permissions import Permission
 from shared.response import build_list_response, build_response
 from shared.schemas.response import SuccessListResponse, SuccessResponse
 
@@ -23,6 +24,7 @@ router = APIRouter(prefix="/promos", tags=["Promos"])
 @router.post("", response_model=SuccessResponse[PromoResponse], status_code=201)
 async def create_promo(
     data: PromoCreate,
+    _user: User = Depends(require_permission(Permission.PROMOS_MANAGE)),
     vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[PromoResponse]:
@@ -36,6 +38,7 @@ async def list_promos(
     request: Request,
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
+    _user: User = Depends(require_permission(Permission.PROMOS_MANAGE)),
     vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessListResponse[PromoResponse]:
@@ -51,6 +54,7 @@ async def list_promos(
 @router.delete("/{code}", status_code=204)
 async def deactivate_promo(
     code: str,
+    _user: User = Depends(require_permission(Permission.PROMOS_MANAGE)),
     vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> None:
@@ -61,7 +65,7 @@ async def deactivate_promo(
 @router.post("/validate", response_model=SuccessResponse[PromoValidateResponse])
 async def validate_promo(
     data: PromoValidateRequest,
-    _current_user: User = Depends(get_current_user),
+    _current_user: User = Depends(require_permission(Permission.PROMOS_VALIDATE)),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[PromoValidateResponse]:
     result = await service.validate_promo(session, data.code, data.restaurant_id)

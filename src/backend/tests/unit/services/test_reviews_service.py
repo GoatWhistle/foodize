@@ -10,7 +10,7 @@ class TestHasCompletedOrder:
     @pytest.mark.asyncio
     async def test_returns_true_when_found(self):
         mock_result = MagicMock()
-        mock_result.scalar_one_or_none = MagicMock(return_value=MagicMock())
+        mock_result.scalar_one = MagicMock(return_value=True)
 
         session = AsyncMock()
         session.execute = AsyncMock(return_value=mock_result)
@@ -21,7 +21,7 @@ class TestHasCompletedOrder:
     @pytest.mark.asyncio
     async def test_returns_false_when_not_found(self):
         mock_result = MagicMock()
-        mock_result.scalar_one_or_none = MagicMock(return_value=None)
+        mock_result.scalar_one = MagicMock(return_value=False)
 
         session = AsyncMock()
         session.execute = AsyncMock(return_value=mock_result)

@@ -60,6 +60,60 @@ const NEXT_ORDER_LABEL_RU = {
 
 const getOrderDisplayId = (order) => order.display_id ?? order.id.slice(0, 8);
 
+const toDateInputValue = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getOrderDateKey = (order) => {
+  if (!order?.created_at) return "unknown";
+  return toDateInputValue(new Date(order.created_at));
+};
+
+const formatOrderTime = (value) => {
+  if (!value) return "";
+  return new Intl.DateTimeFormat("ru-RU", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+};
+
+const formatOrderDateGroup = (dateKey) => {
+  if (dateKey === "unknown") return "Без даты";
+
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+
+  if (dateKey === toDateInputValue(today)) return "Сегодня";
+  if (dateKey === toDateInputValue(yesterday)) return "Вчера";
+
+  const date = new Date(`${dateKey}T00:00:00`);
+  return new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+};
+
+const groupOrdersByDate = (orders) =>
+  orders.reduce((groups, order) => {
+    const dateKey = getOrderDateKey(order);
+    const group = groups.find((item) => item.dateKey === dateKey);
+    if (group) {
+      group.orders.push(order);
+    } else {
+      groups.push({
+        dateKey,
+        title: formatOrderDateGroup(dateKey),
+        orders: [order],
+      });
+    }
+    return groups;
+  }, []);
+
 const createOptionDraft = () => ({
   draftId: `${Date.now()}-${Math.random()}`,
   name: "",
@@ -149,6 +203,7 @@ const VendorDashboardPage = () => {
   const [ordersPage, setOrdersPage] = useState(1);
   const [ordersTotal, setOrdersTotal] = useState(0);
   const [ordersStatusFilter, setOrdersStatusFilter] = useState("");
+  const [ordersDateFilter, setOrdersDateFilter] = useState("");
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [updatingOrderId, setUpdatingOrderId] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -520,6 +575,8 @@ const VendorDashboardPage = () => {
           page: ordersPage,
           size: 20,
           status: ordersStatusFilter || undefined,
+          date_from: ordersDateFilter || undefined,
+          date_to: ordersDateFilter || undefined,
         });
         const list = Array.isArray(res.data?.data) ? res.data.data : [];
         setRestaurantOrders(list);
@@ -537,13 +594,13 @@ const VendorDashboardPage = () => {
         if (!silent) setOrdersLoading(false);
       }
     },
-    [selectedRestaurant, ordersPage, ordersStatusFilter],
+    [selectedRestaurant, ordersPage, ordersStatusFilter, ordersDateFilter],
   );
 
   useEffect(() => {
     if (selectedRestaurant && activeTab === "orders") {
       fetchVendorOrders();
-      if (ordersPage === 1 && !ordersStatusFilter) {
+      if (ordersPage === 1 && !ordersStatusFilter && !ordersDateFilter) {
         pollInterval.current = setInterval(
           () => fetchVendorOrders({ silent: true }),
           5000,
@@ -556,6 +613,7 @@ const VendorDashboardPage = () => {
     activeTab,
     ordersPage,
     ordersStatusFilter,
+    ordersDateFilter,
     fetchVendorOrders,
   ]);
 
@@ -716,6 +774,8 @@ const VendorDashboardPage = () => {
       )}
     </div>
   );
+
+  const groupedRestaurantOrders = groupOrdersByDate(restaurantOrders);
 
   return (
     <div className="vendor-page page-enter">
@@ -1682,6 +1742,39 @@ const VendorDashboardPage = () => {
                     </button>
                   ))}
                 </div>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    marginBottom: 12,
+                  }}
+                >
+                  <input
+                    className="form-input"
+                    type="date"
+                    value={ordersDateFilter}
+                    onChange={(e) => {
+                      setOrdersDateFilter(e.target.value);
+                      setOrdersPage(1);
+                    }}
+                    style={{ maxWidth: 180, height: 36, fontSize: "0.82rem" }}
+                    aria-label="Дата заказов"
+                  />
+                  {ordersDateFilter && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        setOrdersDateFilter("");
+                        setOrdersPage(1);
+                      }}
+                    >
+                      Сбросить дату
+                    </button>
+                  )}
+                </div>
                 {ordersLoading ? (
                   <div className="loading-center">
                     <div className="spinner" />
@@ -1704,97 +1797,128 @@ const VendorDashboardPage = () => {
                       gap: 12,
                     }}
                   >
-                    {restaurantOrders.map((order) => (
+                    {groupedRestaurantOrders.map((group) => (
                       <div
-                        key={order.id}
-                        className="order-card"
-                        style={{ cursor: "pointer" }}
-                        onClick={() => setSelectedOrder(order)}
+                        key={group.dateKey}
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 8,
+                        }}
                       >
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: 700, marginBottom: 4 }}>
-                            Заказ #{getOrderDisplayId(order)}
-                          </div>
-                          <div
-                            style={{
-                              fontSize: "0.8rem",
-                              color: "var(--text-3)",
-                            }}
-                          >
-                            {order.items?.length || 0} позиц. •{" "}
-                            {order.total_price} ₽
-                          </div>
-                          {order.items?.length > 0 && (
-                            <div
-                              style={{
-                                marginTop: 8,
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: 4,
-                                color: "var(--text-2)",
-                                fontSize: "0.78rem",
-                              }}
-                            >
-                              {order.items.map((item) => (
-                                <div key={item.id}>
-                                  ×{item.quantity} {item.menu_item_name}
-                                  {item.selected_options?.length > 0 && (
-                                    <span style={{ color: "var(--text-3)" }}>
-                                      {" "}
-                                      (
-                                      {item.selected_options
-                                        .map(
-                                          (option) =>
-                                            `${option.name}${
-                                              option.price_delta
-                                                ? ` +${option.price_delta} ₽`
-                                                : ""
-                                            }`,
-                                        )
-                                        .join(", ")}
-                                      )
-                                    </span>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
                         <div
                           style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "flex-end",
-                            gap: 6,
+                            color: "var(--text-3)",
+                            fontSize: "0.78rem",
+                            fontWeight: 800,
+                            textTransform: "uppercase",
+                            letterSpacing: 0,
+                            padding: "2px 2px",
                           }}
                         >
-                          <span
-                            className={`order-status-badge ${
-                              order.status === "PENDING"
-                                ? "pending"
-                                : order.status === "COOKING"
-                                  ? "preparing"
-                                  : order.status === "CANCELLED"
-                                    ? "cancelled"
-                                    : "ready"
-                            }`}
+                          {group.title}
+                        </div>
+                        {group.orders.map((order) => (
+                          <div
+                            key={order.id}
+                            className="order-card"
+                            style={{ cursor: "pointer" }}
+                            onClick={() => setSelectedOrder(order)}
                           >
-                            {STATUS_LABEL_RU[order.status] ?? order.status}
-                          </span>
-                          {NEXT_ORDER_STATUS[order.status] && (
-                            <button
-                              className="btn btn-secondary btn-sm"
-                              disabled={updatingOrderId === order.id}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedOrder(order);
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontWeight: 700, marginBottom: 4 }}>
+                                Заказ #{getOrderDisplayId(order)}
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: "0.8rem",
+                                  color: "var(--text-3)",
+                                }}
+                              >
+                                {formatOrderTime(order.created_at) && (
+                                  <>
+                                    {formatOrderTime(order.created_at)} •{" "}
+                                  </>
+                                )}
+                                {order.items?.length || 0} позиц. •{" "}
+                                {order.total_price} ₽
+                              </div>
+                              {order.items?.length > 0 && (
+                                <div
+                                  style={{
+                                    marginTop: 8,
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 4,
+                                    color: "var(--text-2)",
+                                    fontSize: "0.78rem",
+                                  }}
+                                >
+                                  {order.items.map((item) => (
+                                    <div key={item.id}>
+                                      ×{item.quantity} {item.menu_item_name}
+                                      {item.selected_options?.length > 0 && (
+                                        <span
+                                          style={{ color: "var(--text-3)" }}
+                                        >
+                                          {" "}
+                                          (
+                                          {item.selected_options
+                                            .map(
+                                              (option) =>
+                                                `${option.name}${
+                                                  option.price_delta
+                                                    ? ` +${option.price_delta} ₽`
+                                                    : ""
+                                                }`,
+                                            )
+                                            .join(", ")}
+                                          )
+                                        </span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "flex-end",
+                                gap: 6,
                               }}
                             >
-                              Детали
-                              <CaretRight size={16} />
-                            </button>
-                          )}
-                        </div>
+                              <span
+                                className={`order-status-badge ${
+                                  order.status === "PENDING"
+                                    ? "pending"
+                                    : order.status === "COOKING"
+                                      ? "preparing"
+                                      : order.status === "CANCELLED"
+                                        ? "cancelled"
+                                        : "ready"
+                                }`}
+                              >
+                                {STATUS_LABEL_RU[order.status] ??
+                                  order.status}
+                              </span>
+                              {NEXT_ORDER_STATUS[order.status] && (
+                                <button
+                                  className="btn btn-secondary btn-sm"
+                                  disabled={updatingOrderId === order.id}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedOrder(order);
+                                  }}
+                                >
+                                  Детали
+                                  <CaretRight size={16} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     ))}
                     <Pagination

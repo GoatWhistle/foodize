@@ -37,6 +37,31 @@ describe("adminService", () => {
     expect(result.status).toEqual(204);
   });
 
+  it("grantAdmin sends POST to /admin/users/{id}/grant-admin", async () => {
+    mock.onPost("/admin/users/1/grant-admin").reply(200);
+
+    const result = await adminService.grantAdmin("1");
+    expect(result.status).toEqual(200);
+  });
+
+  it("setPermissions sends POST to /admin/users/{id}/permissions", async () => {
+    mock
+      .onPost("/admin/users/1/permissions", {
+        permissions: ["admin.access"],
+      })
+      .reply(200);
+
+    const result = await adminService.setPermissions("1", ["admin.access"]);
+    expect(result.status).toEqual(200);
+  });
+
+  it("resetMyPermissions sends POST to /admin/me/reset-permissions", async () => {
+    mock.onPost("/admin/me/reset-permissions").reply(200);
+
+    const result = await adminService.resetMyPermissions();
+    expect(result.status).toEqual(200);
+  });
+
   it("getOrders sends GET to /admin/orders", async () => {
     const mockData = { data: [], total: 0 };
     mock.onGet("/admin/orders").reply(200, mockData);

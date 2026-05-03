@@ -1,4 +1,5 @@
 import uuid
+from datetime import date
 
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,13 +18,34 @@ from features.orders.schemas.order_event import OrderEventResponse
 from features.orders.services import order as service
 from features.restaurants.models import Restaurant
 from features.users.models import User
+from shared.dependencies import require_permission
 from shared.enums.order_status import OrderStatus
-from shared.enums.roles import UserRole
+from shared.enums.permissions import Permission
 from shared.exceptions import AccessDeniedException, NotFoundException
+from shared.permissions import has_permission
 from shared.response import build_list_response, build_response
 from shared.schemas.response import SuccessListResponse, SuccessResponse
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
+
+
+async def verify_order_read_access(
+    session: AsyncSession, order: Order, current_user: User
+) -> None:
+    if has_permission(current_user.permissions, Permission.ORDERS_MODERATE):
+        return
+
+    if (
+        has_permission(current_user.permissions, Permission.ORDERS_READ_OWN)
+        and order.user_id == current_user.id
+    ):
+        return
+
+    if has_permission(current_user.permissions, Permission.ORDERS_READ_RESTAURANT):
+        await verify_restaurant_access(session, order.restaurant_id, current_user)
+        return
+
+    raise AccessDeniedException()
 
 
 @router.post(
@@ -33,7 +55,7 @@ router = APIRouter(prefix="/orders", tags=["Orders"])
 )
 async def create_order(
     order_in: OrderCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission(Permission.ORDERS_CREATE)),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[OrderResponse]:
     result = await service.place_order(
@@ -48,7 +70,7 @@ async def read_my_orders(
     status: OrderStatus | None = Query(None),
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission(Permission.ORDERS_READ_OWN)),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessListResponse[OrderResponse]:
     data, total = await service.get_user_orders(
@@ -65,6 +87,8 @@ async def read_my_orders(
 async def read_restaurant_orders(
     request: Request,
     status: OrderStatus | None = Query(None),
+    date_from: date | None = Query(None),
+    date_to: date | None = Query(None),
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     restaurant: Restaurant = Depends(get_restaurant_staff_or_vendor),
@@ -74,6 +98,8 @@ async def read_restaurant_orders(
         session=session,
         restaurant_id=restaurant.id,
         status=status,
+        date_from=date_from,
+        date_to=date_to,
         page=page,
         size=size,
     )
@@ -86,7 +112,7 @@ async def read_restaurant_orders(
 async def update_order_status(
     status_in: OrderStatusUpdate,
     order: Order = Depends(get_order_for_staff_or_vendor),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission(Permission.ORDERS_MANAGE_STATUS)),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[OrderResponse]:
     result = await service.change_order_status(
@@ -108,11 +134,7 @@ async def read_order_events(
     if not order:
         raise NotFoundException(detail="Order not found")
 
-    if current_user.user_role == UserRole.CUSTOMER.value:
-        if order.user_id != current_user.id:
-            raise AccessDeniedException()
-    else:
-        await verify_restaurant_access(session, order.restaurant_id, current_user)
+    await verify_order_read_access(session, order, current_user)
 
     events = await service.get_order_events(session=session, order_id=order.id)
     return build_list_response(
@@ -123,7 +145,7 @@ async def read_order_events(
 @router.post("/{order_id}/complete", response_model=SuccessResponse[OrderResponse])
 async def complete_order(
     order_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission(Permission.ORDERS_READ_OWN)),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[OrderResponse]:
     result = await service.complete_order(
@@ -135,7 +157,7 @@ async def complete_order(
 @router.post("/{order_id}/cancel", response_model=SuccessResponse[OrderResponse])
 async def cancel_order(
     order_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission(Permission.ORDERS_READ_OWN)),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[OrderResponse]:
     result = await service.cancel_order(
@@ -154,10 +176,6 @@ async def read_order(
     if not order:
         raise NotFoundException(detail="Order not found")
 
-    if current_user.user_role == UserRole.CUSTOMER.value:
-        if order.user_id != current_user.id:
-            raise AccessDeniedException()
-    else:
-        await verify_restaurant_access(session, order.restaurant_id, current_user)
+    await verify_order_read_access(session, order, current_user)
 
     return build_response(OrderResponse.model_validate(order))

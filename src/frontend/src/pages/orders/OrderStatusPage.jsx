@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useOrderStore } from "../../store/useOrderStore";
 import OrderStatusBadge from "../../components/ui/OrderStatusBadge";
@@ -14,6 +14,12 @@ const TERMINAL_STATUSES = new Set(["COMPLETED", "CANCELLED"]);
 const STATUS_FLOW = ["PENDING", "ACCEPTED", "COOKING", "READY", "COMPLETED"];
 
 const getOrderDisplayId = (order) => order.display_id ?? order.id.slice(0, 8);
+
+const extractEvents = (response) => {
+  if (Array.isArray(response?.data?.data)) return response.data.data;
+  if (Array.isArray(response?.data)) return response.data;
+  return [];
+};
 
 const getOrderStages = (order, events) => {
   const eventByStatus = new Map(
@@ -69,13 +75,12 @@ const OrderStatusPage = () => {
   const [cancelError, setCancelError] = useState("");
   const [completeError, setCompleteError] = useState("");
 
-  const loadEvents = async () => {
+  const loadEvents = useCallback(async () => {
     try {
       const res = await orderService.getOrderEvents(id);
-      const list = Array.isArray(res.data?.data) ? res.data.data : [];
-      setEvents(list);
+      setEvents(extractEvents(res));
     } catch {}
-  };
+  }, [id]);
 
   useEffect(() => {
     fetchOrder(id);

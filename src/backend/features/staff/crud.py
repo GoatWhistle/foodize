@@ -8,9 +8,9 @@ from features.restaurants.models import Restaurant
 from features.staff.models import StaffProfile, StaffRequest
 from features.staff.schemas import StaffRequestCreate
 from features.users.models import User
-from shared.enums.roles import UserRole
 from shared.enums.staff_request_status import StaffRequestStatus
 from shared.enums.staff_roles import StaffRole
+from shared.permissions import STAFF_PERMISSIONS, permissions_with, permissions_without
 
 
 async def create_staff_request(
@@ -115,7 +115,7 @@ async def create_staff_profile(
 ) -> StaffProfile:
     user = await session.get(User, user_id)
     if user:
-        user.user_role = UserRole.STAFF.value
+        user.permissions = permissions_with(user.permissions, STAFF_PERMISSIONS)
 
     profile = StaffProfile(
         user_id=user_id, restaurant_id=restaurant_id, role=StaffRole.COOK.value
@@ -164,6 +164,6 @@ async def get_staff_profile_by_id(
 async def delete_staff_profile(session: AsyncSession, profile: StaffProfile) -> None:
     user = await session.get(User, profile.user_id)
     if user:
-        user.user_role = UserRole.USER.value
+        user.permissions = permissions_without(user.permissions, STAFF_PERMISSIONS)
     await session.delete(profile)
     await session.commit()

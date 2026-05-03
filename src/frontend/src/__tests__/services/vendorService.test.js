@@ -30,15 +30,6 @@ describe("vendorService", () => {
     expect(result.data).toEqual(mockData);
   });
 
-  it("updateDescription sends PATCH to /vendors/description", async () => {
-    const newDesc = "Best food";
-    mock.onPatch("/vendors/description").reply(200, { description: newDesc });
-
-    const result = await vendorService.updateDescription(newDesc);
-    expect(result.data.description).toBe(newDesc);
-    expect(JSON.parse(mock.history.patch[0].data).description).toBe(newDesc);
-  });
-
   it("getFinance sends GET to /vendors/finance", async () => {
     const mockData = { average_check: 500 };
     mock.onGet("/vendors/finance").reply(200, mockData);
@@ -64,5 +55,20 @@ describe("vendorService", () => {
 
     const result = await vendorService.updateStaffStatus(requestId, status);
     expect(result.data.status).toBe(status);
+  });
+
+  it("getStaffMembers sends GET to /staff/my-members", async () => {
+    const mockData = [{ id: "staff-1", status: "APPROVED" }];
+    mock.onGet("/staff/my-members").reply(200, mockData);
+
+    const result = await vendorService.getStaffMembers();
+    expect(result.data).toEqual(mockData);
+  });
+
+  it("removeStaffMember sends DELETE to /staff/members/:id", async () => {
+    mock.onDelete("/staff/members/staff-1").reply(204);
+
+    const result = await vendorService.removeStaffMember("staff-1");
+    expect(result.status).toBe(204);
   });
 });

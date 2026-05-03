@@ -49,7 +49,7 @@ describe("HomePage", () => {
     vi.clearAllMocks();
   });
 
-  it("renders search bar and checkboxes", () => {
+  it("renders search bar and open-only filter", () => {
     render(
       <BrowserRouter>
         <HomePage />
@@ -60,7 +60,6 @@ describe("HomePage", () => {
       screen.getByPlaceholderText("Поиск ресторана или адреса..."),
     ).toBeDefined();
     expect(screen.getByText("Только открытые")).toBeDefined();
-    expect(screen.getByText(/Набор сотрудников/)).toBeDefined();
   });
 
   it("renders all restaurant cards", () => {

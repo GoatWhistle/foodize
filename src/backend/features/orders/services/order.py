@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -34,8 +34,8 @@ from features.restaurants.exceptions import (
 from features.users.models import User
 from infra.cache.redis import get_redis_cache
 from shared.enums.order_status import OrderStatus
-from shared.enums.roles import UserRole
 from shared.exceptions import BadRequestException
+from shared.permissions import CUSTOMER_PERMISSIONS, serialize_permissions
 
 _ALLOWED_TRANSITIONS: dict[OrderStatus, set[OrderStatus]] = {
     OrderStatus.PENDING: {OrderStatus.ACCEPTED, OrderStatus.CANCELLED},
@@ -249,15 +249,27 @@ async def get_restaurant_orders(
     session: AsyncSession,
     restaurant_id: uuid.UUID,
     status: OrderStatus | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
     page: int = 1,
     size: int = 20,
 ) -> tuple[list[OrderResponse], int]:
     offset = (page - 1) * size
     data = await order_crud.get_orders_by_restaurant_id(
-        session, restaurant_id, status=status, offset=offset, limit=size
+        session,
+        restaurant_id,
+        status=status,
+        date_from=date_from,
+        date_to=date_to,
+        offset=offset,
+        limit=size,
     )
     total = await order_crud.count_orders_by_restaurant_id(
-        session, restaurant_id, status=status
+        session,
+        restaurant_id,
+        status=status,
+        date_from=date_from,
+        date_to=date_to,
     )
     return [OrderResponse.model_validate(o) for o in data], total
 
@@ -286,7 +298,7 @@ async def change_order_status(
         session,
         order_id=order.id,
         actor_id=actor.id,
-        actor_role=actor.user_role,
+        actor_permissions=actor.permissions,
         old_status=old_status,
         new_status=status_data.status,
     )
@@ -325,7 +337,7 @@ async def cancel_order(
         session,
         order_id=order.id,
         actor_id=user_id,
-        actor_role=UserRole.CUSTOMER.value,
+        actor_permissions=serialize_permissions(CUSTOMER_PERMISSIONS),
         old_status=old_status,
         new_status=OrderStatus.CANCELLED,
     )
@@ -366,7 +378,7 @@ async def complete_order(
         session,
         order_id=order.id,
         actor_id=user_id,
-        actor_role=UserRole.CUSTOMER.value,
+        actor_permissions=serialize_permissions(CUSTOMER_PERMISSIONS),
         old_status=old_status,
         new_status=OrderStatus.COMPLETED,
     )

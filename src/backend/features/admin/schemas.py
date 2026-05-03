@@ -3,7 +3,7 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
-from shared.enums.roles import UserRole
+from shared.enums.permissions import Permission
 
 
 class AdminUserResponse(BaseModel):
@@ -14,7 +14,7 @@ class AdminUserResponse(BaseModel):
     email: str | None = None
     telegram_username: str | None = None
     phone_number: str
-    user_role: UserRole
+    permissions: list[Permission]
     is_active: bool
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
@@ -26,7 +26,7 @@ class StatsGrowthPoint(BaseModel):
 
 
 class PlatformStats(BaseModel):
-    users_by_role: dict[str, int]
+    users_by_permission: dict[str, int]
     orders_by_status: dict[str, int]
     total_restaurants: int
     total_vendors: int

@@ -135,7 +135,7 @@ describe("RestaurantPage", () => {
     expect(screen.getByText("Veggie Burger")).toBeDefined();
 
     // Click Burger category chip (in the filters list)
-    fireEvent.click(screen.getAllByText(/BURGER/)[0]);
+    fireEvent.click(screen.getAllByText("Бургеры")[0]);
 
     expect(screen.queryByText("Classic Shaurma")).toBeNull();
     expect(screen.getByText("Veggie Burger")).toBeDefined();

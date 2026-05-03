@@ -1,11 +1,11 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, String
+from sqlalchemy import JSON, BigInteger, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base, CreatedAtMixin, IdUuidPkMixin, UpdatedAtMixin
 from database.mixins.name_str import NameStrMixin
-from shared.enums.roles import UserRole
+from shared.permissions import CUSTOMER_PERMISSIONS, serialize_permissions
 
 if TYPE_CHECKING:
     from features.favorites.models import Favorite
@@ -29,10 +29,10 @@ class User(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin):
     is_active: Mapped[bool] = mapped_column(
         default=True, server_default="true", nullable=False
     )
-    user_role: Mapped[str] = mapped_column(
-        String,
-        default=UserRole.CUSTOMER.value,
-        server_default="CUSTOMER",
+    permissions: Mapped[list[str]] = mapped_column(
+        JSON,
+        default=lambda: serialize_permissions(CUSTOMER_PERMISSIONS),
+        server_default="[]",
         nullable=False,
     )
     vendor_profile: Mapped["VendorProfile | None"] = relationship(back_populates="user")

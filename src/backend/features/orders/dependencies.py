@@ -12,8 +12,9 @@ from features.restaurants.models import Restaurant
 from features.staff.models import StaffProfile
 from features.users.models import User
 from features.vendors.crud import get_vendor_by_user_id
-from shared.enums.roles import UserRole
+from shared.enums.permissions import Permission
 from shared.exceptions import AccessDeniedException, NotFoundException
+from shared.permissions import has_permission
 
 
 async def verify_restaurant_access(
@@ -25,12 +26,20 @@ async def verify_restaurant_access(
     if not restaurant:
         raise NotFoundException(detail="Restaurant not found")
 
-    if current_user.user_role == UserRole.ADMIN.value:
+    if has_permission(current_user.permissions, Permission.ORDERS_MODERATE):
         return restaurant
 
-    vendor = await get_vendor_by_user_id(session, current_user.id)
-    if vendor and vendor.id == restaurant.vendor_id:
-        return restaurant
+    if not has_permission(current_user.permissions, Permission.ORDERS_READ_RESTAURANT):
+        raise AccessDeniedException(detail="Only VENDOR and STAFF can access orders")
+
+    if has_permission(current_user.permissions, Permission.VENDORS_READ_OWN):
+        vendor = await get_vendor_by_user_id(session, current_user.id)
+        if vendor and vendor.id == restaurant.vendor_id:
+            return restaurant
+        if vendor:
+            raise AccessDeniedException(
+                detail="Only VENDOR and STAFF can access orders"
+            )
 
     result = await session.execute(
         select(StaffProfile).where(

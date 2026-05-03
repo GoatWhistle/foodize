@@ -1,7 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, String, UniqueConstraint
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base, CreatedAtMixin, IdUuidPkMixin
@@ -25,8 +25,3 @@ class Review(Base, IdUuidPkMixin, CreatedAtMixin, DeletedAtMixin):
     user: Mapped["User"] = relationship(back_populates="reviews")
     restaurant: Mapped["Restaurant"] = relationship(back_populates="reviews")
 
-    __table_args__ = (  # type: ignore[assignment]
-        UniqueConstraint(
-            "user_id", "restaurant_id", name="uq_reviews_user_id_restaurant_id"
-        ),
-    )

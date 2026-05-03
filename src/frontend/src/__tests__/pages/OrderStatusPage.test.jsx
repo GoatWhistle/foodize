@@ -44,6 +44,7 @@ describe("OrderStatusPage", () => {
     vi.mocked(useOrderStore).mockImplementation((sel) => {
       return sel ? sel(state) : state;
     });
+    useOrderStore.getState = vi.fn(() => state);
   });
 
   afterEach(() => {
@@ -63,7 +64,7 @@ describe("OrderStatusPage", () => {
   it("renders order details and initial status", () => {
     renderWithRouter();
 
-    expect(screen.getByText("Принят")).toBeDefined();
+    expect(screen.getAllByText("Принят").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/500 ₽/)).toHaveLength(2);
     expect(screen.getByText("Бургер")).toBeDefined();
   });

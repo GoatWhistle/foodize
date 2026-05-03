@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any
 
 from sqlalchemy import func, select
@@ -8,6 +8,8 @@ from sqlalchemy.orm import selectinload
 
 from features.orders.models import Order, OrderEvent, OrderItem
 from shared.enums.order_status import OrderStatus
+from shared.enums.permissions import Permission
+from shared.permissions import serialize_permissions
 
 
 def _items_options() -> Any:
@@ -48,6 +50,8 @@ async def get_orders_by_restaurant_id(
     session: AsyncSession,
     restaurant_id: uuid.UUID,
     status: OrderStatus | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
     offset: int = 0,
     limit: int = 20,
 ) -> list[Order]:
@@ -59,6 +63,10 @@ async def get_orders_by_restaurant_id(
     )
     if status is not None:
         stmt = stmt.where(Order.status == status.value)
+    if date_from is not None:
+        stmt = stmt.where(func.date(Order.created_at) >= date_from)
+    if date_to is not None:
+        stmt = stmt.where(func.date(Order.created_at) <= date_to)
     stmt = stmt.offset(offset).limit(limit)
     result = await session.execute(stmt)
     return list(result.scalars().all())
@@ -80,6 +88,8 @@ async def count_orders_by_restaurant_id(
     session: AsyncSession,
     restaurant_id: uuid.UUID,
     status: OrderStatus | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
 ) -> int:
     stmt = (
         select(func.count())
@@ -88,6 +98,10 @@ async def count_orders_by_restaurant_id(
     )
     if status is not None:
         stmt = stmt.where(Order.status == status.value)
+    if date_from is not None:
+        stmt = stmt.where(func.date(Order.created_at) >= date_from)
+    if date_to is not None:
+        stmt = stmt.where(func.date(Order.created_at) <= date_to)
     result = await session.execute(stmt)
     return result.scalar_one()
 
@@ -107,14 +121,14 @@ async def create_order_event(
     session: AsyncSession,
     order_id: uuid.UUID,
     actor_id: uuid.UUID,
-    actor_role: str,
+    actor_permissions: list[Permission | str],
     old_status: OrderStatus,
     new_status: OrderStatus,
 ) -> OrderEvent:
     event = OrderEvent(
         order_id=order_id,
         actor_id=actor_id,
-        actor_role=actor_role,
+        actor_permissions=serialize_permissions(actor_permissions),
         old_status=old_status.value,
         new_status=new_status.value,
     )

@@ -1,4 +1,5 @@
 __all__ = [
-    "RoleChecker",
+    "PermissionChecker",
+    "require_permission",
 ]
-from shared.dependencies.roles import RoleChecker
+from shared.dependencies.permissions import PermissionChecker, require_permission

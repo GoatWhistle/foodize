@@ -19,6 +19,7 @@ import { useAuthStore } from "../../store/useAuthStore";
 import { useOrderStore } from "../../store/useOrderStore";
 import { useShallow } from "zustand/react/shallow";
 import { ROUTES } from "../../constants/routes";
+import { hasPermission, PERMISSIONS } from "../../utils/permissions";
 
 const NAV_LINKS = [
   {
@@ -78,6 +79,10 @@ const MainLayout = () => {
   const [error, setError] = useState("");
 
   const cartItemsCount = cart.reduce((t, i) => t + i.quantity, 0);
+  const canOpenStaffDashboard = hasPermission(
+    user,
+    PERMISSIONS.STAFF_PROFILE_READ,
+  );
 
   const handleCheckout = async (promoCode = null, comment = "") => {
     setIsLoading(true);
@@ -104,7 +109,7 @@ const MainLayout = () => {
           <nav className="header-nav" aria-label="Основная навигация">
             {[
               ...NAV_LINKS,
-              ...(user?.user_role === "STAFF" ? [STAFF_LINK] : []),
+              ...(canOpenStaffDashboard ? [STAFF_LINK] : []),
             ].map(({ to, label, icon }) => {
               const isActive =
                 to === ROUTES.HOME
@@ -166,7 +171,7 @@ const MainLayout = () => {
         <nav className="bottom-tab-bar" aria-label="Навигация">
           {[
             ...BOTTOM_NAV_LINKS,
-            ...(user?.user_role === "STAFF" ? [STAFF_LINK] : []),
+            ...(canOpenStaffDashboard ? [STAFF_LINK] : []),
           ].map(({ to, label, icon }) => {
             const isActive =
               to === ROUTES.HOME

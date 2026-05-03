@@ -2,7 +2,7 @@ import uuid
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from shared.enums.roles import UserRole
+from shared.enums.permissions import Permission
 
 
 class UserBase(BaseModel):
@@ -12,14 +12,13 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    user_role: UserRole
     password: str = Field(min_length=8, max_length=128)
     model_config = ConfigDict(from_attributes=True)
 
 
 class UserRead(UserBase):
     id: uuid.UUID
-    user_role: UserRole
+    permissions: list[Permission]
     first_name: str | None = None
     last_name: str | None = None
     middle_name: str | None = None

@@ -15,10 +15,12 @@ import {
   DotsThree,
   List,
   Fire,
+  Trash,
 } from "@phosphor-icons/react";
 import { useRestaurantStore } from "../../store/useRestaurantStore";
 import { useOrderStore } from "../../store/useOrderStore";
 import { useFavoriteStore } from "../../store/useFavoriteStore";
+import { useAuthStore } from "../../store/useAuthStore";
 import { useShallow } from "zustand/react/shallow";
 import { reviewService } from "../../services/reviewService";
 import { restaurantService } from "../../services/restaurantService";
@@ -36,6 +38,20 @@ const CATEGORY_ICONS = {
   SNACK: <Cookie size={14} />,
   DRINK: <Coffee size={14} />,
   OTHER: <DotsThree size={14} />,
+};
+
+const formatReviewTime = (value) => {
+  if (!value) return "";
+  try {
+    return new Intl.DateTimeFormat("ru-RU", {
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(value));
+  } catch {
+    return "";
+  }
 };
 
 const RestaurantPage = () => {
@@ -61,6 +77,8 @@ const RestaurantPage = () => {
   const [staffMessage, setStaffMessage] = useState("");
   const [staffLoading, setStaffLoading] = useState(false);
   const [staffError, setStaffError] = useState("");
+  const currentUser = useAuthStore((s) => s.user);
+  const [reviewDeleteId, setReviewDeleteId] = useState(null);
 
   const { fetchMenu, menus, loading } = useRestaurantStore(
     useShallow((s) => ({
@@ -141,9 +159,36 @@ const RestaurantPage = () => {
       });
       setReviewSuccess(true);
       setReviewForm({ rating: 5, text: "" });
+      window.setTimeout(() => setReviewSuccess(false), 2200);
       loadReviews();
     } catch {
       setReviewError("Не удалось отправить");
+    }
+  };
+
+  const handleReviewDelete = async (reviewId) => {
+    setReviewDeleteId(reviewId);
+  };
+
+  const confirmReviewDelete = async () => {
+    if (!reviewDeleteId) return;
+    setReviewError("");
+    try {
+      await reviewService.deleteReview(id, reviewDeleteId);
+      setReviewsList((prev) =>
+        prev.filter((review) => review.id !== reviewDeleteId),
+      );
+      setReviewDeleteId(null);
+      reviewService
+        .getRating(id)
+        .then((res) => {
+          const val =
+            res.data?.data?.average_rating ?? res.data?.data?.rating ?? null;
+          setRating(val);
+        })
+        .catch(() => {});
+    } catch {
+      setReviewError("Не удалось удалить отзыв");
     }
   };
 
@@ -581,6 +626,48 @@ const RestaurantPage = () => {
         </div>
       )}
 
+      {reviewDeleteId && (
+        <div className="modal-overlay" style={{ zIndex: 5000 }}>
+          <div
+            className="modal-content"
+            style={{
+              padding: 20,
+              borderRadius: 14,
+              maxWidth: 360,
+            }}
+          >
+            <h3 style={{ margin: 0, fontSize: "1rem" }}>Удалить отзыв?</h3>
+            <p
+              style={{
+                color: "var(--text-3)",
+                fontSize: "0.88rem",
+                lineHeight: 1.45,
+                margin: "10px 0 18px",
+              }}
+            >
+              Точно ли вы хотите удалить этот отзыв?
+            </p>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setReviewDeleteId(null)}
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={confirmReviewDelete}
+                style={{ background: "#ef4444" }}
+              >
+                Удалить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showReviews && (
         <div className="modal-overlay" style={{ zIndex: 3000 }}>
           <div
@@ -617,6 +704,26 @@ const RestaurantPage = () => {
               </button>
             </div>
             <div style={{ overflowY: "auto", flex: 1 }}>
+              {reviewSuccess && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 14,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    zIndex: 2,
+                    padding: "9px 12px",
+                    borderRadius: 8,
+                    background: "#16a34a",
+                    color: "#fff",
+                    fontSize: "0.82rem",
+                    fontWeight: 800,
+                    boxShadow: "0 12px 30px rgba(0,0,0,0.24)",
+                  }}
+                >
+                  Отзыв успешно опубликован
+                </div>
+              )}
               <form
                 onSubmit={handleReviewSubmit}
                 style={{
@@ -669,18 +776,6 @@ const RestaurantPage = () => {
                     {reviewError}
                   </div>
                 )}
-                {reviewSuccess && (
-                  <div
-                    style={{
-                      color: "#22c55e",
-                      marginBottom: 8,
-                      fontSize: "0.85rem",
-                      fontWeight: 700,
-                    }}
-                  >
-                    ✓ Опубликован
-                  </div>
-                )}
                 <button
                   type="submit"
                   className="btn btn-primary btn-full"
@@ -725,11 +820,25 @@ const RestaurantPage = () => {
                       }}
                     >
                       <span style={{ fontWeight: 700, fontSize: "0.85rem" }}>
-                        Клиент #{r.user_id?.slice(0, 4)}
+                        {r.user_name || "Клиент"}
+                        {formatReviewTime(r.created_at) && (
+                          <span
+                            style={{
+                              display: "block",
+                              color: "var(--text-3)",
+                              fontSize: "0.74rem",
+                              fontWeight: 600,
+                              marginTop: 2,
+                            }}
+                          >
+                            {formatReviewTime(r.created_at)}
+                          </span>
+                        )}
                       </span>
                       <span
                         style={{
                           display: "flex",
+                          alignItems: "center",
                           gap: 2,
                         }}
                       >
@@ -745,6 +854,28 @@ const RestaurantPage = () => {
                             }
                           />
                         ))}
+                        {currentUser?.id === r.user_id && (
+                          <button
+                            type="button"
+                            aria-label="Удалить отзыв"
+                            onClick={() => handleReviewDelete(r.id)}
+                            style={{
+                              width: 26,
+                              height: 26,
+                              marginLeft: 6,
+                              borderRadius: 8,
+                              border: "1px solid var(--border)",
+                              background: "var(--bg-surface)",
+                              color: "var(--danger, #ef4444)",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer",
+                            }}
+                          >
+                            <Trash size={13} weight="bold" />
+                          </button>
+                        )}
                       </span>
                     </div>
                     <p

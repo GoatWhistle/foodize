@@ -14,6 +14,7 @@ import {
   List,
   Fire,
   ShoppingBag,
+  Trash,
   Leaf,
   Cookie,
   Coffee,
@@ -26,6 +27,8 @@ import EmptyState from "../../components/ui/EmptyState";
 import { reviewService } from "../../services/reviewService";
 import { staffService } from "../../services/staffService";
 import { restaurantService } from "../../services/restaurantService";
+import { useAuthStore } from "../../store/useAuthStore";
+import { useModalStore } from "../../store/useModalStore";
 import { useShallow } from "zustand/react/shallow";
 
 const CATEGORY_ICONS = {
@@ -37,6 +40,20 @@ const CATEGORY_ICONS = {
   SNACK: <Cookie />,
   DRINK: <Coffee />,
   OTHER: <DotsThree />,
+};
+
+const formatReviewTime = (value) => {
+  if (!value) return "";
+  try {
+    return new Intl.DateTimeFormat("ru-RU", {
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(value));
+  } catch {
+    return "";
+  }
 };
 
 const RestaurantPage = () => {
@@ -68,7 +85,8 @@ const RestaurantPage = () => {
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewError, setReviewError] = useState("");
   const [reviewSuccess, setReviewSuccess] = useState(false);
-  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const currentUser = useAuthStore((s) => s.user);
+  const requestConfirm = useModalStore((s) => s.requestConfirm);
 
   const [showStaffModal, setShowStaffModal] = useState(false);
   const [staffMessage, setStaffMessage] = useState("");
@@ -123,9 +141,9 @@ const RestaurantPage = () => {
         rating: reviewForm.rating,
       });
       setReviewSuccess(true);
-      setReviewSubmitted(true);
       setReviewForm({ rating: 5, text: "" });
       loadReviews();
+      window.setTimeout(() => setReviewSuccess(false), 2200);
       reviewService
         .getRating(id)
         .then((res) => {
@@ -135,18 +153,36 @@ const RestaurantPage = () => {
         })
         .catch(() => {});
     } catch (err) {
-      const detail = err?.response?.data?.detail ?? "";
-      const isDuplicate =
-        detail.includes("already reviewed") ||
-        detail.includes("Duplicate entry");
-      if (isDuplicate) {
-        setReviewSubmitted(true);
-        setReviewError("");
-        loadReviews();
-      } else {
-        setReviewError(translateApiError(err, "Не удалось отправить отзыв"));
-      }
+      setReviewError(translateApiError(err, "Не удалось отправить отзыв"));
     }
+  };
+
+  const handleReviewDelete = async (reviewId) => {
+    requestConfirm({
+      title: "Удалить отзыв?",
+      message: "Точно ли вы хотите удалить этот отзыв?",
+      confirmLabel: "Удалить",
+      danger: true,
+      onConfirm: async () => {
+        setReviewError("");
+        try {
+          await reviewService.deleteReview(id, reviewId);
+          setReviewsList((prev) =>
+            prev.filter((review) => review.id !== reviewId),
+          );
+          reviewService
+            .getRating(id)
+            .then((res) => {
+              const val =
+                res.data?.data?.average_rating ?? res.data?.data?.rating ?? null;
+              setRating(val);
+            })
+            .catch(() => {});
+        } catch (err) {
+          setReviewError(translateApiError(err, "Не удалось удалить отзыв"));
+        }
+      },
+    });
   };
 
   const handleStaffSubmit = async (e) => {
@@ -326,7 +362,6 @@ const RestaurantPage = () => {
             className="btn btn-secondary btn-sm"
             onClick={() => {
               setShowReviewsModal(true);
-              setReviewSubmitted(false);
               setReviewError("");
               loadReviews();
             }}
@@ -513,7 +548,26 @@ const RestaurantPage = () => {
             </div>
 
             <div style={{ overflowY: "auto", flex: 1 }}>
-              {!reviewSubmitted && (
+              {reviewSuccess && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 18,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    zIndex: 2,
+                    padding: "10px 14px",
+                    borderRadius: "var(--r-md)",
+                    background: "#16a34a",
+                    color: "#fff",
+                    fontSize: "0.86rem",
+                    fontWeight: 800,
+                    boxShadow: "var(--shadow-lg)",
+                  }}
+                >
+                  Отзыв успешно опубликован
+                </div>
+              )}
                 <form
                   onSubmit={handleReviewSubmit}
                   style={{
@@ -569,18 +623,6 @@ const RestaurantPage = () => {
                       {reviewError}
                     </div>
                   )}
-                  {reviewSuccess && (
-                    <div
-                      style={{
-                        color: "#22c55e",
-                        marginBottom: 8,
-                        fontSize: "0.85rem",
-                        fontWeight: 600,
-                      }}
-                    >
-                      Отзыв опубликован
-                    </div>
-                  )}
                   <button
                     type="submit"
                     className="btn btn-primary btn-full"
@@ -589,7 +631,6 @@ const RestaurantPage = () => {
                     Опубликовать
                   </button>
                 </form>
-              )}
 
               <div
                 style={{ display: "flex", flexDirection: "column", gap: 12 }}
@@ -657,8 +698,19 @@ const RestaurantPage = () => {
                                 color: "var(--text-1)",
                               }}
                             >
-                              Клиент #{r.user_id?.slice(0, 4)}
+                              {r.user_name || "Клиент"}
                             </div>
+                            {formatReviewTime(r.created_at) && (
+                              <div
+                                style={{
+                                  color: "var(--text-3)",
+                                  fontSize: "0.76rem",
+                                  marginTop: 2,
+                                }}
+                              >
+                                {formatReviewTime(r.created_at)}
+                              </div>
+                            )}
                             {r.is_verified_purchase && (
                               <span
                                 className="verified-purchase-badge"
@@ -673,17 +725,46 @@ const RestaurantPage = () => {
                         <div
                           style={{
                             display: "flex",
-                            gap: 1,
-                            color: "var(--fire)",
+                            alignItems: "center",
+                            gap: 8,
                           }}
                         >
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              size={13}
-                              weight={i < r.rating ? "fill" : "regular"}
-                            />
-                          ))}
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: 1,
+                              color: "var(--fire)",
+                            }}
+                          >
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                size={13}
+                                weight={i < r.rating ? "fill" : "regular"}
+                              />
+                            ))}
+                          </div>
+                          {currentUser?.id === r.user_id && (
+                            <button
+                              type="button"
+                              aria-label="Удалить отзыв"
+                              onClick={() => handleReviewDelete(r.id)}
+                              style={{
+                                width: 28,
+                                height: 28,
+                                borderRadius: "var(--r-xs)",
+                                border: "1px solid var(--border)",
+                                background: "var(--bg-surface)",
+                                color: "var(--error)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                cursor: "pointer",
+                              }}
+                            >
+                              <Trash size={14} weight="bold" />
+                            </button>
+                          )}
                         </div>
                       </div>
                       <p

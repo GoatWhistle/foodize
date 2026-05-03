@@ -13,7 +13,7 @@ from features.telegram.schemas import TelegramCheckResponse
 from features.users.models import User
 from infra.cache.redis import get_redis_cache
 from settings.config.app_config import settings
-from shared.enums.roles import UserRole
+from shared.permissions import CUSTOMER_PERMISSIONS, serialize_permissions
 from utils.JWT import create_access_token, create_refresh_token
 
 _INIT_DATA_MAX_AGE = 86400
@@ -116,7 +116,7 @@ async def telegram_register(
         hashed_password=None,
         telegram_id=telegram_id,
         telegram_username=telegram_username,
-        user_role=UserRole.CUSTOMER.value,
+        permissions=serialize_permissions(CUSTOMER_PERMISSIONS),
     )
     session.add(new_user)
     await session.commit()

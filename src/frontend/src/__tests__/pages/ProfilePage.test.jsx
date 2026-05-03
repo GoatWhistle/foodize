@@ -61,7 +61,7 @@ describe("ProfilePage", () => {
     });
   });
 
-  it("renders user info and edit action", () => {
+  it("renders user info and settings action", () => {
     render(
       <BrowserRouter>
         <ProfilePage />
@@ -70,7 +70,7 @@ describe("ProfilePage", () => {
 
     expect(screen.getByText("Ivan Ivanov")).toBeDefined();
     expect(screen.getByText("+7999")).toBeDefined();
-    expect(screen.getByLabelText("Редактировать профиль")).toBeDefined();
+    expect(screen.getByText("Настройки")).toBeDefined();
   });
 
   it("calls logout and navigates on click", async () => {

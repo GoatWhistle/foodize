@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Clock,
   Package,
@@ -8,12 +8,8 @@ import {
 } from "@phosphor-icons/react";
 import { orderService } from "../../services/orderService";
 
-import {
-  ORDER_STATUS_RU,
-  ROLE_RU,
-  CATEGORY_RU,
-  translate,
-} from "../../utils/locales";
+import { ORDER_STATUS_RU, CATEGORY_RU, translate } from "../../utils/locales";
+import { permissionPresetLabel } from "../../utils/permissions";
 
 const STATUS_LABEL_RU = ORDER_STATUS_RU;
 
@@ -57,6 +53,12 @@ const buildReadyAtIso = (timeValue) => {
 };
 
 const getOrderDisplayId = (order) => order.display_id ?? order.id.slice(0, 8);
+
+const extractEvents = (response) => {
+  if (Array.isArray(response?.data?.data)) return response.data.data;
+  if (Array.isArray(response?.data)) return response.data;
+  return [];
+};
 
 const getOrderStages = (order, events) => {
   const eventByStatus = new Map(
@@ -107,22 +109,35 @@ const OrderDetailsModal = ({
   const [events, setEvents] = useState([]);
   const [eventsLoading, setEventsLoading] = useState(false);
   const [eventsError, setEventsError] = useState("");
+  const [eventsUnavailable, setEventsUnavailable] = useState(false);
   const [etaMinutes, setEtaMinutes] = useState(null);
   const [manualEtaTime, setManualEtaTime] = useState("");
 
-  useEffect(() => {
+  const loadEvents = useCallback(async () => {
     if (!order?.id) return;
     setEventsLoading(true);
     setEventsError("");
-    orderService
-      .getOrderEvents(order.id)
-      .then((res) => {
-        const list = Array.isArray(res.data?.data) ? res.data.data : [];
-        setEvents(list);
-      })
-      .catch(() => setEventsError("Не удалось загрузить историю"))
-      .finally(() => setEventsLoading(false));
+    setEventsUnavailable(false);
+    try {
+      const res = await orderService.getOrderEvents(order.id);
+      setEvents(extractEvents(res));
+      setEventsUnavailable(false);
+    } catch (error) {
+      console.error("Order events fetch failed", {
+        status: error?.response?.status,
+        detail: error?.response?.data?.detail,
+      });
+      setEvents([]);
+      setEventsError("");
+      setEventsUnavailable(true);
+    } finally {
+      setEventsLoading(false);
+    }
   }, [order?.id]);
+
+  useEffect(() => {
+    loadEvents();
+  }, [loadEvents]);
 
   if (!order) return null;
 
@@ -144,6 +159,10 @@ const OrderDetailsModal = ({
   const canSubmitNext =
     updating !== order.id && (!acceptingRequiresTime || Boolean(submitPayload));
   const stages = getOrderStages(order, events);
+  const handleStatusAction = async (status, data = {}) => {
+    await onStatusChange(order.id, status, data);
+    await loadEvents();
+  };
 
   return (
     <div
@@ -600,11 +619,19 @@ const OrderDetailsModal = ({
                 </div>
               )}
               {eventsError && <div className="form-error">{eventsError}</div>}
-              {!eventsLoading && !eventsError && events.length === 0 && (
+              {!eventsLoading && !eventsError && eventsUnavailable && (
                 <div style={{ color: "var(--text-3)", fontSize: "0.84rem" }}>
-                  История появится после первого изменения статуса
+                  История изменений пока недоступна
                 </div>
               )}
+              {!eventsLoading &&
+                !eventsError &&
+                !eventsUnavailable &&
+                events.length === 0 && (
+                  <div style={{ color: "var(--text-3)", fontSize: "0.84rem" }}>
+                    История появится после первого изменения статуса
+                  </div>
+                )}
               {events.map((event) => (
                 <div
                   key={event.id}
@@ -628,7 +655,7 @@ const OrderDetailsModal = ({
                         marginTop: 2,
                       }}
                     >
-                      {translate(ROLE_RU, event.actor_role)}
+                      {permissionPresetLabel(event.actor_permissions)}
                     </div>
                   </div>
                   <div
@@ -659,7 +686,7 @@ const OrderDetailsModal = ({
               <button
                 className="btn btn-primary"
                 disabled={!canSubmitNext}
-                onClick={() => onStatusChange(order.id, next, submitPayload)}
+                onClick={() => handleStatusAction(next, submitPayload)}
                 style={{ flex: 1 }}
               >
                 {updating === order.id
@@ -671,7 +698,7 @@ const OrderDetailsModal = ({
               <button
                 className="btn btn-secondary"
                 disabled={updating === order.id}
-                onClick={() => onStatusChange(order.id, "CANCELLED")}
+                onClick={() => handleStatusAction("CANCELLED")}
                 style={{ color: "var(--error)" }}
               >
                 {order.status === "PENDING" ? "Отклонить" : "Отменить"}

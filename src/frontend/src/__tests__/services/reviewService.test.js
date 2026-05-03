@@ -37,4 +37,11 @@ describe("reviewService", () => {
     const result = await reviewService.createReview("123", payload);
     expect(result.status).toEqual(201);
   });
+
+  it("deleteReview sends DELETE to /restaurants/{id}/reviews/{reviewId}", async () => {
+    mock.onDelete("/restaurants/123/reviews/rev-1").reply(200, { id: "rev-1" });
+
+    const result = await reviewService.deleteReview("123", "rev-1");
+    expect(result.status).toEqual(200);
+  });
 });

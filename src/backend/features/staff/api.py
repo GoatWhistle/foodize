@@ -19,6 +19,8 @@ from features.staff.schemas import (
 from features.users.models import User
 from features.vendors.dependencies import get_current_vendor
 from features.vendors.models import VendorProfile
+from shared.dependencies import require_permission
+from shared.enums.permissions import Permission
 from shared.exceptions import NotFoundException
 from shared.response import build_list_response, build_response
 from shared.schemas.response import SuccessListResponse, SuccessResponse
@@ -28,7 +30,7 @@ router = APIRouter(prefix="/staff", tags=["Staff"])
 
 @router.get("/me", response_model=SuccessResponse[StaffProfileResponse])
 async def get_my_staff_profile(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission(Permission.STAFF_PROFILE_READ)),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[StaffProfileResponse]:
     profile = await get_staff_profile_by_user_id(session, current_user.id)
@@ -56,7 +58,7 @@ async def get_my_application(
 async def create_staff_request(
     restaurant_id: uuid.UUID,
     request_in: StaffRequestCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission(Permission.STAFF_REQUESTS_CREATE)),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[StaffRequestResponse]:
     result = await service.create_staff_request(
@@ -88,6 +90,7 @@ async def get_vendor_requests(
     request: Request,
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
+    _user: User = Depends(require_permission(Permission.STAFF_REQUESTS_MANAGE)),
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessListResponse[StaffRequestResponse]:
@@ -104,6 +107,7 @@ async def get_vendor_members(
     request: Request,
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
+    _user: User = Depends(require_permission(Permission.STAFF_MEMBERS_MANAGE)),
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessListResponse[StaffMemberResponse]:
@@ -118,6 +122,7 @@ async def get_vendor_members(
 @router.delete("/members/{profile_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remove_staff_member(
     profile_id: uuid.UUID,
+    _user: User = Depends(require_permission(Permission.STAFF_MEMBERS_MANAGE)),
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> None:

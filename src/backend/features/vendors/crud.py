@@ -6,13 +6,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from features.users.models import User
 from features.vendors.models import VendorProfile
 from features.vendors.schemas import VendorCreate
+from shared.enums.permissions import Permission
 from shared.exceptions import NotFoundException
+from shared.permissions import has_permission
 
 
 async def create_vendor_profile(
     session: AsyncSession, user: User, vendor_in: VendorCreate
 ) -> VendorProfile:
     vendor = VendorProfile(user=user, user_id=user.id)
+    if has_permission(user.permissions, Permission.VENDORS_MODERATE):
+        vendor.approval_status = "APPROVED"
     session.add(vendor)
     await session.commit()
     return vendor
