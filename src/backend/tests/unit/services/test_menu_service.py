@@ -92,9 +92,7 @@ class TestMenuService:
                 return_value=item,
             ),
         ):
-            result = await add_menu_item(
-                MagicMock(), restaurant_id, item_data, vendor_id
-            )
+            result = await add_menu_item(MagicMock(), restaurant_id, item_data, vendor_id)
             assert result.name == "Burger"
 
     @pytest.mark.asyncio
@@ -170,9 +168,7 @@ class TestMenuService:
             ),
             patch("features.menu.crud.delete_menu_item", new_callable=AsyncMock),
         ):
-            await delete_menu_item_for_vendor(
-                MagicMock(), restaurant_id, item_id, vendor_id
-            )
+            await delete_menu_item_for_vendor(MagicMock(), restaurant_id, item_id, vendor_id)
 
     @pytest.mark.asyncio
     async def test_delete_menu_item_not_found(self):
@@ -194,6 +190,4 @@ class TestMenuService:
             ),
         ):
             with pytest.raises(MenuItemNotFoundException):
-                await delete_menu_item_for_vendor(
-                    MagicMock(), restaurant_id, item_id, vendor_id
-                )
+                await delete_menu_item_for_vendor(MagicMock(), restaurant_id, item_id, vendor_id)

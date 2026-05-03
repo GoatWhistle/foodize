@@ -33,9 +33,7 @@ class UserUpdate(BaseModel):
     last_name: str | None = Field(None, min_length=1, max_length=128)
     middle_name: str | None = Field(None, min_length=1, max_length=128)
     email: str | None = Field(None, max_length=128)
-    phone_number: str | None = Field(
-        None, min_length=7, max_length=16, pattern=r"^\+?[0-9]{7,15}$"
-    )
+    phone_number: str | None = Field(None, min_length=7, max_length=16, pattern=r"^\+?[0-9]{7,15}$")
 
 
 class ChangePasswordRequest(BaseModel):

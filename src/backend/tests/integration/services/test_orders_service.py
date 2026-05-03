@@ -71,9 +71,7 @@ class TestPlaceOrder:
             items=[OrderItemCreate(menu_item_id=item_id, quantity=2)],
         )
         mock_order = make_mock_order(uuid.uuid4(), user.id)
-        mock_menu_item = make_mock_menu_item(
-            item_id, price=300, restaurant_id=restaurant_id
-        )
+        mock_menu_item = make_mock_menu_item(item_id, price=300, restaurant_id=restaurant_id)
         mock_restaurant = make_mock_restaurant(restaurant_id)
         mock_restaurant.name = "Test Restaurant"
 
@@ -206,9 +204,7 @@ class TestPlaceOrder:
         with pytest.raises(Exception):  # OrderCreate enforces min_length=1
             OrderCreate(restaurant_id=restaurant_id, items=[])
 
-    async def test_selected_options_are_validated_and_passed_to_create_order(
-        self, mock_db_session
-    ):
+    async def test_selected_options_are_validated_and_passed_to_create_order(self, mock_db_session):
         user = make_user()
         item_id = uuid.uuid4()
         option_id = uuid.uuid4()
@@ -225,9 +221,7 @@ class TestPlaceOrder:
             ],
         )
         mock_order = make_mock_order(uuid.uuid4(), user.id)
-        mock_menu_item = make_mock_menu_item(
-            item_id, price=300, restaurant_id=restaurant_id
-        )
+        mock_menu_item = make_mock_menu_item(item_id, price=300, restaurant_id=restaurant_id)
         mock_group = MagicMock()
         mock_group.id = group_id
         mock_group.name = "Extras"
@@ -285,9 +279,7 @@ class TestPlaceOrder:
         restaurant_id = uuid.uuid4()
         order_data = OrderCreate(
             restaurant_id=restaurant_id,
-            items=[
-                OrderItemCreate(menu_item_id=item_id, selected_option_ids=[option_id])
-            ],
+            items=[OrderItemCreate(menu_item_id=item_id, selected_option_ids=[option_id])],
         )
         mock_menu_item = make_mock_menu_item(item_id, restaurant_id=restaurant_id)
         mock_menu_item.option_groups = []

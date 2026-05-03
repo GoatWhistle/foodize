@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Outlet } from "react-router-dom";
-import { translateApiError } from "../../utils/translateApiError";
+import { useEffect, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
+import { translateApiError } from '../../utils/translateApiError';
 import {
   House,
   Package,
@@ -9,28 +9,28 @@ import {
   SignIn,
   ShoppingCart,
   CookingPot,
-} from "@phosphor-icons/react";
+} from '@phosphor-icons/react';
 
-import FoodizeLogo from "../ui/FoodizeLogo";
-import ThemeToggle from "../ui/ThemeToggle";
-import CartDrawer from "../ui/CartDrawer";
-import NotificationBell from "../ui/NotificationBell";
+import FoodizeLogo from '../ui/FoodizeLogo';
+import ThemeToggle from '../ui/ThemeToggle';
+import CartDrawer from '../ui/CartDrawer';
+import NotificationBell from '../ui/NotificationBell';
 
-import { useAuthStore } from "../../store/useAuthStore";
-import { useOrderStore } from "../../store/useOrderStore";
-import { useShallow } from "zustand/react/shallow";
-import { ROUTES } from "../../constants/routes";
-import { hasPermission, PERMISSIONS } from "../../utils/permissions";
+import { useAuthStore } from '../../store/useAuthStore';
+import { useOrderStore } from '../../store/useOrderStore';
+import { useShallow } from 'zustand/react/shallow';
+import { ROUTES } from '../../constants/routes';
+import { hasPermission, PERMISSIONS } from '../../utils/permissions';
 
 const NAV_LINKS = [
   {
     to: ROUTES.HOME,
-    label: "Рестораны",
+    label: 'Рестораны',
     icon: <House size={18} weight="bold" />,
   },
   {
     to: ROUTES.ORDERS,
-    label: "Заказы",
+    label: 'Заказы',
     icon: <Package size={18} weight="bold" />,
   },
 ];
@@ -38,24 +38,24 @@ const NAV_LINKS = [
 const BOTTOM_NAV_LINKS = [
   {
     to: ROUTES.HOME,
-    label: "Рестораны",
+    label: 'Рестораны',
     icon: <House size={18} weight="bold" />,
   },
   {
     to: ROUTES.ORDERS,
-    label: "Заказы",
+    label: 'Заказы',
     icon: <Package size={18} weight="bold" />,
   },
   {
     to: ROUTES.PROFILE,
-    label: "Профиль",
+    label: 'Профиль',
     icon: <User size={18} weight="bold" />,
   },
 ];
 
 const STAFF_LINK = {
   to: ROUTES.STAFF_DASHBOARD,
-  label: "Работа",
+  label: 'Работа',
   icon: <CookingPot size={18} weight="bold" />,
 };
 
@@ -67,33 +67,49 @@ const MainLayout = () => {
     useShallow((s) => ({
       isAuthenticated: s.isAuthenticated,
       user: s.user,
-    })),
+    }))
   );
   const { cart, placeOrder } = useOrderStore(
     useShallow((s) => ({
       cart: s.cart,
       placeOrder: s.placeOrder,
-    })),
+    }))
   );
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
+  const [badgePop, setBadgePop] = useState(false);
+  const previousCartItemsCount = useRef(0);
 
   const cartItemsCount = cart.reduce((t, i) => t + i.quantity, 0);
   const canOpenStaffDashboard = hasPermission(
     user,
-    PERMISSIONS.STAFF_PROFILE_READ,
+    PERMISSIONS.STAFF_PROFILE_READ
   );
 
-  const handleCheckout = async (promoCode = null, comment = "") => {
+  useEffect(() => {
+    if (cartItemsCount > previousCartItemsCount.current) {
+      setBadgePop(false);
+      const frame = window.requestAnimationFrame(() => setBadgePop(true));
+      const timer = window.setTimeout(() => setBadgePop(false), 520);
+      previousCartItemsCount.current = cartItemsCount;
+      return () => {
+        window.cancelAnimationFrame(frame);
+        window.clearTimeout(timer);
+      };
+    }
+    previousCartItemsCount.current = cartItemsCount;
+  }, [cartItemsCount]);
+
+  const handleCheckout = async (promoCode = null, comment = '') => {
     setIsLoading(true);
-    setError("");
+    setError('');
     try {
       const order = await placeOrder(promoCode, comment);
       setIsCartOpen(false);
-      navigate(ROUTES.ORDER_STATUS.replace(":id", order.id));
+      navigate(ROUTES.ORDER_STATUS.replace(':id', order.id));
     } catch (err) {
-      setError(translateApiError(err, "Не удалось разместить заказ"));
+      setError(translateApiError(err, 'Не удалось разместить заказ'));
     } finally {
       setIsLoading(false);
     }
@@ -108,39 +124,38 @@ const MainLayout = () => {
 
         {isAuthenticated && (
           <nav className="header-nav" aria-label="Основная навигация">
-            {[
-              ...NAV_LINKS,
-              ...(canOpenStaffDashboard ? [STAFF_LINK] : []),
-            ].map(({ to, label, icon }) => {
-              const isActive =
-                to === ROUTES.HOME
-                  ? location.pathname === "/"
-                  : location.pathname.startsWith(to);
-              return (
-                <Link
-                  key={to}
-                  to={to}
-                  className={`nav-link${isActive ? " active" : ""}`}
-                  viewTransition
-                >
-                  <span
-                    aria-hidden="true"
-                    style={{ display: "flex", alignItems: "center" }}
+            {[...NAV_LINKS, ...(canOpenStaffDashboard ? [STAFF_LINK] : [])].map(
+              ({ to, label, icon }) => {
+                const isActive =
+                  to === ROUTES.HOME
+                    ? location.pathname === '/'
+                    : location.pathname.startsWith(to);
+                return (
+                  <Link
+                    key={to}
+                    to={to}
+                    className={`nav-link${isActive ? ' active' : ''}`}
+                    viewTransition
                   >
-                    {icon}
-                  </span>
-                  {label}
-                </Link>
-              );
-            })}
+                    <span
+                      aria-hidden="true"
+                      style={{ display: 'flex', alignItems: 'center' }}
+                    >
+                      {icon}
+                    </span>
+                    {label}
+                  </Link>
+                );
+              }
+            )}
           </nav>
         )}
 
         {isAuthenticated && (
           <Link
             to={ROUTES.PROFILE}
-            className={`nav-link${location.pathname.startsWith(ROUTES.PROFILE) ? " active" : ""}`}
-            style={{ marginLeft: "4px" }}
+            className={`nav-link${location.pathname.startsWith(ROUTES.PROFILE) ? ' active' : ''}`}
+            style={{ marginLeft: '4px' }}
             aria-label="Профиль"
           >
             <User size={18} weight="bold" />
@@ -156,7 +171,7 @@ const MainLayout = () => {
               to={ROUTES.LOGIN}
               className="btn btn-primary btn-sm"
               id="header-login-btn"
-              style={{ display: "flex", alignItems: "center", gap: "6px" }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
             >
               <SignIn size={16} weight="bold" />
               Войти
@@ -177,13 +192,13 @@ const MainLayout = () => {
           ].map(({ to, label, icon }) => {
             const isActive =
               to === ROUTES.HOME
-                ? location.pathname === "/"
+                ? location.pathname === '/'
                 : location.pathname.startsWith(to);
             return (
               <Link
                 key={to}
                 to={to}
-                className={`bottom-tab${isActive ? " active" : ""}`}
+                className={`bottom-tab${isActive ? ' active' : ''}`}
                 viewTransition
               >
                 <span className="bottom-tab-icon">{icon}</span>
@@ -202,7 +217,9 @@ const MainLayout = () => {
         >
           <ShoppingCart size={20} weight="fill" />
           <span>Корзина</span>
-          <span className="cart-badge">{cartItemsCount}</span>
+          <span className={`cart-badge${badgePop ? ' cart-badge-pop' : ''}`}>
+            {cartItemsCount}
+          </span>
         </button>
       )}
 

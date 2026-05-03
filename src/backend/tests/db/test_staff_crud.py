@@ -1,6 +1,7 @@
 import uuid
 
 import pytest
+from shared.enums.roles import UserRole
 
 from features.restaurants.crud import create_restaurant
 from features.restaurants.schemas import RestaurantCreate
@@ -19,7 +20,6 @@ from features.users.crud import create_user
 from features.users.schemas import UserCreate
 from features.vendors.crud import create_vendor_profile
 from features.vendors.schemas import VendorCreate
-from shared.enums.roles import UserRole
 from shared.enums.staff_request_status import StaffRequestStatus
 from shared.exceptions import NotFoundException
 
@@ -33,9 +33,7 @@ async def vendor_and_restaurant(db_session):
         user_role=UserRole.VENDOR,
     )
     vendor_user = await create_user(db_session, vendor_data)
-    vendor_profile = await create_vendor_profile(
-        db_session, vendor_user, VendorCreate()
-    )
+    vendor_profile = await create_vendor_profile(db_session, vendor_user, VendorCreate())
 
     rest_data = RestaurantCreate(name="Rest", address="Addr")
     restaurant = await create_restaurant(db_session, rest_data, vendor_profile.id)
@@ -77,9 +75,7 @@ async def test_staff_crud_lifecycle(db_session, vendor_and_restaurant, staff_can
     assert reqs_by_vendor[0].id == request.id
 
     await create_staff_profile(db_session, candidate.id, restaurant.id)
-    updated_req = await update_request_status(
-        db_session, request, StaffRequestStatus.ACCEPTED
-    )
+    updated_req = await update_request_status(db_session, request, StaffRequestStatus.ACCEPTED)
     assert updated_req.status == StaffRequestStatus.ACCEPTED
 
     profile = await get_staff_profile_by_user_id(db_session, candidate.id)
@@ -89,18 +85,14 @@ async def test_staff_crud_lifecycle(db_session, vendor_and_restaurant, staff_can
 
 
 @pytest.mark.asyncio
-async def test_update_request_status_no_profile(
-    db_session, vendor_and_restaurant, staff_candidate
-):
+async def test_update_request_status_no_profile(db_session, vendor_and_restaurant, staff_candidate):
     vendor, restaurant = vendor_and_restaurant
     candidate = staff_candidate
 
     data = StaffRequestCreate(message="Wanna work")
     request = await create_staff_request(db_session, candidate.id, restaurant.id, data)
 
-    updated_req = await update_request_status(
-        db_session, request, StaffRequestStatus.REJECTED
-    )
+    updated_req = await update_request_status(db_session, request, StaffRequestStatus.REJECTED)
     assert updated_req.status == StaffRequestStatus.REJECTED
 
     profile = await get_staff_profile_by_user_id(db_session, candidate.id)
@@ -108,9 +100,7 @@ async def test_update_request_status_no_profile(
 
 
 @pytest.mark.asyncio
-async def test_get_restaurant_or_404_returns_instance(
-    db_session, vendor_and_restaurant
-):
+async def test_get_restaurant_or_404_returns_instance(db_session, vendor_and_restaurant):
     _, restaurant = vendor_and_restaurant
 
     fetched_restaurant = await get_restaurant_or_404(

@@ -33,9 +33,7 @@ class AutoCacheMiddleware(BaseHTTPMiddleware):
     ) -> None:
         super().__init__(app)
         self.ttl = ttl
-        self.exclude_paths = (
-            exclude_paths if exclude_paths is not None else _DEFAULT_EXCLUDE_PATHS
-        )
+        self.exclude_paths = exclude_paths if exclude_paths is not None else _DEFAULT_EXCLUDE_PATHS
 
     def _make_cache_key(self, request: Request) -> str:
         query = str(sorted(request.query_params.items()))

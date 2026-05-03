@@ -32,9 +32,7 @@ class Order(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
     estimated_ready_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    ready_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    ready_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     user: Mapped["User"] = relationship(back_populates="orders")
     restaurant: Mapped["Restaurant"] = relationship(back_populates="orders")
     items: Mapped[list["OrderItem"]] = relationship(back_populates="order")

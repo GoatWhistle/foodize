@@ -1,4 +1,5 @@
 import pytest
+from shared.enums.roles import UserRole
 
 from features.menu.models import MenuItem
 from features.orders.services.order_item import get_menu_items_by_ids
@@ -9,7 +10,6 @@ from features.users.schemas import UserCreate
 from features.vendors.crud import create_vendor_profile
 from features.vendors.schemas import VendorCreate
 from shared.enums.category import Category
-from shared.enums.roles import UserRole
 
 
 @pytest.mark.asyncio
@@ -21,9 +21,7 @@ async def test_get_menu_items_by_ids(db_session):
         user_role=UserRole.VENDOR,
     )
     vendor_user = await create_user(db_session, vendor_data)
-    vendor_profile = await create_vendor_profile(
-        db_session, vendor_user, VendorCreate()
-    )
+    vendor_profile = await create_vendor_profile(db_session, vendor_user, VendorCreate())
 
     rest_data = RestaurantCreate(name="Rest2", address="Addr2")
     restaurant = await create_restaurant(db_session, rest_data, vendor_profile.id)

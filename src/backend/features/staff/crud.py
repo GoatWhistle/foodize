@@ -19,9 +19,7 @@ async def create_staff_request(
     restaurant_id: uuid.UUID,
     data: StaffRequestCreate,
 ) -> StaffRequest:
-    new_request = StaffRequest(
-        user_id=user_id, restaurant_id=restaurant_id, message=data.message
-    )
+    new_request = StaffRequest(user_id=user_id, restaurant_id=restaurant_id, message=data.message)
     session.add(new_request)
     await session.commit()
     await session.refresh(new_request)
@@ -48,15 +46,11 @@ async def get_last_request(
 async def get_staff_profile_by_user_id(
     session: AsyncSession, user_id: uuid.UUID
 ) -> StaffProfile | None:
-    result = await session.execute(
-        select(StaffProfile).where(StaffProfile.user_id == user_id)
-    )
+    result = await session.execute(select(StaffProfile).where(StaffProfile.user_id == user_id))
     return result.scalar_one_or_none()
 
 
-async def get_request_by_id(
-    session: AsyncSession, request_id: uuid.UUID
-) -> StaffRequest | None:
+async def get_request_by_id(session: AsyncSession, request_id: uuid.UUID) -> StaffRequest | None:
     return await session.get(StaffRequest, request_id)
 
 
@@ -89,9 +83,7 @@ async def get_requests_by_vendor_id(
     return list(result.scalars().all())
 
 
-async def count_requests_by_vendor_id(
-    session: AsyncSession, vendor_id: uuid.UUID
-) -> int:
+async def count_requests_by_vendor_id(session: AsyncSession, vendor_id: uuid.UUID) -> int:
     result = await session.execute(
         select(func.count())
         .select_from(StaffRequest)
@@ -117,9 +109,7 @@ async def create_staff_profile(
     if user:
         user.permissions = permissions_with(user.permissions, STAFF_PERMISSIONS)
 
-    profile = StaffProfile(
-        user_id=user_id, restaurant_id=restaurant_id, role=StaffRole.COOK.value
-    )
+    profile = StaffProfile(user_id=user_id, restaurant_id=restaurant_id, role=StaffRole.COOK.value)
     session.add(profile)
     await session.commit()
     return profile
@@ -143,9 +133,7 @@ async def get_staff_profiles_by_vendor_id(
     return list(result.scalars().all())
 
 
-async def count_staff_profiles_by_vendor_id(
-    session: AsyncSession, vendor_id: uuid.UUID
-) -> int:
+async def count_staff_profiles_by_vendor_id(session: AsyncSession, vendor_id: uuid.UUID) -> int:
     result = await session.execute(
         select(func.count())
         .select_from(StaffProfile)

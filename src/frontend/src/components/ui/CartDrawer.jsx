@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react";
-import { Plus, Minus, Trash, Tag, X } from "@phosphor-icons/react";
-import { useOrderStore } from "../../store/useOrderStore";
-import { useShallow } from "zustand/react/shallow";
-import OrderButton from "./OrderButton";
-import { promoService } from "../../services/promoService";
-import { translateApiError } from "../../utils/translateApiError";
+import { useEffect, useRef, useState } from 'react';
+import { Plus, Minus, Trash, Tag, X } from '@phosphor-icons/react';
+import { useOrderStore } from '../../store/useOrderStore';
+import { useShallow } from 'zustand/react/shallow';
+import OrderButton from './OrderButton';
+import { promoService } from '../../services/promoService';
+import { translateApiError } from '../../utils/translateApiError';
 
 const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
   const { cart, cartRestaurantId, removeFromCart, addToCart, clearCart } =
@@ -15,46 +15,46 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
         removeFromCart: s.removeFromCart,
         addToCart: s.addToCart,
         clearCart: s.clearCart,
-      })),
+      }))
     );
   const total = useOrderStore((s) => s.cartTotal());
   const drawerRef = useRef(null);
 
-  const [promoCode, setPromoCode] = useState("");
+  const [promoCode, setPromoCode] = useState('');
   const [appliedPromo, setAppliedPromo] = useState(null);
-  const [promoError, setPromoError] = useState("");
+  const [promoError, setPromoError] = useState('');
   const [promoLoading, setPromoLoading] = useState(false);
-  const [comment, setComment] = useState("");
+  const [comment, setComment] = useState('');
 
   const handleOverlayClick = (e) => {
     if (drawerRef.current && !drawerRef.current.contains(e.target)) onClose();
   };
 
   useEffect(() => {
-    const handler = (e) => e.key === "Escape" && onClose();
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
+    const handler = (e) => e.key === 'Escape' && onClose();
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
   }, [onClose]);
 
   useEffect(() => {
     setAppliedPromo(null);
-    setPromoCode("");
-    setPromoError("");
-    setComment("");
+    setPromoCode('');
+    setPromoError('');
+    setComment('');
   }, [cartRestaurantId]);
 
   const handleApplyPromo = async () => {
     if (!promoCode.trim() || !cartRestaurantId) return;
     setPromoLoading(true);
-    setPromoError("");
+    setPromoError('');
     try {
       const res = await promoService.validate(
         promoCode.trim(),
-        cartRestaurantId,
+        cartRestaurantId
       );
       setAppliedPromo({ ...res.data.data, originalTotal: total });
     } catch (err) {
-      setPromoError(translateApiError(err, "Неверный промокод"));
+      setPromoError(translateApiError(err, 'Неверный промокод'));
       setAppliedPromo(null);
     } finally {
       setPromoLoading(false);
@@ -63,8 +63,8 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
 
   const handleRemovePromo = () => {
     setAppliedPromo(null);
-    setPromoCode("");
-    setPromoError("");
+    setPromoCode('');
+    setPromoError('');
   };
 
   const finalTotal =
@@ -84,7 +84,7 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
     (Number(item.menuItem.price) || 0) +
     getSelectedOptions(item).reduce(
       (sum, option) => sum + (Number(option.price_delta) || 0),
-      0,
+      0
     );
 
   if (!cart.length) return null;
@@ -103,7 +103,7 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
               const { menuItem, quantity } = cartItem;
               const selectedOptions = getSelectedOptions(cartItem);
               const selectedOptionIds = getSelectedOptionIds(cartItem);
-              const lineKey = `${menuItem.id}:${selectedOptionIds.join(",")}`;
+              const lineKey = `${menuItem.id}:${selectedOptionIds.join(',')}`;
 
               return (
                 <div key={lineKey} className="cart-item">
@@ -113,9 +113,9 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
                       <div
                         style={{
                           marginTop: 3,
-                          fontSize: "0.72rem",
+                          fontSize: '0.72rem',
                           lineHeight: 1.35,
-                          color: "var(--text-3)",
+                          color: 'var(--text-3)',
                         }}
                       >
                         {selectedOptions
@@ -124,10 +124,10 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
                               `${option.name}${
                                 option.price_delta
                                   ? ` +${option.price_delta} ₽`
-                                  : ""
-                              }`,
+                                  : ''
+                              }`
                           )
-                          .join(", ")}
+                          .join(', ')}
                       </div>
                     )}
                   </div>
@@ -146,8 +146,8 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
                       style={{
                         fontWeight: 700,
                         minWidth: 20,
-                        textAlign: "center",
-                        fontSize: "0.9rem",
+                        textAlign: 'center',
+                        fontSize: '0.9rem',
                       }}
                     >
                       {quantity}
@@ -167,9 +167,9 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
                     style={{
                       fontWeight: 700,
                       minWidth: 64,
-                      textAlign: "right",
-                      fontSize: "0.9rem",
-                      color: "var(--text-1)",
+                      textAlign: 'right',
+                      fontSize: '0.9rem',
+                      color: 'var(--text-1)',
                     }}
                   >
                     {getLinePrice(cartItem) * quantity} ₽
@@ -182,34 +182,34 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
           {/* Promo code */}
           {!appliedPromo ? (
             <div style={{ marginTop: 16 }}>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: 'flex', gap: 8 }}>
                 <input
                   className="form-input"
                   placeholder="Промокод"
                   value={promoCode}
                   onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                  onKeyDown={(e) => e.key === "Enter" && handleApplyPromo()}
+                  onKeyDown={(e) => e.key === 'Enter' && handleApplyPromo()}
                   style={{
                     flex: 1,
                     height: 40,
-                    fontSize: "0.85rem",
-                    borderRadius: "var(--r-md)",
-                    letterSpacing: "0.05em",
+                    fontSize: '0.85rem',
+                    borderRadius: 'var(--r-md)',
+                    letterSpacing: '0.05em',
                   }}
                 />
                 <button
                   className="btn btn-secondary"
                   onClick={handleApplyPromo}
                   disabled={promoLoading || !promoCode.trim()}
-                  style={{ height: 40, padding: "0 14px", fontSize: "0.8rem" }}
+                  style={{ height: 40, padding: '0 14px', fontSize: '0.8rem' }}
                 >
-                  {promoLoading ? "..." : "Применить"}
+                  {promoLoading ? '...' : 'Применить'}
                 </button>
               </div>
               {promoError && (
                 <div
                   className="form-error"
-                  style={{ marginTop: 6, fontSize: "0.8rem" }}
+                  style={{ marginTop: 6, fontSize: '0.8rem' }}
                 >
                   {promoError}
                 </div>
@@ -217,41 +217,42 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
             </div>
           ) : (
             <div
+              className="promo-success-badge"
               style={{
                 marginTop: 16,
-                padding: "10px 14px",
-                background: "var(--color-success-bg)",
-                border: "1px solid var(--color-success-border)",
-                borderRadius: "var(--r-md)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
+                padding: '10px 14px',
+                background: 'var(--color-success-bg)',
+                border: '1px solid var(--color-success-border)',
+                borderRadius: 'var(--r-md)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
               }}
             >
               <div
                 style={{
-                  display: "flex",
-                  alignItems: "center",
+                  display: 'flex',
+                  alignItems: 'center',
                   gap: 8,
-                  fontSize: "0.85rem",
-                  color: "var(--color-success)",
+                  fontSize: '0.85rem',
+                  color: 'var(--color-success)',
                   fontWeight: 700,
                 }}
               >
                 <Tag size={14} weight="fill" />
                 {appliedPromo.code}
-                {appliedPromo.discount_type === "PERCENT"
+                {appliedPromo.discount_type === 'PERCENT'
                   ? ` −${appliedPromo.discount_value}%`
                   : ` −${appliedPromo.discount_value} ₽`}
               </div>
               <button
                 onClick={handleRemovePromo}
                 style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "var(--color-success)",
-                  display: "flex",
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--color-success)',
+                  display: 'flex',
                 }}
               >
                 <X size={14} weight="bold" />
@@ -268,8 +269,8 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
             style={{
               marginTop: 16,
               minHeight: 72,
-              resize: "vertical",
-              fontSize: "0.82rem",
+              resize: 'vertical',
+              fontSize: '0.82rem',
               lineHeight: 1.45,
             }}
           />
@@ -278,11 +279,11 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
             className="btn btn-ghost btn-full"
             style={{
               marginTop: 8,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "8px",
-              fontSize: "0.8rem",
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              fontSize: '0.8rem',
             }}
             onClick={clearCart}
           >
@@ -297,11 +298,11 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
             {appliedPromo && (
               <div
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontSize: "0.8rem",
-                  color: "var(--text-3)",
-                  textDecoration: "line-through",
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  fontSize: '0.8rem',
+                  color: 'var(--text-3)',
+                  textDecoration: 'line-through',
                   marginBottom: 4,
                 }}
               >
@@ -310,11 +311,13 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
               </div>
             )}
             <span className="cart-total-label">
-              {appliedPromo ? "Итого со скидкой" : "Итого"}
+              {appliedPromo ? 'Итого со скидкой' : 'Итого'}
             </span>
             <span
               className="cart-total-value"
-              style={appliedPromo ? { color: "var(--color-success)" } : undefined}
+              style={
+                appliedPromo ? { color: 'var(--color-success)' } : undefined
+              }
             >
               {finalTotal} ₽
             </span>
@@ -329,7 +332,7 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
           </OrderButton>
 
           {error && (
-            <div className="form-error" style={{ marginTop: "10px" }}>
+            <div className="form-error" style={{ marginTop: '10px' }}>
               {error}
             </div>
           )}

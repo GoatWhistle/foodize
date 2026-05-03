@@ -41,9 +41,7 @@ async def get_my_staff_profile(
     return build_response(StaffProfileResponse.model_validate(profile))
 
 
-@router.get(
-    "/my-application", response_model=SuccessResponse[StaffRequestResponse] | None
-)
+@router.get("/my-application", response_model=SuccessResponse[StaffRequestResponse] | None)
 async def get_my_application(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
@@ -54,9 +52,7 @@ async def get_my_application(
     return build_response(StaffRequestResponse.model_validate(req))
 
 
-@router.post(
-    "/requests/{restaurant_id}", response_model=SuccessResponse[StaffRequestResponse]
-)
+@router.post("/requests/{restaurant_id}", response_model=SuccessResponse[StaffRequestResponse])
 async def create_staff_request(
     restaurant_id: uuid.UUID,
     request_in: StaffRequestCreate,
@@ -99,9 +95,7 @@ async def get_vendor_requests(
     data, total = await service.get_vendor_staff_requests(
         session=session, vendor_id=current_vendor.id, page=page, size=size
     )
-    return build_list_response(
-        data=data, total=total, page=page, size=size, request=request
-    )
+    return build_list_response(data=data, total=total, page=page, size=size, request=request)
 
 
 @router.get("/my-members", response_model=SuccessListResponse[StaffMemberResponse])
@@ -116,9 +110,7 @@ async def get_vendor_members(
     data, total = await service.get_vendor_staff_members(
         session=session, vendor_id=current_vendor.id, page=page, size=size
     )
-    return build_list_response(
-        data=data, total=total, page=page, size=size, request=request
-    )
+    return build_list_response(data=data, total=total, page=page, size=size, request=request)
 
 
 @router.delete("/members/{profile_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -148,6 +140,7 @@ async def staff_toggle_item_availability(
     staff_profile = await get_staff_profile_by_user_id(session, current_user.id)
     if not staff_profile or str(staff_profile.restaurant_id) != str(restaurant_id):
         from shared.exceptions import ForbiddenException
+
         raise ForbiddenException(detail="Not authorized to manage this restaurant's menu")
     result = await menu_service.toggle_item_availability_for_staff(
         session=session,

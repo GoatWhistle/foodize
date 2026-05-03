@@ -18,9 +18,7 @@ if TYPE_CHECKING:
     from features.vendors.models import VendorProfile
 
 
-class Restaurant(
-    Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin, DeletedAtMixin
-):
+class Restaurant(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin, DeletedAtMixin):
     address: Mapped[str] = mapped_column(unique=True)
     description: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     vendor_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("vendor_profiles.id"))
@@ -37,12 +35,8 @@ class Restaurant(
     vendor: Mapped["VendorProfile"] = relationship(back_populates="restaurants")
     menu_items: Mapped[list["MenuItem"]] = relationship(back_populates="restaurant")
     orders: Mapped[list["Order"]] = relationship(back_populates="restaurant")
-    staff_requests: Mapped[list["StaffRequest"]] = relationship(
-        back_populates="restaurant"
-    )
-    staff_members: Mapped[list["StaffProfile"]] = relationship(
-        back_populates="restaurant"
-    )
+    staff_requests: Mapped[list["StaffRequest"]] = relationship(back_populates="restaurant")
+    staff_members: Mapped[list["StaffProfile"]] = relationship(back_populates="restaurant")
     reviews: Mapped[list["Review"]] = relationship(back_populates="restaurant")
     favorited_by: Mapped[list["Favorite"]] = relationship(back_populates="restaurant")
     promos: Mapped[list["Promo"]] = relationship(back_populates="restaurant")

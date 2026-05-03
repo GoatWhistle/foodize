@@ -83,9 +83,7 @@ async def delete_review_for_user(
     if not restaurant:
         raise RestaurantNotFoundException()
 
-    review = await crud.get_review_by_id_for_user(
-        session, review_id, user_id, restaurant_id
-    )
+    review = await crud.get_review_by_id_for_user(session, review_id, user_id, restaurant_id)
     if not review:
         raise NotFoundException(detail="Review not found")
 
@@ -108,9 +106,7 @@ async def list_reviews_for_restaurant(
     size: int = 20,
 ) -> tuple[list[ReviewResponse], int]:
     offset = (page - 1) * size
-    data = await crud.get_reviews_by_restaurant(
-        session, restaurant_id, offset=offset, limit=size
-    )
+    data = await crud.get_reviews_by_restaurant(session, restaurant_id, offset=offset, limit=size)
     total = await crud.count_reviews_by_restaurant(session, restaurant_id)
     return [_review_to_response(r) for r in data], total
 

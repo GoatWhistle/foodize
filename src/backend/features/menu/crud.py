@@ -16,9 +16,7 @@ from features.menu.schemas import (
 
 
 def _option_groups_options():
-    return selectinload(MenuItem.option_groups).selectinload(
-        MenuItemOptionGroup.options
-    )
+    return selectinload(MenuItem.option_groups).selectinload(MenuItemOptionGroup.options)
 
 
 async def create_menu_item(
@@ -37,9 +35,7 @@ async def create_menu_item(
     return loaded
 
 
-async def get_menu_item_by_id(
-    session: AsyncSession, item_id: uuid.UUID
-) -> MenuItem | None:
+async def get_menu_item_by_id(session: AsyncSession, item_id: uuid.UUID) -> MenuItem | None:
     result = await session.execute(
         select(MenuItem).where(MenuItem.id == item_id).options(_option_groups_options())
     )
@@ -147,9 +143,7 @@ async def update_option_group(
     return group
 
 
-async def delete_option_group(
-    session: AsyncSession, group: MenuItemOptionGroup
-) -> None:
+async def delete_option_group(session: AsyncSession, group: MenuItemOptionGroup) -> None:
     group.is_active = False
     await session.commit()
 
@@ -166,9 +160,7 @@ async def create_option(
     return option
 
 
-async def get_option_by_id(
-    session: AsyncSession, option_id: uuid.UUID
-) -> MenuItemOption | None:
+async def get_option_by_id(session: AsyncSession, option_id: uuid.UUID) -> MenuItemOption | None:
     return await session.get(MenuItemOption, option_id)
 
 

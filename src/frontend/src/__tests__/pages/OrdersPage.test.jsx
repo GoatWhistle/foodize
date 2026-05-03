@@ -1,15 +1,15 @@
-import { render, screen, fireEvent } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { BrowserRouter } from "react-router-dom";
-import OrdersPage from "../../pages/orders/OrdersPage";
-import { useOrderStore } from "../../store/useOrderStore";
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { BrowserRouter } from 'react-router-dom';
+import OrdersPage from '../../pages/orders/OrdersPage';
+import { useOrderStore } from '../../store/useOrderStore';
 
-vi.mock("../../store/useOrderStore", () => ({
+vi.mock('../../store/useOrderStore', () => ({
   useOrderStore: vi.fn((sel) => {
     const state = {
       orders: [
-        { id: "order-1", total_price: 500, status: "pending", items: [1] },
-        { id: "order-2", total_price: 1000, status: "ready", items: [2] },
+        { id: 'order-1', total_price: 500, status: 'pending', items: [1] },
+        { id: 'order-2', total_price: 1000, status: 'ready', items: [2] },
       ],
       fetchMyOrders: vi.fn(),
       ordersLoading: false,
@@ -19,45 +19,45 @@ vi.mock("../../store/useOrderStore", () => ({
 }));
 
 const mockNavigate = vi.fn();
-vi.mock("react-router-dom", async () => {
-  const actual = await vi.importActual("react-router-dom");
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
   return {
     ...actual,
     useNavigate: () => mockNavigate,
   };
 });
 
-describe("OrdersPage", () => {
+describe('OrdersPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("renders orders list", () => {
+  it('renders orders list', () => {
     render(
       <BrowserRouter>
         <OrdersPage />
-      </BrowserRouter>,
+      </BrowserRouter>
     );
 
-    expect(screen.getByText("Мои заказы")).toBeDefined();
-    expect(screen.getByText("500 ₽")).toBeDefined();
-    expect(screen.getByText("1000 ₽")).toBeDefined();
+    expect(screen.getByText('Мои заказы')).toBeDefined();
+    expect(screen.getByText('500 ₽')).toBeDefined();
+    expect(screen.getByText('1000 ₽')).toBeDefined();
   });
 
-  it("navigates to order status page on click", () => {
+  it('navigates to order status page on click', () => {
     render(
       <BrowserRouter>
         <OrdersPage />
-      </BrowserRouter>,
+      </BrowserRouter>
     );
 
-    fireEvent.click(screen.getByText("500 ₽"));
+    fireEvent.click(screen.getByText('500 ₽'));
     expect(mockNavigate).toHaveBeenCalledWith(
-      expect.stringContaining("/orders/order-1"),
+      expect.stringContaining('/orders/order-1')
     );
   });
 
-  it("shows empty state if no orders", () => {
+  it('shows empty state if no orders', () => {
     vi.mocked(useOrderStore).mockImplementation((sel) => {
       const state = {
         orders: [],
@@ -70,9 +70,9 @@ describe("OrdersPage", () => {
     render(
       <BrowserRouter>
         <OrdersPage />
-      </BrowserRouter>,
+      </BrowserRouter>
     );
 
-    expect(screen.getByText("Заказов пока нет")).toBeDefined();
+    expect(screen.getByText('Заказов пока нет')).toBeDefined();
   });
 });

@@ -37,17 +37,13 @@ class RabbitMQBroker:
     @property
     def exchange(self) -> aio_pika.abc.AbstractExchange:
         if self._exchange is None:
-            raise RuntimeError(
-                "RabbitMQ broker is not connected. Call connect() first."
-            )
+            raise RuntimeError("RabbitMQ broker is not connected. Call connect() first.")
         return self._exchange
 
     @property
     def channel(self) -> aio_pika.abc.AbstractChannel:
         if self._channel is None:
-            raise RuntimeError(
-                "RabbitMQ broker is not connected. Call connect() first."
-            )
+            raise RuntimeError("RabbitMQ broker is not connected. Call connect() first.")
         return self._channel
 
 

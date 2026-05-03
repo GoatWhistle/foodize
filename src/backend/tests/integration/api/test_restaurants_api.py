@@ -52,9 +52,7 @@ class TestRestaurantsPublicAPI:
             new_callable=AsyncMock,
             return_value=([], 0),
         ) as mock_get:
-            response = await client.get(
-                "/api/v1/restaurants/public?is_open=true&is_hiring=true"
-            )
+            response = await client.get("/api/v1/restaurants/public?is_open=true&is_hiring=true")
 
         assert response.status_code == 200
         mock_get.assert_awaited_once()

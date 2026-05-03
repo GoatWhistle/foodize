@@ -121,9 +121,7 @@ class TestPlaceOrderExtended:
             patch(
                 "features.orders.crud.order_item.get_menu_items_by_ids",
                 new_callable=AsyncMock,
-                return_value={
-                    item_id: make_mock_menu_item(item_id, restaurant_id=restaurant_id)
-                },
+                return_value={item_id: make_mock_menu_item(item_id, restaurant_id=restaurant_id)},
             ),
             patch(
                 "features.orders.services.order._create_order",
@@ -201,17 +199,13 @@ class TestChangeOrderStatus:
                 new_callable=AsyncMock,
                 return_value=updated_order,
             ),
-            patch(
-                "features.orders.crud.order.create_order_event", new_callable=AsyncMock
-            ),
+            patch("features.orders.crud.order.create_order_event", new_callable=AsyncMock),
             patch(
                 "features.orders.services.order.publish_order_status_changed",
                 new_callable=AsyncMock,
             ),
         ):
-            result = await change_order_status(
-                mock_db_session, order, status_data, user
-            )
+            result = await change_order_status(mock_db_session, order, status_data, user)
             assert result.status == OrderStatus.ACCEPTED
 
     async def test_invalid_transition_raises(self, mock_db_session):
@@ -242,9 +236,7 @@ class TestCompleteOrder:
                 new_callable=AsyncMock,
                 return_value=completed_order,
             ),
-            patch(
-                "features.orders.crud.order.create_order_event", new_callable=AsyncMock
-            ),
+            patch("features.orders.crud.order.create_order_event", new_callable=AsyncMock),
             patch(
                 "features.orders.services.order.publish_order_status_changed",
                 new_callable=AsyncMock,
@@ -313,9 +305,7 @@ class TestCreateOrder:
             new_callable=AsyncMock,
             return_value=saved_order,
         ):
-            result = await _create_order(
-                session, order_data, user_id, {item_id: menu_item_mock}
-            )
+            result = await _create_order(session, order_data, user_id, {item_id: menu_item_mock})
             assert result == saved_order
 
     async def test_order_not_found_after_commit(self, mock_db_session):
@@ -342,9 +332,7 @@ class TestCreateOrder:
             return_value=None,
         ):
             with pytest.raises(OrderNotFoundException):
-                await _create_order(
-                    session, order_data, user_id, {item_id: menu_item_mock}
-                )
+                await _create_order(session, order_data, user_id, {item_id: menu_item_mock})
 
 
 class TestGetOrderEvents:

@@ -1,9 +1,9 @@
 import pytest
 from factories import make_user
+from shared.enums.roles import UserRole
 
 from shared.dependencies.permissions import PermissionChecker
 from shared.enums.permissions import Permission
-from shared.enums.roles import UserRole
 from shared.exceptions.rules import RuleException
 from shared.permissions import get_permissions_for_role, has_permission
 

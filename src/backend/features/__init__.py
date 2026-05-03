@@ -1,5 +1,6 @@
 from features.favorites.models import Favorite
 from features.menu.models import MenuItem, MenuItemOption, MenuItemOptionGroup
+from features.notifications.models import Notification
 from features.orders.models import Order, OrderEvent, OrderItem, OrderItemOption
 from features.promos.models import Promo
 from features.restaurants.models import Restaurant
@@ -8,7 +9,6 @@ from features.reviews.models import Review
 from features.staff.models import StaffProfile, StaffRequest
 from features.users.models import User
 from features.vendors.models import VendorProfile
-from features.notifications.models import Notification
 
 __all__ = [
     "User",

@@ -1,37 +1,37 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from 'react';
 import {
   Clock,
   Package,
   UserCircle,
   X,
   Storefront,
-} from "@phosphor-icons/react";
-import { orderService } from "../../services/orderService";
+} from '@phosphor-icons/react';
+import { orderService } from '../../services/orderService';
 
-import { ORDER_STATUS_RU, CATEGORY_RU, translate } from "../../utils/locales";
-import { permissionPresetLabel } from "../../utils/permissions";
+import { ORDER_STATUS_RU, CATEGORY_RU, translate } from '../../utils/locales';
+import { permissionPresetLabel } from '../../utils/permissions';
 
 const STATUS_LABEL_RU = ORDER_STATUS_RU;
 
-const STATUS_FLOW = ["PENDING", "ACCEPTED", "COOKING", "READY", "COMPLETED"];
+const STATUS_FLOW = ['PENDING', 'ACCEPTED', 'COOKING', 'READY', 'COMPLETED'];
 
 const formatDateTime = (value) => {
-  if (!value) return "—";
-  return new Date(value).toLocaleString("ru-RU", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
+  if (!value) return '—';
+  return new Date(value).toLocaleString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 };
 
 const optionLabel = (option) =>
-  `${option.name}${option.price_delta ? ` +${option.price_delta} ₽` : ""}`;
+  `${option.name}${option.price_delta ? ` +${option.price_delta} ₽` : ''}`;
 
 const buildReadyAtIso = (timeValue) => {
   if (!timeValue) return null;
 
-  const [hours, minutes] = timeValue.split(":").map(Number);
+  const [hours, minutes] = timeValue.split(':').map(Number);
   if (
     Number.isNaN(hours) ||
     Number.isNaN(minutes) ||
@@ -62,22 +62,22 @@ const extractEvents = (response) => {
 
 const getOrderStages = (order, events) => {
   const eventByStatus = new Map(
-    (events || []).map((event) => [event.new_status, event]),
+    (events || []).map((event) => [event.new_status, event])
   );
   const currentIndex = STATUS_FLOW.indexOf(order.status);
 
-  if (order.status === "CANCELLED") {
+  if (order.status === 'CANCELLED') {
     return [
       ...STATUS_FLOW.slice(0, Math.max(currentIndex, 0) + 1),
-      "CANCELLED",
+      'CANCELLED',
     ].map((status) => ({
       status,
       event: eventByStatus.get(status),
       at:
-        status === "PENDING"
+        status === 'PENDING'
           ? order.created_at
           : eventByStatus.get(status)?.created_at,
-      state: status === "CANCELLED" ? "current" : "done",
+      state: status === 'CANCELLED' ? 'current' : 'done',
     }));
   }
 
@@ -85,15 +85,15 @@ const getOrderStages = (order, events) => {
     status,
     event: eventByStatus.get(status),
     at:
-      status === "PENDING"
+      status === 'PENDING'
         ? order.created_at
         : eventByStatus.get(status)?.created_at,
     state:
       index < currentIndex
-        ? "done"
+        ? 'done'
         : index === currentIndex
-          ? "current"
-          : "next",
+          ? 'current'
+          : 'next',
   }));
 };
 
@@ -108,27 +108,27 @@ const OrderDetailsModal = ({
 }) => {
   const [events, setEvents] = useState([]);
   const [eventsLoading, setEventsLoading] = useState(false);
-  const [eventsError, setEventsError] = useState("");
+  const [eventsError, setEventsError] = useState('');
   const [eventsUnavailable, setEventsUnavailable] = useState(false);
   const [etaMinutes, setEtaMinutes] = useState(null);
-  const [manualEtaTime, setManualEtaTime] = useState("");
+  const [manualEtaTime, setManualEtaTime] = useState('');
 
   const loadEvents = useCallback(async () => {
     if (!order?.id) return;
     setEventsLoading(true);
-    setEventsError("");
+    setEventsError('');
     setEventsUnavailable(false);
     try {
       const res = await orderService.getOrderEvents(order.id);
       setEvents(extractEvents(res));
       setEventsUnavailable(false);
     } catch (error) {
-      console.error("Order events fetch failed", {
+      console.error('Order events fetch failed', {
         status: error?.response?.status,
         detail: error?.response?.data?.detail,
       });
       setEvents([]);
-      setEventsError("");
+      setEventsError('');
       setEventsUnavailable(true);
     } finally {
       setEventsLoading(false);
@@ -143,7 +143,7 @@ const OrderDetailsModal = ({
 
   const next = nextStatus?.[order.status];
   const canCancel =
-    allowCancel && ["PENDING", "ACCEPTED"].includes(order.status);
+    allowCancel && ['PENDING', 'ACCEPTED'].includes(order.status);
   const etaPayload = () => {
     const manualReadyAt = buildReadyAtIso(manualEtaTime);
     if (manualReadyAt) {
@@ -154,8 +154,8 @@ const OrderDetailsModal = ({
     }
     return null;
   };
-  const acceptingRequiresTime = next === "ACCEPTED";
-  const submitPayload = next === "ACCEPTED" ? etaPayload() : {};
+  const acceptingRequiresTime = next === 'ACCEPTED';
+  const submitPayload = next === 'ACCEPTED' ? etaPayload() : {};
   const canSubmitNext =
     updating !== order.id && (!acceptingRequiresTime || Boolean(submitPayload));
   const stages = getOrderStages(order, events);
@@ -179,36 +179,36 @@ const OrderDetailsModal = ({
         style={{
           maxWidth: 560,
           padding: 0,
-          overflow: "hidden",
-          maxHeight: "90vh",
-          display: "flex",
-          flexDirection: "column",
+          overflow: 'hidden',
+          maxHeight: '90vh',
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
         <div
           style={{
-            padding: "20px 22px",
-            borderBottom: "1px solid var(--border)",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
+            padding: '20px 22px',
+            borderBottom: '1px solid var(--border)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
             gap: 16,
           }}
         >
           <div>
             <div
               style={{
-                color: "var(--text-3)",
-                fontSize: "0.74rem",
+                color: 'var(--text-3)',
+                fontSize: '0.74rem',
                 fontWeight: 800,
-                textTransform: "uppercase",
-                letterSpacing: "0.06em",
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
                 marginBottom: 4,
               }}
             >
               Заказ #{getOrderDisplayId(order)}
             </div>
-            <h3 style={{ fontSize: "1.15rem", fontWeight: 900, margin: 0 }}>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 900, margin: 0 }}>
               {order.total_price} ₽
             </h3>
           </div>
@@ -224,31 +224,31 @@ const OrderDetailsModal = ({
         <div
           style={{
             padding: 22,
-            overflowY: "auto",
-            display: "flex",
-            flexDirection: "column",
+            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
             gap: 16,
           }}
         >
           <div
             style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
               gap: 10,
             }}
           >
             <div
               style={{
-                background: "var(--bg-surface)",
-                border: "1px solid var(--border)",
-                borderRadius: "var(--radius-md)",
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-md)',
                 padding: 12,
               }}
             >
               <div
                 style={{
-                  color: "var(--text-3)",
-                  fontSize: "0.72rem",
+                  color: 'var(--text-3)',
+                  fontSize: '0.72rem',
                   marginBottom: 6,
                 }}
               >
@@ -260,16 +260,16 @@ const OrderDetailsModal = ({
             </div>
             <div
               style={{
-                background: "var(--bg-surface)",
-                border: "1px solid var(--border)",
-                borderRadius: "var(--radius-md)",
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-md)',
                 padding: 12,
               }}
             >
               <div
                 style={{
-                  color: "var(--text-3)",
-                  fontSize: "0.72rem",
+                  color: 'var(--text-3)',
+                  fontSize: '0.72rem',
                   marginBottom: 6,
                 }}
               >
@@ -283,57 +283,57 @@ const OrderDetailsModal = ({
 
           <div
             style={{
-              background: "var(--bg-surface)",
-              border: "1px solid var(--border)",
-              borderRadius: "var(--radius-md)",
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-md)',
               padding: 14,
-              display: "flex",
-              flexDirection: "column",
+              display: 'flex',
+              flexDirection: 'column',
               gap: 8,
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <UserCircle size={18} color="var(--fire)" />
               <span style={{ fontWeight: 800 }}>Клиент</span>
             </div>
             {order.customer_name && (
-              <div style={{ fontWeight: 800, fontSize: "0.9rem" }}>
+              <div style={{ fontWeight: 800, fontSize: '0.9rem' }}>
                 {order.customer_name}
               </div>
             )}
             {order.customer_phone && (
-              <div style={{ color: "var(--text-2)", fontSize: "0.82rem" }}>
+              <div style={{ color: 'var(--text-2)', fontSize: '0.82rem' }}>
                 {order.customer_phone}
               </div>
             )}
             <div
               style={{
-                color: "var(--text-3)",
-                fontSize: "0.8rem",
+                color: 'var(--text-3)',
+                fontSize: '0.8rem',
                 marginBottom: 12,
               }}
             >
               ID: {order.user_id}
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Storefront size={18} color="var(--fire)" />
               <span style={{ fontWeight: 800 }}>Заведение</span>
             </div>
             {order.restaurant_name && (
-              <div style={{ fontWeight: 800, fontSize: "0.9rem" }}>
+              <div style={{ fontWeight: 800, fontSize: '0.9rem' }}>
                 {order.restaurant_name}
               </div>
             )}
             {order.restaurant_address && (
-              <div style={{ color: "var(--text-2)", fontSize: "0.82rem" }}>
+              <div style={{ color: 'var(--text-2)', fontSize: '0.82rem' }}>
                 {order.restaurant_address}
               </div>
             )}
             <div
               style={{
-                color: "var(--text-3)",
-                fontSize: "0.8rem",
+                color: 'var(--text-3)',
+                fontSize: '0.8rem',
                 marginBottom: 12,
               }}
             >
@@ -341,12 +341,12 @@ const OrderDetailsModal = ({
             </div>
 
             {order.estimated_ready_at && (
-              <div style={{ color: "var(--text-3)", fontSize: "0.8rem" }}>
+              <div style={{ color: 'var(--text-3)', fontSize: '0.8rem' }}>
                 Ожидается к: {formatDateTime(order.estimated_ready_at)}
               </div>
             )}
             {order.ready_at && (
-              <div style={{ color: "var(--text-3)", fontSize: "0.8rem" }}>
+              <div style={{ color: 'var(--text-3)', fontSize: '0.8rem' }}>
                 Готов: {formatDateTime(order.ready_at)}
               </div>
             )}
@@ -355,8 +355,8 @@ const OrderDetailsModal = ({
           <div>
             <div
               style={{
-                display: "flex",
-                alignItems: "center",
+                display: 'flex',
+                alignItems: 'center',
                 gap: 8,
                 fontWeight: 800,
                 marginBottom: 10,
@@ -365,46 +365,46 @@ const OrderDetailsModal = ({
               <Package size={18} color="var(--fire)" />
               Состав заказа
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {order.items?.map((item) => (
                 <div
                   key={item.id}
                   style={{
-                    background: "var(--bg-surface)",
-                    border: "1px solid var(--border)",
-                    borderRadius: "var(--radius-md)",
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-md)',
                     padding: 12,
                   }}
                 >
                   <div
                     style={{
-                      display: "flex",
-                      justifyContent: "space-between",
+                      display: 'flex',
+                      justifyContent: 'space-between',
                       gap: 12,
                     }}
                   >
                     <div>
                       <div style={{ fontWeight: 800 }}>
-                        {item.menu_item_name ?? item.name ?? "Позиция"}
+                        {item.menu_item_name ?? item.name ?? 'Позиция'}
                       </div>
                       <div
                         style={{
-                          color: "var(--text-3)",
-                          fontSize: "0.74rem",
+                          color: 'var(--text-3)',
+                          fontSize: '0.74rem',
                           marginTop: 2,
                         }}
                       >
                         {item.menu_item_category
                           ? translate(CATEGORY_RU, item.menu_item_category)
-                          : "—"}
+                          : '—'}
                       </div>
                     </div>
-                    <div style={{ textAlign: "right", fontWeight: 800 }}>
+                    <div style={{ textAlign: 'right', fontWeight: 800 }}>
                       ×{item.quantity}
                       <div
                         style={{
-                          color: "var(--text-3)",
-                          fontSize: "0.74rem",
+                          color: 'var(--text-3)',
+                          fontSize: '0.74rem',
                           marginTop: 2,
                         }}
                       >
@@ -416,12 +416,12 @@ const OrderDetailsModal = ({
                     <div
                       style={{
                         marginTop: 8,
-                        color: "var(--text-3)",
-                        fontSize: "0.78rem",
+                        color: 'var(--text-3)',
+                        fontSize: '0.78rem',
                         lineHeight: 1.45,
                       }}
                     >
-                      {item.selected_options.map(optionLabel).join(", ")}
+                      {item.selected_options.map(optionLabel).join(', ')}
                     </div>
                   )}
                 </div>
@@ -431,72 +431,72 @@ const OrderDetailsModal = ({
 
           <div
             style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
               gap: 10,
             }}
           >
             <div
               style={{
-                background: "var(--bg-surface)",
-                border: "1px solid var(--border)",
-                borderRadius: "var(--radius-md)",
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-md)',
                 padding: 12,
               }}
             >
-              <div style={{ color: "var(--text-3)", fontSize: "0.72rem" }}>
+              <div style={{ color: 'var(--text-3)', fontSize: '0.72rem' }}>
                 Комментарий
               </div>
-              <div style={{ marginTop: 6, fontSize: "0.84rem" }}>
-                {order.comment || "Не указан"}
+              <div style={{ marginTop: 6, fontSize: '0.84rem' }}>
+                {order.comment || 'Не указан'}
               </div>
             </div>
             <div
               style={{
-                background: "var(--bg-surface)",
-                border: "1px solid var(--border)",
-                borderRadius: "var(--radius-md)",
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-md)',
                 padding: 12,
               }}
             >
-              <div style={{ color: "var(--text-3)", fontSize: "0.72rem" }}>
+              <div style={{ color: 'var(--text-3)', fontSize: '0.72rem' }}>
                 Промокод
               </div>
-              <div style={{ marginTop: 6, fontSize: "0.84rem" }}>
-                {order.promo_code || "Не сохранен"}
+              <div style={{ marginTop: 6, fontSize: '0.84rem' }}>
+                {order.promo_code || 'Не сохранен'}
               </div>
             </div>
           </div>
 
-          {next === "ACCEPTED" && (
+          {next === 'ACCEPTED' && (
             <div
               style={{
-                background: "var(--bg-surface)",
-                border: "1px solid var(--border)",
-                borderRadius: "var(--radius-md)",
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-md)',
                 padding: 12,
               }}
             >
               <div
                 style={{
-                  color: "var(--text-3)",
-                  fontSize: "0.72rem",
+                  color: 'var(--text-3)',
+                  fontSize: '0.72rem',
                   marginBottom: 8,
                 }}
               >
                 Время готовности
               </div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {[10, 15, 20].map((minutes) => (
                   <button
                     key={minutes}
                     type="button"
                     className={`category-chip${
-                      !manualEtaTime && etaMinutes === minutes ? " active" : ""
+                      !manualEtaTime && etaMinutes === minutes ? ' active' : ''
                     }`}
                     onClick={() => {
                       setEtaMinutes(minutes);
-                      setManualEtaTime("");
+                      setManualEtaTime('');
                     }}
                   >
                     {minutes} мин
@@ -505,12 +505,12 @@ const OrderDetailsModal = ({
               </div>
               <label
                 style={{
-                  display: "flex",
-                  flexDirection: "column",
+                  display: 'flex',
+                  flexDirection: 'column',
                   gap: 6,
                   marginTop: 12,
-                  color: "var(--text-3)",
-                  fontSize: "0.72rem",
+                  color: 'var(--text-3)',
+                  fontSize: '0.72rem',
                 }}
               >
                 Указать точное время
@@ -522,13 +522,13 @@ const OrderDetailsModal = ({
                     setEtaMinutes(null);
                   }}
                   style={{
-                    width: "100%",
-                    border: "1px solid var(--border)",
-                    borderRadius: "var(--radius-md)",
-                    background: "var(--bg)",
-                    color: "var(--text-1)",
-                    padding: "10px 12px",
-                    font: "inherit",
+                    width: '100%',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-md)',
+                    background: 'var(--bg)',
+                    color: 'var(--text-1)',
+                    padding: '10px 12px',
+                    font: 'inherit',
                     fontWeight: 800,
                   }}
                 />
@@ -539,8 +539,8 @@ const OrderDetailsModal = ({
           <div>
             <div
               style={{
-                display: "flex",
-                alignItems: "center",
+                display: 'flex',
+                alignItems: 'center',
                 gap: 8,
                 fontWeight: 800,
                 marginBottom: 10,
@@ -549,36 +549,36 @@ const OrderDetailsModal = ({
               <Clock size={18} color="var(--fire)" />
               Этапы заказа
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {stages.map((stage) => (
                 <div
                   key={stage.status}
                   style={{
                     background:
-                      stage.state === "current"
-                        ? "rgba(255, 107, 53, 0.1)"
-                        : "var(--bg-surface)",
+                      stage.state === 'current'
+                        ? 'rgba(255, 107, 53, 0.1)'
+                        : 'var(--bg-surface)',
                     border: `1px solid ${
-                      stage.state === "current"
-                        ? "var(--fire)"
-                        : "var(--border)"
+                      stage.state === 'current'
+                        ? 'var(--fire)'
+                        : 'var(--border)'
                     }`,
-                    borderRadius: "var(--radius-md)",
-                    padding: "10px 12px",
-                    display: "flex",
-                    justifyContent: "space-between",
+                    borderRadius: 'var(--radius-md)',
+                    padding: '10px 12px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
                     gap: 12,
-                    opacity: stage.state === "next" ? 0.62 : 1,
+                    opacity: stage.state === 'next' ? 0.62 : 1,
                   }}
                 >
-                  <div style={{ fontSize: "0.82rem", fontWeight: 800 }}>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 800 }}>
                     {STATUS_LABEL_RU[stage.status] ?? stage.status}
-                    {stage.state === "current" && (
+                    {stage.state === 'current' && (
                       <span
                         style={{
                           marginLeft: 8,
-                          color: "var(--fire)",
-                          fontSize: "0.72rem",
+                          color: 'var(--fire)',
+                          fontSize: '0.72rem',
                         }}
                       >
                         текущий
@@ -587,12 +587,12 @@ const OrderDetailsModal = ({
                   </div>
                   <div
                     style={{
-                      color: "var(--text-3)",
-                      fontSize: "0.72rem",
-                      whiteSpace: "nowrap",
+                      color: 'var(--text-3)',
+                      fontSize: '0.72rem',
+                      whiteSpace: 'nowrap',
                     }}
                   >
-                    {stage.at ? formatDateTime(stage.at) : "—"}
+                    {stage.at ? formatDateTime(stage.at) : '—'}
                   </div>
                 </div>
               ))}
@@ -602,8 +602,8 @@ const OrderDetailsModal = ({
           <div>
             <div
               style={{
-                display: "flex",
-                alignItems: "center",
+                display: 'flex',
+                alignItems: 'center',
                 gap: 8,
                 fontWeight: 800,
                 marginBottom: 10,
@@ -612,15 +612,15 @@ const OrderDetailsModal = ({
               <Clock size={18} color="var(--fire)" />
               Журнал изменений
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {eventsLoading && (
-                <div style={{ color: "var(--text-3)", fontSize: "0.84rem" }}>
+                <div style={{ color: 'var(--text-3)', fontSize: '0.84rem' }}>
                   Загружаю историю...
                 </div>
               )}
               {eventsError && <div className="form-error">{eventsError}</div>}
               {!eventsLoading && !eventsError && eventsUnavailable && (
-                <div style={{ color: "var(--text-3)", fontSize: "0.84rem" }}>
+                <div style={{ color: 'var(--text-3)', fontSize: '0.84rem' }}>
                   История изменений пока недоступна
                 </div>
               )}
@@ -628,7 +628,7 @@ const OrderDetailsModal = ({
                 !eventsError &&
                 !eventsUnavailable &&
                 events.length === 0 && (
-                  <div style={{ color: "var(--text-3)", fontSize: "0.84rem" }}>
+                  <div style={{ color: 'var(--text-3)', fontSize: '0.84rem' }}>
                     История появится после первого изменения статуса
                   </div>
                 )}
@@ -636,22 +636,22 @@ const OrderDetailsModal = ({
                 <div
                   key={event.id}
                   style={{
-                    background: "var(--bg-surface)",
-                    border: "1px solid var(--border)",
-                    borderRadius: "var(--radius-md)",
-                    padding: "10px 12px",
-                    display: "flex",
-                    justifyContent: "space-between",
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '10px 12px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
                     gap: 12,
                   }}
                 >
-                  <div style={{ fontSize: "0.82rem" }}>
-                    {STATUS_LABEL_RU[event.old_status] ?? event.old_status} →{" "}
+                  <div style={{ fontSize: '0.82rem' }}>
+                    {STATUS_LABEL_RU[event.old_status] ?? event.old_status} →{' '}
                     {STATUS_LABEL_RU[event.new_status] ?? event.new_status}
                     <div
                       style={{
-                        color: "var(--text-3)",
-                        fontSize: "0.72rem",
+                        color: 'var(--text-3)',
+                        fontSize: '0.72rem',
                         marginTop: 2,
                       }}
                     >
@@ -660,9 +660,9 @@ const OrderDetailsModal = ({
                   </div>
                   <div
                     style={{
-                      color: "var(--text-3)",
-                      fontSize: "0.72rem",
-                      whiteSpace: "nowrap",
+                      color: 'var(--text-3)',
+                      fontSize: '0.72rem',
+                      whiteSpace: 'nowrap',
                     }}
                   >
                     {formatDateTime(event.created_at)}
@@ -676,9 +676,9 @@ const OrderDetailsModal = ({
         {(next || canCancel) && (
           <div
             style={{
-              padding: "14px 22px",
-              borderTop: "1px solid var(--border)",
-              display: "flex",
+              padding: '14px 22px',
+              borderTop: '1px solid var(--border)',
+              display: 'flex',
               gap: 8,
             }}
           >
@@ -690,18 +690,18 @@ const OrderDetailsModal = ({
                 style={{ flex: 1 }}
               >
                 {updating === order.id
-                  ? "..."
-                  : nextLabel?.[order.status] || "Дальше"}
+                  ? '...'
+                  : nextLabel?.[order.status] || 'Дальше'}
               </button>
             )}
             {canCancel && (
               <button
                 className="btn btn-secondary"
                 disabled={updating === order.id}
-                onClick={() => handleStatusAction("CANCELLED")}
-                style={{ color: "var(--error)" }}
+                onClick={() => handleStatusAction('CANCELLED')}
+                style={{ color: 'var(--error)' }}
               >
-                {order.status === "PENDING" ? "Отклонить" : "Отменить"}
+                {order.status === 'PENDING' ? 'Отклонить' : 'Отменить'}
               </button>
             )}
           </div>

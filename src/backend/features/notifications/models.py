@@ -21,9 +21,11 @@ class Notification(Base, IdUuidPkMixin, CreatedAtMixin):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     message: Mapped[str] = mapped_column(String, nullable=False)
     type: Mapped[str] = mapped_column(
-        String(50), 
-        nullable=False, 
+        String(50),
+        nullable=False,
         default=NotificationType.SYSTEM.value,
-        server_default=NotificationType.SYSTEM.value
+        server_default=NotificationType.SYSTEM.value,
     )
-    is_read: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    is_read: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )

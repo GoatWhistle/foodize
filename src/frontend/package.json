@@ -9,6 +9,10 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest",
+    "api:types": "openapi-typescript ../../openapi/foodize.openapi.json -o src/services/generated/schema.ts",
+    "api:client": "node ../../tools/generate_openapi_client.mjs --schema=../../openapi/foodize.openapi.json --output=src/services/generated/client.ts --api-import=../api",
+    "api:format": "prettier --write \"src/services/generated/*.ts\"",
+    "api:generate": "npm run api:types && npm run api:client && npm run api:format",
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
@@ -39,6 +43,7 @@
     "globals": "^16.5.0",
     "jsdom": "^26.0.0",
     "msw": "^2.0.0",
+    "openapi-typescript": "^7.10.1",
     "prettier": "^3.6.2",
     "vite": "^7.2.4",
     "vitest": "^3.0.0"

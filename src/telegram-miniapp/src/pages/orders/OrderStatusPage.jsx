@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useOrderStore } from "../../store/useOrderStore";
 import { useShallow } from "zustand/react/shallow";
@@ -71,12 +71,12 @@ const OrderStatusPage = () => {
     }
   }, [navigate]);
 
-  const loadEvents = async () => {
+  const loadEvents = useCallback(async () => {
     try {
       const res = await orderService.getOrderEvents(id);
       setEvents(Array.isArray(res.data?.data) ? res.data.data : []);
     } catch {}
-  };
+  }, [id]);
 
   useEffect(() => {
     fetchOrder(id);

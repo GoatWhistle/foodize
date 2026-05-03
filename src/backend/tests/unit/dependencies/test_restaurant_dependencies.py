@@ -15,9 +15,7 @@ class TestRestaurantDependencies:
         mock_session.get.return_value = None
 
         with pytest.raises(NotFoundException):
-            await get_restaurant_and_check_ownership(
-                mock_session, uuid.uuid4(), uuid.uuid4()
-            )
+            await get_restaurant_and_check_ownership(mock_session, uuid.uuid4(), uuid.uuid4())
 
     @pytest.mark.asyncio
     async def test_get_restaurant_and_check_ownership_403(self):
@@ -26,6 +24,4 @@ class TestRestaurantDependencies:
         mock_session.get.return_value = mock_rest
 
         with pytest.raises(RuleException):
-            await get_restaurant_and_check_ownership(
-                mock_session, uuid.uuid4(), uuid.uuid4()
-            )
+            await get_restaurant_and_check_ownership(mock_session, uuid.uuid4(), uuid.uuid4())

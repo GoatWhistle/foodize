@@ -29,16 +29,12 @@ from shared.schemas.response import SuccessListResponse, SuccessResponse
 router = APIRouter(prefix="/restaurants", tags=["Restaurants"])
 
 
-@router.get(
-    "/public/{restaurant_id}", response_model=SuccessResponse[RestaurantResponse]
-)
+@router.get("/public/{restaurant_id}", response_model=SuccessResponse[RestaurantResponse])
 async def read_public_restaurant(
     restaurant_id: uuid.UUID,
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[RestaurantResponse]:
-    result = await service.get_restaurant_public(
-        session=session, restaurant_id=restaurant_id
-    )
+    result = await service.get_restaurant_public(session=session, restaurant_id=restaurant_id)
     return build_response(result)
 
 
@@ -60,9 +56,7 @@ async def read_public_restaurants(
         page=page,
         size=size,
     )
-    return build_list_response(
-        data=data, total=total, page=page, size=size, request=request
-    )
+    return build_list_response(data=data, total=total, page=page, size=size, request=request)
 
 
 @router.post("/", response_model=SuccessResponse[RestaurantResponse])
@@ -106,9 +100,7 @@ async def read_my_restaurants(
     data, total = await service.get_my_restaurants(
         session=session, vendor_id=current_vendor.id, page=page, size=size
     )
-    return build_list_response(
-        data=data, total=total, page=page, size=size, request=request
-    )
+    return build_list_response(data=data, total=total, page=page, size=size, request=request)
 
 
 @router.get(

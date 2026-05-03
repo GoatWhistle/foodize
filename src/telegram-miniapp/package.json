@@ -6,6 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "lint": "eslint .",
+    "api:types": "openapi-typescript ../../openapi/foodize.openapi.json -o src/services/generated/schema.ts",
+    "api:client": "node ../../tools/generate_openapi_client.mjs --schema=../../openapi/foodize.openapi.json --output=src/services/generated/client.ts --api-import=../api",
+    "api:format": "prettier --write \"src/services/generated/*.ts\"",
+    "api:generate": "npm run api:types && npm run api:client && npm run api:format",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -26,6 +31,7 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "globals": "^16.5.0",
+    "openapi-typescript": "^7.10.1",
     "prettier": "^3.6.2",
     "vite": "^7.2.4"
   }

@@ -1,7 +1,8 @@
 import uuid
 
-from features.users.models import User
 from shared.enums.roles import UserRole
+
+from features.users.models import User
 
 
 def make_user(

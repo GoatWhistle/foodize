@@ -38,9 +38,7 @@ async def create_staff_request(
         if last_request.status == StaffRequestStatus.PENDING.value:
             raise StaffRequestActiveExistsException()
         if last_request.status == StaffRequestStatus.REJECTED.value:
-            if datetime.now(timezone.utc) - last_request.updated_at < timedelta(
-                hours=24
-            ):
+            if datetime.now(timezone.utc) - last_request.updated_at < timedelta(hours=24):
                 raise StaffRequestCooldownException()
 
     request = await crud.create_staff_request(
@@ -54,9 +52,7 @@ async def process_staff_request(
 ) -> StaffRequestResponse:
     if new_status == StaffRequestStatus.ACCEPTED:
         if await crud.get_staff_profile_by_user_id(session, request.user_id):
-            await crud.update_request_status(
-                session, request, StaffRequestStatus.REJECTED
-            )
+            await crud.update_request_status(session, request, StaffRequestStatus.REJECTED)
             raise AlreadyStaffException()
         await crud.create_staff_profile(session, request.user_id, request.restaurant_id)
 
@@ -71,9 +67,7 @@ async def get_vendor_staff_requests(
     size: int = 20,
 ) -> tuple[list[StaffRequestResponse], int]:
     offset = (page - 1) * size
-    data = await crud.get_requests_by_vendor_id(
-        session, vendor_id, offset=offset, limit=size
-    )
+    data = await crud.get_requests_by_vendor_id(session, vendor_id, offset=offset, limit=size)
     total = await crud.count_requests_by_vendor_id(session, vendor_id)
     return [StaffRequestResponse.model_validate(r) for r in data], total
 

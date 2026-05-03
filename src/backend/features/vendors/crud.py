@@ -22,18 +22,12 @@ async def create_vendor_profile(
     return vendor
 
 
-async def get_vendor_by_user_id(
-    session: AsyncSession, user_id: uuid.UUID
-) -> VendorProfile | None:
-    result = await session.execute(
-        select(VendorProfile).where(VendorProfile.user_id == user_id)
-    )
+async def get_vendor_by_user_id(session: AsyncSession, user_id: uuid.UUID) -> VendorProfile | None:
+    result = await session.execute(select(VendorProfile).where(VendorProfile.user_id == user_id))
     return result.scalar_one_or_none()
 
 
-async def get_vendor_by_user_id_or_404(
-    session: AsyncSession, user_id: uuid.UUID
-) -> VendorProfile:
+async def get_vendor_by_user_id_or_404(session: AsyncSession, user_id: uuid.UUID) -> VendorProfile:
     vendor = await get_vendor_by_user_id(session, user_id)
     if not vendor:
         raise NotFoundException()

@@ -158,24 +158,18 @@ async def get_vendors_list(
         offset=offset,
         limit=limit,
     )
-    total = await crud.count_all_vendors(
-        session, search=search, approval_status=approval_status
-    )
+    total = await crud.count_all_vendors(session, search=search, approval_status=approval_status)
     return [AdminVendorResponse.model_validate(vendor) for vendor in vendors], total
 
 
-async def get_vendor_or_404(
-    session: AsyncSession, vendor_id: uuid.UUID
-) -> AdminVendorResponse:
+async def get_vendor_or_404(session: AsyncSession, vendor_id: uuid.UUID) -> AdminVendorResponse:
     vendor = await crud.get_vendor_by_id(session, vendor_id)
     if not vendor:
         raise NotFoundException()
     return AdminVendorResponse.model_validate(vendor)
 
 
-async def delete_vendor_service(
-    session: AsyncSession, vendor_id: uuid.UUID
-) -> AdminVendorResponse:
+async def delete_vendor_service(session: AsyncSession, vendor_id: uuid.UUID) -> AdminVendorResponse:
     vendor = await crud.get_vendor_by_id(session, vendor_id)
     if not vendor:
         raise NotFoundException()
@@ -190,16 +184,12 @@ async def get_reviews_list(
     offset: int = 0,
     limit: int = 20,
 ) -> tuple[list[AdminReviewResponse], int]:
-    data = await crud.get_all_reviews(
-        session, rating=rating, offset=offset, limit=limit
-    )
+    data = await crud.get_all_reviews(session, rating=rating, offset=offset, limit=limit)
     total = await crud.count_all_reviews(session, rating=rating)
     return data, total
 
 
-async def delete_review_service(
-    session: AsyncSession, review_id: uuid.UUID
-) -> AdminReviewResponse:
+async def delete_review_service(session: AsyncSession, review_id: uuid.UUID) -> AdminReviewResponse:
     review = await crud.get_review_by_id(session, review_id)
     if not review:
         raise NotFoundException()

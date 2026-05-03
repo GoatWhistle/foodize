@@ -58,21 +58,15 @@ class TestRegisterVendor:
 class TestUpdateDescription:
     async def test_updates_description(self, mock_db_session):
         mock_vendor = make_mock_vendor()
-        updated_mock = make_mock_vendor(
-            user_id=mock_vendor.user_id, description="New description"
-        )
+        updated_mock = make_mock_vendor(user_id=mock_vendor.user_id, description="New description")
 
         with patch(
             "features.vendors.crud.update_vendor_description",
             new_callable=AsyncMock,
             return_value=updated_mock,
         ) as mock_update:
-            result = await update_description(
-                mock_db_session, mock_vendor, "New description"
-            )
+            result = await update_description(mock_db_session, mock_vendor, "New description")
 
-        mock_update.assert_awaited_once_with(
-            mock_db_session, mock_vendor, "New description"
-        )
+        mock_update.assert_awaited_once_with(mock_db_session, mock_vendor, "New description")
         assert isinstance(result, VendorResponse)
         assert result.description == "New description"

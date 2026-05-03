@@ -1,4 +1,3 @@
-import json
 import logging
 
 from database import db_helper
@@ -21,7 +20,7 @@ async def _notify_user(user_id, title: str, message: str) -> None:
             message=message,
             type=NotificationType.ORDER_STATUS,
         )
-        
+
     # We serialize the notification explicitly to json string using pydantic's model_dump_json
     # Notice that pydantic handles UUID and datetime serialization.
     data = NotificationResponse.model_validate(notification).model_dump_json()
@@ -52,7 +51,7 @@ async def handle_order_status_changed(event: OrderStatusChangedEvent) -> None:
         event.user_id,
         event.restaurant_name,
     )
-    
+
     status_ru = {
         OrderStatus.PENDING: "Новый",
         OrderStatus.ACCEPTED: "Принят",
@@ -61,16 +60,16 @@ async def handle_order_status_changed(event: OrderStatusChangedEvent) -> None:
         OrderStatus.COMPLETED: "Выдан",
         OrderStatus.CANCELLED: "Отменен",
     }
-    
+
     status_str = status_ru.get(event.new_status, event.new_status.value)
     title = "Статус заказа изменён"
     message = f"Ваш заказ из {event.restaurant_name} теперь в статусе: {status_str}."
-    
+
     if event.new_status == OrderStatus.CANCELLED:
         title = "Заказ отменен"
         message = f"К сожалению, ваш заказ из {event.restaurant_name} был отменен."
     elif event.new_status == OrderStatus.READY:
         title = "Заказ готов!"
         message = f"Ваш заказ из {event.restaurant_name} готов к выдаче. Приятного аппетита!"
-        
+
     await _notify_user(event.user_id, title, message)

@@ -3,9 +3,9 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from httpx import AsyncClient
+from shared.enums.roles import UserRole
 
 from shared.enums.order_status import OrderStatus
-from shared.enums.roles import UserRole
 
 MOCK_CREATED_AT = "2026-01-01T00:00:00"
 

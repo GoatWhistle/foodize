@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { translateApiError } from "../../utils/translateApiError";
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { translateApiError } from '../../utils/translateApiError';
 import {
   Storefront,
   House,
@@ -17,85 +17,85 @@ import {
   Clock,
   ArrowsClockwise,
   ChartLineUp,
-} from "@phosphor-icons/react";
-import { useRestaurantStore } from "../../store/useRestaurantStore";
-import { useModalStore } from "../../store/useModalStore";
-import { useShallow } from "zustand/react/shallow";
-import { vendorService } from "../../services/vendorService";
-import { orderService } from "../../services/orderService";
-import { menuService } from "../../services/menuService";
-import { promoService } from "../../services/promoService";
-import { restaurantService } from "../../services/restaurantService";
-import { createRestaurantOrdersWebSocket } from "../../services/api";
-import EmptyState from "../../components/ui/EmptyState";
-import Pagination from "../../components/ui/Pagination";
-import OrderDetailsModal from "../../components/ui/OrderDetailsModal";
+} from '@phosphor-icons/react';
+import { useRestaurantStore } from '../../store/useRestaurantStore';
+import { useModalStore } from '../../store/useModalStore';
+import { useShallow } from 'zustand/react/shallow';
+import { vendorService } from '../../services/vendorService';
+import { orderService } from '../../services/orderService';
+import { menuService } from '../../services/menuService';
+import { promoService } from '../../services/promoService';
+import { restaurantService } from '../../services/restaurantService';
+import { createRestaurantOrdersWebSocket } from '../../services/api';
+import EmptyState from '../../components/ui/EmptyState';
+import Pagination from '../../components/ui/Pagination';
+import OrderDetailsModal from '../../components/ui/OrderDetailsModal';
 import {
   RevenueChart,
   HourlyLoadChart,
   CategoryRevenueChart,
   AOVDynamicsChart,
-} from "../../components/dashboard/DashboardCharts";
+} from '../../components/dashboard/DashboardCharts';
 import {
   ORDER_STATUS_RU,
   STAFF_STATUS_RU,
   CATEGORY_RU,
   translate,
-} from "../../utils/locales";
+} from '../../utils/locales';
 
 const STATUS_LABEL_RU = ORDER_STATUS_RU;
 
 const NEXT_ORDER_STATUS = {
-  PENDING: "ACCEPTED",
-  ACCEPTED: "COOKING",
-  COOKING: "READY",
-  READY: "COMPLETED",
+  PENDING: 'ACCEPTED',
+  ACCEPTED: 'COOKING',
+  COOKING: 'READY',
+  READY: 'COMPLETED',
 };
 
 const NEXT_ORDER_LABEL_RU = {
-  PENDING: "Принять",
-  ACCEPTED: "В готовку",
-  COOKING: "Готов",
-  READY: "Выдан",
+  PENDING: 'Принять',
+  ACCEPTED: 'В готовку',
+  COOKING: 'Готов',
+  READY: 'Выдан',
 };
 
 const getOrderDisplayId = (order) => order.display_id ?? order.id.slice(0, 8);
 
 const toDateInputValue = (date) => {
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
 
 const getOrderDateKey = (order) => {
-  if (!order?.created_at) return "unknown";
+  if (!order?.created_at) return 'unknown';
   return toDateInputValue(new Date(order.created_at));
 };
 
 const formatOrderTime = (value) => {
-  if (!value) return "";
-  return new Intl.DateTimeFormat("ru-RU", {
-    hour: "2-digit",
-    minute: "2-digit",
+  if (!value) return '';
+  return new Intl.DateTimeFormat('ru-RU', {
+    hour: '2-digit',
+    minute: '2-digit',
   }).format(new Date(value));
 };
 
 const formatOrderDateGroup = (dateKey) => {
-  if (dateKey === "unknown") return "Без даты";
+  if (dateKey === 'unknown') return 'Без даты';
 
   const today = new Date();
   const yesterday = new Date();
   yesterday.setDate(today.getDate() - 1);
 
-  if (dateKey === toDateInputValue(today)) return "Сегодня";
-  if (dateKey === toDateInputValue(yesterday)) return "Вчера";
+  if (dateKey === toDateInputValue(today)) return 'Сегодня';
+  if (dateKey === toDateInputValue(yesterday)) return 'Вчера';
 
   const date = new Date(`${dateKey}T00:00:00`);
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
   }).format(date);
 };
 
@@ -117,17 +117,17 @@ const groupOrdersByDate = (orders) =>
 
 const createOptionDraft = () => ({
   draftId: `${Date.now()}-${Math.random()}`,
-  name: "",
-  price_delta: "",
+  name: '',
+  price_delta: '',
 });
 
 const createOptionGroupDraft = () => ({
   draftId: `${Date.now()}-${Math.random()}`,
-  name: "",
-  selection_type: "multiple",
+  name: '',
+  selection_type: 'multiple',
   is_required: false,
   min_selected: 0,
-  max_selected: "",
+  max_selected: '',
   options: [createOptionDraft()],
 });
 
@@ -135,21 +135,21 @@ const normalizeOptionGroups = (groups = []) =>
   groups.map((group) => ({
     ...group,
     draftId: group.id || `${Date.now()}-${Math.random()}`,
-    max_selected: group.max_selected ?? "",
+    max_selected: group.max_selected ?? '',
     options: (group.options || []).map((option) => ({
       ...option,
       draftId: option.id || `${Date.now()}-${Math.random()}`,
-      price_delta: option.price_delta?.toString?.() ?? "0",
+      price_delta: option.price_delta?.toString?.() ?? '0',
     })),
   }));
 
-const DAY_NAMES = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+const DAY_NAMES = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
 const buildDefaultHours = () =>
   DAY_NAMES.map((_, i) => ({
     day_of_week: i,
-    open_time: "09:00",
-    close_time: "22:00",
+    open_time: '09:00',
+    close_time: '22:00',
     is_closed: false,
   }));
 
@@ -169,7 +169,7 @@ const VendorDashboardPage = () => {
       loading: s.loading,
       addMenuItem: s.addMenuItem,
       menus: s.menus,
-    })),
+    }))
   );
 
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
@@ -180,22 +180,22 @@ const VendorDashboardPage = () => {
   const [staffMembers, setStaffMembers] = useState([]);
   const [staffMembersPage, setStaffMembersPage] = useState(1);
   const [staffMembersTotal, setStaffMembersTotal] = useState(0);
-  const [staffSubTab, setStaffSubTab] = useState("members");
+  const [staffSubTab, setStaffSubTab] = useState('members');
   const [staffMemberRemoving, setStaffMemberRemoving] = useState(null);
 
   const [showAddRestaurant, setShowAddRestaurant] = useState(false);
-  const [activeTab, setActiveTab] = useState("menu");
+  const [activeTab, setActiveTab] = useState('menu');
 
-  const [newRestaurant, setNewRestaurant] = useState({ name: "", address: "" });
+  const [newRestaurant, setNewRestaurant] = useState({ name: '', address: '' });
   const [editRestaurant, setEditRestaurant] = useState(null);
 
   const [showAddItem, setShowAddItem] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [menuItemForm, setMenuItemForm] = useState({
-    name: "",
-    description: "",
-    price: "",
-    category: "SHAURMA",
+    name: '',
+    description: '',
+    price: '',
+    category: 'SHAURMA',
     prep_time_minutes: 15,
     option_groups: [],
   });
@@ -203,35 +203,35 @@ const VendorDashboardPage = () => {
   const [restaurantOrders, setRestaurantOrders] = useState([]);
   const [ordersPage, setOrdersPage] = useState(1);
   const [ordersTotal, setOrdersTotal] = useState(0);
-  const [ordersStatusFilter, setOrdersStatusFilter] = useState("");
-  const [ordersDateFilter, setOrdersDateFilter] = useState("");
+  const [ordersStatusFilter, setOrdersStatusFilter] = useState('');
+  const [ordersDateFilter, setOrdersDateFilter] = useState('');
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [updatingOrderId, setUpdatingOrderId] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const wsRef = useRef(null);
 
   const [formLoading, setFormLoading] = useState(false);
-  const [formError, setFormError] = useState("");
+  const [formError, setFormError] = useState('');
   const { createRestaurant } = useRestaurantStore(
-    useShallow((s) => ({ createRestaurant: s.createRestaurant })),
+    useShallow((s) => ({ createRestaurant: s.createRestaurant }))
   );
   const requestConfirm = useModalStore((s) => s.requestConfirm);
 
   const [workingHours, setWorkingHours] = useState([]);
   const [workingHoursLoading, setWorkingHoursLoading] = useState(false);
   const [workingHoursSaved, setWorkingHoursSaved] = useState(false);
-  const [workingHoursError, setWorkingHoursError] = useState("");
+  const [workingHoursError, setWorkingHoursError] = useState('');
 
   const [promosList, setPromosList] = useState([]);
   const [promosLoading, setPromosLoading] = useState(false);
-  const [promosError, setPromosError] = useState("");
+  const [promosError, setPromosError] = useState('');
   const [showPromoForm, setShowPromoForm] = useState(false);
   const [promoForm, setPromoForm] = useState({
-    code: "",
-    discount_type: "PERCENT",
-    discount_value: "",
-    max_uses: "",
-    expires_at: "",
+    code: '',
+    discount_type: 'PERCENT',
+    discount_value: '',
+    max_uses: '',
+    expires_at: '',
   });
   const [promoFormLoading, setPromoFormLoading] = useState(false);
 
@@ -242,8 +242,8 @@ const VendorDashboardPage = () => {
   const [advancedAnalytics, setAdvancedAnalytics] = useState(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [financeFilters, setFinanceFilters] = useState({
-    date_from: "",
-    date_to: "",
+    date_from: '',
+    date_to: '',
   });
   const [activePreset, setActivePreset] = useState(null);
 
@@ -287,9 +287,9 @@ const VendorDashboardPage = () => {
   }, [staffMembersPage]);
 
   useEffect(() => {
-    if (activeTab === "schedule" && selectedRestaurant) {
+    if (activeTab === 'schedule' && selectedRestaurant) {
       setWorkingHoursLoading(true);
-      setWorkingHoursError("");
+      setWorkingHoursError('');
       restaurantService
         .getWorkingHours(selectedRestaurant.id)
         .then((res) => {
@@ -298,14 +298,14 @@ const VendorDashboardPage = () => {
             setWorkingHours(buildDefaultHours());
           } else {
             const sorted = [...data].sort(
-              (a, b) => a.day_of_week - b.day_of_week,
+              (a, b) => a.day_of_week - b.day_of_week
             );
             setWorkingHours(sorted);
           }
         })
         .catch((err) => {
           if (err?.response?.status !== 404) {
-            setWorkingHoursError("Не удалось загрузить расписание");
+            setWorkingHoursError('Не удалось загрузить расписание');
           }
           setWorkingHours(buildDefaultHours());
         })
@@ -316,9 +316,9 @@ const VendorDashboardPage = () => {
   const handleSaveWorkingHours = async () => {
     if (!selectedRestaurant) return;
     setWorkingHoursLoading(true);
-    setWorkingHoursError("");
+    setWorkingHoursError('');
     setWorkingHoursSaved(false);
-    const toHHMM = (t) => (t ? t.slice(0, 5) : "00:00");
+    const toHHMM = (t) => (t ? t.slice(0, 5) : '00:00');
     const payload = workingHours.map((r) => ({
       day_of_week: r.day_of_week,
       open_time: toHHMM(r.open_time),
@@ -328,12 +328,12 @@ const VendorDashboardPage = () => {
     try {
       const res = await restaurantService.setWorkingHours(
         selectedRestaurant.id,
-        payload,
+        payload
       );
       const data = Array.isArray(res.data?.data) ? res.data.data : [];
       if (data.length > 0) {
         setWorkingHours(
-          [...data].sort((a, b) => a.day_of_week - b.day_of_week),
+          [...data].sort((a, b) => a.day_of_week - b.day_of_week)
         );
       }
       setWorkingHoursSaved(true);
@@ -341,7 +341,7 @@ const VendorDashboardPage = () => {
     } catch (err) {
       const detail = err?.response?.data?.detail;
       setWorkingHoursError(
-        typeof detail === "string" ? detail : "Не удалось сохранить расписание",
+        typeof detail === 'string' ? detail : 'Не удалось сохранить расписание'
       );
     } finally {
       setWorkingHoursLoading(false);
@@ -349,16 +349,16 @@ const VendorDashboardPage = () => {
   };
 
   useEffect(() => {
-    if (activeTab === "promos") {
+    if (activeTab === 'promos') {
       setPromosLoading(true);
-      setPromosError("");
+      setPromosError('');
       promoService
         .list()
         .then((res) => {
           const list = Array.isArray(res.data?.data) ? res.data.data : [];
           setPromosList(list);
         })
-        .catch(() => setPromosError("Не удалось загрузить промокоды"))
+        .catch(() => setPromosError('Не удалось загрузить промокоды'))
         .finally(() => setPromosLoading(false));
     }
   }, [activeTab]);
@@ -366,14 +366,14 @@ const VendorDashboardPage = () => {
   const handleCreateRestaurant = async (e) => {
     e.preventDefault();
     setFormLoading(true);
-    setFormError("");
+    setFormError('');
     try {
       const r = await createRestaurant(newRestaurant);
       setSelectedRestaurant(r);
       setShowAddRestaurant(false);
-      setNewRestaurant({ name: "", address: "" });
+      setNewRestaurant({ name: '', address: '' });
     } catch (err) {
-      setFormError(translateApiError(err, "Ошибка создания"));
+      setFormError(translateApiError(err, 'Ошибка создания'));
     } finally {
       setFormLoading(false);
     }
@@ -383,7 +383,7 @@ const VendorDashboardPage = () => {
     e.preventDefault();
     if (!selectedRestaurant) return;
     setPromoFormLoading(true);
-    setPromosError("");
+    setPromosError('');
     try {
       const payload = {
         code: promoForm.code,
@@ -399,45 +399,45 @@ const VendorDashboardPage = () => {
       };
       await promoService.create(payload);
       setPromoForm({
-        code: "",
-        discount_type: "PERCENT",
-        discount_value: "",
-        max_uses: "",
-        expires_at: "",
+        code: '',
+        discount_type: 'PERCENT',
+        discount_value: '',
+        max_uses: '',
+        expires_at: '',
       });
       setShowPromoForm(false);
       const res = await promoService.list();
       const list = Array.isArray(res.data?.data) ? res.data.data : [];
       setPromosList(list);
     } catch (err) {
-      setPromosError(translateApiError(err, "Ошибка создания промокода"));
+      setPromosError(translateApiError(err, 'Ошибка создания промокода'));
     } finally {
       setPromoFormLoading(false);
     }
   };
 
   const handleDeactivatePromo = async (code) => {
-    setPromosError("");
+    setPromosError('');
     try {
       await promoService.deactivate(code);
       setPromosList((prev) => prev.filter((p) => p.code !== code));
     } catch {
-      setPromosError("Не удалось деактивировать промокод");
+      setPromosError('Не удалось деактивировать промокод');
     }
   };
 
   const handleUpdateRestaurant = async (e) => {
     e.preventDefault();
     setFormLoading(true);
-    setFormError("");
+    setFormError('');
     const patch = editRestaurant ?? selectedRestaurant;
     if (!patch.name?.trim()) {
-      setFormError("Укажите название заведения");
+      setFormError('Укажите название заведения');
       setFormLoading(false);
       return;
     }
     if (!patch.address?.trim()) {
-      setFormError("Укажите адрес заведения");
+      setFormError('Укажите адрес заведения');
       setFormLoading(false);
       return;
     }
@@ -458,7 +458,7 @@ const VendorDashboardPage = () => {
       setSelectedRestaurant({ ...selectedRestaurant, ...payload });
       setEditRestaurant(null);
     } catch (err) {
-      setFormError(err.response?.data?.detail || "Ошибка обновления");
+      setFormError(err.response?.data?.detail || 'Ошибка обновления');
     } finally {
       setFormLoading(false);
     }
@@ -468,7 +468,7 @@ const VendorDashboardPage = () => {
     e.preventDefault();
     if (!selectedRestaurant) return;
     setFormLoading(true);
-    setFormError("");
+    setFormError('');
 
     try {
       const { option_groups: optionGroups, ...baseForm } = menuItemForm;
@@ -482,7 +482,7 @@ const VendorDashboardPage = () => {
         const res = await menuService.updateItem(
           selectedRestaurant.id,
           editingItem.id,
-          payload,
+          payload
         );
         savedItem = res.data.data;
         setEditingItem(null);
@@ -493,15 +493,15 @@ const VendorDashboardPage = () => {
       await syncOptionGroups(savedItem, optionGroups);
       fetchMenu(selectedRestaurant.id, { force: true });
       setMenuItemForm({
-        name: "",
-        description: "",
-        price: "",
-        category: "SHAURMA",
+        name: '',
+        description: '',
+        price: '',
+        category: 'SHAURMA',
         prep_time_minutes: 15,
         option_groups: [],
       });
     } catch (err) {
-      setFormError(err.response?.data?.detail || "Ошибка сохранения");
+      setFormError(err.response?.data?.detail || 'Ошибка сохранения');
     } finally {
       setFormLoading(false);
     }
@@ -515,9 +515,9 @@ const VendorDashboardPage = () => {
           menuService.deleteOptionGroup(
             selectedRestaurant.id,
             item.id,
-            group.id,
-          ),
-        ),
+            group.id
+          )
+        )
       );
     }
 
@@ -534,7 +534,7 @@ const VendorDashboardPage = () => {
         if (!group.name.trim() || cleanOptions.length === 0) return null;
 
         const maxSelected =
-          group.selection_type === "single"
+          group.selection_type === 'single'
             ? 1
             : group.max_selected
               ? parseInt(group.max_selected, 10)
@@ -558,19 +558,19 @@ const VendorDashboardPage = () => {
       await menuService.createOptionGroup(
         selectedRestaurant.id,
         item.id,
-        group,
+        group
       );
     }
   };
 
-  const [menuError, setMenuError] = useState("");
-  const [ordersError, setOrdersError] = useState("");
+  const [menuError, setMenuError] = useState('');
+  const [ordersError, setOrdersError] = useState('');
 
   const fetchVendorOrders = useCallback(
     async ({ silent = false } = {}) => {
       if (!selectedRestaurant) return;
       if (!silent) setOrdersLoading(true);
-      setOrdersError("");
+      setOrdersError('');
       try {
         const res = await orderService.getByRestaurant(selectedRestaurant.id, {
           page: ordersPage,
@@ -588,23 +588,23 @@ const VendorDashboardPage = () => {
         setOrdersError(
           translateApiError(
             err,
-            "Не удалось загрузить заказы. Проверьте, что аккаунт вендора имеет доступ к этому заведению.",
-          ),
+            'Не удалось загрузить заказы. Проверьте, что аккаунт вендора имеет доступ к этому заведению.'
+          )
         );
       } finally {
         if (!silent) setOrdersLoading(false);
       }
     },
-    [selectedRestaurant, ordersPage, ordersStatusFilter, ordersDateFilter],
+    [selectedRestaurant, ordersPage, ordersStatusFilter, ordersDateFilter]
   );
 
   useEffect(() => {
-    if (selectedRestaurant && activeTab === "orders") {
+    if (selectedRestaurant && activeTab === 'orders') {
       fetchVendorOrders();
       if (ordersPage === 1 && !ordersStatusFilter && !ordersDateFilter) {
         wsRef.current = createRestaurantOrdersWebSocket(
           selectedRestaurant.id,
-          (msg) => {
+          () => {
             fetchVendorOrders({ silent: true });
           }
         );
@@ -627,24 +627,24 @@ const VendorDashboardPage = () => {
 
   const handleDeleteMenuItem = async (itemId) => {
     requestConfirm({
-      title: "Удалить позицию?",
-      message: "Вы уверены, что хотите удалить эту позицию из меню?",
-      confirmLabel: "Удалить",
+      title: 'Удалить позицию?',
+      message: 'Вы уверены, что хотите удалить эту позицию из меню?',
+      confirmLabel: 'Удалить',
       danger: true,
       onConfirm: async () => {
-        setMenuError("");
+        setMenuError('');
         try {
           await menuService.deleteItem(selectedRestaurant.id, itemId);
           fetchMenu(selectedRestaurant.id, { force: true });
         } catch {
-          setMenuError("Не удалось удалить позицию");
+          setMenuError('Не удалось удалить позицию');
         }
       },
     });
   };
 
   const handleOrderChange = async (orderId, status, data = {}) => {
-    setOrdersError("");
+    setOrdersError('');
     setUpdatingOrderId(orderId);
     try {
       await orderService.updateStatus(orderId, status, data);
@@ -656,7 +656,7 @@ const VendorDashboardPage = () => {
               ...(data.estimated_ready_in_minutes
                 ? {
                     estimated_ready_at: new Date(
-                      Date.now() + data.estimated_ready_in_minutes * 60000,
+                      Date.now() + data.estimated_ready_in_minutes * 60000
                     ).toISOString(),
                   }
                 : {}),
@@ -664,12 +664,12 @@ const VendorDashboardPage = () => {
                 ? { estimated_ready_at: data.estimated_ready_at }
                 : {}),
             }
-          : current,
+          : current
       );
       await fetchVendorOrders({ silent: true });
     } catch (err) {
       setOrdersError(
-        translateApiError(err, "Не удалось изменить статус заказа"),
+        translateApiError(err, 'Не удалось изменить статус заказа')
       );
     } finally {
       setUpdatingOrderId(null);
@@ -680,9 +680,9 @@ const VendorDashboardPage = () => {
     try {
       await vendorService.updateStaffStatus(requestId, status);
       setStaffRequests((prev) =>
-        prev.map((r) => (r.id === requestId ? { ...r, status } : r)),
+        prev.map((r) => (r.id === requestId ? { ...r, status } : r))
       );
-      if (status === "ACCEPTED") {
+      if (status === 'ACCEPTED') {
         vendorService
           .getStaffMembers({ page: 1, size: 20 })
           .then((res) => {
@@ -696,7 +696,7 @@ const VendorDashboardPage = () => {
   };
 
   const handleRemoveStaffMember = async (profileId) => {
-    if (!window.confirm("Уволить сотрудника?")) return;
+    if (!window.confirm('Уволить сотрудника?')) return;
     setStaffMemberRemoving(profileId);
     try {
       await vendorService.removeStaffMember(profileId);
@@ -721,7 +721,7 @@ const VendorDashboardPage = () => {
         restaurant_id: selectedRestaurant.id,
       };
       const params = Object.fromEntries(
-        Object.entries(rawParams).filter(([, v]) => v !== "" && v != null),
+        Object.entries(rawParams).filter(([, v]) => v !== '' && v != null)
       );
       const [finRes, advRes] = await Promise.all([
         vendorService.getFinance(params),
@@ -730,7 +730,7 @@ const VendorDashboardPage = () => {
       setFinance(finRes.data.data);
       setAdvancedAnalytics(advRes.data.data);
     } catch (err) {
-      console.error("Analytics fetch error:", err?.response?.data || err);
+      console.error('Analytics fetch error:', err?.response?.data || err);
     } finally {
       setFinanceLoading(false);
       setAnalyticsLoading(false);
@@ -738,7 +738,7 @@ const VendorDashboardPage = () => {
   }, [selectedRestaurant, financeFilters]);
 
   useEffect(() => {
-    if (activeTab === "analytics") {
+    if (activeTab === 'analytics') {
       fetchAnalytics();
     }
   }, [activeTab, fetchAnalytics]);
@@ -746,25 +746,25 @@ const VendorDashboardPage = () => {
   const DetailField = ({ label, children }) => (
     <div
       style={{
-        background: "var(--bg-surface)",
-        border: "1px solid var(--border)",
-        borderRadius: "var(--r-sm)",
+        background: 'var(--bg-surface)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--r-sm)',
         padding: 12,
       }}
     >
       <div
         style={{
-          color: "var(--text-3)",
-          fontSize: "0.75rem",
+          color: 'var(--text-3)',
+          fontSize: '0.75rem',
           fontWeight: 700,
-          textTransform: "uppercase",
+          textTransform: 'uppercase',
           marginBottom: 4,
         }}
       >
         {label}
       </div>
       <div
-        style={{ color: "var(--text-1)", fontSize: "1.1rem", fontWeight: 900 }}
+        style={{ color: 'var(--text-1)', fontSize: '1.1rem', fontWeight: 900 }}
       >
         {children}
       </div>
@@ -772,7 +772,7 @@ const VendorDashboardPage = () => {
   );
 
   const ListSection = ({ loading, children }) => (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {loading ? (
         <div className="loading-center">
           <div className="spinner" />
@@ -789,54 +789,54 @@ const VendorDashboardPage = () => {
     <div className="vendor-page page-enter">
       <h1
         style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-          fontSize: "1.5rem",
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          fontSize: '1.5rem',
           fontWeight: 800,
-          letterSpacing: "-0.03em",
+          letterSpacing: '-0.03em',
           marginBottom: 16,
         }}
       >
         <Storefront /> Дашборд вендора
       </h1>
 
-      {vendorProfile && vendorProfile.approval_status !== "APPROVED" && (
+      {vendorProfile && vendorProfile.approval_status !== 'APPROVED' && (
         <div
           style={{
             padding: 16,
             background:
-              vendorProfile.approval_status === "PENDING"
-                ? "var(--bg-card)"
-                : "rgba(239, 68, 68, 0.1)",
-            border: `1px solid ${vendorProfile.approval_status === "PENDING" ? "var(--border)" : "var(--error)"}`,
-            borderRadius: "var(--radius-md)",
+              vendorProfile.approval_status === 'PENDING'
+                ? 'var(--bg-card)'
+                : 'rgba(239, 68, 68, 0.1)',
+            border: `1px solid ${vendorProfile.approval_status === 'PENDING' ? 'var(--border)' : 'var(--error)'}`,
+            borderRadius: 'var(--radius-md)',
             marginBottom: 28,
           }}
         >
           <div
-            style={{ fontWeight: 800, color: "var(--text-1)", marginBottom: 4 }}
+            style={{ fontWeight: 800, color: 'var(--text-1)', marginBottom: 4 }}
           >
-            {vendorProfile.approval_status === "PENDING"
-              ? "Профиль на модерации"
-              : "Профиль отклонён"}
+            {vendorProfile.approval_status === 'PENDING'
+              ? 'Профиль на модерации'
+              : 'Профиль отклонён'}
           </div>
           <div
             style={{
-              fontSize: "0.85rem",
-              color: "var(--text-3)",
+              fontSize: '0.85rem',
+              color: 'var(--text-3)',
               marginBottom: vendorProfile.rejection_reason ? 8 : 0,
             }}
           >
-            {vendorProfile.approval_status === "PENDING"
-              ? "Ваш профиль проверяется администратором. Ваши заведения пока не видны покупателям."
-              : "К сожалению, ваш профиль не прошел модерацию."}
+            {vendorProfile.approval_status === 'PENDING'
+              ? 'Ваш профиль проверяется администратором. Ваши заведения пока не видны покупателям.'
+              : 'К сожалению, ваш профиль не прошел модерацию.'}
           </div>
           {vendorProfile.rejection_reason && (
             <div
               style={{
-                fontSize: "0.85rem",
-                color: "var(--error)",
+                fontSize: '0.85rem',
+                color: 'var(--error)',
                 fontWeight: 500,
               }}
             >
@@ -849,15 +849,15 @@ const VendorDashboardPage = () => {
       <div className="vendor-section">
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
             marginBottom: 16,
           }}
         >
           <span
             className="vendor-section-title"
-            style={{ display: "flex", alignItems: "center", gap: "8px" }}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
           >
             <House /> Мои заведения
           </span>
@@ -873,17 +873,17 @@ const VendorDashboardPage = () => {
           <form
             onSubmit={handleCreateRestaurant}
             style={{
-              background: "var(--bg-card)",
-              border: "1px solid var(--border)",
-              borderRadius: "var(--radius-md)",
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-md)',
               padding: 16,
               marginBottom: 16,
-              display: "flex",
-              flexDirection: "column",
+              display: 'flex',
+              flexDirection: 'column',
               gap: 10,
             }}
           >
-            <h3 style={{ fontWeight: 700, fontSize: "0.9rem" }}>
+            <h3 style={{ fontWeight: 700, fontSize: '0.9rem' }}>
               Новое заведение
             </h3>
             {formError && <div className="form-error">{formError}</div>}
@@ -929,27 +929,27 @@ const VendorDashboardPage = () => {
             {restaurants.map((r) => (
               <div
                 key={r.id}
-                className={`restaurant-row${selectedRestaurant?.id === r.id ? " active" : ""}`}
+                className={`restaurant-row${selectedRestaurant?.id === r.id ? ' active' : ''}`}
                 onClick={() => setSelectedRestaurant(r)}
               >
                 <div>
                   <div
                     className="restaurant-row-name"
-                    style={{ display: "flex", alignItems: "center", gap: 8 }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8 }}
                   >
                     {r.name}
-                    {r.moderation_status === "PENDING" && (
+                    {r.moderation_status === 'PENDING' && (
                       <span
                         className="order-status-badge pending"
-                        style={{ fontSize: "0.6rem" }}
+                        style={{ fontSize: '0.6rem' }}
                       >
                         На модерации
                       </span>
                     )}
-                    {r.moderation_status === "REJECTED" && (
+                    {r.moderation_status === 'REJECTED' && (
                       <span
                         className="order-status-badge cancelled"
-                        style={{ fontSize: "0.6rem" }}
+                        style={{ fontSize: '0.6rem' }}
                       >
                         Отклонён
                       </span>
@@ -957,7 +957,7 @@ const VendorDashboardPage = () => {
                   </div>
                   <div className="restaurant-row-addr">{r.address}</div>
                 </div>
-                <span style={{ marginLeft: "auto", color: "var(--text-3)" }}>
+                <span style={{ marginLeft: 'auto', color: 'var(--text-3)' }}>
                   <CaretRight />
                 </span>
               </div>
@@ -969,9 +969,9 @@ const VendorDashboardPage = () => {
       {selectedRestaurant && (
         <div
           style={{
-            display: "flex",
+            display: 'flex',
             gap: 24,
-            alignItems: "flex-start",
+            alignItems: 'flex-start',
             marginTop: 24,
           }}
         >
@@ -981,59 +981,59 @@ const VendorDashboardPage = () => {
             style={{
               width: 220,
               flexShrink: 0,
-              position: "sticky",
+              position: 'sticky',
               top: 80,
-              display: "flex",
-              flexDirection: "column",
+              display: 'flex',
+              flexDirection: 'column',
               gap: 6,
-              background: "var(--bg-card)",
+              background: 'var(--bg-card)',
               padding: 16,
-              borderRadius: "var(--r-md)",
-              border: "1px solid var(--border)",
+              borderRadius: 'var(--r-md)',
+              border: '1px solid var(--border)',
             }}
           >
             <div
               style={{
                 fontWeight: 800,
-                fontSize: "1rem",
+                fontSize: '1rem',
                 marginBottom: 12,
-                color: "var(--text-1)",
+                color: 'var(--text-1)',
               }}
             >
               {selectedRestaurant.name}
             </div>
             {[
-              { id: "menu", label: "Меню", icon: <ForkKnife size={18} /> },
-              { id: "orders", label: "Заказы", icon: <Package size={18} /> },
+              { id: 'menu', label: 'Меню', icon: <ForkKnife size={18} /> },
+              { id: 'orders', label: 'Заказы', icon: <Package size={18} /> },
               {
-                id: "analytics",
-                label: "Аналитика",
+                id: 'analytics',
+                label: 'Аналитика',
                 icon: <ChartLineUp size={18} />,
               },
-              { id: "promos", label: "Промокоды", icon: <Tag size={18} /> },
+              { id: 'promos', label: 'Промокоды', icon: <Tag size={18} /> },
               {
-                id: "schedule",
-                label: "Расписание",
+                id: 'schedule',
+                label: 'Расписание',
                 icon: <Clock size={18} />,
               },
-              { id: "staff", label: "Сотрудники", icon: <Users size={18} /> },
-              { id: "settings", label: "Настройки", icon: <Gear size={18} /> },
+              { id: 'staff', label: 'Сотрудники', icon: <Users size={18} /> },
+              { id: 'settings', label: 'Настройки', icon: <Gear size={18} /> },
             ].map((tab) => (
               <button
                 key={tab.id}
-                className={`btn ${activeTab === tab.id ? "btn-primary" : "btn-secondary"}`}
+                className={`btn ${activeTab === tab.id ? 'btn-primary' : 'btn-secondary'}`}
                 onClick={() => {
                   setActiveTab(tab.id);
-                  if (tab.id === "settings" && selectedRestaurant) {
+                  if (tab.id === 'settings' && selectedRestaurant) {
                     setEditRestaurant({ ...selectedRestaurant });
                   }
                 }}
                 style={{
-                  justifyContent: "flex-start",
-                  border: "none",
-                  padding: "10px 14px",
+                  justifyContent: 'flex-start',
+                  border: 'none',
+                  padding: '10px 14px',
                   gap: 10,
-                  fontSize: "0.9rem",
+                  fontSize: '0.9rem',
                   fontWeight: activeTab === tab.id ? 700 : 500,
                 }}
               >
@@ -1047,7 +1047,7 @@ const VendorDashboardPage = () => {
             className="vendor-section"
             style={{ flex: 1, minWidth: 0, margin: 0 }}
           >
-            {activeTab === "menu" && (
+            {activeTab === 'menu' && (
               <div>
                 {menuError && (
                   <div className="form-error" style={{ marginBottom: 12 }}>
@@ -1056,13 +1056,13 @@ const VendorDashboardPage = () => {
                 )}
                 <div
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
                     marginBottom: 16,
                   }}
                 >
-                  <h3 style={{ fontWeight: 700, fontSize: "1rem" }}>
+                  <h3 style={{ fontWeight: 700, fontSize: '1rem' }}>
                     Позиции меню
                   </h3>
                   <button
@@ -1070,10 +1070,10 @@ const VendorDashboardPage = () => {
                     onClick={() => {
                       setEditingItem(null);
                       setMenuItemForm({
-                        name: "",
-                        description: "",
-                        price: "",
-                        category: "SHAURMA",
+                        name: '',
+                        description: '',
+                        price: '',
+                        category: 'SHAURMA',
                         prep_time_minutes: 15,
                         option_groups: [],
                       });
@@ -1088,18 +1088,18 @@ const VendorDashboardPage = () => {
                   <form
                     onSubmit={handleSaveMenuItem}
                     style={{
-                      background: "var(--bg-card)",
-                      border: "1px solid var(--border)",
-                      borderRadius: "var(--radius-md)",
+                      background: 'var(--bg-card)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-md)',
                       padding: 16,
                       marginBottom: 16,
-                      display: "flex",
-                      flexDirection: "column",
+                      display: 'flex',
+                      flexDirection: 'column',
                       gap: 10,
                     }}
                   >
-                    <h3 style={{ fontWeight: 700, fontSize: "0.9rem" }}>
-                      {editingItem ? "Редактировать" : "Новая позиция"}
+                    <h3 style={{ fontWeight: 700, fontSize: '0.9rem' }}>
+                      {editingItem ? 'Редактировать' : 'Новая позиция'}
                     </h3>
                     {formError && <div className="form-error">{formError}</div>}
                     <input
@@ -1125,7 +1125,7 @@ const VendorDashboardPage = () => {
                         })
                       }
                     />
-                    <div style={{ display: "flex", gap: 10 }}>
+                    <div style={{ display: 'flex', gap: 10 }}>
                       <input
                         className="form-input"
                         type="number"
@@ -1160,30 +1160,30 @@ const VendorDashboardPage = () => {
                     </div>
                     <div
                       style={{
-                        border: "1px solid var(--border)",
-                        borderRadius: "var(--radius-md)",
+                        border: '1px solid var(--border)',
+                        borderRadius: 'var(--radius-md)',
                         padding: 12,
-                        display: "flex",
-                        flexDirection: "column",
+                        display: 'flex',
+                        flexDirection: 'column',
                         gap: 10,
                       }}
                     >
                       <div
                         style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
                           gap: 10,
                         }}
                       >
                         <div>
-                          <div style={{ fontWeight: 800, fontSize: "0.86rem" }}>
+                          <div style={{ fontWeight: 800, fontSize: '0.86rem' }}>
                             Опции блюда
                           </div>
                           <div
                             style={{
-                              color: "var(--text-3)",
-                              fontSize: "0.74rem",
+                              color: 'var(--text-3)',
+                              fontSize: '0.74rem',
                             }}
                           >
                             Например: убрать лук, добавить мясо
@@ -1210,16 +1210,16 @@ const VendorDashboardPage = () => {
                         <div
                           key={group.draftId}
                           style={{
-                            background: "var(--bg-surface)",
-                            border: "1px solid var(--border)",
-                            borderRadius: "var(--radius-md)",
+                            background: 'var(--bg-surface)',
+                            border: '1px solid var(--border)',
+                            borderRadius: 'var(--radius-md)',
                             padding: 12,
-                            display: "flex",
-                            flexDirection: "column",
+                            display: 'flex',
+                            flexDirection: 'column',
                             gap: 8,
                           }}
                         >
-                          <div style={{ display: "flex", gap: 8 }}>
+                          <div style={{ display: 'flex', gap: 8 }}>
                             <input
                               className="form-input"
                               placeholder="Название группы"
@@ -1231,7 +1231,7 @@ const VendorDashboardPage = () => {
                                     (g, i) =>
                                       i === groupIndex
                                         ? { ...g, name: e.target.value }
-                                        : g,
+                                        : g
                                   ),
                                 }))
                               }
@@ -1240,12 +1240,12 @@ const VendorDashboardPage = () => {
                             <button
                               type="button"
                               className="btn btn-secondary btn-sm"
-                              style={{ color: "var(--error)" }}
+                              style={{ color: 'var(--error)' }}
                               onClick={() =>
                                 setMenuItemForm((form) => ({
                                   ...form,
                                   option_groups: form.option_groups.filter(
-                                    (_, i) => i !== groupIndex,
+                                    (_, i) => i !== groupIndex
                                   ),
                                 }))
                               }
@@ -1256,8 +1256,8 @@ const VendorDashboardPage = () => {
 
                           <div
                             style={{
-                              display: "grid",
-                              gridTemplateColumns: "1fr 1fr",
+                              display: 'grid',
+                              gridTemplateColumns: '1fr 1fr',
                               gap: 8,
                             }}
                           >
@@ -1274,11 +1274,11 @@ const VendorDashboardPage = () => {
                                             ...g,
                                             selection_type: e.target.value,
                                             max_selected:
-                                              e.target.value === "single"
+                                              e.target.value === 'single'
                                                 ? 1
                                                 : g.max_selected,
                                           }
-                                        : g,
+                                        : g
                                   ),
                                 }))
                               }
@@ -1292,7 +1292,7 @@ const VendorDashboardPage = () => {
                               min="1"
                               placeholder="Макс. выборов"
                               value={group.max_selected}
-                              disabled={group.selection_type === "single"}
+                              disabled={group.selection_type === 'single'}
                               onChange={(e) =>
                                 setMenuItemForm((form) => ({
                                   ...form,
@@ -1300,7 +1300,7 @@ const VendorDashboardPage = () => {
                                     (g, i) =>
                                       i === groupIndex
                                         ? { ...g, max_selected: e.target.value }
-                                        : g,
+                                        : g
                                   ),
                                 }))
                               }
@@ -1309,11 +1309,11 @@ const VendorDashboardPage = () => {
 
                           <label
                             style={{
-                              display: "flex",
-                              alignItems: "center",
+                              display: 'flex',
+                              alignItems: 'center',
                               gap: 8,
-                              color: "var(--text-2)",
-                              fontSize: "0.8rem",
+                              color: 'var(--text-2)',
+                              fontSize: '0.8rem',
                             }}
                           >
                             <input
@@ -1332,7 +1332,7 @@ const VendorDashboardPage = () => {
                                               ? 1
                                               : 0,
                                           }
-                                        : g,
+                                        : g
                                   ),
                                 }))
                               }
@@ -1343,7 +1343,7 @@ const VendorDashboardPage = () => {
                           {group.options.map((option, optionIndex) => (
                             <div
                               key={option.draftId}
-                              style={{ display: "flex", gap: 8 }}
+                              style={{ display: 'flex', gap: 8 }}
                             >
                               <input
                                 className="form-input"
@@ -1363,10 +1363,10 @@ const VendorDashboardPage = () => {
                                                       ...o,
                                                       name: e.target.value,
                                                     }
-                                                  : o,
+                                                  : o
                                               ),
                                             }
-                                          : g,
+                                          : g
                                     ),
                                   }))
                                 }
@@ -1393,10 +1393,10 @@ const VendorDashboardPage = () => {
                                                       price_delta:
                                                         e.target.value,
                                                     }
-                                                  : o,
+                                                  : o
                                               ),
                                             }
-                                          : g,
+                                          : g
                                     ),
                                   }))
                                 }
@@ -1405,7 +1405,7 @@ const VendorDashboardPage = () => {
                               <button
                                 type="button"
                                 className="btn btn-secondary btn-sm"
-                                style={{ color: "var(--error)" }}
+                                style={{ color: 'var(--error)' }}
                                 onClick={() =>
                                   setMenuItemForm((form) => ({
                                     ...form,
@@ -1415,10 +1415,10 @@ const VendorDashboardPage = () => {
                                           ? {
                                               ...g,
                                               options: g.options.filter(
-                                                (_, j) => j !== optionIndex,
+                                                (_, j) => j !== optionIndex
                                               ),
                                             }
-                                          : g,
+                                          : g
                                     ),
                                   }))
                                 }
@@ -1443,7 +1443,7 @@ const VendorDashboardPage = () => {
                                           createOptionDraft(),
                                         ],
                                       }
-                                    : g,
+                                    : g
                                 ),
                               }))
                             }
@@ -1453,7 +1453,7 @@ const VendorDashboardPage = () => {
                         </div>
                       ))}
                     </div>
-                    <div style={{ display: "flex", gap: 10 }}>
+                    <div style={{ display: 'flex', gap: 10 }}>
                       <button
                         type="submit"
                         className="btn btn-primary"
@@ -1469,10 +1469,10 @@ const VendorDashboardPage = () => {
                           setShowAddItem(false);
                           setEditingItem(null);
                           setMenuItemForm({
-                            name: "",
-                            description: "",
-                            price: "",
-                            category: "SHAURMA",
+                            name: '',
+                            description: '',
+                            price: '',
+                            category: 'SHAURMA',
                             prep_time_minutes: 15,
                             option_groups: [],
                           });
@@ -1493,8 +1493,8 @@ const VendorDashboardPage = () => {
                 ) : (
                   <div
                     style={{
-                      display: "flex",
-                      flexDirection: "column",
+                      display: 'flex',
+                      flexDirection: 'column',
                       gap: 10,
                     }}
                   >
@@ -1502,30 +1502,30 @@ const VendorDashboardPage = () => {
                       <div
                         key={item.id}
                         style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          padding: "12px 16px",
-                          background: "var(--bg-card)",
-                          border: "1px solid var(--border)",
-                          borderRadius: "var(--radius-md)",
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '12px 16px',
+                          background: 'var(--bg-card)',
+                          border: '1px solid var(--border)',
+                          borderRadius: 'var(--radius-md)',
                         }}
                       >
                         <div style={{ opacity: item.is_available ? 1 : 0.5 }}>
                           <div
                             style={{
                               fontWeight: 700,
-                              fontSize: "0.9rem",
-                              display: "flex",
-                              alignItems: "center",
+                              fontSize: '0.9rem',
+                              display: 'flex',
+                              alignItems: 'center',
                               gap: 6,
                             }}
                           >
                             <span
                               style={{
                                 textDecoration: item.is_available
-                                  ? "none"
-                                  : "line-through",
+                                  ? 'none'
+                                  : 'line-through',
                               }}
                             >
                               {item.name}
@@ -1534,8 +1534,8 @@ const VendorDashboardPage = () => {
                               <span
                                 className="order-status-badge cancelled"
                                 style={{
-                                  fontSize: "0.6rem",
-                                  padding: "2px 6px",
+                                  fontSize: '0.6rem',
+                                  padding: '2px 6px',
                                 }}
                               >
                                 СТОП
@@ -1544,19 +1544,19 @@ const VendorDashboardPage = () => {
                           </div>
                           <div
                             style={{
-                              fontSize: "0.78rem",
-                              color: "var(--text-3)",
+                              fontSize: '0.78rem',
+                              color: 'var(--text-3)',
                             }}
                           >
-                            {item.price} ₽ •{" "}
+                            {item.price} ₽ •{' '}
                             {translate(CATEGORY_RU, item.category)}
                           </div>
                           {item.option_groups?.length > 0 && (
                             <div
                               style={{
                                 marginTop: 6,
-                                display: "flex",
-                                flexWrap: "wrap",
+                                display: 'flex',
+                                flexWrap: 'wrap',
                                 gap: 6,
                               }}
                             >
@@ -1565,10 +1565,10 @@ const VendorDashboardPage = () => {
                                   key={group.id}
                                   className="tag-pill"
                                   style={{
-                                    fontSize: "0.68rem",
-                                    background: "var(--bg-raised)",
-                                    color: "var(--text-3)",
-                                    border: "1px solid var(--border)",
+                                    fontSize: '0.68rem',
+                                    background: 'var(--bg-raised)',
+                                    color: 'var(--text-3)',
+                                    border: '1px solid var(--border)',
                                   }}
                                 >
                                   {group.name}: {group.options?.length || 0}
@@ -1579,8 +1579,8 @@ const VendorDashboardPage = () => {
                         </div>
                         <div
                           style={{
-                            display: "flex",
-                            alignItems: "center",
+                            display: 'flex',
+                            alignItems: 'center',
                             gap: 12,
                           }}
                         >
@@ -1588,22 +1588,22 @@ const VendorDashboardPage = () => {
                             className="btn btn-sm"
                             title={
                               item.is_available
-                                ? "Доступно (сделать недоступным)"
-                                : "Недоступно (сделать доступным)"
+                                ? 'Доступно (сделать недоступным)'
+                                : 'Недоступно (сделать доступным)'
                             }
                             style={{
-                              padding: "4px 12px",
+                              padding: '4px 12px',
                               height: 28,
                               minWidth: 56,
-                              borderRadius: "20px",
-                              border: "1px solid var(--border)",
+                              borderRadius: '20px',
+                              border: '1px solid var(--border)',
                               background: item.is_available
-                                ? "var(--fire-subtle)"
-                                : "var(--bg-raised)",
+                                ? 'var(--fire-subtle)'
+                                : 'var(--bg-raised)',
                               color: item.is_available
-                                ? "var(--fire)"
-                                : "var(--text-3)",
-                              transition: "all 0.2s ease",
+                                ? 'var(--fire)'
+                                : 'var(--text-3)',
+                              transition: 'all 0.2s ease',
                             }}
                             onClick={async (e) => {
                               e.stopPropagation();
@@ -1617,7 +1617,7 @@ const VendorDashboardPage = () => {
                               ).map((m) =>
                                 m.id === item.id
                                   ? { ...m, is_available: newVal }
-                                  : m,
+                                  : m
                               );
                               useRestaurantStore.setState((s) => ({
                                 menus: { ...s.menus, [restId]: optimistic },
@@ -1635,15 +1635,15 @@ const VendorDashboardPage = () => {
                                   },
                                 }));
                                 setMenuError(
-                                  "Не удалось изменить статус блюда",
+                                  'Не удалось изменить статус блюда'
                                 );
                               }
                             }}
                           >
                             <span
-                              style={{ fontSize: "0.72rem", fontWeight: 800 }}
+                              style={{ fontSize: '0.72rem', fontWeight: 800 }}
                             >
-                              {item.is_available ? "ВКЛ" : "ВЫКЛ"}
+                              {item.is_available ? 'ВКЛ' : 'ВЫКЛ'}
                             </span>
                           </button>
                           <button
@@ -1657,7 +1657,7 @@ const VendorDashboardPage = () => {
                                 category: item.category,
                                 prep_time_minutes: item.prep_time_minutes,
                                 option_groups: normalizeOptionGroups(
-                                  item.option_groups || [],
+                                  item.option_groups || []
                                 ),
                               });
                             }}
@@ -1666,7 +1666,7 @@ const VendorDashboardPage = () => {
                           </button>
                           <button
                             className="btn btn-secondary btn-sm"
-                            style={{ color: "var(--error)" }}
+                            style={{ color: 'var(--error)' }}
                             onClick={() => handleDeleteMenuItem(item.id)}
                           >
                             <X size={16} />
@@ -1679,7 +1679,7 @@ const VendorDashboardPage = () => {
               </div>
             )}
 
-            {activeTab === "orders" && (
+            {activeTab === 'orders' && (
               <div>
                 {ordersError && (
                   <div className="form-error" style={{ marginBottom: 12 }}>
@@ -1688,19 +1688,19 @@ const VendorDashboardPage = () => {
                 )}
                 <div
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
                     gap: 12,
                     marginBottom: 12,
                   }}
                 >
                   <div>
-                    <div style={{ fontWeight: 800, fontSize: "0.95rem" }}>
+                    <div style={{ fontWeight: 800, fontSize: '0.95rem' }}>
                       Заказы заведения
                     </div>
                     <div
-                      style={{ color: "var(--text-3)", fontSize: "0.76rem" }}
+                      style={{ color: 'var(--text-3)', fontSize: '0.76rem' }}
                     >
                       Новые заказы обновляются автоматически
                     </div>
@@ -1711,36 +1711,36 @@ const VendorDashboardPage = () => {
                     onClick={() => fetchVendorOrders()}
                     disabled={ordersLoading}
                     style={{
-                      display: "flex",
-                      alignItems: "center",
+                      display: 'flex',
+                      alignItems: 'center',
                       gap: 6,
-                      whiteSpace: "nowrap",
+                      whiteSpace: 'nowrap',
                     }}
                   >
                     <ArrowsClockwise size={14} />
-                    {ordersLoading ? "..." : "Обновить"}
+                    {ordersLoading ? '...' : 'Обновить'}
                   </button>
                 </div>
                 <div
                   style={{
-                    display: "flex",
+                    display: 'flex',
                     gap: 6,
-                    flexWrap: "wrap",
+                    flexWrap: 'wrap',
                     marginBottom: 12,
                   }}
                 >
                   {[
-                    { key: "", label: "Все" },
-                    { key: "PENDING", label: "Новые" },
-                    { key: "COOKING", label: "Готовятся" },
-                    { key: "READY", label: "Готовы" },
-                    { key: "COMPLETED", label: "Выданы" },
-                    { key: "CANCELLED", label: "Отменены" },
+                    { key: '', label: 'Все' },
+                    { key: 'PENDING', label: 'Новые' },
+                    { key: 'COOKING', label: 'Готовятся' },
+                    { key: 'READY', label: 'Готовы' },
+                    { key: 'COMPLETED', label: 'Выданы' },
+                    { key: 'CANCELLED', label: 'Отменены' },
                   ].map(({ key, label }) => (
                     <button
                       key={key}
-                      className={`category-chip${ordersStatusFilter === key ? " active" : ""}`}
-                      style={{ fontSize: "0.78rem", padding: "4px 12px" }}
+                      className={`category-chip${ordersStatusFilter === key ? ' active' : ''}`}
+                      style={{ fontSize: '0.78rem', padding: '4px 12px' }}
                       onClick={() => {
                         setOrdersStatusFilter(key);
                         setOrdersPage(1);
@@ -1752,10 +1752,10 @@ const VendorDashboardPage = () => {
                 </div>
                 <div
                   style={{
-                    display: "flex",
+                    display: 'flex',
                     gap: 8,
-                    alignItems: "center",
-                    flexWrap: "wrap",
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
                     marginBottom: 12,
                   }}
                 >
@@ -1767,7 +1767,7 @@ const VendorDashboardPage = () => {
                       setOrdersDateFilter(e.target.value);
                       setOrdersPage(1);
                     }}
-                    style={{ maxWidth: 180, height: 36, fontSize: "0.82rem" }}
+                    style={{ maxWidth: 180, height: 36, fontSize: '0.82rem' }}
                     aria-label="Дата заказов"
                   />
                   {ordersDateFilter && (
@@ -1775,7 +1775,7 @@ const VendorDashboardPage = () => {
                       type="button"
                       className="btn btn-secondary btn-sm"
                       onClick={() => {
-                        setOrdersDateFilter("");
+                        setOrdersDateFilter('');
                         setOrdersPage(1);
                       }}
                     >
@@ -1793,15 +1793,15 @@ const VendorDashboardPage = () => {
                     title="Нет заказов"
                     subtitle={
                       ordersStatusFilter
-                        ? "В этом статусе заказов нет"
-                        : "Пока никто не сделал заказ"
+                        ? 'В этом статусе заказов нет'
+                        : 'Пока никто не сделал заказ'
                     }
                   />
                 ) : (
                   <div
                     style={{
-                      display: "flex",
-                      flexDirection: "column",
+                      display: 'flex',
+                      flexDirection: 'column',
                       gap: 12,
                     }}
                   >
@@ -1809,19 +1809,19 @@ const VendorDashboardPage = () => {
                       <div
                         key={group.dateKey}
                         style={{
-                          display: "flex",
-                          flexDirection: "column",
+                          display: 'flex',
+                          flexDirection: 'column',
                           gap: 8,
                         }}
                       >
                         <div
                           style={{
-                            color: "var(--text-3)",
-                            fontSize: "0.78rem",
+                            color: 'var(--text-3)',
+                            fontSize: '0.78rem',
                             fontWeight: 800,
-                            textTransform: "uppercase",
+                            textTransform: 'uppercase',
                             letterSpacing: 0,
-                            padding: "2px 2px",
+                            padding: '2px 2px',
                           }}
                         >
                           {group.title}
@@ -1830,7 +1830,7 @@ const VendorDashboardPage = () => {
                           <div
                             key={order.id}
                             className="order-card"
-                            style={{ cursor: "pointer" }}
+                            style={{ cursor: 'pointer' }}
                             onClick={() => setSelectedOrder(order)}
                           >
                             <div style={{ flex: 1 }}>
@@ -1839,27 +1839,25 @@ const VendorDashboardPage = () => {
                               </div>
                               <div
                                 style={{
-                                  fontSize: "0.8rem",
-                                  color: "var(--text-3)",
+                                  fontSize: '0.8rem',
+                                  color: 'var(--text-3)',
                                 }}
                               >
                                 {formatOrderTime(order.created_at) && (
-                                  <>
-                                    {formatOrderTime(order.created_at)} •{" "}
-                                  </>
+                                  <>{formatOrderTime(order.created_at)} • </>
                                 )}
-                                {order.items?.length || 0} позиц. •{" "}
+                                {order.items?.length || 0} позиц. •{' '}
                                 {order.total_price} ₽
                               </div>
                               {order.items?.length > 0 && (
                                 <div
                                   style={{
                                     marginTop: 8,
-                                    display: "flex",
-                                    flexDirection: "column",
+                                    display: 'flex',
+                                    flexDirection: 'column',
                                     gap: 4,
-                                    color: "var(--text-2)",
-                                    fontSize: "0.78rem",
+                                    color: 'var(--text-2)',
+                                    fontSize: '0.78rem',
                                   }}
                                 >
                                   {order.items.map((item) => (
@@ -1867,9 +1865,9 @@ const VendorDashboardPage = () => {
                                       ×{item.quantity} {item.menu_item_name}
                                       {item.selected_options?.length > 0 && (
                                         <span
-                                          style={{ color: "var(--text-3)" }}
+                                          style={{ color: 'var(--text-3)' }}
                                         >
-                                          {" "}
+                                          {' '}
                                           (
                                           {item.selected_options
                                             .map(
@@ -1877,10 +1875,10 @@ const VendorDashboardPage = () => {
                                                 `${option.name}${
                                                   option.price_delta
                                                     ? ` +${option.price_delta} ₽`
-                                                    : ""
-                                                }`,
+                                                    : ''
+                                                }`
                                             )
-                                            .join(", ")}
+                                            .join(', ')}
                                           )
                                         </span>
                                       )}
@@ -1891,25 +1889,24 @@ const VendorDashboardPage = () => {
                             </div>
                             <div
                               style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "flex-end",
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'flex-end',
                                 gap: 6,
                               }}
                             >
                               <span
                                 className={`order-status-badge ${
-                                  order.status === "PENDING"
-                                    ? "pending"
-                                    : order.status === "COOKING"
-                                      ? "preparing"
-                                      : order.status === "CANCELLED"
-                                        ? "cancelled"
-                                        : "ready"
+                                  order.status === 'PENDING'
+                                    ? 'pending'
+                                    : order.status === 'COOKING'
+                                      ? 'preparing'
+                                      : order.status === 'CANCELLED'
+                                        ? 'cancelled'
+                                        : 'ready'
                                 }`}
                               >
-                                {STATUS_LABEL_RU[order.status] ??
-                                  order.status}
+                                {STATUS_LABEL_RU[order.status] ?? order.status}
                               </span>
                               {NEXT_ORDER_STATUS[order.status] && (
                                 <button
@@ -1951,26 +1948,26 @@ const VendorDashboardPage = () => {
               />
             )}
 
-            {activeTab === "promos" && (
+            {activeTab === 'promos' && (
               <div
-                style={{ display: "flex", flexDirection: "column", gap: 12 }}
+                style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
               >
                 <div
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
                   }}
                 >
-                  <span style={{ fontWeight: 700, fontSize: "0.9rem" }}>
+                  <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>
                     Промокоды
                   </span>
                   {selectedRestaurant && (
                     <button
                       className="btn btn-primary btn-sm"
                       style={{
-                        display: "flex",
-                        alignItems: "center",
+                        display: 'flex',
+                        alignItems: 'center',
                         gap: 6,
                         height: 32,
                       }}
@@ -1988,19 +1985,19 @@ const VendorDashboardPage = () => {
                   <form
                     onSubmit={handleCreatePromo}
                     style={{
-                      background: "var(--bg-card)",
-                      border: "1px solid var(--border)",
-                      borderRadius: "var(--radius-md)",
+                      background: 'var(--bg-card)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-md)',
                       padding: 16,
-                      display: "flex",
-                      flexDirection: "column",
+                      display: 'flex',
+                      flexDirection: 'column',
                       gap: 10,
                     }}
                   >
                     <div
                       style={{
                         fontWeight: 700,
-                        fontSize: "0.85rem",
+                        fontSize: '0.85rem',
                         marginBottom: 4,
                       }}
                     >
@@ -2020,8 +2017,8 @@ const VendorDashboardPage = () => {
                     />
                     <div
                       style={{
-                        display: "grid",
-                        gridTemplateColumns: "1fr 1fr",
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 1fr',
                         gap: 8,
                       }}
                     >
@@ -2042,9 +2039,9 @@ const VendorDashboardPage = () => {
                         className="form-input"
                         type="number"
                         placeholder={
-                          promoForm.discount_type === "PERCENT"
-                            ? "Скидка %"
-                            : "Сумма ₽"
+                          promoForm.discount_type === 'PERCENT'
+                            ? 'Скидка %'
+                            : 'Сумма ₽'
                         }
                         min={1}
                         value={promoForm.discount_value}
@@ -2059,8 +2056,8 @@ const VendorDashboardPage = () => {
                     </div>
                     <div
                       style={{
-                        display: "grid",
-                        gridTemplateColumns: "1fr 1fr",
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 1fr',
                         gap: 8,
                       }}
                     >
@@ -2090,14 +2087,14 @@ const VendorDashboardPage = () => {
                         }
                       />
                     </div>
-                    <div style={{ display: "flex", gap: 8 }}>
+                    <div style={{ display: 'flex', gap: 8 }}>
                       <button
                         className="btn btn-primary btn-sm"
                         type="submit"
                         disabled={promoFormLoading}
                         style={{ flex: 1 }}
                       >
-                        {promoFormLoading ? "Создаю..." : "Создать"}
+                        {promoFormLoading ? 'Создаю...' : 'Создать'}
                       </button>
                       <button
                         className="btn btn-secondary btn-sm"
@@ -2125,12 +2122,12 @@ const VendorDashboardPage = () => {
                     <div
                       key={promo.id}
                       style={{
-                        background: "var(--bg-card)",
-                        border: `1px solid ${promo.is_active ? "var(--border)" : "var(--border-faint, var(--border))"}`,
-                        borderRadius: "var(--radius-md)",
-                        padding: "14px 16px",
-                        display: "flex",
-                        alignItems: "center",
+                        background: 'var(--bg-card)',
+                        border: `1px solid ${promo.is_active ? 'var(--border)' : 'var(--border-faint, var(--border))'}`,
+                        borderRadius: 'var(--radius-md)',
+                        padding: '14px 16px',
+                        display: 'flex',
+                        alignItems: 'center',
                         gap: 12,
                         opacity: promo.is_active ? 1 : 0.5,
                       }}
@@ -2139,50 +2136,50 @@ const VendorDashboardPage = () => {
                         size={18}
                         weight="bold"
                         color={
-                          promo.is_active ? "var(--fire)" : "var(--text-3)"
+                          promo.is_active ? 'var(--fire)' : 'var(--text-3)'
                         }
                       />
                       <div style={{ flex: 1 }}>
                         <div
                           style={{
                             fontWeight: 800,
-                            fontSize: "0.95rem",
-                            fontFamily: "monospace",
+                            fontSize: '0.95rem',
+                            fontFamily: 'monospace',
                           }}
                         >
                           {promo.code}
                         </div>
                         <div
                           style={{
-                            fontSize: "0.78rem",
-                            color: "var(--text-3)",
+                            fontSize: '0.78rem',
+                            color: 'var(--text-3)',
                             marginTop: 2,
                           }}
                         >
-                          {promo.discount_type === "PERCENT"
+                          {promo.discount_type === 'PERCENT'
                             ? `${promo.discount_value}%`
                             : `${promo.discount_value} ₽`}
-                          {" • "}
-                          {promo.used_count}/{promo.max_uses ?? "∞"} исп.
+                          {' • '}
+                          {promo.used_count}/{promo.max_uses ?? '∞'} исп.
                           {promo.expires_at
                             ? ` • до ${new Date(promo.expires_at).toLocaleDateString()}`
-                            : ""}
+                            : ''}
                         </div>
                       </div>
                       <span
                         style={{
-                          fontSize: "0.65rem",
+                          fontSize: '0.65rem',
                           fontWeight: 800,
-                          padding: "3px 8px",
-                          borderRadius: "100px",
+                          padding: '3px 8px',
+                          borderRadius: '100px',
                           background: promo.is_active
-                            ? "rgba(34,197,94,0.12)"
-                            : "rgba(107,114,128,0.12)",
-                          color: promo.is_active ? "#22c55e" : "#6b7280",
-                          border: `1px solid ${promo.is_active ? "rgba(34,197,94,0.3)" : "rgba(107,114,128,0.2)"}`,
+                            ? 'rgba(34,197,94,0.12)'
+                            : 'rgba(107,114,128,0.12)',
+                          color: promo.is_active ? '#22c55e' : '#6b7280',
+                          border: `1px solid ${promo.is_active ? 'rgba(34,197,94,0.3)' : 'rgba(107,114,128,0.2)'}`,
                         }}
                       >
-                        {promo.is_active ? "Активен" : "Завершён"}
+                        {promo.is_active ? 'Активен' : 'Завершён'}
                       </span>
                       {promo.is_active && (
                         <button
@@ -2199,18 +2196,18 @@ const VendorDashboardPage = () => {
               </div>
             )}
 
-            {activeTab === "schedule" && (
+            {activeTab === 'schedule' && (
               <div
-                style={{ display: "flex", flexDirection: "column", gap: 12 }}
+                style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
               >
                 <div
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
                   }}
                 >
-                  <span style={{ fontWeight: 700, fontSize: "0.9rem" }}>
+                  <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>
                     Расписание работы
                   </span>
                   <button
@@ -2219,10 +2216,10 @@ const VendorDashboardPage = () => {
                     disabled={workingHoursLoading}
                   >
                     {workingHoursSaved
-                      ? "Сохранено ✓"
+                      ? 'Сохранено ✓'
                       : workingHoursLoading
-                        ? "Сохранение..."
-                        : "Сохранить"}
+                        ? 'Сохранение...'
+                        : 'Сохранить'}
                   </button>
                 </div>
 
@@ -2237,33 +2234,33 @@ const VendorDashboardPage = () => {
                 ) : (
                   <div
                     style={{
-                      background: "var(--bg-card)",
-                      border: "1px solid var(--border)",
-                      borderRadius: "var(--radius-md)",
-                      overflow: "hidden",
+                      background: 'var(--bg-card)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-md)',
+                      overflow: 'hidden',
                     }}
                   >
                     {workingHours.map((row, idx) => (
                       <div
                         key={row.day_of_week}
                         style={{
-                          display: "grid",
-                          gridTemplateColumns: "40px 1fr 1fr auto",
-                          alignItems: "center",
+                          display: 'grid',
+                          gridTemplateColumns: '40px 1fr 1fr auto',
+                          alignItems: 'center',
                           gap: 10,
-                          padding: "10px 16px",
+                          padding: '10px 16px',
                           borderBottom:
                             idx < workingHours.length - 1
-                              ? "1px solid var(--border)"
-                              : "none",
+                              ? '1px solid var(--border)'
+                              : 'none',
                           opacity: row.is_closed ? 0.45 : 1,
                         }}
                       >
                         <span
                           style={{
                             fontWeight: 700,
-                            fontSize: "0.85rem",
-                            color: "var(--text-2)",
+                            fontSize: '0.85rem',
+                            color: 'var(--text-2)',
                           }}
                         >
                           {DAY_NAMES[row.day_of_week]}
@@ -2278,11 +2275,11 @@ const VendorDashboardPage = () => {
                               prev.map((r, i) =>
                                 i === idx
                                   ? { ...r, open_time: e.target.value }
-                                  : r,
-                              ),
+                                  : r
+                              )
                             )
                           }
-                          style={{ padding: "6px 8px", fontSize: "0.85rem" }}
+                          style={{ padding: '6px 8px', fontSize: '0.85rem' }}
                         />
                         <input
                           className="form-input"
@@ -2294,15 +2291,15 @@ const VendorDashboardPage = () => {
                               prev.map((r, i) =>
                                 i === idx
                                   ? { ...r, close_time: e.target.value }
-                                  : r,
-                              ),
+                                  : r
+                              )
                             )
                           }
-                          style={{ padding: "6px 8px", fontSize: "0.85rem" }}
+                          style={{ padding: '6px 8px', fontSize: '0.85rem' }}
                         />
                         <label
                           className="form-check"
-                          style={{ margin: 0, whiteSpace: "nowrap" }}
+                          style={{ margin: 0, whiteSpace: 'nowrap' }}
                           title="Выходной"
                         >
                           <input
@@ -2313,14 +2310,14 @@ const VendorDashboardPage = () => {
                                 prev.map((r, i) =>
                                   i === idx
                                     ? { ...r, is_closed: e.target.checked }
-                                    : r,
-                                ),
+                                    : r
+                                )
                               )
                             }
                           />
                           <span
                             className="form-check-label"
-                            style={{ fontSize: "0.75rem" }}
+                            style={{ fontSize: '0.75rem' }}
                           >
                             Вых.
                           </span>
@@ -2332,26 +2329,26 @@ const VendorDashboardPage = () => {
               </div>
             )}
 
-            {activeTab === "staff" && (
+            {activeTab === 'staff' && (
               <div
-                style={{ display: "flex", flexDirection: "column", gap: 10 }}
+                style={{ display: 'flex', flexDirection: 'column', gap: 10 }}
               >
-                <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
                   <button
-                    className={`btn btn-sm ${staffSubTab === "members" ? "btn-primary" : "btn-secondary"}`}
-                    onClick={() => setStaffSubTab("members")}
+                    className={`btn btn-sm ${staffSubTab === 'members' ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => setStaffSubTab('members')}
                   >
                     Сотрудники
                   </button>
                   <button
-                    className={`btn btn-sm ${staffSubTab === "requests" ? "btn-primary" : "btn-secondary"}`}
-                    onClick={() => setStaffSubTab("requests")}
+                    className={`btn btn-sm ${staffSubTab === 'requests' ? 'btn-primary' : 'btn-secondary'}`}
+                    onClick={() => setStaffSubTab('requests')}
                   >
                     Заявки
                   </button>
                 </div>
 
-                {staffSubTab === "members" && (
+                {staffSubTab === 'members' && (
                   <>
                     {staffMembers.length === 0 ? (
                       <EmptyState
@@ -2361,8 +2358,8 @@ const VendorDashboardPage = () => {
                     ) : (
                       <div
                         style={{
-                          display: "flex",
-                          flexDirection: "column",
+                          display: 'flex',
+                          flexDirection: 'column',
                           gap: 10,
                         }}
                       >
@@ -2374,23 +2371,23 @@ const VendorDashboardPage = () => {
                               </div>
                               <div
                                 style={{
-                                  fontSize: "0.8rem",
-                                  color: "var(--text-3)",
+                                  fontSize: '0.8rem',
+                                  color: 'var(--text-3)',
                                 }}
                               >
-                                {m.user_phone || "Нет телефона"}
+                                {m.user_phone || 'Нет телефона'}
                                 {m.restaurant_name && ` · ${m.restaurant_name}`}
                               </div>
                             </div>
                             <div className="staff-request-actions">
                               <button
                                 className="btn btn-secondary btn-sm"
-                                style={{ color: "var(--error)" }}
+                                style={{ color: 'var(--error)' }}
                                 disabled={staffMemberRemoving === m.id}
                                 onClick={() => handleRemoveStaffMember(m.id)}
                               >
                                 {staffMemberRemoving === m.id ? (
-                                  "..."
+                                  '...'
                                 ) : (
                                   <Trash size={16} />
                                 )}
@@ -2411,7 +2408,7 @@ const VendorDashboardPage = () => {
                   </>
                 )}
 
-                {staffSubTab === "requests" && (
+                {staffSubTab === 'requests' && (
                   <>
                     {!Array.isArray(staffRequests) ||
                     staffRequests.length === 0 ? (
@@ -2422,8 +2419,8 @@ const VendorDashboardPage = () => {
                     ) : (
                       <div
                         style={{
-                          display: "flex",
-                          flexDirection: "column",
+                          display: 'flex',
+                          flexDirection: 'column',
                           gap: 10,
                         }}
                       >
@@ -2437,12 +2434,12 @@ const VendorDashboardPage = () => {
                                 {translate(STAFF_STATUS_RU, req.status)}
                               </span>
                             </div>
-                            {req.status === "PENDING" && (
+                            {req.status === 'PENDING' && (
                               <div className="staff-request-actions">
                                 <button
                                   className="btn btn-primary btn-sm"
                                   onClick={() =>
-                                    handleStaffDecision(req.id, "ACCEPTED")
+                                    handleStaffDecision(req.id, 'ACCEPTED')
                                   }
                                 >
                                   <Check size={16} />
@@ -2450,7 +2447,7 @@ const VendorDashboardPage = () => {
                                 <button
                                   className="btn btn-secondary btn-sm"
                                   onClick={() =>
-                                    handleStaffDecision(req.id, "REJECTED")
+                                    handleStaffDecision(req.id, 'REJECTED')
                                   }
                                 >
                                   <X size={16} />
@@ -2474,12 +2471,12 @@ const VendorDashboardPage = () => {
               </div>
             )}
 
-            {activeTab === "analytics" && (
+            {activeTab === 'analytics' && (
               <ListSection
                 loading={financeLoading || analyticsLoading}
                 emptyTitle="Данных пока нет"
               >
-                <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+                <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
                   <input
                     className="form-input"
                     type="date"
@@ -2507,40 +2504,40 @@ const VendorDashboardPage = () => {
                 </div>
                 <div
                   style={{
-                    display: "flex",
+                    display: 'flex',
                     gap: 8,
-                    overflowX: "auto",
+                    overflowX: 'auto',
                     marginBottom: 20,
                   }}
                 >
                   {[
-                    { label: "Сегодня", days: 0 },
-                    { label: "3 дня", days: 3 },
-                    { label: "7 дней", days: 7 },
-                    { label: "30 дней", days: 30 },
-                    { label: "Полгода", days: 180 },
-                    { label: "Год", days: 365 },
-                    { label: "Сбросить", days: null },
+                    { label: 'Сегодня', days: 0 },
+                    { label: '3 дня', days: 3 },
+                    { label: '7 дней', days: 7 },
+                    { label: '30 дней', days: 30 },
+                    { label: 'Полгода', days: 180 },
+                    { label: 'Год', days: 365 },
+                    { label: 'Сбросить', days: null },
                   ].map((preset) => (
                     <button
                       key={preset.label}
-                      className={`btn btn-sm ${activePreset === preset.days ? "btn-primary" : "btn-secondary"}`}
-                      style={{ whiteSpace: "nowrap" }}
+                      className={`btn btn-sm ${activePreset === preset.days ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ whiteSpace: 'nowrap' }}
                       onClick={() => {
                         setActivePreset(preset.days);
                         if (preset.days === null) {
                           setFinanceFilters((prev) => ({
                             ...prev,
-                            date_from: "",
-                            date_to: "",
+                            date_from: '',
+                            date_to: '',
                           }));
                         } else {
                           const to = new Date();
                           const from = new Date();
                           from.setDate(to.getDate() - preset.days);
                           const fmt = (d) => {
-                            const m = String(d.getMonth() + 1).padStart(2, "0");
-                            const day = String(d.getDate()).padStart(2, "0");
+                            const m = String(d.getMonth() + 1).padStart(2, '0');
+                            const day = String(d.getDate()).padStart(2, '0');
                             return `${d.getFullYear()}-${m}-${day}`;
                           };
                           setFinanceFilters((prev) => ({
@@ -2558,9 +2555,9 @@ const VendorDashboardPage = () => {
                 {finance && (
                   <div
                     style={{
-                      display: "grid",
+                      display: 'grid',
                       gridTemplateColumns:
-                        "repeat(auto-fit, minmax(180px, 1fr))",
+                        'repeat(auto-fit, minmax(180px, 1fr))',
                       gap: 12,
                       marginBottom: 20,
                     }}
@@ -2584,8 +2581,8 @@ const VendorDashboardPage = () => {
                 )}
                 <div
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))",
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
                     gap: 20,
                     marginTop: 20,
                   }}
@@ -2600,7 +2597,7 @@ const VendorDashboardPage = () => {
                           (item) => ({
                             ...item,
                             label: translate(CATEGORY_RU, item.label),
-                          }),
+                          })
                         )}
                       />
                       <AOVDynamicsChart
@@ -2612,13 +2609,13 @@ const VendorDashboardPage = () => {
               </ListSection>
             )}
 
-            {activeTab === "settings" && (
+            {activeTab === 'settings' && (
               <div
                 style={{
                   padding: 16,
-                  background: "var(--bg-card)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "var(--radius-md)",
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-md)',
                 }}
               >
                 <h3 style={{ fontWeight: 700, marginBottom: 12 }}>
@@ -2626,12 +2623,12 @@ const VendorDashboardPage = () => {
                 </h3>
                 <form
                   onSubmit={handleUpdateRestaurant}
-                  style={{ display: "flex", flexDirection: "column", gap: 10 }}
+                  style={{ display: 'flex', flexDirection: 'column', gap: 10 }}
                 >
                   {formError && <div className="form-error">{formError}</div>}
                   <div>
                     <label
-                      style={{ fontSize: "0.8rem", color: "var(--text-3)" }}
+                      style={{ fontSize: '0.8rem', color: 'var(--text-3)' }}
                     >
                       Название
                     </label>
@@ -2648,7 +2645,7 @@ const VendorDashboardPage = () => {
                   </div>
                   <div>
                     <label
-                      style={{ fontSize: "0.8rem", color: "var(--text-3)" }}
+                      style={{ fontSize: '0.8rem', color: 'var(--text-3)' }}
                     >
                       Описание ресторана
                     </label>
@@ -2658,7 +2655,7 @@ const VendorDashboardPage = () => {
                       value={
                         editRestaurant?.description ??
                         selectedRestaurant.description ??
-                        ""
+                        ''
                       }
                       onChange={(e) =>
                         setEditRestaurant({
@@ -2667,12 +2664,12 @@ const VendorDashboardPage = () => {
                         })
                       }
                       rows={3}
-                      style={{ resize: "vertical" }}
+                      style={{ resize: 'vertical' }}
                     />
                   </div>
                   <div>
                     <label
-                      style={{ fontSize: "0.8rem", color: "var(--text-3)" }}
+                      style={{ fontSize: '0.8rem', color: 'var(--text-3)' }}
                     >
                       Адрес
                     </label>

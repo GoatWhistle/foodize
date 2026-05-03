@@ -1,6 +1,6 @@
-import { create } from "zustand";
-import { restaurantService } from "../services/restaurantService";
-import { menuService } from "../services/menuService";
+import { create } from 'zustand';
+import { restaurantService } from '../services/restaurantService';
+import { menuService } from '../services/menuService';
 
 export const useRestaurantStore = create((set, get) => ({
   publicRestaurants: [],

@@ -2,12 +2,12 @@ import uuid
 
 import pytest
 from pydantic import ValidationError
+from shared.enums.roles import UserRole
 
 from features.auth.schemas import TokenResponse, UserLogin
 from features.orders.schemas.order import OrderCreate
 from features.orders.schemas.order_item import OrderItemCreate
 from features.users.schemas import UserCreate, UserRead
-from shared.enums.roles import UserRole
 
 
 class TestUserLoginSchema:

@@ -32,9 +32,7 @@ async def create_vendor(
     user: User = Depends(require_permission(Permission.VENDORS_CREATE)),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[VendorResponse]:
-    result = await service.register_vendor(
-        user=user, session=session, vendor_in=vendor_in
-    )
+    result = await service.register_vendor(user=user, session=session, vendor_in=vendor_in)
     return build_response(result)
 
 

@@ -22,7 +22,11 @@ from features.orders.schemas.order import OrderResponse
 from features.users.models import User
 from shared.enums.order_status import OrderStatus
 from shared.enums.permissions import Permission
-from shared.permissions import ADMIN_PERMISSIONS, CUSTOMER_PERMISSIONS, serialize_permissions
+from shared.permissions import (
+    ADMIN_PERMISSIONS,
+    CUSTOMER_PERMISSIONS,
+    serialize_permissions,
+)
 from shared.response import build_list_response, build_response
 from shared.schemas.response import SuccessListResponse, SuccessResponse
 
@@ -45,12 +49,8 @@ async def read_users(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessListResponse[AdminUserResponse]:
     offset = (page - 1) * size
-    data, total = await service.get_users_list(
-        session, permission, offset, size, search=search
-    )
-    return build_list_response(
-        data=data, total=total, page=page, size=size, request=request
-    )
+    data, total = await service.get_users_list(session, permission, offset, size, search=search)
+    return build_list_response(data=data, total=total, page=page, size=size, request=request)
 
 
 @router.get("/users/{user_id}", response_model=SuccessResponse[AdminUserResponse])
@@ -73,9 +73,7 @@ async def delete_user(
     return build_response(result)
 
 
-@router.post(
-    "/users/{user_id}/activate", response_model=SuccessResponse[AdminUserResponse]
-)
+@router.post("/users/{user_id}/activate", response_model=SuccessResponse[AdminUserResponse])
 async def activate_user(
     user_id: uuid.UUID,
     _: User = Depends(require_admin),
@@ -85,9 +83,7 @@ async def activate_user(
     return build_response(result)
 
 
-@router.post(
-    "/users/{user_id}/grant-admin", response_model=SuccessResponse[AdminUserResponse]
-)
+@router.post("/users/{user_id}/grant-admin", response_model=SuccessResponse[AdminUserResponse])
 async def grant_admin_permissions(
     user_id: uuid.UUID,
     _: User = Depends(require_admin),
@@ -99,9 +95,7 @@ async def grant_admin_permissions(
     return build_response(result)
 
 
-@router.post(
-    "/users/{user_id}/permissions", response_model=SuccessResponse[AdminUserResponse]
-)
+@router.post("/users/{user_id}/permissions", response_model=SuccessResponse[AdminUserResponse])
 async def change_user_permissions(
     user_id: uuid.UUID,
     body: SetPermissionsRequest,
@@ -149,9 +143,7 @@ async def read_orders(
         offset=offset,
         limit=size,
     )
-    return build_list_response(
-        data=data, total=total, page=page, size=size, request=request
-    )
+    return build_list_response(data=data, total=total, page=page, size=size, request=request)
 
 
 @router.get("/restaurants", response_model=SuccessListResponse[AdminRestaurantResponse])
@@ -178,9 +170,7 @@ async def read_restaurants(
         offset=offset,
         limit=size,
     )
-    return build_list_response(
-        data=data, total=total, page=page, size=size, request=request
-    )
+    return build_list_response(data=data, total=total, page=page, size=size, request=request)
 
 
 @router.get(
@@ -232,9 +222,7 @@ async def reject_restaurant(
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminRestaurantResponse]:
-    result = await service.moderate_restaurant(
-        session, restaurant_id, "REJECTED", body.reason
-    )
+    result = await service.moderate_restaurant(session, restaurant_id, "REJECTED", body.reason)
     return build_response(result)
 
 
@@ -256,9 +244,7 @@ async def read_vendors(
         offset=offset,
         limit=size,
     )
-    return build_list_response(
-        data=data, total=total, page=page, size=size, request=request
-    )
+    return build_list_response(data=data, total=total, page=page, size=size, request=request)
 
 
 @router.get("/vendors/{vendor_id}", response_model=SuccessResponse[AdminVendorResponse])
@@ -271,9 +257,7 @@ async def read_vendor(
     return build_response(result)
 
 
-@router.delete(
-    "/vendors/{vendor_id}", response_model=SuccessResponse[AdminVendorResponse]
-)
+@router.delete("/vendors/{vendor_id}", response_model=SuccessResponse[AdminVendorResponse])
 async def delete_vendor(
     vendor_id: uuid.UUID,
     _: User = Depends(require_admin),
@@ -283,9 +267,7 @@ async def delete_vendor(
     return build_response(result)
 
 
-@router.post(
-    "/vendors/{vendor_id}/approve", response_model=SuccessResponse[AdminVendorResponse]
-)
+@router.post("/vendors/{vendor_id}/approve", response_model=SuccessResponse[AdminVendorResponse])
 async def approve_vendor(
     vendor_id: uuid.UUID,
     _: User = Depends(require_admin),
@@ -295,9 +277,7 @@ async def approve_vendor(
     return build_response(result)
 
 
-@router.post(
-    "/vendors/{vendor_id}/reject", response_model=SuccessResponse[AdminVendorResponse]
-)
+@router.post("/vendors/{vendor_id}/reject", response_model=SuccessResponse[AdminVendorResponse])
 async def reject_vendor(
     vendor_id: uuid.UUID,
     body: ModerationDecision,
@@ -324,14 +304,10 @@ async def read_reviews(
         offset=offset,
         limit=size,
     )
-    return build_list_response(
-        data=data, total=total, page=page, size=size, request=request
-    )
+    return build_list_response(data=data, total=total, page=page, size=size, request=request)
 
 
-@router.delete(
-    "/reviews/{review_id}", response_model=SuccessResponse[AdminReviewResponse]
-)
+@router.delete("/reviews/{review_id}", response_model=SuccessResponse[AdminReviewResponse])
 async def delete_review(
     review_id: uuid.UUID,
     _: User = Depends(require_admin),

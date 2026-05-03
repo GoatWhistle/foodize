@@ -1,5 +1,5 @@
-import { create } from "zustand";
-import { favoriteService } from "../services/favoriteService";
+import { create } from 'zustand';
+import { favoriteService } from '../services/favoriteService';
 
 export const useFavoriteStore = create((set, get) => ({
   favoriteIds: new Set(),

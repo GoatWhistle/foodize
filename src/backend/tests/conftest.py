@@ -9,12 +9,12 @@ from httpx import ASGITransport, AsyncClient
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from factories import make_user
+from shared.enums.roles import UserRole
 
 from database.db_helper import db_helper
 from features.auth.service import get_current_user
 from features.users.models import User
 from main import app
-from shared.enums.roles import UserRole
 
 
 @pytest_asyncio.fixture

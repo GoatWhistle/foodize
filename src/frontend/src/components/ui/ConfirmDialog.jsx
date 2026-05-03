@@ -1,6 +1,6 @@
-import { Trash } from "@phosphor-icons/react";
-import { useModalStore } from "../../store/useModalStore";
-import { useShallow } from "zustand/react/shallow";
+import { Trash } from '@phosphor-icons/react';
+import { useModalStore } from '../../store/useModalStore';
+import { useShallow } from 'zustand/react/shallow';
 
 const ConfirmDialog = () => {
   const { dialog, loading, cancelConfirm, runConfirmAction } = useModalStore(
@@ -9,7 +9,7 @@ const ConfirmDialog = () => {
       loading: s.confirmLoading,
       cancelConfirm: s.cancelConfirm,
       runConfirmAction: s.runConfirmAction,
-    })),
+    }))
   );
 
   if (!dialog) return null;
@@ -27,22 +27,22 @@ const ConfirmDialog = () => {
         style={{
           maxWidth: 440,
           padding: 22,
-          display: "flex",
-          flexDirection: "column",
+          display: 'flex',
+          flexDirection: 'column',
           gap: 18,
         }}
       >
-        <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+        <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
           <div
             style={{
               width: 42,
               height: 42,
-              borderRadius: "var(--r-sm)",
-              background: "var(--color-error-bg)",
-              color: "var(--error)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              borderRadius: 'var(--r-sm)',
+              background: 'var(--color-error-bg)',
+              color: 'var(--error)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               flexShrink: 0,
             }}
           >
@@ -50,16 +50,16 @@ const ConfirmDialog = () => {
           </div>
           <div>
             <h3
-              style={{ color: "var(--text-1)", fontSize: "1.05rem", margin: 0 }}
+              style={{ color: 'var(--text-1)', fontSize: '1.05rem', margin: 0 }}
             >
               {dialog.title}
             </h3>
             <p
               style={{
-                color: "var(--text-3)",
-                fontSize: "0.88rem",
+                color: 'var(--text-3)',
+                fontSize: '0.88rem',
                 lineHeight: 1.55,
-                margin: "8px 0 0",
+                margin: '8px 0 0',
               }}
             >
               {dialog.message}
@@ -69,10 +69,10 @@ const ConfirmDialog = () => {
 
         <div
           style={{
-            display: "flex",
+            display: 'flex',
             gap: 8,
-            justifyContent: "flex-end",
-            flexWrap: "wrap",
+            justifyContent: 'flex-end',
+            flexWrap: 'wrap',
           }}
         >
           <button
@@ -87,10 +87,10 @@ const ConfirmDialog = () => {
             disabled={loading}
             onClick={runConfirmAction}
             style={{
-              background: dialog.danger ? "var(--error)" : "var(--fire)",
+              background: dialog.danger ? 'var(--error)' : 'var(--fire)',
             }}
           >
-            {loading ? "Выполняю..." : dialog.confirmLabel}
+            {loading ? 'Выполняю...' : dialog.confirmLabel}
           </button>
         </div>
       </div>

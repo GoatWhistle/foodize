@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuthStore } from "../../store/useAuthStore";
-import { ROUTES } from "../../constants/routes";
-import FoodizeLogo from "../../components/ui/FoodizeLogo";
-import { translateApiError } from "../../utils/translateApiError";
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../../store/useAuthStore';
+import { ROUTES } from '../../constants/routes';
+import FoodizeLogo from '../../components/ui/FoodizeLogo';
+import { translateApiError } from '../../utils/translateApiError';
 
 const AuthVisual = () => (
   <div className="auth-visual">
@@ -24,9 +24,9 @@ const AuthVisual = () => (
 );
 
 const LoginPage = () => {
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const login = useAuthStore((s) => s.login);
@@ -34,13 +34,13 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
+    setError('');
     setIsLoading(true);
     try {
       await login({ phone_number: phoneNumber, password });
       navigate(ROUTES.HOME);
     } catch (err) {
-      setError(translateApiError(err, "Неверный телефон или пароль"));
+      setError(translateApiError(err, 'Неверный телефон или пароль'));
     } finally {
       setIsLoading(false);
     }
@@ -107,19 +107,19 @@ const LoginPage = () => {
               disabled={isLoading}
               style={{
                 marginTop: 4,
-                height: "52px",
-                borderRadius: "var(--r-sm)",
+                height: '52px',
+                borderRadius: 'var(--r-sm)',
               }}
             >
               {isLoading ? (
                 <span
-                  style={{ display: "flex", alignItems: "center", gap: 10 }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10 }}
                 >
                   <span className="spinner" style={{ width: 18, height: 18 }} />
                   Вход...
                 </span>
               ) : (
-                "Войти"
+                'Войти'
               )}
             </button>
           </form>

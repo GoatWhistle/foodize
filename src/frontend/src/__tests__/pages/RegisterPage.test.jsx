@@ -1,11 +1,11 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { BrowserRouter } from "react-router-dom";
-import RegisterPage from "../../pages/auth/RegisterPage";
-import { useAuthStore } from "../../store/useAuthStore";
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { BrowserRouter } from 'react-router-dom';
+import RegisterPage from '../../pages/auth/RegisterPage';
+import { useAuthStore } from '../../store/useAuthStore';
 
 // Mock useAuthStore
-vi.mock("../../store/useAuthStore", () => ({
+vi.mock('../../store/useAuthStore', () => ({
   useAuthStore: vi.fn((sel) => {
     const state = {
       register: vi.fn(),
@@ -16,15 +16,15 @@ vi.mock("../../store/useAuthStore", () => ({
 }));
 
 const mockNavigate = vi.fn();
-vi.mock("react-router-dom", async () => {
-  const actual = await vi.importActual("react-router-dom");
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
   return {
     ...actual,
     useNavigate: () => mockNavigate,
   };
 });
 
-describe("RegisterPage", () => {
+describe('RegisterPage', () => {
   const registerMock = vi.fn();
   const loginMock = vi.fn();
 
@@ -39,87 +39,87 @@ describe("RegisterPage", () => {
     });
   });
 
-  it("renders registration form", () => {
+  it('renders registration form', () => {
     render(
       <BrowserRouter>
         <RegisterPage />
-      </BrowserRouter>,
+      </BrowserRouter>
     );
 
-    expect(screen.getByLabelText("Имя")).toBeDefined();
-    expect(screen.getByLabelText("Телефон")).toBeDefined();
-    expect(screen.getByLabelText("Пароль")).toBeDefined();
+    expect(screen.getByLabelText('Имя')).toBeDefined();
+    expect(screen.getByLabelText('Телефон')).toBeDefined();
+    expect(screen.getByLabelText('Пароль')).toBeDefined();
     expect(
-      screen.getByRole("button", { name: "Создать аккаунт" }),
+      screen.getByRole('button', { name: 'Создать аккаунт' })
     ).toBeDefined();
   });
 
-  it("registers without client-side role assignment", async () => {
+  it('registers without client-side role assignment', async () => {
     registerMock.mockResolvedValueOnce();
     loginMock.mockResolvedValueOnce();
 
     render(
       <BrowserRouter>
         <RegisterPage />
-      </BrowserRouter>,
+      </BrowserRouter>
     );
 
-    fireEvent.change(screen.getByLabelText("Имя"), {
-      target: { value: "Test" },
+    fireEvent.change(screen.getByLabelText('Имя'), {
+      target: { value: 'Test' },
     });
-    fireEvent.change(screen.getByLabelText("Телефон"), {
-      target: { value: "79991234567" },
+    fireEvent.change(screen.getByLabelText('Телефон'), {
+      target: { value: '79991234567' },
     });
-    fireEvent.change(screen.getByLabelText("Пароль"), {
-      target: { value: "password123" },
+    fireEvent.change(screen.getByLabelText('Пароль'), {
+      target: { value: 'password123' },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Создать аккаунт" }));
+    fireEvent.click(screen.getByRole('button', { name: 'Создать аккаунт' }));
 
     await waitFor(() => {
       expect(registerMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: "Test",
-          phone_number: "79991234567",
-          password: "password123",
-        }),
+          name: 'Test',
+          phone_number: '79991234567',
+          password: 'password123',
+        })
       );
-      expect(registerMock.mock.calls[0][0]).not.toHaveProperty("user_role");
+      expect(registerMock.mock.calls[0][0]).not.toHaveProperty('user_role');
     });
   });
 
-  it("registers and logs in on submit", async () => {
+  it('registers and logs in on submit', async () => {
     registerMock.mockResolvedValueOnce();
     loginMock.mockResolvedValueOnce();
 
     render(
       <BrowserRouter>
         <RegisterPage />
-      </BrowserRouter>,
+      </BrowserRouter>
     );
 
-    fireEvent.change(screen.getByLabelText("Имя"), {
-      target: { value: "Ivan" },
+    fireEvent.change(screen.getByLabelText('Имя'), {
+      target: { value: 'Ivan' },
     });
-    fireEvent.change(screen.getByLabelText("Телефон"), {
-      target: { value: "111" },
+    fireEvent.change(screen.getByLabelText('Телефон'), {
+      target: { value: '111' },
     });
-    fireEvent.change(screen.getByLabelText("Пароль"), {
-      target: { value: "pw123456" },
+    fireEvent.change(screen.getByLabelText('Пароль'), {
+      target: { value: 'pw123456' },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Создать аккаунт" }));
+    fireEvent.click(screen.getByRole('button', { name: 'Создать аккаунт' }));
 
     await waitFor(() => {
       expect(registerMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          name: "Ivan",
-          phone_number: "111",
-          password: "pw123456",
-        }),
+          name: 'Ivan',
+          phone_number: '111',
+          password: 'pw123456',
+        })
       );
-      expect(registerMock.mock.calls[0][0]).not.toHaveProperty("user_role");
+      expect(registerMock.mock.calls[0][0]).not.toHaveProperty('user_role');
       expect(loginMock).toHaveBeenCalled();
-      expect(mockNavigate).toHaveBeenCalledWith("/");
+      expect(mockNavigate).toHaveBeenCalledWith('/');
     });
   });
 });

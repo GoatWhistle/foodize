@@ -49,9 +49,7 @@ async def create_menu_item(
     return build_response(result)
 
 
-@router.patch(
-    "/{restaurant_id}/items/{item_id}", response_model=SuccessResponse[MenuItemResponse]
-)
+@router.patch("/{restaurant_id}/items/{item_id}", response_model=SuccessResponse[MenuItemResponse])
 async def update_menu_item(
     restaurant_id: uuid.UUID,
     item_id: uuid.UUID,
@@ -70,9 +68,7 @@ async def update_menu_item(
     return build_response(result)
 
 
-@router.delete(
-    "/{restaurant_id}/items/{item_id}", status_code=status.HTTP_204_NO_CONTENT
-)
+@router.delete("/{restaurant_id}/items/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_menu_item(
     restaurant_id: uuid.UUID,
     item_id: uuid.UUID,
@@ -261,6 +257,4 @@ async def read_restaurant_menu(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessListResponse[MenuItemResponse]:
     data, total = await service.get_menu(session, restaurant_id, page=page, size=size)
-    return build_list_response(
-        data=data, total=total, page=page, size=size, request=request
-    )
+    return build_list_response(data=data, total=total, page=page, size=size, request=request)

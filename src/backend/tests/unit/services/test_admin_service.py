@@ -2,6 +2,7 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from shared.enums.roles import UserRole
 
 from features.admin.service import (
     activate_user_service,
@@ -12,7 +13,6 @@ from features.admin.service import (
     get_users_list,
     set_user_role,
 )
-from shared.enums.roles import UserRole
 from shared.exceptions import NotFoundException
 
 

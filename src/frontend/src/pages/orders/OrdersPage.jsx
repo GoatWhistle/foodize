@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Package,
   Clock,
@@ -8,55 +8,55 @@ import {
   CookingPot,
   CaretRight,
   HandPalm,
-} from "@phosphor-icons/react";
-import { useOrderStore } from "../../store/useOrderStore";
-import EmptyState from "../../components/ui/EmptyState";
-import { ROUTES } from "../../constants/routes";
-import Pagination from "../../components/ui/Pagination";
+} from '@phosphor-icons/react';
+import { useOrderStore } from '../../store/useOrderStore';
+import EmptyState from '../../components/ui/EmptyState';
+import { ROUTES } from '../../constants/routes';
+import Pagination from '../../components/ui/Pagination';
 
 const STATUS_CONFIG = {
   PENDING: {
-    label: "Принят",
-    className: "pending",
+    label: 'Принят',
+    className: 'pending',
     icon: <Clock weight="bold" />,
   },
   ACCEPTED: {
-    label: "Подтверждён",
-    className: "pending",
+    label: 'Подтверждён',
+    className: 'pending',
     icon: <CheckCircle weight="bold" />,
   },
   COOKING: {
-    label: "Готовится",
-    className: "preparing",
+    label: 'Готовится',
+    className: 'preparing',
     icon: <CookingPot weight="bold" />,
   },
   READY: {
-    label: "Готов",
-    className: "ready",
+    label: 'Готов',
+    className: 'ready',
     icon: <HandPalm weight="bold" />,
   },
   COMPLETED: {
-    label: "Выдан",
-    className: "ready",
+    label: 'Выдан',
+    className: 'ready',
     icon: <CheckCircle weight="fill" />,
   },
   CANCELLED: {
-    label: "Отменён",
-    className: "cancelled",
+    label: 'Отменён',
+    className: 'cancelled',
     icon: <Prohibit weight="bold" />,
   },
 };
 
 const STATUS_FILTERS = [
-  { key: "", label: "Все" },
-  { key: "PENDING", label: "Ожидают" },
-  { key: "COOKING", label: "Готовятся" },
-  { key: "READY", label: "Готовы" },
-  { key: "COMPLETED", label: "Выданы" },
-  { key: "CANCELLED", label: "Отменены" },
+  { key: '', label: 'Все' },
+  { key: 'PENDING', label: 'Ожидают' },
+  { key: 'COOKING', label: 'Готовятся' },
+  { key: 'READY', label: 'Готовы' },
+  { key: 'COMPLETED', label: 'Выданы' },
+  { key: 'CANCELLED', label: 'Отменены' },
 ];
 
-import { useShallow } from "zustand/react/shallow";
+import { useShallow } from 'zustand/react/shallow';
 
 const getOrderDisplayId = (order) => order.display_id ?? order.id.slice(0, 8);
 
@@ -67,11 +67,11 @@ const OrdersPage = () => {
       ordersTotal: s.ordersTotal,
       fetchMyOrders: s.fetchMyOrders,
       ordersLoading: s.ordersLoading,
-    })),
+    }))
   );
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState('');
   const size = 20;
 
   useEffect(() => {
@@ -89,24 +89,24 @@ const OrdersPage = () => {
   }
 
   return (
-    <div className="page-enter" style={{ padding: "28px var(--gutter, 20px)" }}>
+    <div className="page-enter" style={{ padding: '28px var(--gutter, 20px)' }}>
       <div
         style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "12px",
-          marginBottom: "24px",
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          marginBottom: '24px',
         }}
       >
         <Package size={24} weight="bold" color="var(--fire)" />
         <h1
           style={{
-            fontFamily: "var(--font-serif)",
-            fontSize: "1.6rem",
+            fontFamily: 'var(--font-serif)',
+            fontSize: '1.6rem',
             fontWeight: 700,
-            letterSpacing: "-0.03em",
+            letterSpacing: '-0.03em',
             margin: 0,
-            color: "var(--text-1)",
+            color: 'var(--text-1)',
           }}
         >
           Мои заказы
@@ -114,13 +114,13 @@ const OrdersPage = () => {
       </div>
 
       <div
-        style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 20 }}
+        style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 20 }}
       >
         {STATUS_FILTERS.map(({ key, label }) => (
           <button
             key={key}
-            className={`category-chip${statusFilter === key ? " active" : ""}`}
-            style={{ fontSize: "0.8rem" }}
+            className={`category-chip${statusFilter === key ? ' active' : ''}`}
+            style={{ fontSize: '0.8rem' }}
             onClick={() => {
               setStatusFilter(key);
               setPage(1);
@@ -134,17 +134,17 @@ const OrdersPage = () => {
       {orders.length === 0 ? (
         <EmptyState
           title={
-            statusFilter ? "Заказов с таким статусом нет" : "Заказов пока нет"
+            statusFilter ? 'Заказов с таким статусом нет' : 'Заказов пока нет'
           }
           subtitle={
             statusFilter
-              ? "Попробуйте выбрать другую категорию"
-              : "Сделайте первый заказ — это займёт меньше минуты"
+              ? 'Попробуйте выбрать другую категорию'
+              : 'Сделайте первый заказ — это займёт меньше минуты'
           }
           action={
             !statusFilter
               ? {
-                  label: "Выбрать заведение",
+                  label: 'Выбрать заведение',
                   onClick: () => navigate(ROUTES.HOME),
                 }
               : undefined
@@ -152,7 +152,7 @@ const OrdersPage = () => {
         />
       ) : (
         <>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {orders.map((order) => {
               const cfg = STATUS_CONFIG[order.status] || STATUS_CONFIG.PENDING;
               return (
@@ -161,23 +161,23 @@ const OrdersPage = () => {
                   id={`order-card-${order.id}`}
                   className="order-card"
                   onClick={() =>
-                    navigate(ROUTES.ORDER_STATUS.replace(":id", order.id))
+                    navigate(ROUTES.ORDER_STATUS.replace(':id', order.id))
                   }
                 >
                   <div style={{ flex: 1 }}>
                     <div
                       style={{
                         fontWeight: 700,
-                        fontSize: "0.9rem",
-                        letterSpacing: "-0.02em",
+                        fontSize: '0.9rem',
+                        letterSpacing: '-0.02em',
                         marginBottom: 4,
-                        color: "var(--text-1)",
+                        color: 'var(--text-1)',
                       }}
                     >
                       Заказ #{getOrderDisplayId(order)}
                     </div>
                     <div
-                      style={{ fontSize: "0.78rem", color: "var(--text-3)" }}
+                      style={{ fontSize: '0.78rem', color: 'var(--text-3)' }}
                     >
                       {order.items?.length || 0} позиций
                     </div>
@@ -185,19 +185,19 @@ const OrdersPage = () => {
 
                   <div
                     style={{
-                      textAlign: "right",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-end",
+                      textAlign: 'right',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-end',
                       gap: 6,
                     }}
                   >
                     <span
                       className={`order-status-badge ${cfg.className}`}
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "4px",
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
                       }}
                     >
                       {cfg.icon}
@@ -206,9 +206,9 @@ const OrdersPage = () => {
                     <span
                       style={{
                         fontWeight: 800,
-                        fontSize: "1rem",
-                        letterSpacing: "-0.02em",
-                        color: "var(--text-1)",
+                        fontSize: '1rem',
+                        letterSpacing: '-0.02em',
+                        color: 'var(--text-1)',
                       }}
                     >
                       {order.total_price} ₽

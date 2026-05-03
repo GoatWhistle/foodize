@@ -33,9 +33,7 @@ async def get_valid_staff_request(
     restaurant = res.scalar_one_or_none()
 
     if not restaurant or restaurant.vendor_id != current_vendor.id:
-        raise AccessDeniedException(
-            detail="You don't have permission to manage this request"
-        )
+        raise AccessDeniedException(detail="You don't have permission to manage this request")
 
     return request
 

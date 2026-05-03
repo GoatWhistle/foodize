@@ -35,15 +35,11 @@ class CartItemIn(BaseModel):
     image_url: str | None = None
     quantity: int = Field(..., ge=1, le=99)
     selected_option_ids: list[uuid.UUID] = Field(default_factory=list, max_length=50)
-    selected_options: list[CartSelectedOption] = Field(
-        default_factory=list, max_length=50
-    )
+    selected_options: list[CartSelectedOption] = Field(default_factory=list, max_length=50)
 
     @field_validator("selected_option_ids")
     @classmethod
-    def selected_option_ids_must_be_unique(
-        cls, value: list[uuid.UUID]
-    ) -> list[uuid.UUID]:
+    def selected_option_ids_must_be_unique(cls, value: list[uuid.UUID]) -> list[uuid.UUID]:
         if len(value) != len(set(value)):
             raise ValueError("Duplicate options selected")
         return value

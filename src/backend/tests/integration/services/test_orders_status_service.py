@@ -3,12 +3,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from factories import make_user
+from shared.enums.roles import UserRole
 
 from features.orders.exceptions import InvalidStatusTransitionException
 from features.orders.schemas.order import OrderStatusUpdate
 from features.orders.services.order import _validate_transition, change_order_status
 from shared.enums.order_status import OrderStatus
-from shared.enums.roles import UserRole
 
 
 def make_mock_order(status: OrderStatus) -> MagicMock:
@@ -122,8 +122,6 @@ class TestChangeOrderStatus:
             new_callable=AsyncMock,
         ) as mock_event:
             with pytest.raises(InvalidStatusTransitionException):
-                await change_order_status(
-                    mock_db_session, order, status_data, actor=actor
-                )
+                await change_order_status(mock_db_session, order, status_data, actor=actor)
 
         mock_event.assert_not_awaited()

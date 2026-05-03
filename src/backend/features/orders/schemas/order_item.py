@@ -12,9 +12,7 @@ class OrderItemCreate(BaseModel):
 
     @field_validator("selected_option_ids")
     @classmethod
-    def selected_option_ids_must_be_unique(
-        cls, value: list[uuid.UUID]
-    ) -> list[uuid.UUID]:
+    def selected_option_ids_must_be_unique(cls, value: list[uuid.UUID]) -> list[uuid.UUID]:
         if len(value) != len(set(value)):
             raise ValueError("Duplicate options selected")
         return value

@@ -94,9 +94,7 @@ class TestOrderEventsAPI:
         assert response.status_code == 401
 
     @pytest.mark.asyncio
-    async def test_read_order_events_customer_denied(
-        self, client: AsyncClient, as_user
-    ):
+    async def test_read_order_events_customer_denied(self, client: AsyncClient, as_user):
         order_id = uuid.uuid4()
         mock_order = _make_mock_order(order_id, user_id=uuid.uuid4())
 

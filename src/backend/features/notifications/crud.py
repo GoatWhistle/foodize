@@ -36,17 +36,21 @@ async def get_user_notifications(
         .where(Notification.user_id == user_id)
         .order_by(Notification.created_at.desc())
     )
-    total_query = select(func.count()).select_from(Notification).where(Notification.user_id == user_id)
-    
+    total_query = (
+        select(func.count()).select_from(Notification).where(Notification.user_id == user_id)
+    )
+
     result = await session.execute(query.limit(limit).offset(offset))
     total_result = await session.execute(total_query)
-    
+
     return list(result.scalars().all()), total_result.scalar_one()
 
 
 async def get_unread_count(session: AsyncSession, user_id: uuid.UUID) -> int:
-    query = select(func.count()).select_from(Notification).where(
-        Notification.user_id == user_id, Notification.is_read == False
+    query = (
+        select(func.count())
+        .select_from(Notification)
+        .where(Notification.user_id == user_id, not Notification.is_read)
     )
     result = await session.execute(query)
     return result.scalar_one()
@@ -60,19 +64,19 @@ async def mark_as_read(
     )
     result = await session.execute(query)
     notification = result.scalar_one_or_none()
-    
+
     if notification and not notification.is_read:
         notification.is_read = True
         await session.commit()
         await session.refresh(notification)
-        
+
     return notification
 
 
 async def mark_all_as_read(session: AsyncSession, user_id: uuid.UUID) -> None:
     stmt = (
         update(Notification)
-        .where(Notification.user_id == user_id, Notification.is_read == False)
+        .where(Notification.user_id == user_id, not Notification.is_read)
         .values(is_read=True)
     )
     await session.execute(stmt)

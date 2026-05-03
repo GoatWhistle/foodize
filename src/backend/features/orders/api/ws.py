@@ -38,9 +38,7 @@ async def order_status_ws(
                 return
 
         while True:
-            message = await pubsub.get_message(
-                ignore_subscribe_messages=True, timeout=1.0
-            )
+            message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
             if message is not None:
                 async with db_helper.session_factory() as session:
                     order = await get_order_by_id(session, order_id)
@@ -50,9 +48,7 @@ async def order_status_ws(
                     current_status = str(order.status)
                     if current_status != last_status:
                         last_status = current_status
-                        data = OrderResponse.model_validate(order).model_dump(
-                            mode="json"
-                        )
+                        data = OrderResponse.model_validate(order).model_dump(mode="json")
                         await websocket.send_text(json.dumps(data))
 
                     if current_status in {"COMPLETED", "CANCELLED"}:
@@ -77,9 +73,7 @@ async def restaurant_orders_ws(
 
     try:
         while True:
-            message = await pubsub.get_message(
-                ignore_subscribe_messages=True, timeout=1.0
-            )
+            message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
             if message is not None:
                 data_str = message["data"]
                 if isinstance(data_str, bytes):

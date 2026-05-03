@@ -8,9 +8,7 @@ from features.restaurants.working_hours import WorkingHours
 from features.restaurants.working_hours_schemas import WorkingHoursEntry
 
 
-async def get_working_hours(
-    session: AsyncSession, restaurant_id: uuid.UUID
-) -> list[WorkingHours]:
+async def get_working_hours(session: AsyncSession, restaurant_id: uuid.UUID) -> list[WorkingHours]:
     result = await session.execute(
         select(WorkingHours)
         .where(WorkingHours.restaurant_id == restaurant_id)
@@ -24,9 +22,7 @@ async def set_working_hours(
     restaurant_id: uuid.UUID,
     entries: list[WorkingHoursEntry],
 ) -> list[WorkingHours]:
-    await session.execute(
-        delete(WorkingHours).where(WorkingHours.restaurant_id == restaurant_id)
-    )
+    await session.execute(delete(WorkingHours).where(WorkingHours.restaurant_id == restaurant_id))
     rows = [
         WorkingHours(
             restaurant_id=restaurant_id,

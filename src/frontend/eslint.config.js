@@ -1,24 +1,24 @@
-import js from "@eslint/js";
-import react from "eslint-plugin-react";
-import reactHooks from "eslint-plugin-react-hooks";
-import globals from "globals";
-import prettierConfig from "eslint-config-prettier";
+import js from '@eslint/js';
+import react from 'eslint-plugin-react';
+import reactHooks from 'eslint-plugin-react-hooks';
+import globals from 'globals';
+import prettierConfig from 'eslint-config-prettier';
 
 export default [
   {
-    ignores: ["dist/**", "node_modules/**"],
+    ignores: ['dist/**', 'node_modules/**'],
   },
   js.configs.recommended,
   prettierConfig,
   {
-    files: ["**/*.js", "**/*.jsx"],
+    files: ['**/*.js', '**/*.jsx'],
     languageOptions: {
       globals: {
         ...globals.browser,
         ...globals.es2021,
       },
-      ecmaVersion: "latest",
-      sourceType: "module",
+      ecmaVersion: 'latest',
+      sourceType: 'module',
       parserOptions: {
         ecmaFeatures: {
           jsx: true,
@@ -27,20 +27,20 @@ export default [
     },
     plugins: {
       react,
-      "react-hooks": reactHooks,
+      'react-hooks': reactHooks,
     },
     rules: {
-      "react/jsx-uses-vars": "error",
-      "react/react-in-jsx-scope": "off",
-      "react/prop-types": "off",
-      "react-hooks/rules-of-hooks": "error",
-      "react-hooks/exhaustive-deps": "warn",
-      "no-unused-vars": ["error", { caughtErrorsIgnorePattern: "^_" }],
-      "no-empty": ["error", { allowEmptyCatch: true }],
+      'react/jsx-uses-vars': 'error',
+      'react/react-in-jsx-scope': 'off',
+      'react/prop-types': 'off',
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
+      'no-unused-vars': ['error', { caughtErrorsIgnorePattern: '^_' }],
+      'no-empty': ['error', { allowEmptyCatch: true }],
     },
     settings: {
       react: {
-        version: "detect",
+        version: 'detect',
       },
     },
   },

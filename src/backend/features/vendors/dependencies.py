@@ -20,15 +20,9 @@ async def get_current_vendor(
     user: User = Depends(get_current_user),
 ) -> VendorProfile:
     if not has_permission(user.permissions, Permission.VENDORS_READ_OWN):
-        raise AccessDeniedException(
-            detail="Insufficient permissions to access vendor profile"
-        )
+        raise AccessDeniedException(detail="Insufficient permissions to access vendor profile")
 
-    stmt = (
-        select(User)
-        .where(User.id == user.id)
-        .options(selectinload(User.vendor_profile))
-    )
+    stmt = select(User).where(User.id == user.id).options(selectinload(User.vendor_profile))
     result = await session.execute(stmt)
     loaded_user = result.scalar_one_or_none()
     if not loaded_user or not loaded_user.vendor_profile:

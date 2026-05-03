@@ -1,33 +1,33 @@
-import { useEffect } from "react";
+import { useEffect } from 'react';
 import {
   RouterProvider,
   createBrowserRouter,
   Navigate,
-} from "react-router-dom";
+} from 'react-router-dom';
 
-import { IconContext, MapPin, ArrowLeft } from "@phosphor-icons/react";
+import { IconContext, MapPin, ArrowLeft } from '@phosphor-icons/react';
 
-import MainLayout from "./components/layout/MainLayout";
-import ErrorBoundary from "./components/ui/ErrorBoundary";
-import ConfirmDialog from "./components/ui/ConfirmDialog";
+import MainLayout from './components/layout/MainLayout';
+import ErrorBoundary from './components/ui/ErrorBoundary';
+import ConfirmDialog from './components/ui/ConfirmDialog';
 
-import LoginPage from "./pages/auth/LoginPage";
-import RegisterPage from "./pages/auth/RegisterPage";
-import HomePage from "./pages/home/HomePage";
-import RestaurantPage from "./pages/restaurant/RestaurantPage";
-import OrdersPage from "./pages/orders/OrdersPage";
-import OrderStatusPage from "./pages/orders/OrderStatusPage";
-import VendorDashboardPage from "./pages/vendor/VendorDashboardPage";
-import ProfilePage from "./pages/profile/ProfilePage";
-import FavoritesPage from "./pages/profile/FavoritesPage";
-import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
-import StaffDashboardPage from "./pages/staff/StaffDashboardPage";
+import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
+import HomePage from './pages/home/HomePage';
+import RestaurantPage from './pages/restaurant/RestaurantPage';
+import OrdersPage from './pages/orders/OrdersPage';
+import OrderStatusPage from './pages/orders/OrderStatusPage';
+import VendorDashboardPage from './pages/vendor/VendorDashboardPage';
+import ProfilePage from './pages/profile/ProfilePage';
+import FavoritesPage from './pages/profile/FavoritesPage';
+import AdminDashboardPage from './pages/admin/AdminDashboardPage';
+import StaffDashboardPage from './pages/staff/StaffDashboardPage';
 
-import { ROUTES } from "./constants/routes";
-import { useAuthStore } from "./store/useAuthStore";
-import { useThemeStore } from "./store/useThemeStore";
-import { useOrderStore } from "./store/useOrderStore";
-import { useFavoriteStore } from "./store/useFavoriteStore";
+import { ROUTES } from './constants/routes';
+import { useAuthStore } from './store/useAuthStore';
+import { useThemeStore } from './store/useThemeStore';
+import { useOrderStore } from './store/useOrderStore';
+import { useFavoriteStore } from './store/useFavoriteStore';
 
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -109,25 +109,30 @@ const router = createBrowserRouter([
     ],
   },
   {
-    path: "*",
+    path: '*',
     element: (
       <div
         style={{
-          minHeight: "100vh",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
           gap: 16,
-          fontFamily: "Manrope, sans-serif",
+          fontFamily: 'Manrope, sans-serif',
         }}
       >
-        <MapPin size={64} weight="bold" color="var(--fire)" />
+        <MapPin
+          className="not-found-pin"
+          size={64}
+          weight="bold"
+          color="var(--fire)"
+        />
         <h1
           style={{
             fontWeight: 800,
-            fontSize: "1.5rem",
-            letterSpacing: "-0.03em",
+            fontSize: '1.5rem',
+            letterSpacing: '-0.03em',
           }}
         >
           Страница не найдена
@@ -135,12 +140,12 @@ const router = createBrowserRouter([
         <a
           href="/"
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            color: "var(--fire)",
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: 'var(--fire)',
             fontWeight: 700,
-            textDecoration: "none",
+            textDecoration: 'none',
           }}
         >
           <ArrowLeft weight="bold" /> На главную
@@ -176,9 +181,9 @@ function App() {
     <ErrorBoundary>
       <IconContext.Provider
         value={{
-          color: "currentColor",
+          color: 'currentColor',
           size: 20,
-          weight: "bold",
+          weight: 'bold',
           mirrored: false,
         }}
       >

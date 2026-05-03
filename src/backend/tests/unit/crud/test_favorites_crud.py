@@ -41,9 +41,7 @@ class TestGetFavoritesByUser:
     async def test_success(self):
         fav = MagicMock()
         mock_result = MagicMock()
-        mock_result.scalars = MagicMock(
-            return_value=MagicMock(all=MagicMock(return_value=[fav]))
-        )
+        mock_result.scalars = MagicMock(return_value=MagicMock(all=MagicMock(return_value=[fav])))
 
         session = AsyncMock()
         session.execute = AsyncMock(return_value=mock_result)
@@ -54,9 +52,7 @@ class TestGetFavoritesByUser:
     @pytest.mark.asyncio
     async def test_empty(self):
         mock_result = MagicMock()
-        mock_result.scalars = MagicMock(
-            return_value=MagicMock(all=MagicMock(return_value=[]))
-        )
+        mock_result.scalars = MagicMock(return_value=MagicMock(all=MagicMock(return_value=[])))
 
         session = AsyncMock()
         session.execute = AsyncMock(return_value=mock_result)

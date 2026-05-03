@@ -21,9 +21,7 @@ async def user_notifications_ws(
 
     try:
         while True:
-            message = await pubsub.get_message(
-                ignore_subscribe_messages=True, timeout=1.0
-            )
+            message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
             if message is not None:
                 data_str = message["data"]
                 if isinstance(data_str, bytes):

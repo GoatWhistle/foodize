@@ -15,36 +15,36 @@ import {
   Cell,
   AreaChart,
   Area,
-} from "recharts";
+} from 'recharts';
 
 const COLORS = [
-  "#6366f1",
-  "#10b981",
-  "#f59e0b",
-  "#ef4444",
-  "#8b5cf6",
-  "#ec4899",
+  '#6366f1',
+  '#10b981',
+  '#f59e0b',
+  '#ef4444',
+  '#8b5cf6',
+  '#ec4899',
 ];
 
 const ChartCard = ({ title, children }) => (
   <div
     style={{
-      background: "var(--bg-card)",
-      border: "1px solid var(--border)",
-      borderRadius: "var(--r-md)",
-      padding: "20px",
-      display: "flex",
-      flexDirection: "column",
-      gap: "16px",
-      minHeight: "350px",
+      background: 'var(--bg-card)',
+      border: '1px solid var(--border)',
+      borderRadius: 'var(--r-md)',
+      padding: '20px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '16px',
+      minHeight: '350px',
     }}
   >
     <h3
       style={{
-        fontSize: "0.95rem",
+        fontSize: '0.95rem',
         fontWeight: 700,
         margin: 0,
-        color: "var(--text-1)",
+        color: 'var(--text-1)',
       }}
     >
       {title}
@@ -76,9 +76,9 @@ export const RevenueChart = ({ data }) => (
         stroke="var(--text-3)"
         fontSize={11}
         tickFormatter={(val) =>
-          new Date(val).toLocaleDateString("ru-RU", {
-            day: "2-digit",
-            month: "2-digit",
+          new Date(val).toLocaleDateString('ru-RU', {
+            day: '2-digit',
+            month: '2-digit',
           })
         }
       />
@@ -89,11 +89,11 @@ export const RevenueChart = ({ data }) => (
       />
       <Tooltip
         contentStyle={{
-          background: "var(--bg-card)",
-          border: "1px solid var(--border)",
-          borderRadius: "8px",
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
+          borderRadius: '8px',
         }}
-        labelStyle={{ color: "var(--text-1)", fontWeight: 700 }}
+        labelStyle={{ color: 'var(--text-1)', fontWeight: 700 }}
       />
       <Area
         type="monotone"
@@ -120,9 +120,9 @@ export const HourlyLoadChart = ({ data }) => (
       <YAxis stroke="var(--text-3)" fontSize={11} />
       <Tooltip
         contentStyle={{
-          background: "var(--bg-card)",
-          border: "1px solid var(--border)",
-          borderRadius: "8px",
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
+          borderRadius: '8px',
         }}
       />
       <Bar
@@ -154,12 +154,12 @@ export const CategoryRevenueChart = ({ data }) => (
       </Pie>
       <Tooltip
         contentStyle={{
-          background: "var(--bg-card)",
-          border: "1px solid var(--border)",
-          borderRadius: "8px",
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
+          borderRadius: '8px',
         }}
       />
-      <Legend iconType="circle" wrapperStyle={{ fontSize: "12px" }} />
+      <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
     </PieChart>
   </ChartCard>
 );
@@ -177,9 +177,9 @@ export const AOVDynamicsChart = ({ data }) => (
         stroke="var(--text-3)"
         fontSize={11}
         tickFormatter={(val) =>
-          new Date(val).toLocaleDateString("ru-RU", {
-            day: "2-digit",
-            month: "2-digit",
+          new Date(val).toLocaleDateString('ru-RU', {
+            day: '2-digit',
+            month: '2-digit',
           })
         }
       />
@@ -190,9 +190,9 @@ export const AOVDynamicsChart = ({ data }) => (
       />
       <Tooltip
         contentStyle={{
-          background: "var(--bg-card)",
-          border: "1px solid var(--border)",
-          borderRadius: "8px",
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
+          borderRadius: '8px',
         }}
       />
       <Line

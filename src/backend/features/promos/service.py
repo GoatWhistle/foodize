@@ -83,9 +83,7 @@ async def validate_promo(
     discounted_amount: int | None = None
     if order_total is not None:
         if promo.discount_type == "PERCENT":
-            discounted_amount = max(
-                0, order_total - int(order_total * promo.discount_value / 100)
-            )
+            discounted_amount = max(0, order_total - int(order_total * promo.discount_value / 100))
         else:
             discounted_amount = max(0, order_total - promo.discount_value)
 

@@ -1,4 +1,5 @@
 .venv/
+.venv-win/
 .idea/
 __pycache__/
 .ruff_cache/
@@ -14,6 +15,7 @@ certs/
 .env
 
 .vite
+.openapi-certs/
 coverage/
 
 setting.local.json

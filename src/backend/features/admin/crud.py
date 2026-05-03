@@ -136,13 +136,10 @@ async def get_all_orders(
             | (Restaurant.name.ilike(pattern))
         )
     if date_from is not None:
-        stmt = stmt.where(
-            Order.created_at >= datetime.combine(date_from, datetime.min.time())
-        )
+        stmt = stmt.where(Order.created_at >= datetime.combine(date_from, datetime.min.time()))
     if date_to is not None:
         stmt = stmt.where(
-            Order.created_at
-            < datetime.combine(date_to + timedelta(days=1), datetime.min.time())
+            Order.created_at < datetime.combine(date_to + timedelta(days=1), datetime.min.time())
         )
     result = await session.execute(stmt)
     return list(result.scalars().all())
@@ -177,13 +174,10 @@ async def count_all_orders(
             | (Restaurant.name.ilike(pattern))
         )
     if date_from is not None:
-        stmt = stmt.where(
-            Order.created_at >= datetime.combine(date_from, datetime.min.time())
-        )
+        stmt = stmt.where(Order.created_at >= datetime.combine(date_from, datetime.min.time()))
     if date_to is not None:
         stmt = stmt.where(
-            Order.created_at
-            < datetime.combine(date_to + timedelta(days=1), datetime.min.time())
+            Order.created_at < datetime.combine(date_to + timedelta(days=1), datetime.min.time())
         )
     result = await session.execute(stmt)
     return result.scalar_one()
@@ -224,9 +218,7 @@ async def get_all_restaurants(
         stmt = stmt.where(Restaurant.name.ilike(f"%{search}%"))
     if vendor_search:
         pattern = f"%{vendor_search}%"
-        stmt = stmt.where(
-            (User.name.ilike(pattern)) | (User.phone_number.ilike(pattern))
-        )
+        stmt = stmt.where((User.name.ilike(pattern)) | (User.phone_number.ilike(pattern)))
     if is_open is not None:
         stmt = stmt.where(Restaurant.is_open == is_open)
     if moderation_status:
@@ -335,16 +327,12 @@ async def get_all_vendors(
     stmt = (
         select(VendorProfile)
         .join(User, User.id == VendorProfile.user_id)
-        .options(
-            selectinload(VendorProfile.user), selectinload(VendorProfile.restaurants)
-        )
+        .options(selectinload(VendorProfile.user), selectinload(VendorProfile.restaurants))
         .order_by(VendorProfile.created_at.desc())
     )
     if search:
         pattern = f"%{search}%"
-        stmt = stmt.where(
-            (User.name.ilike(pattern)) | (User.phone_number.ilike(pattern))
-        )
+        stmt = stmt.where((User.name.ilike(pattern)) | (User.phone_number.ilike(pattern)))
     if approval_status:
         stmt = stmt.where(VendorProfile.approval_status == approval_status)
     result = await session.execute(stmt.offset(offset).limit(limit))
@@ -357,31 +345,23 @@ async def count_all_vendors(
     approval_status: str | None = None,
 ) -> int:
     stmt = (
-        select(func.count())
-        .select_from(VendorProfile)
-        .join(User, User.id == VendorProfile.user_id)
+        select(func.count()).select_from(VendorProfile).join(User, User.id == VendorProfile.user_id)
     )
     if search:
         pattern = f"%{search}%"
-        stmt = stmt.where(
-            (User.name.ilike(pattern)) | (User.phone_number.ilike(pattern))
-        )
+        stmt = stmt.where((User.name.ilike(pattern)) | (User.phone_number.ilike(pattern)))
     if approval_status:
         stmt = stmt.where(VendorProfile.approval_status == approval_status)
     result = await session.execute(stmt)
     return result.scalar_one()
 
 
-async def get_vendor_by_id(
-    session: AsyncSession, vendor_id: uuid.UUID
-) -> VendorProfile | None:
+async def get_vendor_by_id(session: AsyncSession, vendor_id: uuid.UUID) -> VendorProfile | None:
     result = await session.execute(
         select(VendorProfile)
         .join(User, User.id == VendorProfile.user_id)
         .where(VendorProfile.id == vendor_id)
-        .options(
-            selectinload(VendorProfile.user), selectinload(VendorProfile.restaurants)
-        )
+        .options(selectinload(VendorProfile.user), selectinload(VendorProfile.restaurants))
     )
     return result.scalar_one_or_none()
 
@@ -400,13 +380,9 @@ async def deactivate_restaurant(
     return restaurant
 
 
-async def deactivate_vendor(
-    session: AsyncSession, vendor: VendorProfile
-) -> VendorProfile:
+async def deactivate_vendor(session: AsyncSession, vendor: VendorProfile) -> VendorProfile:
     if not has_permission(vendor.user.permissions, Permission.ADMIN_ACCESS):
-        vendor.user.permissions = permissions_without(
-            vendor.user.permissions, VENDOR_PERMISSIONS
-        )
+        vendor.user.permissions = permissions_without(vendor.user.permissions, VENDOR_PERMISSIONS)
     for restaurant in vendor.restaurants or []:
         restaurant.is_active = False
         restaurant.is_open = False
@@ -426,9 +402,7 @@ async def set_vendor_moderation(
     vendor.rejection_reason = reason if status == "REJECTED" else None
     if status == "APPROVED":
         if not has_permission(vendor.user.permissions, Permission.ADMIN_ACCESS):
-            vendor.user.permissions = permissions_with(
-                vendor.user.permissions, VENDOR_PERMISSIONS
-            )
+            vendor.user.permissions = permissions_with(vendor.user.permissions, VENDOR_PERMISSIONS)
         else:
             for restaurant in vendor.restaurants or []:
                 restaurant.moderation_status = "APPROVED"
@@ -498,9 +472,7 @@ async def count_all_reviews(session: AsyncSession, rating: int | None = None) ->
     return result.scalar_one()
 
 
-async def get_review_by_id(
-    session: AsyncSession, review_id: uuid.UUID
-) -> Review | None:
+async def get_review_by_id(session: AsyncSession, review_id: uuid.UUID) -> Review | None:
     result = await session.execute(
         select(Review).where(Review.id == review_id, Review.deleted_at.is_(None))
     )
@@ -521,10 +493,7 @@ async def _count_by_day(
 ) -> dict[date, int]:
     result = await session.execute(
         select(func.date(created_at_column), func.count())
-        .where(
-            created_at_column
-            >= datetime.combine(start_date, datetime.min.time(), tzinfo=UTC)
-        )
+        .where(created_at_column >= datetime.combine(start_date, datetime.min.time(), tzinfo=UTC))
         .group_by(func.date(created_at_column))
         .order_by(func.date(created_at_column))
     )
@@ -536,9 +505,7 @@ async def _count_by_day(
     return counts
 
 
-def _growth_points(
-    counts: dict[date, int], start_date: date, days: int
-) -> list[StatsGrowthPoint]:
+def _growth_points(counts: dict[date, int], start_date: date, days: int) -> list[StatsGrowthPoint]:
     return [
         StatsGrowthPoint(
             date=start_date + timedelta(days=index),
@@ -571,12 +538,9 @@ async def get_finance_analytics(
     start_date = date_from or (end_date - timedelta(days=13))
 
     order_filters = [
+        Order.created_at >= datetime.combine(start_date, datetime.min.time(), tzinfo=UTC),
         Order.created_at
-        >= datetime.combine(start_date, datetime.min.time(), tzinfo=UTC),
-        Order.created_at
-        < datetime.combine(
-            end_date + timedelta(days=1), datetime.min.time(), tzinfo=UTC
-        ),
+        < datetime.combine(end_date + timedelta(days=1), datetime.min.time(), tzinfo=UTC),
     ]
     if vendor_id is not None:
         order_filters.append(Restaurant.vendor_id == vendor_id)
@@ -584,9 +548,7 @@ async def get_finance_analytics(
         order_filters.append(Order.restaurant_id == restaurant_id)
 
     revenue_rows = await session.execute(
-        select(
-            func.date(Order.created_at), func.coalesce(func.sum(Order.total_price), 0)
-        )
+        select(func.date(Order.created_at), func.coalesce(func.sum(Order.total_price), 0))
         .join(Restaurant, Restaurant.id == Order.restaurant_id)
         .where(*order_filters, Order.status == OrderStatus.COMPLETED.value)
         .group_by(func.date(Order.created_at))
@@ -606,9 +568,7 @@ async def get_finance_analytics(
             func.count().filter(Order.status == OrderStatus.COMPLETED.value),
             func.count().filter(Order.status == OrderStatus.CANCELLED.value),
             func.coalesce(
-                func.avg(Order.total_price).filter(
-                    Order.status == OrderStatus.COMPLETED.value
-                ),
+                func.avg(Order.total_price).filter(Order.status == OrderStatus.COMPLETED.value),
                 0,
             ),
         )
@@ -637,9 +597,9 @@ async def get_finance_analytics(
             MenuItem.id,
             MenuItem.name,
             func.coalesce(func.sum(OrderItem.quantity), 0).label("quantity"),
-            func.coalesce(
-                func.sum(OrderItem.quantity * OrderItem.price_at_purchase), 0
-            ).label("revenue"),
+            func.coalesce(func.sum(OrderItem.quantity * OrderItem.price_at_purchase), 0).label(
+                "revenue"
+            ),
         )
         .join(OrderItem, OrderItem.menu_item_id == MenuItem.id)
         .join(Order, Order.id == OrderItem.order_id)
@@ -650,9 +610,7 @@ async def get_finance_analytics(
         .limit(5)
     )
 
-    conversion = (
-        round((completed_orders / total_orders) * 100, 1) if total_orders else 0.0
-    )
+    conversion = round((completed_orders / total_orders) * 100, 1) if total_orders else 0.0
     days = (end_date - start_date).days + 1
     return FinanceAnalytics(
         revenue_by_day=_finance_points(revenue_counts, start_date, days),
@@ -695,9 +653,7 @@ async def get_platform_stats(session: AsyncSession) -> PlatformStats:
     orders_by_status = {row[0]: row[1] for row in orders_by_status_rows.all()}
 
     total_restaurants_result = await session.execute(
-        select(func.count())
-        .select_from(Restaurant)
-        .where(Restaurant.is_active.is_(True))
+        select(func.count()).select_from(Restaurant).where(Restaurant.is_active.is_(True))
     )
     total_restaurants = total_restaurants_result.scalar_one()
 
@@ -740,12 +696,9 @@ async def get_advanced_analytics(
     start_date = date_from or (end_date - timedelta(days=29))
 
     filters = [
+        Order.created_at >= datetime.combine(start_date, datetime.min.time(), tzinfo=UTC),
         Order.created_at
-        >= datetime.combine(start_date, datetime.min.time(), tzinfo=UTC),
-        Order.created_at
-        < datetime.combine(
-            end_date + timedelta(days=1), datetime.min.time(), tzinfo=UTC
-        ),
+        < datetime.combine(end_date + timedelta(days=1), datetime.min.time(), tzinfo=UTC),
         Order.status == OrderStatus.COMPLETED.value,
     ]
     if restaurant_id:
@@ -754,17 +707,14 @@ async def get_advanced_analytics(
         filters.append(Restaurant.vendor_id == vendor_id)
 
     hourly_rows = await session.execute(
-        select(
-            func.extract("hour", Order.created_at).label("hour"), func.count(Order.id)
-        )
+        select(func.extract("hour", Order.created_at).label("hour"), func.count(Order.id))
         .join(Restaurant, Restaurant.id == Order.restaurant_id)
         .where(*filters)
         .group_by("hour")
         .order_by("hour")
     )
     hourly_load = [
-        AnalyticsPoint(label=f"{int(row[0]):02d}:00", value=row[1])
-        for row in hourly_rows.all()
+        AnalyticsPoint(label=f"{int(row[0]):02d}:00", value=row[1]) for row in hourly_rows.all()
     ]
 
     category_rows = await session.execute(
@@ -779,8 +729,7 @@ async def get_advanced_analytics(
         .group_by(MenuItem.category)
     )
     category_revenue = [
-        AnalyticsPoint(label=row[0], value=int(row[1] or 0))
-        for row in category_rows.all()
+        AnalyticsPoint(label=row[0], value=int(row[1] or 0)) for row in category_rows.all()
     ]
 
     aov_rows = await session.execute(

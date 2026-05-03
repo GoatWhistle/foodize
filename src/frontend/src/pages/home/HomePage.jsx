@@ -1,19 +1,19 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { MagnifyingGlass, Storefront } from "@phosphor-icons/react";
-import RestaurantCard from "../../components/ui/RestaurantCard";
-import EmptyState from "../../components/ui/EmptyState";
-import Pagination from "../../components/ui/Pagination";
-import { useAuthStore } from "../../store/useAuthStore";
-import { useShallow } from "zustand/react/shallow";
-import { useRestaurantStore } from "../../store/useRestaurantStore";
-import { ROUTES } from "../../constants/routes";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { MagnifyingGlass, Storefront } from '@phosphor-icons/react';
+import RestaurantCard from '../../components/ui/RestaurantCard';
+import EmptyState from '../../components/ui/EmptyState';
+import Pagination from '../../components/ui/Pagination';
+import { useAuthStore } from '../../store/useAuthStore';
+import { useShallow } from 'zustand/react/shallow';
+import { useRestaurantStore } from '../../store/useRestaurantStore';
+import { ROUTES } from '../../constants/routes';
 
 const HomePage = () => {
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
   const [onlyOpen, setOnlyOpen] = useState(false);
   const { isAuthenticated } = useAuthStore(
-    useShallow((s) => ({ isAuthenticated: s.isAuthenticated })),
+    useShallow((s) => ({ isAuthenticated: s.isAuthenticated }))
   );
   const {
     publicRestaurants,
@@ -26,7 +26,7 @@ const HomePage = () => {
       publicRestaurantsTotal: s.publicRestaurantsTotal,
       fetchPublicRestaurants: s.fetchPublicRestaurants,
       loading: s.loading,
-    })),
+    }))
   );
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
@@ -53,7 +53,7 @@ const HomePage = () => {
       navigate(ROUTES.LOGIN);
       return;
     }
-    navigate(ROUTES.RESTAURANT.replace(":id", restaurant.id), {
+    navigate(ROUTES.RESTAURANT.replace(':id', restaurant.id), {
       state: { restaurant },
       viewTransition: true,
     });
@@ -75,13 +75,13 @@ const HomePage = () => {
         </div>
         <div
           style={{
-            display: "flex",
+            display: 'flex',
             gap: 16,
-            marginTop: "10px",
-            flexWrap: "wrap",
+            marginTop: '10px',
+            flexWrap: 'wrap',
           }}
         >
-          <label className="form-check" style={{ width: "fit-content" }}>
+          <label className="form-check" style={{ width: 'fit-content' }}>
             <input
               type="checkbox"
               checked={onlyOpen}
@@ -98,7 +98,7 @@ const HomePage = () => {
           <h1 className="section-title">Все заведения</h1>
           <span
             className="text-muted"
-            style={{ fontSize: "0.8rem", fontWeight: 600 }}
+            style={{ fontSize: '0.8rem', fontWeight: 600 }}
           >
             {publicRestaurants.length}
           </span>
@@ -113,9 +113,9 @@ const HomePage = () => {
             title="Ничего не найдено"
             subtitle="Попробуйте другой поиск или фильтр"
             action={{
-              label: "Сбросить",
+              label: 'Сбросить',
               onClick: () => {
-                setSearch("");
+                setSearch('');
                 setOnlyOpen(false);
               },
             }}

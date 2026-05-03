@@ -46,8 +46,6 @@ async def get_my_favorites(
     size: int = 20,
 ) -> tuple[list[FavoriteResponse], int]:
     offset = (page - 1) * size
-    items = await favorites_crud.get_favorites_by_user(
-        session, user_id, offset=offset, limit=size
-    )
+    items = await favorites_crud.get_favorites_by_user(session, user_id, offset=offset, limit=size)
     total = await favorites_crud.count_favorites_by_user(session, user_id)
     return [FavoriteResponse.model_validate(f) for f in items], total

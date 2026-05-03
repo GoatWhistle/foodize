@@ -20,9 +20,7 @@ class PermissionChecker:
             if not has_permission(user.permissions, permission)
         ]
         if missing_permissions:
-            raise RuleException(
-                detail="Insufficient permissions to perform this action"
-            )
+            raise RuleException(detail="Insufficient permissions to perform this action")
         return user
 
 

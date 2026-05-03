@@ -57,9 +57,7 @@ class TestCreateStaffRequest:
                 return_value=mock_request,
             ),
         ):
-            result = await create_staff_request(
-                MagicMock(), user_id, restaurant_id, request_data
-            )
+            result = await create_staff_request(MagicMock(), user_id, restaurant_id, request_data)
             assert result.user_id == mock_request.user_id
 
     @pytest.mark.asyncio
@@ -201,9 +199,7 @@ class TestCreateStaffRequest:
 class TestProcessStaffRequest:
     @pytest.mark.asyncio
     async def test_none_request_returns_none(self):
-        result = await process_staff_request(
-            MagicMock(), None, StaffRequestStatus.ACCEPTED
-        )
+        result = await process_staff_request(MagicMock(), None, StaffRequestStatus.ACCEPTED)
         assert result is None
 
     @pytest.mark.asyncio
@@ -227,9 +223,7 @@ class TestProcessStaffRequest:
                 return_value=updated,
             ),
         ):
-            result = await process_staff_request(
-                MagicMock(), request, StaffRequestStatus.ACCEPTED
-            )
+            result = await process_staff_request(MagicMock(), request, StaffRequestStatus.ACCEPTED)
             assert result.status == StaffRequestStatus.ACCEPTED
 
     @pytest.mark.asyncio
@@ -248,9 +242,7 @@ class TestProcessStaffRequest:
             patch("features.staff.crud.update_request_status", new_callable=AsyncMock),
         ):
             with pytest.raises(AlreadyStaffException):
-                await process_staff_request(
-                    MagicMock(), request, StaffRequestStatus.ACCEPTED
-                )
+                await process_staff_request(MagicMock(), request, StaffRequestStatus.ACCEPTED)
 
     @pytest.mark.asyncio
     async def test_reject_success(self):
@@ -262,9 +254,7 @@ class TestProcessStaffRequest:
             new_callable=AsyncMock,
             return_value=updated,
         ):
-            result = await process_staff_request(
-                MagicMock(), request, StaffRequestStatus.REJECTED
-            )
+            result = await process_staff_request(MagicMock(), request, StaffRequestStatus.REJECTED)
             assert result.status == StaffRequestStatus.REJECTED
 
 

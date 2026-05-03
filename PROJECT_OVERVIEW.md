@@ -63,7 +63,7 @@ Foodize
 | `.gitignore` | Исключения Git. |
 | `.dockerignore` | Исключения для Docker build context. |
 | `.pre-commit-config.yaml` | Ruff, Black, mypy, ESLint, Prettier, trailing whitespace/end-of-file checks. |
-| `Makefile` | Команды `sync`, `lint`, `test`, `keys`, `build`, `up`, `down`, `stop`, `logs`. |
+| `Makefile` | Команды `sync`, `lint`, `test`, `openapi`, `keys`, `build`, `up`, `down`, `stop`, `logs`. |
 | `docker-compose.yaml` | Основной compose для разработки и запуска всех сервисов. |
 | `docker-compose.monitoring.yml` | Отдельный compose для Prometheus и Grafana. |
 | `prometheus.yml` | Конфигурация scrape FastAPI metrics. |
@@ -221,6 +221,7 @@ Backend написан на Python 3.13, FastAPI, SQLAlchemy async, Alembic, Pyd
 - `make sync` - установка backend, bot, frontend и miniapp зависимостей;
 - `make lint` - pre-commit checks для проекта;
 - `make test` - backend pytest и frontend vitest;
+- `make openapi` - экспорт OpenAPI schema и генерация typed clients для frontend и miniapp;
 - `make keys` или `make certs` - генерация RSA ключей JWT в `src/backend/certs`;
 - `make build` - сборка Docker сервисов;
 - `make up` - запуск Docker сервисов;
@@ -242,93 +243,127 @@ Backend написан на Python 3.13, FastAPI, SQLAlchemy async, Alembic, Pyd
 
 ## Замечания по текущему состоянию
 
-- `README.md` почти пустой. Для командной работы лучше перенести туда быстрый старт, переменные окружения, запуск, тесты и архитектуру.
-- В `.env.example` и некоторых исходниках русские комментарии/строки отображаются с mojibake в текущем окружении PowerShell. Нужно проверить кодировку файлов, вероятно привести к UTF-8.
-- Внутри репозитория есть вложенная папка `Khorokhorin/Desktop/foodize/src/backend/certs`. Она выглядит как случайный артефакт пути. Если там только локальные ключи, их лучше удалить из проекта и оставить ключи в `src/backend/certs`, который должен быть в `.gitignore`.
-- CI использует Node.js 20, а Dockerfile для frontend и miniapp использует Node.js 22.17.0. Лучше выровнять версии.
-- `docker-compose.monitoring.yml` использует отдельную сеть `foodize_net`, а основной compose - `foodize-network`. Для совместного запуска мониторинга и приложения стоит проверить сетевую схему.
-- Основной frontend и miniapp имеют много похожих services/store/components. Можно выделить общий пакет или аккуратно синхронизировать общие части, чтобы не чинить одно и то же дважды.
-- Есть мониторинг метрик, но не видно готовых Grafana dashboard provisioning файлов.
-- Telegram Mini App зависит от `VITE_API_URL=http://localhost:8000/api/v1`; для реального Telegram нужен публичный HTTPS backend URL.
+- `README.md` почти пустой. Для командной работы туда нужно вынести быстрый старт, переменные окружения, команды запуска, тесты, миграции и ссылку на архитектурную документацию.
+- В `.env.example` и части русских строк/комментариев виден mojibake в PowerShell. Нужно привести файлы к UTF-8 и договориться о кодировке редакторов/CI.
+- CI, Dockerfile и локальная разработка используют разные версии Node.js. Лучше зафиксировать одну версию через `.nvmrc`/`.node-version`, Dockerfile и GitHub Actions.
+- Основной frontend и Telegram Mini App дублируют API services, store-логику и часть UI. Это увеличивает стоимость изменений: одну бизнес-правку часто нужно делать дважды.
+- OpenAPI schema и typed clients уже добавлены как направление, но пока не встроены в CI как contract check. Сейчас это инструмент генерации, а не гарантия от рассинхрона.
+- WebSocket-логика статусов заказов есть, но нет явной стратегии reconnect/backoff, heartbeat, дедупликации событий и восстановления состояния после пропущенных сообщений.
+- RabbitMQ используется для уведомлений, но для надежной доставки событий заказа нужен outbox/inbox-подход или другой механизм, который связывает запись в БД и публикацию события атомарно.
+- Корзина хранится в Redis. Нужно явно определить политику TTL, восстановления, совместимости при изменении схемы menu item/options и поведение при недоступности Redis.
+- Нет полноценного audit log для административных, vendor и staff действий. Для взрослого marketplace это критично: кто изменил меню, цену, статус заказа, права или промокод.
+- Есть Prometheus/Grafana заготовка, но не видно production-ready dashboard provisioning, алертов и SLO: ошибки API, latency, queue lag, WebSocket disconnects, время обработки заказа.
+- Telegram Mini App для production требует публичные HTTPS URL, webhook-mode, проверку подписи initData, понятную стратегию токенов и тесты edge cases.
+- Frontend lint сейчас падает на существующих ошибках в staff/vendor dashboard. Это снижает доверие к CI и мешает использовать lint как quality gate.
 
-## Что можно добавить
+## Архитектурные проблемы и технический долг
 
-### Документация и запуск
+### API contract и типизация
 
-- Полный `README.md`: описание продукта, архитектура, требования, быстрый старт, Docker-запуск, локальный запуск без Docker, тесты, миграции, Telegram-настройка.
-- `docs/architecture.md`: схема сервисов, поток заказа, поток уведомлений, роли и права.
-- `docs/api.md` или ссылка на OpenAPI `/docs`.
-- `docs/env.md`: описание всех переменных окружения без секретов.
-- `docs/deployment.md`: как деплоить backend, frontend, miniapp, bot, worker и мониторинг.
+- Ручные `services/*.js` в frontend и miniapp исторически расходятся с backend-контрактом. Нужен обязательный contract workflow: backend экспортирует OpenAPI, фронты генерируют типы/клиент, CI проверяет, что generated files актуальны.
+- Сейчас клиенты остаются JavaScript. Следующий взрослый шаг - постепенно переносить service-layer на TypeScript или хотя бы JSDoc-типизацию поверх generated schemas.
+- Нужно договориться, что является публичным contract: response envelope, error shape, pagination, auth errors, validation errors. Сейчас это размазано между backend handlers и frontend `translateApiError`.
 
-### Продуктовые функции
+### Доменные границы
 
-- Поиск ресторанов и блюд с фильтрами по категории, рейтингу, времени приготовления, открытости и доставке/самовывозу.
-- Геолокация и зоны обслуживания ресторанов.
-- Онлайн-оплата или подготовленная интеграция с платежным провайдером.
-- Купоны с более гибкими правилами: лимиты, период действия, минимальная сумма, конкретные рестораны.
-- История изменения заказа для пользователя и ресторана.
-- Отмена заказа с причинами и правилами по времени.
-- Чат или быстрые сообщения между клиентом и рестораном по заказу.
+- `features/*` хорошо разделены физически, но доменные инварианты заказа, промокода, меню и уведомлений нужно держать в service-layer, а не размазывать между API, CRUD и frontend.
+- Заказ должен иметь строгую state machine: разрешенные переходы, actor, timestamp, reason, side effects. Это важно для отмен, возвратов, staff/vendor workflows и аудита.
+- Финансы и промокоды стоит отделить от базовой логики заказа: итоговая цена, скидка, комиссия, refund и история пересчета должны быть воспроизводимыми.
+
+### Надежность событий
+
+- Смена статуса заказа должна создавать durable event в БД и только потом отправляться в RabbitMQ/WebSocket/Telegram. Иначе возможны потерянные уведомления.
+- Нужны idempotency keys для создания заказа и оплаты, чтобы повторный клик/ретрай не создавал дубликаты.
+- Для consumers нужны retry policy, dead-letter queue, poison-message handling и метрики queue lag.
+
+### Frontend architecture
+
+- Основной frontend и miniapp нуждаются в общем слое: generated API client, доменные mappers, форматирование цен/дат, enum labels, cart/order helpers.
+- Большие страницы dashboard стоит разрезать на feature-компоненты и hooks. Сейчас такие файлы легко становятся местом случайных regressions.
+- Нужна единая стратегия серверного состояния: сейчас часть данных в Zustand, часть локально в компонентах. Для заказов, меню, профиля и dashboard-таблиц лучше определить правила кеширования, invalidation и optimistic updates.
+
+### Security и production readiness
+
+- Refresh token rotation, session table/blacklist и revoke-device flow нужны до реального production.
+- Нужна явная CSRF/CORS модель с учетом cookie/auth header сценариев.
+- Нужен secret scanning в CI и запрет на commit `.env`, JWT keys, Telegram tokens, dumps.
+- Нужны backup/restore runbooks для PostgreSQL и проверка восстановления, не только наличие volume.
+
+## Что добавить, чтобы проект стал взрослее
+
+### P0: качество, которое должно блокировать regressions
+
+- CI contract check: `make openapi`, генерация клиентов, затем проверка `git diff --exit-code`, чтобы API schema/client не забывали обновлять.
+- Починить frontend lint и сделать его обязательным quality gate.
+- Playwright smoke-tests для ключевого пути: регистрация/логин, ресторан, добавление в корзину, промокод, заказ, смена статуса, получение заказа.
+- Alembic migration check в CI: одна head-миграция, upgrade на пустой БД, downgrade policy или хотя бы documented no-downgrade decision.
+- Coverage gates по критичным backend модулям: orders, promos, auth, permissions, Telegram auth.
+- Secret scanning и dependency audit для Python/Node.
+
+### P1: надежный заказ как ядро продукта
+
+- Order state machine с таблицей разрешенных переходов, actor и reason.
+- Idempotency keys для `create order`, `complete order`, будущей оплаты и повторных webhook callbacks.
+- Outbox pattern для order events: БД событие -> publisher -> RabbitMQ/WebSocket/Telegram.
+- Durable order timeline: пользователь, ресторан и админ видят историю статусов, отмен, комментариев и системных событий.
+- Reconnect/backoff для WebSocket, heartbeat и fallback polling для страницы статуса заказа.
+- Явные SLA/ETA поля: estimated ready time, actual ready time, pickup deadline, delay reason.
+
+### P1: операционная зрелость для ресторанов
+
+- Stop-list и быстрый toggle доступности блюд/опций во время смены.
+- CRUD рабочих часов и временных закрытий: сегодня закрыто, перерыв, праздник, перегруз кухни.
+- New order alert в staff/vendor dashboard: звук/визуальный сигнал, подтверждение принятия, фильтр активных заказов.
+- Экспорт заказов и финансов в CSV/XLSX.
+- Audit log для изменений меню, цен, промокодов, статусов, прав сотрудников и ресторанных настроек.
+- Роли внутри ресторана: owner, manager, cook, cashier с разными правами.
+
+### P1: Telegram production-flow
+
+- Проверка подписи Telegram initData с тестами нормальных и атакующих случаев.
+- Deep links в ресторан, menu item и конкретный заказ.
+- Telegram notifications по статусам заказа с retry и логированием доставки.
+- Webhook production mode для бота: HTTPS/nginx инструкция, secret path/header, healthcheck.
+- Обработка случая, когда пользователь удалил чат/заблокировал бота.
+
+### P2: продуктовые фичи, которые усиливают marketplace
+
+- Поиск по ресторанам и блюдам: категория, рейтинг, доступность, время приготовления, открыто сейчас.
 - Избранные блюда, а не только рестораны.
-- Рекомендации блюд/ресторанов на основе истории заказов.
-- Фотографии блюд и ресторанов с загрузкой в S3-compatible storage.
+- Гибкие промокоды: минимальная сумма, период действия, лимиты, first order only, ресторан/категория/пользователь.
+- Отмена заказа с причинами и правилами по времени.
+- Чат или быстрые сообщения по заказу: "опоздаю", "заменить блюдо", "нет ингредиента".
+- Online payment-ready architecture: payment intent, provider webhook, refund, reconciliation, без обязательной немедленной интеграции.
+- Загрузка фотографий в S3-compatible storage с moderation flow.
+- Рекомендации на основе истории заказов после накопления данных.
 
-### Панели ресторана и админа
+### P2: наблюдаемость и эксплуатация
 
-- CRUD для рабочих часов прямо в vendor dashboard.
-- Управление доступностью блюд и стоп-листом.
-- Экспорт заказов/финансов в CSV/XLSX.
-- Детальная финансовая аналитика: комиссии, возвраты, средний чек, конверсия.
-- Модерация фотографий, меню и отзывов.
-- Audit log для действий админа, вендора и персонала.
-- Расширенная RBAC-модель с granular permissions.
+- Grafana dashboards provisioning: API latency/error rate, DB pool, Redis, RabbitMQ queue lag, order conversion funnel.
+- Alert rules: backend 5xx, высокая latency, consumer lag, ошибки Telegram delivery, health degraded.
+- Structured logs с request_id/user_id/order_id/restaurant_id и dashboard/search recipe.
+- Backup/restore scripts и регулярная проверка восстановления PostgreSQL.
+- Production runbooks: как откатить релиз, как восстановить очередь, что делать при падении Redis/RabbitMQ.
 
-### Telegram
+### P2: UX и polish
 
-- Deep links в конкретный ресторан или заказ.
-- Push-уведомления о статусе заказа в Telegram.
-- Команды бота для просмотра активного заказа.
-- Webhook-only production mode с инструкцией для HTTPS/nginx.
-- Проверка подписи Telegram initData с тестами edge cases.
-
-### Надежность и безопасность
-
-- Rate limits на чувствительные endpoint-ы, не только auth.
-- Refresh token rotation и хранение blacklist/session table.
-- Password reset и email/phone verification.
-- Проверка CORS/CSRF модели для production.
-- Idempotency keys для создания заказов.
-- Outbox pattern для надежной публикации событий заказов.
-- Structured logging dashboard и correlation по request_id.
-- Backup/restore инструкция для PostgreSQL.
-
-### Качество и CI/CD
-
-- Backend coverage gate в CI.
-- Тесты Telegram bot и miniapp.
-- E2E-тесты Playwright для основных сценариев: регистрация, корзина, заказ, смена статуса.
-- Docker image build в CI.
-- Проверка миграций Alembic в CI.
-- Автоматическая генерация OpenAPI schema artifact.
-- Pre-commit hook или CI-check на отсутствие `.env`/ключей/секретов.
-
-### UX/UI
-
-- Skeleton/loading states для ресторанов, меню и заказов.
-- Более явные empty/error states во всех кабинетах.
-- Accessibility pass: focus states, aria-label, keyboard navigation.
-- Адаптивные таблицы в admin/vendor/staff dashboard.
-- Toast-уведомления для успешных/ошибочных действий.
-- Единая дизайн-система для frontend и miniapp.
+- Skeleton/loading states для ресторанов, меню, заказа и dashboard tables.
+- Единая дизайн-система для frontend и miniapp: tokens, buttons, forms, badges, empty/error states.
+- Accessibility pass: focus states, keyboard navigation, aria-labels, reduced motion, contrast.
+- Mobile-first checkout: sticky cart summary, быстрый повтор заказа, понятные ошибки промокода/опций.
+- Admin/vendor dashboards с адаптивными таблицами, фильтрами, сохранением состояния и понятными bulk actions.
 
 ## Приоритетный план улучшений
 
-1. Расширить `README.md` быстрым стартом и ссылкой на этот обзор.
-2. Проверить и убрать случайную вложенную папку `Khorokhorin/...`, если это артефакт.
-3. Выровнять версии Node.js в CI и Docker.
-4. Исправить кодировку русских строк/комментариев на UTF-8.
-5. Добавить `docs/env.md` и `docs/deployment.md`.
-6. Добавить Playwright smoke-тесты для главного пользовательского сценария.
-7. Усилить Telegram production-flow: публичные URL, webhook docs, подпись initData, уведомления.
-8. Добавить audit log и export CSV/XLSX для admin/vendor.
+1. Починить frontend lint в `StaffDashboardPage.jsx` и `VendorDashboardPage.jsx`, затем сделать lint обязательным gate.
+2. Встроить OpenAPI generation в CI: `make openapi` + проверка, что schema и generated clients не изменились.
+3. Расширить `README.md`: быстрый старт, env, Docker, локальный запуск, тесты, миграции, OpenAPI, Telegram.
+4. Выровнять Node.js версии в CI, Dockerfile и локальном окружении.
+5. Привести кодировку русских строк/комментариев к UTF-8 и убрать mojibake.
+6. Описать order state machine и покрыть переходы тестами.
+7. Добавить idempotency keys и durable order timeline для создания/изменения заказа.
+8. Реализовать outbox для order events и надежную доставку уведомлений.
+9. Добавить Playwright smoke-tests для главного customer flow и staff/vendor order flow.
+10. Добавить audit log для admin/vendor/staff действий.
+11. Усилить Telegram production-flow: initData signature tests, webhook docs, deep links, delivery retries.
+12. Добавить Grafana dashboards/alerts и backup/restore runbook.

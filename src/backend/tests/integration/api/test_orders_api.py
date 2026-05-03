@@ -20,9 +20,7 @@ from shared.enums.order_status import OrderStatus
 MOCK_CREATED_AT = "2026-01-01T00:00:00"
 
 
-def _make_mock_order_dict(
-    order_id, user_id, restaurant_id, status=OrderStatus.PENDING, items=None
-):
+def _make_mock_order_dict(order_id, user_id, restaurant_id, status=OrderStatus.PENDING, items=None):
     return {
         "id": str(order_id),
         "user_id": str(user_id),
@@ -136,9 +134,7 @@ class TestRestaurantOrdersAPI:
 
         mock_orders = [_make_mock_order_dict(uuid.uuid4(), uuid.uuid4(), restaurant_id)]
 
-        app.dependency_overrides[get_restaurant_staff_or_vendor] = (
-            lambda: mock_restaurant
-        )
+        app.dependency_overrides[get_restaurant_staff_or_vendor] = lambda: mock_restaurant
 
         with patch(
             "features.orders.api.order.service.get_restaurant_orders",

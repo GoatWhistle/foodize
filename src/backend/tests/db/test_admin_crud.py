@@ -1,4 +1,5 @@
 import pytest
+from shared.enums.roles import UserRole
 
 from features.admin.crud import (
     count_all_orders,
@@ -19,7 +20,6 @@ from features.vendors.crud import create_vendor_profile
 from features.vendors.schemas import VendorCreate
 from shared.enums.category import Category
 from shared.enums.order_status import OrderStatus
-from shared.enums.roles import UserRole
 
 
 @pytest.fixture
@@ -33,9 +33,7 @@ async def seeded_db(db_session):
             user_role=UserRole.VENDOR,
         ),
     )
-    vendor_profile = await create_vendor_profile(
-        db_session, vendor_user, VendorCreate()
-    )
+    vendor_profile = await create_vendor_profile(db_session, vendor_user, VendorCreate())
 
     customer = await create_user(
         db_session,

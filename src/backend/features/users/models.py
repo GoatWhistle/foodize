@@ -26,9 +26,7 @@ class User(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin):
     last_name: Mapped[str | None] = mapped_column(String, nullable=True)
     middle_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
     email: Mapped[str | None] = mapped_column(String, nullable=True)
-    is_active: Mapped[bool] = mapped_column(
-        default=True, server_default="true", nullable=False
-    )
+    is_active: Mapped[bool] = mapped_column(default=True, server_default="true", nullable=False)
     permissions: Mapped[list[str]] = mapped_column(
         JSON,
         default=lambda: serialize_permissions(CUSTOMER_PERMISSIONS),

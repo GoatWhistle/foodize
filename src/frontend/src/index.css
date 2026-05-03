@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Manrope:wght@400;500;600;700;800&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Manrope:wght@400;500;600;700;800&display=swap');
 
 /* ─── View Transitions ─────────────────────────────────────────────────── */
 ::view-transition-group(*) {
@@ -67,56 +67,56 @@
   --radius-xl: var(--r-xl);
 
   /* Semantic status colors */
-  --color-success:        oklch(62% 0.19 145);
-  --color-success-dim:    oklch(50% 0.15 145);
-  --color-success-bg:     oklch(62% 0.19 145 / 0.08);
+  --color-success: oklch(62% 0.19 145);
+  --color-success-dim: oklch(50% 0.15 145);
+  --color-success-bg: oklch(62% 0.19 145 / 0.08);
   --color-success-border: oklch(62% 0.19 145 / 0.25);
 
-  --color-warning:        oklch(68% 0.17 60);
-  --color-warning-dim:    oklch(52% 0.14 55);
-  --color-warning-bg:     oklch(68% 0.17 60 / 0.1);
+  --color-warning: oklch(68% 0.17 60);
+  --color-warning-dim: oklch(52% 0.14 55);
+  --color-warning-bg: oklch(68% 0.17 60 / 0.1);
   --color-warning-border: oklch(68% 0.17 60 / 0.25);
 
-  --color-error:          oklch(59% 0.22 27);
-  --color-error-dim:      oklch(46% 0.18 27);
-  --color-error-bg:       oklch(59% 0.22 27 / 0.08);
-  --color-error-border:   oklch(59% 0.22 27 / 0.2);
+  --color-error: oklch(59% 0.22 27);
+  --color-error-dim: oklch(46% 0.18 27);
+  --color-error-bg: oklch(59% 0.22 27 / 0.08);
+  --color-error-border: oklch(59% 0.22 27 / 0.2);
 
-  --color-neutral:        oklch(52% 0.02 230);
-  --color-neutral-bg:     oklch(52% 0.02 230 / 0.1);
+  --color-neutral: oklch(52% 0.02 230);
+  --color-neutral-bg: oklch(52% 0.02 230 / 0.1);
   --color-neutral-border: oklch(52% 0.02 230 / 0.2);
 
   --error: var(--color-error);
 
   /* Typography — families */
-  --font-serif: "Playfair Display", Georgia, serif;
-  --font-sans: "Manrope", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
 
   /* Type scale (1.25 ratio, rem-based for app UI) */
-  --text-xs:   0.64rem;
-  --text-sm:   0.75rem;
+  --text-xs: 0.64rem;
+  --text-sm: 0.75rem;
   --text-base: 0.875rem;
-  --text-md:   1rem;
-  --text-lg:   1.25rem;
-  --text-xl:   1.5rem;
-  --text-2xl:  2rem;
-  --text-3xl:  3rem;
+  --text-md: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+  --text-3xl: 3rem;
 
   /* Font weights — semantic roles */
-  --weight-body:    400;
-  --weight-ui:      600;
-  --weight-strong:  700;
+  --weight-body: 400;
+  --weight-ui: 600;
+  --weight-strong: 700;
   --weight-display: 800;
 
   /* Line heights */
-  --lh-tight:  1.15;
-  --lh-snug:   1.35;
-  --lh-base:   1.55;
-  --lh-loose:  1.7;
+  --lh-tight: 1.15;
+  --lh-snug: 1.35;
+  --lh-base: 1.55;
+  --lh-loose: 1.7;
 
   /* Easing */
-  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-snap:   cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-snap: cubic-bezier(0.25, 1, 0.5, 1);
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-spring: var(--ease-out);
 
@@ -142,7 +142,7 @@
   --gutter: 20px;
 }
 
-[data-theme="light"] {
+[data-theme='light'] {
   --bg: var(--paper);
   --bg-card: var(--white);
   --bg-surface: #f4f4f0;
@@ -168,7 +168,7 @@
   --gold: #d97706;
 }
 
-[data-theme="dark"] {
+[data-theme='dark'] {
   --bg: oklch(14% 0.005 50);
   --bg-card: oklch(16.5% 0.005 50);
   --bg-surface: oklch(19% 0.006 50);
@@ -191,29 +191,29 @@
   --amber: oklch(76% 0.16 65);
   --gold: oklch(68% 0.14 60);
 
-  --color-success:        oklch(70% 0.18 145);
-  --color-success-dim:    oklch(58% 0.14 145);
-  --color-success-bg:     oklch(70% 0.18 145 / 0.1);
+  --color-success: oklch(70% 0.18 145);
+  --color-success-dim: oklch(58% 0.14 145);
+  --color-success-bg: oklch(70% 0.18 145 / 0.1);
   --color-success-border: oklch(70% 0.18 145 / 0.28);
 
-  --color-warning:        oklch(78% 0.16 65);
-  --color-warning-dim:    oklch(65% 0.13 60);
-  --color-warning-bg:     oklch(78% 0.16 65 / 0.1);
+  --color-warning: oklch(78% 0.16 65);
+  --color-warning-dim: oklch(65% 0.13 60);
+  --color-warning-bg: oklch(78% 0.16 65 / 0.1);
   --color-warning-border: oklch(78% 0.16 65 / 0.25);
 
-  --color-error:          oklch(67% 0.2 27);
-  --color-error-dim:      oklch(55% 0.16 27);
-  --color-error-bg:       oklch(67% 0.2 27 / 0.1);
-  --color-error-border:   oklch(67% 0.2 27 / 0.22);
+  --color-error: oklch(67% 0.2 27);
+  --color-error-dim: oklch(55% 0.16 27);
+  --color-error-bg: oklch(67% 0.2 27 / 0.1);
+  --color-error-border: oklch(67% 0.2 27 / 0.22);
 
-  --color-neutral:        oklch(60% 0.02 220);
-  --color-neutral-bg:     oklch(60% 0.02 220 / 0.12);
+  --color-neutral: oklch(60% 0.02 220);
+  --color-neutral-bg: oklch(60% 0.02 220 / 0.12);
   --color-neutral-border: oklch(60% 0.02 220 / 0.22);
 }
 
 /* ─── Noise Texture Overlay ────────────────────────────────────────────── */
 body::before {
-  content: "";
+  content: '';
   position: fixed;
   inset: 0;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
@@ -331,10 +331,10 @@ select {
     border-color var(--dur-md) var(--ease-in-out);
 }
 
-[data-theme="light"] .header {
+[data-theme='light'] .header {
   background: rgba(250, 250, 247, 0.88);
 }
-[data-theme="dark"] .header {
+[data-theme='dark'] .header {
   background: rgba(18, 19, 21, 0.86);
 }
 
@@ -407,10 +407,10 @@ select {
   border-top: 1px solid var(--border);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
-[data-theme="light"] .bottom-tab-bar {
+[data-theme='light'] .bottom-tab-bar {
   background: rgba(255, 255, 255, 0.94);
 }
-[data-theme="dark"] .bottom-tab-bar {
+[data-theme='dark'] .bottom-tab-bar {
   background: rgba(18, 19, 21, 0.92);
 }
 @media (min-width: 600px) {
@@ -438,7 +438,7 @@ select {
   color: var(--fire);
 }
 .bottom-tab.active::before {
-  content: "";
+  content: '';
   position: absolute;
   top: 0;
   left: 50%;
@@ -611,7 +611,7 @@ select {
 }
 
 /* ─── Custom Checkbox ──────────────────────────────────────────────────── */
-input[type="checkbox"] {
+input[type='checkbox'] {
   appearance: none;
   -webkit-appearance: none;
   width: 20px;
@@ -627,12 +627,12 @@ input[type="checkbox"] {
   align-items: center;
   justify-content: center;
 }
-input[type="checkbox"]:checked {
+input[type='checkbox']:checked {
   background: var(--fire);
   border-color: var(--fire);
 }
-input[type="checkbox"]:checked::after {
-  content: "";
+input[type='checkbox']:checked::after {
+  content: '';
   position: absolute;
   width: 5px;
   height: 9px;
@@ -641,7 +641,7 @@ input[type="checkbox"]:checked::after {
   border-left: none;
   transform: rotate(45deg) translate(-1px, -1px);
 }
-input[type="checkbox"]:hover {
+input[type='checkbox']:hover {
   border-color: var(--fire);
   box-shadow: 0 0 0 3px var(--fire-subtle);
 }
@@ -662,27 +662,27 @@ select.form-input option {
 }
 
 /* ─── Time / Date-time inputs ──────────────────────────────────────────── */
-input[type="time"].form-input,
-input[type="datetime-local"].form-input,
-input[type="date"].form-input {
+input[type='time'].form-input,
+input[type='datetime-local'].form-input,
+input[type='date'].form-input {
   color-scheme: dark;
   cursor: text;
 }
-input[type="time"].form-input::-webkit-calendar-picker-indicator,
-input[type="datetime-local"].form-input::-webkit-calendar-picker-indicator,
-input[type="date"].form-input::-webkit-calendar-picker-indicator {
+input[type='time'].form-input::-webkit-calendar-picker-indicator,
+input[type='datetime-local'].form-input::-webkit-calendar-picker-indicator,
+input[type='date'].form-input::-webkit-calendar-picker-indicator {
   filter: invert(0.6) sepia(1) saturate(4) hue-rotate(5deg);
   opacity: 0.7;
   cursor: pointer;
 }
-input[type="time"].form-input::-webkit-calendar-picker-indicator:hover,
-input[type="datetime-local"].form-input::-webkit-calendar-picker-indicator:hover,
-input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
+input[type='time'].form-input::-webkit-calendar-picker-indicator:hover,
+input[type='datetime-local'].form-input::-webkit-calendar-picker-indicator:hover,
+input[type='date'].form-input::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
 }
-[data-theme="light"] input[type="time"].form-input,
-[data-theme="light"] input[type="datetime-local"].form-input,
-[data-theme="light"] input[type="date"].form-input {
+[data-theme='light'] input[type='time'].form-input,
+[data-theme='light'] input[type='datetime-local'].form-input,
+[data-theme='light'] input[type='date'].form-input {
   color-scheme: light;
 }
 
@@ -877,7 +877,7 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
 .card-status-badge--closed {
   border: 1px solid var(--color-neutral-border);
 }
-[data-theme="dark"] .card-status-badge {
+[data-theme='dark'] .card-status-badge {
   background: rgba(27, 29, 33, 0.88);
 }
 
@@ -1051,6 +1051,8 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  position: relative;
+  overflow: visible;
   transition: all var(--dur-sm) var(--ease-out);
   box-shadow: 0 2px 10px var(--fire-glow);
 }
@@ -1063,19 +1065,24 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
   transform: scale(0.88);
 }
 .add-btn::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
   background: oklch(100% 0 0 / 0.22);
   opacity: 0;
   transform: scale(0.6);
-  transition: opacity var(--dur-sm) var(--ease-out), transform var(--dur-sm) var(--ease-out);
+  transition:
+    opacity var(--dur-sm) var(--ease-out),
+    transform var(--dur-sm) var(--ease-out);
 }
 .add-btn:active::after {
   opacity: 1;
   transform: scale(1.4);
   transition-duration: 50ms;
+}
+.add-btn-pulse::after {
+  animation: add-btn-pulse 520ms var(--ease-out);
 }
 
 /* ─── Orders ───────────────────────────────────────────────────────────── */
@@ -1209,6 +1216,22 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
 }
 .status-ready-flash {
   animation: flash-bg 1s var(--ease-out) forwards;
+}
+.status-ready-urge {
+  animation: ready-urge 1.8s var(--ease-in-out) infinite;
+  transform-origin: center;
+}
+.order-stage-dot {
+  transition:
+    background var(--dur-sm) var(--ease-out),
+    box-shadow var(--dur-sm) var(--ease-out),
+    transform var(--dur-sm) var(--ease-out);
+}
+.order-stage-dot--current {
+  animation: stage-dot-pulse 1.6s var(--ease-out) infinite;
+}
+.order-stage-dot--done {
+  box-shadow: 0 0 0 3px var(--color-success-bg);
 }
 
 @keyframes pop-in {
@@ -1409,6 +1432,9 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
   font-weight: var(--weight-display);
   font-variant-numeric: tabular-nums;
 }
+.cart-badge-pop {
+  animation: cart-badge-pop 480ms var(--ease-out);
+}
 
 /* Staff FAB — kept for legacy, replaced by .hiring-hint */
 .staff-fab {
@@ -1470,6 +1496,19 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
   padding: 72px 24px;
   gap: 14px;
   text-align: center;
+}
+.empty-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fire);
+  background: var(--fire-subtle);
+  border: 1px solid rgba(255, 107, 53, 0.18);
+  box-shadow: 0 8px 24px var(--fire-glow);
+  animation: float 4.8s var(--ease-in-out) infinite;
 }
 .empty-title {
   font-family: var(--font-sans);
@@ -1667,7 +1706,7 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
-[data-theme="dark"] .search-bar-wrap {
+[data-theme='dark'] .search-bar-wrap {
   background: rgba(18, 19, 21, 0.9);
 }
 
@@ -1858,7 +1897,7 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
 }
 
 .menu-category-label::after {
-  content: "";
+  content: '';
   flex: 1;
   height: 1px;
   background: var(--border);
@@ -1990,7 +2029,7 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
   overflow: hidden;
 }
 .profile-header::before {
-  content: "";
+  content: '';
   position: absolute;
   top: 0;
   left: 0;
@@ -2205,37 +2244,142 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(-8px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
 }
 
 @keyframes badge-pop {
-  0%   { transform: scale(1); }
-  40%  { transform: scale(1.45); }
-  70%  { transform: scale(0.9); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.45);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes cart-badge-pop {
+  0% {
+    transform: scale(1);
+  }
+  42% {
+    transform: scale(1.42);
+  }
+  72% {
+    transform: scale(0.92);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes add-btn-pulse {
+  0% {
+    opacity: 0.8;
+    transform: scale(0.7);
+  }
+  65% {
+    opacity: 0.18;
+    transform: scale(1.85);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.05);
+  }
 }
 
 @keyframes stage-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 var(--fire-glow); }
-  50%       { box-shadow: 0 0 0 6px transparent; }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--fire-glow);
+  }
+  50% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+}
+
+@keyframes stage-dot-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 var(--fire-glow);
+  }
+  50% {
+    transform: scale(1.18);
+    box-shadow: 0 0 0 7px transparent;
+  }
 }
 
 @keyframes promo-in {
-  from { opacity: 0; transform: scale(0.94) translateY(4px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes promo-success-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.94) translateY(6px);
+  }
+  62% {
+    opacity: 1;
+    transform: scale(1.02) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 @keyframes star-select {
-  0%   { transform: scale(1); }
-  45%  { transform: scale(1.3) rotate(-8deg); }
-  75%  { transform: scale(1.05) rotate(3deg); }
-  100% { transform: scale(1.1); }
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.3) rotate(-8deg);
+  }
+  75% {
+    transform: scale(1.05) rotate(3deg);
+  }
+  100% {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes ready-urge {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.035);
+  }
 }
 
 @keyframes checkmark-draw {
-  from { stroke-dashoffset: 40; opacity: 0; }
-  to   { stroke-dashoffset: 0;  opacity: 1; }
+  from {
+    stroke-dashoffset: 40;
+    opacity: 0;
+  }
+  to {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
 }
 
 @keyframes slide-up {
@@ -2289,7 +2433,7 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
-[data-theme="light"] .glass {
+[data-theme='light'] .glass {
   background: rgba(255, 255, 255, 0.75);
   border: 1px solid rgba(0, 0, 0, 0.08);
 }
@@ -2298,6 +2442,33 @@ input[type="date"].form-input::-webkit-calendar-picker-indicator:hover {
 .review-card:hover {
   transform: translateY(-2px);
   border-color: var(--border-mid) !important;
+}
+.promo-success-badge {
+  animation: promo-success-in 460ms var(--ease-out);
+}
+.rating-star {
+  color: var(--fire);
+  cursor: pointer;
+  transform: scale(1);
+  transform-origin: center;
+  transition:
+    color var(--dur-sm) var(--ease-out),
+    filter var(--dur-sm) var(--ease-out),
+    transform var(--dur-sm) var(--ease-out);
+}
+.rating-star:hover {
+  transform: scale(1.1);
+  filter: drop-shadow(0 2px 8px var(--fire-glow));
+}
+.rating-star--selected {
+  color: var(--amber);
+  transform: scale(1.14);
+  filter: drop-shadow(0 3px 10px rgba(245, 158, 11, 0.24));
+  animation: star-select 360ms var(--ease-out);
+}
+.not-found-pin {
+  animation: float 4s var(--ease-in-out) infinite;
+  transform-origin: center bottom;
 }
 
 /* ─── Mobile Adaptations ───────────────────────────────────────────────── */

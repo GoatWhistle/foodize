@@ -104,9 +104,7 @@ class TestRemoveFavorite:
                 new_callable=AsyncMock,
                 return_value=fav,
             ),
-            patch(
-                "features.favorites.service.favorites_crud.delete_favorite", delete_mock
-            ),
+            patch("features.favorites.service.favorites_crud.delete_favorite", delete_mock),
         ):
             await remove_favorite(MagicMock(), uuid.uuid4(), uuid.uuid4())
             delete_mock.assert_awaited_once()

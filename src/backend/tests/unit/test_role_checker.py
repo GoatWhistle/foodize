@@ -1,8 +1,8 @@
 import pytest
 from factories import make_user
-
 from shared.dependencies.roles import RoleChecker
 from shared.enums.roles import UserRole
+
 from shared.exceptions.rules import RuleException
 
 

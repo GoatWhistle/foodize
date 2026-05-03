@@ -185,9 +185,7 @@ class TestDeactivatePromo:
                 return_value=updated,
             ),
         ):
-            result = await deactivate_promo(
-                MagicMock(), "TEST10", [promo.restaurant_id]
-            )
+            result = await deactivate_promo(MagicMock(), "TEST10", [promo.restaurant_id])
             assert result.is_active is False
 
 

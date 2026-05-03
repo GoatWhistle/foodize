@@ -57,9 +57,7 @@ async def get_my_restaurants(
     size: int = 20,
 ) -> tuple[list[RestaurantResponse], int]:
     offset = (page - 1) * size
-    data = await crud.get_vendor_restaurants(
-        session, vendor_id, offset=offset, limit=size
-    )
+    data = await crud.get_vendor_restaurants(session, vendor_id, offset=offset, limit=size)
     total = await crud.count_vendor_restaurants(session, vendor_id)
     return [RestaurantResponse.model_validate(r) for r in data], total
 

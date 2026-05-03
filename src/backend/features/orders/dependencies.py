@@ -37,9 +37,7 @@ async def verify_restaurant_access(
         if vendor and vendor.id == restaurant.vendor_id:
             return restaurant
         if vendor:
-            raise AccessDeniedException(
-                detail="Only VENDOR and STAFF can access orders"
-            )
+            raise AccessDeniedException(detail="Only VENDOR and STAFF can access orders")
 
     result = await session.execute(
         select(StaffProfile).where(

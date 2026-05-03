@@ -29,8 +29,6 @@ async def update_user(session: AsyncSession, user: User, data: UserUpdate) -> Us
     return user
 
 
-async def update_user_password(
-    session: AsyncSession, user: User, new_password: str
-) -> None:
+async def update_user_password(session: AsyncSession, user: User, new_password: str) -> None:
     user.hashed_password = hash_password(new_password)
     await session.commit()

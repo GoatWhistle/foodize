@@ -28,9 +28,7 @@ class TestGetAllOrders:
     @pytest.mark.asyncio
     async def test_with_all_filters(self):
         mock_result = MagicMock()
-        mock_result.scalars = MagicMock(
-            return_value=MagicMock(all=MagicMock(return_value=[]))
-        )
+        mock_result.scalars = MagicMock(return_value=MagicMock(all=MagicMock(return_value=[])))
 
         session = AsyncMock()
         session.execute = AsyncMock(return_value=mock_result)
@@ -47,9 +45,7 @@ class TestGetAllOrders:
     @pytest.mark.asyncio
     async def test_without_filters(self):
         mock_result = MagicMock()
-        mock_result.scalars = MagicMock(
-            return_value=MagicMock(all=MagicMock(return_value=[]))
-        )
+        mock_result.scalars = MagicMock(return_value=MagicMock(all=MagicMock(return_value=[])))
 
         session = AsyncMock()
         session.execute = AsyncMock(return_value=mock_result)

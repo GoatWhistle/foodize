@@ -1,12 +1,12 @@
 import uuid
 
 import pytest
+from shared.enums.roles import UserRole
 from sqlalchemy.exc import IntegrityError
 
 from features.users.crud import create_user
 from features.users.dependencies import get_user_by_id, get_user_by_phone
 from features.users.schemas import UserCreate
-from shared.enums.roles import UserRole
 
 
 @pytest.mark.asyncio

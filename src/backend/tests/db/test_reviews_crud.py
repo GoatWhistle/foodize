@@ -1,4 +1,5 @@
 import pytest
+from shared.enums.roles import UserRole
 
 from features.restaurants.crud import create_restaurant
 from features.restaurants.schemas import RestaurantCreate
@@ -14,7 +15,6 @@ from features.users.crud import create_user
 from features.users.schemas import UserCreate
 from features.vendors.crud import create_vendor_profile
 from features.vendors.schemas import VendorCreate
-from shared.enums.roles import UserRole
 
 
 @pytest.fixture
@@ -28,9 +28,7 @@ async def seeded(db_session):
             user_role=UserRole.VENDOR,
         ),
     )
-    vendor_profile = await create_vendor_profile(
-        db_session, vendor_user, VendorCreate()
-    )
+    vendor_profile = await create_vendor_profile(db_session, vendor_user, VendorCreate())
     restaurant = await create_restaurant(
         db_session,
         RestaurantCreate(name="Review Rest", address="R St"),
@@ -78,12 +76,8 @@ async def test_create_and_get_review(db_session, seeded):
 async def test_get_reviews_by_restaurant(db_session, seeded):
     restaurant = seeded["restaurant"]
 
-    await create_review(
-        db_session, ReviewCreate(rating=4), seeded["user1"].id, restaurant.id
-    )
-    await create_review(
-        db_session, ReviewCreate(rating=2), seeded["user2"].id, restaurant.id
-    )
+    await create_review(db_session, ReviewCreate(rating=4), seeded["user1"].id, restaurant.id)
+    await create_review(db_session, ReviewCreate(rating=2), seeded["user2"].id, restaurant.id)
 
     reviews = await get_reviews_by_restaurant(db_session, restaurant.id)
     assert len(reviews) == 2
@@ -95,9 +89,7 @@ async def test_count_reviews_by_restaurant(db_session, seeded):
 
     assert await count_reviews_by_restaurant(db_session, restaurant.id) == 0
 
-    await create_review(
-        db_session, ReviewCreate(rating=3), seeded["user1"].id, restaurant.id
-    )
+    await create_review(db_session, ReviewCreate(rating=3), seeded["user1"].id, restaurant.id)
     assert await count_reviews_by_restaurant(db_session, restaurant.id) == 1
 
 
@@ -106,9 +98,7 @@ async def test_get_user_review_for_restaurant(db_session, seeded):
     restaurant = seeded["restaurant"]
     user = seeded["user1"]
 
-    assert (
-        await get_user_review_for_restaurant(db_session, user.id, restaurant.id) is None
-    )
+    assert await get_user_review_for_restaurant(db_session, user.id, restaurant.id) is None
 
     await create_review(db_session, ReviewCreate(rating=5), user.id, restaurant.id)
 
@@ -125,12 +115,8 @@ async def test_get_restaurant_avg_rating(db_session, seeded):
     assert avg is None
     assert count == 0
 
-    await create_review(
-        db_session, ReviewCreate(rating=4), seeded["user1"].id, restaurant.id
-    )
-    await create_review(
-        db_session, ReviewCreate(rating=2), seeded["user2"].id, restaurant.id
-    )
+    await create_review(db_session, ReviewCreate(rating=4), seeded["user1"].id, restaurant.id)
+    await create_review(db_session, ReviewCreate(rating=2), seeded["user2"].id, restaurant.id)
 
     avg, count = await get_restaurant_avg_rating(db_session, restaurant.id)
     assert count == 2

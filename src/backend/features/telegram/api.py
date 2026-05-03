@@ -43,7 +43,5 @@ async def telegram_auth(
     data: TelegramCheckRequest,
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[TokenResponse]:
-    result = await service.telegram_auth_existing(
-        session=session, init_data=data.init_data
-    )
+    result = await service.telegram_auth_existing(session=session, init_data=data.init_data)
     return build_response(result)

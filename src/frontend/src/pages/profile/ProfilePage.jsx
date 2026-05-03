@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { translateApiError } from "../../utils/translateApiError";
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { translateApiError } from '../../utils/translateApiError';
 import {
   Package,
   Crown,
@@ -13,15 +13,15 @@ import {
   Heart,
   GearSix,
   CaretDown,
-} from "@phosphor-icons/react";
-import { useAuthStore } from "../../store/useAuthStore";
-import { ROUTES } from "../../constants/routes";
-import { vendorService } from "../../services/vendorService";
-import { staffService } from "../../services/staffService";
-import { userService } from "../../services/userService";
-import { hasPermission, PERMISSIONS } from "../../utils/permissions";
+} from '@phosphor-icons/react';
+import { useAuthStore } from '../../store/useAuthStore';
+import { ROUTES } from '../../constants/routes';
+import { vendorService } from '../../services/vendorService';
+import { staffService } from '../../services/staffService';
+import { userService } from '../../services/userService';
+import { hasPermission, PERMISSIONS } from '../../utils/permissions';
 
-import { useShallow } from "zustand/react/shallow";
+import { useShallow } from 'zustand/react/shallow';
 
 const ProfilePage = () => {
   const { user, logout, fetchMe } = useAuthStore(
@@ -29,7 +29,7 @@ const ProfilePage = () => {
       user: s.user,
       logout: s.logout,
       fetchMe: s.fetchMe,
-    })),
+    }))
   );
   const navigate = useNavigate();
 
@@ -38,24 +38,24 @@ const ProfilePage = () => {
   const [isStaff, setIsStaff] = useState(false);
   const [checkingStaff, setCheckingStaff] = useState(true);
   const [vendorLoading, setVendorLoading] = useState(false);
-  const [vendorError, setVendorError] = useState("");
+  const [vendorError, setVendorError] = useState('');
 
-  const [settingsTab, setSettingsTab] = useState("profile");
+  const [settingsTab, setSettingsTab] = useState('profile');
   const [showSettingsInline, setShowSettingsInline] = useState(false);
 
   const [editForm, setEditForm] = useState({
-    name: "",
-    first_name: "",
-    last_name: "",
-    middle_name: "",
+    name: '',
+    first_name: '',
+    last_name: '',
+    middle_name: '',
   });
   const [editLoading, setEditLoading] = useState(false);
-  const [editError, setEditError] = useState("");
+  const [editError, setEditError] = useState('');
   const [editSuccess, setEditSuccess] = useState(false);
 
-  const [pwForm, setPwForm] = useState({ old_password: "", new_password: "" });
+  const [pwForm, setPwForm] = useState({ old_password: '', new_password: '' });
   const [pwLoading, setPwLoading] = useState(false);
-  const [pwError, setPwError] = useState("");
+  const [pwError, setPwError] = useState('');
   const [pwSuccess, setPwSuccess] = useState(false);
 
   useEffect(() => {
@@ -79,14 +79,14 @@ const ProfilePage = () => {
 
   const handleBecomeVendor = async () => {
     setVendorLoading(true);
-    setVendorError("");
+    setVendorError('');
     try {
-      await vendorService.createProfile({ description: "" });
+      await vendorService.createProfile({ description: '' });
       await fetchMe();
       setIsVendor(true);
       navigate(ROUTES.VENDOR_DASHBOARD);
     } catch {
-      setVendorError("Не удалось стать вендором");
+      setVendorError('Не удалось стать вендором');
       setVendorLoading(false);
     }
   };
@@ -94,31 +94,31 @@ const ProfilePage = () => {
   const openSettings = () => {
     if (!showSettingsInline) {
       setEditForm({
-        name: user?.name ?? "",
-        first_name: user?.first_name ?? "",
-        last_name: user?.last_name ?? "",
-        middle_name: user?.middle_name ?? "",
+        name: user?.name ?? '',
+        first_name: user?.first_name ?? '',
+        last_name: user?.last_name ?? '',
+        middle_name: user?.middle_name ?? '',
       });
-      setEditError("");
+      setEditError('');
       setEditSuccess(false);
-      setPwForm({ old_password: "", new_password: "" });
-      setPwError("");
+      setPwForm({ old_password: '', new_password: '' });
+      setPwError('');
       setPwSuccess(false);
-      setSettingsTab("profile");
+      setSettingsTab('profile');
     }
     setShowSettingsInline((v) => !v);
   };
 
   const handleEditSave = async () => {
     setEditLoading(true);
-    setEditError("");
+    setEditError('');
     setEditSuccess(false);
     try {
       await userService.updateMe(editForm);
       await fetchMe();
       setEditSuccess(true);
     } catch {
-      setEditError("Не удалось сохранить изменения");
+      setEditError('Не удалось сохранить изменения');
     } finally {
       setEditLoading(false);
     }
@@ -127,14 +127,14 @@ const ProfilePage = () => {
   const handlePasswordChange = async (e) => {
     e.preventDefault();
     setPwLoading(true);
-    setPwError("");
+    setPwError('');
     setPwSuccess(false);
     try {
       await userService.changePassword(pwForm);
       setPwSuccess(true);
-      setPwForm({ old_password: "", new_password: "" });
+      setPwForm({ old_password: '', new_password: '' });
     } catch (err) {
-      setPwError(translateApiError(err, "Не удалось сменить пароль"));
+      setPwError(translateApiError(err, 'Не удалось сменить пароль'));
     } finally {
       setPwLoading(false);
     }
@@ -151,14 +151,14 @@ const ProfilePage = () => {
           <div className="profile-name">
             {user?.first_name && user?.last_name
               ? `${user.first_name} ${user.last_name}`
-              : user?.name || "Пользователь"}
+              : user?.name || 'Пользователь'}
           </div>
-          <div className="profile-phone">{user?.phone_number || "—"}</div>
+          <div className="profile-phone">{user?.phone_number || '—'}</div>
           {user?.email && (
             <div
               style={{
-                fontSize: "0.8rem",
-                color: "var(--text-3)",
+                fontSize: '0.8rem',
+                color: 'var(--text-3)',
                 marginTop: 2,
               }}
             >
@@ -169,7 +169,7 @@ const ProfilePage = () => {
       </div>
 
       {vendorError && (
-        <div className="form-error" style={{ margin: "12px 0" }}>
+        <div className="form-error" style={{ margin: '12px 0' }}>
           {vendorError}
         </div>
       )}
@@ -182,9 +182,9 @@ const ProfilePage = () => {
           onClick={() => navigate(ROUTES.ORDERS)}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => e.key === "Enter" && navigate(ROUTES.ORDERS)}
+          onKeyDown={(e) => e.key === 'Enter' && navigate(ROUTES.ORDERS)}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <Package size={20} weight="bold" />
             <span>Мои заказы</span>
           </div>
@@ -198,9 +198,9 @@ const ProfilePage = () => {
           onClick={() => navigate(ROUTES.FAVORITES)}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => e.key === "Enter" && navigate(ROUTES.FAVORITES)}
+          onKeyDown={(e) => e.key === 'Enter' && navigate(ROUTES.FAVORITES)}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <Heart size={20} weight="bold" color="#ef4444" />
             <span>Избранное</span>
           </div>
@@ -214,7 +214,7 @@ const ProfilePage = () => {
             className="profile-menu-item"
             onClick={() => navigate(ROUTES.ADMIN)}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
               <Crown size={20} weight="bold" color="var(--gold, #e8a200)" />
               <span>Админ-панель</span>
             </div>
@@ -231,10 +231,10 @@ const ProfilePage = () => {
             role="button"
             tabIndex={0}
             onKeyDown={(e) =>
-              e.key === "Enter" && navigate(ROUTES.STAFF_DASHBOARD)
+              e.key === 'Enter' && navigate(ROUTES.STAFF_DASHBOARD)
             }
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
               <CookingPot size={20} weight="bold" color="var(--fire)" />
               <span>Кабинет сотрудника</span>
             </div>
@@ -251,7 +251,7 @@ const ProfilePage = () => {
               onClick={() => navigate(ROUTES.VENDOR_DASHBOARD)}
             >
               <div
-                style={{ display: "flex", alignItems: "center", gap: "14px" }}
+                style={{ display: 'flex', alignItems: 'center', gap: '14px' }}
               >
                 <Storefront size={20} weight="bold" />
                 <span>Кабинет вендора</span>
@@ -264,15 +264,15 @@ const ProfilePage = () => {
               className="profile-menu-item"
               onClick={handleBecomeVendor}
               style={{
-                pointerEvents: vendorLoading ? "none" : "auto",
+                pointerEvents: vendorLoading ? 'none' : 'auto',
                 opacity: vendorLoading ? 0.6 : 1,
               }}
             >
               <div
-                style={{ display: "flex", alignItems: "center", gap: "14px" }}
+                style={{ display: 'flex', alignItems: 'center', gap: '14px' }}
               >
                 <Sparkle size={20} weight="bold" color="var(--fire)" />
-                <span>{vendorLoading ? "Загрузка..." : "Стать вендором"}</span>
+                <span>{vendorLoading ? 'Загрузка...' : 'Стать вендором'}</span>
               </div>
               <CaretRight size={16} color="var(--text-3)" />
             </div>
@@ -283,9 +283,9 @@ const ProfilePage = () => {
           onClick={openSettings}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => e.key === "Enter" && openSettings()}
+          onKeyDown={(e) => e.key === 'Enter' && openSettings()}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <GearSix size={20} weight="bold" />
             <span>Настройки</span>
           </div>
@@ -297,38 +297,38 @@ const ProfilePage = () => {
         </div>
 
         {showSettingsInline && (
-          <div style={{ padding: "8px 0 4px" }}>
+          <div style={{ padding: '8px 0 4px' }}>
             <div
               style={{
-                display: "flex",
+                display: 'flex',
                 gap: 8,
                 marginBottom: 16,
-                borderBottom: "1px solid var(--border)",
+                borderBottom: '1px solid var(--border)',
                 paddingBottom: 12,
               }}
             >
               <button
-                className={`btn btn-sm ${settingsTab === "profile" ? "btn-primary" : "btn-secondary"}`}
-                onClick={() => setSettingsTab("profile")}
+                className={`btn btn-sm ${settingsTab === 'profile' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setSettingsTab('profile')}
               >
                 Данные профиля
               </button>
               <button
-                className={`btn btn-sm ${settingsTab === "password" ? "btn-primary" : "btn-secondary"}`}
-                onClick={() => setSettingsTab("password")}
+                className={`btn btn-sm ${settingsTab === 'password' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setSettingsTab('password')}
               >
                 Пароль
               </button>
             </div>
 
-            {settingsTab === "profile" && (
+            {settingsTab === 'profile' && (
               <div
-                style={{ display: "flex", flexDirection: "column", gap: 10 }}
+                style={{ display: 'flex', flexDirection: 'column', gap: 10 }}
               >
                 <label
                   style={{
-                    fontSize: "0.78rem",
-                    color: "var(--text-3)",
+                    fontSize: '0.78rem',
+                    color: 'var(--text-3)',
                     fontWeight: 700,
                   }}
                 >
@@ -344,15 +344,15 @@ const ProfilePage = () => {
                 />
                 <label
                   style={{
-                    fontSize: "0.78rem",
-                    color: "var(--text-3)",
+                    fontSize: '0.78rem',
+                    color: 'var(--text-3)',
                     fontWeight: 700,
                     marginTop: 4,
                   }}
                 >
                   ФИО
                 </label>
-                <div style={{ display: "flex", gap: 8 }}>
+                <div style={{ display: 'flex', gap: 8 }}>
                   <input
                     className="form-input"
                     style={{ flex: 1 }}
@@ -381,15 +381,15 @@ const ProfilePage = () => {
                   }
                 />
                 {editError && (
-                  <div className="form-error" style={{ fontSize: "0.78rem" }}>
+                  <div className="form-error" style={{ fontSize: '0.78rem' }}>
                     {editError}
                   </div>
                 )}
                 {editSuccess && (
                   <div
                     style={{
-                      color: "#22c55e",
-                      fontSize: "0.78rem",
+                      color: '#22c55e',
+                      fontSize: '0.78rem',
                       fontWeight: 700,
                     }}
                   >
@@ -402,20 +402,20 @@ const ProfilePage = () => {
                   disabled={editLoading}
                   style={{ marginTop: 4 }}
                 >
-                  {editLoading ? "..." : "Сохранить"}
+                  {editLoading ? '...' : 'Сохранить'}
                 </button>
               </div>
             )}
 
-            {settingsTab === "password" && (
+            {settingsTab === 'password' && (
               <form
                 onSubmit={handlePasswordChange}
-                style={{ display: "flex", flexDirection: "column", gap: 10 }}
+                style={{ display: 'flex', flexDirection: 'column', gap: 10 }}
               >
                 <label
                   style={{
-                    fontSize: "0.78rem",
-                    color: "var(--text-3)",
+                    fontSize: '0.78rem',
+                    color: 'var(--text-3)',
                     fontWeight: 700,
                   }}
                 >
@@ -433,8 +433,8 @@ const ProfilePage = () => {
                 />
                 <label
                   style={{
-                    fontSize: "0.78rem",
-                    color: "var(--text-3)",
+                    fontSize: '0.78rem',
+                    color: 'var(--text-3)',
                     fontWeight: 700,
                     marginTop: 4,
                   }}
@@ -453,15 +453,15 @@ const ProfilePage = () => {
                   required
                 />
                 {pwError && (
-                  <div className="form-error" style={{ fontSize: "0.78rem" }}>
+                  <div className="form-error" style={{ fontSize: '0.78rem' }}>
                     {pwError}
                   </div>
                 )}
                 {pwSuccess && (
                   <div
                     style={{
-                      color: "#22c55e",
-                      fontSize: "0.78rem",
+                      color: '#22c55e',
+                      fontSize: '0.78rem',
                       fontWeight: 700,
                     }}
                   >
@@ -474,14 +474,14 @@ const ProfilePage = () => {
                   disabled={pwLoading}
                   style={{ marginTop: 4 }}
                 >
-                  {pwLoading ? "..." : "Сменить пароль"}
+                  {pwLoading ? '...' : 'Сменить пароль'}
                 </button>
               </form>
             )}
           </div>
         )}
 
-        <div className="divider" style={{ margin: "8px 0" }} />
+        <div className="divider" style={{ margin: '8px 0' }} />
 
         <div
           id="profile-logout-btn"
@@ -489,9 +489,9 @@ const ProfilePage = () => {
           onClick={handleLogout}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => e.key === "Enter" && handleLogout()}
+          onKeyDown={(e) => e.key === 'Enter' && handleLogout()}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <SignOut size={20} weight="bold" />
             <span>Выйти</span>
           </div>

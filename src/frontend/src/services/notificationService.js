@@ -1,7 +1,7 @@
-import api from "./api";
+import api from './api';
 
 export const notificationService = {
-  getNotifications: (params) => api.get("/notifications", { params }),
+  getNotifications: (params) => api.get('/notifications', { params }),
   markAsRead: (id) => api.post(`/notifications/${id}/read`),
-  markAllAsRead: () => api.post("/notifications/read-all"),
+  markAllAsRead: () => api.post('/notifications/read-all'),
 };

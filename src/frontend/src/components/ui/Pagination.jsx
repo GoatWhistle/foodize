@@ -4,32 +4,32 @@ const Pagination = ({ page, totalPages, onPageChange }) => {
   return (
     <div
       style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         gap: 12,
         marginTop: 32,
-        padding: "16px 0",
+        padding: '16px 0',
       }}
     >
       <button
         className="btn btn-secondary btn-sm"
         disabled={page <= 1}
         onClick={() => onPageChange(page - 1)}
-        style={{ borderRadius: "100px", padding: "8px 20px" }}
+        style={{ borderRadius: '100px', padding: '8px 20px' }}
       >
         ← Назад
       </button>
 
       <span
         style={{
-          fontSize: "0.85rem",
+          fontSize: '0.85rem',
           fontWeight: 800,
-          color: "var(--text-3)",
-          textTransform: "uppercase",
-          letterSpacing: "0.05em",
+          color: 'var(--text-3)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
           minWidth: 100,
-          textAlign: "center",
+          textAlign: 'center',
         }}
       >
         {page} / {totalPages}
@@ -39,7 +39,7 @@ const Pagination = ({ page, totalPages, onPageChange }) => {
         className="btn btn-secondary btn-sm"
         disabled={page >= totalPages}
         onClick={() => onPageChange(page + 1)}
-        style={{ borderRadius: "100px", padding: "8px 20px" }}
+        style={{ borderRadius: '100px', padding: '8px 20px' }}
       >
         Вперед →
       </button>

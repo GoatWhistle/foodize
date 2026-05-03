@@ -1,14 +1,14 @@
-import { render, screen, act } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
-import OrderStatusPage from "../../pages/orders/OrderStatusPage";
-import { useOrderStore } from "../../store/useOrderStore";
+import { render, screen, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import OrderStatusPage from '../../pages/orders/OrderStatusPage';
+import { useOrderStore } from '../../store/useOrderStore';
 
-vi.mock("../../store/useOrderStore", () => ({
+vi.mock('../../store/useOrderStore', () => ({
   useOrderStore: vi.fn(),
 }));
 
-vi.mock("../../services/orderService", () => ({
+vi.mock('../../services/orderService', () => ({
   orderService: {
     getOrderEvents: vi.fn().mockResolvedValue({ data: [] }),
     cancelOrder: vi.fn().mockResolvedValue({}),
@@ -16,7 +16,7 @@ vi.mock("../../services/orderService", () => ({
   },
 }));
 
-describe("OrderStatusPage", () => {
+describe('OrderStatusPage', () => {
   const fetchOrderMock = vi.fn();
 
   beforeEach(() => {
@@ -25,16 +25,16 @@ describe("OrderStatusPage", () => {
     const state = {
       fetchOrder: fetchOrderMock,
       currentOrder: {
-        id: "ord-1",
-        status: "PENDING",
+        id: 'ord-1',
+        status: 'PENDING',
         total_price: 500,
         items: [
           {
-            id: "i1",
+            id: 'i1',
             quantity: 1,
-            menu_item_id: "m1",
-            menu_item_name: "Бургер",
-            menu_item_category: "BURGER",
+            menu_item_id: 'm1',
+            menu_item_name: 'Бургер',
+            menu_item_category: 'BURGER',
             price_at_purchase: 500,
           },
         ],
@@ -53,23 +53,23 @@ describe("OrderStatusPage", () => {
 
   const renderWithRouter = () => {
     return render(
-      <MemoryRouter initialEntries={["/orders/ord-1"]}>
+      <MemoryRouter initialEntries={['/orders/ord-1']}>
         <Routes>
           <Route path="/orders/:id" element={<OrderStatusPage />} />
         </Routes>
-      </MemoryRouter>,
+      </MemoryRouter>
     );
   };
 
-  it("renders order details and initial status", () => {
+  it('renders order details and initial status', () => {
     renderWithRouter();
 
-    expect(screen.getAllByText("Принят").length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Принят').length).toBeGreaterThan(0);
     expect(screen.getAllByText(/500 ₽/)).toHaveLength(2);
-    expect(screen.getByText("Бургер")).toBeDefined();
+    expect(screen.getByText('Бургер')).toBeDefined();
   });
 
-  it("polls for order updates", async () => {
+  it('polls for order updates', async () => {
     renderWithRouter();
 
     expect(fetchOrderMock).toHaveBeenCalledTimes(1);
@@ -81,9 +81,9 @@ describe("OrderStatusPage", () => {
     expect(fetchOrderMock).toHaveBeenCalledTimes(2);
   });
 
-  it("stops polling when status is ready", async () => {
+  it('stops polling when status is ready', async () => {
     // Return ready on the next poll
-    fetchOrderMock.mockResolvedValue({ status: "READY" });
+    fetchOrderMock.mockResolvedValue({ status: 'READY' });
 
     renderWithRouter();
 

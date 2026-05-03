@@ -91,11 +91,7 @@ async def count_orders_by_restaurant_id(
     date_from: date | None = None,
     date_to: date | None = None,
 ) -> int:
-    stmt = (
-        select(func.count())
-        .select_from(Order)
-        .where(Order.restaurant_id == restaurant_id)
-    )
+    stmt = select(func.count()).select_from(Order).where(Order.restaurant_id == restaurant_id)
     if status is not None:
         stmt = stmt.where(Order.status == status.value)
     if date_from is not None:
@@ -138,13 +134,9 @@ async def create_order_event(
     return event
 
 
-async def get_events_by_order_id(
-    session: AsyncSession, order_id: uuid.UUID
-) -> list[OrderEvent]:
+async def get_events_by_order_id(session: AsyncSession, order_id: uuid.UUID) -> list[OrderEvent]:
     result = await session.execute(
-        select(OrderEvent)
-        .where(OrderEvent.order_id == order_id)
-        .order_by(OrderEvent.created_at)
+        select(OrderEvent).where(OrderEvent.order_id == order_id).order_by(OrderEvent.created_at)
     )
     return list(result.scalars().all())
 

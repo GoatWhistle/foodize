@@ -2,6 +2,7 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from shared.enums.roles import UserRole
 
 from features.vendors.dependencies import (
     ensure_no_vendor_profile,
@@ -9,7 +10,6 @@ from features.vendors.dependencies import (
     get_vendor_or_404,
 )
 from features.vendors.exceptions import VendorAlreadyExistsException
-from shared.enums.roles import UserRole
 from shared.exceptions import AccessDeniedException, NotFoundException
 
 

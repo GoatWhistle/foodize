@@ -647,7 +647,9 @@ const RestaurantPage = () => {
             >
               Точно ли вы хотите удалить этот отзыв?
             </p>
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <div
+              style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}
+            >
               <button
                 type="button"
                 className="btn btn-secondary"

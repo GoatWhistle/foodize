@@ -8,7 +8,7 @@ CERTS_DIR := $(BACKEND_DIR)/certs
 JWT_PRIVATE_KEY := $(CERTS_DIR)/jwt-private.pem
 JWT_PUBLIC_KEY := $(CERTS_DIR)/jwt-public.pem
 
-.PHONY: help sync lint test keys certs build up down stop logs run
+.PHONY: help sync lint test openapi keys certs build up down stop logs run
 
 help:
 	@echo " "
@@ -16,6 +16,7 @@ help:
 	@echo "  sync            - Sync locally project dependencies with UV"
 	@echo "  lint            - Run all project code linting"
 	@echo "  test            - Run all project tests"
+	@echo "  openapi         - Export OpenAPI schema and generate typed frontend clients"
 	@echo "  keys, certs     - Generate RSA keys for JWT auth (use FORCE=1 to overwrite)"
 	@echo " "
 	@echo "  build           - Build docker containers (use SERVICE=... to build a specific service)"
@@ -35,6 +36,8 @@ sync:
 
 lint:
 	cd "$(BACKEND_DIR)" && uv run pre-commit run --all-files
+	cd "$(FRONTEND_DIR)" && npm run lint
+	cd "$(MINIAPP_DIR)" && npm run lint
 	@echo " "
 	@echo "Linting completed!"
 
@@ -43,6 +46,13 @@ test:
 	cd "$(FRONTEND_DIR)" && npm test -- --run
 	@echo " "
 	@echo "Tests completed!"
+
+openapi:
+	cd "$(BACKEND_DIR)" && uv run python ../../tools/export_openapi.py --output "$(CURDIR)/openapi/foodize.openapi.json"
+	cd "$(FRONTEND_DIR)" && npm run api:generate
+	cd "$(MINIAPP_DIR)" && npm run api:generate
+	@echo " "
+	@echo "OpenAPI schema and typed clients generated!"
 
 keys: certs
 

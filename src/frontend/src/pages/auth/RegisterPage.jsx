@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuthStore } from "../../store/useAuthStore";
-import { ROUTES } from "../../constants/routes";
-import FoodizeLogo from "../../components/ui/FoodizeLogo";
-import { translateApiError } from "../../utils/translateApiError";
-import { useShallow } from "zustand/react/shallow";
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../../store/useAuthStore';
+import { ROUTES } from '../../constants/routes';
+import FoodizeLogo from '../../components/ui/FoodizeLogo';
+import { translateApiError } from '../../utils/translateApiError';
+import { useShallow } from 'zustand/react/shallow';
 
 const AuthVisual = () => (
   <div className="auth-visual">
@@ -26,22 +26,22 @@ const AuthVisual = () => (
 );
 
 const RegisterPage = () => {
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { register, login } = useAuthStore(
     useShallow((s) => ({
       register: s.register,
       login: s.login,
-    })),
+    }))
   );
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
+    setError('');
     setIsLoading(true);
     try {
       await register({
@@ -52,7 +52,7 @@ const RegisterPage = () => {
       await login({ phone_number: phone, password });
       navigate(ROUTES.HOME);
     } catch (err) {
-      setError(translateApiError(err, "Ошибка при регистрации"));
+      setError(translateApiError(err, 'Ошибка при регистрации'));
     } finally {
       setIsLoading(false);
     }
@@ -135,19 +135,19 @@ const RegisterPage = () => {
               disabled={isLoading}
               style={{
                 marginTop: 4,
-                height: "52px",
-                borderRadius: "var(--r-sm)",
+                height: '52px',
+                borderRadius: 'var(--r-sm)',
               }}
             >
               {isLoading ? (
                 <span
-                  style={{ display: "flex", alignItems: "center", gap: 10 }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10 }}
                 >
                   <span className="spinner" style={{ width: 18, height: 18 }} />
                   Создаём аккаунт...
                 </span>
               ) : (
-                "Создать аккаунт"
+                'Создать аккаунт'
               )}
             </button>
           </form>

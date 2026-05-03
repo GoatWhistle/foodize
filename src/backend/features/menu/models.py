@@ -13,9 +13,7 @@ if TYPE_CHECKING:
     from features.restaurants.models import Restaurant
 
 
-class MenuItem(
-    Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin, DeletedAtMixin
-):
+class MenuItem(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin, DeletedAtMixin):
     description: Mapped[str | None]
     price: Mapped[int]
     prep_time_minutes: Mapped[int] = mapped_column(default=15, server_default="15")
@@ -53,9 +51,7 @@ class MenuItemOptionGroup(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
 
 
 class MenuItemOption(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
-    group_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("menu_item_option_groups.id")
-    )
+    group_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("menu_item_option_groups.id"))
     name: Mapped[str] = mapped_column(String(128))
     price_delta: Mapped[int] = mapped_column(default=0, server_default="0")
     is_available: Mapped[bool] = mapped_column(default=True, server_default="true")

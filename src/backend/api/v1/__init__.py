@@ -5,6 +5,8 @@ from features.auth.api import router as auth_router
 from features.cart.api import router as cart_router
 from features.favorites.api import router as favorites_router
 from features.menu.api import router as menu_router
+from features.notifications.api import router as notifications_router
+from features.notifications.ws import router as notifications_ws_router
 from features.orders.router import router as order_router
 from features.promos.api import router as promos_router
 from features.restaurants.api import router as restaurant_router
@@ -12,8 +14,6 @@ from features.reviews.api import router as reviews_router
 from features.staff.api import router as staff_router
 from features.telegram.api import router as telegram_router
 from features.users.api import router as user_router
-from features.notifications.api import router as notifications_router
-from features.notifications.ws import router as notifications_ws_router
 from features.vendors.api import router as vendor_router
 from settings.config.app_config import settings
 

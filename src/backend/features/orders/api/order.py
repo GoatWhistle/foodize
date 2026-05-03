@@ -29,9 +29,7 @@ from shared.schemas.response import SuccessListResponse, SuccessResponse
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
 
-async def verify_order_read_access(
-    session: AsyncSession, order: Order, current_user: User
-) -> None:
+async def verify_order_read_access(session: AsyncSession, order: Order, current_user: User) -> None:
     if has_permission(current_user.permissions, Permission.ORDERS_MODERATE):
         return
 
@@ -76,14 +74,10 @@ async def read_my_orders(
     data, total = await service.get_user_orders(
         session=session, user_id=current_user.id, status=status, page=page, size=size
     )
-    return build_list_response(
-        data=data, total=total, page=page, size=size, request=request
-    )
+    return build_list_response(data=data, total=total, page=page, size=size, request=request)
 
 
-@router.get(
-    "/restaurant/{restaurant_id}", response_model=SuccessListResponse[OrderResponse]
-)
+@router.get("/restaurant/{restaurant_id}", response_model=SuccessListResponse[OrderResponse])
 async def read_restaurant_orders(
     request: Request,
     status: OrderStatus | None = Query(None),
@@ -103,9 +97,7 @@ async def read_restaurant_orders(
         page=page,
         size=size,
     )
-    return build_list_response(
-        data=data, total=total, page=page, size=size, request=request
-    )
+    return build_list_response(data=data, total=total, page=page, size=size, request=request)
 
 
 @router.patch("/{order_id}/status", response_model=SuccessResponse[OrderResponse])
@@ -121,9 +113,7 @@ async def update_order_status(
     return build_response(result)
 
 
-@router.get(
-    "/{order_id}/events", response_model=SuccessListResponse[OrderEventResponse]
-)
+@router.get("/{order_id}/events", response_model=SuccessListResponse[OrderEventResponse])
 async def read_order_events(
     request: Request,
     order_id: uuid.UUID,
@@ -160,9 +150,7 @@ async def cancel_order(
     current_user: User = Depends(require_permission(Permission.ORDERS_READ_OWN)),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[OrderResponse]:
-    result = await service.cancel_order(
-        session=session, order_id=order_id, user_id=current_user.id
-    )
+    result = await service.cancel_order(session=session, order_id=order_id, user_id=current_user.id)
     return build_response(result)
 
 

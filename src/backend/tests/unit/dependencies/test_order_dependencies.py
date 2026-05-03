@@ -2,12 +2,12 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from shared.enums.roles import UserRole
 
 from features.orders.dependencies import (
     get_order_for_staff_or_vendor,
     verify_restaurant_access,
 )
-from shared.enums.roles import UserRole
 from shared.exceptions import AccessDeniedException, NotFoundException
 
 
@@ -131,6 +131,4 @@ class TestGetOrderForStaffOrVendor:
             return_value=None,
         ):
             with pytest.raises(NotFoundException):
-                await get_order_for_staff_or_vendor(
-                    uuid.uuid4(), AsyncMock(), MagicMock()
-                )
+                await get_order_for_staff_or_vendor(uuid.uuid4(), AsyncMock(), MagicMock())

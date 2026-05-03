@@ -11,9 +11,7 @@ from features.restaurants.models import Restaurant
 async def get_restaurant_ids_by_vendor(
     session: AsyncSession, vendor_id: uuid.UUID
 ) -> list[uuid.UUID]:
-    result = await session.execute(
-        select(Restaurant.id).where(Restaurant.vendor_id == vendor_id)
-    )
+    result = await session.execute(select(Restaurant.id).where(Restaurant.vendor_id == vendor_id))
     return [row[0] for row in result.fetchall()]
 
 
@@ -46,9 +44,7 @@ async def count_promos_by_restaurant_ids(
     if not restaurant_ids:
         return 0
     result = await session.execute(
-        select(func.count())
-        .select_from(Promo)
-        .where(Promo.restaurant_id.in_(restaurant_ids))
+        select(func.count()).select_from(Promo).where(Promo.restaurant_id.in_(restaurant_ids))
     )
     return result.scalar_one()
 

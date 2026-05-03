@@ -82,7 +82,5 @@ def permissions_without(
     return serialize_permissions(normalize_permissions(current) - normalize_permissions(removals))
 
 
-def has_permission(
-    permissions: Iterable[Permission | str] | None, permission: Permission
-) -> bool:
+def has_permission(permissions: Iterable[Permission | str] | None, permission: Permission) -> bool:
     return permission in normalize_permissions(permissions)

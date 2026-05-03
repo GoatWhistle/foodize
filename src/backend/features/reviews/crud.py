@@ -48,9 +48,7 @@ async def get_reviews_by_restaurant(
     return list(result.scalars().all())
 
 
-async def count_reviews_by_restaurant(
-    session: AsyncSession, restaurant_id: uuid.UUID
-) -> int:
+async def count_reviews_by_restaurant(session: AsyncSession, restaurant_id: uuid.UUID) -> int:
     result = await session.execute(
         select(func.count())
         .select_from(Review)
@@ -107,9 +105,7 @@ async def get_user_review_for_restaurant(
     if not include_deleted:
         filters.append(Review.deleted_at.is_(None))
 
-    result = await session.execute(
-        select(Review).where(*filters)
-    )
+    result = await session.execute(select(Review).where(*filters))
     return result.scalar_one_or_none()
 
 

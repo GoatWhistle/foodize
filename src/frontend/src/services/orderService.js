@@ -1,8 +1,8 @@
-import api from "./api";
+import api from './api';
 
 export const orderService = {
-  create: (data) => api.post("/orders/", data),
-  getMyOrders: (config) => api.get("/orders/me", config),
+  create: (data) => api.post('/orders/', data),
+  getMyOrders: (config) => api.get('/orders/me', config),
   getById: (id) => api.get(`/orders/${id}`),
   getByRestaurant: (restaurantId, params) =>
     api.get(`/orders/restaurant/${restaurantId}`, { params }),

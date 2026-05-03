@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from 'react';
 import {
   ChartLineUp,
   UsersThree,
@@ -13,25 +13,25 @@ import {
   CookingPot,
   HandPalm,
   Prohibit,
-} from "@phosphor-icons/react";
-import { adminService } from "../../services/adminService";
-import EmptyState from "../../components/ui/EmptyState";
-import OrderDetailsModal from "../../components/ui/OrderDetailsModal";
-import Pagination from "../../components/ui/Pagination";
-import { useModalStore } from "../../store/useModalStore";
-import { useAuthStore } from "../../store/useAuthStore";
+} from '@phosphor-icons/react';
+import { adminService } from '../../services/adminService';
+import EmptyState from '../../components/ui/EmptyState';
+import OrderDetailsModal from '../../components/ui/OrderDetailsModal';
+import Pagination from '../../components/ui/Pagination';
+import { useModalStore } from '../../store/useModalStore';
+import { useAuthStore } from '../../store/useAuthStore';
 import {
   RevenueChart,
   HourlyLoadChart,
   CategoryRevenueChart,
   AOVDynamicsChart,
-} from "../../components/dashboard/DashboardCharts";
+} from '../../components/dashboard/DashboardCharts';
 import {
   ORDER_STATUS_RU,
   APPROVAL_STATUS_RU,
   CATEGORY_RU,
   translate,
-} from "../../utils/locales";
+} from '../../utils/locales';
 import {
   ADMIN_PERMISSIONS,
   CUSTOMER_PERMISSIONS,
@@ -41,74 +41,74 @@ import {
   PERMISSION_RU,
   permissionPresetLabel,
   PERMISSIONS,
-} from "../../utils/permissions";
+} from '../../utils/permissions';
 
 const PAGE_SIZE = 50;
 
 const STATUS_MAP = {
   PENDING: {
     label: ORDER_STATUS_RU.PENDING,
-    className: "pending",
+    className: 'pending',
     icon: <Clock />,
   },
   ACCEPTED: {
     label: ORDER_STATUS_RU.ACCEPTED,
-    className: "pending",
+    className: 'pending',
     icon: <CheckCircle />,
   },
   COOKING: {
     label: ORDER_STATUS_RU.COOKING,
-    className: "preparing",
+    className: 'preparing',
     icon: <CookingPot />,
   },
   READY: {
     label: ORDER_STATUS_RU.READY,
-    className: "ready",
+    className: 'ready',
     icon: <HandPalm />,
   },
   COMPLETED: {
     label: ORDER_STATUS_RU.COMPLETED,
-    className: "ready",
+    className: 'ready',
     icon: <CheckCircle weight="fill" />,
   },
   CANCELLED: {
     label: ORDER_STATUS_RU.CANCELLED,
-    className: "cancelled",
+    className: 'cancelled',
     icon: <Prohibit />,
   },
 };
 
 const formatDateTime = (value) => {
-  if (!value) return "—";
-  return new Date(value).toLocaleString("ru-RU", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+  if (!value) return '—';
+  return new Date(value).toLocaleString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 };
 
-const shortId = (value) => (value ? value.slice(0, 8) : "—");
+const shortId = (value) => (value ? value.slice(0, 8) : '—');
 const orderTitle = (order) => order.display_id ?? shortId(order.id);
 
 const cardStyle = {
-  background: "var(--bg-card)",
-  border: "1px solid var(--border)",
-  borderRadius: "var(--r-md)",
-  boxShadow: "var(--shadow-sm)",
+  background: 'var(--bg-card)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--r-md)',
+  boxShadow: 'var(--shadow-sm)',
 };
 
 const filterGridStyle = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
   gap: 8,
-  alignItems: "center",
+  alignItems: 'center',
 };
 
 const wideFilterGridStyle = {
   ...filterGridStyle,
-  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
 };
 
 const filterControlStyle = {
@@ -116,33 +116,33 @@ const filterControlStyle = {
   height: 48,
   paddingTop: 11,
   paddingBottom: 11,
-  fontSize: "0.86rem",
+  fontSize: '0.86rem',
   lineHeight: 1.2,
 };
 
 const selectFilterStyle = {
   ...filterControlStyle,
   paddingRight: 34,
-  backgroundPosition: "right 10px center",
+  backgroundPosition: 'right 10px center',
 };
 
 const DetailField = ({ label, children, mono = false }) => (
   <div
     style={{
-      background: "var(--bg-surface)",
-      border: "1px solid var(--border)",
-      borderRadius: "var(--r-sm)",
+      background: 'var(--bg-surface)',
+      border: '1px solid var(--border)',
+      borderRadius: 'var(--r-sm)',
       padding: 12,
       minWidth: 0,
     }}
   >
     <div
       style={{
-        color: "var(--text-3)",
-        fontSize: "0.7rem",
+        color: 'var(--text-3)',
+        fontSize: '0.7rem',
         fontWeight: 800,
-        letterSpacing: "0.08em",
-        textTransform: "uppercase",
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase',
         marginBottom: 6,
       }}
     >
@@ -150,14 +150,14 @@ const DetailField = ({ label, children, mono = false }) => (
     </div>
     <div
       style={{
-        color: "var(--text-1)",
+        color: 'var(--text-1)',
         fontWeight: 800,
-        fontSize: mono ? "0.78rem" : "0.9rem",
-        fontFamily: mono ? "monospace" : "inherit",
-        overflowWrap: "anywhere",
+        fontSize: mono ? '0.78rem' : '0.9rem',
+        fontFamily: mono ? 'monospace' : 'inherit',
+        overflowWrap: 'anywhere',
       }}
     >
-      {children ?? "—"}
+      {children ?? '—'}
     </div>
   </div>
 );
@@ -173,26 +173,26 @@ const DetailModal = ({ title, subtitle, onClose, loading, children }) => (
       className="modal-content"
       style={{
         maxWidth: 620,
-        overflow: "hidden",
-        maxHeight: "90vh",
-        display: "flex",
-        flexDirection: "column",
+        overflow: 'hidden',
+        maxHeight: '90vh',
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
       <div
         style={{
-          padding: "20px 22px",
-          borderBottom: "1px solid var(--border)",
-          display: "flex",
-          justifyContent: "space-between",
+          padding: '20px 22px',
+          borderBottom: '1px solid var(--border)',
+          display: 'flex',
+          justifyContent: 'space-between',
           gap: 16,
         }}
       >
         <div>
           <div
             style={{
-              color: "var(--text-3)",
-              fontSize: "0.78rem",
+              color: 'var(--text-3)',
+              fontSize: '0.78rem',
               fontWeight: 800,
             }}
           >
@@ -200,9 +200,9 @@ const DetailModal = ({ title, subtitle, onClose, loading, children }) => (
           </div>
           <h3
             style={{
-              margin: "4px 0 0",
-              color: "var(--text-1)",
-              fontSize: "1.18rem",
+              margin: '4px 0 0',
+              color: 'var(--text-1)',
+              fontSize: '1.18rem',
             }}
           >
             {title}
@@ -216,7 +216,7 @@ const DetailModal = ({ title, subtitle, onClose, loading, children }) => (
           <X size={16} />
         </button>
       </div>
-      <div style={{ padding: 22, overflowY: "auto" }}>
+      <div style={{ padding: 22, overflowY: 'auto' }}>
         {loading ? (
           <div className="loading-center">
             <div className="spinner" />
@@ -230,10 +230,10 @@ const DetailModal = ({ title, subtitle, onClose, loading, children }) => (
 );
 
 const ReasonDialog = ({ dialog, loading, onCancel, onConfirm }) => {
-  const [reason, setReason] = useState("");
+  const [reason, setReason] = useState('');
 
   useEffect(() => {
-    setReason("");
+    setReason('');
   }, [dialog]);
 
   if (!dialog) return null;
@@ -253,23 +253,23 @@ const ReasonDialog = ({ dialog, loading, onCancel, onConfirm }) => {
         style={{
           maxWidth: 480,
           padding: 22,
-          display: "flex",
-          flexDirection: "column",
+          display: 'flex',
+          flexDirection: 'column',
           gap: 16,
         }}
       >
         <div>
           <h3
-            style={{ color: "var(--text-1)", fontSize: "1.05rem", margin: 0 }}
+            style={{ color: 'var(--text-1)', fontSize: '1.05rem', margin: 0 }}
           >
             {dialog.title}
           </h3>
           <p
             style={{
-              color: "var(--text-3)",
-              fontSize: "0.88rem",
+              color: 'var(--text-3)',
+              fontSize: '0.88rem',
               lineHeight: 1.55,
-              margin: "8px 0 0",
+              margin: '8px 0 0',
             }}
           >
             {dialog.message}
@@ -282,16 +282,16 @@ const ReasonDialog = ({ dialog, loading, onCancel, onConfirm }) => {
           onChange={(event) => setReason(event.target.value)}
           placeholder="Напишите причину отклонения"
           rows={4}
-          style={{ minHeight: 112, resize: "vertical" }}
+          style={{ minHeight: 112, resize: 'vertical' }}
           autoFocus
         />
 
         <div
           style={{
-            display: "flex",
+            display: 'flex',
             gap: 8,
-            justifyContent: "flex-end",
-            flexWrap: "wrap",
+            justifyContent: 'flex-end',
+            flexWrap: 'wrap',
           }}
         >
           <button
@@ -305,9 +305,9 @@ const ReasonDialog = ({ dialog, loading, onCancel, onConfirm }) => {
             className="btn btn-primary"
             disabled={loading || !trimmedReason}
             onClick={() => onConfirm(trimmedReason)}
-            style={{ background: "var(--error)" }}
+            style={{ background: 'var(--error)' }}
           >
-            {loading ? "Выполняю..." : dialog.confirmLabel}
+            {loading ? 'Выполняю...' : dialog.confirmLabel}
           </button>
         </div>
       </div>
@@ -318,7 +318,7 @@ const ReasonDialog = ({ dialog, loading, onCancel, onConfirm }) => {
 const sumValues = (valueMap = {}) =>
   Object.values(valueMap).reduce((a, b) => a + b, 0);
 
-const Sparkline = ({ points = [], color = "var(--fire)" }) => {
+const Sparkline = ({ points = [], color = 'var(--fire)' }) => {
   const values = points.map((point) => point.count || 0);
   const max = Math.max(...values, 1);
   const width = 220;
@@ -330,15 +330,15 @@ const Sparkline = ({ points = [], color = "var(--fire)" }) => {
       const y = height - 10 - (value / max) * (height - 20);
       return `${x},${y}`;
     })
-    .join(" ");
-  const area = line ? `0,${height} ${line} ${width},${height}` : "";
+    .join(' ');
+  const area = line ? `0,${height} ${line} ${width},${height}` : '';
 
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
       role="img"
       aria-hidden="true"
-      style={{ width: "100%", height: 76, display: "block", marginTop: 14 }}
+      style={{ width: '100%', height: 76, display: 'block', marginTop: 14 }}
     >
       <polyline points={area} fill="rgba(255, 107, 53, 0.1)" stroke="none" />
       <polyline
@@ -363,7 +363,7 @@ const Sparkline = ({ points = [], color = "var(--fire)" }) => {
 const StatCard = ({ label, value, icon, growth, onClick }) => {
   const totalGrowth = (growth || []).reduce(
     (sum, point) => sum + (point.count || 0),
-    0,
+    0
   );
 
   return (
@@ -373,33 +373,33 @@ const StatCard = ({ label, value, icon, growth, onClick }) => {
       style={{
         ...cardStyle,
         padding: 18,
-        textAlign: "left",
-        width: "100%",
+        textAlign: 'left',
+        width: '100%',
         minHeight: 190,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
       }}
     >
       <div
-        style={{ display: "flex", justifyContent: "space-between", gap: 12 }}
+        style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}
       >
         <div>
           <div
             style={{
-              color: "var(--text-3)",
-              fontSize: "0.72rem",
+              color: 'var(--text-3)',
+              fontSize: '0.72rem',
               fontWeight: 900,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
             }}
           >
             {label}
           </div>
           <div
             style={{
-              color: "var(--text-1)",
-              fontSize: "2rem",
+              color: 'var(--text-1)',
+              fontSize: '2rem',
               fontWeight: 950,
               lineHeight: 1.1,
               marginTop: 8,
@@ -412,12 +412,12 @@ const StatCard = ({ label, value, icon, growth, onClick }) => {
           style={{
             width: 42,
             height: 42,
-            borderRadius: "var(--r-sm)",
-            background: "var(--fire-subtle)",
-            color: "var(--fire)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            borderRadius: 'var(--r-sm)',
+            background: 'var(--fire-subtle)',
+            color: 'var(--fire)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             flexShrink: 0,
           }}
         >
@@ -426,7 +426,7 @@ const StatCard = ({ label, value, icon, growth, onClick }) => {
       </div>
       <Sparkline points={growth} />
       <div
-        style={{ color: "var(--text-3)", fontSize: "0.78rem", fontWeight: 700 }}
+        style={{ color: 'var(--text-3)', fontSize: '0.78rem', fontWeight: 700 }}
       >
         +{totalGrowth} за последние 14 дней
       </div>
@@ -436,10 +436,10 @@ const StatCard = ({ label, value, icon, growth, onClick }) => {
 
 const AdminDashboardPage = () => {
   const { user: currentUser } = useAuthStore();
-  const [activeTab, setActiveTab] = useState("stats");
+  const [activeTab, setActiveTab] = useState('stats');
   const [stats, setStats] = useState(null);
-  const [actionError, setActionError] = useState("");
-  const [actionSuccess, setActionSuccess] = useState("");
+  const [actionError, setActionError] = useState('');
+  const [actionSuccess, setActionSuccess] = useState('');
 
   const [users, setUsers] = useState([]);
   const [usersPage, setUsersPage] = useState(1);
@@ -477,36 +477,36 @@ const AdminDashboardPage = () => {
   const [finance, setFinance] = useState(null);
   const [financeLoading, setFinanceLoading] = useState(false);
   const [financeFilters, setFinanceFilters] = useState({
-    date_from: "",
-    date_to: "",
-    restaurant_id: "",
+    date_from: '',
+    date_to: '',
+    restaurant_id: '',
   });
   const [activePreset, setActivePreset] = useState(null);
 
   const [advancedAnalytics, setAdvancedAnalytics] = useState(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [userFilters, setUserFilters] = useState({
-    search: "",
-    permission: "",
+    search: '',
+    permission: '',
   });
   const [orderFilters, setOrderFilters] = useState({
-    search: "",
-    status: "",
-    date_from: "",
-    date_to: "",
+    search: '',
+    status: '',
+    date_from: '',
+    date_to: '',
   });
   const [restaurantFilters, setRestaurantFilters] = useState({
-    search: "",
-    vendor_search: "",
-    is_open: "",
-    moderation_status: "",
-    min_rating: "",
+    search: '',
+    vendor_search: '',
+    is_open: '',
+    moderation_status: '',
+    min_rating: '',
   });
   const [vendorFilters, setVendorFilters] = useState({
-    search: "",
-    approval_status: "",
+    search: '',
+    approval_status: '',
   });
-  const [reviewFilters, setReviewFilters] = useState({ rating: "" });
+  const [reviewFilters, setReviewFilters] = useState({ rating: '' });
   const [reasonDialog, setReasonDialog] = useState(null);
   const [reasonLoading, setReasonLoading] = useState(false);
 
@@ -525,16 +525,16 @@ const AdminDashboardPage = () => {
   };
 
   useEffect(() => {
-    if (activeTab === "stats" && !stats) {
+    if (activeTab === 'stats' && !stats) {
       adminService
         .getPlatformStats()
         .then((res) => setStats(res.data.data))
-        .catch(() => setActionError("Не удалось загрузить статистику"));
+        .catch(() => setActionError('Не удалось загрузить статистику'));
     }
   }, [activeTab, stats]);
 
   useEffect(() => {
-    if (activeTab !== "users") return;
+    if (activeTab !== 'users') return;
     setUsersLoading(true);
     adminService
       .getUsers({
@@ -547,12 +547,12 @@ const AdminDashboardPage = () => {
         setUsers(res.data.data || []);
         setUsersTotal(res.data.pagination?.total || 0);
       })
-      .catch(() => setActionError("Не удалось загрузить пользователей"))
+      .catch(() => setActionError('Не удалось загрузить пользователей'))
       .finally(() => setUsersLoading(false));
   }, [activeTab, usersPage, userFilters]);
 
   useEffect(() => {
-    if (activeTab !== "orders") return;
+    if (activeTab !== 'orders') return;
     setOrdersLoading(true);
     adminService
       .getOrders({
@@ -567,12 +567,12 @@ const AdminDashboardPage = () => {
         setOrders(res.data.data || []);
         setOrdersTotal(res.data.pagination?.total || 0);
       })
-      .catch(() => setActionError("Не удалось загрузить заказы"))
+      .catch(() => setActionError('Не удалось загрузить заказы'))
       .finally(() => setOrdersLoading(false));
   }, [activeTab, ordersPage, orderFilters]);
 
   useEffect(() => {
-    if (activeTab !== "restaurants") return;
+    if (activeTab !== 'restaurants') return;
     setRestaurantsLoading(true);
     adminService
       .getRestaurants({
@@ -588,12 +588,12 @@ const AdminDashboardPage = () => {
         setRestaurants(res.data.data || []);
         setRestaurantsTotal(res.data.pagination?.total || 0);
       })
-      .catch(() => setActionError("Не удалось загрузить рестораны"))
+      .catch(() => setActionError('Не удалось загрузить рестораны'))
       .finally(() => setRestaurantsLoading(false));
   }, [activeTab, restaurantsPage, restaurantFilters]);
 
   useEffect(() => {
-    if (activeTab !== "vendors") return;
+    if (activeTab !== 'vendors') return;
     setVendorsLoading(true);
     adminService
       .getVendors({
@@ -606,12 +606,12 @@ const AdminDashboardPage = () => {
         setVendors(res.data.data || []);
         setVendorsTotal(res.data.pagination?.total || 0);
       })
-      .catch(() => setActionError("Не удалось загрузить вендоров"))
+      .catch(() => setActionError('Не удалось загрузить вендоров'))
       .finally(() => setVendorsLoading(false));
   }, [activeTab, vendorsPage, vendorFilters]);
 
   useEffect(() => {
-    if (activeTab !== "reviews") return;
+    if (activeTab !== 'reviews') return;
     setReviewsLoading(true);
     adminService
       .getReviews({
@@ -623,7 +623,7 @@ const AdminDashboardPage = () => {
         setReviews(res.data.data || []);
         setReviewsTotal(res.data.pagination?.total || 0);
       })
-      .catch(() => setActionError("Не удалось загрузить отзывы"))
+      .catch(() => setActionError('Не удалось загрузить отзывы'))
       .finally(() => setReviewsLoading(false));
   }, [activeTab, reviewsPage, reviewFilters]);
 
@@ -632,7 +632,7 @@ const AdminDashboardPage = () => {
     setAnalyticsLoading(true);
     try {
       const params = Object.fromEntries(
-        Object.entries(financeFilters).filter(([, v]) => v !== "" && v != null),
+        Object.entries(financeFilters).filter(([, v]) => v !== '' && v != null)
       );
       const [finRes, advRes] = await Promise.all([
         adminService.getFinance(params),
@@ -641,8 +641,8 @@ const AdminDashboardPage = () => {
       setFinance(finRes.data.data);
       setAdvancedAnalytics(advRes.data.data);
     } catch (err) {
-      console.error("Finance fetch error:", err);
-      setActionError("Не удалось загрузить аналитику");
+      console.error('Finance fetch error:', err);
+      setActionError('Не удалось загрузить аналитику');
     } finally {
       setFinanceLoading(false);
       setAnalyticsLoading(false);
@@ -650,19 +650,19 @@ const AdminDashboardPage = () => {
   }, [financeFilters]);
 
   useEffect(() => {
-    if (activeTab === "finance") {
+    if (activeTab === 'finance') {
       fetchFinance();
     }
   }, [activeTab, fetchFinance]);
 
   const loadUserDetails = async (id) => {
     setUserDetailsLoading(true);
-    setActionError("");
+    setActionError('');
     try {
       const res = await adminService.getUser(id);
       setSelectedUser(res.data.data);
     } catch {
-      setActionError("Не удалось загрузить детали пользователя");
+      setActionError('Не удалось загрузить детали пользователя');
     } finally {
       setUserDetailsLoading(false);
     }
@@ -670,12 +670,12 @@ const AdminDashboardPage = () => {
 
   const loadRestaurantDetails = async (id) => {
     setRestaurantDetailsLoading(true);
-    setActionError("");
+    setActionError('');
     try {
       const res = await adminService.getRestaurant(id);
       setSelectedRestaurant(res.data.data);
     } catch {
-      setActionError("Не удалось загрузить детали ресторана");
+      setActionError('Не удалось загрузить детали ресторана');
     } finally {
       setRestaurantDetailsLoading(false);
     }
@@ -683,12 +683,12 @@ const AdminDashboardPage = () => {
 
   const loadVendorDetails = async (id) => {
     setVendorDetailsLoading(true);
-    setActionError("");
+    setActionError('');
     try {
       const res = await adminService.getVendor(id);
       setSelectedVendor(res.data.data);
     } catch {
-      setActionError("Не удалось загрузить детали вендора");
+      setActionError('Не удалось загрузить детали вендора');
     } finally {
       setVendorDetailsLoading(false);
     }
@@ -696,23 +696,23 @@ const AdminDashboardPage = () => {
 
   const handleDeleteUser = async (id) => {
     requestConfirm({
-      title: "Заблокировать пользователя?",
+      title: 'Заблокировать пользователя?',
       message:
-        "Пользователь больше не сможет пользоваться аккаунтом, пока вы его не разблокируете.",
-      confirmLabel: "Заблокировать",
+        'Пользователь больше не сможет пользоваться аккаунтом, пока вы его не разблокируете.',
+      confirmLabel: 'Заблокировать',
       danger: true,
       onConfirm: async () => {
-        setActionError("");
+        setActionError('');
         try {
           await adminService.deleteUser(id);
           setUsers((prev) =>
-            prev.map((u) => (u.id === id ? { ...u, is_active: false } : u)),
+            prev.map((u) => (u.id === id ? { ...u, is_active: false } : u))
           );
           setSelectedUser((prev) =>
-            prev?.id === id ? { ...prev, is_active: false } : prev,
+            prev?.id === id ? { ...prev, is_active: false } : prev
           );
         } catch {
-          setActionError("Не удалось заблокировать пользователя");
+          setActionError('Не удалось заблокировать пользователя');
         }
       },
     });
@@ -720,25 +720,25 @@ const AdminDashboardPage = () => {
 
   const handleMakeAdmin = async (userId) => {
     requestConfirm({
-      title: "Сделать пользователя админом?",
+      title: 'Сделать пользователя админом?',
       message:
-        "Точно ли вы хотите дать этому пользователю права администратора?",
-      confirmLabel: "Сделать админом",
+        'Точно ли вы хотите дать этому пользователю права администратора?',
+      confirmLabel: 'Сделать админом',
       onConfirm: async () => {
         setPermissionActionLoading(true);
-        setActionError("");
+        setActionError('');
         try {
           await adminService.grantAdmin(userId);
           setSelectedUser((prev) =>
-            prev ? { ...prev, permissions: ADMIN_PERMISSIONS } : prev,
+            prev ? { ...prev, permissions: ADMIN_PERMISSIONS } : prev
           );
           setUsers((prev) =>
             prev.map((u) =>
-              u.id === userId ? { ...u, permissions: ADMIN_PERMISSIONS } : u,
-            ),
+              u.id === userId ? { ...u, permissions: ADMIN_PERMISSIONS } : u
+            )
           );
         } catch {
-          setActionError("Не удалось изменить роль");
+          setActionError('Не удалось изменить роль');
         } finally {
           setPermissionActionLoading(false);
         }
@@ -751,20 +751,18 @@ const AdminDashboardPage = () => {
     requestConfirm({
       title: `Set permissions preset: ${PERMISSION_PRESET_RU[preset]}?`,
       message: `Replace this user's permissions with ${PERMISSION_PRESET_RU[preset]} preset?`,
-      confirmLabel: "Изменить",
+      confirmLabel: 'Изменить',
       onConfirm: async () => {
         setPermissionActionLoading(true);
-        setActionError("");
+        setActionError('');
         try {
           await adminService.setPermissions(userId, permissions);
-          setSelectedUser((prev) =>
-            prev ? { ...prev, permissions } : prev,
-          );
+          setSelectedUser((prev) => (prev ? { ...prev, permissions } : prev));
           setUsers((prev) =>
-            prev.map((u) => (u.id === userId ? { ...u, permissions } : u)),
+            prev.map((u) => (u.id === userId ? { ...u, permissions } : u))
           );
         } catch {
-          setActionError("Не удалось изменить роль");
+          setActionError('Не удалось изменить роль');
         } finally {
           setPermissionActionLoading(false);
         }
@@ -774,22 +772,22 @@ const AdminDashboardPage = () => {
 
   const handleDeleteRestaurant = async (restaurantId) => {
     requestConfirm({
-      title: "Удалить ресторан?",
+      title: 'Удалить ресторан?',
       message:
-        "Точно ли вы хотите удалить ресторан? Он пропадёт из активных списков и будет закрыт.",
-      confirmLabel: "Удалить ресторан",
+        'Точно ли вы хотите удалить ресторан? Он пропадёт из активных списков и будет закрыт.',
+      confirmLabel: 'Удалить ресторан',
       danger: true,
       onConfirm: async () => {
-        setActionError("");
+        setActionError('');
         try {
           await adminService.deleteRestaurant(restaurantId);
           setRestaurants((prev) =>
-            prev.filter((item) => item.id !== restaurantId),
+            prev.filter((item) => item.id !== restaurantId)
           );
           setSelectedRestaurant(null);
           setStats(null);
         } catch {
-          setActionError("Не удалось удалить ресторан");
+          setActionError('Не удалось удалить ресторан');
         }
       },
     });
@@ -797,20 +795,20 @@ const AdminDashboardPage = () => {
 
   const handleDeleteVendor = async (vendorId) => {
     requestConfirm({
-      title: "Удалить вендора?",
+      title: 'Удалить вендора?',
       message:
-        "Точно ли вы хотите удалить вендора? Его рестораны будут скрыты.",
-      confirmLabel: "Удалить вендора",
+        'Точно ли вы хотите удалить вендора? Его рестораны будут скрыты.',
+      confirmLabel: 'Удалить вендора',
       danger: true,
       onConfirm: async () => {
-        setActionError("");
+        setActionError('');
         try {
           await adminService.deleteVendor(vendorId);
           setVendors((prev) => prev.filter((item) => item.id !== vendorId));
           setSelectedVendor(null);
           setStats(null);
         } catch {
-          setActionError("Не удалось удалить вендора");
+          setActionError('Не удалось удалить вендора');
         }
       },
     });
@@ -818,19 +816,19 @@ const AdminDashboardPage = () => {
 
   const handleDeleteReview = async (reviewId) => {
     requestConfirm({
-      title: "Удалить отзыв?",
+      title: 'Удалить отзыв?',
       message:
-        "Точно ли вы хотите удалить отзыв? Он исчезнет из карточки ресторана.",
-      confirmLabel: "Удалить отзыв",
+        'Точно ли вы хотите удалить отзыв? Он исчезнет из карточки ресторана.',
+      confirmLabel: 'Удалить отзыв',
       danger: true,
       onConfirm: async () => {
-        setActionError("");
+        setActionError('');
         try {
           await adminService.deleteReview(reviewId);
           setReviews((prev) => prev.filter((item) => item.id !== reviewId));
           setReviewsTotal((prev) => Math.max(0, prev - 1));
         } catch {
-          setActionError("Не удалось удалить отзыв");
+          setActionError('Не удалось удалить отзыв');
         }
       },
     });
@@ -839,46 +837,46 @@ const AdminDashboardPage = () => {
   const refreshSelectedRestaurant = (data) => {
     setSelectedRestaurant(data);
     setRestaurants((prev) =>
-      prev.map((item) => (item.id === data.id ? data : item)),
+      prev.map((item) => (item.id === data.id ? data : item))
     );
   };
 
   const refreshSelectedVendor = (data) => {
     setSelectedVendor(data);
     setVendors((prev) =>
-      prev.map((item) => (item.id === data.id ? data : item)),
+      prev.map((item) => (item.id === data.id ? data : item))
     );
   };
 
   const showActionSuccess = (message) => {
-    setActionError("");
+    setActionError('');
     setActionSuccess(message);
-    window.setTimeout(() => setActionSuccess(""), 4000);
+    window.setTimeout(() => setActionSuccess(''), 4000);
   };
 
   const handleApproveRestaurant = async (restaurantId) => {
     try {
       const res = await adminService.approveRestaurant(restaurantId);
       refreshSelectedRestaurant(res.data.data);
-      showActionSuccess("Ресторан одобрен");
+      showActionSuccess('Ресторан одобрен');
     } catch {
-      setActionError("Не удалось одобрить ресторан");
+      setActionError('Не удалось одобрить ресторан');
     }
   };
 
   const handleRejectRestaurant = (restaurantId) => {
     requestReason({
-      title: "Отклонить ресторан",
+      title: 'Отклонить ресторан',
       message:
-        "Укажите причину. Вендор увидит, что нужно исправить перед повторной проверкой.",
-      confirmLabel: "Отклонить",
+        'Укажите причину. Вендор увидит, что нужно исправить перед повторной проверкой.',
+      confirmLabel: 'Отклонить',
       onConfirm: async (reason) => {
         try {
           const res = await adminService.rejectRestaurant(restaurantId, reason);
           refreshSelectedRestaurant(res.data.data);
-          showActionSuccess("Ресторан отклонён");
+          showActionSuccess('Ресторан отклонён');
         } catch {
-          setActionError("Не удалось отклонить ресторан");
+          setActionError('Не удалось отклонить ресторан');
         }
       },
     });
@@ -886,19 +884,19 @@ const AdminDashboardPage = () => {
 
   const handleApproveVendor = (vendorId) => {
     requestConfirm({
-      title: "Одобрить вендора?",
+      title: 'Одобрить вендора?',
       message:
-        "После одобрения вендор сможет работать в кабинете и управлять заведениями.",
-      confirmLabel: "Одобрить",
+        'После одобрения вендор сможет работать в кабинете и управлять заведениями.',
+      confirmLabel: 'Одобрить',
       onConfirm: async () => {
-        setActionError("");
-        setActionSuccess("");
+        setActionError('');
+        setActionSuccess('');
         try {
           const res = await adminService.approveVendor(vendorId);
           refreshSelectedVendor(res.data.data);
-          showActionSuccess("Вендор одобрен");
+          showActionSuccess('Вендор одобрен');
         } catch {
-          setActionError("Не удалось одобрить вендора");
+          setActionError('Не удалось одобрить вендора');
         }
       },
     });
@@ -906,17 +904,17 @@ const AdminDashboardPage = () => {
 
   const handleRejectVendor = (vendorId) => {
     requestReason({
-      title: "Отклонить вендора",
+      title: 'Отклонить вендора',
       message:
-        "Укажите причину отказа, чтобы заявка не выглядела как молчаливый отказ.",
-      confirmLabel: "Отклонить",
+        'Укажите причину отказа, чтобы заявка не выглядела как молчаливый отказ.',
+      confirmLabel: 'Отклонить',
       onConfirm: async (reason) => {
         try {
           const res = await adminService.rejectVendor(vendorId, reason);
           refreshSelectedVendor(res.data.data);
-          showActionSuccess("Вендор отклонён");
+          showActionSuccess('Вендор отклонён');
         } catch {
-          setActionError("Не удалось отклонить вендора");
+          setActionError('Не удалось отклонить вендора');
         }
       },
     });
@@ -924,40 +922,40 @@ const AdminDashboardPage = () => {
 
   const handleActivateUser = async (userId) => {
     setPermissionActionLoading(true);
-    setActionError("");
+    setActionError('');
     try {
       await adminService.activateUser(userId);
       setSelectedUser((prev) => (prev ? { ...prev, is_active: true } : prev));
       setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, is_active: true } : u)),
+        prev.map((u) => (u.id === userId ? { ...u, is_active: true } : u))
       );
     } catch {
-      setActionError("Не удалось разблокировать пользователя");
+      setActionError('Не удалось разблокировать пользователя');
     } finally {
       setPermissionActionLoading(false);
     }
   };
 
   const tabs = [
-    { id: "stats", label: "Статистика", icon: <ChartLineUp size={18} /> },
-    { id: "users", label: "Пользователи", icon: <UsersThree size={18} /> },
-    { id: "orders", label: "Заказы", icon: <Package size={18} /> },
-    { id: "restaurants", label: "Рестораны", icon: <Storefront size={18} /> },
-    { id: "vendors", label: "Вендоры", icon: <UsersThree size={18} /> },
-    { id: "reviews", label: "Отзывы", icon: <Star size={18} /> },
-    { id: "finance", label: "Аналитика", icon: <ChartLineUp size={18} /> },
+    { id: 'stats', label: 'Статистика', icon: <ChartLineUp size={18} /> },
+    { id: 'users', label: 'Пользователи', icon: <UsersThree size={18} /> },
+    { id: 'orders', label: 'Заказы', icon: <Package size={18} /> },
+    { id: 'restaurants', label: 'Рестораны', icon: <Storefront size={18} /> },
+    { id: 'vendors', label: 'Вендоры', icon: <UsersThree size={18} /> },
+    { id: 'reviews', label: 'Отзывы', icon: <Star size={18} /> },
+    { id: 'finance', label: 'Аналитика', icon: <ChartLineUp size={18} /> },
   ];
 
   return (
     <div
       className="page-enter"
       style={{
-        padding: "80px 20px 100px",
+        padding: '80px 20px 100px',
         maxWidth: 1200,
-        margin: "0 auto",
-        display: "flex",
+        margin: '0 auto',
+        display: 'flex',
         gap: 24,
-        alignItems: "flex-start",
+        alignItems: 'flex-start',
       }}
     >
       <div
@@ -965,31 +963,31 @@ const AdminDashboardPage = () => {
         style={{
           width: 240,
           flexShrink: 0,
-          position: "sticky",
+          position: 'sticky',
           top: 80,
-          display: "flex",
-          flexDirection: "column",
+          display: 'flex',
+          flexDirection: 'column',
           gap: 6,
-          background: "var(--bg-card)",
+          background: 'var(--bg-card)',
           padding: 16,
-          borderRadius: "var(--r-md)",
-          border: "1px solid var(--border)",
+          borderRadius: 'var(--r-md)',
+          border: '1px solid var(--border)',
         }}
       >
-        <h1 style={{ fontSize: "1.2rem", fontWeight: 900, marginBottom: 16 }}>
+        <h1 style={{ fontSize: '1.2rem', fontWeight: 900, marginBottom: 16 }}>
           Админ-панель
         </h1>
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            className={`btn ${activeTab === tab.id ? "btn-primary" : "btn-secondary"}`}
+            className={`btn ${activeTab === tab.id ? 'btn-primary' : 'btn-secondary'}`}
             onClick={() => setActiveTab(tab.id)}
             style={{
-              justifyContent: "flex-start",
-              border: "none",
-              padding: "10px 16px",
+              justifyContent: 'flex-start',
+              border: 'none',
+              padding: '10px 16px',
               gap: 10,
-              fontSize: "0.95rem",
+              fontSize: '0.95rem',
               fontWeight: activeTab === tab.id ? 700 : 500,
             }}
           >
@@ -1009,23 +1007,23 @@ const AdminDashboardPage = () => {
           <div
             style={{
               marginBottom: 16,
-              padding: "10px 12px",
-              borderRadius: "var(--r-sm)",
-              border: "1px solid rgba(34, 197, 94, 0.35)",
-              background: "rgba(34, 197, 94, 0.1)",
-              color: "#16a34a",
-              fontSize: "0.86rem",
+              padding: '10px 12px',
+              borderRadius: 'var(--r-sm)',
+              border: '1px solid rgba(34, 197, 94, 0.35)',
+              background: 'rgba(34, 197, 94, 0.1)',
+              color: '#16a34a',
+              fontSize: '0.86rem',
               fontWeight: 700,
             }}
           >
             {actionSuccess}
           </div>
         )}
-        {activeTab === "stats" && stats && (
+        {activeTab === 'stats' && stats && (
           <div
             style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
               gap: 12,
             }}
           >
@@ -1034,33 +1032,33 @@ const AdminDashboardPage = () => {
               value={sumValues(stats.users_by_permission)}
               icon={<UsersThree size={22} />}
               growth={stats.growth?.users}
-              onClick={() => setActiveTab("users")}
+              onClick={() => setActiveTab('users')}
             />
             <StatCard
               label="Рестораны"
               value={stats.total_restaurants || 0}
               icon={<Storefront size={22} />}
               growth={stats.growth?.restaurants}
-              onClick={() => setActiveTab("restaurants")}
+              onClick={() => setActiveTab('restaurants')}
             />
             <StatCard
               label="Заказы"
               value={sumValues(stats.orders_by_status)}
               icon={<Package size={22} />}
               growth={stats.growth?.orders}
-              onClick={() => setActiveTab("orders")}
+              onClick={() => setActiveTab('orders')}
             />
             <StatCard
               label="Вендоры"
               value={stats.total_vendors || 0}
               icon={<UsersThree size={22} />}
               growth={stats.growth?.vendors}
-              onClick={() => setActiveTab("vendors")}
+              onClick={() => setActiveTab('vendors')}
             />
           </div>
         )}
 
-        {activeTab === "finance" && (
+        {activeTab === 'finance' && (
           <ListSection
             loading={financeLoading || analyticsLoading}
             emptyTitle="Финансовых данных пока нет"
@@ -1111,32 +1109,32 @@ const AdminDashboardPage = () => {
             </div>
             <div
               style={{
-                display: "flex",
+                display: 'flex',
                 gap: 8,
-                overflowX: "auto",
+                overflowX: 'auto',
                 marginBottom: 20,
               }}
             >
               {[
-                { label: "Сегодня", days: 0 },
-                { label: "3 дня", days: 3 },
-                { label: "7 дней", days: 7 },
-                { label: "30 дней", days: 30 },
-                { label: "Полгода", days: 180 },
-                { label: "Год", days: 365 },
-                { label: "Сбросить", days: null },
+                { label: 'Сегодня', days: 0 },
+                { label: '3 дня', days: 3 },
+                { label: '7 дней', days: 7 },
+                { label: '30 дней', days: 30 },
+                { label: 'Полгода', days: 180 },
+                { label: 'Год', days: 365 },
+                { label: 'Сбросить', days: null },
               ].map((preset) => (
                 <button
                   key={preset.label}
-                  className={`btn btn-sm ${activePreset === preset.days ? "btn-primary" : "btn-secondary"}`}
-                  style={{ whiteSpace: "nowrap" }}
+                  className={`btn btn-sm ${activePreset === preset.days ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ whiteSpace: 'nowrap' }}
                   onClick={() => {
                     setActivePreset(preset.days);
                     if (preset.days === null) {
                       setFinanceFilters((prev) => ({
                         ...prev,
-                        date_from: "",
-                        date_to: "",
+                        date_from: '',
+                        date_to: '',
                       }));
                     } else {
                       const to = new Date();
@@ -1144,8 +1142,8 @@ const AdminDashboardPage = () => {
                       from.setDate(to.getDate() - preset.days);
                       // Use a safe formatting strategy that ignores local timezone offsets
                       const fmt = (d) => {
-                        const m = String(d.getMonth() + 1).padStart(2, "0");
-                        const day = String(d.getDate()).padStart(2, "0");
+                        const m = String(d.getMonth() + 1).padStart(2, '0');
+                        const day = String(d.getDate()).padStart(2, '0');
                         return `${d.getFullYear()}-${m}-${day}`;
                       };
                       setFinanceFilters((prev) => ({
@@ -1164,8 +1162,8 @@ const AdminDashboardPage = () => {
               <>
                 <div
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
                     gap: 12,
                   }}
                 >
@@ -1189,8 +1187,8 @@ const AdminDashboardPage = () => {
 
                 <div
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))",
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
                     gap: 20,
                     marginTop: 20,
                     marginBottom: 20,
@@ -1206,7 +1204,7 @@ const AdminDashboardPage = () => {
                           (item) => ({
                             ...item,
                             label: translate(CATEGORY_RU, item.label),
-                          }),
+                          })
                         )}
                       />
                       <AOVDynamicsChart
@@ -1217,15 +1215,15 @@ const AdminDashboardPage = () => {
                 </div>
                 <div
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
                     gap: 12,
                   }}
                 >
                   <div style={{ ...cardStyle, padding: 18 }}>
                     <div
                       style={{
-                        color: "var(--text-1)",
+                        color: 'var(--text-1)',
                         fontWeight: 900,
                         marginBottom: 12,
                       }}
@@ -1235,9 +1233,9 @@ const AdminDashboardPage = () => {
                     {(finance.top_restaurants || []).map((item) => (
                       <div
                         key={item.restaurant_id}
-                        style={{ color: "var(--text-2)", marginBottom: 8 }}
+                        style={{ color: 'var(--text-2)', marginBottom: 8 }}
                       >
-                        {item.name}: <b>{item.revenue} ₽</b> ·{" "}
+                        {item.name}: <b>{item.revenue} ₽</b> ·{' '}
                         {item.orders_count} заказов
                       </div>
                     ))}
@@ -1245,7 +1243,7 @@ const AdminDashboardPage = () => {
                   <div style={{ ...cardStyle, padding: 18 }}>
                     <div
                       style={{
-                        color: "var(--text-1)",
+                        color: 'var(--text-1)',
                         fontWeight: 900,
                         marginBottom: 12,
                       }}
@@ -1255,9 +1253,9 @@ const AdminDashboardPage = () => {
                     {(finance.top_items || []).map((item) => (
                       <div
                         key={item.menu_item_id}
-                        style={{ color: "var(--text-2)", marginBottom: 8 }}
+                        style={{ color: 'var(--text-2)', marginBottom: 8 }}
                       >
-                        {item.name}: <b>{item.quantity} шт.</b> · {item.revenue}{" "}
+                        {item.name}: <b>{item.quantity} шт.</b> · {item.revenue}{' '}
                         ₽
                       </div>
                     ))}
@@ -1268,7 +1266,7 @@ const AdminDashboardPage = () => {
           </ListSection>
         )}
 
-        {activeTab === "users" && (
+        {activeTab === 'users' && (
           <ListSection
             loading={usersLoading}
             emptyTitle="Пользователей пока нет"
@@ -1315,7 +1313,7 @@ const AdminDashboardPage = () => {
                 tabIndex={0}
                 onClick={() => loadUserDetails(u.id)}
                 onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
+                  if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault();
                     loadUserDetails(u.id);
                   }
@@ -1323,63 +1321,63 @@ const AdminDashboardPage = () => {
                 style={{
                   ...cardStyle,
                   padding: 16,
-                  display: "flex",
-                  justifyContent: "space-between",
+                  display: 'flex',
+                  justifyContent: 'space-between',
                   gap: 14,
-                  alignItems: "center",
-                  cursor: "pointer",
+                  alignItems: 'center',
+                  cursor: 'pointer',
                 }}
               >
                 <div
                   style={{
-                    display: "flex",
-                    alignItems: "center",
+                    display: 'flex',
+                    alignItems: 'center',
                     gap: 12,
                     minWidth: 0,
                   }}
                 >
                   <UserCircle size={40} weight="thin" color="var(--text-3)" />
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: 800, color: "var(--text-1)" }}>
-                      {u.name || "Без имени"}
+                    <div style={{ fontWeight: 800, color: 'var(--text-1)' }}>
+                      {u.name || 'Без имени'}
                     </div>
-                    <div style={{ fontSize: "0.8rem", color: "var(--text-3)" }}>
-                      {u.phone_number || "Нет телефона"}
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-3)' }}>
+                      {u.phone_number || 'Нет телефона'}
                     </div>
                     <div
                       style={{
-                        display: "flex",
+                        display: 'flex',
                         gap: 6,
                         marginTop: 6,
-                        flexWrap: "wrap",
+                        flexWrap: 'wrap',
                       }}
                     >
                       <span className="order-status-badge pending">
                         {permissionPresetLabel(u.permissions)}
                       </span>
                       <span
-                        className={`order-status-badge ${u.is_active ? "ready" : "cancelled"}`}
+                        className={`order-status-badge ${u.is_active ? 'ready' : 'cancelled'}`}
                       >
-                        {u.is_active ? "Активен" : "Заблокирован"}
+                        {u.is_active ? 'Активен' : 'Заблокирован'}
                       </span>
                     </div>
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                   {u.id !== currentUser?.id &&
                     !hasPermission(u, PERMISSIONS.ADMIN_ACCESS) && (
-                    <button
-                      className="btn btn-secondary btn-sm"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        handleDeleteUser(u.id);
-                      }}
-                      title="Заблокировать"
-                      style={{ color: "var(--error)" }}
-                    >
-                      <Trash size={16} />
-                    </button>
-                  )}
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleDeleteUser(u.id);
+                        }}
+                        title="Заблокировать"
+                        style={{ color: 'var(--error)' }}
+                      >
+                        <Trash size={16} />
+                      </button>
+                    )}
                 </div>
               </div>
             ))}
@@ -1391,7 +1389,7 @@ const AdminDashboardPage = () => {
           </ListSection>
         )}
 
-        {activeTab === "orders" && (
+        {activeTab === 'orders' && (
           <ListSection
             loading={ordersLoading}
             emptyTitle="Заказов пока нет"
@@ -1440,25 +1438,25 @@ const AdminDashboardPage = () => {
             </div>
             <div
               style={{
-                display: "flex",
+                display: 'flex',
                 gap: 6,
-                flexWrap: "wrap",
+                flexWrap: 'wrap',
                 marginBottom: 4,
               }}
             >
               {[
-                ["", "Все"],
-                ["PENDING", "Новые"],
-                ["ACCEPTED", "Принятые"],
-                ["COOKING", "Готовятся"],
-                ["READY", "Готовы"],
-                ["COMPLETED", "Выданы"],
-                ["CANCELLED", "Отменены"],
+                ['', 'Все'],
+                ['PENDING', 'Новые'],
+                ['ACCEPTED', 'Принятые'],
+                ['COOKING', 'Готовятся'],
+                ['READY', 'Готовы'],
+                ['COMPLETED', 'Выданы'],
+                ['CANCELLED', 'Отменены'],
               ].map(([key, label]) => (
                 <button
                   key={key}
-                  className={`category-chip${orderFilters.status === key ? " active" : ""}`}
-                  style={{ fontSize: "0.78rem", padding: "6px 12px" }}
+                  className={`category-chip${orderFilters.status === key ? ' active' : ''}`}
+                  style={{ fontSize: '0.78rem', padding: '6px 12px' }}
                   onClick={() => {
                     setOrderFilters((prev) => ({ ...prev, status: key }));
                     setOrdersPage(1);
@@ -1471,7 +1469,7 @@ const AdminDashboardPage = () => {
             {orders.map((o) => {
               const cfg = STATUS_MAP[o.status] || {
                 label: o.status,
-                className: "pending",
+                className: 'pending',
                 icon: <Package />,
               };
               return (
@@ -1482,26 +1480,26 @@ const AdminDashboardPage = () => {
                   style={{
                     ...cardStyle,
                     padding: 16,
-                    textAlign: "left",
-                    display: "flex",
-                    flexDirection: "column",
+                    textAlign: 'left',
+                    display: 'flex',
+                    flexDirection: 'column',
                     gap: 10,
-                    width: "100%",
+                    width: '100%',
                   }}
                 >
                   <div
                     style={{
-                      display: "flex",
-                      justifyContent: "space-between",
+                      display: 'flex',
+                      justifyContent: 'space-between',
                       gap: 12,
-                      alignItems: "flex-start",
+                      alignItems: 'flex-start',
                     }}
                   >
                     <div>
                       <div
                         style={{
-                          color: "var(--text-3)",
-                          fontSize: "0.74rem",
+                          color: 'var(--text-3)',
+                          fontSize: '0.74rem',
                           fontWeight: 800,
                         }}
                       >
@@ -1509,9 +1507,9 @@ const AdminDashboardPage = () => {
                       </div>
                       <div
                         style={{
-                          color: "var(--text-1)",
+                          color: 'var(--text-1)',
                           fontWeight: 900,
-                          fontSize: "1.05rem",
+                          fontSize: '1.05rem',
                           marginTop: 2,
                         }}
                       >
@@ -1524,23 +1522,23 @@ const AdminDashboardPage = () => {
                   </div>
                   <div
                     style={{
-                      display: "flex",
-                      flexDirection: "column",
+                      display: 'flex',
+                      flexDirection: 'column',
                       gap: 3,
-                      color: "var(--text-3)",
-                      fontSize: "0.84rem",
+                      color: 'var(--text-3)',
+                      fontSize: '0.84rem',
                     }}
                   >
                     <div>
-                      <b style={{ color: "var(--text-2)" }}>
-                        {o.customer_name || "Клиент"}
+                      <b style={{ color: 'var(--text-2)' }}>
+                        {o.customer_name || 'Клиент'}
                       </b>
                       {o.customer_phone && <span> · {o.customer_phone}</span>}
                     </div>
                     {(o.restaurant_name || o.restaurant_address) && (
                       <div>
                         {o.restaurant_name && (
-                          <b style={{ color: "var(--text-2)" }}>
+                          <b style={{ color: 'var(--text-2)' }}>
                             {o.restaurant_name}
                           </b>
                         )}
@@ -1564,7 +1562,7 @@ const AdminDashboardPage = () => {
           </ListSection>
         )}
 
-        {activeTab === "restaurants" && (
+        {activeTab === 'restaurants' && (
           <ListSection
             loading={restaurantsLoading}
             emptyTitle="Ресторанов пока нет"
@@ -1658,21 +1656,21 @@ const AdminDashboardPage = () => {
                 style={{
                   ...cardStyle,
                   padding: 16,
-                  width: "100%",
-                  textAlign: "left",
-                  display: "flex",
-                  justifyContent: "space-between",
+                  width: '100%',
+                  textAlign: 'left',
+                  display: 'flex',
+                  justifyContent: 'space-between',
                   gap: 14,
                 }}
               >
                 <div>
-                  <div style={{ color: "var(--text-1)", fontWeight: 900 }}>
+                  <div style={{ color: 'var(--text-1)', fontWeight: 900 }}>
                     {restaurant.name}
                   </div>
                   <div
                     style={{
-                      color: "var(--text-3)",
-                      fontSize: "0.84rem",
+                      color: 'var(--text-3)',
+                      fontSize: '0.84rem',
                       marginTop: 4,
                     }}
                   >
@@ -1680,29 +1678,29 @@ const AdminDashboardPage = () => {
                   </div>
                   <div
                     style={{
-                      display: "flex",
+                      display: 'flex',
                       gap: 6,
                       marginTop: 8,
-                      flexWrap: "wrap",
+                      flexWrap: 'wrap',
                     }}
                   >
                     <span
-                      className={`order-status-badge ${restaurant.is_open ? "ready" : "cancelled"}`}
+                      className={`order-status-badge ${restaurant.is_open ? 'ready' : 'cancelled'}`}
                     >
-                      {restaurant.is_open ? "Открыт" : "Закрыт"}
+                      {restaurant.is_open ? 'Открыт' : 'Закрыт'}
                     </span>
                     <span
-                      className={`order-status-badge ${restaurant.is_hiring ? "pending" : "cancelled"}`}
+                      className={`order-status-badge ${restaurant.is_hiring ? 'pending' : 'cancelled'}`}
                     >
-                      {restaurant.is_hiring ? "Нанимает" : "Не нанимает"}
+                      {restaurant.is_hiring ? 'Нанимает' : 'Не нанимает'}
                     </span>
                   </div>
                 </div>
                 <div
                   style={{
-                    color: "var(--text-3)",
-                    fontSize: "0.82rem",
-                    textAlign: "right",
+                    color: 'var(--text-3)',
+                    fontSize: '0.82rem',
+                    textAlign: 'right',
                   }}
                 >
                   {restaurant.orders_count || 0} заказов
@@ -1718,7 +1716,7 @@ const AdminDashboardPage = () => {
           </ListSection>
         )}
 
-        {activeTab === "vendors" && (
+        {activeTab === 'vendors' && (
           <ListSection
             loading={vendorsLoading}
             emptyTitle="Вендоров пока нет"
@@ -1764,25 +1762,25 @@ const AdminDashboardPage = () => {
                 style={{
                   ...cardStyle,
                   padding: 16,
-                  width: "100%",
-                  textAlign: "left",
-                  display: "flex",
-                  justifyContent: "space-between",
+                  width: '100%',
+                  textAlign: 'left',
+                  display: 'flex',
+                  justifyContent: 'space-between',
                   gap: 14,
                 }}
               >
                 <div>
-                  <div style={{ color: "var(--text-1)", fontWeight: 900 }}>
-                    {vendor.name || "Вендор без имени"}
+                  <div style={{ color: 'var(--text-1)', fontWeight: 900 }}>
+                    {vendor.name || 'Вендор без имени'}
                   </div>
                   <div
                     style={{
-                      color: "var(--text-3)",
-                      fontSize: "0.84rem",
+                      color: 'var(--text-3)',
+                      fontSize: '0.84rem',
                       marginTop: 4,
                     }}
                   >
-                    {vendor.phone_number || "Нет телефона"}
+                    {vendor.phone_number || 'Нет телефона'}
                   </div>
                 </div>
                 <span className="order-status-badge pending">
@@ -1798,7 +1796,7 @@ const AdminDashboardPage = () => {
           </ListSection>
         )}
 
-        {activeTab === "reviews" && (
+        {activeTab === 'reviews' && (
           <ListSection
             loading={reviewsLoading}
             emptyTitle="Отзывов пока нет"
@@ -1806,17 +1804,17 @@ const AdminDashboardPage = () => {
           >
             <div
               style={{
-                display: "flex",
+                display: 'flex',
                 gap: 8,
-                overflowX: "auto",
+                overflowX: 'auto',
                 marginBottom: 12,
               }}
             >
               <button
-                className={`btn btn-sm ${!reviewFilters.rating ? "btn-primary" : "btn-secondary"}`}
+                className={`btn btn-sm ${!reviewFilters.rating ? 'btn-primary' : 'btn-secondary'}`}
                 onClick={() => {
                   setReviewsPage(1);
-                  setReviewFilters({ rating: "" });
+                  setReviewFilters({ rating: '' });
                 }}
               >
                 Все
@@ -1824,7 +1822,7 @@ const AdminDashboardPage = () => {
               {[5, 4, 3, 2, 1].map((rating) => (
                 <button
                   key={rating}
-                  className={`btn btn-sm ${reviewFilters.rating === rating.toString() ? "btn-primary" : "btn-secondary"}`}
+                  className={`btn btn-sm ${reviewFilters.rating === rating.toString() ? 'btn-primary' : 'btn-secondary'}`}
                   onClick={() => {
                     setReviewsPage(1);
                     setReviewFilters({ rating: rating.toString() });
@@ -1840,22 +1838,22 @@ const AdminDashboardPage = () => {
                 style={{
                   ...cardStyle,
                   padding: 16,
-                  display: "flex",
-                  justifyContent: "space-between",
+                  display: 'flex',
+                  justifyContent: 'space-between',
                   gap: 14,
-                  alignItems: "flex-start",
+                  alignItems: 'flex-start',
                 }}
               >
                 <div style={{ minWidth: 0 }}>
                   <div
                     style={{
-                      display: "flex",
-                      alignItems: "center",
+                      display: 'flex',
+                      alignItems: 'center',
                       gap: 8,
-                      flexWrap: "wrap",
+                      flexWrap: 'wrap',
                     }}
                   >
-                    <span style={{ color: "var(--text-1)", fontWeight: 900 }}>
+                    <span style={{ color: 'var(--text-1)', fontWeight: 900 }}>
                       {review.restaurant_name || shortId(review.restaurant_id)}
                     </span>
                     <span className="order-status-badge pending">
@@ -1869,32 +1867,32 @@ const AdminDashboardPage = () => {
                   </div>
                   <div
                     style={{
-                      color: "var(--text-3)",
-                      fontSize: "0.82rem",
+                      color: 'var(--text-3)',
+                      fontSize: '0.82rem',
                       marginTop: 6,
                     }}
                   >
                     {review.user_name ||
                       review.user_phone ||
-                      shortId(review.user_id)}{" "}
+                      shortId(review.user_id)}{' '}
                     · {formatDateTime(review.created_at)}
                   </div>
                   <div
                     style={{
-                      color: "var(--text-2)",
-                      fontSize: "0.9rem",
+                      color: 'var(--text-2)',
+                      fontSize: '0.9rem',
                       marginTop: 10,
                       lineHeight: 1.5,
                     }}
                   >
-                    {review.text || "Без текста"}
+                    {review.text || 'Без текста'}
                   </div>
                 </div>
                 <button
                   className="btn btn-secondary btn-sm"
                   onClick={() => handleDeleteReview(review.id)}
                   title="Удалить отзыв"
-                  style={{ color: "var(--error)", flexShrink: 0 }}
+                  style={{ color: 'var(--error)', flexShrink: 0 }}
                 >
                   <Trash size={16} />
                 </button>
@@ -1910,15 +1908,15 @@ const AdminDashboardPage = () => {
 
         {selectedUser && (
           <DetailModal
-            title={selectedUser.name || "Пользователь"}
+            title={selectedUser.name || 'Пользователь'}
             subtitle="Детали профиля"
             loading={userDetailsLoading}
             onClose={() => setSelectedUser(null)}
           >
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
                 gap: 10,
               }}
             >
@@ -1928,13 +1926,13 @@ const AdminDashboardPage = () => {
               <DetailField label="ФИО">
                 {[selectedUser.first_name, selectedUser.last_name]
                   .filter(Boolean)
-                  .join(" ") || "Не указано"}
+                  .join(' ') || 'Не указано'}
               </DetailField>
               <DetailField label="Отображаемое имя">
-                {selectedUser.name || "Не указано"}
+                {selectedUser.name || 'Не указано'}
               </DetailField>
               <DetailField label="Телефон">
-                {selectedUser.phone_number || "Не указан"}
+                {selectedUser.phone_number || 'Не указан'}
               </DetailField>
               {selectedUser.telegram_username && (
                 <DetailField label="Telegram">
@@ -1954,19 +1952,19 @@ const AdminDashboardPage = () => {
               </DetailField>
               <DetailField label="Статус">
                 <span
-                  className={`order-status-badge ${selectedUser.is_active ? "ready" : "cancelled"}`}
+                  className={`order-status-badge ${selectedUser.is_active ? 'ready' : 'cancelled'}`}
                 >
-                  {selectedUser.is_active ? "Активен" : "Заблокирован"}
+                  {selectedUser.is_active ? 'Активен' : 'Заблокирован'}
                 </span>
               </DetailField>
             </div>
             <div
               style={{
-                display: "flex",
+                display: 'flex',
                 gap: 8,
                 marginTop: 16,
-                flexWrap: "wrap",
-                flexDirection: "column",
+                flexWrap: 'wrap',
+                flexDirection: 'column',
               }}
             >
               {selectedUser.id !== currentUser?.id &&
@@ -1975,8 +1973,8 @@ const AdminDashboardPage = () => {
                     <div style={{ fontWeight: 800, marginBottom: 8 }}>
                       Управление ролью
                     </div>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      {["CUSTOMER", "VENDOR", "STAFF"].map(
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {['CUSTOMER', 'VENDOR', 'STAFF'].map(
                         (role) =>
                           permissionPresetLabel(selectedUser.permissions) !==
                             PERMISSION_PRESET_RU[role] && (
@@ -1990,13 +1988,13 @@ const AdminDashboardPage = () => {
                             >
                               {PERMISSION_PRESET_RU[role]}
                             </button>
-                          ),
+                          )
                       )}
                       <button
                         className="btn btn-secondary btn-sm"
                         disabled={permissionActionLoading}
                         onClick={() => handleMakeAdmin(selectedUser.id)}
-                        style={{ color: "var(--error)" }}
+                        style={{ color: 'var(--error)' }}
                       >
                         Сделать админом
                       </button>
@@ -2004,15 +2002,15 @@ const AdminDashboardPage = () => {
                   </div>
                 )}
 
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {!selectedUser.is_active && (
                   <button
                     className="btn btn-secondary"
                     disabled={permissionActionLoading}
                     onClick={() => handleActivateUser(selectedUser.id)}
-                    style={{ color: "#22c55e" }}
+                    style={{ color: '#22c55e' }}
                   >
-                    {permissionActionLoading ? "Применяю..." : "Разблокировать"}
+                    {permissionActionLoading ? 'Применяю...' : 'Разблокировать'}
                   </button>
                 )}
                 {selectedUser.is_active &&
@@ -2022,7 +2020,7 @@ const AdminDashboardPage = () => {
                       className="btn btn-secondary"
                       disabled={permissionActionLoading}
                       onClick={() => handleDeleteUser(selectedUser.id)}
-                      style={{ color: "var(--error)" }}
+                      style={{ color: 'var(--error)' }}
                     >
                       Заблокировать пользователя
                     </button>
@@ -2041,15 +2039,15 @@ const AdminDashboardPage = () => {
           >
             <div
               style={{
-                display: "flex",
-                flexDirection: "column",
+                display: 'flex',
+                flexDirection: 'column',
                 gap: 12,
               }}
             >
               <div
                 style={{
-                  display: "flex",
-                  alignItems: "center",
+                  display: 'flex',
+                  alignItems: 'center',
                   gap: 8,
                   marginTop: 4,
                 }}
@@ -2059,15 +2057,15 @@ const AdminDashboardPage = () => {
               </div>
               <div style={{ marginBottom: 16 }}>
                 <DetailField label="Имя">
-                  {selectedRestaurant.vendor_name || "Не указано"}
+                  {selectedRestaurant.vendor_name || 'Не указано'}
                 </DetailField>
                 <DetailField label="Телефон">
-                  {selectedRestaurant.vendor_phone || "Не указан"}
+                  {selectedRestaurant.vendor_phone || 'Не указан'}
                 </DetailField>
                 <div
                   style={{
-                    color: "var(--text-3)",
-                    fontSize: "0.8rem",
+                    color: 'var(--text-3)',
+                    fontSize: '0.8rem',
                     marginTop: 4,
                   }}
                 >
@@ -2075,7 +2073,7 @@ const AdminDashboardPage = () => {
                 </div>
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Storefront size={18} color="var(--fire)" />
                 <span style={{ fontWeight: 800 }}>Заведение</span>
               </div>
@@ -2088,8 +2086,8 @@ const AdminDashboardPage = () => {
                 </DetailField>
                 <div
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
                     gap: 10,
                     marginTop: 8,
                   }}
@@ -2110,22 +2108,22 @@ const AdminDashboardPage = () => {
                     <span className="order-status-badge pending">
                       {translate(
                         APPROVAL_STATUS_RU,
-                        selectedRestaurant.moderation_status,
+                        selectedRestaurant.moderation_status
                       )}
                     </span>
                   </DetailField>
                   <DetailField label="Работа">
                     <span
-                      className={`order-status-badge ${selectedRestaurant.is_open ? "ready" : "cancelled"}`}
+                      className={`order-status-badge ${selectedRestaurant.is_open ? 'ready' : 'cancelled'}`}
                     >
-                      {selectedRestaurant.is_open ? "Открыт" : "Закрыт"}
+                      {selectedRestaurant.is_open ? 'Открыт' : 'Закрыт'}
                     </span>
                   </DetailField>
                 </div>
                 <div
                   style={{
-                    color: "var(--text-3)",
-                    fontSize: "0.8rem",
+                    color: 'var(--text-3)',
+                    fontSize: '0.8rem',
                     marginTop: 12,
                   }}
                 >
@@ -2142,13 +2140,13 @@ const AdminDashboardPage = () => {
             )}
             <div
               style={{
-                display: "flex",
+                display: 'flex',
                 gap: 8,
                 marginTop: 16,
-                flexWrap: "wrap",
+                flexWrap: 'wrap',
               }}
             >
-              {selectedRestaurant.moderation_status !== "APPROVED" && (
+              {selectedRestaurant.moderation_status !== 'APPROVED' && (
                 <button
                   className="btn btn-secondary"
                   onClick={() => handleApproveRestaurant(selectedRestaurant.id)}
@@ -2157,11 +2155,11 @@ const AdminDashboardPage = () => {
                   Одобрить
                 </button>
               )}
-              {selectedRestaurant.moderation_status !== "REJECTED" && (
+              {selectedRestaurant.moderation_status !== 'REJECTED' && (
                 <button
                   className="btn btn-secondary"
                   onClick={() => handleRejectRestaurant(selectedRestaurant.id)}
-                  style={{ color: "var(--error)" }}
+                  style={{ color: 'var(--error)' }}
                 >
                   <Prohibit size={16} />
                   Отклонить
@@ -2170,7 +2168,7 @@ const AdminDashboardPage = () => {
             </div>
             <button
               className="btn btn-secondary"
-              style={{ marginTop: 16, color: "var(--error)" }}
+              style={{ marginTop: 16, color: 'var(--error)' }}
               onClick={() => handleDeleteRestaurant(selectedRestaurant.id)}
             >
               <Trash size={16} />
@@ -2181,15 +2179,15 @@ const AdminDashboardPage = () => {
 
         {selectedVendor && (
           <DetailModal
-            title={selectedVendor.name || "Вендор"}
+            title={selectedVendor.name || 'Вендор'}
             subtitle="Детали вендора"
             loading={vendorDetailsLoading}
             onClose={() => setSelectedVendor(null)}
           >
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
                 gap: 10,
               }}
             >
@@ -2210,7 +2208,7 @@ const AdminDashboardPage = () => {
                 <span className="order-status-badge pending">
                   {translate(
                     APPROVAL_STATUS_RU,
-                    selectedVendor.approval_status,
+                    selectedVendor.approval_status
                   )}
                 </span>
               </DetailField>
@@ -2227,13 +2225,13 @@ const AdminDashboardPage = () => {
             )}
             <div
               style={{
-                display: "flex",
+                display: 'flex',
                 gap: 8,
                 marginTop: 16,
-                flexWrap: "wrap",
+                flexWrap: 'wrap',
               }}
             >
-              {selectedVendor.approval_status !== "APPROVED" && (
+              {selectedVendor.approval_status !== 'APPROVED' && (
                 <button
                   className="btn btn-secondary"
                   onClick={() => handleApproveVendor(selectedVendor.id)}
@@ -2242,11 +2240,11 @@ const AdminDashboardPage = () => {
                   Одобрить
                 </button>
               )}
-              {selectedVendor.approval_status !== "REJECTED" && (
+              {selectedVendor.approval_status !== 'REJECTED' && (
                 <button
                   className="btn btn-secondary"
                   onClick={() => handleRejectVendor(selectedVendor.id)}
-                  style={{ color: "var(--error)" }}
+                  style={{ color: 'var(--error)' }}
                 >
                   <Prohibit size={16} />
                   Отклонить
@@ -2255,7 +2253,7 @@ const AdminDashboardPage = () => {
             </div>
             <button
               className="btn btn-secondary"
-              style={{ marginTop: 16, color: "var(--error)" }}
+              style={{ marginTop: 16, color: 'var(--error)' }}
               onClick={() => handleDeleteVendor(selectedVendor.id)}
             >
               <Trash size={16} />
@@ -2293,11 +2291,11 @@ const ListSection = ({ loading, emptyTitle, items, children }) => {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {children}
       {Array.isArray(items) && items.length === 0 && (
         <EmptyState
-          title={emptyTitle || "Ничего не найдено"}
+          title={emptyTitle || 'Ничего не найдено'}
           subtitle="Для выбранных фильтров нет результатов"
         />
       )}
@@ -2306,4 +2304,3 @@ const ListSection = ({ loading, emptyTitle, items, children }) => {
 };
 
 export default AdminDashboardPage;
-

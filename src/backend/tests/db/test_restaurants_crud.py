@@ -1,6 +1,7 @@
 import uuid
 
 import pytest
+from shared.enums.roles import UserRole
 
 from features.restaurants.crud import (
     count_restaurants,
@@ -16,7 +17,6 @@ from features.users.crud import create_user
 from features.users.schemas import UserCreate
 from features.vendors.crud import create_vendor_profile
 from features.vendors.schemas import VendorCreate
-from shared.enums.roles import UserRole
 
 
 async def _make_vendor(db_session, phone: str):
@@ -109,9 +109,7 @@ async def test_get_all_restaurants_with_filters(db_session):
     )
     await create_restaurant(
         db_session,
-        RestaurantCreate(
-            name="Pizza Place", address="D", is_open=False, is_hiring=False
-        ),
+        RestaurantCreate(name="Pizza Place", address="D", is_open=False, is_hiring=False),
         vendor_profile.id,
     )
 

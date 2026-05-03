@@ -1,14 +1,14 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { BrowserRouter } from "react-router-dom";
-import ProfilePage from "../../pages/profile/ProfilePage";
-import { useAuthStore } from "../../store/useAuthStore";
-import { staffService } from "../../services/staffService";
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { BrowserRouter } from 'react-router-dom';
+import ProfilePage from '../../pages/profile/ProfilePage';
+import { useAuthStore } from '../../store/useAuthStore';
+import { staffService } from '../../services/staffService';
 
-vi.mock("../../store/useAuthStore", () => ({
+vi.mock('../../store/useAuthStore', () => ({
   useAuthStore: vi.fn((sel) => {
     const state = {
-      user: { name: "Ivan Ivanov", phone_number: "+7999" },
+      user: { name: 'Ivan Ivanov', phone_number: '+7999' },
       logout: vi.fn(),
     };
     return sel ? sel(state) : state;
@@ -16,102 +16,102 @@ vi.mock("../../store/useAuthStore", () => ({
 }));
 
 const mockNavigate = vi.fn();
-vi.mock("react-router-dom", async () => {
-  const actual = await vi.importActual("react-router-dom");
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
   return {
     ...actual,
     useNavigate: () => mockNavigate,
   };
 });
 
-vi.mock("../../services/vendorService", () => ({
+vi.mock('../../services/vendorService', () => ({
   vendorService: {
-    getMyProfile: vi.fn().mockRejectedValue(new Error("Not a vendor")),
+    getMyProfile: vi.fn().mockRejectedValue(new Error('Not a vendor')),
     createProfile: vi.fn().mockResolvedValue({}),
   },
 }));
 
-vi.mock("../../services/staffService", () => ({
+vi.mock('../../services/staffService', () => ({
   staffService: {
-    getMyProfile: vi.fn().mockRejectedValue(new Error("Not a staff member")),
+    getMyProfile: vi.fn().mockRejectedValue(new Error('Not a staff member')),
   },
 }));
 
-vi.mock("../../services/userService", () => ({
+vi.mock('../../services/userService', () => ({
   userService: {
     updateMe: vi.fn().mockResolvedValue({}),
     changePassword: vi.fn().mockResolvedValue({}),
   },
 }));
 
-describe("ProfilePage", () => {
+describe('ProfilePage', () => {
   const logoutMock = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
     staffService.getMyProfile.mockRejectedValue(
-      new Error("Not a staff member"),
+      new Error('Not a staff member')
     );
     vi.mocked(useAuthStore).mockImplementation((sel) => {
       const state = {
-        user: { name: "Ivan Ivanov", phone_number: "+7999" },
+        user: { name: 'Ivan Ivanov', phone_number: '+7999' },
         logout: logoutMock,
       };
       return sel ? sel(state) : state;
     });
   });
 
-  it("renders user info and settings action", () => {
+  it('renders user info and settings action', () => {
     render(
       <BrowserRouter>
         <ProfilePage />
-      </BrowserRouter>,
+      </BrowserRouter>
     );
 
-    expect(screen.getByText("Ivan Ivanov")).toBeDefined();
-    expect(screen.getByText("+7999")).toBeDefined();
-    expect(screen.getByText("Настройки")).toBeDefined();
+    expect(screen.getByText('Ivan Ivanov')).toBeDefined();
+    expect(screen.getByText('+7999')).toBeDefined();
+    expect(screen.getByText('Настройки')).toBeDefined();
   });
 
-  it("calls logout and navigates on click", async () => {
+  it('calls logout and navigates on click', async () => {
     render(
       <BrowserRouter>
         <ProfilePage />
-      </BrowserRouter>,
+      </BrowserRouter>
     );
 
     fireEvent.click(screen.getByText(/Выйти/));
     expect(logoutMock).toHaveBeenCalled();
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith("/login");
+      expect(mockNavigate).toHaveBeenCalledWith('/login');
     });
   });
 
-  it("navigates to orders from menu", () => {
+  it('navigates to orders from menu', () => {
     render(
       <BrowserRouter>
         <ProfilePage />
-      </BrowserRouter>,
+      </BrowserRouter>
     );
 
     fireEvent.click(screen.getByText(/Мои заказы/));
-    expect(mockNavigate).toHaveBeenCalledWith("/orders");
+    expect(mockNavigate).toHaveBeenCalledWith('/orders');
   });
 
-  it("shows staff dashboard link for staff users", async () => {
+  it('shows staff dashboard link for staff users', async () => {
     staffService.getMyProfile.mockResolvedValueOnce({
-      data: { data: { id: "staff-1", restaurant_id: "rest-1", role: "COOK" } },
+      data: { data: { id: 'staff-1', restaurant_id: 'rest-1', role: 'COOK' } },
     });
 
     render(
       <BrowserRouter>
         <ProfilePage />
-      </BrowserRouter>,
+      </BrowserRouter>
     );
 
-    expect(await screen.findByText("Кабинет сотрудника")).toBeDefined();
+    expect(await screen.findByText('Кабинет сотрудника')).toBeDefined();
 
-    fireEvent.click(screen.getByText("Кабинет сотрудника"));
-    expect(mockNavigate).toHaveBeenCalledWith("/staff");
+    fireEvent.click(screen.getByText('Кабинет сотрудника'));
+    expect(mockNavigate).toHaveBeenCalledWith('/staff');
   });
 });

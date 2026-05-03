@@ -13,9 +13,7 @@ from utils.logging_setup import get_logger
 logger = get_logger()
 
 
-async def request_validation_error_handler(
-    request: Request, exc: RequestValidationError
-):
+async def request_validation_error_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
         content=ErrorSchema(detail=ErrorDescriptionSchema(error=str(exc))).model_dump(),
@@ -36,9 +34,7 @@ async def app_exception_handler(request: Request, exc: AppException):
     )
     return JSONResponse(
         status_code=int(exc.status_code),
-        content=ErrorSchema(
-            detail=ErrorDescriptionSchema(error=exc.detail)
-        ).model_dump(),
+        content=ErrorSchema(detail=ErrorDescriptionSchema(error=exc.detail)).model_dump(),
         headers={"X-Request-ID": request_id} if request_id else {},
     )
 
@@ -67,9 +63,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     return JSONResponse(
         status_code=exc.status_code,
-        content=ErrorSchema(
-            detail=ErrorDescriptionSchema(error=exc.detail)
-        ).model_dump(),
+        content=ErrorSchema(detail=ErrorDescriptionSchema(error=exc.detail)).model_dump(),
     )
 
 
@@ -95,7 +89,5 @@ async def integrity_error_handler(request: Request, exc: IntegrityError):
 
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
-        content=ErrorSchema(
-            detail=ErrorDescriptionSchema(error=friendly_msg)
-        ).model_dump(),
+        content=ErrorSchema(detail=ErrorDescriptionSchema(error=friendly_msg)).model_dump(),
     )

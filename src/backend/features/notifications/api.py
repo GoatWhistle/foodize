@@ -6,7 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import db_helper
 from features.auth.service import get_current_user
 from features.notifications import crud
-from features.notifications.schemas import NotificationListResponse, NotificationResponse
+from features.notifications.schemas import (
+    NotificationListResponse,
+    NotificationResponse,
+)
 from features.users.models import User
 from shared.exceptions import NotFoundException
 
@@ -21,9 +24,7 @@ async def get_my_notifications(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> NotificationListResponse:
     offset = (page - 1) * size
-    items, total = await crud.get_user_notifications(
-        session, user.id, limit=size, offset=offset
-    )
+    items, total = await crud.get_user_notifications(session, user.id, limit=size, offset=offset)
     unread_count = await crud.get_unread_count(session, user.id)
 
     return NotificationListResponse(

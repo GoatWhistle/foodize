@@ -17,9 +17,7 @@ async def register_vendor(
 ) -> VendorResponse:
     if await crud.get_vendor_by_user_id(session, user.id):
         raise VendorAlreadyExistsException()
-    vendor = await crud.create_vendor_profile(
-        session=session, user=user, vendor_in=vendor_in
-    )
+    vendor = await crud.create_vendor_profile(session=session, user=user, vendor_in=vendor_in)
     return VendorResponse.model_validate(vendor)
 
 

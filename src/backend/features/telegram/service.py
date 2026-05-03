@@ -40,9 +40,7 @@ def _validate_init_data(init_data: str) -> dict:
         settings.telegram.bot_token.encode(),
         hashlib.sha256,
     ).digest()
-    expected_hash = hmac.new(
-        secret_key, data_check_string.encode(), hashlib.sha256
-    ).hexdigest()
+    expected_hash = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
 
     if not hmac.compare_digest(expected_hash, received_hash):
         raise InvalidTelegramInitDataException()
@@ -71,9 +69,7 @@ def _make_tokens(user: User) -> TokenResponse:
     )
 
 
-async def telegram_check(
-    session: AsyncSession, init_data: str
-) -> TelegramCheckResponse:
+async def telegram_check(session: AsyncSession, init_data: str) -> TelegramCheckResponse:
     parsed = _validate_init_data(init_data)
     tg_user = _extract_tg_user(parsed)
     telegram_id = int(tg_user["id"])
@@ -125,9 +121,7 @@ async def telegram_register(
     return _make_tokens(new_user)
 
 
-async def telegram_auth_existing(
-    session: AsyncSession, init_data: str
-) -> TokenResponse:
+async def telegram_auth_existing(session: AsyncSession, init_data: str) -> TokenResponse:
     parsed = _validate_init_data(init_data)
     tg_user = _extract_tg_user(parsed)
     telegram_id = int(tg_user["id"])

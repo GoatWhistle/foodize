@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect } from 'react';
 import {
   Fire,
   Hamburger,
@@ -8,10 +8,10 @@ import {
   MapPin,
   Star,
   Heart,
-} from "@phosphor-icons/react";
-import { useAuthStore } from "../../store/useAuthStore";
-import { useFavoriteStore } from "../../store/useFavoriteStore";
-import { useShallow } from "zustand/react/shallow";
+} from '@phosphor-icons/react';
+import { useAuthStore } from '../../store/useAuthStore';
+import { useFavoriteStore } from '../../store/useFavoriteStore';
+import { useShallow } from 'zustand/react/shallow';
 
 const CATEGORY_ICONS = {
   SHAURMA: <Fire size={52} weight="fill" />,
@@ -28,7 +28,7 @@ const RestaurantCard = ({ restaurant, onClick }) => {
     useShallow((s) => ({
       favoriteIds: s.favoriteIds,
       toggle: s.toggle,
-    })),
+    }))
   );
   const isFav = favoriteIds.has(restaurant.id);
 
@@ -38,11 +38,11 @@ const RestaurantCard = ({ restaurant, onClick }) => {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          el.classList.add("visible");
+          el.classList.add('visible');
           observer.unobserve(el);
         }
       },
-      { threshold: 0.1 },
+      { threshold: 0.1 }
     );
     observer.observe(el);
     return () => observer.disconnect();
@@ -60,7 +60,7 @@ const RestaurantCard = ({ restaurant, onClick }) => {
       onClick={onClick}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => e.key === "Enter" && onClick?.()}
+      onKeyDown={(e) => e.key === 'Enter' && onClick?.()}
       aria-label={`Ресторан ${restaurant.name}`}
     >
       {/* Photo */}
@@ -84,11 +84,11 @@ const RestaurantCard = ({ restaurant, onClick }) => {
       {/* Open / Closed badge */}
       {restaurant.is_open != null && (
         <div
-          className={`card-status-badge card-status-badge--${restaurant.is_open ? "open" : "closed"}`}
+          className={`card-status-badge card-status-badge--${restaurant.is_open ? 'open' : 'closed'}`}
         >
           <span className="card-status-dot" />
           <span className="card-status-label">
-            {restaurant.is_open ? "Открыто" : "Закрыто"}
+            {restaurant.is_open ? 'Открыто' : 'Закрыто'}
           </span>
         </div>
       )}
@@ -100,21 +100,18 @@ const RestaurantCard = ({ restaurant, onClick }) => {
             e.stopPropagation();
             toggle(restaurant.id);
           }}
-          className={`card-fav-btn${isFav ? " card-fav-btn--active" : ""}`}
-          aria-label={isFav ? "Убрать из избранного" : "Добавить в избранное"}
+          className={`card-fav-btn${isFav ? ' card-fav-btn--active' : ''}`}
+          aria-label={isFav ? 'Убрать из избранного' : 'Добавить в избранное'}
           aria-pressed={isFav}
         >
-          <Heart
-            size={15}
-            weight={isFav ? "fill" : "regular"}
-          />
+          <Heart size={15} weight={isFav ? 'fill' : 'regular'} />
         </button>
       )}
 
       {/* Rating badge */}
       <div className="card-rating-badge">
         <Star size={13} weight="fill" color="var(--fire)" />
-        <span>{rating ? rating.toFixed(1) : "0.0"}</span>
+        <span>{rating ? rating.toFixed(1) : '0.0'}</span>
       </div>
 
       {/* Content */}
