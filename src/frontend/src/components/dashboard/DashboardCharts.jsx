@@ -206,3 +206,92 @@ export const AOVDynamicsChart = ({ data }) => (
     </LineChart>
   </ChartCard>
 );
+
+const ROLE_COLORS = {
+  CUSTOMER: '#6366f1',
+  STAFF: '#10b981',
+  VENDOR: '#f59e0b',
+};
+
+export const UsersByRoleChart = ({ data = {} }) => {
+  const roles = [
+    { key: 'CUSTOMER', name: 'Клиенты' },
+    { key: 'STAFF', name: 'Персонал' },
+    { key: 'VENDOR', name: 'Вендоры' },
+  ];
+  const total = roles.reduce((s, r) => s + (data[r.key] || 0), 0) || 1;
+
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: 12,
+      }}
+    >
+      {roles.map(({ key, name }) => {
+        const value = data[key] || 0;
+        const pct = Math.round((value / total) * 100);
+        const color = ROLE_COLORS[key];
+        return (
+          <div
+            key={key}
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--r-md)',
+              padding: '16px 20px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 10,
+            }}
+          >
+            <div
+              style={{
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                color: 'var(--text-3)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+              }}
+            >
+              {name}
+            </div>
+            <div
+              style={{
+                fontSize: '2rem',
+                fontWeight: 800,
+                color,
+                letterSpacing: '-0.03em',
+                lineHeight: 1,
+              }}
+            >
+              {value}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>
+              {pct}% от всех
+            </div>
+            <div
+              style={{
+                height: 6,
+                borderRadius: 3,
+                background: 'var(--border)',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  height: '100%',
+                  width: `${pct}%`,
+                  background: color,
+                  borderRadius: 3,
+                  transition: 'width 0.4s ease',
+                }}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};

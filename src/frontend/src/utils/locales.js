@@ -1,8 +1,8 @@
 export const ORDER_STATUS_RU = {
-  PENDING: 'Ожидается',
+  PENDING: 'Новый',
   ACCEPTED: 'Принят',
-  READY: 'Готово',
-  COMPLETED: 'Выполнено',
+  READY: 'Готов к выдаче',
+  COMPLETED: 'Выдан',
 };
 
 export const APPROVAL_STATUS_RU = {

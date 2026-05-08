@@ -44,6 +44,7 @@ import {
   CATEGORY_RU,
   translate,
 } from '../../utils/locales';
+import { downloadBlob } from '../../utils/download';
 
 const STATUS_LABEL_RU = ORDER_STATUS_RU;
 
@@ -56,7 +57,7 @@ const NEXT_ORDER_STATUS = {
 const NEXT_ORDER_LABEL_RU = {
   PENDING: 'Принять',
   ACCEPTED: 'Готово',
-  READY: 'Отдал',
+  READY: 'Выдать',
 };
 
 const getOrderDisplayId = (order) => order.display_id ?? order.id.slice(0, 8);
@@ -211,6 +212,7 @@ const VendorDashboardPage = () => {
   const wsRef = useRef(null);
 
   const [formLoading, setFormLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
   const [formError, setFormError] = useState('');
   const { createRestaurant } = useRestaurantStore(
     useShallow((s) => ({ createRestaurant: s.createRestaurant }))
@@ -676,6 +678,36 @@ const VendorDashboardPage = () => {
     }
   };
 
+  const handleVendorExport = async (exportFn, filename) => {
+    setExportLoading(true);
+    try {
+      const res = await exportFn();
+      downloadBlob(res.data, filename);
+    } catch {
+      setOrdersError('Не удалось выполнить экспорт');
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  const handleCancelOrder = async (orderId, reason) => {
+    setOrdersError('');
+    setUpdatingOrderId(orderId);
+    try {
+      await orderService.cancelOrder(orderId, reason);
+      setSelectedOrder((current) =>
+        current?.id === orderId
+          ? { ...current, status: 'CANCELLED', cancellation_reason: reason }
+          : current
+      );
+      await fetchVendorOrders({ silent: true });
+    } catch (err) {
+      setOrdersError(translateApiError(err, 'Не удалось отменить заказ'));
+    } finally {
+      setUpdatingOrderId(null);
+    }
+  };
+
   const handleStaffDecision = async (requestId, status) => {
     try {
       await vendorService.updateStaffStatus(requestId, status);
@@ -1095,23 +1127,40 @@ const VendorDashboardPage = () => {
                   <h3 style={{ fontWeight: 700, fontSize: '1rem' }}>
                     Позиции меню
                   </h3>
-                  <button
-                    className="btn btn-primary btn-sm"
-                    onClick={() => {
-                      setEditingItem(null);
-                      setMenuItemForm({
-                        name: '',
-                        description: '',
-                        price: '',
-                        category: 'SHAURMA',
-                        prep_time_minutes: 15,
-                        option_groups: [],
-                      });
-                      setShowAddItem(!showAddItem);
-                    }}
-                  >
-                    <Plus size={16} /> Позиция
-                  </button>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      disabled={exportLoading}
+                      onClick={() =>
+                        handleVendorExport(
+                          () =>
+                            vendorService.exportMenuCSV({
+                              restaurant_id: selectedRestaurant || undefined,
+                            }),
+                          'menu.csv'
+                        )
+                      }
+                    >
+                      {exportLoading ? '...' : '↓ CSV'}
+                    </button>
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={() => {
+                        setEditingItem(null);
+                        setMenuItemForm({
+                          name: '',
+                          description: '',
+                          price: '',
+                          category: 'SHAURMA',
+                          prep_time_minutes: 15,
+                          option_groups: [],
+                        });
+                        setShowAddItem(!showAddItem);
+                      }}
+                    >
+                      <Plus size={16} /> Позиция
+                    </button>
+                  </div>
                 </div>
 
                 {(showAddItem || editingItem) && (
@@ -1735,21 +1784,41 @@ const VendorDashboardPage = () => {
                       Новые заказы обновляются автоматически
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => fetchVendorOrders()}
-                    disabled={ordersLoading}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    <ArrowsClockwise size={14} />
-                    {ordersLoading ? '...' : 'Обновить'}
-                  </button>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      disabled={exportLoading}
+                      onClick={() =>
+                        handleVendorExport(
+                          () =>
+                            vendorService.exportOrdersCSV({
+                              restaurant_id:
+                                selectedRestaurant?.id || undefined,
+                              status: ordersStatusFilter || undefined,
+                            }),
+                          'orders.csv'
+                        )
+                      }
+                    >
+                      {exportLoading ? '...' : '↓ CSV'}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => fetchVendorOrders()}
+                      disabled={ordersLoading}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      <ArrowsClockwise size={14} />
+                      {ordersLoading ? '...' : 'Обновить'}
+                    </button>
+                  </div>
                 </div>
                 <div
                   style={{
@@ -1761,10 +1830,10 @@ const VendorDashboardPage = () => {
                 >
                   {[
                     { key: '', label: 'Все' },
-                    { key: 'PENDING', label: 'Ожидается' },
-                    { key: 'ACCEPTED', label: 'Принято' },
-                    { key: 'READY', label: 'Готово' },
-                    { key: 'COMPLETED', label: 'Отдал' },
+                    { key: 'PENDING', label: 'Новые' },
+                    { key: 'ACCEPTED', label: 'Принятые' },
+                    { key: 'READY', label: 'Готовые' },
+                    { key: 'COMPLETED', label: 'Выданные' },
                   ].map(({ key, label }) => (
                     <button
                       key={key}
@@ -1970,6 +2039,7 @@ const VendorDashboardPage = () => {
                 nextStatus={NEXT_ORDER_STATUS}
                 nextLabel={NEXT_ORDER_LABEL_RU}
                 onStatusChange={handleOrderChange}
+                onCancel={handleCancelOrder}
                 updating={updatingOrderId}
               />
             )}
@@ -2577,6 +2647,50 @@ const VendorDashboardPage = () => {
                       {preset.label}
                     </button>
                   ))}
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: 8,
+                    justifyContent: 'flex-end',
+                    marginBottom: 16,
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    disabled={exportLoading}
+                    onClick={() =>
+                      handleVendorExport(
+                        () =>
+                          vendorService.exportFinancePDF({
+                            date_from: financeFilters.date_from || undefined,
+                            date_to: financeFilters.date_to || undefined,
+                            restaurant_id: selectedRestaurant?.id || undefined,
+                          }),
+                        'finance.pdf'
+                      )
+                    }
+                  >
+                    {exportLoading ? '...' : '↓ Финансы PDF'}
+                  </button>
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    disabled={exportLoading}
+                    onClick={() =>
+                      handleVendorExport(
+                        () =>
+                          vendorService.exportAnalyticsPDF({
+                            date_from: financeFilters.date_from || undefined,
+                            date_to: financeFilters.date_to || undefined,
+                            restaurant_id: selectedRestaurant?.id || undefined,
+                          }),
+                        'analytics.pdf'
+                      )
+                    }
+                  >
+                    {exportLoading ? '...' : '↓ Аналитика PDF'}
+                  </button>
                 </div>
                 {finance && (
                   <div

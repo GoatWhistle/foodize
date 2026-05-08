@@ -9,5 +9,6 @@ export const orderService = {
   updateStatus: (id, status, data = {}) =>
     api.patch(`/orders/${id}/status`, { status, ...data }),
   completeOrder: (id) => api.post(`/orders/${id}/complete`),
+  cancelOrder: (id, reason) => api.post(`/orders/${id}/cancel`, { reason }),
   getOrderEvents: (id) => api.get(`/orders/${id}/events`),
 };

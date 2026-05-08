@@ -27,6 +27,8 @@ class StatsGrowthPoint(BaseModel):
 
 class PlatformStats(BaseModel):
     users_by_permission: dict[str, int]
+    users_by_role: dict[str, int]
+    total_users: int
     orders_by_status: dict[str, int]
     total_restaurants: int
     total_vendors: int

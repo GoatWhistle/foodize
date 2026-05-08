@@ -116,7 +116,10 @@ const OrderStatusPage = () => {
     <div
       className={`status-screen page-enter${isReady ? ' status-ready-flash' : ''}`}
     >
-      <OrderStatusBadge status={currentOrder.status} />
+      <OrderStatusBadge
+        status={currentOrder.status}
+        cancellationReason={currentOrder.cancellation_reason}
+      />
 
       <div
         style={{

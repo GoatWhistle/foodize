@@ -13,7 +13,12 @@ from features.orders.dependencies import (
     verify_restaurant_access,
 )
 from features.orders.models import Order
-from features.orders.schemas.order import OrderCreate, OrderResponse, OrderStatusUpdate
+from features.orders.schemas.order import (
+    OrderCancelRequest,
+    OrderCreate,
+    OrderResponse,
+    OrderStatusUpdate,
+)
 from features.orders.schemas.order_event import OrderEventResponse
 from features.orders.services import order as service
 from features.restaurants.models import Restaurant
@@ -134,6 +139,22 @@ async def read_order_events(
     return build_list_response(
         data=events, total=len(events), page=1, size=len(events) or 1, request=request
     )
+
+
+@router.post("/{order_id}/cancel", response_model=SuccessResponse[OrderResponse])
+async def cancel_order(
+    order_id: uuid.UUID,
+    cancel_in: OrderCancelRequest,
+    current_user: User = Depends(require_permission(Permission.ORDERS_MANAGE_STATUS)),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> SuccessResponse[OrderResponse]:
+    result = await service.cancel_order(
+        session=session,
+        order_id=order_id,
+        actor=current_user,
+        cancel_data=cancel_in,
+    )
+    return build_response(result)
 
 
 @router.post("/{order_id}/complete", response_model=SuccessResponse[OrderResponse])

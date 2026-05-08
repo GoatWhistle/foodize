@@ -1,12 +1,17 @@
 import uuid
-from datetime import date
+from datetime import UTC, date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Query, Request
+from fastapi.responses import Response
 from pydantic import BaseModel
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
+from features.admin import export as admin_export
 from features.admin import service
+from features.admin.audit_log import service as audit_service
+from features.admin.audit_log.models import AuditLog
 from features.admin.dependencies import require_admin
 from features.admin.schemas import (
     AdminRestaurantResponse,
@@ -33,6 +38,15 @@ from shared.schemas.response import SuccessListResponse, SuccessResponse
 
 class SetPermissionsRequest(BaseModel):
     permissions: list[Permission]
+
+
+class BatchIdsRequest(BaseModel):
+    ids: list[uuid.UUID]
+
+
+class BatchRejectRequest(BaseModel):
+    ids: list[uuid.UUID]
+    reason: str | None = None
 
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
@@ -173,6 +187,38 @@ async def read_restaurants(
     return build_list_response(data=data, total=total, page=page, size=size, request=request)
 
 
+@router.post("/restaurants/batch-approve")
+async def batch_approve_restaurants(
+    body: BatchIdsRequest,
+    _: User = Depends(require_admin),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> SuccessResponse[dict]:
+    results = []
+    for rid in body.ids:
+        try:
+            await service.moderate_restaurant(session, rid, "APPROVED")
+            results.append(str(rid))
+        except Exception:
+            pass
+    return build_response({"approved": results})
+
+
+@router.post("/restaurants/batch-reject")
+async def batch_reject_restaurants(
+    body: BatchRejectRequest,
+    _: User = Depends(require_admin),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> SuccessResponse[dict]:
+    results = []
+    for rid in body.ids:
+        try:
+            await service.moderate_restaurant(session, rid, "REJECTED", body.reason)
+            results.append(str(rid))
+        except Exception:
+            pass
+    return build_response({"rejected": results})
+
+
 @router.get(
     "/restaurants/{restaurant_id}",
     response_model=SuccessResponse[AdminRestaurantResponse],
@@ -205,10 +251,14 @@ async def delete_restaurant(
 )
 async def approve_restaurant(
     restaurant_id: uuid.UUID,
-    _: User = Depends(require_admin),
+    actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminRestaurantResponse]:
     result = await service.moderate_restaurant(session, restaurant_id, "APPROVED")
+    await audit_service.log_action(
+        session, actor.id, "APPROVE_RESTAURANT", "restaurant", restaurant_id
+    )
+    await session.commit()
     return build_response(result)
 
 
@@ -219,10 +269,14 @@ async def approve_restaurant(
 async def reject_restaurant(
     restaurant_id: uuid.UUID,
     body: ModerationDecision,
-    _: User = Depends(require_admin),
+    actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminRestaurantResponse]:
     result = await service.moderate_restaurant(session, restaurant_id, "REJECTED", body.reason)
+    await audit_service.log_action(
+        session, actor.id, "REJECT_RESTAURANT", "restaurant", restaurant_id, {"reason": body.reason}
+    )
+    await session.commit()
     return build_response(result)
 
 
@@ -245,6 +299,38 @@ async def read_vendors(
         limit=size,
     )
     return build_list_response(data=data, total=total, page=page, size=size, request=request)
+
+
+@router.post("/vendors/batch-approve")
+async def batch_approve_vendors(
+    body: BatchIdsRequest,
+    _: User = Depends(require_admin),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> SuccessResponse[dict]:
+    results = []
+    for vid in body.ids:
+        try:
+            await service.moderate_vendor(session, vid, "APPROVED")
+            results.append(str(vid))
+        except Exception:
+            pass
+    return build_response({"approved": results})
+
+
+@router.post("/vendors/batch-reject")
+async def batch_reject_vendors(
+    body: BatchRejectRequest,
+    _: User = Depends(require_admin),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> SuccessResponse[dict]:
+    results = []
+    for vid in body.ids:
+        try:
+            await service.moderate_vendor(session, vid, "REJECTED", body.reason)
+            results.append(str(vid))
+        except Exception:
+            pass
+    return build_response({"rejected": results})
 
 
 @router.get("/vendors/{vendor_id}", response_model=SuccessResponse[AdminVendorResponse])
@@ -270,10 +356,12 @@ async def delete_vendor(
 @router.post("/vendors/{vendor_id}/approve", response_model=SuccessResponse[AdminVendorResponse])
 async def approve_vendor(
     vendor_id: uuid.UUID,
-    _: User = Depends(require_admin),
+    actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminVendorResponse]:
     result = await service.moderate_vendor(session, vendor_id, "APPROVED")
+    await audit_service.log_action(session, actor.id, "APPROVE_VENDOR", "vendor", vendor_id)
+    await session.commit()
     return build_response(result)
 
 
@@ -281,10 +369,14 @@ async def approve_vendor(
 async def reject_vendor(
     vendor_id: uuid.UUID,
     body: ModerationDecision,
-    _: User = Depends(require_admin),
+    actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminVendorResponse]:
     result = await service.moderate_vendor(session, vendor_id, "REJECTED", body.reason)
+    await audit_service.log_action(
+        session, actor.id, "REJECT_VENDOR", "vendor", vendor_id, {"reason": body.reason}
+    )
+    await session.commit()
     return build_response(result)
 
 
@@ -352,3 +444,187 @@ async def read_advanced_analytics(
         session, date_from=date_from, date_to=date_to, restaurant_id=restaurant_id
     )
     return build_response(result)
+
+
+@router.get("/audit-logs")
+async def get_audit_logs(
+    request: Request,
+    action: str | None = Query(None),
+    entity_type: str | None = Query(None),
+    actor_id: uuid.UUID | None = Query(None),
+    date_from: date | None = Query(None),
+    date_to: date | None = Query(None),
+    page: int = Query(1, ge=1),
+    size: int = Query(50, ge=1, le=200),
+    _: User = Depends(require_admin),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+):
+    stmt = select(AuditLog).order_by(AuditLog.created_at.desc())
+    count_stmt = select(func.count()).select_from(AuditLog)
+    if action:
+        stmt = stmt.where(AuditLog.action == action)
+        count_stmt = count_stmt.where(AuditLog.action == action)
+    if entity_type:
+        stmt = stmt.where(AuditLog.entity_type == entity_type)
+        count_stmt = count_stmt.where(AuditLog.entity_type == entity_type)
+    if actor_id:
+        stmt = stmt.where(AuditLog.actor_id == actor_id)
+        count_stmt = count_stmt.where(AuditLog.actor_id == actor_id)
+    if date_from:
+        stmt = stmt.where(
+            AuditLog.created_at >= datetime.combine(date_from, datetime.min.time(), tzinfo=UTC)
+        )
+        count_stmt = count_stmt.where(
+            AuditLog.created_at >= datetime.combine(date_from, datetime.min.time(), tzinfo=UTC)
+        )
+    if date_to:
+        stmt = stmt.where(
+            AuditLog.created_at
+            < datetime.combine(date_to + timedelta(days=1), datetime.min.time(), tzinfo=UTC)
+        )
+        count_stmt = count_stmt.where(
+            AuditLog.created_at
+            < datetime.combine(date_to + timedelta(days=1), datetime.min.time(), tzinfo=UTC)
+        )
+
+    total = (await session.execute(count_stmt)).scalar_one()
+    offset = (page - 1) * size
+    rows = (await session.execute(stmt.offset(offset).limit(size))).scalars().all()
+    data = [
+        {
+            "id": str(r.id),
+            "actor_id": str(r.actor_id) if r.actor_id else None,
+            "action": r.action,
+            "entity_type": r.entity_type,
+            "entity_id": str(r.entity_id) if r.entity_id else None,
+            "details": r.details,
+            "created_at": r.created_at.isoformat(),
+        }
+        for r in rows
+    ]
+    return build_list_response(data=data, total=total, page=page, size=size, request=request)
+
+
+@router.get("/export/users.csv")
+async def export_users_csv(
+    _: User = Depends(require_admin),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> Response:
+    data = await admin_export.export_users_csv(session)
+    return Response(
+        content=data,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=users.csv"},
+    )
+
+
+@router.get("/export/orders.csv")
+async def export_orders_csv(
+    date_from: date | None = Query(None),
+    date_to: date | None = Query(None),
+    status: str | None = Query(None),
+    _: User = Depends(require_admin),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> Response:
+    order_status = None
+    if status:
+        try:
+            order_status = OrderStatus(status)
+        except ValueError:
+            pass
+    data = await admin_export.export_orders_csv(
+        session, date_from=date_from, date_to=date_to, status=order_status
+    )
+    return Response(
+        content=data,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=orders.csv"},
+    )
+
+
+@router.get("/export/restaurants.csv")
+async def export_restaurants_csv(
+    _: User = Depends(require_admin),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> Response:
+    data = await admin_export.export_restaurants_csv(session)
+    return Response(
+        content=data,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=restaurants.csv"},
+    )
+
+
+@router.get("/export/vendors.csv")
+async def export_vendors_csv(
+    _: User = Depends(require_admin),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> Response:
+    data = await admin_export.export_vendors_csv(session)
+    return Response(
+        content=data,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=vendors.csv"},
+    )
+
+
+@router.get("/export/reviews.csv")
+async def export_reviews_csv(
+    min_rating: int | None = Query(None),
+    max_rating: int | None = Query(None),
+    _: User = Depends(require_admin),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> Response:
+    data = await admin_export.export_reviews_csv(
+        session, min_rating=min_rating, max_rating=max_rating
+    )
+    return Response(
+        content=data,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=reviews.csv"},
+    )
+
+
+@router.get("/export/finance.pdf")
+async def export_finance_pdf(
+    date_from: date | None = Query(None),
+    date_to: date | None = Query(None),
+    _: User = Depends(require_admin),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> Response:
+    data = await admin_export.export_finance_pdf(session, date_from=date_from, date_to=date_to)
+    return Response(
+        content=data,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=finance.pdf"},
+    )
+
+
+@router.get("/export/analytics.pdf")
+async def export_analytics_pdf(
+    date_from: date | None = Query(None),
+    date_to: date | None = Query(None),
+    _: User = Depends(require_admin),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> Response:
+    data = await admin_export.export_analytics_pdf(session, date_from=date_from, date_to=date_to)
+    return Response(
+        content=data,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=analytics.pdf"},
+    )
+
+
+@router.get("/export/overview.pdf")
+async def export_overview_pdf(
+    date_from: date | None = Query(None),
+    date_to: date | None = Query(None),
+    _: User = Depends(require_admin),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> Response:
+    data = await admin_export.export_overview_pdf(session, date_from=date_from, date_to=date_to)
+    return Response(
+        content=data,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=overview.pdf"},
+    )

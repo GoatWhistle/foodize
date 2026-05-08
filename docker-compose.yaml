@@ -87,6 +87,7 @@ services:
       - "8000:8000"
     volumes:
       - ./src/backend:/backend
+      - ./tools:/tools
     networks:
       - foodize-network
 

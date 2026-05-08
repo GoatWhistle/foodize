@@ -23,6 +23,7 @@ import {
   HourlyLoadChart,
   CategoryRevenueChart,
   AOVDynamicsChart,
+  UsersByRoleChart,
 } from '../../components/dashboard/DashboardCharts';
 import {
   ORDER_STATUS_RU,
@@ -40,8 +41,16 @@ import {
   permissionPresetLabel,
   PERMISSIONS,
 } from '../../utils/permissions';
+import { downloadBlob } from '../../utils/download';
 
 const PAGE_SIZE = 50;
+
+const AUDIT_ACTION_LABELS = {
+  APPROVE_VENDOR: 'Одобрен вендор',
+  REJECT_VENDOR: 'Отклонён вендор',
+  APPROVE_RESTAURANT: 'Одобрен ресторан',
+  REJECT_RESTAURANT: 'Отклонён ресторан',
+};
 
 const STATUS_MAP = {
   PENDING: {
@@ -497,6 +506,21 @@ const AdminDashboardPage = () => {
   const [reviewFilters, setReviewFilters] = useState({ rating: '' });
   const [reasonDialog, setReasonDialog] = useState(null);
   const [reasonLoading, setReasonLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [selectedVendorIds, setSelectedVendorIds] = useState(new Set());
+  const [selectedRestaurantIds, setSelectedRestaurantIds] = useState(new Set());
+  const [batchLoading, setBatchLoading] = useState(false);
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [auditTotal, setAuditTotal] = useState(0);
+  const [auditPage, setAuditPage] = useState(1);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditFilters, setAuditFilters] = useState({
+    action: '',
+    entity_type: '',
+    date_from: '',
+    date_to: '',
+  });
+  const [expandedAuditId, setExpandedAuditId] = useState(null);
 
   const requestConfirm = useModalStore((s) => s.requestConfirm);
   const requestReason = (dialog) => setReasonDialog(dialog);
@@ -509,6 +533,58 @@ const AdminDashboardPage = () => {
       setReasonDialog(null);
     } finally {
       setReasonLoading(false);
+    }
+  };
+
+  const handleExport = async (exportFn, filename) => {
+    setExportLoading(true);
+    try {
+      const res = await exportFn();
+      downloadBlob(res.data, filename);
+    } catch {
+      setActionError('Не удалось выполнить экспорт');
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  const handleBatchVendors = async (action, reason) => {
+    setBatchLoading(true);
+    try {
+      const ids = Array.from(selectedVendorIds);
+      if (action === 'approve') {
+        await adminService.batchApproveVendors(ids);
+      } else {
+        await adminService.batchRejectVendors(ids, reason);
+      }
+      setSelectedVendorIds(new Set());
+      setActionSuccess(`Готово: ${ids.length} вендоров`);
+      setVendorsPage(1);
+      setVendorFilters((f) => ({ ...f }));
+    } catch {
+      setActionError('Ошибка при массовом действии');
+    } finally {
+      setBatchLoading(false);
+    }
+  };
+
+  const handleBatchRestaurants = async (action, reason) => {
+    setBatchLoading(true);
+    try {
+      const ids = Array.from(selectedRestaurantIds);
+      if (action === 'approve') {
+        await adminService.batchApproveRestaurants(ids);
+      } else {
+        await adminService.batchRejectRestaurants(ids, reason);
+      }
+      setSelectedRestaurantIds(new Set());
+      setActionSuccess(`Готово: ${ids.length} ресторанов`);
+      setRestaurantsPage(1);
+      setRestaurantFilters((f) => ({ ...f }));
+    } catch {
+      setActionError('Ошибка при массовом действии');
+    } finally {
+      setBatchLoading(false);
     }
   };
 
@@ -642,6 +718,29 @@ const AdminDashboardPage = () => {
       fetchFinance();
     }
   }, [activeTab, fetchFinance]);
+
+  useEffect(() => {
+    if (activeTab !== 'audit') return;
+    setAuditLoading(true);
+    const params = {
+      page: auditPage,
+      size: 50,
+      ...(auditFilters.action && { action: auditFilters.action }),
+      ...(auditFilters.entity_type && {
+        entity_type: auditFilters.entity_type,
+      }),
+      ...(auditFilters.date_from && { date_from: auditFilters.date_from }),
+      ...(auditFilters.date_to && { date_to: auditFilters.date_to }),
+    };
+    adminService
+      .getAuditLogs(params)
+      .then((res) => {
+        setAuditLogs(res.data.data || []);
+        setAuditTotal(res.data.pagination?.total || 0);
+      })
+      .catch(() => setActionError('Не удалось загрузить логи'))
+      .finally(() => setAuditLoading(false));
+  }, [activeTab, auditPage, auditFilters]);
 
   const loadUserDetails = async (id) => {
     setUserDetailsLoading(true);
@@ -932,6 +1031,7 @@ const AdminDashboardPage = () => {
     { id: 'vendors', label: 'Вендоры', icon: <UsersThree size={18} /> },
     { id: 'reviews', label: 'Отзывы', icon: <Star size={18} /> },
     { id: 'finance', label: 'Аналитика', icon: <ChartLineUp size={18} /> },
+    { id: 'audit', label: 'Логи', icon: <Clock size={18} /> },
   ];
 
   return (
@@ -1017,7 +1117,7 @@ const AdminDashboardPage = () => {
           >
             <StatCard
               label="Пользователи"
-              value={sumValues(stats.users_by_permission)}
+              value={stats.total_users ?? sumValues(stats.users_by_permission)}
               icon={<UsersThree size={22} />}
               growth={stats.growth?.users}
               onClick={() => setActiveTab('users')}
@@ -1043,6 +1143,12 @@ const AdminDashboardPage = () => {
               growth={stats.growth?.vendors}
               onClick={() => setActiveTab('vendors')}
             />
+          </div>
+        )}
+
+        {activeTab === 'stats' && stats?.users_by_role && (
+          <div style={{ marginTop: 16 }}>
+            <UsersByRoleChart data={stats.users_by_role} />
           </div>
         )}
 
@@ -1145,6 +1251,64 @@ const AdminDashboardPage = () => {
                   {preset.label}
                 </button>
               ))}
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                gap: 8,
+                justifyContent: 'flex-end',
+                marginBottom: 16,
+                flexWrap: 'wrap',
+              }}
+            >
+              <button
+                className="btn btn-secondary btn-sm"
+                disabled={exportLoading}
+                onClick={() =>
+                  handleExport(
+                    () =>
+                      adminService.exportFinancePDF({
+                        date_from: financeFilters.date_from || undefined,
+                        date_to: financeFilters.date_to || undefined,
+                      }),
+                    'finance.pdf'
+                  )
+                }
+              >
+                {exportLoading ? '...' : '↓ Финансы PDF'}
+              </button>
+              <button
+                className="btn btn-secondary btn-sm"
+                disabled={exportLoading}
+                onClick={() =>
+                  handleExport(
+                    () =>
+                      adminService.exportAnalyticsPDF({
+                        date_from: financeFilters.date_from || undefined,
+                        date_to: financeFilters.date_to || undefined,
+                      }),
+                    'analytics.pdf'
+                  )
+                }
+              >
+                {exportLoading ? '...' : '↓ Аналитика PDF'}
+              </button>
+              <button
+                className="btn btn-secondary btn-sm"
+                disabled={exportLoading}
+                onClick={() =>
+                  handleExport(
+                    () =>
+                      adminService.exportOverviewPDF({
+                        date_from: financeFilters.date_from || undefined,
+                        date_to: financeFilters.date_to || undefined,
+                      }),
+                    'overview.pdf'
+                  )
+                }
+              >
+                {exportLoading ? '...' : '↓ Обзор платформы PDF'}
+              </button>
             </div>
             {finance && (
               <>
@@ -1254,6 +1418,149 @@ const AdminDashboardPage = () => {
           </ListSection>
         )}
 
+        {activeTab === 'audit' && (
+          <ListSection
+            loading={auditLoading}
+            emptyTitle="Логов пока нет"
+            items={auditLogs}
+          >
+            <div
+              style={{
+                display: 'flex',
+                gap: 8,
+                flexWrap: 'wrap',
+                marginBottom: 12,
+              }}
+            >
+              <select
+                className="form-input"
+                style={{ maxWidth: 180 }}
+                value={auditFilters.action}
+                onChange={(e) => {
+                  setAuditPage(1);
+                  setAuditFilters((f) => ({ ...f, action: e.target.value }));
+                }}
+              >
+                <option value="">Все действия</option>
+                {Object.entries(AUDIT_ACTION_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+              <select
+                className="form-input"
+                style={{ maxWidth: 160 }}
+                value={auditFilters.entity_type}
+                onChange={(e) => {
+                  setAuditPage(1);
+                  setAuditFilters((f) => ({
+                    ...f,
+                    entity_type: e.target.value,
+                  }));
+                }}
+              >
+                <option value="">Все объекты</option>
+                <option value="vendor">Вендор</option>
+                <option value="restaurant">Ресторан</option>
+              </select>
+              <input
+                type="date"
+                className="form-input"
+                style={{ maxWidth: 160 }}
+                value={auditFilters.date_from}
+                onChange={(e) => {
+                  setAuditPage(1);
+                  setAuditFilters((f) => ({ ...f, date_from: e.target.value }));
+                }}
+              />
+              <input
+                type="date"
+                className="form-input"
+                style={{ maxWidth: 160 }}
+                value={auditFilters.date_to}
+                onChange={(e) => {
+                  setAuditPage(1);
+                  setAuditFilters((f) => ({ ...f, date_to: e.target.value }));
+                }}
+              />
+            </div>
+            {auditLogs.map((log) => (
+              <div
+                key={log.id}
+                style={{
+                  ...cardStyle,
+                  padding: '12px 16px',
+                  cursor: 'pointer',
+                }}
+                onClick={() =>
+                  setExpandedAuditId(expandedAuditId === log.id ? null : log.id)
+                }
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: 12,
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontWeight: 700,
+                      fontSize: '0.85rem',
+                      color: 'var(--text-1)',
+                    }}
+                  >
+                    {AUDIT_ACTION_LABELS[log.action] ?? log.action}
+                  </span>
+                  <span className="order-status-badge pending">
+                    {log.entity_type}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '0.78rem',
+                      color: 'var(--text-3)',
+                      marginLeft: 'auto',
+                    }}
+                  >
+                    {new Date(log.created_at).toLocaleString('ru-RU')}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    fontSize: '0.78rem',
+                    color: 'var(--text-3)',
+                    marginTop: 4,
+                  }}
+                >
+                  Объект: {log.entity_id || '—'}
+                </div>
+                {expandedAuditId === log.id && (
+                  <pre
+                    style={{
+                      marginTop: 8,
+                      fontSize: '0.75rem',
+                      color: 'var(--text-2)',
+                      background: 'var(--bg-surface)',
+                      borderRadius: 6,
+                      padding: 8,
+                      overflow: 'auto',
+                    }}
+                  >
+                    {JSON.stringify(log.details, null, 2)}
+                  </pre>
+                )}
+              </div>
+            ))}
+            <Pagination
+              page={auditPage}
+              totalPages={Math.ceil(auditTotal / 50)}
+              onPageChange={setAuditPage}
+            />
+          </ListSection>
+        )}
+
         {activeTab === 'users' && (
           <ListSection
             loading={usersLoading}
@@ -1293,6 +1600,23 @@ const AdminDashboardPage = () => {
                   </option>
                 ))}
               </select>
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                marginBottom: 8,
+              }}
+            >
+              <button
+                className="btn btn-secondary btn-sm"
+                disabled={exportLoading}
+                onClick={() =>
+                  handleExport(adminService.exportUsersCSV, 'users.csv')
+                }
+              >
+                {exportLoading ? '...' : '↓ CSV'}
+              </button>
             </div>
             {users.map((u) => (
               <div
@@ -1451,6 +1775,31 @@ const AdminDashboardPage = () => {
                   {label}
                 </button>
               ))}
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                marginBottom: 8,
+              }}
+            >
+              <button
+                className="btn btn-secondary btn-sm"
+                disabled={exportLoading}
+                onClick={() =>
+                  handleExport(
+                    () =>
+                      adminService.exportOrdersCSV({
+                        date_from: orderFilters.date_from || undefined,
+                        date_to: orderFilters.date_to || undefined,
+                        status: orderFilters.status || undefined,
+                      }),
+                    'orders.csv'
+                  )
+                }
+              >
+                {exportLoading ? '...' : '↓ CSV'}
+              </button>
             </div>
             {orders.map((o) => {
               const cfg = STATUS_MAP[o.status] || {
@@ -1634,65 +1983,129 @@ const AdminDashboardPage = () => {
                 <option value="2">★ от 2</option>
               </select>
             </div>
-            {restaurants.map((restaurant) => (
-              <button
-                key={restaurant.id}
-                type="button"
-                onClick={() => loadRestaurantDetails(restaurant.id)}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 8,
+              }}
+            >
+              <label
                 style={{
-                  ...cardStyle,
-                  padding: 16,
-                  width: '100%',
-                  textAlign: 'left',
                   display: 'flex',
-                  justifyContent: 'space-between',
-                  gap: 14,
+                  alignItems: 'center',
+                  gap: 6,
+                  fontSize: '0.82rem',
+                  color: 'var(--text-3)',
+                  cursor: 'pointer',
                 }}
               >
-                <div>
-                  <div style={{ color: 'var(--text-1)', fontWeight: 900 }}>
-                    {restaurant.name}
+                <input
+                  type="checkbox"
+                  checked={
+                    restaurants.length > 0 &&
+                    selectedRestaurantIds.size === restaurants.length
+                  }
+                  onChange={(e) =>
+                    setSelectedRestaurantIds(
+                      e.target.checked
+                        ? new Set(restaurants.map((r) => r.id))
+                        : new Set()
+                    )
+                  }
+                />
+                Выбрать все
+              </label>
+              <button
+                className="btn btn-secondary btn-sm"
+                disabled={exportLoading}
+                onClick={() =>
+                  handleExport(
+                    adminService.exportRestaurantsCSV,
+                    'restaurants.csv'
+                  )
+                }
+              >
+                {exportLoading ? '...' : '↓ CSV'}
+              </button>
+            </div>
+            {restaurants.map((restaurant) => (
+              <div
+                key={restaurant.id}
+                style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedRestaurantIds.has(restaurant.id)}
+                  onChange={(e) => {
+                    setSelectedRestaurantIds((prev) => {
+                      const next = new Set(prev);
+                      if (e.target.checked) next.add(restaurant.id);
+                      else next.delete(restaurant.id);
+                      return next;
+                    });
+                  }}
+                  style={{ flexShrink: 0 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => loadRestaurantDetails(restaurant.id)}
+                  style={{
+                    ...cardStyle,
+                    padding: 16,
+                    flex: 1,
+                    textAlign: 'left',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: 14,
+                  }}
+                >
+                  <div>
+                    <div style={{ color: 'var(--text-1)', fontWeight: 900 }}>
+                      {restaurant.name}
+                    </div>
+                    <div
+                      style={{
+                        color: 'var(--text-3)',
+                        fontSize: '0.84rem',
+                        marginTop: 4,
+                      }}
+                    >
+                      {restaurant.address}
+                    </div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: 6,
+                        marginTop: 8,
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      <span
+                        className={`order-status-badge ${restaurant.is_open ? 'ready' : 'cancelled'}`}
+                      >
+                        {restaurant.is_open ? 'Открыт' : 'Закрыт'}
+                      </span>
+                      <span
+                        className={`order-status-badge ${restaurant.is_hiring ? 'pending' : 'cancelled'}`}
+                      >
+                        {restaurant.is_hiring ? 'Нанимает' : 'Не нанимает'}
+                      </span>
+                    </div>
                   </div>
                   <div
                     style={{
                       color: 'var(--text-3)',
-                      fontSize: '0.84rem',
-                      marginTop: 4,
+                      fontSize: '0.82rem',
+                      textAlign: 'right',
                     }}
                   >
-                    {restaurant.address}
+                    {restaurant.orders_count || 0} заказов
+                    <br />★ {restaurant.average_rating || 0}
                   </div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      gap: 6,
-                      marginTop: 8,
-                      flexWrap: 'wrap',
-                    }}
-                  >
-                    <span
-                      className={`order-status-badge ${restaurant.is_open ? 'ready' : 'cancelled'}`}
-                    >
-                      {restaurant.is_open ? 'Открыт' : 'Закрыт'}
-                    </span>
-                    <span
-                      className={`order-status-badge ${restaurant.is_hiring ? 'pending' : 'cancelled'}`}
-                    >
-                      {restaurant.is_hiring ? 'Нанимает' : 'Не нанимает'}
-                    </span>
-                  </div>
-                </div>
-                <div
-                  style={{
-                    color: 'var(--text-3)',
-                    fontSize: '0.82rem',
-                    textAlign: 'right',
-                  }}
-                >
-                  {restaurant.orders_count || 0} заказов
-                  <br />★ {restaurant.average_rating || 0}
-                </div>
-              </button>
+                </button>
+              </div>
             ))}
             <Pagination
               page={restaurantsPage}
@@ -1740,39 +2153,100 @@ const AdminDashboardPage = () => {
                 <option value="REJECTED">Отклонён</option>
               </select>
             </div>
-            {vendors.map((vendor) => (
-              <button
-                key={vendor.id}
-                type="button"
-                onClick={() => loadVendorDetails(vendor.id)}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 8,
+              }}
+            >
+              <label
                 style={{
-                  ...cardStyle,
-                  padding: 16,
-                  width: '100%',
-                  textAlign: 'left',
                   display: 'flex',
-                  justifyContent: 'space-between',
-                  gap: 14,
+                  alignItems: 'center',
+                  gap: 6,
+                  fontSize: '0.82rem',
+                  color: 'var(--text-3)',
+                  cursor: 'pointer',
                 }}
               >
-                <div>
-                  <div style={{ color: 'var(--text-1)', fontWeight: 900 }}>
-                    {vendor.name || 'Вендор без имени'}
-                  </div>
-                  <div
-                    style={{
-                      color: 'var(--text-3)',
-                      fontSize: '0.84rem',
-                      marginTop: 4,
-                    }}
-                  >
-                    {vendor.phone_number || 'Нет телефона'}
-                  </div>
-                </div>
-                <span className="order-status-badge pending">
-                  {vendor.restaurants_count || 0} заведений
-                </span>
+                <input
+                  type="checkbox"
+                  checked={
+                    vendors.length > 0 &&
+                    selectedVendorIds.size === vendors.length
+                  }
+                  onChange={(e) =>
+                    setSelectedVendorIds(
+                      e.target.checked
+                        ? new Set(vendors.map((v) => v.id))
+                        : new Set()
+                    )
+                  }
+                />
+                Выбрать все
+              </label>
+              <button
+                className="btn btn-secondary btn-sm"
+                disabled={exportLoading}
+                onClick={() =>
+                  handleExport(adminService.exportVendorsCSV, 'vendors.csv')
+                }
+              >
+                {exportLoading ? '...' : '↓ CSV'}
               </button>
+            </div>
+            {vendors.map((vendor) => (
+              <div
+                key={vendor.id}
+                style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedVendorIds.has(vendor.id)}
+                  onChange={(e) => {
+                    setSelectedVendorIds((prev) => {
+                      const next = new Set(prev);
+                      if (e.target.checked) next.add(vendor.id);
+                      else next.delete(vendor.id);
+                      return next;
+                    });
+                  }}
+                  style={{ flexShrink: 0 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => loadVendorDetails(vendor.id)}
+                  style={{
+                    ...cardStyle,
+                    padding: 16,
+                    flex: 1,
+                    textAlign: 'left',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: 14,
+                  }}
+                >
+                  <div>
+                    <div style={{ color: 'var(--text-1)', fontWeight: 900 }}>
+                      {vendor.name || 'Вендор без имени'}
+                    </div>
+                    <div
+                      style={{
+                        color: 'var(--text-3)',
+                        fontSize: '0.84rem',
+                        marginTop: 4,
+                      }}
+                    >
+                      {vendor.phone_number || 'Нет телефона'}
+                    </div>
+                  </div>
+                  <span className="order-status-badge pending">
+                    {vendor.restaurants_count || 0} заведений
+                  </span>
+                </button>
+              </div>
             ))}
             <Pagination
               page={vendorsPage}
@@ -1817,6 +2291,30 @@ const AdminDashboardPage = () => {
                   ★ {rating}
                 </button>
               ))}
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                marginBottom: 8,
+              }}
+            >
+              <button
+                className="btn btn-secondary btn-sm"
+                disabled={exportLoading}
+                onClick={() =>
+                  handleExport(
+                    () =>
+                      adminService.exportReviewsCSV({
+                        min_rating: reviewFilters.rating || undefined,
+                        max_rating: reviewFilters.rating || undefined,
+                      }),
+                    'reviews.csv'
+                  )
+                }
+              >
+                {exportLoading ? '...' : '↓ CSV'}
+              </button>
             </div>
             {reviews.map((review) => (
               <div
@@ -2262,6 +2760,109 @@ const AdminDashboardPage = () => {
           onCancel={() => setReasonDialog(null)}
           onConfirm={runReasonAction}
         />
+
+        {selectedVendorIds.size > 0 && (
+          <div
+            style={{
+              position: 'fixed',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              background: 'var(--bg-card)',
+              borderTop: '1px solid var(--border)',
+              padding: '12px 20px',
+              display: 'flex',
+              gap: 10,
+              alignItems: 'center',
+              zIndex: 9000,
+              boxShadow: '0 -4px 16px rgba(0,0,0,0.12)',
+            }}
+          >
+            <span style={{ fontWeight: 700, fontSize: '0.9rem', flex: 1 }}>
+              Выбрано: {selectedVendorIds.size} вендоров
+            </span>
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={batchLoading}
+              onClick={() => setSelectedVendorIds(new Set())}
+            >
+              Снять выделение
+            </button>
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={batchLoading}
+              onClick={() => handleBatchVendors('approve')}
+              style={{ color: 'var(--color-success)' }}
+            >
+              {batchLoading ? '...' : 'Одобрить выбранных'}
+            </button>
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={batchLoading}
+              onClick={() =>
+                requestReason({
+                  title: 'Причина отклонения',
+                  onConfirm: (reason) => handleBatchVendors('reject', reason),
+                })
+              }
+              style={{ color: 'var(--error)' }}
+            >
+              {batchLoading ? '...' : 'Отклонить выбранных'}
+            </button>
+          </div>
+        )}
+
+        {selectedRestaurantIds.size > 0 && (
+          <div
+            style={{
+              position: 'fixed',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              background: 'var(--bg-card)',
+              borderTop: '1px solid var(--border)',
+              padding: '12px 20px',
+              display: 'flex',
+              gap: 10,
+              alignItems: 'center',
+              zIndex: 9000,
+              boxShadow: '0 -4px 16px rgba(0,0,0,0.12)',
+            }}
+          >
+            <span style={{ fontWeight: 700, fontSize: '0.9rem', flex: 1 }}>
+              Выбрано: {selectedRestaurantIds.size} ресторанов
+            </span>
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={batchLoading}
+              onClick={() => setSelectedRestaurantIds(new Set())}
+            >
+              Снять выделение
+            </button>
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={batchLoading}
+              onClick={() => handleBatchRestaurants('approve')}
+              style={{ color: 'var(--color-success)' }}
+            >
+              {batchLoading ? '...' : 'Одобрить выбранных'}
+            </button>
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={batchLoading}
+              onClick={() =>
+                requestReason({
+                  title: 'Причина отклонения',
+                  onConfirm: (reason) =>
+                    handleBatchRestaurants('reject', reason),
+                })
+              }
+              style={{ color: 'var(--error)' }}
+            >
+              {batchLoading ? '...' : 'Отклонить выбранных'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -20,6 +20,10 @@ class OrderStatusUpdate(BaseModel):
     estimated_ready_at: datetime | None = None
 
 
+class OrderCancelRequest(BaseModel):
+    reason: str | None = Field(None, max_length=500)
+
+
 class OrderResponse(BaseModel):
     id: uuid.UUID
     display_id: int
@@ -32,6 +36,7 @@ class OrderResponse(BaseModel):
     status: OrderStatus
     total_price: int
     comment: str | None = None
+    cancellation_reason: str | None = None
     created_at: datetime
     estimated_ready_at: datetime | None = None
     ready_at: datetime | None = None
@@ -54,6 +59,7 @@ class OrderResponse(BaseModel):
             "status": data.status,
             "total_price": data.total_price,
             "comment": data.comment,
+            "cancellation_reason": getattr(data, "cancellation_reason", None),
             "created_at": data.created_at,
             "estimated_ready_at": getattr(data, "estimated_ready_at", None),
             "ready_at": getattr(data, "ready_at", None),

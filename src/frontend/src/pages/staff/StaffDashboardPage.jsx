@@ -28,8 +28,8 @@ const NEXT_STATUS = {
 
 const NEXT_LABEL = {
   PENDING: 'Принять',
-  ACCEPTED: 'Готово',
-  READY: 'Отдал',
+  ACCEPTED: 'Готов',
+  READY: 'Выдать',
 };
 
 const COLUMNS = [
@@ -330,13 +330,17 @@ const formatEta = (isoString) => {
 const KanbanCard = ({
   order,
   onAdvance,
+  onCancel,
   updating,
   dragging,
   onDragStart,
   onDragEnd,
 }) => {
+  const [showCancelForm, setShowCancelForm] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
   const nextStatus = NEXT_STATUS[order.status];
   const nextLabel = NEXT_LABEL[order.status];
+  const canCancel = order.status === 'PENDING' || order.status === 'ACCEPTED';
 
   return (
     <div
@@ -444,14 +448,64 @@ const KanbanCard = ({
       )}
 
       {order.status === 'ACCEPTED' && order.estimated_ready_at && (
-          <div
-            style={{ fontSize: '0.75rem', color: '#f97316', fontWeight: 700 }}
-          >
-            ⏱ {formatEta(order.estimated_ready_at)}
-          </div>
-        )}
+        <div style={{ fontSize: '0.75rem', color: '#f97316', fontWeight: 700 }}>
+          ⏱ {formatEta(order.estimated_ready_at)}
+        </div>
+      )}
 
-      {nextStatus && (
+      {showCancelForm ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <textarea
+            value={cancelReason}
+            onChange={(e) => setCancelReason(e.target.value)}
+            placeholder="Причина отмены (необязательно)"
+            style={{
+              width: '100%',
+              minHeight: 64,
+              borderRadius: 'var(--r-sm)',
+              border: '1px solid var(--border)',
+              padding: '6px 8px',
+              fontSize: '0.8rem',
+              resize: 'vertical',
+              background: 'var(--bg-input)',
+              color: 'var(--text-1)',
+            }}
+          />
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button
+              className="btn btn-secondary"
+              style={{ flex: 1, height: 32, fontSize: '0.78rem' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowCancelForm(false);
+                setCancelReason('');
+              }}
+            >
+              Назад
+            </button>
+            <button
+              className="btn"
+              style={{
+                flex: 1,
+                height: 32,
+                fontSize: '0.78rem',
+                background: '#ef4444',
+                color: '#fff',
+                border: 'none',
+              }}
+              disabled={updating === order.id}
+              onClick={(e) => {
+                e.stopPropagation();
+                onCancel(order.id, cancelReason || null);
+                setShowCancelForm(false);
+                setCancelReason('');
+              }}
+            >
+              {updating === order.id ? '...' : 'Подтвердить'}
+            </button>
+          </div>
+        </div>
+      ) : (
         <div style={{ display: 'flex', gap: 6 }}>
           {nextStatus && (
             <button
@@ -470,6 +524,30 @@ const KanbanCard = ({
               {updating === order.id ? '...' : nextLabel}
             </button>
           )}
+          {canCancel && onCancel && (
+            <button
+              style={{
+                height: 36,
+                width: 36,
+                borderRadius: 'var(--r-sm)',
+                border: '1px solid #ef444466',
+                background: 'transparent',
+                color: '#ef4444',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+              disabled={updating === order.id}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowCancelForm(true);
+              }}
+            >
+              <XCircle size={18} weight="fill" />
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -480,6 +558,7 @@ const KanbanColumn = ({
   column,
   orders,
   onAdvance,
+  onCancel,
   updating,
   draggingId,
   onDragStart,
@@ -581,6 +660,7 @@ const KanbanColumn = ({
             key={order.id}
             order={order}
             onAdvance={onAdvance}
+            onCancel={onCancel}
             updating={updating}
             dragging={draggingId === order.id}
             onDragStart={() => onDragStart(order)}
@@ -728,6 +808,17 @@ const StaffDashboardPage = () => {
     } else {
       const next = NEXT_STATUS[order.status];
       if (next) doStatusChange(order.id, next);
+    }
+  };
+
+  const handleCancelOrder = async (orderId, reason) => {
+    setUpdating(orderId);
+    try {
+      await staffService.cancelOrder(orderId, reason);
+      await fetchOrders(true);
+    } catch {
+    } finally {
+      setUpdating(null);
     }
   };
 
@@ -947,6 +1038,7 @@ const StaffDashboardPage = () => {
                     column={col}
                     orders={colOrders}
                     onAdvance={handleAdvance}
+                    onCancel={handleCancelOrder}
                     updating={updating}
                     draggingId={draggingOrderId}
                     onDragStart={(order) => {

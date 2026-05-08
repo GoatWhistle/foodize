@@ -30,6 +30,7 @@ dependencies = [
     "limits>=3.0.0",
     "structlog>=25.5.0",
     "prometheus-fastapi-instrumentator>=7.1.0",
+    "fpdf2>=2.8.0,<3.0.0",
 ]
 
 [dependency-groups]

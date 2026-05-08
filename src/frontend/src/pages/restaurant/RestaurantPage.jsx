@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { translateApiError } from '../../utils/translateApiError';
 import { CATEGORY_RU } from '../../utils/locales';
@@ -253,7 +253,29 @@ const RestaurantPage = () => {
   const myReview =
     reviewsList.find((r) => r.user_id === currentUser?.id) ?? null;
   const otherReviews = reviewsList.filter((r) => r.user_id !== currentUser?.id);
-  const canReview = currentUser?.permissions?.includes('reviews:create');
+  const canReview = currentUser?.permissions?.includes('reviews.create');
+
+  const loadReviews = useCallback(() => {
+    setReviewsLoading(true);
+    reviewService
+      .getReviews(id)
+      .then((res) => {
+        const list = Array.isArray(res.data?.data) ? res.data.data : [];
+        setReviewsList(list);
+      })
+      .finally(() => setReviewsLoading(false));
+  }, [id]);
+
+  const refreshRating = useCallback(() => {
+    reviewService
+      .getRating(id)
+      .then((res) => {
+        const d = res.data?.data;
+        setRating(d?.average_rating ?? d?.rating ?? null);
+        setReviewCount(d?.review_count ?? null);
+      })
+      .catch(() => {});
+  }, [id]);
 
   useEffect(() => {
     fetchMenu(id);
@@ -265,29 +287,7 @@ const RestaurantPage = () => {
     }
     refreshRating();
     loadReviews();
-  }, [id, fetchMenu, location.state]);
-
-  const loadReviews = () => {
-    setReviewsLoading(true);
-    reviewService
-      .getReviews(id)
-      .then((res) => {
-        const list = Array.isArray(res.data?.data) ? res.data.data : [];
-        setReviewsList(list);
-      })
-      .finally(() => setReviewsLoading(false));
-  };
-
-  const refreshRating = () => {
-    reviewService
-      .getRating(id)
-      .then((res) => {
-        const d = res.data?.data;
-        setRating(d?.average_rating ?? d?.rating ?? null);
-        setReviewCount(d?.review_count ?? null);
-      })
-      .catch(() => {});
-  };
+  }, [id, fetchMenu, location.state, loadReviews, refreshRating]);
 
   const openReviewForm = () => {
     setReviewError('');
@@ -473,10 +473,7 @@ const RestaurantPage = () => {
   })();
 
   return (
-    <div
-      className="page-enter"
-      style={{ position: 'relative', minHeight: '100vh' }}
-    >
+    <div className="page-enter" style={{ minHeight: '100vh' }}>
       <div className="restaurant-hero">
         {restaurant.photo_url ? (
           <img

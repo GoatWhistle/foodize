@@ -8,7 +8,7 @@ COPY --from=ghcr.io/astral-sh/uv:0.6.0 /uv /uvx /bin/
 
 WORKDIR /backend
 
-RUN apt-get update && apt-get install -y netcat-openbsd && apt-get clean
+RUN apt-get update && apt-get install -y netcat-openbsd fonts-dejavu-core && apt-get clean
 
 COPY pyproject.toml uv.lock ./
 RUN uv pip install --system --no-cache -r pyproject.toml

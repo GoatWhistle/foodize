@@ -17,12 +17,18 @@ from features.orders.exceptions import (
     MenuItemsNotFoundException,
     MenuItemUnavailableException,
     OrderAccessDeniedException,
+    OrderNotCancellableException,
     OrderNotCompletableException,
     OrderNotFoundException,
     OrderReadyTimeRequiredException,
 )
 from features.orders.models import IdempotencyKey, Order, OrderItem, OrderItemOption
-from features.orders.schemas.order import OrderCreate, OrderResponse, OrderStatusUpdate
+from features.orders.schemas.order import (
+    OrderCancelRequest,
+    OrderCreate,
+    OrderResponse,
+    OrderStatusUpdate,
+)
 from features.orders.schemas.order_event import OrderEventResponse
 from features.promos import service as promo_service
 from features.restaurants import crud as restaurant_crud
@@ -41,7 +47,10 @@ _ALLOWED_TRANSITIONS: dict[OrderStatus, set[OrderStatus]] = {
     OrderStatus.ACCEPTED: {OrderStatus.READY},
     OrderStatus.READY: {OrderStatus.COMPLETED},
     OrderStatus.COMPLETED: set(),
+    OrderStatus.CANCELLED: set(),
 }
+
+_CANCELLABLE_STATUSES = {OrderStatus.PENDING, OrderStatus.ACCEPTED}
 
 
 def _validate_transition(old: OrderStatus, new: OrderStatus) -> None:
@@ -190,7 +199,7 @@ async def place_order(
             restaurant_id=order.restaurant_id,
             restaurant_name=restaurant.name,
             total_price=order.total_price,
-            items_count=len(order.items),
+            items_count=len(order_data.items),
         ),
     )
     await session.commit()
@@ -402,6 +411,49 @@ async def complete_order(
         f"status_changed:{OrderStatus.COMPLETED.value}",
     )
     return OrderResponse.model_validate(completed)
+
+
+async def cancel_order(
+    session: AsyncSession,
+    order_id: uuid.UUID,
+    actor: User,
+    cancel_data: OrderCancelRequest,
+) -> OrderResponse:
+    order = await order_crud.get_order_by_id(session, order_id)
+    if not order:
+        raise OrderNotFoundException()
+    old_status = OrderStatus(order.status)
+    if old_status not in _CANCELLABLE_STATUSES:
+        raise OrderNotCancellableException()
+    order.cancellation_reason = cancel_data.reason
+    updated = await order_crud.update_order_status(session, order, OrderStatus.CANCELLED)
+    await order_crud.create_order_event(
+        session,
+        order_id=order.id,
+        actor_id=actor.id,
+        actor_permissions=actor.permissions,
+        old_status=old_status,
+        new_status=OrderStatus.CANCELLED,
+    )
+    await enqueue_event(
+        session,
+        OrderStatusChangedEvent(
+            order_id=order.id,
+            user_id=order.user_id,
+            restaurant_id=order.restaurant_id,
+            restaurant_name=order.restaurant.name,
+            old_status=old_status,
+            new_status=OrderStatus.CANCELLED,
+            total_price=order.total_price,
+        ),
+    )
+    await session.commit()
+    await get_redis_cache().publish(f"order_status:{order.id}", OrderStatus.CANCELLED.value)
+    await get_redis_cache().publish(
+        f"restaurant_orders:{order.restaurant_id}",
+        f"status_changed:{OrderStatus.CANCELLED.value}",
+    )
+    return OrderResponse.model_validate(updated)
 
 
 async def get_order_events(

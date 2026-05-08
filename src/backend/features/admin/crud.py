@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, date, datetime, timedelta
 
-from sqlalchemy import Integer, and_, func, select
+from sqlalchemy import Integer, Text, and_, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -643,9 +643,19 @@ async def get_finance_analytics(
 async def get_platform_stats(session: AsyncSession) -> PlatformStats:
     users_result = await session.execute(select(User.permissions))
     users_by_permission: dict[str, int] = {}
+    users_by_role: dict[str, int] = {"CUSTOMER": 0, "VENDOR": 0, "STAFF": 0, "ADMIN": 0}
     for permissions in users_result.scalars().all():
-        for permission in serialize_permissions(permissions):
+        perm_set = set(serialize_permissions(permissions))
+        for permission in perm_set:
             users_by_permission[permission] = users_by_permission.get(permission, 0) + 1
+        if "admin.access" in perm_set:
+            users_by_role["ADMIN"] += 1
+        elif "vendors.read_own" in perm_set:
+            users_by_role["VENDOR"] += 1
+        elif "staff.profile_read" in perm_set:
+            users_by_role["STAFF"] += 1
+        else:
+            users_by_role["CUSTOMER"] += 1
 
     orders_by_status_rows = await session.execute(
         select(Order.status, func.count()).group_by(Order.status)
@@ -666,13 +676,26 @@ async def get_platform_stats(session: AsyncSession) -> PlatformStats:
 
     days = 14
     start_date = datetime.now(UTC).date() - timedelta(days=days - 1)
-    users_growth = await _count_by_day(session, User.created_at, start_date)
+    users_growth_result = await session.execute(
+        select(func.date(User.created_at), func.count())
+        .where(User.created_at >= datetime.combine(start_date, datetime.min.time(), tzinfo=UTC))
+        .where(~cast(User.permissions, Text).like('%"admin.access"%'))
+        .group_by(func.date(User.created_at))
+        .order_by(func.date(User.created_at))
+    )
+    users_growth: dict[date, int] = {}
+    for day, count in users_growth_result.all():
+        if isinstance(day, str):
+            day = date.fromisoformat(day)
+        users_growth[day] = count
     restaurants_growth = await _count_by_day(session, Restaurant.created_at, start_date)
     orders_growth = await _count_by_day(session, Order.created_at, start_date)
     vendors_growth = await _count_by_day(session, VendorProfile.created_at, start_date)
 
     return PlatformStats(
         users_by_permission=users_by_permission,
+        users_by_role=users_by_role,
+        total_users=users_by_role["CUSTOMER"] + users_by_role["STAFF"] + users_by_role["VENDOR"],
         orders_by_status=orders_by_status,
         total_restaurants=total_restaurants,
         total_vendors=total_vendors,

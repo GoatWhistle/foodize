@@ -6,6 +6,7 @@ import {
   CheckCircle,
   CaretRight,
   HandPalm,
+  XCircle,
 } from '@phosphor-icons/react';
 import { useOrderStore } from '../../store/useOrderStore';
 import EmptyState from '../../components/ui/EmptyState';
@@ -14,31 +15,37 @@ import Pagination from '../../components/ui/Pagination';
 
 const STATUS_CONFIG = {
   PENDING: {
-    label: 'Ожидается',
+    label: 'Новый',
     className: 'pending',
     icon: <Clock weight="bold" />,
   },
   ACCEPTED: {
-    label: 'Ожидается',
+    label: 'Принят',
     className: 'pending',
     icon: <CheckCircle weight="bold" />,
   },
   READY: {
-    label: 'Ожидается',
+    label: 'Готов к выдаче',
     className: 'ready',
     icon: <HandPalm weight="bold" />,
   },
   COMPLETED: {
-    label: 'Выполнено',
+    label: 'Выдан',
     className: 'ready',
     icon: <CheckCircle weight="fill" />,
+  },
+  CANCELLED: {
+    label: 'Отменён',
+    className: 'cancelled',
+    icon: <XCircle weight="fill" />,
   },
 };
 
 const STATUS_FILTERS = [
   { key: '', label: 'Все' },
-  { key: 'ACTIVE', label: 'Ожидается' },
-  { key: 'COMPLETED', label: 'Выполнено' },
+  { key: 'ACTIVE', label: 'Активные' },
+  { key: 'COMPLETED', label: 'Выданные' },
+  { key: 'CANCELLED', label: 'Отменённые' },
 ];
 
 import { useShallow } from 'zustand/react/shallow';
@@ -60,17 +67,20 @@ const OrdersPage = () => {
   const size = 20;
 
   useEffect(() => {
-    fetchMyOrders({
-      page,
-      size,
-      status: statusFilter === 'COMPLETED' ? 'COMPLETED' : undefined,
-    });
+    const apiStatus =
+      statusFilter === 'COMPLETED' || statusFilter === 'CANCELLED'
+        ? statusFilter
+        : undefined;
+    fetchMyOrders({ page, size, status: apiStatus });
   }, [fetchMyOrders, page, statusFilter]);
 
   const totalPages = Math.ceil(ordersTotal / size);
   const visibleOrders =
     statusFilter === 'ACTIVE'
-      ? orders.filter((order) => order.status !== 'COMPLETED')
+      ? orders.filter(
+          (order) =>
+            order.status !== 'COMPLETED' && order.status !== 'CANCELLED'
+        )
       : orders;
 
   if (ordersLoading) {

@@ -19,4 +19,7 @@ export const staffService = {
     api.patch(`/staff/menu/${restaurantId}/items/${itemId}/availability`, {
       is_available: isAvailable,
     }),
+
+  cancelOrder: (orderId, reason) =>
+    api.post(`/orders/${orderId}/cancel`, { reason }),
 };

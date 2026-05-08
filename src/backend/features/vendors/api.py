@@ -2,11 +2,13 @@ import uuid
 from datetime import date
 
 from fastapi import APIRouter, Depends, Query, status
+from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
 from features.admin.schemas import AdvancedAnalytics, FinanceAnalytics
 from features.users.models import User
+from features.vendors import export as vendor_export
 from features.vendors import service
 from features.vendors.dependencies import get_current_vendor
 from features.vendors.models import VendorProfile
@@ -15,6 +17,7 @@ from features.vendors.schemas import (
     VendorResponse,
 )
 from shared.dependencies import require_permission
+from shared.enums.order_status import OrderStatus
 from shared.enums.permissions import Permission
 from shared.response import build_response
 from shared.schemas.response import SuccessResponse
@@ -79,3 +82,114 @@ async def read_vendor_analytics(
         restaurant_id=restaurant_id,
     )
     return build_response(result)
+
+
+@router.get("/export/orders.csv")
+async def export_orders_csv(
+    date_from: date | None = Query(None),
+    date_to: date | None = Query(None),
+    status: str | None = Query(None),
+    restaurant_id: uuid.UUID | None = Query(None),
+    _user: User = Depends(require_permission(Permission.VENDORS_ANALYTICS_READ)),
+    current_vendor: VendorProfile = Depends(get_current_vendor),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> Response:
+    order_status = None
+    if status:
+        try:
+            order_status = OrderStatus(status)
+        except ValueError:
+            pass
+    data = await vendor_export.export_orders_csv(
+        session,
+        vendor=current_vendor,
+        date_from=date_from,
+        date_to=date_to,
+        status=order_status,
+        restaurant_id=restaurant_id,
+    )
+    return Response(
+        content=data,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=orders.csv"},
+    )
+
+
+@router.get("/export/menu.csv")
+async def export_menu_csv(
+    restaurant_id: uuid.UUID | None = Query(None),
+    _user: User = Depends(require_permission(Permission.MENU_MANAGE)),
+    current_vendor: VendorProfile = Depends(get_current_vendor),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> Response:
+    data = await vendor_export.export_menu_csv(
+        session, vendor=current_vendor, restaurant_id=restaurant_id
+    )
+    return Response(
+        content=data,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=menu.csv"},
+    )
+
+
+@router.get("/export/promos.csv")
+async def export_promos_csv(
+    restaurant_id: uuid.UUID | None = Query(None),
+    _user: User = Depends(require_permission(Permission.PROMOS_MANAGE)),
+    current_vendor: VendorProfile = Depends(get_current_vendor),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> Response:
+    data = await vendor_export.export_promos_csv(
+        session, vendor=current_vendor, restaurant_id=restaurant_id
+    )
+    return Response(
+        content=data,
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=promos.csv"},
+    )
+
+
+@router.get("/export/finance.pdf")
+async def export_finance_pdf(
+    date_from: date | None = Query(None),
+    date_to: date | None = Query(None),
+    restaurant_id: uuid.UUID | None = Query(None),
+    _user: User = Depends(require_permission(Permission.VENDORS_ANALYTICS_READ)),
+    current_vendor: VendorProfile = Depends(get_current_vendor),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> Response:
+    data = await vendor_export.export_finance_pdf(
+        session,
+        vendor=current_vendor,
+        date_from=date_from,
+        date_to=date_to,
+        restaurant_id=restaurant_id,
+    )
+    return Response(
+        content=data,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=finance.pdf"},
+    )
+
+
+@router.get("/export/analytics.pdf")
+async def export_analytics_pdf(
+    date_from: date | None = Query(None),
+    date_to: date | None = Query(None),
+    restaurant_id: uuid.UUID | None = Query(None),
+    _user: User = Depends(require_permission(Permission.VENDORS_ANALYTICS_READ)),
+    current_vendor: VendorProfile = Depends(get_current_vendor),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> Response:
+    data = await vendor_export.export_analytics_pdf(
+        session,
+        vendor=current_vendor,
+        date_from=date_from,
+        date_to=date_to,
+        restaurant_id=restaurant_id,
+    )
+    return Response(
+        content=data,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=analytics.pdf"},
+    )

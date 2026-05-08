@@ -5,6 +5,7 @@ import {
   UserCircle,
   X,
   Storefront,
+  XCircle,
 } from '@phosphor-icons/react';
 import { orderService } from '../../services/orderService';
 
@@ -82,12 +83,15 @@ const getOrderStages = (order, events) => {
   }));
 };
 
+const CANCELLABLE_STATUSES = new Set(['PENDING', 'ACCEPTED']);
+
 const OrderDetailsModal = ({
   order,
   onClose,
   nextStatus,
   nextLabel,
   onStatusChange,
+  onCancel,
   updating,
 }) => {
   const [events, setEvents] = useState([]);
@@ -96,6 +100,9 @@ const OrderDetailsModal = ({
   const [eventsUnavailable, setEventsUnavailable] = useState(false);
   const [etaMinutes, setEtaMinutes] = useState(null);
   const [manualEtaTime, setManualEtaTime] = useState('');
+  const [showCancelForm, setShowCancelForm] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelling, setCancelling] = useState(false);
 
   const loadEvents = useCallback(async () => {
     if (!order?.id) return;
@@ -145,6 +152,19 @@ const OrderDetailsModal = ({
     await onStatusChange(order.id, status, data);
     await loadEvents();
   };
+
+  const handleCancel = async () => {
+    if (!onCancel) return;
+    setCancelling(true);
+    try {
+      await onCancel(order.id, cancelReason.trim() || null);
+      onClose();
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const canCancel = onCancel && CANCELLABLE_STATUSES.has(order.status);
 
   return (
     <div
@@ -632,26 +652,75 @@ const OrderDetailsModal = ({
           </div>
         </div>
 
-        {next && (
+        {(next || canCancel) && (
           <div
             style={{
               padding: '14px 22px',
               borderTop: '1px solid var(--border)',
               display: 'flex',
+              flexDirection: 'column',
               gap: 8,
             }}
           >
-            {next && (
-              <button
-                className="btn btn-primary"
-                disabled={!canSubmitNext}
-                onClick={() => handleStatusAction(next, submitPayload)}
-                style={{ flex: 1 }}
-              >
-                {updating === order.id
-                  ? '...'
-                  : nextLabel?.[order.status] || 'Дальше'}
-              </button>
+            {showCancelForm ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <textarea
+                  className="form-input"
+                  placeholder="Причина отмены (необязательно)"
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  rows={2}
+                  style={{ resize: 'none', fontSize: '0.85rem' }}
+                />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => setShowCancelForm(false)}
+                    disabled={cancelling}
+                    style={{ flex: 1 }}
+                  >
+                    Назад
+                  </button>
+                  <button
+                    className="btn"
+                    onClick={handleCancel}
+                    disabled={cancelling}
+                    style={{
+                      flex: 1,
+                      background: '#ef4444',
+                      color: '#fff',
+                      border: 'none',
+                    }}
+                  >
+                    {cancelling ? '...' : 'Подтвердить отмену'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', gap: 8 }}>
+                {canCancel && (
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => setShowCancelForm(true)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                  >
+                    <XCircle size={16} />
+                    Отменить
+                  </button>
+                )}
+                {next && (
+                  <button
+                    className="btn btn-primary"
+                    disabled={!canSubmitNext}
+                    onClick={() => handleStatusAction(next, submitPayload)}
+                    style={{ flex: 1 }}
+                  >
+                    {updating === order.id
+                      ? '...'
+                      : nextLabel?.[order.status] || 'Дальше'}
+                  </button>
+                )}
+              </div>
             )}
           </div>
         )}

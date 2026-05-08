@@ -28,7 +28,7 @@ help:
 	@echo " "
 
 seed:
-	docker compose exec backend python seed.py
+	docker compose exec -e PYTHONPATH=/backend backend python /tools/seed.py
 
 sync:
 	cd "$(BACKEND_DIR)" && pip install uv && uv sync

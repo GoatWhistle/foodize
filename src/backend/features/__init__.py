@@ -1,3 +1,4 @@
+from features.admin.audit_log.models import AuditLog
 from features.favorites.models import Favorite
 from features.menu.models import MenuItem, MenuItemOption, MenuItemOptionGroup
 from features.notifications.models import Notification
@@ -12,6 +13,7 @@ from features.users.models import User
 from features.vendors.models import VendorProfile
 
 __all__ = [
+    "AuditLog",
     "User",
     "VendorProfile",
     "Restaurant",

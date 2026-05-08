@@ -19,13 +19,14 @@ from database import db_helper
 from features.favorites.crud import create_favorite, get_favorite
 from features.menu.crud import create_menu_item
 from features.menu.models import MenuItem
+from features.menu.schemas import MenuItemCreate
 from features.orders.models import Order, OrderItem
 from features.promos.crud import create_promo
 from features.promos.schemas import PromoCreate
 from features.restaurants.crud import create_restaurant
 from features.restaurants.models import Restaurant
 from features.restaurants.schemas import RestaurantCreate
-from features.reviews.crud import create_review
+from features.reviews.crud import create_review, get_restaurant_avg_rating
 from features.reviews.models import Review
 from features.reviews.schemas import ReviewCreate
 from features.staff.crud import create_staff_profile, get_staff_profile_by_user_id
@@ -34,7 +35,6 @@ from features.users.models import User
 from features.users.schemas import UserCreate, UserUpdate
 from features.vendors.crud import create_vendor_profile, get_vendor_by_user_id
 from features.vendors.schemas import VendorCreate
-from features.menu.schemas import MenuItemCreate
 from shared.enums.category import Category
 from shared.enums.order_status import OrderStatus
 from shared.permissions import ADMIN_PERMISSIONS, VENDOR_PERMISSIONS, serialize_permissions
@@ -111,6 +111,16 @@ SEED_USERS = [
         "password": "customer1234",
         "role": "customer",
     },
+    {
+        "name": "Тестовый Супер",
+        "first_name": "Тестовый",
+        "last_name": "Супер",
+        "middle_name": None,
+        "email": "superuser@foodize.dev",
+        "phone_number": "+70000000099",
+        "password": "super1234",
+        "role": "superuser",
+    },
 ]
 
 SEED_RESTAURANTS = [
@@ -118,15 +128,55 @@ SEED_RESTAURANTS = [
         "vendor_index": 0,
         "name": "Шаурма у Ашота",
         "address": "ул. Ленина, д. 1, ТЦ «Центральный»",
-        "description": "Настоящая уличная шаурма по армянскому рецепту. Готовим только из свежего мяса, лаваш выпекаем сами каждое утро. Работаем с 2015 года.",
+        "description": (
+            "Настоящая уличная шаурма по армянскому рецепту. "
+            "Готовим только из свежего мяса, лаваш выпекаем сами каждое утро. "
+            "Работаем с 2015 года."
+        ),
         "is_hiring": True,
         "items": [
-            {"name": "Шаурма классик", "description": "Говядина, свежие овощи, фирменный соус, лаваш", "price": 250, "category": Category.SHAURMA, "prep_time_minutes": 5},
-            {"name": "Шаурма с курицей", "description": "Куриное филе гриль, помидоры, огурцы, сыр, майонез", "price": 280, "category": Category.SHAURMA, "prep_time_minutes": 5},
-            {"name": "Шаурма двойная", "description": "Двойная порция мяса, два вида соуса", "price": 380, "category": Category.SHAURMA, "prep_time_minutes": 7},
-            {"name": "Картофель фри", "description": "Хрустящий картофель, соль, специи", "price": 120, "category": Category.SNACK, "prep_time_minutes": 7},
-            {"name": "Coca-Cola 0.5", "description": "Газированный напиток", "price": 80, "category": Category.DRINK, "prep_time_minutes": 1},
-            {"name": "Чай с мятой", "description": "Горячий чай с мятой и лимоном", "price": 60, "category": Category.DRINK, "prep_time_minutes": 3},
+            {
+                "name": "Шаурма классик",
+                "description": "Говядина, свежие овощи, фирменный соус, лаваш",
+                "price": 250,
+                "category": Category.SHAURMA,
+                "prep_time_minutes": 5,
+            },
+            {
+                "name": "Шаурма с курицей",
+                "description": "Куриное филе гриль, помидоры, огурцы, сыр, майонез",
+                "price": 280,
+                "category": Category.SHAURMA,
+                "prep_time_minutes": 5,
+            },
+            {
+                "name": "Шаурма двойная",
+                "description": "Двойная порция мяса, два вида соуса",
+                "price": 380,
+                "category": Category.SHAURMA,
+                "prep_time_minutes": 7,
+            },
+            {
+                "name": "Картофель фри",
+                "description": "Хрустящий картофель, соль, специи",
+                "price": 120,
+                "category": Category.SNACK,
+                "prep_time_minutes": 7,
+            },
+            {
+                "name": "Coca-Cola 0.5",
+                "description": "Газированный напиток",
+                "price": 80,
+                "category": Category.DRINK,
+                "prep_time_minutes": 1,
+            },
+            {
+                "name": "Чай с мятой",
+                "description": "Горячий чай с мятой и лимоном",
+                "price": 60,
+                "category": Category.DRINK,
+                "prep_time_minutes": 3,
+            },
         ],
         "promos": [
             {"code": "SHAUR10", "discount_type": "PERCENT", "discount_value": 10, "max_uses": 100},
@@ -137,16 +187,62 @@ SEED_RESTAURANTS = [
         "vendor_index": 0,
         "name": "Бургерная «Котлета»",
         "address": "пр. Мира, д. 42, 1 этаж",
-        "description": "Авторские бургеры с фермерской говядиной. Котлеты готовятся вручную, булочки печём сами. Нет ничего лишнего — только мясо, хлеб и вкус.",
+        "description": (
+            "Авторские бургеры с фермерской говядиной. "
+            "Котлеты готовятся вручную, булочки печём сами. "
+            "Нет ничего лишнего — только мясо, хлеб и вкус."
+        ),
         "is_hiring": False,
         "items": [
-            {"name": "Чизбургер", "description": "Говяжья котлета, чеддер, маринованные огурцы, горчица", "price": 320, "category": Category.BURGER, "prep_time_minutes": 8},
-            {"name": "Двойной бургер", "description": "Две котлеты по 150г, двойной чеддер, соус барбекю", "price": 480, "category": Category.BURGER, "prep_time_minutes": 10},
-            {"name": "Куриный бургер", "description": "Куриное филе, салат, томаты, соус ранч", "price": 290, "category": Category.BURGER, "prep_time_minutes": 8},
-            {"name": "Картофель фри", "description": "Картофель фри с фирменной солью", "price": 150, "category": Category.SNACK, "prep_time_minutes": 7},
-            {"name": "Луковые кольца", "description": "Хрустящие луковые кольца в панировке", "price": 140, "category": Category.SNACK, "prep_time_minutes": 8},
-            {"name": "Молочный коктейль", "description": "Ванильный, шоколадный или клубничный", "price": 180, "category": Category.DRINK, "prep_time_minutes": 3},
-            {"name": "Лимонад домашний", "description": "Лимон, мята, имбирь, сахарный сироп", "price": 130, "category": Category.DRINK, "prep_time_minutes": 2},
+            {
+                "name": "Чизбургер",
+                "description": "Говяжья котлета, чеддер, маринованные огурцы, горчица",
+                "price": 320,
+                "category": Category.BURGER,
+                "prep_time_minutes": 8,
+            },
+            {
+                "name": "Двойной бургер",
+                "description": "Две котлеты по 150г, двойной чеддер, соус барбекю",
+                "price": 480,
+                "category": Category.BURGER,
+                "prep_time_minutes": 10,
+            },
+            {
+                "name": "Куриный бургер",
+                "description": "Куриное филе, салат, томаты, соус ранч",
+                "price": 290,
+                "category": Category.BURGER,
+                "prep_time_minutes": 8,
+            },
+            {
+                "name": "Картофель фри",
+                "description": "Картофель фри с фирменной солью",
+                "price": 150,
+                "category": Category.SNACK,
+                "prep_time_minutes": 7,
+            },
+            {
+                "name": "Луковые кольца",
+                "description": "Хрустящие луковые кольца в панировке",
+                "price": 140,
+                "category": Category.SNACK,
+                "prep_time_minutes": 8,
+            },
+            {
+                "name": "Молочный коктейль",
+                "description": "Ванильный, шоколадный или клубничный",
+                "price": 180,
+                "category": Category.DRINK,
+                "prep_time_minutes": 3,
+            },
+            {
+                "name": "Лимонад домашний",
+                "description": "Лимон, мята, имбирь, сахарный сироп",
+                "price": 130,
+                "category": Category.DRINK,
+                "prep_time_minutes": 2,
+            },
         ],
         "promos": [
             {"code": "BURGER15", "discount_type": "PERCENT", "discount_value": 15, "max_uses": 200},
@@ -156,16 +252,62 @@ SEED_RESTAURANTS = [
         "vendor_index": 1,
         "name": "Суши-бар «Токио»",
         "address": "ул. Садовая, д. 15, ТРЦ «Галерея»",
-        "description": "Японская кухня в центре города. Роллы готовит шеф-повар с 10-летним опытом работы в Токио. Рыба доставляется ежедневно, рис — только японский.",
+        "description": (
+            "Японская кухня в центре города. "
+            "Роллы готовит шеф-повар с 10-летним опытом работы в Токио. "
+            "Рыба доставляется ежедневно, рис — только японский."
+        ),
         "is_hiring": True,
         "items": [
-            {"name": "Ролл Калифорния", "description": "Краб, авокадо, огурец, икра тобико", "price": 350, "category": Category.SUSHI, "prep_time_minutes": 15},
-            {"name": "Ролл Филадельфия", "description": "Лосось, сливочный сыр, огурец", "price": 420, "category": Category.SUSHI, "prep_time_minutes": 15},
-            {"name": "Ролл Дракон", "description": "Угорь, авокадо, огурец, соус унаги", "price": 480, "category": Category.SUSHI, "prep_time_minutes": 18},
-            {"name": "Нигири с лососем (2 шт)", "description": "Рис, свежий лосось, васаби", "price": 220, "category": Category.SUSHI, "prep_time_minutes": 10},
-            {"name": "Мисо-суп", "description": "Паста мисо, тофу, водоросли вакамэ", "price": 120, "category": Category.OTHER, "prep_time_minutes": 5},
-            {"name": "Зелёный чай", "description": "Японский зелёный чай сенча", "price": 90, "category": Category.DRINK, "prep_time_minutes": 2},
-            {"name": "Рамен с курицей", "description": "Бульон тонкоцу, куриное филе, яйцо аджицке, нори", "price": 390, "category": Category.OTHER, "prep_time_minutes": 20},
+            {
+                "name": "Ролл Калифорния",
+                "description": "Краб, авокадо, огурец, икра тобико",
+                "price": 350,
+                "category": Category.SUSHI,
+                "prep_time_minutes": 15,
+            },
+            {
+                "name": "Ролл Филадельфия",
+                "description": "Лосось, сливочный сыр, огурец",
+                "price": 420,
+                "category": Category.SUSHI,
+                "prep_time_minutes": 15,
+            },
+            {
+                "name": "Ролл Дракон",
+                "description": "Угорь, авокадо, огурец, соус унаги",
+                "price": 480,
+                "category": Category.SUSHI,
+                "prep_time_minutes": 18,
+            },
+            {
+                "name": "Нигири с лососем (2 шт)",
+                "description": "Рис, свежий лосось, васаби",
+                "price": 220,
+                "category": Category.SUSHI,
+                "prep_time_minutes": 10,
+            },
+            {
+                "name": "Мисо-суп",
+                "description": "Паста мисо, тофу, водоросли вакамэ",
+                "price": 120,
+                "category": Category.OTHER,
+                "prep_time_minutes": 5,
+            },
+            {
+                "name": "Зелёный чай",
+                "description": "Японский зелёный чай сенча",
+                "price": 90,
+                "category": Category.DRINK,
+                "prep_time_minutes": 2,
+            },
+            {
+                "name": "Рамен с курицей",
+                "description": "Бульон тонкоцу, куриное филе, яйцо аджицке, нори",
+                "price": 390,
+                "category": Category.OTHER,
+                "prep_time_minutes": 20,
+            },
         ],
         "promos": [
             {"code": "SUSHI20", "discount_type": "PERCENT", "discount_value": 20, "max_uses": 50},
@@ -176,15 +318,55 @@ SEED_RESTAURANTS = [
         "vendor_index": 1,
         "name": "Пиццерия «Napoletano»",
         "address": "ул. Тверская, д. 8",
-        "description": "Неаполитанская пицца на дровяной печи. Тесто выдерживается 48 часов, томаты San Marzano, моцарелла Fior di Latte. Доставка за 25 минут или пицца бесплатно.",
+        "description": (
+            "Неаполитанская пицца на дровяной печи. "
+            "Тесто выдерживается 48 часов, томаты San Marzano, "
+            "моцарелла Fior di Latte. Доставка за 25 минут или пицца бесплатно."
+        ),
         "is_hiring": True,
         "items": [
-            {"name": "Маргарита", "description": "Томатный соус, моцарелла, базилик", "price": 450, "category": Category.PIZZA, "prep_time_minutes": 15},
-            {"name": "Пепперони", "description": "Томатный соус, моцарелла, пепперони", "price": 520, "category": Category.PIZZA, "prep_time_minutes": 15},
-            {"name": "Четыре сыра", "description": "Моцарелла, горгонзола, пармезан, рикотта", "price": 580, "category": Category.PIZZA, "prep_time_minutes": 17},
-            {"name": "Прошутто", "description": "Томатный соус, моцарелла, пармская ветчина, руккола", "price": 620, "category": Category.PIZZA, "prep_time_minutes": 18},
-            {"name": "Тирамису", "description": "Классический итальянский десерт", "price": 280, "category": Category.OTHER, "prep_time_minutes": 5},
-            {"name": "Апероль шприц б/а", "description": "Апельсиновый напиток без алкоголя", "price": 160, "category": Category.DRINK, "prep_time_minutes": 2},
+            {
+                "name": "Маргарита",
+                "description": "Томатный соус, моцарелла, базилик",
+                "price": 450,
+                "category": Category.PIZZA,
+                "prep_time_minutes": 15,
+            },
+            {
+                "name": "Пепперони",
+                "description": "Томатный соус, моцарелла, пепперони",
+                "price": 520,
+                "category": Category.PIZZA,
+                "prep_time_minutes": 15,
+            },
+            {
+                "name": "Четыре сыра",
+                "description": "Моцарелла, горгонзола, пармезан, рикотта",
+                "price": 580,
+                "category": Category.PIZZA,
+                "prep_time_minutes": 17,
+            },
+            {
+                "name": "Прошутто",
+                "description": "Томатный соус, моцарелла, пармская ветчина, руккола",
+                "price": 620,
+                "category": Category.PIZZA,
+                "prep_time_minutes": 18,
+            },
+            {
+                "name": "Тирамису",
+                "description": "Классический итальянский десерт",
+                "price": 280,
+                "category": Category.OTHER,
+                "prep_time_minutes": 5,
+            },
+            {
+                "name": "Апероль шприц б/а",
+                "description": "Апельсиновый напиток без алкоголя",
+                "price": 160,
+                "category": Category.DRINK,
+                "prep_time_minutes": 2,
+            },
         ],
         "promos": [
             {"code": "PIZZA10", "discount_type": "PERCENT", "discount_value": 10, "max_uses": 150},
@@ -222,7 +404,9 @@ async def seed():
 
         print("── Users ──────────────────────────────")
         for u in SEED_USERS:
-            result = await session.execute(select(User).where(User.phone_number == u["phone_number"]))
+            result = await session.execute(
+                select(User).where(User.phone_number == u["phone_number"])
+            )
             existing = result.scalar_one_or_none()
             if existing:
                 print(f"  skip {u['phone_number']} (exists)")
@@ -244,7 +428,7 @@ async def seed():
                 ),
             )
 
-            if u["role"] == "admin":
+            if u["role"] in ("admin", "superuser"):
                 user.permissions = serialize_permissions(ADMIN_PERMISSIONS)
                 await session.commit()
 
@@ -342,7 +526,22 @@ async def seed():
                     await create_staff_profile(session, staff_user.id, all_restaurants[0].id)
                     print(f"  {staff_data['name']} → '{all_restaurants[0].name}'")
                 else:
-                    print(f"  skip (exists)")
+                    print("  skip (exists)")
+
+        superuser_data = next((u for u in SEED_USERS if u["role"] == "superuser"), None)
+        if superuser_data and all_restaurants:
+            su = await _get_or_load_user(session, superuser_data["phone_number"], created_users)
+            if su:
+                vendor = await get_vendor_by_user_id(session, su.id)
+                if vendor is None:
+                    vendor = await create_vendor_profile(session, su, VendorCreate())
+                    vendor.approval_status = "APPROVED"
+                    await session.commit()
+                    print("  superuser vendor profile created")
+                existing_staff = await get_staff_profile_by_user_id(session, su.id)
+                if existing_staff is None:
+                    await create_staff_profile(session, su.id, all_restaurants[0].id)
+                    print(f"  superuser staff profile → '{all_restaurants[0].name}'")
 
         print("\n── Orders ──────────────────────────────")
         customer_phones = [u["phone_number"] for u in SEED_USERS if u["role"] == "customer"]
@@ -351,8 +550,8 @@ async def seed():
             OrderStatus.COMPLETED,
             OrderStatus.COMPLETED,
             OrderStatus.READY,
-            OrderStatus.COOKING,
-            OrderStatus.CANCELLED,
+            OrderStatus.ACCEPTED,
+            OrderStatus.PENDING,
         ]
 
         all_placed_orders: list[tuple[Order, User, Restaurant]] = []
@@ -368,10 +567,12 @@ async def seed():
                     continue
 
                 result = await session.execute(
-                    select(Order).where(
+                    select(Order)
+                    .where(
                         Order.user_id == customer.id,
                         Order.restaurant_id == restaurant.id,
-                    ).limit(1)
+                    )
+                    .limit(1)
                 )
                 if result.scalar_one_or_none():
                     print(f"  skip order (exists): {customer.name} @ {restaurant.name}")
@@ -399,27 +600,31 @@ async def seed():
                     session.add(order_item)
 
                 target_status = order_statuses_cycle[idx % len(order_statuses_cycle)]
-                if target_status == OrderStatus.CANCELLED:
-                    order.status = OrderStatus.CANCELLED.value
+                path = [OrderStatus.ACCEPTED, OrderStatus.READY, OrderStatus.COMPLETED]
+                if target_status == OrderStatus.PENDING:
+                    order.status = OrderStatus.PENDING.value
                 else:
-                    path = [OrderStatus.ACCEPTED, OrderStatus.COOKING, OrderStatus.READY, OrderStatus.COMPLETED]
                     for step in path:
                         order.status = step.value
                         if step == target_status:
                             break
-                    if target_status == OrderStatus.COMPLETED:
-                        order.ready_at = datetime.now(timezone.utc) - timedelta(minutes=random.randint(5, 30))
+                if target_status == OrderStatus.COMPLETED:
+                    order.ready_at = datetime.now(timezone.utc) - timedelta(
+                        minutes=random.randint(5, 30)
+                    )
 
                 await session.commit()
                 await session.refresh(order)
 
                 all_placed_orders.append((order, customer, restaurant))
-                print(f"  order #{order.display_id} [{order.status}]: {customer.name} @ {restaurant.name}")
+                print(
+                    f"  order #{order.display_id} [{order.status}]: "
+                    f"{customer.name} @ {restaurant.name}"
+                )
 
         print("\n── Reviews ─────────────────────────────")
         completed_orders = [
-            (o, u, r) for o, u, r in all_placed_orders
-            if o.status == OrderStatus.COMPLETED.value
+            (o, u, r) for o, u, r in all_placed_orders if o.status == OrderStatus.COMPLETED.value
         ]
         review_pool = list(REVIEW_TEXTS)
         random.shuffle(review_pool)
@@ -445,6 +650,15 @@ async def seed():
             )
             print(f"  review ★{rating}: {customer.name} @ {restaurant.name}")
 
+        print("\n── Ratings recalc ──────────────────────")
+        for restaurant in all_restaurants:
+            avg, count = await get_restaurant_avg_rating(session, restaurant.id)
+            restaurant.average_rating = avg or 0.0
+            restaurant.review_count = count
+            session.add(restaurant)
+        await session.commit()
+        print(f"  updated {len(all_restaurants)} restaurants")
+
         print("\n── Favorites ───────────────────────────")
         fav_assignments = [
             (customer_phones[0], [0, 2]),
@@ -464,7 +678,7 @@ async def seed():
                     await create_favorite(session, customer.id, restaurant.id)
                     print(f"  fav: {customer.name} → {restaurant.name}")
                 else:
-                    print(f"  skip fav (exists)")
+                    print("  skip fav (exists)")
 
     await db_helper.dispose()
 

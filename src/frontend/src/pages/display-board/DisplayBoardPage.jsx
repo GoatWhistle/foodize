@@ -3,14 +3,19 @@ import { useParams } from 'react-router-dom';
 import { createDisplayBoardWebSocket } from '../../services/api';
 
 const RETRY_DELAY_MS = 3000;
+const NEW_HIGHLIGHT_MS = 1500;
 
 export default function DisplayBoardPage() {
   const { restaurantId } = useParams();
   const [cooking, setCooking] = useState([]);
   const [ready, setReady] = useState([]);
+  const [newCooking, setNewCooking] = useState(new Set());
+  const [newReady, setNewReady] = useState(new Set());
   const [error, setError] = useState(null);
   const wsRef = useRef(null);
   const retryRef = useRef(null);
+  const prevCookingRef = useRef(new Set());
+  const prevReadyRef = useRef(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -24,8 +29,44 @@ export default function DisplayBoardPage() {
             setError(data.error);
             return;
           }
-          setCooking(data.cooking ?? []);
-          setReady(data.ready ?? []);
+
+          const nextCooking = data.cooking ?? [];
+          const nextReady = data.ready ?? [];
+
+          const addedCooking = nextCooking.filter(
+            (id) => !prevCookingRef.current.has(id)
+          );
+          const addedReady = nextReady.filter(
+            (id) => !prevReadyRef.current.has(id)
+          );
+
+          prevCookingRef.current = new Set(nextCooking);
+          prevReadyRef.current = new Set(nextReady);
+
+          setCooking(nextCooking);
+          setReady(nextReady);
+
+          if (addedCooking.length > 0) {
+            setNewCooking((prev) => new Set([...prev, ...addedCooking]));
+            setTimeout(() => {
+              setNewCooking((prev) => {
+                const next = new Set(prev);
+                addedCooking.forEach((id) => next.delete(id));
+                return next;
+              });
+            }, NEW_HIGHLIGHT_MS);
+          }
+
+          if (addedReady.length > 0) {
+            setNewReady((prev) => new Set([...prev, ...addedReady]));
+            setTimeout(() => {
+              setNewReady((prev) => {
+                const next = new Set(prev);
+                addedReady.forEach((id) => next.delete(id));
+                return next;
+              });
+            }, NEW_HIGHLIGHT_MS);
+          }
         },
         () => {
           if (!cancelled) {
@@ -55,25 +96,30 @@ export default function DisplayBoardPage() {
   }
 
   return (
-    <div style={styles.root}>
-      <Column
-        title="Готовятся"
-        ids={cooking}
-        accentColor="#f97316"
-        bgColor="#f9731612"
-      />
-      <div style={styles.divider} />
-      <Column
-        title="Готовы к выдаче"
-        ids={ready}
-        accentColor="#22c55e"
-        bgColor="#22c55e12"
-      />
-    </div>
+    <>
+      <style>{KEYFRAMES}</style>
+      <div style={styles.root}>
+        <Column
+          title="Готовятся"
+          ids={cooking}
+          newIds={newCooking}
+          accentColor="#f97316"
+          bgColor="#f9731612"
+        />
+        <div style={styles.divider} />
+        <Column
+          title="Готовы к выдаче"
+          ids={ready}
+          newIds={newReady}
+          accentColor="#22c55e"
+          bgColor="#22c55e12"
+        />
+      </div>
+    </>
   );
 }
 
-function Column({ title, ids, accentColor, bgColor }) {
+function Column({ title, ids, newIds, accentColor, bgColor }) {
   return (
     <div style={{ ...styles.column, background: bgColor }}>
       <div style={{ ...styles.columnHeader, color: accentColor }}>{title}</div>
@@ -82,7 +128,16 @@ function Column({ title, ids, accentColor, bgColor }) {
           <div style={styles.empty}>—</div>
         ) : (
           ids.map((id) => (
-            <div key={id} style={{ ...styles.card, borderColor: accentColor }}>
+            <div
+              key={id}
+              style={{
+                ...styles.card,
+                borderColor: accentColor,
+                animation: newIds.has(id)
+                  ? 'orderSlideIn 0.4s ease forwards'
+                  : undefined,
+              }}
+            >
               {id}
             </div>
           ))
@@ -91,6 +146,19 @@ function Column({ title, ids, accentColor, bgColor }) {
     </div>
   );
 }
+
+const KEYFRAMES = `
+@keyframes orderSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.7) translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+`;
 
 const styles = {
   root: {
