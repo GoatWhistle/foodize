@@ -1,12 +1,19 @@
 import json
 import uuid
 
+import jwt
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from database import db_helper
-from features.orders.crud.order import get_order_by_id
+from features.orders.crud.order import get_active_orders_for_display, get_order_by_id
+from features.orders.dependencies import verify_restaurant_access
 from features.orders.schemas.order import OrderResponse
+from features.users.dependencies import get_user_by_id
 from infra.cache.redis import get_redis_cache
+from shared.enums.order_status import OrderStatus
+from shared.enums.permissions import Permission
+from shared.permissions import has_permission
+from utils.JWT import decode_jwt
 
 router = APIRouter()
 
@@ -54,6 +61,81 @@ async def order_status_ws(
                     if current_status in {"COMPLETED", "CANCELLED"}:
                         break
 
+    except WebSocketDisconnect:
+        pass
+    finally:
+        await pubsub.unsubscribe(channel)
+
+
+def _build_display_board(rows: list[tuple[int, str]]) -> dict:
+    cooking_statuses = {
+        OrderStatus.PENDING.value,
+        OrderStatus.ACCEPTED.value,
+        OrderStatus.COOKING.value,
+    }
+    cooking = [display_id for display_id, status in rows if status in cooking_statuses]
+    ready = [display_id for display_id, status in rows if status == OrderStatus.READY.value]
+    return {"cooking": cooking, "ready": ready}
+
+
+@router.websocket("/ws/restaurants/{restaurant_id}/display-board")
+async def display_board_ws(
+    restaurant_id: uuid.UUID,
+    websocket: WebSocket,
+    token: str | None = None,
+) -> None:
+    await websocket.accept()
+
+    if not token:
+        await websocket.send_text(json.dumps({"error": "not_authenticated"}))
+        await websocket.close()
+        return
+
+    try:
+        payload = decode_jwt(token)
+        user_id = payload.get("sub")
+        if user_id is None:
+            raise ValueError
+        parsed_user_id = uuid.UUID(user_id)
+    except (jwt.InvalidTokenError, ValueError):
+        await websocket.send_text(json.dumps({"error": "invalid_token"}))
+        await websocket.close()
+        return
+
+    async with db_helper.session_factory() as session:
+        user = await get_user_by_id(session, parsed_user_id)
+        if user is None or not user.is_active:
+            await websocket.send_text(json.dumps({"error": "not_authenticated"}))
+            await websocket.close()
+            return
+
+        if not has_permission(user.permissions, Permission.DISPLAY_BOARD_VIEW):
+            await websocket.send_text(json.dumps({"error": "forbidden"}))
+            await websocket.close()
+            return
+
+        try:
+            await verify_restaurant_access(session, restaurant_id, user)
+        except Exception:
+            await websocket.send_text(json.dumps({"error": "forbidden"}))
+            await websocket.close()
+            return
+
+        rows = await get_active_orders_for_display(session, restaurant_id)
+        await websocket.send_text(json.dumps(_build_display_board(rows)))
+
+    redis_client = get_redis_cache().get_raw_client()
+    pubsub = redis_client.pubsub()
+    channel = f"restaurant_orders:{restaurant_id}"
+    await pubsub.subscribe(channel)
+
+    try:
+        while True:
+            message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
+            if message is not None:
+                async with db_helper.session_factory() as session:
+                    rows = await get_active_orders_for_display(session, restaurant_id)
+                    await websocket.send_text(json.dumps(_build_display_board(rows)))
     except WebSocketDisconnect:
         pass
     finally:

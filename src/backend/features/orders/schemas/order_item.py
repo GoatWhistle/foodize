@@ -44,6 +44,7 @@ class OrderItemResponse(BaseModel):
     menu_item_id: uuid.UUID
     menu_item_name: str
     menu_item_category: Category
+    menu_item_prep_time: int
     quantity: int
     price_at_purchase: int
     selected_options: list[OrderItemOptionResponse] = []
@@ -60,6 +61,7 @@ class OrderItemResponse(BaseModel):
                 "menu_item_id": data.menu_item_id,
                 "menu_item_name": mi.name,
                 "menu_item_category": mi.category,
+                "menu_item_prep_time": mi.prep_time_minutes,
                 "quantity": data.quantity,
                 "price_at_purchase": data.price_at_purchase,
                 "selected_options": data.selected_options,

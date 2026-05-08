@@ -5,6 +5,8 @@ export const reviewService = {
     api.post(`/restaurants/${restaurantId}/reviews`, data),
   deleteReview: (restaurantId, reviewId) =>
     api.delete(`/restaurants/${restaurantId}/reviews/${reviewId}`),
+  updateMyReview: (restaurantId, data) =>
+    api.put(`/restaurants/${restaurantId}/reviews/my`, data),
   getReviews: (restaurantId) => api.get(`/restaurants/${restaurantId}/reviews`),
   getRating: (restaurantId) => api.get(`/restaurants/${restaurantId}/rating`),
 };

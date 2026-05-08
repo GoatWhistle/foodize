@@ -17,6 +17,7 @@ import {
   Clock,
   ArrowsClockwise,
   ChartLineUp,
+  MonitorPlay,
 } from '@phosphor-icons/react';
 import { useRestaurantStore } from '../../store/useRestaurantStore';
 import { useModalStore } from '../../store/useModalStore';
@@ -27,6 +28,7 @@ import { menuService } from '../../services/menuService';
 import { promoService } from '../../services/promoService';
 import { restaurantService } from '../../services/restaurantService';
 import { createRestaurantOrdersWebSocket } from '../../services/api';
+import { ROUTES } from '../../constants/routes';
 import EmptyState from '../../components/ui/EmptyState';
 import Pagination from '../../components/ui/Pagination';
 import OrderDetailsModal from '../../components/ui/OrderDetailsModal';
@@ -1041,6 +1043,36 @@ const VendorDashboardPage = () => {
                 {tab.label}
               </button>
             ))}
+            <div
+              style={{
+                borderTop: '1px solid var(--border)',
+                marginTop: 8,
+                paddingTop: 8,
+              }}
+            >
+              <a
+                href={ROUTES.DISPLAY_BOARD.replace(
+                  ':restaurantId',
+                  selectedRestaurant.id
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '10px 14px',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  color: 'var(--fire)',
+                  textDecoration: 'none',
+                  borderRadius: 'var(--r-sm)',
+                }}
+              >
+                <MonitorPlay size={18} weight="bold" />
+                Открыть табло
+              </a>
+            </div>
           </div>
 
           <div

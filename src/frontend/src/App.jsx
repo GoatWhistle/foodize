@@ -22,6 +22,7 @@ import ProfilePage from './pages/profile/ProfilePage';
 import FavoritesPage from './pages/profile/FavoritesPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import StaffDashboardPage from './pages/staff/StaffDashboardPage';
+import DisplayBoardPage from './pages/display-board/DisplayBoardPage';
 
 import { ROUTES } from './constants/routes';
 import { useAuthStore } from './store/useAuthStore';
@@ -107,6 +108,14 @@ const router = createBrowserRouter([
         ),
       },
     ],
+  },
+  {
+    path: ROUTES.DISPLAY_BOARD,
+    element: (
+      <ProtectedRoute>
+        <DisplayBoardPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '*',

@@ -54,6 +54,25 @@ async def delete_my_review(
     return build_response(result)
 
 
+@router.put(
+    "/{restaurant_id}/reviews/my",
+    response_model=SuccessResponse[ReviewResponse],
+)
+async def update_my_review(
+    restaurant_id: uuid.UUID,
+    review_in: ReviewCreate,
+    current_user: User = Depends(require_permission(Permission.REVIEWS_CREATE)),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> SuccessResponse[ReviewResponse]:
+    result = await service.update_review_for_user(
+        session=session,
+        review_data=review_in,
+        user_id=current_user.id,
+        restaurant_id=restaurant_id,
+    )
+    return build_response(result)
+
+
 @router.get("/{restaurant_id}/reviews", response_model=SuccessListResponse[ReviewResponse])
 async def read_reviews(
     request: Request,

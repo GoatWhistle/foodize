@@ -13,7 +13,7 @@ from features.reviews.schemas import RatingResponse, ReviewCreate, ReviewRespons
 from shared.enums.order_status import OrderStatus
 from shared.exceptions import NotFoundException
 
-MAX_REVIEWS_PER_USER_RESTAURANT = 5
+MAX_REVIEWS_PER_USER_RESTAURANT = 1
 
 
 def _review_to_response(review: Review) -> ReviewResponse:
@@ -97,6 +97,31 @@ async def delete_review_for_user(
     await session.commit()
 
     return response
+
+
+async def update_review_for_user(
+    session: AsyncSession,
+    review_data: ReviewCreate,
+    user_id: uuid.UUID,
+    restaurant_id: uuid.UUID,
+) -> ReviewResponse:
+    restaurant = await get_restaurant_by_id(session, restaurant_id)
+    if not restaurant:
+        raise RestaurantNotFoundException()
+
+    review = await crud.get_user_review_for_restaurant(session, user_id, restaurant_id)
+    if not review:
+        raise NotFoundException(detail="Review not found")
+
+    updated = await crud.update_review(session, review, review_data)
+
+    avg, count = await crud.get_restaurant_avg_rating(session, restaurant_id)
+    restaurant.average_rating = avg or 0.0
+    restaurant.review_count = count
+    session.add(restaurant)
+    await session.commit()
+
+    return _review_to_response(updated)
 
 
 async def list_reviews_for_restaurant(

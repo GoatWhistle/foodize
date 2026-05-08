@@ -8,11 +8,12 @@ CERTS_DIR := $(BACKEND_DIR)/certs
 JWT_PRIVATE_KEY := $(CERTS_DIR)/jwt-private.pem
 JWT_PUBLIC_KEY := $(CERTS_DIR)/jwt-public.pem
 
-.PHONY: help sync lint test openapi keys certs build up down stop logs run
+.PHONY: help sync lint test openapi keys certs build up down stop logs run seed
 
 help:
 	@echo " "
 	@echo "Targets:"
+	@echo "  seed            - Seed demo users, restaurants and menu items into the database"
 	@echo "  sync            - Sync locally project dependencies with UV"
 	@echo "  lint            - Run all project code linting"
 	@echo "  test            - Run all project tests"
@@ -25,6 +26,9 @@ help:
 	@echo "  stop            - Stop running containers (use SERVICE=... to stop a specific service)"
 	@echo "  logs            - View containers logs (use SERVICE=... to specific containers logs and/or LOGS_TAIL=... to set logs length)"
 	@echo " "
+
+seed:
+	docker compose exec backend python seed.py
 
 sync:
 	cd "$(BACKEND_DIR)" && pip install uv && uv sync

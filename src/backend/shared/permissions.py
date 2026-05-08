@@ -32,6 +32,7 @@ VENDOR_PERMISSIONS: frozenset[Permission] = frozenset(
         Permission.STAFF_REQUESTS_MANAGE,
         Permission.STAFF_MEMBERS_MANAGE,
         Permission.STAFF_PROFILE_READ,
+        Permission.DISPLAY_BOARD_VIEW,
     }
 )
 
@@ -40,6 +41,7 @@ STAFF_PERMISSIONS: frozenset[Permission] = frozenset(
         Permission.ORDERS_READ_RESTAURANT,
         Permission.ORDERS_MANAGE_STATUS,
         Permission.STAFF_PROFILE_READ,
+        Permission.DISPLAY_BOARD_VIEW,
     }
 )
 

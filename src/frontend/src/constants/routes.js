@@ -12,4 +12,5 @@ export const ROUTES = {
   VENDOR_DASHBOARD: '/vendor',
   ADMIN: '/admin',
   STAFF_DASHBOARD: '/staff',
+  DISPLAY_BOARD: '/display-board/:restaurantId',
 };

@@ -301,20 +301,6 @@ const OrderDetailsModal = ({
                 {order.customer_name}
               </div>
             )}
-            {order.customer_phone && (
-              <div style={{ color: 'var(--text-2)', fontSize: '0.82rem' }}>
-                {order.customer_phone}
-              </div>
-            )}
-            <div
-              style={{
-                color: 'var(--text-3)',
-                fontSize: '0.8rem',
-                marginBottom: 12,
-              }}
-            >
-              ID: {order.user_id}
-            </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Storefront size={18} color="var(--fire)" />
@@ -330,15 +316,6 @@ const OrderDetailsModal = ({
                 {order.restaurant_address}
               </div>
             )}
-            <div
-              style={{
-                color: 'var(--text-3)',
-                fontSize: '0.8rem',
-                marginBottom: 12,
-              }}
-            >
-              ID: {order.restaurant_id}
-            </div>
 
             {order.estimated_ready_at && (
               <div style={{ color: 'var(--text-3)', fontSize: '0.8rem' }}>

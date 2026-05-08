@@ -37,6 +37,10 @@ export const STAFF_STATUS_RU = {
   REVOKED: 'Отозван',
 };
 
+export const STAFF_ROLE_RU = {
+  COOK: 'Повар',
+};
+
 export const translate = (dict, key, fallback = '') => {
   if (!key) return fallback;
   return dict[key] || key;

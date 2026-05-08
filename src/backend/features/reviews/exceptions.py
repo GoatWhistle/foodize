@@ -5,7 +5,7 @@ from shared.exceptions import RuleException
 
 class ReviewLimitExceededException(RuleException):
     status_code: int = HTTPStatus.CONFLICT
-    detail: str = "You can publish up to 5 reviews for one restaurant"
+    detail: str = "You have already reviewed this restaurant"
 
 
 class ReviewNotAllowedException(RuleException):

@@ -19,11 +19,11 @@ import {
   Cookie,
   Coffee,
   DotsThree,
+  PencilSimple,
 } from '@phosphor-icons/react';
 import { useRestaurantStore } from '../../store/useRestaurantStore';
 import { useOrderStore } from '../../store/useOrderStore';
 import MenuItemCard from '../../components/ui/MenuItemCard';
-import EmptyState from '../../components/ui/EmptyState';
 import { reviewService } from '../../services/reviewService';
 import { staffService } from '../../services/staffService';
 import { restaurantService } from '../../services/restaurantService';
@@ -56,6 +56,156 @@ const formatReviewTime = (value) => {
   }
 };
 
+const ReviewCard = ({ r, currentUserId, onEdit, onDelete }) => (
+  <div
+    style={{
+      padding: '16px',
+      background:
+        r.user_id === currentUserId ? 'var(--fire-subtle)' : 'var(--bg-card)',
+      border: `1px solid ${r.user_id === currentUserId ? 'var(--fire)' : 'var(--border)'}`,
+      borderRadius: 'var(--r-md)',
+      opacity: r.user_id === currentUserId ? 1 : 0.95,
+    }}
+  >
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: r.text ? 10 : 0,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, var(--fire), var(--amber))',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#fff',
+            fontSize: '0.75rem',
+            fontWeight: 800,
+            flexShrink: 0,
+          }}
+        >
+          {r.user_id?.slice(0, 1).toUpperCase() || 'U'}
+        </div>
+        <div>
+          <div
+            style={{
+              fontWeight: 700,
+              fontSize: '0.85rem',
+              color: 'var(--text-1)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            {r.user_name || 'Клиент'}
+            {r.user_id === currentUserId && (
+              <span
+                style={{
+                  fontSize: '0.7rem',
+                  color: 'var(--fire)',
+                  fontWeight: 700,
+                }}
+              >
+                Вы
+              </span>
+            )}
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              marginTop: 2,
+            }}
+          >
+            <div style={{ display: 'flex', gap: 1, color: 'var(--fire)' }}>
+              {[...Array(5)].map((_, i) => (
+                <Star
+                  key={i}
+                  size={11}
+                  weight={i < r.rating ? 'fill' : 'regular'}
+                />
+              ))}
+            </div>
+            {formatReviewTime(r.created_at) && (
+              <span style={{ color: 'var(--text-3)', fontSize: '0.72rem' }}>
+                {formatReviewTime(r.created_at)}
+              </span>
+            )}
+          </div>
+          {r.is_verified_purchase && (
+            <span className="verified-purchase-badge" style={{ marginTop: 3 }}>
+              <ShoppingBag size={10} weight="fill" />
+              Подтверждённый заказ
+            </span>
+          )}
+        </div>
+      </div>
+      {r.user_id === currentUserId && (
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button
+            type="button"
+            aria-label="Редактировать отзыв"
+            onClick={onEdit}
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 'var(--r-xs)',
+              border: '1px solid var(--border)',
+              background: 'var(--bg-surface)',
+              color: 'var(--text-2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <PencilSimple size={13} weight="bold" />
+          </button>
+          <button
+            type="button"
+            aria-label="Удалить отзыв"
+            onClick={onDelete}
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 'var(--r-xs)',
+              border: '1px solid var(--border)',
+              background: 'var(--bg-surface)',
+              color: 'var(--error)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <Trash size={13} weight="bold" />
+          </button>
+        </div>
+      )}
+    </div>
+    {r.text && (
+      <p
+        style={{
+          color: 'var(--text-2)',
+          margin: 0,
+          lineHeight: 1.6,
+          fontSize: '0.875rem',
+        }}
+      >
+        {r.text}
+      </p>
+    )}
+  </div>
+);
+
 const RestaurantPage = () => {
   const { id } = useParams();
   const location = useLocation();
@@ -63,6 +213,7 @@ const RestaurantPage = () => {
     location.state?.restaurant ?? null
   );
   const [rating, setRating] = useState(null);
+  const [reviewCount, setReviewCount] = useState(null);
   const restaurant = restaurantData ?? { id, name: 'Ресторан', address: '' };
 
   const { fetchMenu, menus, loading } = useRestaurantStore(
@@ -80,6 +231,7 @@ const RestaurantPage = () => {
 
   const [activeCategory, setActiveCategory] = useState('ALL');
   const [showReviewsModal, setShowReviewsModal] = useState(false);
+  const [reviewFormOpen, setReviewFormOpen] = useState(false);
   const [reviewsList, setReviewsList] = useState([]);
   const [reviewForm, setReviewForm] = useState({ rating: 5, text: '' });
   const [reviewsLoading, setReviewsLoading] = useState(false);
@@ -98,6 +250,11 @@ const RestaurantPage = () => {
 
   const menuItems = menus[id] || [];
 
+  const myReview =
+    reviewsList.find((r) => r.user_id === currentUser?.id) ?? null;
+  const otherReviews = reviewsList.filter((r) => r.user_id !== currentUser?.id);
+  const canReview = currentUser?.permissions?.includes('reviews:create');
+
   useEffect(() => {
     fetchMenu(id);
     if (!location.state?.restaurant) {
@@ -106,14 +263,8 @@ const RestaurantPage = () => {
         .then((res) => setRestaurantData(res.data.data))
         .catch(() => {});
     }
-    reviewService
-      .getRating(id)
-      .then((res) => {
-        const val =
-          res.data?.data?.average_rating ?? res.data?.data?.rating ?? null;
-        setRating(val);
-      })
-      .catch(() => {});
+    refreshRating();
+    loadReviews();
   }, [id, fetchMenu, location.state]);
 
   const loadReviews = () => {
@@ -127,31 +278,48 @@ const RestaurantPage = () => {
       .finally(() => setReviewsLoading(false));
   };
 
+  const refreshRating = () => {
+    reviewService
+      .getRating(id)
+      .then((res) => {
+        const d = res.data?.data;
+        setRating(d?.average_rating ?? d?.rating ?? null);
+        setReviewCount(d?.review_count ?? null);
+      })
+      .catch(() => {});
+  };
+
+  const openReviewForm = () => {
+    setReviewError('');
+    setReviewSuccess(false);
+    setReviewForm(
+      myReview
+        ? { rating: myReview.rating, text: myReview.text ?? '' }
+        : { rating: 5, text: '' }
+    );
+    setReviewFormOpen(true);
+  };
+
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
     setReviewError('');
-    setReviewSuccess(false);
-    if (!reviewForm.text.trim()) {
-      setReviewError('Напишите текст отзыва');
-      return;
-    }
     try {
-      await reviewService.createReview(id, {
-        text: reviewForm.text,
-        rating: reviewForm.rating,
-      });
+      if (myReview) {
+        await reviewService.updateMyReview(id, {
+          text: reviewForm.text || null,
+          rating: reviewForm.rating,
+        });
+      } else {
+        await reviewService.createReview(id, {
+          text: reviewForm.text || null,
+          rating: reviewForm.rating,
+        });
+      }
+      setReviewFormOpen(false);
       setReviewSuccess(true);
-      setReviewForm({ rating: 5, text: '' });
       loadReviews();
+      refreshRating();
       window.setTimeout(() => setReviewSuccess(false), 2200);
-      reviewService
-        .getRating(id)
-        .then((res) => {
-          const val =
-            res.data?.data?.average_rating ?? res.data?.data?.rating ?? null;
-          setRating(val);
-        })
-        .catch(() => {});
     } catch (err) {
       setReviewError(translateApiError(err, 'Не удалось отправить отзыв'));
     }
@@ -164,22 +332,10 @@ const RestaurantPage = () => {
       confirmLabel: 'Удалить',
       danger: true,
       onConfirm: async () => {
-        setReviewError('');
         try {
           await reviewService.deleteReview(id, reviewId);
-          setReviewsList((prev) =>
-            prev.filter((review) => review.id !== reviewId)
-          );
-          reviewService
-            .getRating(id)
-            .then((res) => {
-              const val =
-                res.data?.data?.average_rating ??
-                res.data?.data?.rating ??
-                null;
-              setRating(val);
-            })
-            .catch(() => {});
+          setReviewsList((prev) => prev.filter((r) => r.id !== reviewId));
+          refreshRating();
         } catch (err) {
           setReviewError(translateApiError(err, 'Не удалось удалить отзыв'));
         }
@@ -305,6 +461,17 @@ const RestaurantPage = () => {
     setCustomizeError('');
   };
 
+  const reviewsButtonLabel = (() => {
+    const parts = [];
+    if (rating != null) parts.push(`${Number(rating).toFixed(1)}`);
+    if (reviewCount != null)
+      parts.push(
+        `${reviewCount} отзыв${reviewCount === 1 ? '' : reviewCount < 5 ? 'а' : 'ов'}`
+      );
+    else parts.push('Отзывы');
+    return parts.join(' · ');
+  })();
+
   return (
     <div
       className="page-enter"
@@ -338,34 +505,11 @@ const RestaurantPage = () => {
               {restaurant.description}
             </p>
           )}
-          {rating != null && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5,
-                marginBottom: 8,
-              }}
-            >
-              <Star size={14} weight="fill" color="#fbbf24" />
-              <span
-                style={{
-                  fontWeight: 700,
-                  color: '#fff',
-                  fontSize: '0.875rem',
-                  lineHeight: 1,
-                }}
-              >
-                {Number(rating).toFixed(1)}
-              </span>
-            </div>
-          )}
           <button
             className="btn btn-secondary btn-sm"
             onClick={() => {
               setShowReviewsModal(true);
-              setReviewError('');
-              loadReviews();
+              setReviewFormOpen(false);
             }}
             style={{
               display: 'flex',
@@ -377,7 +521,8 @@ const RestaurantPage = () => {
               color: '#fff',
             }}
           >
-            <ChatCircleText size={16} weight="bold" /> Отзывы
+            <Star size={14} weight="fill" color="#fbbf24" />
+            {reviewsButtonLabel}
           </button>
         </div>
       </div>
@@ -513,7 +658,7 @@ const RestaurantPage = () => {
               maxHeight: '85vh',
               display: 'flex',
               flexDirection: 'column',
-              padding: '36px',
+              padding: '28px 28px 0',
             }}
           >
             <div
@@ -521,262 +666,226 @@ const RestaurantPage = () => {
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                marginBottom: '24px',
+                marginBottom: '20px',
+                flexShrink: 0,
               }}
             >
-              <h2
-                style={{
-                  fontFamily: 'var(--font-serif)',
-                  fontSize: '1.8rem',
-                  fontWeight: 700,
-                  color: 'var(--text-1)',
-                  margin: 0,
-                }}
-              >
-                Отзывы
-              </h2>
-              <button
-                onClick={() => setShowReviewsModal(false)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: 'var(--text-3)',
-                  display: 'flex',
-                }}
-              >
-                <X size={28} weight="bold" />
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <h2
+                  style={{
+                    fontFamily: 'var(--font-serif)',
+                    fontSize: '1.6rem',
+                    fontWeight: 700,
+                    color: 'var(--text-1)',
+                    margin: 0,
+                  }}
+                >
+                  Отзывы
+                </h2>
+                {rating != null && (
+                  <span
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      color: 'var(--text-2)',
+                      fontSize: '0.9rem',
+                    }}
+                  >
+                    <Star size={14} weight="fill" color="#fbbf24" />
+                    {Number(rating).toFixed(1)}
+                  </span>
+                )}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {canReview && !reviewFormOpen && (
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={openReviewForm}
+                    style={{ display: 'flex', alignItems: 'center', gap: 5 }}
+                  >
+                    {myReview ? (
+                      <>
+                        <PencilSimple size={13} weight="bold" /> Редактировать
+                      </>
+                    ) : (
+                      <>
+                        <Star size={13} weight="bold" /> Оставить отзыв
+                      </>
+                    )}
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowReviewsModal(false)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: 'var(--text-3)',
+                    display: 'flex',
+                  }}
+                >
+                  <X size={26} weight="bold" />
+                </button>
+              </div>
             </div>
 
-            <div style={{ overflowY: 'auto', flex: 1 }}>
+            <div style={{ overflowY: 'auto', flex: 1, paddingBottom: 28 }}>
+              {reviewFormOpen && (
+                <div
+                  style={{
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--r-lg)',
+                    padding: '20px',
+                    marginBottom: '20px',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: 16,
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontWeight: 700,
+                        fontSize: '0.95rem',
+                        color: 'var(--text-1)',
+                      }}
+                    >
+                      {myReview ? 'Редактировать отзыв' : 'Оставить отзыв'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setReviewFormOpen(false)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: 'var(--text-3)',
+                        display: 'flex',
+                      }}
+                    >
+                      <X size={18} weight="bold" />
+                    </button>
+                  </div>
+                  <form
+                    onSubmit={handleReviewSubmit}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 12,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: 6,
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star
+                          key={s}
+                          className={`rating-star${s <= reviewForm.rating ? ' rating-star--selected' : ''}`}
+                          size={30}
+                          weight={s <= reviewForm.rating ? 'fill' : 'regular'}
+                          onClick={() =>
+                            setReviewForm({ ...reviewForm, rating: s })
+                          }
+                        />
+                      ))}
+                    </div>
+                    <textarea
+                      className="form-input"
+                      placeholder="Ваш отзыв (необязательно)..."
+                      value={reviewForm.text}
+                      onChange={(e) =>
+                        setReviewForm({ ...reviewForm, text: e.target.value })
+                      }
+                      style={{
+                        borderRadius: 'var(--r-md)',
+                        background: 'var(--bg-card)',
+                        minHeight: '72px',
+                      }}
+                    />
+                    {reviewError && (
+                      <div className="form-error">{reviewError}</div>
+                    )}
+                    <button
+                      type="submit"
+                      className="btn btn-primary btn-full"
+                      style={{ borderRadius: 'var(--r-md)' }}
+                    >
+                      {myReview ? 'Сохранить' : 'Опубликовать'}
+                    </button>
+                  </form>
+                </div>
+              )}
+
               {reviewSuccess && (
                 <div
                   style={{
-                    position: 'absolute',
-                    top: 18,
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    zIndex: 2,
                     padding: '10px 14px',
                     borderRadius: 'var(--r-md)',
                     background: 'var(--color-success)',
                     color: '#fff',
                     fontSize: '0.86rem',
                     fontWeight: 800,
-                    boxShadow: 'var(--shadow-lg)',
+                    marginBottom: 12,
                   }}
                 >
-                  Отзыв успешно опубликован
+                  Отзыв успешно сохранён
                 </div>
               )}
-              <form
-                onSubmit={handleReviewSubmit}
-                style={{
-                  background: 'var(--bg-surface)',
-                  padding: '24px',
-                  borderRadius: 'var(--r-lg)',
-                  marginBottom: '24px',
-                  border: '1px solid var(--border)',
-                }}
-              >
+
+              {reviewsLoading ? (
+                <div className="loading-center">
+                  <div className="spinner" />
+                </div>
+              ) : reviewsList.length === 0 ? (
                 <div
                   style={{
-                    display: 'flex',
-                    gap: 8,
-                    justifyContent: 'center',
-                    marginBottom: 16,
+                    textAlign: 'center',
+                    padding: '32px 0',
+                    color: 'var(--text-3)',
                   }}
                 >
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Star
-                      key={s}
-                      className={`rating-star${s <= reviewForm.rating ? ' rating-star--selected' : ''}`}
-                      size={30}
-                      weight={s <= reviewForm.rating ? 'fill' : 'regular'}
-                      onClick={() =>
-                        setReviewForm({ ...reviewForm, rating: s })
-                      }
+                  <ChatCircleText
+                    size={36}
+                    style={{ marginBottom: 8, opacity: 0.4 }}
+                  />
+                  <div style={{ fontWeight: 600 }}>Отзывов пока нет</div>
+                  <div style={{ fontSize: '0.85rem', marginTop: 4 }}>
+                    Будьте первым, кто оставит отзыв!
+                  </div>
+                </div>
+              ) : (
+                <div
+                  style={{ display: 'flex', flexDirection: 'column', gap: 10 }}
+                >
+                  {myReview && (
+                    <ReviewCard
+                      r={myReview}
+                      currentUserId={currentUser?.id}
+                      onEdit={openReviewForm}
+                      onDelete={() => handleReviewDelete(myReview.id)}
+                    />
+                  )}
+                  {otherReviews.map((r) => (
+                    <ReviewCard
+                      key={r.id}
+                      r={r}
+                      currentUserId={currentUser?.id}
+                      onEdit={openReviewForm}
+                      onDelete={() => handleReviewDelete(r.id)}
                     />
                   ))}
                 </div>
-                <textarea
-                  className="form-input"
-                  placeholder="Ваш отзыв..."
-                  value={reviewForm.text}
-                  onChange={(e) =>
-                    setReviewForm({ ...reviewForm, text: e.target.value })
-                  }
-                  style={{
-                    borderRadius: 'var(--r-md)',
-                    marginBottom: '12px',
-                    background: 'var(--bg-card)',
-                    minHeight: '80px',
-                  }}
-                />
-                {reviewError && (
-                  <div className="form-error" style={{ marginBottom: 8 }}>
-                    {reviewError}
-                  </div>
-                )}
-                <button
-                  type="submit"
-                  className="btn btn-primary btn-full"
-                  style={{ borderRadius: 'var(--r-md)' }}
-                >
-                  Опубликовать
-                </button>
-              </form>
-
-              <div
-                style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
-              >
-                {reviewsLoading ? (
-                  <div className="loading-center">
-                    <div className="spinner" />
-                  </div>
-                ) : reviewsList.length === 0 ? (
-                  <EmptyState
-                    title="Отзывов пока нет"
-                    subtitle="Будьте первым, кто оставит отзыв!"
-                  />
-                ) : (
-                  reviewsList.map((r) => (
-                    <div
-                      key={r.id}
-                      className="review-card"
-                      style={{
-                        padding: '18px',
-                        background: 'var(--bg-card)',
-                        border: '1px solid var(--border)',
-                        borderRadius: 'var(--r-md)',
-                        transition:
-                          'border-color var(--dur-sm), transform var(--dur-sm)',
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          marginBottom: 10,
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 10,
-                          }}
-                        >
-                          <div
-                            style={{
-                              width: 34,
-                              height: 34,
-                              borderRadius: '50%',
-                              background:
-                                'linear-gradient(135deg, var(--fire), var(--amber))',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: '#fff',
-                              fontSize: '0.75rem',
-                              fontWeight: 800,
-                            }}
-                          >
-                            {r.user_id?.slice(0, 1).toUpperCase() || 'U'}
-                          </div>
-                          <div>
-                            <div
-                              style={{
-                                fontWeight: 700,
-                                fontSize: '0.85rem',
-                                color: 'var(--text-1)',
-                              }}
-                            >
-                              {r.user_name || 'Клиент'}
-                            </div>
-                            {formatReviewTime(r.created_at) && (
-                              <div
-                                style={{
-                                  color: 'var(--text-3)',
-                                  fontSize: '0.76rem',
-                                  marginTop: 2,
-                                }}
-                              >
-                                {formatReviewTime(r.created_at)}
-                              </div>
-                            )}
-                            {r.is_verified_purchase && (
-                              <span
-                                className="verified-purchase-badge"
-                                style={{ marginTop: 3 }}
-                              >
-                                <ShoppingBag size={10} weight="fill" />
-                                Подтверждённый заказ
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 8,
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: 'flex',
-                              gap: 1,
-                              color: 'var(--fire)',
-                            }}
-                          >
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                size={13}
-                                weight={i < r.rating ? 'fill' : 'regular'}
-                              />
-                            ))}
-                          </div>
-                          {currentUser?.id === r.user_id && (
-                            <button
-                              type="button"
-                              aria-label="Удалить отзыв"
-                              onClick={() => handleReviewDelete(r.id)}
-                              style={{
-                                width: 28,
-                                height: 28,
-                                borderRadius: 'var(--r-xs)',
-                                border: '1px solid var(--border)',
-                                background: 'var(--bg-surface)',
-                                color: 'var(--error)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer',
-                              }}
-                            >
-                              <Trash size={14} weight="bold" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      <p
-                        style={{
-                          color: 'var(--text-2)',
-                          margin: 0,
-                          lineHeight: 1.6,
-                          fontSize: '0.875rem',
-                        }}
-                      >
-                        {r.text}
-                      </p>
-                    </div>
-                  ))
-                )}
-              </div>
+              )}
             </div>
           </div>
         </div>

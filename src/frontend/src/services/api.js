@@ -105,6 +105,21 @@ export function createRestaurantOrdersWebSocket(
   return ws;
 }
 
+export function createDisplayBoardWebSocket(restaurantId, onMessage, onClose) {
+  const token = localStorage.getItem('access_token') ?? '';
+  const ws = new WebSocket(
+    `${WS_BASE_URL}/api/v1/ws/restaurants/${restaurantId}/display-board?token=${encodeURIComponent(token)}`
+  );
+  ws.onmessage = (event) => {
+    try {
+      onMessage(JSON.parse(event.data));
+    } catch {}
+  };
+  ws.onclose = () => onClose?.();
+  ws.onerror = () => ws.close();
+  return ws;
+}
+
 export function createNotificationWebSocket(userId, onMessage, onClose) {
   const ws = new WebSocket(
     `${WS_BASE_URL}/api/v1/ws/users/${userId}/notifications`

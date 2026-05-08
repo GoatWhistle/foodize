@@ -43,3 +43,5 @@ class Permission(enum.Enum):
     STAFF_PROFILE_READ = "staff.profile_read"
 
     TELEGRAM_AUTH = "telegram.auth"
+
+    DISPLAY_BOARD_VIEW = "display_board.view"

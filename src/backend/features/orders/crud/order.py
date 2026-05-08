@@ -141,6 +141,20 @@ async def get_events_by_order_id(session: AsyncSession, order_id: uuid.UUID) -> 
     return list(result.scalars().all())
 
 
+async def get_active_orders_for_display(
+    session: AsyncSession,
+    restaurant_id: uuid.UUID,
+) -> list[tuple[int, str]]:
+    stmt = (
+        select(Order.display_id, Order.status)
+        .where(Order.restaurant_id == restaurant_id)
+        .where(Order.status.notin_([OrderStatus.COMPLETED.value, OrderStatus.CANCELLED.value]))
+        .order_by(Order.created_at.asc())
+    )
+    result = await session.execute(stmt)
+    return list(result.tuples().all())
+
+
 async def cancel_order(session: AsyncSession, order: Order) -> Order:
     order.status = OrderStatus.CANCELLED.value
     await session.commit()
