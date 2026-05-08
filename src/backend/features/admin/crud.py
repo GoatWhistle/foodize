@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, date, datetime, timedelta
 
-from sqlalchemy import and_, func, select
+from sqlalchemy import Integer, and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -566,7 +566,7 @@ async def get_finance_analytics(
         select(
             func.count(Order.id),
             func.count().filter(Order.status == OrderStatus.COMPLETED.value),
-            func.count().filter(Order.status == OrderStatus.CANCELLED.value),
+            func.cast(0, Integer),
             func.coalesce(
                 func.avg(Order.total_price).filter(Order.status == OrderStatus.COMPLETED.value),
                 0,

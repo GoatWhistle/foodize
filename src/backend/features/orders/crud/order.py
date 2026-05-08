@@ -108,8 +108,7 @@ async def update_order_status(
     order.status = new_status.value
     if new_status == OrderStatus.READY:
         order.ready_at = datetime.now(timezone.utc)
-    await session.commit()
-    await session.refresh(order)
+    await session.flush()
     return order
 
 
@@ -129,8 +128,7 @@ async def create_order_event(
         new_status=new_status.value,
     )
     session.add(event)
-    await session.commit()
-    await session.refresh(event)
+    await session.flush()
     return event
 
 
@@ -148,15 +146,8 @@ async def get_active_orders_for_display(
     stmt = (
         select(Order.display_id, Order.status)
         .where(Order.restaurant_id == restaurant_id)
-        .where(Order.status.notin_([OrderStatus.COMPLETED.value, OrderStatus.CANCELLED.value]))
+        .where(Order.status != OrderStatus.COMPLETED.value)
         .order_by(Order.created_at.asc())
     )
     result = await session.execute(stmt)
     return list(result.tuples().all())
-
-
-async def cancel_order(session: AsyncSession, order: Order) -> Order:
-    order.status = OrderStatus.CANCELLED.value
-    await session.commit()
-    await session.refresh(order)
-    return order

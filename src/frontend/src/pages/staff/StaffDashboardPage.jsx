@@ -16,24 +16,20 @@ import { createRestaurantOrdersWebSocket } from '../../services/api';
 const STATUS_COLOR = {
   PENDING: '#f59e0b',
   ACCEPTED: '#f97316',
-  COOKING: '#f97316',
   READY: '#22c55e',
   COMPLETED: '#6b7280',
-  CANCELLED: '#ef4444',
 };
 
 const NEXT_STATUS = {
-  PENDING: 'COOKING',
-  ACCEPTED: 'COOKING',
-  COOKING: 'READY',
+  PENDING: 'ACCEPTED',
+  ACCEPTED: 'READY',
   READY: 'COMPLETED',
 };
 
 const NEXT_LABEL = {
-  PENDING: 'Начать готовить',
-  ACCEPTED: 'Начать готовить',
-  COOKING: 'Готово',
-  READY: 'Выдать клиенту',
+  PENDING: 'Принять',
+  ACCEPTED: 'Готово',
+  READY: 'Отдал',
 };
 
 const COLUMNS = [
@@ -45,9 +41,9 @@ const COLUMNS = [
     icon: <Clock size={18} weight="fill" />,
   },
   {
-    id: 'cooking',
-    label: 'Готовится',
-    statuses: ['ACCEPTED', 'COOKING'],
+    id: 'accepted',
+    label: 'Принято',
+    statuses: ['ACCEPTED'],
     color: '#f97316',
     icon: <CookingPot size={18} weight="fill" />,
   },
@@ -334,7 +330,6 @@ const formatEta = (isoString) => {
 const KanbanCard = ({
   order,
   onAdvance,
-  onCancel,
   updating,
   dragging,
   onDragStart,
@@ -448,8 +443,7 @@ const KanbanCard = ({
         </div>
       )}
 
-      {(order.status === 'ACCEPTED' || order.status === 'COOKING') &&
-        order.estimated_ready_at && (
+      {order.status === 'ACCEPTED' && order.estimated_ready_at && (
           <div
             style={{ fontSize: '0.75rem', color: '#f97316', fontWeight: 700 }}
           >
@@ -457,7 +451,7 @@ const KanbanCard = ({
           </div>
         )}
 
-      {(nextStatus || order.status === 'PENDING') && (
+      {nextStatus && (
         <div style={{ display: 'flex', gap: 6 }}>
           {nextStatus && (
             <button
@@ -476,24 +470,6 @@ const KanbanCard = ({
               {updating === order.id ? '...' : nextLabel}
             </button>
           )}
-          {order.status === 'PENDING' && (
-            <button
-              className="btn btn-secondary"
-              style={{
-                height: 36,
-                fontSize: '0.8rem',
-                color: 'var(--error)',
-                whiteSpace: 'nowrap',
-              }}
-              disabled={updating === order.id}
-              onClick={(e) => {
-                e.stopPropagation();
-                onCancel(order.id);
-              }}
-            >
-              Отклонить
-            </button>
-          )}
         </div>
       )}
     </div>
@@ -504,7 +480,6 @@ const KanbanColumn = ({
   column,
   orders,
   onAdvance,
-  onCancel,
   updating,
   draggingId,
   onDragStart,
@@ -606,7 +581,6 @@ const KanbanColumn = ({
             key={order.id}
             order={order}
             onAdvance={onAdvance}
-            onCancel={onCancel}
             updating={updating}
             dragging={draggingId === order.id}
             onDragStart={() => onDragStart(order)}
@@ -662,7 +636,7 @@ const StaffDashboardPage = () => {
         const list = Array.isArray(res.data?.data) ? res.data.data : [];
 
         const activeList = list
-          .filter((o) => o.status !== 'COMPLETED' && o.status !== 'CANCELLED')
+          .filter((o) => o.status !== 'COMPLETED')
           .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
         const incoming = new Set(activeList.map((o) => o.id));
@@ -727,11 +701,10 @@ const StaffDashboardPage = () => {
     }
   };
 
-  const startCooking = async (orderId, etaPayload) => {
+  const acceptOrder = async (orderId, etaPayload) => {
     setUpdating(orderId);
     try {
       await staffService.updateOrderStatus(orderId, 'ACCEPTED', etaPayload);
-      await staffService.updateOrderStatus(orderId, 'COOKING', {});
       await fetchOrders(true);
     } catch {
     } finally {
@@ -741,7 +714,7 @@ const StaffDashboardPage = () => {
 
   const triggerCooking = (order) => {
     if (autoEta) {
-      startCooking(order.id, {
+      acceptOrder(order.id, {
         estimated_ready_in_minutes: getOrderDefaultEta(order),
       });
     } else {
@@ -750,7 +723,7 @@ const StaffDashboardPage = () => {
   };
 
   const handleAdvance = (order) => {
-    if (order.status === 'PENDING' || order.status === 'ACCEPTED') {
+    if (order.status === 'PENDING') {
       triggerCooking(order);
     } else {
       const next = NEXT_STATUS[order.status];
@@ -764,12 +737,9 @@ const StaffDashboardPage = () => {
     const currentCol = COLUMNS.find((c) => c.statuses.includes(order.status));
     if (!currentCol || currentCol.id === column.id) return;
 
-    if (column.id === 'cooking' && order.status === 'PENDING') {
+    if (column.id === 'accepted' && order.status === 'PENDING') {
       triggerCooking(order);
-    } else if (
-      column.id === 'ready' &&
-      (order.status === 'COOKING' || order.status === 'ACCEPTED')
-    ) {
+    } else if (column.id === 'ready' && order.status === 'ACCEPTED') {
       doStatusChange(order.id, 'READY');
     }
   };
@@ -777,7 +747,7 @@ const StaffDashboardPage = () => {
   const handleEtaConfirm = (etaPayload) => {
     const order = etaOrder;
     setEtaOrder(null);
-    if (order) startCooking(order.id, etaPayload);
+    if (order) acceptOrder(order.id, etaPayload);
   };
 
   const handleToggleAvailability = async (item) => {
@@ -977,7 +947,6 @@ const StaffDashboardPage = () => {
                     column={col}
                     orders={colOrders}
                     onAdvance={handleAdvance}
-                    onCancel={(orderId) => doStatusChange(orderId, 'CANCELLED')}
                     updating={updating}
                     draggingId={draggingOrderId}
                     onDragStart={(order) => {

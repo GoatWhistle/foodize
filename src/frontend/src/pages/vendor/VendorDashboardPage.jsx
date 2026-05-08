@@ -49,16 +49,14 @@ const STATUS_LABEL_RU = ORDER_STATUS_RU;
 
 const NEXT_ORDER_STATUS = {
   PENDING: 'ACCEPTED',
-  ACCEPTED: 'COOKING',
-  COOKING: 'READY',
+  ACCEPTED: 'READY',
   READY: 'COMPLETED',
 };
 
 const NEXT_ORDER_LABEL_RU = {
   PENDING: 'Принять',
-  ACCEPTED: 'В готовку',
-  COOKING: 'Готов',
-  READY: 'Выдан',
+  ACCEPTED: 'Готово',
+  READY: 'Отдал',
 };
 
 const getOrderDisplayId = (order) => order.display_id ?? order.id.slice(0, 8);
@@ -1763,11 +1761,10 @@ const VendorDashboardPage = () => {
                 >
                   {[
                     { key: '', label: 'Все' },
-                    { key: 'PENDING', label: 'Новые' },
-                    { key: 'COOKING', label: 'Готовятся' },
-                    { key: 'READY', label: 'Готовы' },
-                    { key: 'COMPLETED', label: 'Выданы' },
-                    { key: 'CANCELLED', label: 'Отменены' },
+                    { key: 'PENDING', label: 'Ожидается' },
+                    { key: 'ACCEPTED', label: 'Принято' },
+                    { key: 'READY', label: 'Готово' },
+                    { key: 'COMPLETED', label: 'Отдал' },
                   ].map(({ key, label }) => (
                     <button
                       key={key}
@@ -1931,11 +1928,9 @@ const VendorDashboardPage = () => {
                                 className={`order-status-badge ${
                                   order.status === 'PENDING'
                                     ? 'pending'
-                                    : order.status === 'COOKING'
+                                    : order.status === 'ACCEPTED'
                                       ? 'preparing'
-                                      : order.status === 'CANCELLED'
-                                        ? 'cancelled'
-                                        : 'ready'
+                                      : 'ready'
                                 }`}
                               >
                                 {STATUS_LABEL_RU[order.status] ?? order.status}
@@ -1976,7 +1971,6 @@ const VendorDashboardPage = () => {
                 nextLabel={NEXT_ORDER_LABEL_RU}
                 onStatusChange={handleOrderChange}
                 updating={updatingOrderId}
-                allowCancel
               />
             )}
 

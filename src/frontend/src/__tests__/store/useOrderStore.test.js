@@ -84,10 +84,15 @@ describe('useOrderStore', () => {
 
     await useOrderStore.getState().placeOrder();
 
-    expect(orderService.create).toHaveBeenCalledWith({
-      restaurant_id: 'rest-1',
-      items: [{ menu_item_id: '1', quantity: 2, selected_option_ids: [] }],
-    });
+    expect(orderService.create).toHaveBeenCalledWith(
+      {
+        restaurant_id: 'rest-1',
+        items: [{ menu_item_id: '1', quantity: 2, selected_option_ids: [] }],
+      },
+      {
+        headers: { 'Idempotency-Key': expect.any(String) },
+      }
+    );
     const state = useOrderStore.getState();
     expect(state.cart).toHaveLength(0);
     expect(state.orders[0]).toEqual(mockOrder);

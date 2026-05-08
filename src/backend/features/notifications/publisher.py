@@ -19,7 +19,7 @@ async def _publish(
     if publisher is None:
         publisher = get_rabbitmq_publisher()
     routing_key = _ROUTING.get(event.event_type, event.event_type)
-    await publisher.publish(routing_key, event.model_dump_json().encode())
+    await publisher.publish(routing_key, event.model_dump(mode="json"))
 
 
 async def publish_order_placed(event: OrderPlacedEvent) -> None:

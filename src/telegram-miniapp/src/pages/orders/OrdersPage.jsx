@@ -4,8 +4,6 @@ import {
   Package,
   Clock,
   CheckCircle,
-  Prohibit,
-  CookingPot,
   CaretRight,
   HandPalm,
 } from "@phosphor-icons/react";
@@ -17,44 +15,31 @@ import Pagination from "../../components/ui/Pagination";
 
 const STATUS_CONFIG = {
   PENDING: {
-    label: "Принят",
+    label: "Ожидается",
     color: "#f59e0b",
     icon: <Clock weight="bold" />,
   },
   ACCEPTED: {
-    label: "Подтверждён",
+    label: "Ожидается",
     color: "#3b82f6",
     icon: <CheckCircle weight="bold" />,
   },
-  COOKING: {
-    label: "Готовится",
-    color: "#f97316",
-    icon: <CookingPot weight="bold" />,
-  },
   READY: {
-    label: "Готов",
+    label: "Ожидается",
     color: "#22c55e",
     icon: <HandPalm weight="bold" />,
   },
   COMPLETED: {
-    label: "Выдан",
+    label: "Выполнено",
     color: "#6b7280",
     icon: <CheckCircle weight="fill" />,
-  },
-  CANCELLED: {
-    label: "Отменён",
-    color: "#ef4444",
-    icon: <Prohibit weight="bold" />,
   },
 };
 
 const STATUS_FILTERS = [
   { key: "", label: "Все" },
-  { key: "PENDING", label: "Ожидают" },
-  { key: "COOKING", label: "Готовятся" },
-  { key: "READY", label: "Готовы" },
-  { key: "COMPLETED", label: "Выданы" },
-  { key: "CANCELLED", label: "Отменены" },
+  { key: "ACTIVE", label: "Ожидается" },
+  { key: "COMPLETED", label: "Выполнено" },
 ];
 
 const getDisplayId = (order) => order.display_id ?? order.id.slice(0, 8);
@@ -87,8 +72,16 @@ const OrdersPage = () => {
   }, [navigate]);
 
   useEffect(() => {
-    fetchMyOrders({ page, size, status: statusFilter || undefined });
+    fetchMyOrders({
+      page,
+      size,
+      status: statusFilter === "COMPLETED" ? "COMPLETED" : undefined,
+    });
   }, [fetchMyOrders, page, statusFilter]);
+  const visibleOrders =
+    statusFilter === "ACTIVE"
+      ? orders.filter((order) => order.status !== "COMPLETED")
+      : orders;
 
   return (
     <div style={{ padding: "16px 16px 100px" }}>
@@ -134,7 +127,7 @@ const OrdersPage = () => {
         <div className="loading-center">
           <div className="spinner" />
         </div>
-      ) : orders.length === 0 ? (
+      ) : visibleOrders.length === 0 ? (
         <EmptyState
           title="Заказов пока нет"
           subtitle="Сделайте первый заказ в любом ресторане"
@@ -143,7 +136,7 @@ const OrdersPage = () => {
       ) : (
         <>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {orders.map((order) => {
+            {visibleOrders.map((order) => {
               const cfg = STATUS_CONFIG[order.status] ?? STATUS_CONFIG.PENDING;
               return (
                 <div

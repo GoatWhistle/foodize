@@ -10,6 +10,7 @@ from features.notifications.handlers import (
     handle_order_placed,
     handle_order_status_changed,
 )
+from features.notifications.outbox_service import run_outbox_publisher
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,7 @@ async def _process_message(
 
 async def start_consuming() -> None:
     await broker.connect()
+    asyncio.create_task(run_outbox_publisher())
     exchange = broker.exchange
     channel = broker.channel
 

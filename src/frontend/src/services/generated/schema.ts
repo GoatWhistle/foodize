@@ -1037,23 +1037,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/orders/{order_id}/cancel': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Cancel Order */
-    post: operations['cancel_order_api_v1_orders__order_id__cancel_post'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/api/v1/orders/{order_id}': {
     parameters: {
       query?: never;
@@ -1101,6 +1084,23 @@ export interface paths {
     post?: never;
     /** Delete My Review */
     delete: operations['delete_my_review_api_v1_restaurants__restaurant_id__reviews__review_id__delete'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/restaurants/{restaurant_id}/reviews/my': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Update My Review */
+    put: operations['update_my_review_api_v1_restaurants__restaurant_id__reviews_my_put'];
+    post?: never;
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
@@ -2018,6 +2018,8 @@ export interface components {
       /** Menu Item Name */
       menu_item_name: string;
       menu_item_category: components['schemas']['Category'];
+      /** Menu Item Prep Time */
+      menu_item_prep_time: number;
       /** Quantity */
       quantity: number;
       /** Price At Purchase */
@@ -2076,13 +2078,7 @@ export interface components {
      * OrderStatus
      * @enum {string}
      */
-    OrderStatus:
-      | 'PENDING'
-      | 'ACCEPTED'
-      | 'COOKING'
-      | 'READY'
-      | 'COMPLETED'
-      | 'CANCELLED';
+    OrderStatus: 'PENDING' | 'ACCEPTED' | 'READY' | 'COMPLETED';
     /** OrderStatusUpdate */
     OrderStatusUpdate: {
       status: components['schemas']['OrderStatus'];
@@ -2141,7 +2137,8 @@ export interface components {
       | 'staff.requests_manage'
       | 'staff.members_manage'
       | 'staff.profile_read'
-      | 'telegram.auth';
+      | 'telegram.auth'
+      | 'display_board.view';
     /** PlatformStats */
     PlatformStats: {
       /** Users By Permission */
@@ -4953,7 +4950,9 @@ export interface operations {
   create_order_api_v1_orders__post: {
     parameters: {
       query?: never;
-      header?: never;
+      header?: {
+        'Idempotency-Key'?: string | null;
+      };
       path?: never;
       cookie?: never;
     };
@@ -5150,37 +5149,6 @@ export interface operations {
       };
     };
   };
-  cancel_order_api_v1_orders__order_id__cancel_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        order_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['SuccessResponse_OrderResponse_'];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['HTTPValidationError'];
-        };
-      };
-    };
-  };
   read_order_api_v1_orders__order_id__get: {
     parameters: {
       query?: never;
@@ -5292,6 +5260,41 @@ export interface operations {
       cookie?: never;
     };
     requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SuccessResponse_ReviewResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  update_my_review_api_v1_restaurants__restaurant_id__reviews_my_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        restaurant_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ReviewCreate'];
+      };
+    };
     responses: {
       /** @description Successful Response */
       200: {

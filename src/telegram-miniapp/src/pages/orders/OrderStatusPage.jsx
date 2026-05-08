@@ -13,29 +13,18 @@ const STATUS_LABEL = ORDER_STATUS_RU;
 const STATUS_COLOR = {
   PENDING: "#f59e0b",
   ACCEPTED: "#3b82f6",
-  COOKING: "#f97316",
   READY: "#22c55e",
   COMPLETED: "#6b7280",
-  CANCELLED: "#ef4444",
 };
 
-const STATUS_FLOW = ["PENDING", "ACCEPTED", "COOKING", "READY", "COMPLETED"];
-const TERMINAL = new Set(["COMPLETED", "CANCELLED"]);
+const STATUS_FLOW = ["PENDING", "ACCEPTED", "READY", "COMPLETED"];
+const TERMINAL = new Set(["COMPLETED"]);
 
 const getDisplayId = (order) => order.display_id ?? order.id.slice(0, 8);
 
 const getStages = (order, events) => {
   const byStatus = new Map((events || []).map((e) => [e.new_status, e]));
   const curIdx = STATUS_FLOW.indexOf(order.status);
-  if (order.status === "CANCELLED") {
-    return [...STATUS_FLOW.slice(0, Math.max(curIdx, 0) + 1), "CANCELLED"].map(
-      (s) => ({
-        status: s,
-        at: s === "PENDING" ? order.created_at : byStatus.get(s)?.created_at,
-        state: s === "CANCELLED" ? "current" : "done",
-      }),
-    );
-  }
   return STATUS_FLOW.map((s, i) => ({
     status: s,
     at: s === "PENDING" ? order.created_at : byStatus.get(s)?.created_at,
@@ -54,9 +43,7 @@ const OrderStatusPage = () => {
   );
   const wsRef = useRef(null);
   const [events, setEvents] = useState([]);
-  const [cancelling, setCancelling] = useState(false);
   const [completing, setCompleting] = useState(false);
-  const [cancelError, setCancelError] = useState("");
   const [completeError, setCompleteError] = useState("");
 
   useEffect(() => {
@@ -107,32 +94,7 @@ const OrderStatusPage = () => {
 
   const color = STATUS_COLOR[currentOrder.status] ?? "#6b7280";
   const stages = getStages(currentOrder, events);
-  const isPending = currentOrder.status === "PENDING";
   const isReady = currentOrder.status === "READY";
-  const isCancelled = currentOrder.status === "CANCELLED";
-
-  const cookingProgress = (() => {
-    if (currentOrder.status !== "COOKING") return 0.6;
-    if (!currentOrder.estimated_ready_at || !currentOrder.updated_at)
-      return 0.3;
-    const start = new Date(currentOrder.updated_at).getTime();
-    const end = new Date(currentOrder.estimated_ready_at).getTime();
-    const now = Date.now();
-    return Math.min(1, Math.max(0.05, (now - start) / (end - start)));
-  })();
-
-  const handleCancel = async () => {
-    setCancelling(true);
-    setCancelError("");
-    try {
-      await orderService.cancelOrder(id);
-      await fetchOrder(id);
-    } catch {
-      setCancelError("Не удалось отменить заказ");
-    } finally {
-      setCancelling(false);
-    }
-  };
 
   const handleComplete = async () => {
     setCompleting(true);
@@ -152,10 +114,7 @@ const OrderStatusPage = () => {
       className="status-screen"
       style={{ justifyContent: "flex-start", padding: "24px 16px 100px" }}
     >
-      <OrderStatusBadge
-        status={currentOrder.status}
-        progress={cookingProgress}
-      />
+      <OrderStatusBadge status={currentOrder.status} />
 
       {/* Order composition */}
       <div
@@ -246,7 +205,7 @@ const OrderStatusPage = () => {
         </div>
 
         {/* Estimated ready time */}
-        {currentOrder.estimated_ready_at && !isReady && !isCancelled && (
+        {currentOrder.estimated_ready_at && !isReady && (
           <div
             style={{
               marginTop: 10,
@@ -390,27 +349,17 @@ const OrderStatusPage = () => {
       </div>
 
       {/* Errors */}
-      {(cancelError || completeError) && (
+      {completeError && (
         <div
           className="form-error"
           style={{ marginBottom: 12, width: "100%", maxWidth: 480 }}
         >
-          {cancelError || completeError}
+          {completeError}
         </div>
       )}
 
       {/* Actions */}
       <div style={{ display: "flex", gap: 10, width: "100%", maxWidth: 480 }}>
-        {isPending && (
-          <button
-            className="btn btn-secondary"
-            style={{ flex: 1, color: "#ef4444" }}
-            onClick={handleCancel}
-            disabled={cancelling}
-          >
-            {cancelling ? "Отмена..." : "Отменить"}
-          </button>
-        )}
         {isReady && (
           <button
             className="btn btn-primary"
@@ -422,7 +371,7 @@ const OrderStatusPage = () => {
             {completing ? "..." : "✓ Получил"}
           </button>
         )}
-        {["COMPLETED", "CANCELLED"].includes(currentOrder.status) && (
+        {currentOrder.status === "COMPLETED" && (
           <button
             className="btn btn-primary"
             style={{ flex: 1, background: "var(--fire)" }}

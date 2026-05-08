@@ -11,7 +11,6 @@ vi.mock('../../store/useOrderStore', () => ({
 vi.mock('../../services/orderService', () => ({
   orderService: {
     getOrderEvents: vi.fn().mockResolvedValue({ data: [] }),
-    cancelOrder: vi.fn().mockResolvedValue({}),
     completeOrder: vi.fn().mockResolvedValue({}),
   },
 }));

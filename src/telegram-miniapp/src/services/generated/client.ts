@@ -775,15 +775,6 @@ export const completeOrderApiV1OrdersOrderIdCompletePost = (
     options,
   );
 
-export const cancelOrderApiV1OrdersOrderIdCancelPost = (
-  options?: RequestOptions<paths["/api/v1/orders/{order_id}/cancel"]["post"]>,
-) =>
-  request<paths["/api/v1/orders/{order_id}/cancel"]["post"]>(
-    "post",
-    "/api/v1/orders/{order_id}/cancel",
-    options,
-  );
-
 export const readOrderApiV1OrdersOrderIdGet = (
   options?: RequestOptions<paths["/api/v1/orders/{order_id}"]["get"]>,
 ) =>
@@ -825,6 +816,17 @@ export const deleteMyReviewApiV1RestaurantsRestaurantIdReviewsReviewIdDelete = (
   >(
     "delete",
     "/api/v1/restaurants/{restaurant_id}/reviews/{review_id}",
+    options,
+  );
+
+export const updateMyReviewApiV1RestaurantsRestaurantIdReviewsMyPut = (
+  options?: RequestOptions<
+    paths["/api/v1/restaurants/{restaurant_id}/reviews/my"]["put"]
+  >,
+) =>
+  request<paths["/api/v1/restaurants/{restaurant_id}/reviews/my"]["put"]>(
+    "put",
+    "/api/v1/restaurants/{restaurant_id}/reviews/my",
     options,
   );
 

@@ -1,14 +1,14 @@
+import hashlib
+import json
 import uuid
 from datetime import date, datetime, timedelta, timezone
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.menu.models import MenuItem, MenuItemOption
 from features.notifications.events import OrderPlacedEvent, OrderStatusChangedEvent
-from features.notifications.publisher import (
-    publish_order_placed,
-    publish_order_status_changed,
-)
+from features.notifications.outbox_service import enqueue_event
 from features.orders.crud import order as order_crud
 from features.orders.crud import order_item as order_item_crud
 from features.orders.exceptions import (
@@ -17,12 +17,11 @@ from features.orders.exceptions import (
     MenuItemsNotFoundException,
     MenuItemUnavailableException,
     OrderAccessDeniedException,
-    OrderNotCancellableException,
     OrderNotCompletableException,
     OrderNotFoundException,
     OrderReadyTimeRequiredException,
 )
-from features.orders.models import Order, OrderItem, OrderItemOption
+from features.orders.models import IdempotencyKey, Order, OrderItem, OrderItemOption
 from features.orders.schemas.order import OrderCreate, OrderResponse, OrderStatusUpdate
 from features.orders.schemas.order_event import OrderEventResponse
 from features.promos import service as promo_service
@@ -38,12 +37,10 @@ from shared.exceptions import BadRequestException
 from shared.permissions import CUSTOMER_PERMISSIONS, serialize_permissions
 
 _ALLOWED_TRANSITIONS: dict[OrderStatus, set[OrderStatus]] = {
-    OrderStatus.PENDING: {OrderStatus.ACCEPTED, OrderStatus.CANCELLED},
-    OrderStatus.ACCEPTED: {OrderStatus.COOKING, OrderStatus.CANCELLED},
-    OrderStatus.COOKING: {OrderStatus.READY},
+    OrderStatus.PENDING: {OrderStatus.ACCEPTED},
+    OrderStatus.ACCEPTED: {OrderStatus.READY},
     OrderStatus.READY: {OrderStatus.COMPLETED},
     OrderStatus.COMPLETED: set(),
-    OrderStatus.CANCELLED: set(),
 }
 
 
@@ -92,11 +89,62 @@ def _validate_item_options(
     return selected_options
 
 
+def _make_request_hash(order_data: OrderCreate) -> str:
+    payload = order_data.model_dump(mode="json")
+    raw = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(raw.encode()).hexdigest()
+
+
+async def _get_idempotency_record(
+    session: AsyncSession,
+    user_id: uuid.UUID,
+    key: str,
+) -> IdempotencyKey | None:
+    result = await session.execute(
+        select(IdempotencyKey).where(
+            IdempotencyKey.user_id == user_id,
+            IdempotencyKey.key == key,
+        )
+    )
+    return result.scalar_one_or_none()
+
+
+async def _start_idempotency_record(
+    session: AsyncSession,
+    user_id: uuid.UUID,
+    key: str | None,
+    request_hash: str,
+) -> IdempotencyKey | None:
+    if not key:
+        return None
+
+    existing = await _get_idempotency_record(session, user_id, key)
+    if existing:
+        if existing.request_hash != request_hash:
+            raise BadRequestException(detail="Idempotency key was used with different payload")
+        if existing.response_json:
+            return existing
+        raise BadRequestException(detail="Idempotent request is still being processed")
+
+    record = IdempotencyKey(user_id=user_id, key=key, request_hash=request_hash)
+    session.add(record)
+    await session.flush()
+    return record
+
+
 async def place_order(
     session: AsyncSession,
     order_data: OrderCreate,
     user_id: uuid.UUID,
+    idempotency_key: str | None = None,
 ) -> OrderResponse:
+    request_hash = _make_request_hash(order_data)
+    idempotency_record = await _start_idempotency_record(
+        session, user_id, idempotency_key, request_hash
+    )
+    if idempotency_record and idempotency_record.response_json:
+        return OrderResponse.model_validate(idempotency_record.response_json)
+
     restaurant = await restaurant_crud.get_restaurant_by_id(session, order_data.restaurant_id)
     if not restaurant:
         raise RestaurantNotFoundException()
@@ -133,10 +181,9 @@ async def place_order(
         )
         if new_total != order.total_price:
             order.total_price = new_total
-            await session.commit()
-            await session.refresh(order)
 
-    await publish_order_placed(
+    await enqueue_event(
+        session,
         OrderPlacedEvent(
             order_id=order.id,
             user_id=order.user_id,
@@ -144,10 +191,23 @@ async def place_order(
             restaurant_name=restaurant.name,
             total_price=order.total_price,
             items_count=len(order.items),
-        )
+        ),
     )
+    await session.commit()
+
+    result = await order_crud.get_order_by_id(session, order.id)
+    if result is None:
+        raise OrderNotFoundException()
+    response = OrderResponse.model_validate(result)
+
+    if idempotency_record:
+        idempotency_record.order_id = order.id
+        idempotency_record.response_json = response.model_dump(mode="json")
+        idempotency_record.completed_at = datetime.now(timezone.utc)
+        await session.commit()
+
     await get_redis_cache().publish(f"restaurant_orders:{order.restaurant_id}", "new_order")
-    return OrderResponse.model_validate(order)
+    return response
 
 
 async def _create_order(
@@ -193,11 +253,8 @@ async def _create_order(
                 )
             )
 
-    await session.commit()
-    result = await order_crud.get_order_by_id(session, order.id)
-    if result is None:
-        raise OrderNotFoundException()
-    return result
+    await session.flush()
+    return order
 
 
 async def get_user_orders(
@@ -283,7 +340,8 @@ async def change_order_status(
         old_status=old_status,
         new_status=status_data.status,
     )
-    await publish_order_status_changed(
+    await enqueue_event(
+        session,
         OrderStatusChangedEvent(
             order_id=order.id,
             user_id=order.user_id,
@@ -292,55 +350,15 @@ async def change_order_status(
             old_status=old_status,
             new_status=status_data.status,
             total_price=order.total_price,
-        )
+        ),
     )
+    await session.commit()
     await get_redis_cache().publish(f"order_status:{order.id}", status_data.status.value)
     await get_redis_cache().publish(
         f"restaurant_orders:{order.restaurant_id}",
         f"status_changed:{status_data.status.value}",
     )
     return OrderResponse.model_validate(updated)
-
-
-async def cancel_order(
-    session: AsyncSession,
-    order_id: uuid.UUID,
-    user_id: uuid.UUID,
-) -> OrderResponse:
-    order = await order_crud.get_order_by_id(session, order_id)
-    if not order:
-        raise OrderNotFoundException()
-    if order.user_id != user_id:
-        raise OrderAccessDeniedException()
-    if order.status != OrderStatus.PENDING.value:
-        raise OrderNotCancellableException()
-    old_status = OrderStatus(order.status)
-    cancelled = await order_crud.cancel_order(session, order)
-    await order_crud.create_order_event(
-        session,
-        order_id=order.id,
-        actor_id=user_id,
-        actor_permissions=serialize_permissions(CUSTOMER_PERMISSIONS),
-        old_status=old_status,
-        new_status=OrderStatus.CANCELLED,
-    )
-    await publish_order_status_changed(
-        OrderStatusChangedEvent(
-            order_id=order.id,
-            user_id=order.user_id,
-            restaurant_id=order.restaurant_id,
-            restaurant_name=order.restaurant.name,
-            old_status=old_status,
-            new_status=OrderStatus.CANCELLED,
-            total_price=order.total_price,
-        )
-    )
-    await get_redis_cache().publish(f"order_status:{order.id}", OrderStatus.CANCELLED.value)
-    await get_redis_cache().publish(
-        f"restaurant_orders:{order.restaurant_id}",
-        f"status_changed:{OrderStatus.CANCELLED.value}",
-    )
-    return OrderResponse.model_validate(cancelled)
 
 
 async def complete_order(
@@ -365,7 +383,8 @@ async def complete_order(
         old_status=old_status,
         new_status=OrderStatus.COMPLETED,
     )
-    await publish_order_status_changed(
+    await enqueue_event(
+        session,
         OrderStatusChangedEvent(
             order_id=order.id,
             user_id=order.user_id,
@@ -374,8 +393,9 @@ async def complete_order(
             old_status=old_status,
             new_status=OrderStatus.COMPLETED,
             total_price=order.total_price,
-        )
+        ),
     )
+    await session.commit()
     await get_redis_cache().publish(f"order_status:{order.id}", OrderStatus.COMPLETED.value)
     await get_redis_cache().publish(
         f"restaurant_orders:{order.restaurant_id}",

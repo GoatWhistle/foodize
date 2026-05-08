@@ -66,7 +66,7 @@ async def create_promo(session: AsyncSession, data: PromoCreate) -> Promo:
 
 async def increment_used_count(session: AsyncSession, promo: Promo) -> None:
     promo.used_count += 1
-    await session.commit()
+    await session.flush()
 
 
 async def deactivate_promo(session: AsyncSession, promo: Promo) -> Promo:

@@ -1,7 +1,7 @@
 import uuid
 from datetime import date
 
-from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi import APIRouter, Depends, Header, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
@@ -53,11 +53,15 @@ async def verify_order_read_access(session: AsyncSession, order: Order, current_
 )
 async def create_order(
     order_in: OrderCreate,
+    idempotency_key: str | None = Header(None, alias="Idempotency-Key"),
     current_user: User = Depends(require_permission(Permission.ORDERS_CREATE)),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[OrderResponse]:
     result = await service.place_order(
-        session=session, order_data=order_in, user_id=current_user.id
+        session=session,
+        order_data=order_in,
+        user_id=current_user.id,
+        idempotency_key=idempotency_key,
     )
     return build_response(result)
 
@@ -141,16 +145,6 @@ async def complete_order(
     result = await service.complete_order(
         session=session, order_id=order_id, user_id=current_user.id
     )
-    return build_response(result)
-
-
-@router.post("/{order_id}/cancel", response_model=SuccessResponse[OrderResponse])
-async def cancel_order(
-    order_id: uuid.UUID,
-    current_user: User = Depends(require_permission(Permission.ORDERS_READ_OWN)),
-    session: AsyncSession = Depends(db_helper.dependency_session_getter),
-) -> SuccessResponse[OrderResponse]:
-    result = await service.cancel_order(session=session, order_id=order_id, user_id=current_user.id)
     return build_response(result)
 
 

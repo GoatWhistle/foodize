@@ -4,8 +4,6 @@ import {
   Package,
   Clock,
   CheckCircle,
-  Prohibit,
-  CookingPot,
   CaretRight,
   HandPalm,
 } from '@phosphor-icons/react';
@@ -16,44 +14,31 @@ import Pagination from '../../components/ui/Pagination';
 
 const STATUS_CONFIG = {
   PENDING: {
-    label: 'Принят',
+    label: 'Ожидается',
     className: 'pending',
     icon: <Clock weight="bold" />,
   },
   ACCEPTED: {
-    label: 'Подтверждён',
+    label: 'Ожидается',
     className: 'pending',
     icon: <CheckCircle weight="bold" />,
   },
-  COOKING: {
-    label: 'Готовится',
-    className: 'preparing',
-    icon: <CookingPot weight="bold" />,
-  },
   READY: {
-    label: 'Готов',
+    label: 'Ожидается',
     className: 'ready',
     icon: <HandPalm weight="bold" />,
   },
   COMPLETED: {
-    label: 'Выдан',
+    label: 'Выполнено',
     className: 'ready',
     icon: <CheckCircle weight="fill" />,
-  },
-  CANCELLED: {
-    label: 'Отменён',
-    className: 'cancelled',
-    icon: <Prohibit weight="bold" />,
   },
 };
 
 const STATUS_FILTERS = [
   { key: '', label: 'Все' },
-  { key: 'PENDING', label: 'Ожидают' },
-  { key: 'COOKING', label: 'Готовятся' },
-  { key: 'READY', label: 'Готовы' },
-  { key: 'COMPLETED', label: 'Выданы' },
-  { key: 'CANCELLED', label: 'Отменены' },
+  { key: 'ACTIVE', label: 'Ожидается' },
+  { key: 'COMPLETED', label: 'Выполнено' },
 ];
 
 import { useShallow } from 'zustand/react/shallow';
@@ -75,10 +60,18 @@ const OrdersPage = () => {
   const size = 20;
 
   useEffect(() => {
-    fetchMyOrders({ page, size, status: statusFilter || undefined });
+    fetchMyOrders({
+      page,
+      size,
+      status: statusFilter === 'COMPLETED' ? 'COMPLETED' : undefined,
+    });
   }, [fetchMyOrders, page, statusFilter]);
 
   const totalPages = Math.ceil(ordersTotal / size);
+  const visibleOrders =
+    statusFilter === 'ACTIVE'
+      ? orders.filter((order) => order.status !== 'COMPLETED')
+      : orders;
 
   if (ordersLoading) {
     return (
@@ -131,7 +124,7 @@ const OrdersPage = () => {
         ))}
       </div>
 
-      {orders.length === 0 ? (
+      {visibleOrders.length === 0 ? (
         <EmptyState
           title={
             statusFilter ? 'Заказов с таким статусом нет' : 'Заказов пока нет'
@@ -153,7 +146,7 @@ const OrdersPage = () => {
       ) : (
         <>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {orders.map((order) => {
+            {visibleOrders.map((order) => {
               const cfg = STATUS_CONFIG[order.status] || STATUS_CONFIG.PENDING;
               return (
                 <div

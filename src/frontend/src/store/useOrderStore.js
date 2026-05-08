@@ -36,6 +36,10 @@ const uniqueOptions = (options = []) => {
   });
 };
 
+const makeIdempotencyKey = () =>
+  globalThis.crypto?.randomUUID?.() ??
+  `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
 export const useOrderStore = create((set, get) => ({
   cart: [],
   cartRestaurantId: null,
@@ -203,7 +207,9 @@ export const useOrderStore = create((set, get) => ({
       ...(promoCode ? { promo_code: promoCode } : {}),
       ...(trimmedComment ? { comment: trimmedComment } : {}),
     };
-    const res = await orderService.create(payload);
+    const res = await orderService.create(payload, {
+      headers: { 'Idempotency-Key': makeIdempotencyKey() },
+    });
     set((s) => ({
       orders: [res.data.data, ...s.orders],
       currentOrder: res.data.data,

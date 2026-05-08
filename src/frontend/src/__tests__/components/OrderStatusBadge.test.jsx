@@ -5,17 +5,14 @@ import OrderStatusBadge from '../../components/ui/OrderStatusBadge';
 describe('OrderStatusBadge', () => {
   it('renders pending status with ripple rings', () => {
     const { container } = render(<OrderStatusBadge status="PENDING" />);
-    expect(screen.getByText('Принят')).toBeDefined();
+    expect(screen.getByText('Ожидается')).toBeDefined();
     expect(container.querySelectorAll('.ripple-ring')).toHaveLength(3);
   });
 
-  it('renders preparing status with progress circle', () => {
-    const { container } = render(
-      <OrderStatusBadge status="COOKING" progress={0.5} />
-    );
-    expect(screen.getByText('Готовится')).toBeDefined();
-    const circles = container.querySelectorAll('circle');
-    expect(circles).toHaveLength(2); // Track + Progress
+  it('renders accepted status as waiting for customers', () => {
+    render(<OrderStatusBadge status="ACCEPTED" />);
+    expect(screen.getByText('Ожидается')).toBeDefined();
+    expect(screen.getByText('Ресторан готовит заказ к выдаче')).toBeDefined();
   });
 
   it('renders ready status with checkmark', () => {

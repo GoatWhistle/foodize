@@ -41,7 +41,7 @@ async def order_status_ws(
             data = OrderResponse.model_validate(order).model_dump(mode="json")
             await websocket.send_text(json.dumps(data))
 
-            if last_status in {"COMPLETED", "CANCELLED"}:
+            if last_status == "COMPLETED":
                 return
 
         while True:
@@ -58,7 +58,7 @@ async def order_status_ws(
                         data = OrderResponse.model_validate(order).model_dump(mode="json")
                         await websocket.send_text(json.dumps(data))
 
-                    if current_status in {"COMPLETED", "CANCELLED"}:
+                    if current_status == "COMPLETED":
                         break
 
     except WebSocketDisconnect:
@@ -71,7 +71,6 @@ def _build_display_board(rows: list[tuple[int, str]]) -> dict:
     cooking_statuses = {
         OrderStatus.PENDING.value,
         OrderStatus.ACCEPTED.value,
-        OrderStatus.COOKING.value,
     }
     cooking = [display_id for display_id, status in rows if status in cooking_statuses]
     ready = [display_id for display_id, status in rows if status == OrderStatus.READY.value]

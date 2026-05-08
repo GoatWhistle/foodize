@@ -53,22 +53,17 @@ async def handle_order_status_changed(event: OrderStatusChangedEvent) -> None:
     )
 
     status_ru = {
-        OrderStatus.PENDING: "Новый",
+        OrderStatus.PENDING: "Ожидается",
         OrderStatus.ACCEPTED: "Принят",
-        OrderStatus.COOKING: "Готовится",
-        OrderStatus.READY: "Готов к выдаче",
-        OrderStatus.COMPLETED: "Выдан",
-        OrderStatus.CANCELLED: "Отменен",
+        OrderStatus.READY: "Готово",
+        OrderStatus.COMPLETED: "Выполнено",
     }
 
     status_str = status_ru.get(event.new_status, event.new_status.value)
     title = "Статус заказа изменён"
     message = f"Ваш заказ из {event.restaurant_name} теперь в статусе: {status_str}."
 
-    if event.new_status == OrderStatus.CANCELLED:
-        title = "Заказ отменен"
-        message = f"К сожалению, ваш заказ из {event.restaurant_name} был отменен."
-    elif event.new_status == OrderStatus.READY:
+    if event.new_status == OrderStatus.READY:
         title = "Заказ готов!"
         message = f"Ваш заказ из {event.restaurant_name} готов к выдаче. Приятного аппетита!"
 

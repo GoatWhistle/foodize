@@ -4,14 +4,13 @@ import { useOrderStore } from '../../store/useOrderStore';
 import OrderStatusBadge from '../../components/ui/OrderStatusBadge';
 import { ROUTES } from '../../constants/routes';
 import { orderService } from '../../services/orderService';
-import { useModalStore } from '../../store/useModalStore';
 import { createOrderWebSocket } from '../../services/api';
 import { ORDER_STATUS_RU } from '../../utils/locales';
 
 const STATUS_LABEL_RU = ORDER_STATUS_RU;
 
-const TERMINAL_STATUSES = new Set(['COMPLETED', 'CANCELLED']);
-const STATUS_FLOW = ['PENDING', 'ACCEPTED', 'COOKING', 'READY', 'COMPLETED'];
+const TERMINAL_STATUSES = new Set(['COMPLETED']);
+const STATUS_FLOW = ['PENDING', 'ACCEPTED', 'READY', 'COMPLETED'];
 
 const getOrderDisplayId = (order) => order.display_id ?? order.id.slice(0, 8);
 
@@ -26,20 +25,6 @@ const getOrderStages = (order, events) => {
     (events || []).map((event) => [event.new_status, event])
   );
   const currentIndex = STATUS_FLOW.indexOf(order.status);
-
-  if (order.status === 'CANCELLED') {
-    return [
-      ...STATUS_FLOW.slice(0, Math.max(currentIndex, 0) + 1),
-      'CANCELLED',
-    ].map((status) => ({
-      status,
-      at:
-        status === 'PENDING'
-          ? order.created_at
-          : eventByStatus.get(status)?.created_at,
-      state: status === 'CANCELLED' ? 'current' : 'done',
-    }));
-  }
 
   return STATUS_FLOW.map((status, index) => ({
     status,
@@ -61,7 +46,6 @@ import { useShallow } from 'zustand/react/shallow';
 const OrderStatusPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const requestConfirm = useModalStore((s) => s.requestConfirm);
   const { fetchOrder, currentOrder } = useOrderStore(
     useShallow((s) => ({
       fetchOrder: s.fetchOrder,
@@ -69,10 +53,8 @@ const OrderStatusPage = () => {
     }))
   );
   const wsRef = useRef(null);
-  const [cancelling, setCancelling] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [events, setEvents] = useState([]);
-  const [cancelError, setCancelError] = useState('');
   const [completeError, setCompleteError] = useState('');
 
   const loadEvents = useCallback(async () => {
@@ -115,31 +97,7 @@ const OrderStatusPage = () => {
 
   const isReady =
     currentOrder.status === 'READY' || currentOrder.status === 'COMPLETED';
-  const isCancelled = currentOrder.status === 'CANCELLED';
-  const isPending = currentOrder.status === 'PENDING';
   const stages = getOrderStages(currentOrder, events);
-
-  const handleCancel = async () => {
-    requestConfirm({
-      title: 'Отменить заказ?',
-      message:
-        'Вы уверены, что хотите отменить этот заказ? Это действие необратимо.',
-      confirmLabel: 'Отменить заказ',
-      danger: true,
-      onConfirm: async () => {
-        setCancelling(true);
-        setCancelError('');
-        try {
-          await orderService.cancelOrder(id);
-          await fetchOrder(id);
-        } catch {
-          setCancelError('Не удалось отменить заказ');
-        } finally {
-          setCancelling(false);
-        }
-      },
-    });
-  };
 
   const handleComplete = async () => {
     setCompleting(true);
@@ -158,10 +116,7 @@ const OrderStatusPage = () => {
     <div
       className={`status-screen page-enter${isReady ? ' status-ready-flash' : ''}`}
     >
-      <OrderStatusBadge
-        status={currentOrder.status}
-        progress={isCancelled ? 0 : 0.6}
-      />
+      <OrderStatusBadge status={currentOrder.status} />
 
       <div
         style={{
@@ -264,7 +219,7 @@ const OrderStatusPage = () => {
           </span>
         </div>
 
-        {currentOrder.estimated_ready_at && !isReady && !isCancelled && (
+        {currentOrder.estimated_ready_at && !isReady && (
           <div
             style={{
               marginTop: 12,
@@ -402,12 +357,12 @@ const OrderStatusPage = () => {
         </div>
       </div>
 
-      {(cancelError || completeError) && (
+      {completeError && (
         <div
           className="form-error"
           style={{ marginTop: 16, maxWidth: 380, width: '100%' }}
         >
-          {cancelError || completeError}
+          {completeError}
         </div>
       )}
       <div
@@ -419,16 +374,6 @@ const OrderStatusPage = () => {
           maxWidth: 380,
         }}
       >
-        {isPending && (
-          <button
-            className="btn btn-secondary"
-            style={{ flex: 1, color: 'var(--error)' }}
-            onClick={handleCancel}
-            disabled={cancelling}
-          >
-            {cancelling ? 'Отмена...' : 'Отменить'}
-          </button>
-        )}
         {currentOrder.status === 'READY' && (
           <button
             className="btn btn-primary"
@@ -448,7 +393,7 @@ const OrderStatusPage = () => {
             {completing ? 'Подтверждение...' : '✓ Получил'}
           </button>
         )}
-        {['COMPLETED', 'CANCELLED'].includes(currentOrder.status) && (
+        {currentOrder.status === 'COMPLETED' && (
           <button
             className="btn btn-primary"
             style={{ flex: 1, background: 'var(--fire)' }}

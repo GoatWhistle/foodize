@@ -13,7 +13,7 @@ import { permissionPresetLabel } from '../../utils/permissions';
 
 const STATUS_LABEL_RU = ORDER_STATUS_RU;
 
-const STATUS_FLOW = ['PENDING', 'ACCEPTED', 'COOKING', 'READY', 'COMPLETED'];
+const STATUS_FLOW = ['PENDING', 'ACCEPTED', 'READY', 'COMPLETED'];
 
 const formatDateTime = (value) => {
   if (!value) return '—';
@@ -66,21 +66,6 @@ const getOrderStages = (order, events) => {
   );
   const currentIndex = STATUS_FLOW.indexOf(order.status);
 
-  if (order.status === 'CANCELLED') {
-    return [
-      ...STATUS_FLOW.slice(0, Math.max(currentIndex, 0) + 1),
-      'CANCELLED',
-    ].map((status) => ({
-      status,
-      event: eventByStatus.get(status),
-      at:
-        status === 'PENDING'
-          ? order.created_at
-          : eventByStatus.get(status)?.created_at,
-      state: status === 'CANCELLED' ? 'current' : 'done',
-    }));
-  }
-
   return STATUS_FLOW.map((status, index) => ({
     status,
     event: eventByStatus.get(status),
@@ -104,7 +89,6 @@ const OrderDetailsModal = ({
   nextLabel,
   onStatusChange,
   updating,
-  allowCancel = false,
 }) => {
   const [events, setEvents] = useState([]);
   const [eventsLoading, setEventsLoading] = useState(false);
@@ -142,8 +126,6 @@ const OrderDetailsModal = ({
   if (!order) return null;
 
   const next = nextStatus?.[order.status];
-  const canCancel =
-    allowCancel && ['PENDING', 'ACCEPTED'].includes(order.status);
   const etaPayload = () => {
     const manualReadyAt = buildReadyAtIso(manualEtaTime);
     if (manualReadyAt) {
@@ -650,7 +632,7 @@ const OrderDetailsModal = ({
           </div>
         </div>
 
-        {(next || canCancel) && (
+        {next && (
           <div
             style={{
               padding: '14px 22px',
@@ -669,16 +651,6 @@ const OrderDetailsModal = ({
                 {updating === order.id
                   ? '...'
                   : nextLabel?.[order.status] || 'Дальше'}
-              </button>
-            )}
-            {canCancel && (
-              <button
-                className="btn btn-secondary"
-                disabled={updating === order.id}
-                onClick={() => handleStatusAction('CANCELLED')}
-                style={{ color: 'var(--error)' }}
-              >
-                {order.status === 'PENDING' ? 'Отклонить' : 'Отменить'}
               </button>
             )}
           </div>

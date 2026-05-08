@@ -3870,15 +3870,38 @@
         ],
         "summary": "Create Order",
         "operationId": "create_order_api_v1_orders__post",
+        "security": [
+          {
+            "OAuth2PasswordBearerWithCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/OrderCreate"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
@@ -3901,12 +3924,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearerWithCookie": []
-          }
-        ]
+        }
       }
     },
     "/api/v1/orders/me": {
@@ -4261,54 +4279,6 @@
         }
       }
     },
-    "/api/v1/orders/{order_id}/cancel": {
-      "post": {
-        "tags": [
-          "Orders"
-        ],
-        "summary": "Cancel Order",
-        "operationId": "cancel_order_api_v1_orders__order_id__cancel_post",
-        "security": [
-          {
-            "OAuth2PasswordBearerWithCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "order_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Order Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse_OrderResponse_"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/orders/{order_id}": {
       "get": {
         "tags": [
@@ -4513,6 +4483,64 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_ReviewResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/restaurants/{restaurant_id}/reviews/my": {
+      "put": {
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "Update My Review",
+        "operationId": "update_my_review_api_v1_restaurants__restaurant_id__reviews_my_put",
+        "security": [
+          {
+            "OAuth2PasswordBearerWithCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "restaurant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Restaurant Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewCreate"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -6774,6 +6802,10 @@
           "menu_item_category": {
             "$ref": "#/components/schemas/Category"
           },
+          "menu_item_prep_time": {
+            "type": "integer",
+            "title": "Menu Item Prep Time"
+          },
           "quantity": {
             "type": "integer",
             "title": "Quantity"
@@ -6797,6 +6829,7 @@
           "menu_item_id",
           "menu_item_name",
           "menu_item_category",
+          "menu_item_prep_time",
           "quantity",
           "price_at_purchase"
         ],
@@ -6940,10 +6973,8 @@
         "enum": [
           "PENDING",
           "ACCEPTED",
-          "COOKING",
           "READY",
-          "COMPLETED",
-          "CANCELLED"
+          "COMPLETED"
         ],
         "title": "OrderStatus"
       },
@@ -7069,7 +7100,8 @@
           "staff.requests_manage",
           "staff.members_manage",
           "staff.profile_read",
-          "telegram.auth"
+          "telegram.auth",
+          "display_board.view"
         ],
         "title": "Permission"
       },

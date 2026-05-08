@@ -1,7 +1,8 @@
 from features.favorites.models import Favorite
 from features.menu.models import MenuItem, MenuItemOption, MenuItemOptionGroup
 from features.notifications.models import Notification
-from features.orders.models import Order, OrderEvent, OrderItem, OrderItemOption
+from features.notifications.outbox import OutboxEvent
+from features.orders.models import IdempotencyKey, Order, OrderEvent, OrderItem, OrderItemOption
 from features.promos.models import Promo
 from features.restaurants.models import Restaurant
 from features.restaurants.working_hours import WorkingHours
@@ -22,10 +23,12 @@ __all__ = [
     "OrderEvent",
     "OrderItem",
     "OrderItemOption",
+    "IdempotencyKey",
     "StaffProfile",
     "StaffRequest",
     "Review",
     "Favorite",
     "Promo",
     "Notification",
+    "OutboxEvent",
 ]

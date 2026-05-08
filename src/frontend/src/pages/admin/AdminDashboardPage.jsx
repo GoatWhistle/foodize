@@ -10,9 +10,7 @@ import {
   UserCircle,
   Clock,
   CheckCircle,
-  CookingPot,
   HandPalm,
-  Prohibit,
 } from '@phosphor-icons/react';
 import { adminService } from '../../services/adminService';
 import EmptyState from '../../components/ui/EmptyState';
@@ -56,11 +54,6 @@ const STATUS_MAP = {
     className: 'pending',
     icon: <CheckCircle />,
   },
-  COOKING: {
-    label: ORDER_STATUS_RU.COOKING,
-    className: 'preparing',
-    icon: <CookingPot />,
-  },
   READY: {
     label: ORDER_STATUS_RU.READY,
     className: 'ready',
@@ -70,11 +63,6 @@ const STATUS_MAP = {
     label: ORDER_STATUS_RU.COMPLETED,
     className: 'ready',
     icon: <CheckCircle weight="fill" />,
-  },
-  CANCELLED: {
-    label: ORDER_STATUS_RU.CANCELLED,
-    className: 'cancelled',
-    icon: <Prohibit />,
   },
 };
 
@@ -1448,10 +1436,8 @@ const AdminDashboardPage = () => {
                 ['', 'Все'],
                 ['PENDING', 'Новые'],
                 ['ACCEPTED', 'Принятые'],
-                ['COOKING', 'Готовятся'],
                 ['READY', 'Готовы'],
                 ['COMPLETED', 'Выданы'],
-                ['CANCELLED', 'Отменены'],
               ].map(([key, label]) => (
                 <button
                   key={key}
