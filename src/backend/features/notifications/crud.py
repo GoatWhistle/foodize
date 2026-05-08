@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import func, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.notifications.models import Notification, NotificationType
@@ -79,5 +79,22 @@ async def mark_all_as_read(session: AsyncSession, user_id: uuid.UUID) -> None:
         .where(Notification.user_id == user_id, not Notification.is_read)
         .values(is_read=True)
     )
+    await session.execute(stmt)
+    await session.commit()
+
+
+async def delete_notification(
+    session: AsyncSession, notification_id: uuid.UUID, user_id: uuid.UUID
+) -> bool:
+    stmt = delete(Notification).where(
+        Notification.id == notification_id, Notification.user_id == user_id
+    )
+    result = await session.execute(stmt)
+    await session.commit()
+    return result.rowcount > 0
+
+
+async def delete_all_notifications(session: AsyncSession, user_id: uuid.UUID) -> None:
+    stmt = delete(Notification).where(Notification.user_id == user_id)
     await session.execute(stmt)
     await session.commit()

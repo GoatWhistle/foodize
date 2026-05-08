@@ -21,6 +21,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/admin/users/batch-deactivate": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Batch Deactivate Users */
+    post: operations["batch_deactivate_users_api_v1_admin_users_batch_deactivate_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/users/batch-activate": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Batch Activate Users */
+    post: operations["batch_activate_users_api_v1_admin_users_batch_activate_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/admin/users/{user_id}": {
     parameters: {
       query?: never;
@@ -141,6 +175,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/admin/restaurants/batch-approve": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Batch Approve Restaurants */
+    post: operations["batch_approve_restaurants_api_v1_admin_restaurants_batch_approve_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/restaurants/batch-reject": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Batch Reject Restaurants */
+    post: operations["batch_reject_restaurants_api_v1_admin_restaurants_batch_reject_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/admin/restaurants/{restaurant_id}": {
     parameters: {
       query?: never;
@@ -204,6 +272,40 @@ export interface paths {
     get: operations["read_vendors_api_v1_admin_vendors_get"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/vendors/batch-approve": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Batch Approve Vendors */
+    post: operations["batch_approve_vendors_api_v1_admin_vendors_batch_approve_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/vendors/batch-reject": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Batch Reject Vendors */
+    post: operations["batch_reject_vendors_api_v1_admin_vendors_batch_reject_post"];
     delete?: never;
     options?: never;
     head?: never;
@@ -279,6 +381,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/admin/reviews/batch": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Batch Delete Reviews */
+    delete: operations["batch_delete_reviews_api_v1_admin_reviews_batch_delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/admin/reviews/{review_id}": {
     parameters: {
       query?: never;
@@ -339,6 +458,159 @@ export interface paths {
     };
     /** Read Advanced Analytics */
     get: operations["read_advanced_analytics_api_v1_admin_analytics_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/audit-logs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Audit Logs */
+    get: operations["get_audit_logs_api_v1_admin_audit_logs_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/export/users.csv": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Export Users Csv */
+    get: operations["export_users_csv_api_v1_admin_export_users_csv_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/export/orders.csv": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Export Orders Csv */
+    get: operations["export_orders_csv_api_v1_admin_export_orders_csv_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/export/restaurants.csv": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Export Restaurants Csv */
+    get: operations["export_restaurants_csv_api_v1_admin_export_restaurants_csv_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/export/vendors.csv": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Export Vendors Csv */
+    get: operations["export_vendors_csv_api_v1_admin_export_vendors_csv_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/export/reviews.csv": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Export Reviews Csv */
+    get: operations["export_reviews_csv_api_v1_admin_export_reviews_csv_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/export/finance.pdf": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Export Finance Pdf */
+    get: operations["export_finance_pdf_api_v1_admin_export_finance_pdf_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/export/analytics.pdf": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Export Analytics Pdf */
+    get: operations["export_analytics_pdf_api_v1_admin_export_analytics_pdf_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/export/overview.pdf": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Export Overview Pdf */
+    get: operations["export_overview_pdf_api_v1_admin_export_overview_pdf_get"];
     put?: never;
     post?: never;
     delete?: never;
@@ -709,6 +981,91 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/vendors/export/orders.csv": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Export Orders Csv */
+    get: operations["export_orders_csv_api_v1_vendors_export_orders_csv_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/vendors/export/menu.csv": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Export Menu Csv */
+    get: operations["export_menu_csv_api_v1_vendors_export_menu_csv_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/vendors/export/promos.csv": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Export Promos Csv */
+    get: operations["export_promos_csv_api_v1_vendors_export_promos_csv_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/vendors/export/finance.pdf": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Export Finance Pdf */
+    get: operations["export_finance_pdf_api_v1_vendors_export_finance_pdf_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/vendors/export/analytics.pdf": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Export Analytics Pdf */
+    get: operations["export_analytics_pdf_api_v1_vendors_export_analytics_pdf_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/restaurants/public/{restaurant_id}": {
     parameters: {
       query?: never;
@@ -1020,6 +1377,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/orders/{order_id}/cancel": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Cancel Order */
+    post: operations["cancel_order_api_v1_orders__order_id__cancel_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/orders/{order_id}/complete": {
     parameters: {
       query?: never;
@@ -1174,6 +1548,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/telegram/bot/link-phone": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Telegram Bot Link Phone */
+    post: operations["telegram_bot_link_phone_api_v1_telegram_bot_link_phone_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/users/me": {
     parameters: {
       query?: never;
@@ -1237,7 +1628,8 @@ export interface paths {
     get: operations["get_my_notifications_api_v1_notifications_get"];
     put?: never;
     post?: never;
-    delete?: never;
+    /** Delete All Notifications */
+    delete: operations["delete_all_notifications_api_v1_notifications_delete"];
     options?: never;
     head?: never;
     patch?: never;
@@ -1272,6 +1664,23 @@ export interface paths {
     /** Read All Notifications */
     post: operations["read_all_notifications_api_v1_notifications_read_all_post"];
     delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/notifications/{notification_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete Notification */
+    delete: operations["delete_notification_api_v1_notifications__notification_id__delete"];
     options?: never;
     head?: never;
     patch?: never;
@@ -1495,6 +1904,18 @@ export interface components {
       /** Is Available */
       is_available: boolean;
     };
+    /** BatchIdsRequest */
+    BatchIdsRequest: {
+      /** Ids */
+      ids: string[];
+    };
+    /** BatchRejectRequest */
+    BatchRejectRequest: {
+      /** Ids */
+      ids: string[];
+      /** Reason */
+      reason?: string | null;
+    };
     /** CartItemIn */
     CartItemIn: {
       /**
@@ -1637,6 +2058,13 @@ export interface components {
       completed_orders: number;
       /** Conversion Percent */
       conversion_percent: number;
+      /**
+       * Total Revenue
+       * @default 0
+       */
+      total_revenue: number;
+      /** Revenue Growth Pct */
+      revenue_growth_pct?: number | null;
     };
     /** FinanceSeriesPoint */
     FinanceSeriesPoint: {
@@ -1933,6 +2361,11 @@ export interface components {
      * @enum {string}
      */
     NotificationType: "ORDER_STATUS" | "SYSTEM";
+    /** OrderCancelRequest */
+    OrderCancelRequest: {
+      /** Reason */
+      reason?: string | null;
+    };
     /** OrderCreate */
     OrderCreate: {
       /**
@@ -2062,6 +2495,8 @@ export interface components {
       total_price: number;
       /** Comment */
       comment?: string | null;
+      /** Cancellation Reason */
+      cancellation_reason?: string | null;
       /**
        * Created At
        * Format: date-time
@@ -2078,7 +2513,7 @@ export interface components {
      * OrderStatus
      * @enum {string}
      */
-    OrderStatus: "PENDING" | "ACCEPTED" | "READY" | "COMPLETED";
+    OrderStatus: "PENDING" | "ACCEPTED" | "READY" | "COMPLETED" | "CANCELLED";
     /** OrderStatusUpdate */
     OrderStatusUpdate: {
       status: components["schemas"]["OrderStatus"];
@@ -2145,6 +2580,12 @@ export interface components {
       users_by_permission: {
         [key: string]: number;
       };
+      /** Users By Role */
+      users_by_role: {
+        [key: string]: number;
+      };
+      /** Total Users */
+      total_users: number;
       /** Orders By Status */
       orders_by_status: {
         [key: string]: number;
@@ -2672,11 +3113,30 @@ export interface components {
       data: components["schemas"]["VendorResponse"];
       meta?: components["schemas"]["Meta"];
     };
+    /** SuccessResponse[dict] */
+    SuccessResponse_dict_: {
+      /** Data */
+      data: {
+        [key: string]: unknown;
+      };
+      meta?: components["schemas"]["Meta"];
+    };
     /** SuccessResponse[list[WorkingHoursRead]] */
     SuccessResponse_list_WorkingHoursRead__: {
       /** Data */
       data: components["schemas"]["WorkingHoursRead"][];
       meta?: components["schemas"]["Meta"];
+    };
+    /** TelegramBotLinkRequest */
+    TelegramBotLinkRequest: {
+      /** Telegram Id */
+      telegram_id: number;
+      /** Telegram Username */
+      telegram_username?: string | null;
+      /** Phone Number */
+      phone_number: string;
+      /** Name */
+      name: string;
     };
     /** TelegramCheckRequest */
     TelegramCheckRequest: {
@@ -2854,7 +3314,7 @@ export interface operations {
   read_users_api_v1_admin_users_get: {
     parameters: {
       query?: {
-        permission?: components["schemas"]["Permission"] | null;
+        role?: string | null;
         search?: string | null;
         page?: number;
         size?: number;
@@ -2872,6 +3332,76 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["SuccessListResponse_AdminUserResponse_"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  batch_deactivate_users_api_v1_admin_users_batch_deactivate_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BatchIdsRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  batch_activate_users_api_v1_admin_users_batch_activate_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BatchIdsRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
         };
       };
       /** @description Validation Error */
@@ -3139,6 +3669,72 @@ export interface operations {
       };
     };
   };
+  batch_approve_restaurants_api_v1_admin_restaurants_batch_approve_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BatchIdsRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SuccessResponse_dict_"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  batch_reject_restaurants_api_v1_admin_restaurants_batch_reject_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BatchRejectRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SuccessResponse_dict_"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   read_restaurant_api_v1_admin_restaurants__restaurant_id__get: {
     parameters: {
       query?: never;
@@ -3288,6 +3884,72 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["SuccessListResponse_AdminVendorResponse_"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  batch_approve_vendors_api_v1_admin_vendors_batch_approve_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BatchIdsRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SuccessResponse_dict_"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  batch_reject_vendors_api_v1_admin_vendors_batch_reject_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BatchRejectRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SuccessResponse_dict_"];
         };
       };
       /** @description Validation Error */
@@ -3462,6 +4124,41 @@ export interface operations {
       };
     };
   };
+  batch_delete_reviews_api_v1_admin_reviews_batch_delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BatchIdsRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   delete_review_api_v1_admin_reviews__review_id__delete: {
     parameters: {
       query?: never;
@@ -3566,6 +4263,264 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["SuccessResponse_AdvancedAnalytics_"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_audit_logs_api_v1_admin_audit_logs_get: {
+    parameters: {
+      query?: {
+        action?: string | null;
+        entity_type?: string | null;
+        actor_id?: string | null;
+        date_from?: string | null;
+        date_to?: string | null;
+        page?: number;
+        size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  export_users_csv_api_v1_admin_export_users_csv_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  export_orders_csv_api_v1_admin_export_orders_csv_get: {
+    parameters: {
+      query?: {
+        date_from?: string | null;
+        date_to?: string | null;
+        status?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  export_restaurants_csv_api_v1_admin_export_restaurants_csv_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  export_vendors_csv_api_v1_admin_export_vendors_csv_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+    };
+  };
+  export_reviews_csv_api_v1_admin_export_reviews_csv_get: {
+    parameters: {
+      query?: {
+        min_rating?: number | null;
+        max_rating?: number | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  export_finance_pdf_api_v1_admin_export_finance_pdf_get: {
+    parameters: {
+      query?: {
+        date_from?: string | null;
+        date_to?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  export_analytics_pdf_api_v1_admin_export_analytics_pdf_get: {
+    parameters: {
+      query?: {
+        date_from?: string | null;
+        date_to?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  export_overview_pdf_api_v1_admin_export_overview_pdf_get: {
+    parameters: {
+      query?: {
+        date_from?: string | null;
+        date_to?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
         };
       };
       /** @description Validation Error */
@@ -4320,6 +5275,168 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["SuccessResponse_AdvancedAnalytics_"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  export_orders_csv_api_v1_vendors_export_orders_csv_get: {
+    parameters: {
+      query?: {
+        date_from?: string | null;
+        date_to?: string | null;
+        status?: string | null;
+        restaurant_id?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  export_menu_csv_api_v1_vendors_export_menu_csv_get: {
+    parameters: {
+      query?: {
+        restaurant_id?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  export_promos_csv_api_v1_vendors_export_promos_csv_get: {
+    parameters: {
+      query?: {
+        restaurant_id?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  export_finance_pdf_api_v1_vendors_export_finance_pdf_get: {
+    parameters: {
+      query?: {
+        date_from?: string | null;
+        date_to?: string | null;
+        restaurant_id?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  export_analytics_pdf_api_v1_vendors_export_analytics_pdf_get: {
+    parameters: {
+      query?: {
+        date_from?: string | null;
+        date_to?: string | null;
+        restaurant_id?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
         };
       };
       /** @description Validation Error */
@@ -5118,6 +6235,41 @@ export interface operations {
       };
     };
   };
+  cancel_order_api_v1_orders__order_id__cancel_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        order_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["OrderCancelRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SuccessResponse_OrderResponse_"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   complete_order_api_v1_orders__order_id__complete_post: {
     parameters: {
       query?: never;
@@ -5446,6 +6598,41 @@ export interface operations {
       };
     };
   };
+  telegram_bot_link_phone_api_v1_telegram_bot_link_phone_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        "X-Telegram-Bot-Secret"?: string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TelegramBotLinkRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SuccessResponse_UserRead_"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   read_my_profile_api_v1_users_me_get: {
     parameters: {
       query?: never;
@@ -5593,6 +6780,24 @@ export interface operations {
       };
     };
   };
+  delete_all_notifications_api_v1_notifications_delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   read_notification_api_v1_notifications__notification_id__read_post: {
     parameters: {
       query?: never;
@@ -5642,6 +6847,35 @@ export interface operations {
           "application/json": {
             [key: string]: unknown;
           };
+        };
+      };
+    };
+  };
+  delete_notification_api_v1_notifications__notification_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        notification_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
     };

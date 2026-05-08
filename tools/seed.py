@@ -37,7 +37,13 @@ from features.vendors.crud import create_vendor_profile, get_vendor_by_user_id
 from features.vendors.schemas import VendorCreate
 from shared.enums.category import Category
 from shared.enums.order_status import OrderStatus
-from shared.permissions import ADMIN_PERMISSIONS, VENDOR_PERMISSIONS, serialize_permissions
+from shared.permissions import (
+    ADMIN_PERMISSIONS,
+    CUSTOMER_PERMISSIONS,
+    VENDOR_PERMISSIONS,
+    permissions_with,
+    serialize_permissions,
+)
 
 
 SEED_USERS = [
@@ -445,9 +451,13 @@ async def seed():
             if not user:
                 continue
 
+            user.permissions = permissions_with(
+                user.permissions, CUSTOMER_PERMISSIONS | VENDOR_PERMISSIONS
+            )
+            await session.commit()
+
             vendor = await get_vendor_by_user_id(session, user.id)
             if vendor is None:
-                user.permissions = serialize_permissions(VENDOR_PERMISSIONS)
                 vendor = await create_vendor_profile(session, user, VendorCreate())
                 vendor.approval_status = "APPROVED"
                 await session.commit()

@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
@@ -53,3 +53,22 @@ async def read_all_notifications(
 ) -> dict:
     await crud.mark_all_as_read(session, user.id)
     return {"success": True}
+
+
+@router.delete("/{notification_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_notification(
+    notification_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> None:
+    deleted = await crud.delete_notification(session, notification_id, user.id)
+    if not deleted:
+        raise NotFoundException(detail="Notification not found")
+
+
+@router.delete("", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_all_notifications(
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> None:
+    await crud.delete_all_notifications(session, user.id)

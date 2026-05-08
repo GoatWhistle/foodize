@@ -121,6 +121,42 @@ async def telegram_register(
     return _make_tokens(new_user)
 
 
+async def link_phone_from_bot(
+    session: AsyncSession,
+    telegram_id: int,
+    telegram_username: str | None,
+    phone_number: str,
+    name: str,
+) -> User:
+    existing_by_tg = await get_user_by_telegram_id(session, telegram_id)
+    if existing_by_tg:
+        await _cache_telegram_id(str(existing_by_tg.id), telegram_id)
+        return existing_by_tg
+
+    existing_by_phone = await get_user_by_phone(session, phone_number)
+    if existing_by_phone:
+        existing_by_phone.telegram_id = telegram_id
+        existing_by_phone.telegram_username = telegram_username
+        await session.commit()
+        await session.refresh(existing_by_phone)
+        await _cache_telegram_id(str(existing_by_phone.id), telegram_id)
+        return existing_by_phone
+
+    new_user = User(
+        name=name,
+        phone_number=phone_number,
+        hashed_password=None,
+        telegram_id=telegram_id,
+        telegram_username=telegram_username,
+        permissions=serialize_permissions(CUSTOMER_PERMISSIONS),
+    )
+    session.add(new_user)
+    await session.commit()
+    await session.refresh(new_user)
+    await _cache_telegram_id(str(new_user.id), telegram_id)
+    return new_user
+
+
 async def telegram_auth_existing(session: AsyncSession, init_data: str) -> TokenResponse:
     parsed = _validate_init_data(init_data)
     tg_user = _extract_tg_user(parsed)

@@ -90,6 +90,26 @@ export const readUsersApiV1AdminUsersGet = (
     options,
   );
 
+export const batchDeactivateUsersApiV1AdminUsersBatchDeactivatePost = (
+  options?: RequestOptions<
+    paths["/api/v1/admin/users/batch-deactivate"]["post"]
+  >,
+) =>
+  request<paths["/api/v1/admin/users/batch-deactivate"]["post"]>(
+    "post",
+    "/api/v1/admin/users/batch-deactivate",
+    options,
+  );
+
+export const batchActivateUsersApiV1AdminUsersBatchActivatePost = (
+  options?: RequestOptions<paths["/api/v1/admin/users/batch-activate"]["post"]>,
+) =>
+  request<paths["/api/v1/admin/users/batch-activate"]["post"]>(
+    "post",
+    "/api/v1/admin/users/batch-activate",
+    options,
+  );
+
 export const readUserApiV1AdminUsersUserIdGet = (
   options?: RequestOptions<paths["/api/v1/admin/users/{user_id}"]["get"]>,
 ) =>
@@ -168,6 +188,28 @@ export const readRestaurantsApiV1AdminRestaurantsGet = (
     options,
   );
 
+export const batchApproveRestaurantsApiV1AdminRestaurantsBatchApprovePost = (
+  options?: RequestOptions<
+    paths["/api/v1/admin/restaurants/batch-approve"]["post"]
+  >,
+) =>
+  request<paths["/api/v1/admin/restaurants/batch-approve"]["post"]>(
+    "post",
+    "/api/v1/admin/restaurants/batch-approve",
+    options,
+  );
+
+export const batchRejectRestaurantsApiV1AdminRestaurantsBatchRejectPost = (
+  options?: RequestOptions<
+    paths["/api/v1/admin/restaurants/batch-reject"]["post"]
+  >,
+) =>
+  request<paths["/api/v1/admin/restaurants/batch-reject"]["post"]>(
+    "post",
+    "/api/v1/admin/restaurants/batch-reject",
+    options,
+  );
+
 export const readRestaurantApiV1AdminRestaurantsRestaurantIdGet = (
   options?: RequestOptions<
     paths["/api/v1/admin/restaurants/{restaurant_id}"]["get"]
@@ -218,6 +260,26 @@ export const readVendorsApiV1AdminVendorsGet = (
   request<paths["/api/v1/admin/vendors"]["get"]>(
     "get",
     "/api/v1/admin/vendors",
+    options,
+  );
+
+export const batchApproveVendorsApiV1AdminVendorsBatchApprovePost = (
+  options?: RequestOptions<
+    paths["/api/v1/admin/vendors/batch-approve"]["post"]
+  >,
+) =>
+  request<paths["/api/v1/admin/vendors/batch-approve"]["post"]>(
+    "post",
+    "/api/v1/admin/vendors/batch-approve",
+    options,
+  );
+
+export const batchRejectVendorsApiV1AdminVendorsBatchRejectPost = (
+  options?: RequestOptions<paths["/api/v1/admin/vendors/batch-reject"]["post"]>,
+) =>
+  request<paths["/api/v1/admin/vendors/batch-reject"]["post"]>(
+    "post",
+    "/api/v1/admin/vendors/batch-reject",
     options,
   );
 
@@ -272,6 +334,15 @@ export const readReviewsApiV1AdminReviewsGet = (
     options,
   );
 
+export const batchDeleteReviewsApiV1AdminReviewsBatchDelete = (
+  options?: RequestOptions<paths["/api/v1/admin/reviews/batch"]["delete"]>,
+) =>
+  request<paths["/api/v1/admin/reviews/batch"]["delete"]>(
+    "delete",
+    "/api/v1/admin/reviews/batch",
+    options,
+  );
+
 export const deleteReviewApiV1AdminReviewsReviewIdDelete = (
   options?: RequestOptions<
     paths["/api/v1/admin/reviews/{review_id}"]["delete"]
@@ -307,6 +378,89 @@ export const readAdvancedAnalyticsApiV1AdminAnalyticsGet = (
   request<paths["/api/v1/admin/analytics"]["get"]>(
     "get",
     "/api/v1/admin/analytics",
+    options,
+  );
+
+export const getAuditLogsApiV1AdminAuditLogsGet = (
+  options?: RequestOptions<paths["/api/v1/admin/audit-logs"]["get"]>,
+) =>
+  request<paths["/api/v1/admin/audit-logs"]["get"]>(
+    "get",
+    "/api/v1/admin/audit-logs",
+    options,
+  );
+
+export const exportUsersCsvApiV1AdminExportUsersCsvGet = (
+  options?: RequestOptions<paths["/api/v1/admin/export/users.csv"]["get"]>,
+) =>
+  request<paths["/api/v1/admin/export/users.csv"]["get"]>(
+    "get",
+    "/api/v1/admin/export/users.csv",
+    options,
+  );
+
+export const exportOrdersCsvApiV1AdminExportOrdersCsvGet = (
+  options?: RequestOptions<paths["/api/v1/admin/export/orders.csv"]["get"]>,
+) =>
+  request<paths["/api/v1/admin/export/orders.csv"]["get"]>(
+    "get",
+    "/api/v1/admin/export/orders.csv",
+    options,
+  );
+
+export const exportRestaurantsCsvApiV1AdminExportRestaurantsCsvGet = (
+  options?: RequestOptions<
+    paths["/api/v1/admin/export/restaurants.csv"]["get"]
+  >,
+) =>
+  request<paths["/api/v1/admin/export/restaurants.csv"]["get"]>(
+    "get",
+    "/api/v1/admin/export/restaurants.csv",
+    options,
+  );
+
+export const exportVendorsCsvApiV1AdminExportVendorsCsvGet = (
+  options?: RequestOptions<paths["/api/v1/admin/export/vendors.csv"]["get"]>,
+) =>
+  request<paths["/api/v1/admin/export/vendors.csv"]["get"]>(
+    "get",
+    "/api/v1/admin/export/vendors.csv",
+    options,
+  );
+
+export const exportReviewsCsvApiV1AdminExportReviewsCsvGet = (
+  options?: RequestOptions<paths["/api/v1/admin/export/reviews.csv"]["get"]>,
+) =>
+  request<paths["/api/v1/admin/export/reviews.csv"]["get"]>(
+    "get",
+    "/api/v1/admin/export/reviews.csv",
+    options,
+  );
+
+export const exportFinancePdfApiV1AdminExportFinancePdfGet = (
+  options?: RequestOptions<paths["/api/v1/admin/export/finance.pdf"]["get"]>,
+) =>
+  request<paths["/api/v1/admin/export/finance.pdf"]["get"]>(
+    "get",
+    "/api/v1/admin/export/finance.pdf",
+    options,
+  );
+
+export const exportAnalyticsPdfApiV1AdminExportAnalyticsPdfGet = (
+  options?: RequestOptions<paths["/api/v1/admin/export/analytics.pdf"]["get"]>,
+) =>
+  request<paths["/api/v1/admin/export/analytics.pdf"]["get"]>(
+    "get",
+    "/api/v1/admin/export/analytics.pdf",
+    options,
+  );
+
+export const exportOverviewPdfApiV1AdminExportOverviewPdfGet = (
+  options?: RequestOptions<paths["/api/v1/admin/export/overview.pdf"]["get"]>,
+) =>
+  request<paths["/api/v1/admin/export/overview.pdf"]["get"]>(
+    "get",
+    "/api/v1/admin/export/overview.pdf",
     options,
   );
 
@@ -510,6 +664,53 @@ export const readVendorAnalyticsApiV1VendorsAnalyticsGet = (
   request<paths["/api/v1/vendors/analytics"]["get"]>(
     "get",
     "/api/v1/vendors/analytics",
+    options,
+  );
+
+export const exportOrdersCsvApiV1VendorsExportOrdersCsvGet = (
+  options?: RequestOptions<paths["/api/v1/vendors/export/orders.csv"]["get"]>,
+) =>
+  request<paths["/api/v1/vendors/export/orders.csv"]["get"]>(
+    "get",
+    "/api/v1/vendors/export/orders.csv",
+    options,
+  );
+
+export const exportMenuCsvApiV1VendorsExportMenuCsvGet = (
+  options?: RequestOptions<paths["/api/v1/vendors/export/menu.csv"]["get"]>,
+) =>
+  request<paths["/api/v1/vendors/export/menu.csv"]["get"]>(
+    "get",
+    "/api/v1/vendors/export/menu.csv",
+    options,
+  );
+
+export const exportPromosCsvApiV1VendorsExportPromosCsvGet = (
+  options?: RequestOptions<paths["/api/v1/vendors/export/promos.csv"]["get"]>,
+) =>
+  request<paths["/api/v1/vendors/export/promos.csv"]["get"]>(
+    "get",
+    "/api/v1/vendors/export/promos.csv",
+    options,
+  );
+
+export const exportFinancePdfApiV1VendorsExportFinancePdfGet = (
+  options?: RequestOptions<paths["/api/v1/vendors/export/finance.pdf"]["get"]>,
+) =>
+  request<paths["/api/v1/vendors/export/finance.pdf"]["get"]>(
+    "get",
+    "/api/v1/vendors/export/finance.pdf",
+    options,
+  );
+
+export const exportAnalyticsPdfApiV1VendorsExportAnalyticsPdfGet = (
+  options?: RequestOptions<
+    paths["/api/v1/vendors/export/analytics.pdf"]["get"]
+  >,
+) =>
+  request<paths["/api/v1/vendors/export/analytics.pdf"]["get"]>(
+    "get",
+    "/api/v1/vendors/export/analytics.pdf",
     options,
   );
 
@@ -766,6 +967,15 @@ export const readOrderEventsApiV1OrdersOrderIdEventsGet = (
     options,
   );
 
+export const cancelOrderApiV1OrdersOrderIdCancelPost = (
+  options?: RequestOptions<paths["/api/v1/orders/{order_id}/cancel"]["post"]>,
+) =>
+  request<paths["/api/v1/orders/{order_id}/cancel"]["post"]>(
+    "post",
+    "/api/v1/orders/{order_id}/cancel",
+    options,
+  );
+
 export const completeOrderApiV1OrdersOrderIdCompletePost = (
   options?: RequestOptions<paths["/api/v1/orders/{order_id}/complete"]["post"]>,
 ) =>
@@ -868,6 +1078,15 @@ export const telegramAuthApiV1TelegramAuthPost = (
     options,
   );
 
+export const telegramBotLinkPhoneApiV1TelegramBotLinkPhonePost = (
+  options?: RequestOptions<paths["/api/v1/telegram/bot/link-phone"]["post"]>,
+) =>
+  request<paths["/api/v1/telegram/bot/link-phone"]["post"]>(
+    "post",
+    "/api/v1/telegram/bot/link-phone",
+    options,
+  );
+
 export const readMyProfileApiV1UsersMeGet = (
   options?: RequestOptions<paths["/api/v1/users/me"]["get"]>,
 ) =>
@@ -909,6 +1128,15 @@ export const getMyNotificationsApiV1NotificationsGet = (
     options,
   );
 
+export const deleteAllNotificationsApiV1NotificationsDelete = (
+  options?: RequestOptions<paths["/api/v1/notifications"]["delete"]>,
+) =>
+  request<paths["/api/v1/notifications"]["delete"]>(
+    "delete",
+    "/api/v1/notifications",
+    options,
+  );
+
 export const readNotificationApiV1NotificationsNotificationIdReadPost = (
   options?: RequestOptions<
     paths["/api/v1/notifications/{notification_id}/read"]["post"]
@@ -926,6 +1154,17 @@ export const readAllNotificationsApiV1NotificationsReadAllPost = (
   request<paths["/api/v1/notifications/read-all"]["post"]>(
     "post",
     "/api/v1/notifications/read-all",
+    options,
+  );
+
+export const deleteNotificationApiV1NotificationsNotificationIdDelete = (
+  options?: RequestOptions<
+    paths["/api/v1/notifications/{notification_id}"]["delete"]
+  >,
+) =>
+  request<paths["/api/v1/notifications/{notification_id}"]["delete"]>(
+    "delete",
+    "/api/v1/notifications/{notification_id}",
     options,
   );
 

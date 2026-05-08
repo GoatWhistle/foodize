@@ -1,9 +1,46 @@
 import { useState, useEffect, useRef } from 'react';
-import { Bell } from '@phosphor-icons/react';
+import { Bell, Trash } from '@phosphor-icons/react';
 import { notificationService } from '../../services/notificationService';
 import { createNotificationWebSocket } from '../../services/api';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useShallow } from 'zustand/react/shallow';
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+const getDateStart = (date) =>
+  new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+const getDayLabel = (value) => {
+  const date = new Date(value);
+  const today = getDateStart(new Date());
+  const day = getDateStart(date);
+  const diff = Math.round((today - day) / MS_PER_DAY);
+
+  if (diff <= 0) return 'Сегодня';
+  if (diff === 1) return 'Вчера';
+  if (diff === 2) return '2 дня назад';
+  if (diff < 5) return `${diff} дня назад`;
+  return `${diff} дней назад`;
+};
+
+const groupNotificationsByDay = (items) => {
+  const sorted = [...items].sort(
+    (a, b) => new Date(b.created_at) - new Date(a.created_at)
+  );
+
+  return sorted.reduce((groups, notification) => {
+    const label = getDayLabel(notification.created_at);
+    const last = groups[groups.length - 1];
+
+    if (last?.label === label) {
+      last.items.push(notification);
+    } else {
+      groups.push({ label, items: [notification] });
+    }
+
+    return groups;
+  }, []);
+};
 
 const NotificationBell = () => {
   const { user, isAuthenticated } = useAuthStore(
@@ -15,6 +52,7 @@ const NotificationBell = () => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
   const wsRef = useRef(null);
+  const notificationGroups = groupNotificationsByDay(notifications);
 
   useEffect(() => {
     if (!isAuthenticated || !user?.id) return;
@@ -65,6 +103,26 @@ const NotificationBell = () => {
     try {
       await notificationService.markAllAsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      setUnreadCount(0);
+    } catch {}
+  };
+
+  const handleDelete = async (id, e) => {
+    e.stopPropagation();
+    const notification = notifications.find((n) => n.id === id);
+    try {
+      await notificationService.deleteNotification(id);
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+      if (notification && !notification.is_read) {
+        setUnreadCount((c) => Math.max(0, c - 1));
+      }
+    } catch {}
+  };
+
+  const handleDeleteAll = async () => {
+    try {
+      await notificationService.deleteAll();
+      setNotifications([]);
       setUnreadCount(0);
     } catch {}
   };
@@ -147,21 +205,44 @@ const NotificationBell = () => {
             >
               Уведомления
             </span>
-            {unreadCount > 0 && (
-              <button
-                onClick={handleMarkAllAsRead}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--brand)',
-                  fontSize: '0.8rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  padding: 0,
-                }}
-              >
-                Прочитать все
-              </button>
+            {notifications.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {unreadCount > 0 && (
+                  <button
+                    onClick={handleMarkAllAsRead}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--brand)',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      padding: 0,
+                    }}
+                  >
+                    Прочитать все
+                  </button>
+                )}
+                <button
+                  onClick={handleDeleteAll}
+                  aria-label="Удалить все уведомления"
+                  title="Удалить все"
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 'var(--r-xs)',
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg-card)',
+                    color: 'var(--text-3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Trash size={14} weight="bold" />
+                </button>
+              </div>
             )}
           </div>
 
@@ -179,60 +260,111 @@ const NotificationBell = () => {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {notifications.map((n) => (
-                  <div
-                    key={n.id}
-                    onClick={(e) => !n.is_read && handleMarkAsRead(n.id, e)}
-                    style={{
-                      padding: '12px 16px',
-                      borderBottom: '1px solid var(--border)',
-                      background: n.is_read
-                        ? 'transparent'
-                        : 'var(--brand-alpha)',
-                      cursor: n.is_read ? 'default' : 'pointer',
-                      transition: 'background 0.2s',
-                    }}
-                  >
+                {notificationGroups.map((group) => (
+                  <div key={group.label}>
                     <div
                       style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        marginBottom: 4,
-                        gap: 8,
+                        padding: '10px 16px 6px',
+                        color: 'var(--text-3)',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                        background: 'var(--bg-surface)',
+                        borderBottom: '1px solid var(--border)',
                       }}
                     >
-                      <strong
-                        style={{
-                          fontSize: '0.875rem',
-                          color: 'var(--text-1)',
-                          lineHeight: 1.2,
-                        }}
-                      >
-                        {n.title}
-                      </strong>
-                      <span
-                        style={{
-                          fontSize: '0.7rem',
-                          color: 'var(--text-3)',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {new Date(n.created_at).toLocaleTimeString('ru-RU', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </span>
+                      {group.label}
                     </div>
-                    <p
-                      style={{
-                        margin: 0,
-                        fontSize: '0.8rem',
-                        color: 'var(--text-2)',
-                        lineHeight: 1.4,
-                      }}
-                    >
-                      {n.message}
-                    </p>
+                    {group.items.map((n) => (
+                      <div
+                        key={n.id}
+                        onClick={(e) =>
+                          !n.is_read && handleMarkAsRead(n.id, e)
+                        }
+                        style={{
+                          padding: '12px 16px',
+                          borderBottom: '1px solid var(--border)',
+                          background: n.is_read
+                            ? 'transparent'
+                            : 'var(--brand-alpha)',
+                          cursor: n.is_read ? 'default' : 'pointer',
+                          transition: 'background 0.2s',
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            marginBottom: 4,
+                            gap: 8,
+                          }}
+                        >
+                          <strong
+                            style={{
+                              fontSize: '0.875rem',
+                              color: 'var(--text-1)',
+                              lineHeight: 1.2,
+                            }}
+                          >
+                            {n.title}
+                          </strong>
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              flexShrink: 0,
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontSize: '0.7rem',
+                                color: 'var(--text-3)',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {new Date(n.created_at).toLocaleTimeString(
+                                'ru-RU',
+                                {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                }
+                              )}
+                            </span>
+                            <button
+                              onClick={(e) => handleDelete(n.id, e)}
+                              aria-label="Удалить уведомление"
+                              title="Удалить"
+                              style={{
+                                width: 24,
+                                height: 24,
+                                borderRadius: 'var(--r-xs)',
+                                border: '1px solid var(--border)',
+                                background: 'var(--bg-surface)',
+                                color: 'var(--text-3)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <Trash size={12} weight="bold" />
+                            </button>
+                          </div>
+                        </div>
+                        <p
+                          style={{
+                            margin: 0,
+                            fontSize: '0.8rem',
+                            color: 'var(--text-2)',
+                            lineHeight: 1.4,
+                          }}
+                        >
+                          {n.message}
+                        </p>
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>
