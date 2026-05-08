@@ -203,6 +203,13 @@ def _build_finance_pdf(
     pdf.ln(3)
 
     pdf.section("Сводка")
+    pdf.row([("Выручка за период (₽)", 98), ("Рост к пред. периоду", 98)], bold=True)
+    growth_str = (
+        f"{analytics.revenue_growth_pct:+.1f}%" if analytics.revenue_growth_pct is not None else "—"
+    )
+    pdf.row([(f"{analytics.total_revenue:,}".replace(",", " "), 98), (growth_str, 98)])
+    pdf.ln(3)
+
     cols = [
         ("Заказов всего", 48),
         ("Выполнено", 38),

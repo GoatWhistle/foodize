@@ -24,6 +24,7 @@ import {
 import { useRestaurantStore } from '../../store/useRestaurantStore';
 import { useOrderStore } from '../../store/useOrderStore';
 import MenuItemCard from '../../components/ui/MenuItemCard';
+import Pagination from '../../components/ui/Pagination';
 import { reviewService } from '../../services/reviewService';
 import { staffService } from '../../services/staffService';
 import { restaurantService } from '../../services/restaurantService';
@@ -233,6 +234,8 @@ const RestaurantPage = () => {
   const [showReviewsModal, setShowReviewsModal] = useState(false);
   const [reviewFormOpen, setReviewFormOpen] = useState(false);
   const [reviewsList, setReviewsList] = useState([]);
+  const [reviewsPage, setReviewsPage] = useState(1);
+  const [reviewsTotal, setReviewsTotal] = useState(0);
   const [reviewForm, setReviewForm] = useState({ rating: 5, text: '' });
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewError, setReviewError] = useState('');
@@ -258,13 +261,14 @@ const RestaurantPage = () => {
   const loadReviews = useCallback(() => {
     setReviewsLoading(true);
     reviewService
-      .getReviews(id)
+      .getReviews(id, { page: reviewsPage, size: 10 })
       .then((res) => {
         const list = Array.isArray(res.data?.data) ? res.data.data : [];
         setReviewsList(list);
+        setReviewsTotal(res.data?.pagination?.total || 0);
       })
       .finally(() => setReviewsLoading(false));
-  }, [id]);
+  }, [id, reviewsPage]);
 
   const refreshRating = useCallback(() => {
     reviewService
@@ -839,7 +843,7 @@ const RestaurantPage = () => {
                 </div>
               )}
 
-              {reviewsLoading ? (
+              {reviewsLoading && reviewsList.length === 0 ? (
                 <div className="loading-center">
                   <div className="spinner" />
                 </div>
@@ -862,6 +866,7 @@ const RestaurantPage = () => {
                 </div>
               ) : (
                 <div
+                  className={reviewsLoading ? 'loading-dim' : undefined}
                   style={{ display: 'flex', flexDirection: 'column', gap: 10 }}
                 >
                   {myReview && (
@@ -881,6 +886,11 @@ const RestaurantPage = () => {
                       onDelete={() => handleReviewDelete(r.id)}
                     />
                   ))}
+                  <Pagination
+                    page={reviewsPage}
+                    totalPages={Math.ceil(reviewsTotal / 10)}
+                    onPageChange={setReviewsPage}
+                  />
                 </div>
               )}
             </div>

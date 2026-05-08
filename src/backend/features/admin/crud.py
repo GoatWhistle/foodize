@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, date, datetime, timedelta
 
-from sqlalchemy import Integer, Text, and_, cast, func, select
+from sqlalchemy import Text, and_, cast, delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -34,9 +34,20 @@ from shared.permissions import (
 )
 
 
+def _infer_role(permissions: list[str]) -> str:
+    perm_set = set(permissions)
+    if Permission.ADMIN_ACCESS.value in perm_set:
+        return "ADMIN"
+    if Permission.VENDORS_READ_OWN.value in perm_set:
+        return "VENDOR"
+    if Permission.STAFF_PROFILE_READ.value in perm_set:
+        return "STAFF"
+    return "CUSTOMER"
+
+
 async def get_all_users(
     session: AsyncSession,
-    permission: Permission | None = None,
+    role: str | None = None,
     search: str | None = None,
     offset: int = 0,
     limit: int = 20,
@@ -52,14 +63,14 @@ async def get_all_users(
         )
     result = await session.execute(stmt)
     users = list(result.scalars().all())
-    if permission is not None:
-        users = [user for user in users if has_permission(user.permissions, permission)]
+    if role is not None:
+        users = [u for u in users if _infer_role(u.permissions or []) == role]
     return users[offset : offset + limit]
 
 
 async def count_all_users(
     session: AsyncSession,
-    permission: Permission | None = None,
+    role: str | None = None,
     search: str | None = None,
 ) -> int:
     stmt = select(User)
@@ -73,8 +84,8 @@ async def count_all_users(
         )
     result = await session.execute(stmt)
     users = list(result.scalars().all())
-    if permission is not None:
-        users = [user for user in users if has_permission(user.permissions, permission)]
+    if role is not None:
+        users = [u for u in users if _infer_role(u.permissions or []) == role]
     return len(users)
 
 
@@ -486,6 +497,21 @@ async def delete_review(session: AsyncSession, review: Review) -> Review:
     return review
 
 
+async def batch_deactivate_users(session: AsyncSession, ids: list[uuid.UUID]) -> int:
+    result = await session.execute(update(User).where(User.id.in_(ids)).values(is_active=False))
+    return result.rowcount
+
+
+async def batch_activate_users(session: AsyncSession, ids: list[uuid.UUID]) -> int:
+    result = await session.execute(update(User).where(User.id.in_(ids)).values(is_active=True))
+    return result.rowcount
+
+
+async def batch_delete_reviews(session: AsyncSession, ids: list[uuid.UUID]) -> int:
+    result = await session.execute(delete(Review).where(Review.id.in_(ids)))
+    return result.rowcount
+
+
 async def _count_by_day(
     session: AsyncSession,
     created_at_column,
@@ -566,7 +592,7 @@ async def get_finance_analytics(
         select(
             func.count(Order.id),
             func.count().filter(Order.status == OrderStatus.COMPLETED.value),
-            func.cast(0, Integer),
+            func.count().filter(Order.status == OrderStatus.CANCELLED.value),
             func.coalesce(
                 func.avg(Order.total_price).filter(Order.status == OrderStatus.COMPLETED.value),
                 0,
@@ -612,6 +638,37 @@ async def get_finance_analytics(
 
     conversion = round((completed_orders / total_orders) * 100, 1) if total_orders else 0.0
     days = (end_date - start_date).days + 1
+    total_revenue = sum(revenue_counts.values())
+
+    prev_end = start_date - timedelta(days=1)
+    prev_start = prev_end - timedelta(days=days - 1)
+    prev_filters = [
+        Order.created_at >= datetime.combine(prev_start, datetime.min.time(), tzinfo=UTC),
+        Order.created_at
+        < datetime.combine(prev_end + timedelta(days=1), datetime.min.time(), tzinfo=UTC),
+        Order.status == OrderStatus.COMPLETED.value,
+    ]
+    if vendor_id is not None:
+        prev_filters.append(Restaurant.vendor_id == vendor_id)
+    if restaurant_id is not None:
+        prev_filters.append(Order.restaurant_id == restaurant_id)
+
+    prev_row = await session.execute(
+        select(func.coalesce(func.sum(Order.total_price), 0))
+        .join(Restaurant, Restaurant.id == Order.restaurant_id)
+        .where(*prev_filters)
+    )
+    prev_revenue = int(prev_row.scalar_one())
+
+    if prev_revenue > 0:
+        revenue_growth_pct: float | None = round(
+            (total_revenue - prev_revenue) / prev_revenue * 100, 1
+        )
+    elif total_revenue > 0:
+        revenue_growth_pct = 100.0
+    else:
+        revenue_growth_pct = None
+
     return FinanceAnalytics(
         revenue_by_day=_finance_points(revenue_counts, start_date, days),
         average_check=round(float(average_check or 0), 1),
@@ -637,6 +694,8 @@ async def get_finance_analytics(
         total_orders=total_orders,
         completed_orders=completed_orders,
         conversion_percent=conversion,
+        total_revenue=total_revenue,
+        revenue_growth_pct=revenue_growth_pct,
     )
 
 

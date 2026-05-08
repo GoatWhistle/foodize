@@ -11,7 +11,12 @@ import {
   Clock,
   CheckCircle,
   HandPalm,
+  CaretDown,
+  Rows,
+  Prohibit,
+  Monitor,
 } from '@phosphor-icons/react';
+import { useDebounce } from '../../hooks/useDebounce';
 import { adminService } from '../../services/adminService';
 import EmptyState from '../../components/ui/EmptyState';
 import OrderDetailsModal from '../../components/ui/OrderDetailsModal';
@@ -24,6 +29,7 @@ import {
   CategoryRevenueChart,
   AOVDynamicsChart,
   UsersByRoleChart,
+  KPICards,
 } from '../../components/dashboard/DashboardCharts';
 import {
   ORDER_STATUS_RU,
@@ -37,13 +43,12 @@ import {
   hasPermission,
   PERMISSION_PRESET_RU,
   PERMISSION_PRESETS,
-  PERMISSION_RU,
   permissionPresetLabel,
   PERMISSIONS,
 } from '../../utils/permissions';
 import { downloadBlob } from '../../utils/download';
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 20;
 
 const AUDIT_ACTION_LABELS = {
   APPROVE_VENDOR: 'Одобрен вендор',
@@ -471,6 +476,7 @@ const AdminDashboardPage = () => {
   const [reviewsPage, setReviewsPage] = useState(1);
   const [reviewsTotal, setReviewsTotal] = useState(0);
   const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [allRestaurants, setAllRestaurants] = useState([]);
   const [finance, setFinance] = useState(null);
   const [financeLoading, setFinanceLoading] = useState(false);
   const [financeFilters, setFinanceFilters] = useState({
@@ -482,34 +488,53 @@ const AdminDashboardPage = () => {
 
   const [advancedAnalytics, setAdvancedAnalytics] = useState(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
-  const [userFilters, setUserFilters] = useState({
-    search: '',
-    permission: '',
-  });
+  const [userFilters, setUserFilters] = useState({ role: '' });
+  const [userSearchRaw, setUserSearchRaw] = useState('');
+  const userSearch = useDebounce(userSearchRaw);
+
   const [orderFilters, setOrderFilters] = useState({
-    search: '',
     status: '',
     date_from: '',
     date_to: '',
   });
+  const [orderSearchRaw, setOrderSearchRaw] = useState('');
+  const orderSearch = useDebounce(orderSearchRaw);
+
   const [restaurantFilters, setRestaurantFilters] = useState({
-    search: '',
-    vendor_search: '',
     is_open: '',
     moderation_status: '',
     min_rating: '',
   });
-  const [vendorFilters, setVendorFilters] = useState({
-    search: '',
-    approval_status: '',
-  });
+  const [restaurantSearchRaw, setRestaurantSearchRaw] = useState('');
+  const restaurantSearch = useDebounce(restaurantSearchRaw);
+  const [restaurantVendorSearchRaw, setRestaurantVendorSearchRaw] =
+    useState('');
+  const restaurantVendorSearch = useDebounce(restaurantVendorSearchRaw);
+
+  const [vendorFilters, setVendorFilters] = useState({ approval_status: '' });
+  const [vendorSearchRaw, setVendorSearchRaw] = useState('');
+  const vendorSearch = useDebounce(vendorSearchRaw);
   const [reviewFilters, setReviewFilters] = useState({ rating: '' });
   const [reasonDialog, setReasonDialog] = useState(null);
   const [reasonLoading, setReasonLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
   const [selectedVendorIds, setSelectedVendorIds] = useState(new Set());
   const [selectedRestaurantIds, setSelectedRestaurantIds] = useState(new Set());
+  const [selectedUserIds, setSelectedUserIds] = useState(new Set());
+  const [selectedReviewIds, setSelectedReviewIds] = useState(new Set());
   const [batchLoading, setBatchLoading] = useState(false);
+  const [entitiesOpen, setEntitiesOpen] = useState(true);
+
+  useEffect(() => {
+    if (
+      ['users', 'orders', 'restaurants', 'vendors', 'reviews'].includes(
+        activeTab
+      )
+    ) {
+      setEntitiesOpen(true);
+    }
+  }, [activeTab]);
+
   const [auditLogs, setAuditLogs] = useState([]);
   const [auditTotal, setAuditTotal] = useState(0);
   const [auditPage, setAuditPage] = useState(1);
@@ -534,6 +559,25 @@ const AdminDashboardPage = () => {
     } finally {
       setReasonLoading(false);
     }
+  };
+
+  const todayStr = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  })();
+
+  const getRestaurantLabel = () => {
+    if (!financeFilters.restaurant_id) return 'все';
+    return (
+      allRestaurants.find((r) => r.id === financeFilters.restaurant_id)?.name ||
+      'все'
+    ).replace(/\s+/g, '_');
+  };
+
+  const getDateRangeLabel = () => {
+    const from = financeFilters.date_from || todayStr;
+    const to = financeFilters.date_to || todayStr;
+    return `${from}_${to}`;
   };
 
   const handleExport = async (exportFn, filename) => {
@@ -588,6 +632,39 @@ const AdminDashboardPage = () => {
     }
   };
 
+  const handleBatchUsers = async (action) => {
+    setBatchLoading(true);
+    try {
+      const ids = Array.from(selectedUserIds);
+      if (action === 'deactivate') await adminService.batchDeactivateUsers(ids);
+      else await adminService.batchActivateUsers(ids);
+      setSelectedUserIds(new Set());
+      setActionSuccess(`Готово: ${ids.length} пользователей`);
+      setUsersPage(1);
+      setUserFilters((f) => ({ ...f }));
+    } catch {
+      setActionError('Ошибка при массовом действии');
+    } finally {
+      setBatchLoading(false);
+    }
+  };
+
+  const handleBatchDeleteReviews = async () => {
+    setBatchLoading(true);
+    try {
+      const ids = Array.from(selectedReviewIds);
+      await adminService.batchDeleteReviews(ids);
+      setSelectedReviewIds(new Set());
+      setActionSuccess(`Удалено: ${ids.length} отзывов`);
+      setReviewsPage(1);
+      setReviewFilters((f) => ({ ...f }));
+    } catch {
+      setActionError('Ошибка при удалении');
+    } finally {
+      setBatchLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'stats' && !stats) {
       adminService
@@ -604,8 +681,8 @@ const AdminDashboardPage = () => {
       .getUsers({
         page: usersPage,
         size: PAGE_SIZE,
-        search: userFilters.search || undefined,
-        permission: userFilters.permission || undefined,
+        search: userSearch || undefined,
+        role: userFilters.role || undefined,
       })
       .then((res) => {
         setUsers(res.data.data || []);
@@ -613,7 +690,7 @@ const AdminDashboardPage = () => {
       })
       .catch(() => setActionError('Не удалось загрузить пользователей'))
       .finally(() => setUsersLoading(false));
-  }, [activeTab, usersPage, userFilters]);
+  }, [activeTab, usersPage, userFilters, userSearch]);
 
   useEffect(() => {
     if (activeTab !== 'orders') return;
@@ -623,7 +700,7 @@ const AdminDashboardPage = () => {
         page: ordersPage,
         size: PAGE_SIZE,
         status: orderFilters.status || undefined,
-        search: orderFilters.search || undefined,
+        search: orderSearch || undefined,
         date_from: orderFilters.date_from || undefined,
         date_to: orderFilters.date_to || undefined,
       })
@@ -633,7 +710,7 @@ const AdminDashboardPage = () => {
       })
       .catch(() => setActionError('Не удалось загрузить заказы'))
       .finally(() => setOrdersLoading(false));
-  }, [activeTab, ordersPage, orderFilters]);
+  }, [activeTab, ordersPage, orderFilters, orderSearch]);
 
   useEffect(() => {
     if (activeTab !== 'restaurants') return;
@@ -642,8 +719,8 @@ const AdminDashboardPage = () => {
       .getRestaurants({
         page: restaurantsPage,
         size: PAGE_SIZE,
-        search: restaurantFilters.search || undefined,
-        vendor_search: restaurantFilters.vendor_search || undefined,
+        search: restaurantSearch || undefined,
+        vendor_search: restaurantVendorSearch || undefined,
         is_open: restaurantFilters.is_open || undefined,
         moderation_status: restaurantFilters.moderation_status || undefined,
         min_rating: restaurantFilters.min_rating || undefined,
@@ -654,7 +731,13 @@ const AdminDashboardPage = () => {
       })
       .catch(() => setActionError('Не удалось загрузить рестораны'))
       .finally(() => setRestaurantsLoading(false));
-  }, [activeTab, restaurantsPage, restaurantFilters]);
+  }, [
+    activeTab,
+    restaurantsPage,
+    restaurantFilters,
+    restaurantSearch,
+    restaurantVendorSearch,
+  ]);
 
   useEffect(() => {
     if (activeTab !== 'vendors') return;
@@ -663,7 +746,7 @@ const AdminDashboardPage = () => {
       .getVendors({
         page: vendorsPage,
         size: PAGE_SIZE,
-        search: vendorFilters.search || undefined,
+        search: vendorSearch || undefined,
         approval_status: vendorFilters.approval_status || undefined,
       })
       .then((res) => {
@@ -672,7 +755,7 @@ const AdminDashboardPage = () => {
       })
       .catch(() => setActionError('Не удалось загрузить вендоров'))
       .finally(() => setVendorsLoading(false));
-  }, [activeTab, vendorsPage, vendorFilters]);
+  }, [activeTab, vendorsPage, vendorFilters, vendorSearch]);
 
   useEffect(() => {
     if (activeTab !== 'reviews') return;
@@ -716,15 +799,20 @@ const AdminDashboardPage = () => {
   useEffect(() => {
     if (activeTab === 'finance') {
       fetchFinance();
+      if (allRestaurants.length === 0) {
+        adminService
+          .getRestaurants({ size: 100 })
+          .then((res) => setAllRestaurants(res.data.data || []));
+      }
     }
-  }, [activeTab, fetchFinance]);
+  }, [activeTab, fetchFinance, allRestaurants.length]);
 
   useEffect(() => {
     if (activeTab !== 'audit') return;
     setAuditLoading(true);
     const params = {
       page: auditPage,
-      size: 50,
+      size: PAGE_SIZE,
       ...(auditFilters.action && { action: auditFilters.action }),
       ...(auditFilters.entity_type && {
         entity_type: auditFilters.entity_type,
@@ -1034,6 +1122,33 @@ const AdminDashboardPage = () => {
     { id: 'audit', label: 'Логи', icon: <Clock size={18} /> },
   ];
 
+  const ENTITY_TAB_IDS = new Set([
+    'users',
+    'orders',
+    'restaurants',
+    'vendors',
+    'reviews',
+  ]);
+
+  const renderTabButton = (tab, indented = false) => (
+    <button
+      key={tab.id}
+      className={`btn ${activeTab === tab.id ? 'btn-primary' : 'btn-secondary'}`}
+      onClick={() => setActiveTab(tab.id)}
+      style={{
+        justifyContent: 'flex-start',
+        border: 'none',
+        padding: indented ? '8px 16px' : '10px 16px',
+        gap: 10,
+        fontSize: indented ? '0.88rem' : '0.95rem',
+        fontWeight: activeTab === tab.id ? 700 : 500,
+      }}
+    >
+      {tab.icon}
+      {tab.label}
+    </button>
+  );
+
   return (
     <div
       className="page-enter"
@@ -1065,24 +1180,61 @@ const AdminDashboardPage = () => {
         <h1 style={{ fontSize: '1.2rem', fontWeight: 900, marginBottom: 16 }}>
           Админ-панель
         </h1>
-        {tabs.map((tab) => (
+        {tabs
+          .filter((t) => t.id === 'stats')
+          .map((tab) => renderTabButton(tab))}
+        <div>
           <button
-            key={tab.id}
-            className={`btn ${activeTab === tab.id ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => setEntitiesOpen((o) => !o)}
             style={{
-              justifyContent: 'flex-start',
-              border: 'none',
-              padding: '10px 16px',
-              gap: 10,
-              fontSize: '0.95rem',
-              fontWeight: activeTab === tab.id ? 700 : 500,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              width: '100%',
+              padding: '10px 14px',
+              background: entitiesOpen ? 'var(--bg-surface)' : 'none',
+              border: '1px solid',
+              borderColor: entitiesOpen ? 'var(--border)' : 'transparent',
+              cursor: 'pointer',
+              color: 'var(--text-2)',
+              fontSize: '0.9rem',
+              fontWeight: 700,
+              borderRadius: 'var(--r-sm)',
+              marginTop: 4,
+              transition: 'background 0.15s, border-color 0.15s',
             }}
           >
-            {tab.icon}
-            {tab.label}
+            <Rows size={16} weight="bold" />
+            Сущности
+            <CaretDown
+              size={14}
+              weight="bold"
+              style={{
+                marginLeft: 'auto',
+                transform: entitiesOpen ? 'rotate(180deg)' : 'none',
+                transition: 'transform 0.2s',
+                color: 'var(--text-3)',
+              }}
+            />
           </button>
-        ))}
+          {entitiesOpen && (
+            <div
+              style={{
+                paddingLeft: 8,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 4,
+              }}
+            >
+              {tabs
+                .filter((t) => ENTITY_TAB_IDS.has(t.id))
+                .map((tab) => renderTabButton(tab, true))}
+            </div>
+          )}
+        </div>
+        {tabs
+          .filter((t) => !ENTITY_TAB_IDS.has(t.id) && t.id !== 'stats')
+          .map((tab) => renderTabButton(tab))}
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -1153,9 +1305,11 @@ const AdminDashboardPage = () => {
         )}
 
         {activeTab === 'finance' && (
-          <ListSection
-            loading={financeLoading || analyticsLoading}
-            emptyTitle="Финансовых данных пока нет"
+          <div
+            className={
+              financeLoading || analyticsLoading ? 'loading-dim' : undefined
+            }
+            style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
           >
             <div style={{ ...filterGridStyle, marginBottom: 12 }}>
               <input
@@ -1194,7 +1348,7 @@ const AdminDashboardPage = () => {
                 style={selectFilterStyle}
               >
                 <option value="">Все рестораны</option>
-                {restaurants.map((r) => (
+                {allRestaurants.map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.name}
                   </option>
@@ -1270,8 +1424,10 @@ const AdminDashboardPage = () => {
                       adminService.exportFinancePDF({
                         date_from: financeFilters.date_from || undefined,
                         date_to: financeFilters.date_to || undefined,
+                        restaurant_id:
+                          financeFilters.restaurant_id || undefined,
                       }),
-                    'finance.pdf'
+                    `финансы_${getRestaurantLabel()}_${getDateRangeLabel()}.pdf`
                   )
                 }
               >
@@ -1287,7 +1443,7 @@ const AdminDashboardPage = () => {
                         date_from: financeFilters.date_from || undefined,
                         date_to: financeFilters.date_to || undefined,
                       }),
-                    'analytics.pdf'
+                    `аналитика_${getRestaurantLabel()}_${getDateRangeLabel()}.pdf`
                   )
                 }
               >
@@ -1303,38 +1459,21 @@ const AdminDashboardPage = () => {
                         date_from: financeFilters.date_from || undefined,
                         date_to: financeFilters.date_to || undefined,
                       }),
-                    'overview.pdf'
+                    `обзор_платформы_${todayStr}.pdf`
                   )
                 }
               >
                 {exportLoading ? '...' : '↓ Обзор платформы PDF'}
               </button>
             </div>
+            {financeLoading && !finance && (
+              <div className="loading-center">
+                <div className="spinner" />
+              </div>
+            )}
             {finance && (
               <>
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                    gap: 12,
-                  }}
-                >
-                  <DetailField label="Средний чек">
-                    {finance.average_check} ₽
-                  </DetailField>
-                  <DetailField label="Всего заказов">
-                    {finance.total_orders}
-                  </DetailField>
-                  <DetailField label="Выдано">
-                    {finance.completed_orders}
-                  </DetailField>
-                  <DetailField label="Отменено">
-                    {finance.cancelled_orders}
-                  </DetailField>
-                  <DetailField label="Конверсия">
-                    {finance.conversion_percent}%
-                  </DetailField>
-                </div>
+                <KPICards finance={finance} />
                 <RevenueChart data={finance.revenue_by_day || []} />
 
                 <div
@@ -1415,7 +1554,7 @@ const AdminDashboardPage = () => {
                 </div>
               </>
             )}
-          </ListSection>
+          </div>
         )}
 
         {activeTab === 'audit' && (
@@ -1555,7 +1694,7 @@ const AdminDashboardPage = () => {
             ))}
             <Pagination
               page={auditPage}
-              totalPages={Math.ceil(auditTotal / 50)}
+              totalPages={Math.ceil(auditTotal / PAGE_SIZE)}
               onPageChange={setAuditPage}
             />
           </ListSection>
@@ -1572,47 +1711,75 @@ const AdminDashboardPage = () => {
                 className="form-input"
                 style={filterControlStyle}
                 placeholder="Поиск по имени или телефону"
-                value={userFilters.search}
+                value={userSearchRaw}
                 onChange={(event) => {
                   setUsersPage(1);
-                  setUserFilters((prev) => ({
-                    ...prev,
-                    search: event.target.value,
-                  }));
+                  setUserSearchRaw(event.target.value);
                 }}
               />
               <select
                 className="form-input"
                 style={selectFilterStyle}
-                value={userFilters.permission}
+                value={userFilters.role}
                 onChange={(event) => {
                   setUsersPage(1);
                   setUserFilters((prev) => ({
                     ...prev,
-                    permission: event.target.value,
+                    role: event.target.value,
                   }));
                 }}
               >
                 <option value="">Все роли</option>
-                {Object.entries(PERMISSION_RU).map(([val, label]) => (
-                  <option key={val} value={val}>
-                    {label}
-                  </option>
-                ))}
+                {Object.entries(PERMISSION_PRESET_RU)
+                  .filter(([val]) => val !== 'CUSTOMER')
+                  .map(([val, label]) => (
+                    <option key={val} value={val}>
+                      {label}
+                    </option>
+                  ))}
               </select>
             </div>
             <div
               style={{
                 display: 'flex',
-                justifyContent: 'flex-end',
+                justifyContent: 'space-between',
+                alignItems: 'center',
                 marginBottom: 8,
               }}
             >
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  fontSize: '0.82rem',
+                  color: 'var(--text-3)',
+                  cursor: 'pointer',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={
+                    users.length > 0 && selectedUserIds.size === users.length
+                  }
+                  onChange={(e) =>
+                    setSelectedUserIds(
+                      e.target.checked
+                        ? new Set(users.map((u) => u.id))
+                        : new Set()
+                    )
+                  }
+                />
+                Выбрать все
+              </label>
               <button
                 className="btn btn-secondary btn-sm"
                 disabled={exportLoading}
                 onClick={() =>
-                  handleExport(adminService.exportUsersCSV, 'users.csv')
+                  handleExport(
+                    adminService.exportUsersCSV,
+                    `пользователи_${todayStr}.csv`
+                  )
                 }
               >
                 {exportLoading ? '...' : '↓ CSV'}
@@ -1621,75 +1788,96 @@ const AdminDashboardPage = () => {
             {users.map((u) => (
               <div
                 key={u.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => loadUserDetails(u.id)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    loadUserDetails(u.id);
-                  }
-                }}
-                style={{
-                  ...cardStyle,
-                  padding: 16,
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  gap: 14,
-                  alignItems: 'center',
-                  cursor: 'pointer',
-                }}
+                style={{ display: 'flex', alignItems: 'center', gap: 8 }}
               >
+                <input
+                  type="checkbox"
+                  checked={selectedUserIds.has(u.id)}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    setSelectedUserIds((prev) => {
+                      const next = new Set(prev);
+                      if (e.target.checked) next.add(u.id);
+                      else next.delete(u.id);
+                      return next;
+                    });
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ flexShrink: 0 }}
+                />
                 <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => loadUserDetails(u.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      loadUserDetails(u.id);
+                    }
+                  }}
                   style={{
+                    ...cardStyle,
+                    padding: 16,
+                    flex: 1,
                     display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: 14,
                     alignItems: 'center',
-                    gap: 12,
-                    minWidth: 0,
+                    cursor: 'pointer',
                   }}
                 >
-                  <UserCircle size={40} weight="thin" color="var(--text-3)" />
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: 800, color: 'var(--text-1)' }}>
-                      {u.name || 'Без имени'}
-                    </div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-3)' }}>
-                      {u.phone_number || 'Нет телефона'}
-                    </div>
-                    <div
-                      style={{
-                        display: 'flex',
-                        gap: 6,
-                        marginTop: 6,
-                        flexWrap: 'wrap',
-                      }}
-                    >
-                      <span className="order-status-badge pending">
-                        {permissionPresetLabel(u.permissions)}
-                      </span>
-                      <span
-                        className={`order-status-badge ${u.is_active ? 'ready' : 'cancelled'}`}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                      minWidth: 0,
+                    }}
+                  >
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 800, color: 'var(--text-1)' }}>
+                        {u.name || 'Без имени'}
+                      </div>
+                      <div
+                        style={{ fontSize: '0.8rem', color: 'var(--text-3)' }}
                       >
-                        {u.is_active ? 'Активен' : 'Заблокирован'}
-                      </span>
+                        {u.phone_number || 'Нет телефона'}
+                      </div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          gap: 6,
+                          marginTop: 6,
+                          flexWrap: 'wrap',
+                        }}
+                      >
+                        <span className="order-status-badge pending">
+                          {permissionPresetLabel(u.permissions)}
+                        </span>
+                        <span
+                          className={`order-status-badge ${u.is_active ? 'ready' : 'cancelled'}`}
+                        >
+                          {u.is_active ? 'Активен' : 'Заблокирован'}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                  {u.id !== currentUser?.id &&
-                    !hasPermission(u, PERMISSIONS.ADMIN_ACCESS) && (
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          handleDeleteUser(u.id);
-                        }}
-                        title="Заблокировать"
-                        style={{ color: 'var(--error)' }}
-                      >
-                        <Trash size={16} />
-                      </button>
-                    )}
+                  <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                    {u.id !== currentUser?.id &&
+                      !hasPermission(u, PERMISSIONS.ADMIN_ACCESS) && (
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleDeleteUser(u.id);
+                          }}
+                          title="Заблокировать"
+                          style={{ color: 'var(--error)' }}
+                        >
+                          <Trash size={16} />
+                        </button>
+                      )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -1712,13 +1900,10 @@ const AdminDashboardPage = () => {
                 className="form-input"
                 style={filterControlStyle}
                 placeholder="Клиент, телефон или ресторан"
-                value={orderFilters.search}
+                value={orderSearchRaw}
                 onChange={(event) => {
                   setOrdersPage(1);
-                  setOrderFilters((prev) => ({
-                    ...prev,
-                    search: event.target.value,
-                  }));
+                  setOrderSearchRaw(event.target.value);
                 }}
               />
               <input
@@ -1794,7 +1979,7 @@ const AdminDashboardPage = () => {
                         date_to: orderFilters.date_to || undefined,
                         status: orderFilters.status || undefined,
                       }),
-                    'orders.csv'
+                    `заказы_${todayStr}.csv`
                   )
                 }
               >
@@ -1908,26 +2093,20 @@ const AdminDashboardPage = () => {
                 className="form-input"
                 style={filterControlStyle}
                 placeholder="Ресторан"
-                value={restaurantFilters.search}
+                value={restaurantSearchRaw}
                 onChange={(event) => {
                   setRestaurantsPage(1);
-                  setRestaurantFilters((prev) => ({
-                    ...prev,
-                    search: event.target.value,
-                  }));
+                  setRestaurantSearchRaw(event.target.value);
                 }}
               />
               <input
                 className="form-input"
                 style={filterControlStyle}
                 placeholder="Вендор или телефон"
-                value={restaurantFilters.vendor_search}
+                value={restaurantVendorSearchRaw}
                 onChange={(event) => {
                   setRestaurantsPage(1);
-                  setRestaurantFilters((prev) => ({
-                    ...prev,
-                    vendor_search: event.target.value,
-                  }));
+                  setRestaurantVendorSearchRaw(event.target.value);
                 }}
               />
               <select
@@ -2023,7 +2202,7 @@ const AdminDashboardPage = () => {
                 onClick={() =>
                   handleExport(
                     adminService.exportRestaurantsCSV,
-                    'restaurants.csv'
+                    `рестораны_${todayStr}.csv`
                   )
                 }
               >
@@ -2096,13 +2275,49 @@ const AdminDashboardPage = () => {
                   </div>
                   <div
                     style={{
-                      color: 'var(--text-3)',
-                      fontSize: '0.82rem',
-                      textAlign: 'right',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-end',
+                      gap: 6,
                     }}
                   >
-                    {restaurant.orders_count || 0} заказов
-                    <br />★ {restaurant.average_rating || 0}
+                    <div
+                      style={{
+                        color: 'var(--text-3)',
+                        fontSize: '0.82rem',
+                        textAlign: 'right',
+                      }}
+                    >
+                      {restaurant.orders_count || 0} заказов
+                      <br />★ {restaurant.average_rating || 0}
+                    </div>
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.open(
+                          `/display-board/${restaurant.id}`,
+                          '_blank',
+                          'noopener,noreferrer'
+                        );
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        color: 'var(--text-3)',
+                        padding: '3px 7px',
+                        borderRadius: 6,
+                        border: '1px solid var(--border)',
+                        background: 'var(--bg-surface)',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      <Monitor size={11} />
+                      Табло
+                    </div>
                   </div>
                 </button>
               </div>
@@ -2126,13 +2341,10 @@ const AdminDashboardPage = () => {
                 className="form-input"
                 style={filterControlStyle}
                 placeholder="Вендор или телефон"
-                value={vendorFilters.search}
+                value={vendorSearchRaw}
                 onChange={(event) => {
                   setVendorsPage(1);
-                  setVendorFilters((prev) => ({
-                    ...prev,
-                    search: event.target.value,
-                  }));
+                  setVendorSearchRaw(event.target.value);
                 }}
               />
               <select
@@ -2191,7 +2403,10 @@ const AdminDashboardPage = () => {
                 className="btn btn-secondary btn-sm"
                 disabled={exportLoading}
                 onClick={() =>
-                  handleExport(adminService.exportVendorsCSV, 'vendors.csv')
+                  handleExport(
+                    adminService.exportVendorsCSV,
+                    `вендоры_${todayStr}.csv`
+                  )
                 }
               >
                 {exportLoading ? '...' : '↓ CSV'}
@@ -2295,10 +2510,37 @@ const AdminDashboardPage = () => {
             <div
               style={{
                 display: 'flex',
-                justifyContent: 'flex-end',
+                justifyContent: 'space-between',
+                alignItems: 'center',
                 marginBottom: 8,
               }}
             >
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  fontSize: '0.82rem',
+                  color: 'var(--text-3)',
+                  cursor: 'pointer',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={
+                    reviews.length > 0 &&
+                    selectedReviewIds.size === reviews.length
+                  }
+                  onChange={(e) =>
+                    setSelectedReviewIds(
+                      e.target.checked
+                        ? new Set(reviews.map((r) => r.id))
+                        : new Set()
+                    )
+                  }
+                />
+                Выбрать все
+              </label>
               <button
                 className="btn btn-secondary btn-sm"
                 disabled={exportLoading}
@@ -2309,7 +2551,7 @@ const AdminDashboardPage = () => {
                         min_rating: reviewFilters.rating || undefined,
                         max_rating: reviewFilters.rating || undefined,
                       }),
-                    'reviews.csv'
+                    `отзывы_${todayStr}.csv`
                   )
                 }
               >
@@ -2319,67 +2561,88 @@ const AdminDashboardPage = () => {
             {reviews.map((review) => (
               <div
                 key={review.id}
-                style={{
-                  ...cardStyle,
-                  padding: 16,
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  gap: 14,
-                  alignItems: 'flex-start',
-                }}
+                style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}
               >
-                <div style={{ minWidth: 0 }}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      flexWrap: 'wrap',
-                    }}
-                  >
-                    <span style={{ color: 'var(--text-1)', fontWeight: 900 }}>
-                      {review.restaurant_name || shortId(review.restaurant_id)}
-                    </span>
-                    <span className="order-status-badge pending">
-                      ★ {review.rating}
-                    </span>
-                    {review.is_verified_purchase && (
-                      <span className="order-status-badge ready">
-                        Покупка подтверждена
+                <input
+                  type="checkbox"
+                  checked={selectedReviewIds.has(review.id)}
+                  onChange={(e) => {
+                    setSelectedReviewIds((prev) => {
+                      const next = new Set(prev);
+                      if (e.target.checked) next.add(review.id);
+                      else next.delete(review.id);
+                      return next;
+                    });
+                  }}
+                  style={{ flexShrink: 0, marginTop: 18 }}
+                />
+                <div
+                  style={{
+                    ...cardStyle,
+                    padding: 16,
+                    flex: 1,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: 14,
+                    alignItems: 'flex-start',
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      <span style={{ color: 'var(--text-1)', fontWeight: 900 }}>
+                        {review.restaurant_name ||
+                          shortId(review.restaurant_id)}
                       </span>
+                      <span className="order-status-badge pending">
+                        ★ {review.rating}
+                      </span>
+                      {review.is_verified_purchase && (
+                        <span className="order-status-badge ready">
+                          Покупка подтверждена
+                        </span>
+                      )}
+                    </div>
+                    <div
+                      style={{
+                        color: 'var(--text-3)',
+                        fontSize: '0.82rem',
+                        marginTop: 6,
+                      }}
+                    >
+                      {review.user_name ||
+                        review.user_phone ||
+                        shortId(review.user_id)}{' '}
+                      · {formatDateTime(review.created_at)}
+                    </div>
+                    {review.text && (
+                      <div
+                        style={{
+                          color: 'var(--text-2)',
+                          fontSize: '0.9rem',
+                          marginTop: 10,
+                          lineHeight: 1.5,
+                        }}
+                      >
+                        {review.text}
+                      </div>
                     )}
                   </div>
-                  <div
-                    style={{
-                      color: 'var(--text-3)',
-                      fontSize: '0.82rem',
-                      marginTop: 6,
-                    }}
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => handleDeleteReview(review.id)}
+                    title="Удалить отзыв"
+                    style={{ color: 'var(--error)', flexShrink: 0 }}
                   >
-                    {review.user_name ||
-                      review.user_phone ||
-                      shortId(review.user_id)}{' '}
-                    · {formatDateTime(review.created_at)}
-                  </div>
-                  <div
-                    style={{
-                      color: 'var(--text-2)',
-                      fontSize: '0.9rem',
-                      marginTop: 10,
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    {review.text || 'Без текста'}
-                  </div>
+                    <Trash size={16} />
+                  </button>
                 </div>
-                <button
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => handleDeleteReview(review.id)}
-                  title="Удалить отзыв"
-                  style={{ color: 'var(--error)', flexShrink: 0 }}
-                >
-                  <Trash size={16} />
-                </button>
               </div>
             ))}
             <Pagination
@@ -2652,7 +2915,21 @@ const AdminDashboardPage = () => {
             </div>
             <button
               className="btn btn-secondary"
-              style={{ marginTop: 16, color: 'var(--error)' }}
+              style={{ marginTop: 8 }}
+              onClick={() =>
+                window.open(
+                  `/display-board/${selectedRestaurant.id}`,
+                  '_blank',
+                  'noopener,noreferrer'
+                )
+              }
+            >
+              <Monitor size={16} />
+              Открыть табло
+            </button>
+            <button
+              className="btn btn-secondary"
+              style={{ marginTop: 8, color: 'var(--error)' }}
               onClick={() => handleDeleteRestaurant(selectedRestaurant.id)}
             >
               <Trash size={16} />
@@ -2760,6 +3037,90 @@ const AdminDashboardPage = () => {
           onCancel={() => setReasonDialog(null)}
           onConfirm={runReasonAction}
         />
+
+        {selectedUserIds.size > 0 && (
+          <div
+            style={{
+              position: 'fixed',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              background: 'var(--bg-card)',
+              borderTop: '1px solid var(--border)',
+              padding: '12px 20px',
+              display: 'flex',
+              gap: 10,
+              alignItems: 'center',
+              zIndex: 9000,
+              boxShadow: '0 -4px 16px rgba(0,0,0,0.12)',
+            }}
+          >
+            <span style={{ fontWeight: 700, fontSize: '0.9rem', flex: 1 }}>
+              Выбрано: {selectedUserIds.size} пользователей
+            </span>
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={batchLoading}
+              onClick={() => setSelectedUserIds(new Set())}
+            >
+              Снять выделение
+            </button>
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={batchLoading}
+              onClick={() => handleBatchUsers('activate')}
+              style={{ color: 'var(--color-success)' }}
+            >
+              {batchLoading ? '...' : 'Активировать'}
+            </button>
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={batchLoading}
+              onClick={() => handleBatchUsers('deactivate')}
+              style={{ color: 'var(--error)' }}
+            >
+              {batchLoading ? '...' : 'Деактивировать'}
+            </button>
+          </div>
+        )}
+
+        {selectedReviewIds.size > 0 && (
+          <div
+            style={{
+              position: 'fixed',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              background: 'var(--bg-card)',
+              borderTop: '1px solid var(--border)',
+              padding: '12px 20px',
+              display: 'flex',
+              gap: 10,
+              alignItems: 'center',
+              zIndex: 9000,
+              boxShadow: '0 -4px 16px rgba(0,0,0,0.12)',
+            }}
+          >
+            <span style={{ fontWeight: 700, fontSize: '0.9rem', flex: 1 }}>
+              Выбрано: {selectedReviewIds.size} отзывов
+            </span>
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={batchLoading}
+              onClick={() => setSelectedReviewIds(new Set())}
+            >
+              Снять выделение
+            </button>
+            <button
+              className="btn btn-secondary btn-sm"
+              disabled={batchLoading}
+              onClick={handleBatchDeleteReviews}
+              style={{ color: 'var(--error)' }}
+            >
+              {batchLoading ? '...' : 'Удалить выбранные'}
+            </button>
+          </div>
+        )}
 
         {selectedVendorIds.size > 0 && (
           <div
@@ -2869,7 +3230,9 @@ const AdminDashboardPage = () => {
 };
 
 const ListSection = ({ loading, emptyTitle, items, children }) => {
-  if (loading) {
+  const isEmpty = !Array.isArray(items) || items.length === 0;
+
+  if (loading && isEmpty) {
     return (
       <div className="loading-center">
         <div className="spinner" />
@@ -2878,9 +3241,12 @@ const ListSection = ({ loading, emptyTitle, items, children }) => {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div
+      className={loading ? 'loading-dim' : undefined}
+      style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+    >
       {children}
-      {Array.isArray(items) && items.length === 0 && (
+      {isEmpty && (
         <EmptyState
           title={emptyTitle || 'Ничего не найдено'}
           subtitle="Для выбранных фильтров нет результатов"

@@ -2248,6 +2248,11 @@ input[type='date'].form-input::-webkit-calendar-picker-indicator:hover {
   align-items: center;
   min-height: 200px;
 }
+.loading-dim {
+  opacity: 0.45;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
 
 /* ─── Animations ───────────────────────────────────────────────────────── */
 @keyframes fade-in {
@@ -2418,7 +2423,7 @@ input[type='date'].form-input::-webkit-calendar-picker-indicator:hover {
   }
 }
 .page-enter {
-  animation: page-enter var(--dur-lg) var(--ease-out) forwards;
+  animation: page-enter var(--dur-lg) var(--ease-out);
 }
 
 /* ─── Utilities ────────────────────────────────────────────────────────── */

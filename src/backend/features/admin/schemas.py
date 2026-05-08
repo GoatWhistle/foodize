@@ -63,6 +63,8 @@ class FinanceAnalytics(BaseModel):
     total_orders: int
     completed_orders: int
     conversion_percent: float
+    total_revenue: int = 0
+    revenue_growth_pct: float | None = None
 
 
 class AnalyticsPoint(BaseModel):

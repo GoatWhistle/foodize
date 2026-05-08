@@ -104,7 +104,7 @@ const HomePage = () => {
           </span>
         </div>
 
-        {loading ? (
+        {loading && publicRestaurants.length === 0 ? (
           <div className="loading-center">
             <div className="spinner" />
           </div>
@@ -121,7 +121,7 @@ const HomePage = () => {
             }}
           />
         ) : (
-          <>
+          <div className={loading ? 'loading-dim' : undefined}>
             <div className="restaurants-grid">
               {publicRestaurants.map((r) => (
                 <RestaurantCard
@@ -136,7 +136,7 @@ const HomePage = () => {
               totalPages={Math.ceil((publicRestaurantsTotal || 1) / size)}
               onPageChange={setPage}
             />
-          </>
+          </div>
         )}
       </div>
     </div>

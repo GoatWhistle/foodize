@@ -12,14 +12,15 @@ const Pagination = ({ page, totalPages, onPageChange }) => {
         padding: '16px 0',
       }}
     >
-      <button
-        className="btn btn-secondary btn-sm"
-        disabled={page <= 1}
-        onClick={() => onPageChange(page - 1)}
-        style={{ borderRadius: '100px', padding: '8px 20px' }}
-      >
-        ← Назад
-      </button>
+      {page > 1 && (
+        <button
+          className="btn btn-secondary btn-sm"
+          onClick={() => onPageChange(page - 1)}
+          style={{ borderRadius: '100px', padding: '8px 20px' }}
+        >
+          ← Назад
+        </button>
+      )}
 
       <span
         style={{
@@ -35,14 +36,15 @@ const Pagination = ({ page, totalPages, onPageChange }) => {
         {page} / {totalPages}
       </span>
 
-      <button
-        className="btn btn-secondary btn-sm"
-        disabled={page >= totalPages}
-        onClick={() => onPageChange(page + 1)}
-        style={{ borderRadius: '100px', padding: '8px 20px' }}
-      >
-        Вперед →
-      </button>
+      {page < totalPages && (
+        <button
+          className="btn btn-secondary btn-sm"
+          onClick={() => onPageChange(page + 1)}
+          style={{ borderRadius: '100px', padding: '8px 20px' }}
+        >
+          Вперед →
+        </button>
+      )}
     </div>
   );
 };

@@ -23,15 +23,13 @@ from shared.permissions import serialize_permissions
 
 async def get_users_list(
     session: AsyncSession,
-    permission: Permission | None,
+    role: str | None,
     offset: int,
     limit: int,
     search: str | None = None,
 ) -> tuple[list[User], int]:
-    data = await crud.get_all_users(
-        session, permission=permission, search=search, offset=offset, limit=limit
-    )
-    total = await crud.count_all_users(session, permission=permission, search=search)
+    data = await crud.get_all_users(session, role=role, search=search, offset=offset, limit=limit)
+    total = await crud.count_all_users(session, role=role, search=search)
     return data, total
 
 

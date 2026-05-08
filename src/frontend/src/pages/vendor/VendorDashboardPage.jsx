@@ -37,6 +37,7 @@ import {
   HourlyLoadChart,
   CategoryRevenueChart,
   AOVDynamicsChart,
+  KPICards,
 } from '../../components/dashboard/DashboardCharts';
 import {
   ORDER_STATUS_RU,
@@ -678,6 +679,20 @@ const VendorDashboardPage = () => {
     }
   };
 
+  const todayStr = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  })();
+
+  const getVendorRestaurantLabel = () =>
+    (selectedRestaurant?.name || 'все').replace(/\s+/g, '_');
+
+  const getVendorDateRange = () => {
+    const from = financeFilters.date_from || todayStr;
+    const to = financeFilters.date_to || todayStr;
+    return `${from}_${to}`;
+  };
+
   const handleVendorExport = async (exportFn, filename) => {
     setExportLoading(true);
     try {
@@ -774,46 +789,6 @@ const VendorDashboardPage = () => {
       fetchAnalytics();
     }
   }, [activeTab, fetchAnalytics]);
-
-  const DetailField = ({ label, children }) => (
-    <div
-      style={{
-        background: 'var(--bg-surface)',
-        border: '1px solid var(--border)',
-        borderRadius: 'var(--r-sm)',
-        padding: 12,
-      }}
-    >
-      <div
-        style={{
-          color: 'var(--text-3)',
-          fontSize: '0.75rem',
-          fontWeight: 700,
-          textTransform: 'uppercase',
-          marginBottom: 4,
-        }}
-      >
-        {label}
-      </div>
-      <div
-        style={{ color: 'var(--text-1)', fontSize: '1.1rem', fontWeight: 900 }}
-      >
-        {children}
-      </div>
-    </div>
-  );
-
-  const ListSection = ({ loading, children }) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {loading ? (
-        <div className="loading-center">
-          <div className="spinner" />
-        </div>
-      ) : (
-        children
-      )}
-    </div>
-  );
 
   const groupedRestaurantOrders = groupOrdersByDate(restaurantOrders);
 
@@ -947,7 +922,8 @@ const VendorDashboardPage = () => {
           </form>
         )}
 
-        {loading ? (
+        {loading &&
+        (!Array.isArray(restaurants) || restaurants.length === 0) ? (
           <div className="loading-center">
             <div className="spinner" />
           </div>
@@ -957,7 +933,7 @@ const VendorDashboardPage = () => {
             subtitle="Добавьте первое заведение"
           />
         ) : (
-          <div className="restaurant-list">
+          <div className={`restaurant-list${loading ? ' loading-dim' : ''}`}>
             {restaurants.map((r) => (
               <div
                 key={r.id}
@@ -1137,7 +1113,7 @@ const VendorDashboardPage = () => {
                             vendorService.exportMenuCSV({
                               restaurant_id: selectedRestaurant || undefined,
                             }),
-                          'menu.csv'
+                          `меню_${todayStr}.csv`
                         )
                       }
                     >
@@ -1797,7 +1773,7 @@ const VendorDashboardPage = () => {
                                 selectedRestaurant?.id || undefined,
                               status: ordersStatusFilter || undefined,
                             }),
-                          'orders.csv'
+                          `заказы_${todayStr}.csv`
                         )
                       }
                     >
@@ -1881,7 +1857,9 @@ const VendorDashboardPage = () => {
                     </button>
                   )}
                 </div>
-                {ordersLoading ? (
+                {ordersLoading &&
+                (!Array.isArray(restaurantOrders) ||
+                  restaurantOrders.length === 0) ? (
                   <div className="loading-center">
                     <div className="spinner" />
                   </div>
@@ -1897,6 +1875,7 @@ const VendorDashboardPage = () => {
                   />
                 ) : (
                   <div
+                    className={ordersLoading ? 'loading-dim' : undefined}
                     style={{
                       display: 'flex',
                       flexDirection: 'column',
@@ -2203,7 +2182,7 @@ const VendorDashboardPage = () => {
                   </form>
                 )}
 
-                {promosLoading ? (
+                {promosLoading && promosList.length === 0 ? (
                   <div className="loading-center">
                     <div className="spinner" />
                   </div>
@@ -2214,80 +2193,82 @@ const VendorDashboardPage = () => {
                     subtitle="Создайте первый промокод для скидки клиентам"
                   />
                 ) : (
-                  promosList.map((promo) => (
-                    <div
-                      key={promo.id}
-                      style={{
-                        background: 'var(--bg-card)',
-                        border: `1px solid ${promo.is_active ? 'var(--border)' : 'var(--border-faint, var(--border))'}`,
-                        borderRadius: 'var(--radius-md)',
-                        padding: '14px 16px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 12,
-                        opacity: promo.is_active ? 1 : 0.5,
-                      }}
-                    >
-                      <Tag
-                        size={18}
-                        weight="bold"
-                        color={
-                          promo.is_active ? 'var(--fire)' : 'var(--text-3)'
-                        }
-                      />
-                      <div style={{ flex: 1 }}>
-                        <div
-                          style={{
-                            fontWeight: 800,
-                            fontSize: '0.95rem',
-                            fontFamily: 'monospace',
-                          }}
-                        >
-                          {promo.code}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: '0.78rem',
-                            color: 'var(--text-3)',
-                            marginTop: 2,
-                          }}
-                        >
-                          {promo.discount_type === 'PERCENT'
-                            ? `${promo.discount_value}%`
-                            : `${promo.discount_value} ₽`}
-                          {' • '}
-                          {promo.used_count}/{promo.max_uses ?? '∞'} исп.
-                          {promo.expires_at
-                            ? ` • до ${new Date(promo.expires_at).toLocaleDateString()}`
-                            : ''}
-                        </div>
-                      </div>
-                      <span
+                  <div className={promosLoading ? 'loading-dim' : undefined}>
+                    {promosList.map((promo) => (
+                      <div
+                        key={promo.id}
                         style={{
-                          fontSize: '0.65rem',
-                          fontWeight: 800,
-                          padding: '3px 8px',
-                          borderRadius: '100px',
-                          background: promo.is_active
-                            ? 'rgba(34,197,94,0.12)'
-                            : 'rgba(107,114,128,0.12)',
-                          color: promo.is_active ? '#22c55e' : '#6b7280',
-                          border: `1px solid ${promo.is_active ? 'rgba(34,197,94,0.3)' : 'rgba(107,114,128,0.2)'}`,
+                          background: 'var(--bg-card)',
+                          border: `1px solid ${promo.is_active ? 'var(--border)' : 'var(--border-faint, var(--border))'}`,
+                          borderRadius: 'var(--radius-md)',
+                          padding: '14px 16px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 12,
+                          opacity: promo.is_active ? 1 : 0.5,
                         }}
                       >
-                        {promo.is_active ? 'Активен' : 'Завершён'}
-                      </span>
-                      {promo.is_active && (
-                        <button
-                          className="btn-icon-sm danger"
-                          onClick={() => handleDeactivatePromo(promo.code)}
-                          title="Деактивировать"
+                        <Tag
+                          size={18}
+                          weight="bold"
+                          color={
+                            promo.is_active ? 'var(--fire)' : 'var(--text-3)'
+                          }
+                        />
+                        <div style={{ flex: 1 }}>
+                          <div
+                            style={{
+                              fontWeight: 800,
+                              fontSize: '0.95rem',
+                              fontFamily: 'monospace',
+                            }}
+                          >
+                            {promo.code}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: '0.78rem',
+                              color: 'var(--text-3)',
+                              marginTop: 2,
+                            }}
+                          >
+                            {promo.discount_type === 'PERCENT'
+                              ? `${promo.discount_value}%`
+                              : `${promo.discount_value} ₽`}
+                            {' • '}
+                            {promo.used_count}/{promo.max_uses ?? '∞'} исп.
+                            {promo.expires_at
+                              ? ` • до ${new Date(promo.expires_at).toLocaleDateString()}`
+                              : ''}
+                          </div>
+                        </div>
+                        <span
+                          style={{
+                            fontSize: '0.65rem',
+                            fontWeight: 800,
+                            padding: '3px 8px',
+                            borderRadius: '100px',
+                            background: promo.is_active
+                              ? 'rgba(34,197,94,0.12)'
+                              : 'rgba(107,114,128,0.12)',
+                            color: promo.is_active ? '#22c55e' : '#6b7280',
+                            border: `1px solid ${promo.is_active ? 'rgba(34,197,94,0.3)' : 'rgba(107,114,128,0.2)'}`,
+                          }}
                         >
-                          <Trash size={14} />
-                        </button>
-                      )}
-                    </div>
-                  ))
+                          {promo.is_active ? 'Активен' : 'Завершён'}
+                        </span>
+                        {promo.is_active && (
+                          <button
+                            className="btn-icon-sm danger"
+                            onClick={() => handleDeactivatePromo(promo.code)}
+                            title="Деактивировать"
+                          >
+                            <Trash size={14} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             )}
@@ -2329,6 +2310,7 @@ const VendorDashboardPage = () => {
                   </div>
                 ) : (
                   <div
+                    className={workingHoursLoading ? 'loading-dim' : undefined}
                     style={{
                       background: 'var(--bg-card)',
                       border: '1px solid var(--border)',
@@ -2568,9 +2550,11 @@ const VendorDashboardPage = () => {
             )}
 
             {activeTab === 'analytics' && (
-              <ListSection
-                loading={financeLoading || analyticsLoading}
-                emptyTitle="Данных пока нет"
+              <div
+                className={
+                  financeLoading || analyticsLoading ? 'loading-dim' : undefined
+                }
+                style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
               >
                 <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
                   <input
@@ -2668,7 +2652,7 @@ const VendorDashboardPage = () => {
                             date_to: financeFilters.date_to || undefined,
                             restaurant_id: selectedRestaurant?.id || undefined,
                           }),
-                        'finance.pdf'
+                        `финансы_${getVendorRestaurantLabel()}_${getVendorDateRange()}.pdf`
                       )
                     }
                   >
@@ -2685,37 +2669,19 @@ const VendorDashboardPage = () => {
                             date_to: financeFilters.date_to || undefined,
                             restaurant_id: selectedRestaurant?.id || undefined,
                           }),
-                        'analytics.pdf'
+                        `аналитика_${getVendorRestaurantLabel()}_${getVendorDateRange()}.pdf`
                       )
                     }
                   >
                     {exportLoading ? '...' : '↓ Аналитика PDF'}
                   </button>
                 </div>
-                {finance && (
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns:
-                        'repeat(auto-fit, minmax(180px, 1fr))',
-                      gap: 12,
-                      marginBottom: 20,
-                    }}
-                  >
-                    <DetailField label="Средний чек">
-                      {finance.average_check} ₽
-                    </DetailField>
-                    <DetailField label="Всего заказов">
-                      {finance.total_orders}
-                    </DetailField>
-                    <DetailField label="Выдано">
-                      {finance.completed_orders}
-                    </DetailField>
-                    <DetailField label="Конверсия">
-                      {finance.conversion_percent}%
-                    </DetailField>
+                {financeLoading && !finance && (
+                  <div className="loading-center">
+                    <div className="spinner" />
                   </div>
                 )}
+                {finance && <KPICards finance={finance} />}
                 {finance && (
                   <RevenueChart data={finance.revenue_by_day || []} />
                 )}
@@ -2746,7 +2712,7 @@ const VendorDashboardPage = () => {
                     </>
                   )}
                 </div>
-              </ListSection>
+              </div>
             )}
 
             {activeTab === 'settings' && (

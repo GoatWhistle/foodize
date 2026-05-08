@@ -83,14 +83,6 @@ const OrdersPage = () => {
         )
       : orders;
 
-  if (ordersLoading) {
-    return (
-      <div className="loading-center">
-        <div className="spinner" />
-      </div>
-    );
-  }
-
   return (
     <div className="page-enter" style={{ padding: '28px var(--gutter, 20px)' }}>
       <div
@@ -134,7 +126,11 @@ const OrdersPage = () => {
         ))}
       </div>
 
-      {visibleOrders.length === 0 ? (
+      {ordersLoading && visibleOrders.length === 0 ? (
+        <div className="loading-center">
+          <div className="spinner" />
+        </div>
+      ) : visibleOrders.length === 0 ? (
         <EmptyState
           title={
             statusFilter ? 'Заказов с таким статусом нет' : 'Заказов пока нет'
@@ -154,7 +150,7 @@ const OrdersPage = () => {
           }
         />
       ) : (
-        <>
+        <div className={ordersLoading ? 'loading-dim' : undefined}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {visibleOrders.map((order) => {
               const cfg = STATUS_CONFIG[order.status] || STATUS_CONFIG.PENDING;
@@ -233,7 +229,7 @@ const OrdersPage = () => {
             totalPages={totalPages}
             onPageChange={setPage}
           />
-        </>
+        </div>
       )}
     </div>
   );

@@ -8,8 +8,8 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
+from features.admin import crud, service
 from features.admin import export as admin_export
-from features.admin import service
 from features.admin.audit_log import service as audit_service
 from features.admin.audit_log.models import AuditLog
 from features.admin.dependencies import require_admin
@@ -55,7 +55,7 @@ router = APIRouter(prefix="/admin", tags=["Admin"])
 @router.get("/users", response_model=SuccessListResponse[AdminUserResponse])
 async def read_users(
     request: Request,
-    permission: Permission | None = Query(None),
+    role: str | None = Query(None),
     search: str | None = Query(None, max_length=128),
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
@@ -63,8 +63,30 @@ async def read_users(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessListResponse[AdminUserResponse]:
     offset = (page - 1) * size
-    data, total = await service.get_users_list(session, permission, offset, size, search=search)
+    data, total = await service.get_users_list(session, role, offset, size, search=search)
     return build_list_response(data=data, total=total, page=page, size=size, request=request)
+
+
+@router.post("/users/batch-deactivate")
+async def batch_deactivate_users(
+    body: BatchIdsRequest,
+    _: User = Depends(require_admin),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> dict:
+    count = await crud.batch_deactivate_users(session, body.ids)
+    await session.commit()
+    return {"affected": count}
+
+
+@router.post("/users/batch-activate")
+async def batch_activate_users(
+    body: BatchIdsRequest,
+    _: User = Depends(require_admin),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> dict:
+    count = await crud.batch_activate_users(session, body.ids)
+    await session.commit()
+    return {"affected": count}
 
 
 @router.get("/users/{user_id}", response_model=SuccessResponse[AdminUserResponse])
@@ -397,6 +419,17 @@ async def read_reviews(
         limit=size,
     )
     return build_list_response(data=data, total=total, page=page, size=size, request=request)
+
+
+@router.delete("/reviews/batch")
+async def batch_delete_reviews(
+    body: BatchIdsRequest,
+    _: User = Depends(require_admin),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> dict:
+    count = await crud.batch_delete_reviews(session, body.ids)
+    await session.commit()
+    return {"affected": count}
 
 
 @router.delete("/reviews/{review_id}", response_model=SuccessResponse[AdminReviewResponse])

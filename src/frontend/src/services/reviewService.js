@@ -7,6 +7,7 @@ export const reviewService = {
     api.delete(`/restaurants/${restaurantId}/reviews/${reviewId}`),
   updateMyReview: (restaurantId, data) =>
     api.put(`/restaurants/${restaurantId}/reviews/my`, data),
-  getReviews: (restaurantId) => api.get(`/restaurants/${restaurantId}/reviews`),
+  getReviews: (restaurantId, params = {}) =>
+    api.get(`/restaurants/${restaurantId}/reviews`, { params }),
   getRating: (restaurantId) => api.get(`/restaurants/${restaurantId}/rating`),
 };

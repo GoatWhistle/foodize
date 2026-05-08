@@ -33,23 +33,19 @@ const ChartCard = ({ title, children }) => (
       border: '1px solid var(--border)',
       borderRadius: 'var(--r-md)',
       padding: '20px',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '16px',
-      minHeight: '350px',
     }}
   >
     <h3
       style={{
         fontSize: '0.95rem',
         fontWeight: 700,
-        margin: 0,
+        margin: '0 0 16px',
         color: 'var(--text-1)',
       }}
     >
       {title}
     </h3>
-    <div style={{ flex: 1, minHeight: 0 }}>
+    <div style={{ height: 280 }}>
       <ResponsiveContainer width="100%" height="100%">
         {children}
       </ResponsiveContainer>
@@ -62,8 +58,8 @@ export const RevenueChart = ({ data }) => (
     <AreaChart data={data}>
       <defs>
         <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3} />
-          <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
+          <stop offset="5%" stopColor="var(--fire)" stopOpacity={0.3} />
+          <stop offset="95%" stopColor="var(--fire)" stopOpacity={0} />
         </linearGradient>
       </defs>
       <CartesianGrid
@@ -98,7 +94,7 @@ export const RevenueChart = ({ data }) => (
       <Area
         type="monotone"
         dataKey="value"
-        stroke="var(--primary)"
+        stroke="var(--fire)"
         fillOpacity={1}
         fill="url(#colorRevenue)"
         strokeWidth={2}
@@ -127,7 +123,7 @@ export const HourlyLoadChart = ({ data }) => (
       />
       <Bar
         dataKey="value"
-        fill="var(--primary)"
+        fill="var(--fire)"
         radius={[4, 4, 0, 0]}
         name="Заказы"
       />
@@ -292,6 +288,97 @@ export const UsersByRoleChart = ({ data = {} }) => {
           </div>
         );
       })}
+    </div>
+  );
+};
+
+export const KPICards = ({ finance }) => {
+  const cancellationRate =
+    finance.total_orders > 0
+      ? ((finance.cancelled_orders / finance.total_orders) * 100).toFixed(1)
+      : 0;
+
+  const growth = finance.revenue_growth_pct;
+  const growthColor =
+    growth == null ? 'var(--text-3)' : growth >= 0 ? '#10b981' : '#ef4444';
+  const growthLabel =
+    growth == null ? '—' : `${growth > 0 ? '+' : ''}${growth}%`;
+
+  const cards = [
+    {
+      label: 'Выручка',
+      value: `${(finance.total_revenue ?? 0).toLocaleString('ru-RU')} ₽`,
+      color: 'var(--fire)',
+      large: true,
+    },
+    {
+      label: 'Рост',
+      value: growthLabel,
+      color: growthColor,
+      sub: 'vs. прошлый период',
+    },
+    { label: 'Заказов', value: finance.total_orders },
+    { label: 'Средний чек', value: `${finance.average_check} ₽` },
+    { label: 'Конверсия', value: `${finance.conversion_percent}%` },
+    {
+      label: 'Отменено',
+      value: finance.cancelled_orders,
+      sub: `${cancellationRate}% от всех`,
+      color: finance.cancelled_orders > 0 ? '#ef4444' : undefined,
+    },
+  ];
+
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(155px, 1fr))',
+        gap: 12,
+        marginBottom: 20,
+      }}
+    >
+      {cards.map(({ label, value, color, sub, large }) => (
+        <div
+          key={label}
+          style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--r-md)',
+            padding: '16px 18px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 6,
+          }}
+        >
+          <div
+            style={{
+              fontSize: '0.7rem',
+              fontWeight: 800,
+              color: 'var(--text-3)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.07em',
+            }}
+          >
+            {label}
+          </div>
+          <div
+            style={{
+              fontSize: large ? '1.55rem' : '1.2rem',
+              fontWeight: 800,
+              color: color ?? 'var(--text-1)',
+              lineHeight: 1.1,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            {value}
+          </div>
+          {sub && (
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-3)' }}>
+              {sub}
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 };

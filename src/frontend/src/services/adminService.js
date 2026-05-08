@@ -30,6 +30,12 @@ export const adminService = {
 
   getAuditLogs: (params) => api.get('/admin/audit-logs', { params }),
 
+  batchDeactivateUsers: (ids) =>
+    api.post('/admin/users/batch-deactivate', { ids }),
+  batchActivateUsers: (ids) => api.post('/admin/users/batch-activate', { ids }),
+  batchDeleteReviews: (ids) =>
+    api.delete('/admin/reviews/batch', { data: { ids } }),
+
   batchApproveVendors: (ids) =>
     api.post('/admin/vendors/batch-approve', { ids }),
   batchRejectVendors: (ids, reason) =>

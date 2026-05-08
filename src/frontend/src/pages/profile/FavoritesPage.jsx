@@ -5,34 +5,37 @@ import { favoriteService } from '../../services/favoriteService';
 import { useFavoriteStore } from '../../store/useFavoriteStore';
 import { ROUTES } from '../../constants/routes';
 import EmptyState from '../../components/ui/EmptyState';
+import Pagination from '../../components/ui/Pagination';
 
 const FavoritesPage = () => {
   const navigate = useNavigate();
   const { toggle } = useFavoriteStore();
   const [favorites, setFavorites] = useState([]);
+  const [favPage, setFavPage] = useState(1);
+  const [favTotal, setFavTotal] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const loadFavorites = () => {
+  const FAV_PAGE_SIZE = 20;
+
+  useEffect(() => {
     setLoading(true);
     favoriteService
-      .getAll({ size: 100 })
+      .getAll({ page: favPage, size: FAV_PAGE_SIZE })
       .then((res) => {
         const list = Array.isArray(res.data?.data) ? res.data.data : [];
         setFavorites(list);
+        setFavTotal(res.data?.pagination?.total || 0);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    loadFavorites();
-  }, []);
+  }, [favPage]);
 
   const handleUnfavorite = async (restaurantId) => {
     await toggle(restaurantId);
     setFavorites((prev) =>
       prev.filter((f) => f.restaurant.id !== restaurantId)
     );
+    setFavTotal((prev) => Math.max(0, prev - 1));
   };
 
   const handleCardClick = (restaurant) => {
@@ -82,7 +85,7 @@ const FavoritesPage = () => {
         >
           Избранное
         </h1>
-        {favorites.length > 0 && (
+        {favTotal > 0 && (
           <span
             style={{
               background: 'var(--fire-subtle)',
@@ -93,12 +96,12 @@ const FavoritesPage = () => {
               fontWeight: 800,
             }}
           >
-            {favorites.length}
+            {favTotal}
           </span>
         )}
       </div>
 
-      {loading ? (
+      {loading && favorites.length === 0 ? (
         <div className="loading-center">
           <div className="spinner" />
         </div>
@@ -108,7 +111,10 @@ const FavoritesPage = () => {
           subtitle="Нажмите ❤ на карточке ресторана, чтобы сохранить"
         />
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div
+          className={loading ? 'loading-dim' : undefined}
+          style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+        >
           {favorites.map(({ id: favId, restaurant }) => (
             <div
               key={favId}
@@ -237,6 +243,11 @@ const FavoritesPage = () => {
               </button>
             </div>
           ))}
+          <Pagination
+            page={favPage}
+            totalPages={Math.ceil(favTotal / FAV_PAGE_SIZE)}
+            onPageChange={setFavPage}
+          />
         </div>
       )}
     </div>
