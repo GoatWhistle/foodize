@@ -92,7 +92,9 @@ async def _link_phone(message: Message, phone_number: str) -> bool:
         if exc.response.status_code == 403:
             await message.answer("Бот не прошел проверку доступа к Foodize API.")
         else:
-            await message.answer("Не получилось привязать телефон. Проверьте номер и попробуйте еще раз.")
+            await message.answer(
+                "Не получилось привязать телефон. Проверьте номер и попробуйте еще раз."
+            )
         return False
     except httpx.HTTPError:
         await message.answer("Foodize API сейчас недоступен. Попробуйте чуть позже.")

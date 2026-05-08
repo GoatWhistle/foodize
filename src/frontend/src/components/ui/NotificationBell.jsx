@@ -279,9 +279,7 @@ const NotificationBell = () => {
                     {group.items.map((n) => (
                       <div
                         key={n.id}
-                        onClick={(e) =>
-                          !n.is_read && handleMarkAsRead(n.id, e)
-                        }
+                        onClick={(e) => !n.is_read && handleMarkAsRead(n.id, e)}
                         style={{
                           padding: '12px 16px',
                           borderBottom: '1px solid var(--border)',
