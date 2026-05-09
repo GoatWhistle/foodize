@@ -544,8 +544,17 @@ const RestaurantPage = () => {
         </div>
 
         {loading ? (
-          <div className="loading-center">
-            <div className="spinner" />
+          <div className="menu-list">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="menu-item" style={{ pointerEvents: 'none' }}>
+                <div className="menu-item-img skeleton" style={{ minHeight: 90, borderRadius: 'var(--r-sm)' }} />
+                <div style={{ flex: 1, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div className="skeleton" style={{ width: '65%', height: 14 }} />
+                  <div className="skeleton" style={{ width: '85%', height: 11 }} />
+                  <div className="skeleton" style={{ width: '35%', height: 14, marginTop: 4 }} />
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="menu-list">

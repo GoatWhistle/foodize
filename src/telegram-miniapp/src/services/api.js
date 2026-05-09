@@ -67,3 +67,17 @@ export function createOrderWebSocket(orderId, onMessage, onClose) {
   ws.onerror = () => ws.close();
   return ws;
 }
+
+export function createNotificationWebSocket(userId, onMessage, onClose) {
+  const token = sessionStorage.getItem("access_token");
+  const url = `${WS_BASE}/api/v1/ws/notifications/${userId}${token ? `?token=${encodeURIComponent(token)}` : ""}`;
+  const ws = new WebSocket(url);
+  ws.onmessage = (event) => {
+    try {
+      onMessage(JSON.parse(event.data));
+    } catch {}
+  };
+  ws.onclose = () => onClose?.();
+  ws.onerror = () => ws.close();
+  return ws;
+}

@@ -50,7 +50,7 @@ async def get_unread_count(session: AsyncSession, user_id: uuid.UUID) -> int:
     query = (
         select(func.count())
         .select_from(Notification)
-        .where(Notification.user_id == user_id, not Notification.is_read)
+        .where(Notification.user_id == user_id, Notification.is_read.is_(False))
     )
     result = await session.execute(query)
     return result.scalar_one()
@@ -76,7 +76,7 @@ async def mark_as_read(
 async def mark_all_as_read(session: AsyncSession, user_id: uuid.UUID) -> None:
     stmt = (
         update(Notification)
-        .where(Notification.user_id == user_id, not Notification.is_read)
+        .where(Notification.user_id == user_id, Notification.is_read.is_(False))
         .values(is_read=True)
     )
     await session.execute(stmt)

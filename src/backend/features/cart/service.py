@@ -1,6 +1,9 @@
 import json
+import logging
 
 from fastapi import Depends
+
+logger = logging.getLogger(__name__)
 
 from infra.cache.base import CacheRepository
 from infra.cache.redis import get_redis_cache
@@ -26,6 +29,7 @@ class CartService:
         try:
             cart_dict = json.loads(raw)
         except (json.JSONDecodeError, TypeError):
+            logger.error("Corrupted cart data for key=%s", self._key(identifier))
             return CartResponse(restaurant_id=None, items=[])
 
         enriched = [

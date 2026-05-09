@@ -47,7 +47,7 @@ const FavoritesPage = () => {
   };
 
   return (
-    <div style={{ padding: "16px 16px 100px" }}>
+    <div style={{ padding: "16px 16px calc(var(--bottom-tab-h, 68px) + 24px)" }}>
       {/* Header */}
       <div
         style={{

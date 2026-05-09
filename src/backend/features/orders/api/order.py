@@ -145,13 +145,13 @@ async def read_order_events(
 async def cancel_order(
     order_id: uuid.UUID,
     cancel_in: OrderCancelRequest,
-    current_user: User = Depends(require_permission(Permission.ORDERS_MANAGE_STATUS)),
+    current_user: User = Depends(require_permission(Permission.ORDERS_READ_OWN)),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[OrderResponse]:
     result = await service.cancel_order(
         session=session,
         order_id=order_id,
-        actor=current_user,
+        user_id=current_user.id,
         cancel_data=cancel_in,
     )
     return build_response(result)

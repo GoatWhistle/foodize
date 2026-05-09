@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useShallow } from 'zustand/react/shallow';
 import { useOrderStore } from '../../store/useOrderStore';
 import OrderStatusBadge from '../../components/ui/OrderStatusBadge';
 import { ROUTES } from '../../constants/routes';
@@ -9,7 +10,7 @@ import { ORDER_STATUS_RU } from '../../utils/locales';
 
 const STATUS_LABEL_RU = ORDER_STATUS_RU;
 
-const TERMINAL_STATUSES = new Set(['COMPLETED']);
+const TERMINAL_STATUSES = new Set(['COMPLETED', 'CANCELLED']);
 const STATUS_FLOW = ['PENDING', 'ACCEPTED', 'READY', 'COMPLETED'];
 
 const getOrderDisplayId = (order) => order.display_id ?? order.id.slice(0, 8);
@@ -24,6 +25,15 @@ const getOrderStages = (order, events) => {
   const eventByStatus = new Map(
     (events || []).map((event) => [event.new_status, event])
   );
+
+  if (order.status === 'CANCELLED') {
+    return STATUS_FLOW.map((status) => ({
+      status,
+      at: status === 'PENDING' ? order.created_at : eventByStatus.get(status)?.created_at,
+      state: eventByStatus.has(status) || status === 'PENDING' ? 'done' : 'next',
+    }));
+  }
+
   const currentIndex = STATUS_FLOW.indexOf(order.status);
 
   return STATUS_FLOW.map((status, index) => ({
@@ -40,8 +50,6 @@ const getOrderStages = (order, events) => {
           : 'next',
   }));
 };
-
-import { useShallow } from 'zustand/react/shallow';
 
 const OrderStatusPage = () => {
   const { id } = useParams();
@@ -89,8 +97,26 @@ const OrderStatusPage = () => {
 
   if (!currentOrder) {
     return (
-      <div className="loading-center">
-        <div className="spinner" />
+      <div className="status-screen">
+        <div className="skeleton" style={{ width: 160, height: 52, borderRadius: 'var(--r-md)', marginBottom: 12 }} />
+        <div className="skeleton" style={{ width: 100, height: 14, marginBottom: 32 }} />
+        <div style={{ width: '100%', maxWidth: 380, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 20, marginBottom: 16 }}>
+          <div className="skeleton" style={{ width: 90, height: 11, marginBottom: 16 }} />
+          {[1, 2, 3].map((i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 0', borderBottom: '1px solid var(--border)' }}>
+              <div className="skeleton" style={{ width: '58%', height: 14 }} />
+              <div className="skeleton" style={{ width: '18%', height: 14 }} />
+            </div>
+          ))}
+        </div>
+        <div style={{ width: '100%', maxWidth: 380, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 20 }}>
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0' }}>
+              <div className="skeleton" style={{ width: 24, height: 24, borderRadius: '50%', flexShrink: 0 }} />
+              <div className="skeleton" style={{ width: `${38 + i * 10}%`, height: 13 }} />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -396,7 +422,7 @@ const OrderStatusPage = () => {
             {completing ? 'Подтверждение...' : '✓ Получил'}
           </button>
         )}
-        {currentOrder.status === 'COMPLETED' && (
+        {(currentOrder.status === 'COMPLETED' || currentOrder.status === 'CANCELLED') && (
           <button
             className="btn btn-primary"
             style={{ flex: 1, background: 'var(--fire)' }}

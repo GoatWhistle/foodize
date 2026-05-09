@@ -89,7 +89,16 @@ export const useOrderStore = create((set, get) => ({
       lineKey,
     };
 
-    if (cartRestaurantId && cartRestaurantId !== restaurantId) {
+    if (cartRestaurantId && cartRestaurantId !== restaurantId && cart.length > 0) {
+      const confirmed = await new Promise((resolve) => {
+        const tg = window.Telegram?.WebApp;
+        if (tg?.showConfirm) {
+          tg.showConfirm("Заменить корзину?\nТекущие товары будут удалены.", resolve);
+        } else {
+          resolve(window.confirm("Заменить корзину? Текущие товары будут удалены."));
+        }
+      });
+      if (!confirmed) return false;
       set({ cart: [nextItem], cartRestaurantId: restaurantId });
     } else {
       const existing = cart.find(
@@ -181,6 +190,21 @@ export const useOrderStore = create((set, get) => ({
   currentOrder: null,
   ordersLoading: false,
   ordersTotal: 0,
+  activeOrder: null,
+
+  setActiveOrder: (order) => set({ activeOrder: order }),
+  clearActiveOrder: () => set({ activeOrder: null }),
+
+  fetchActiveOrder: async () => {
+    try {
+      const res = await orderService.getMyOrders({ page: 1, size: 5 });
+      const orders = Array.isArray(res.data?.data) ? res.data.data : [];
+      const active = orders.find((o) =>
+        ["PENDING", "ACCEPTED", "READY"].includes(o.status),
+      );
+      set({ activeOrder: active ?? null });
+    } catch {}
+  },
 
   placeOrder: async (promoCode = null, comment = "") => {
     const { cart, cartRestaurantId } = get();
@@ -201,6 +225,7 @@ export const useOrderStore = create((set, get) => ({
     set((s) => ({
       orders: [res.data.data, ...s.orders],
       currentOrder: res.data.data,
+      activeOrder: res.data.data,
       cart: [],
       cartRestaurantId: null,
     }));

@@ -3,6 +3,7 @@ export const ORDER_STATUS_RU = {
   ACCEPTED: "Принят",
   READY: "Готово",
   COMPLETED: "Выполнено",
+  CANCELLED: "Отменён",
 };
 
 export const APPROVAL_STATUS_RU = {

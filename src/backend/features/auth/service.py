@@ -171,14 +171,12 @@ async def refresh_user_token(
 
     cache = get_redis_cache()
     blacklist_key = f"{_REFRESH_BLACKLIST_PREFIX}{token}"
-    if await cache.exists(blacklist_key):
+    ttl = max(1, payload.get("exp", 0) - int(time.time()))
+    blacklisted = await cache.set_nx(blacklist_key, "1", ttl=ttl)
+    if not blacklisted:
         raise AuthException(detail="Refresh token already used")
 
     user = await get_user_by_id_or_404(session, parsed_user_id)
-
-    ttl = payload.get("exp", 0) - int(time.time())
-    if ttl > 0:
-        await cache.set(blacklist_key, "1", ttl=ttl)
 
     access_token = create_access_token(user.id, str(user.phone_number))
     new_refresh_token = create_refresh_token(user.id, str(user.phone_number))

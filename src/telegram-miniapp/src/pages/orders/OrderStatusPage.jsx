@@ -15,15 +15,23 @@ const STATUS_COLOR = {
   ACCEPTED: "#3b82f6",
   READY: "#22c55e",
   COMPLETED: "#6b7280",
+  CANCELLED: "#ef4444",
 };
 
 const STATUS_FLOW = ["PENDING", "ACCEPTED", "READY", "COMPLETED"];
-const TERMINAL = new Set(["COMPLETED"]);
+const TERMINAL = new Set(["COMPLETED", "CANCELLED"]);
 
 const getDisplayId = (order) => order.display_id ?? order.id.slice(0, 8);
 
 const getStages = (order, events) => {
   const byStatus = new Map((events || []).map((e) => [e.new_status, e]));
+  if (order.status === "CANCELLED") {
+    return STATUS_FLOW.map((s) => ({
+      status: s,
+      at: s === "PENDING" ? order.created_at : byStatus.get(s)?.created_at,
+      state: byStatus.has(s) || s === "PENDING" ? "done" : "next",
+    }));
+  }
   const curIdx = STATUS_FLOW.indexOf(order.status);
   return STATUS_FLOW.map((s, i) => ({
     status: s,
@@ -35,16 +43,18 @@ const getStages = (order, events) => {
 const OrderStatusPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { fetchOrder, currentOrder } = useOrderStore(
+  const { fetchOrder, currentOrder, clearActiveOrder } = useOrderStore(
     useShallow((s) => ({
       fetchOrder: s.fetchOrder,
       currentOrder: s.currentOrder,
+      clearActiveOrder: s.clearActiveOrder,
     })),
   );
   const wsRef = useRef(null);
   const [events, setEvents] = useState([]);
   const [completing, setCompleting] = useState(false);
   const [completeError, setCompleteError] = useState("");
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     if (BackButton) {
@@ -86,8 +96,25 @@ const OrderStatusPage = () => {
 
   if (!currentOrder) {
     return (
-      <div className="loading-center">
-        <div className="spinner" />
+      <div className="status-screen" style={{ justifyContent: "flex-start", padding: "24px 16px calc(var(--bottom-tab-h, 68px) + 24px)" }}>
+        <div className="skeleton" style={{ width: 160, height: 48, borderRadius: "var(--r-md)", marginBottom: 24, alignSelf: "center" }} />
+        <div style={{ width: "100%", maxWidth: 480, background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--r-md)", padding: 18, marginBottom: 14 }}>
+          <div className="skeleton" style={{ width: 80, height: 11, marginBottom: 16 }} />
+          {[1, 2, 3].map((i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
+              <div className="skeleton" style={{ width: "58%", height: 14 }} />
+              <div className="skeleton" style={{ width: "18%", height: 14 }} />
+            </div>
+          ))}
+        </div>
+        <div style={{ width: "100%", maxWidth: 480, background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--r-md)", padding: 18 }}>
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0" }}>
+              <div className="skeleton" style={{ width: 24, height: 24, borderRadius: "50%", flexShrink: 0 }} />
+              <div className="skeleton" style={{ width: `${40 + i * 10}%`, height: 13 }} />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -109,12 +136,50 @@ const OrderStatusPage = () => {
     }
   };
 
+  const handleCancel = () => {
+    const tgApp = window.Telegram?.WebApp;
+    const doCancel = async () => {
+      setCancelling(true);
+      try {
+        await orderService.cancelOrder(id);
+        await fetchOrder(id);
+        clearActiveOrder();
+      } catch {
+        setCompleteError("Не удалось отменить заказ");
+      } finally {
+        setCancelling(false);
+      }
+    };
+    if (tgApp?.showConfirm) {
+      tgApp.showConfirm("Отменить заказ?", (ok) => ok && doCancel());
+    } else {
+      if (window.confirm("Отменить заказ?")) doCancel();
+    }
+  };
+
   return (
     <div
       className="status-screen"
-      style={{ justifyContent: "flex-start", padding: "24px 16px 100px" }}
+      style={{ justifyContent: "flex-start", padding: "24px 16px calc(var(--bottom-tab-h, 68px) + 24px)" }}
     >
       <OrderStatusBadge status={currentOrder.status} />
+
+      {currentOrder.status === "CANCELLED" && (
+        <div style={{
+          width: "100%",
+          maxWidth: 480,
+          background: "rgba(239,68,68,0.08)",
+          border: "1px solid rgba(239,68,68,0.2)",
+          borderRadius: "var(--r-md)",
+          padding: "12px 16px",
+          marginBottom: 14,
+          fontSize: "0.85rem",
+          color: "#ef4444",
+          fontWeight: 600,
+        }}>
+          Заказ был отменён
+        </div>
+      )}
 
       {/* Order composition */}
       <div
@@ -359,7 +424,18 @@ const OrderStatusPage = () => {
       )}
 
       {/* Actions */}
-      <div style={{ display: "flex", gap: 10, width: "100%", maxWidth: 480 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", maxWidth: 480 }}>
+        {(currentOrder.status === "PENDING" || currentOrder.status === "ACCEPTED") && (
+          <button
+            className="btn btn-secondary"
+            style={{ width: "100%", color: "var(--color-error)", borderColor: "var(--color-error-border)" }}
+            onClick={handleCancel}
+            disabled={cancelling}
+          >
+            {cancelling ? "Отмена..." : "Отменить заказ"}
+          </button>
+        )}
+        <div style={{ display: "flex", gap: 10 }}>
         {isReady && (
           <button
             className="btn btn-primary"
@@ -371,7 +447,7 @@ const OrderStatusPage = () => {
             {completing ? "..." : "✓ Получил"}
           </button>
         )}
-        {currentOrder.status === "COMPLETED" && (
+        {(currentOrder.status === "COMPLETED" || currentOrder.status === "CANCELLED") && (
           <button
             className="btn btn-primary"
             style={{ flex: 1, background: "var(--fire)" }}
@@ -392,6 +468,7 @@ const OrderStatusPage = () => {
         >
           ← К заказам
         </button>
+        </div>
       </div>
     </div>
   );

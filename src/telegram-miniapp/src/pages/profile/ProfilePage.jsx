@@ -14,8 +14,10 @@ import {
   Check,
   X,
   UserCircle,
+  Bell,
 } from "@phosphor-icons/react";
 import { useAuthStore } from "../../store/useAuthStore";
+import { useNotificationStore } from "../../store/useNotificationStore";
 import { hasPermission, PERMISSIONS } from "../../utils/permissions";
 import { useShallow } from "zustand/react/shallow";
 import { BackButton } from "../../telegram/sdk";
@@ -25,6 +27,7 @@ import { staffService } from "../../services/staffService";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
+  const unreadCount = useNotificationStore((s) => s.unreadCount);
   const { user, logout, fetchMe } = useAuthStore(
     useShallow((s) => ({
       user: s.user,
@@ -103,6 +106,7 @@ const ProfilePage = () => {
       await userService.updateMe(editForm);
       await fetchMe();
       setEditMode(false);
+      window.Telegram?.WebApp?.showAlert?.("Профиль сохранён");
     } catch {
       setEditError("Не удалось сохранить");
     } finally {
@@ -154,7 +158,7 @@ const ProfilePage = () => {
       : user?.name || "Пользователь";
 
   return (
-    <div className="profile-page" style={{ paddingBottom: 100 }}>
+    <div className="profile-page" style={{ paddingBottom: "calc(var(--bottom-tab-h, 68px) + 24px)" }}>
       {/* Header */}
       <div className="profile-header" style={{ position: "relative" }}>
         <div className="profile-avatar">
@@ -325,6 +329,31 @@ const ProfilePage = () => {
           <CaretRight size={16} color="var(--text-3)" />
         </div>
 
+        {/* Notifications */}
+        <div
+          className="profile-menu-item"
+          onClick={() => navigate("/notifications")}
+        >
+          <Bell size={18} />
+          <span style={{ flex: 1 }}>Уведомления</span>
+          {unreadCount > 0 && (
+            <span
+              style={{
+                background: "var(--fire)",
+                color: "var(--fire-text, #fff)",
+                borderRadius: 99,
+                fontSize: 11,
+                fontWeight: 700,
+                padding: "1px 7px",
+                marginRight: 4,
+              }}
+            >
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
+          <CaretRight size={16} color="var(--text-3)" />
+        </div>
+
         {/* Admin */}
         {hasPermission(user, PERMISSIONS.ADMIN_ACCESS) && (
           <div
@@ -345,11 +374,7 @@ const ProfilePage = () => {
         {!checkingStaff && isStaff && (
           <div
             className="profile-menu-item"
-            onClick={() =>
-              window.Telegram?.WebApp?.showAlert(
-                "Кабинет сотрудника доступен только в веб-версии Foodize",
-              )
-            }
+            onClick={() => navigate("/staff-profile")}
           >
             <CookingPot size={18} color="var(--fire)" />
             <span style={{ flex: 1 }}>Кабинет сотрудника</span>
@@ -362,11 +387,7 @@ const ProfilePage = () => {
           (isVendor ? (
             <div
               className="profile-menu-item"
-              onClick={() =>
-                window.Telegram?.WebApp?.showAlert(
-                  "Кабинет вендора доступен только в веб-версии Foodize",
-                )
-              }
+              onClick={() => navigate("/vendor-profile")}
             >
               <Storefront size={18} />
               <span style={{ flex: 1 }}>Кабинет вендора</span>

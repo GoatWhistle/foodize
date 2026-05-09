@@ -1,4 +1,17 @@
 const ERROR_MAP = {
+  'Invalid phone number or password': 'Неверный телефон или пароль',
+  'Invalid credentials': 'Неверный телефон или пароль',
+  'Not authenticated': 'Необходима авторизация',
+  'Token has expired': 'Сессия истекла, войдите заново',
+  'Invalid token': 'Недействительный токен авторизации',
+  'Token has been invalidated': 'Сессия завершена, войдите заново',
+  'Account is deactivated': 'Аккаунт деактивирован',
+  'Refresh token missing': 'Необходима авторизация',
+  'Refresh token has expired': 'Сессия истекла, войдите заново',
+  'Invalid refresh token': 'Недействительный токен авторизации',
+  'Refresh token already used': 'Токен уже использован, войдите заново',
+  'Access denied': 'Доступ запрещён',
+  'Bad request': 'Некорректный запрос',
   'You have already reviewed this restaurant':
     'Вы уже оставили отзыв на этот ресторан',
   'You can publish up to 5 reviews for one restaurant':
@@ -25,13 +38,19 @@ const ERROR_MAP = {
     'Один или несколько товаров не найдены',
   'One or more menu items do not belong to the specified restaurant':
     'Один или несколько товаров не принадлежат этому ресторану',
-  'Order can only be cancelled when in PENDING status':
-    'Отменить заказ можно только в статусе «Ожидает»',
+  'Order can only be cancelled when in PENDING or ACCEPTED status':
+    'Отменить заказ можно только пока он ожидает или готовится',
   'Invalid order status transition': 'Недопустимое изменение статуса заказа',
   'One or more menu items are not available':
     'Один или несколько товаров недоступны для заказа',
   'Order can only be completed when in READY status':
     'Подтвердить получение можно только в статусе «Готов»',
+  'Ready time is required to accept an order':
+    'Укажите время готовности заказа',
+  'Idempotency key was used with different payload':
+    'Конфликт запроса, попробуйте ещё раз',
+  'Idempotent request is still being processed':
+    'Запрос уже обрабатывается, подождите',
   'Restaurant not found': 'Ресторан не найден',
   'Restaurant is currently closed': 'Ресторан сейчас закрыт',
   'Duplicate options selected': 'Одна и та же опция выбрана дважды',
@@ -66,7 +85,7 @@ export function translateApiError(err, fallback) {
     const exact = ERROR_MAP[detail];
     if (exact) return exact;
     const prefix = Object.keys(ERROR_MAP).find((key) => detail.startsWith(key));
-    return prefix ? ERROR_MAP[prefix] : detail;
+    return prefix ? ERROR_MAP[prefix] : (fallback ?? detail);
   }
   return fallback;
 }

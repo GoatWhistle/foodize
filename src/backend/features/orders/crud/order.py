@@ -146,7 +146,7 @@ async def get_active_orders_for_display(
     stmt = (
         select(Order.display_id, Order.status)
         .where(Order.restaurant_id == restaurant_id)
-        .where(Order.status != OrderStatus.COMPLETED.value)
+        .where(Order.status.notin_([OrderStatus.COMPLETED.value, OrderStatus.CANCELLED.value]))
         .order_by(Order.created_at.asc())
     )
     result = await session.execute(stmt)

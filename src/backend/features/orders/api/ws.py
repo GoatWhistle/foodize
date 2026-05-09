@@ -41,7 +41,7 @@ async def order_status_ws(
             data = OrderResponse.model_validate(order).model_dump(mode="json")
             await websocket.send_text(json.dumps(data))
 
-            if last_status == "COMPLETED":
+            if last_status in ("COMPLETED", "CANCELLED"):
                 return
 
         while True:
@@ -58,7 +58,7 @@ async def order_status_ws(
                         data = OrderResponse.model_validate(order).model_dump(mode="json")
                         await websocket.send_text(json.dumps(data))
 
-                    if current_status == "COMPLETED":
+                    if current_status in ("COMPLETED", "CANCELLED"):
                         break
 
     except WebSocketDisconnect:
@@ -145,8 +145,39 @@ async def display_board_ws(
 async def restaurant_orders_ws(
     restaurant_id: uuid.UUID,
     websocket: WebSocket,
+    token: str | None = None,
 ) -> None:
     await websocket.accept()
+
+    if not token:
+        await websocket.send_text(json.dumps({"error": "not_authenticated"}))
+        await websocket.close()
+        return
+
+    try:
+        payload = decode_jwt(token)
+        user_id = payload.get("sub")
+        if user_id is None:
+            raise ValueError
+        parsed_user_id = uuid.UUID(user_id)
+    except (jwt.InvalidTokenError, ValueError):
+        await websocket.send_text(json.dumps({"error": "invalid_token"}))
+        await websocket.close()
+        return
+
+    async with db_helper.session_factory() as session:
+        user = await get_user_by_id(session, parsed_user_id)
+        if user is None or not user.is_active:
+            await websocket.send_text(json.dumps({"error": "not_authenticated"}))
+            await websocket.close()
+            return
+        try:
+            await verify_restaurant_access(session, restaurant_id, user)
+        except Exception:
+            await websocket.send_text(json.dumps({"error": "forbidden"}))
+            await websocket.close()
+            return
+
     redis_client = get_redis_cache().get_raw_client()
     pubsub = redis_client.pubsub()
     channel = f"restaurant_orders:{restaurant_id}"

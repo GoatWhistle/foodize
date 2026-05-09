@@ -416,12 +416,14 @@ async def complete_order(
 async def cancel_order(
     session: AsyncSession,
     order_id: uuid.UUID,
-    actor: User,
+    user_id: uuid.UUID,
     cancel_data: OrderCancelRequest,
 ) -> OrderResponse:
     order = await order_crud.get_order_by_id(session, order_id)
     if not order:
         raise OrderNotFoundException()
+    if order.user_id != user_id:
+        raise OrderAccessDeniedException()
     old_status = OrderStatus(order.status)
     if old_status not in _CANCELLABLE_STATUSES:
         raise OrderNotCancellableException()
@@ -430,8 +432,8 @@ async def cancel_order(
     await order_crud.create_order_event(
         session,
         order_id=order.id,
-        actor_id=actor.id,
-        actor_permissions=actor.permissions,
+        actor_id=user_id,
+        actor_permissions=serialize_permissions(CUSTOMER_PERMISSIONS),
         old_status=old_status,
         new_status=OrderStatus.CANCELLED,
     )

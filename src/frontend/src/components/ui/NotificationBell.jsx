@@ -49,6 +49,9 @@ const NotificationBell = () => {
 
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
   const wsRef = useRef(null);
@@ -63,6 +66,8 @@ const NotificationBell = () => {
       .then((res) => {
         setNotifications(res.data.items || []);
         setUnreadCount(res.data.unread_count || 0);
+        setTotal(res.data.total || 0);
+        setPage(1);
       })
       .catch(() => {});
 
@@ -124,7 +129,23 @@ const NotificationBell = () => {
       await notificationService.deleteAll();
       setNotifications([]);
       setUnreadCount(0);
+      setTotal(0);
+      setPage(1);
     } catch {}
+  };
+
+  const handleLoadMore = async () => {
+    if (loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const nextPage = page + 1;
+      const res = await notificationService.getNotifications({ page: nextPage, size: 20 });
+      setNotifications((prev) => [...prev, ...(res.data.items || [])]);
+      setTotal(res.data.total || 0);
+      setPage(nextPage);
+    } catch {} finally {
+      setLoadingMore(false);
+    }
   };
 
   if (!isAuthenticated) return null;
@@ -365,6 +386,26 @@ const NotificationBell = () => {
                     ))}
                   </div>
                 ))}
+                {notifications.length < total && (
+                  <button
+                    onClick={handleLoadMore}
+                    disabled={loadingMore}
+                    style={{
+                      width: '100%',
+                      padding: '10px 16px',
+                      background: 'none',
+                      border: 'none',
+                      borderTop: '1px solid var(--border)',
+                      color: 'var(--brand)',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      cursor: loadingMore ? 'default' : 'pointer',
+                      opacity: loadingMore ? 0.6 : 1,
+                    }}
+                  >
+                    {loadingMore ? 'Загрузка...' : 'Загрузить ещё'}
+                  </button>
+                )}
               </div>
             )}
           </div>

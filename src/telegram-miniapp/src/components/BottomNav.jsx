@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { Storefront, Package, User } from "@phosphor-icons/react";
+import { useNotificationStore } from "../store/useNotificationStore";
 
 const TABS = [
   { path: "/", icon: Storefront, label: "Рестораны" },
@@ -10,6 +11,7 @@ const TABS = [
 const BottomNav = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const unreadCount = useNotificationStore((s) => s.unreadCount);
 
   const isActive = (path) =>
     path === "/" ? pathname === "/" : pathname.startsWith(path);
@@ -18,14 +20,38 @@ const BottomNav = () => {
     <div className="bottom-tab-bar">
       {TABS.map(({ path, icon: Icon, label }) => {
         const active = isActive(path);
+        const showBadge = path === "/profile" && unreadCount > 0;
         return (
           <button
             key={path}
             className={`bottom-tab${active ? " active" : ""}`}
             onClick={() => navigate(path)}
           >
-            <span className="bottom-tab-icon">
+            <span className="bottom-tab-icon" style={{ position: "relative" }}>
               <Icon size={22} weight={active ? "fill" : "regular"} />
+              {showBadge && (
+                <span
+                  style={{
+                    position: "absolute",
+                    top: -4,
+                    right: -6,
+                    background: "var(--fire)",
+                    color: "var(--fire-text, #fff)",
+                    borderRadius: "50%",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    minWidth: 16,
+                    height: 16,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "0 3px",
+                    lineHeight: 1,
+                  }}
+                >
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
             </span>
             <span className="bottom-tab-label">{label}</span>
           </button>

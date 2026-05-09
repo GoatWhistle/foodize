@@ -2,6 +2,7 @@ import logging
 
 import redis.asyncio as aioredis
 from aiogram import Bot
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
 from config import bot_config
 from utils.formatting import format_price, format_status
@@ -16,6 +17,21 @@ async def _get_telegram_id(user_id: str) -> int | None:
         return int(val) if val else None
     finally:
         await client.aclose()
+
+
+def _mini_app_keyboard() -> InlineKeyboardMarkup | None:
+    if not bot_config.mini_app_url:
+        return None
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="Открыть Foodize",
+                    web_app=WebAppInfo(url=bot_config.mini_app_url),
+                )
+            ]
+        ]
+    )
 
 
 async def handle_order_placed(event: dict, bot: Bot) -> None:
@@ -34,7 +50,7 @@ async def handle_order_placed(event: dict, bot: Bot) -> None:
         f"Мы уведомим вас, когда статус изменится."
     )
     try:
-        await bot.send_message(chat_id=telegram_id, text=text)
+        await bot.send_message(chat_id=telegram_id, text=text, reply_markup=_mini_app_keyboard())
     except Exception as e:
         logger.warning("Failed to send order_placed notification: %s", e)
 
@@ -54,6 +70,8 @@ async def handle_order_status_changed(event: dict, bot: Bot) -> None:
         f"Сумма: {format_price(total)}"
     )
     try:
-        await bot.send_message(chat_id=telegram_id, text=text)
+        await bot.send_message(
+            chat_id=telegram_id, text=text, reply_markup=_mini_app_keyboard()
+        )
     except Exception as e:
         logger.warning("Failed to send status_changed notification: %s", e)

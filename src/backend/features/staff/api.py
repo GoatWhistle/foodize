@@ -23,7 +23,7 @@ from features.vendors.dependencies import get_current_vendor
 from features.vendors.models import VendorProfile
 from shared.dependencies import require_permission
 from shared.enums.permissions import Permission
-from shared.exceptions import NotFoundException
+from shared.exceptions import ForbiddenException, NotFoundException
 from shared.response import build_list_response, build_response
 from shared.schemas.response import SuccessListResponse, SuccessResponse
 
@@ -138,9 +138,7 @@ async def staff_toggle_item_availability(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[MenuItemResponse]:
     staff_profile = await get_staff_profile_by_user_id(session, current_user.id)
-    if not staff_profile or str(staff_profile.restaurant_id) != str(restaurant_id):
-        from shared.exceptions import ForbiddenException
-
+    if not staff_profile or staff_profile.restaurant_id != restaurant_id:
         raise ForbiddenException(detail="Not authorized to manage this restaurant's menu")
     result = await menu_service.toggle_item_availability_for_staff(
         session=session,

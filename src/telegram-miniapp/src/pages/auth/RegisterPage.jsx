@@ -1,17 +1,39 @@
 import { useState } from "react";
 import { completeTelegramAuth } from "../../telegram/init";
 import { useAuthStore } from "../../store/useAuthStore";
+import { translateApiError } from "../../utils/translateApiError";
+
+const PHONE_RE = /^\+?[0-9]{7,15}$/;
 
 export default function RegisterPage({ initData, prefillPhone, onSuccess }) {
   const [phone, setPhone] = useState(prefillPhone ?? "");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
 
   const fetchMe = useAuthStore((s) => s.fetchMe);
 
+  const validatePhone = (value) => {
+    if (!value) return "Введите номер телефона";
+    if (!PHONE_RE.test(value.replace(/[\s().-]/g, "")))
+      return "Неверный формат номера (+7XXXXXXXXXX)";
+    return "";
+  };
+
+  const handlePhoneChange = (e) => {
+    const val = e.target.value;
+    setPhone(val);
+    setPhoneError(validatePhone(val));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const pErr = validatePhone(phone);
+    if (pErr) {
+      setPhoneError(pErr);
+      return;
+    }
     setError("");
     setLoading(true);
     try {
@@ -19,11 +41,8 @@ export default function RegisterPage({ initData, prefillPhone, onSuccess }) {
       await fetchMe();
       onSuccess();
     } catch (err) {
-      const detail = err.response?.data?.detail;
       setError(
-        typeof detail === "string"
-          ? detail
-          : "Не удалось зарегистрироваться. Проверьте данные.",
+        translateApiError(err, "Не удалось зарегистрироваться. Проверьте данные."),
       );
     } finally {
       setLoading(false);
@@ -99,12 +118,17 @@ export default function RegisterPage({ initData, prefillPhone, onSuccess }) {
             type="tel"
             value={phone}
             readOnly={!!prefillPhone}
-            onChange={(e) => !prefillPhone && setPhone(e.target.value)}
-            className="form-input"
+            onChange={prefillPhone ? undefined : handlePhoneChange}
+            className={`form-input${phoneError ? " form-input--error" : ""}`}
             placeholder="+7XXXXXXXXXX"
             required
             style={prefillPhone ? { opacity: 0.6, cursor: "not-allowed" } : {}}
           />
+          {phoneError && (
+            <div className="form-error" style={{ fontSize: "0.78rem", marginTop: 4 }}>
+              {phoneError}
+            </div>
+          )}
         </div>
 
         <div className="form-group">

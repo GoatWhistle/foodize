@@ -27,6 +27,9 @@ class RedisCache(CacheRepository):
     async def exists(self, key: str) -> bool:
         return bool(await self._client.exists(key))
 
+    async def set_nx(self, key: str, value: str, ttl: int | None = None) -> bool:
+        return bool(await self._client.set(key, value, ex=ttl, nx=True))
+
     async def sadd(self, key: str, *values: str) -> None:
         await self._client.sadd(key, *values)
 

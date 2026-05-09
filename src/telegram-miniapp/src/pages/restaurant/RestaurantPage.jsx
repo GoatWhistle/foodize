@@ -16,6 +16,7 @@ import {
   List,
   Fire,
   Trash,
+  MapPin,
 } from "@phosphor-icons/react";
 import { useRestaurantStore } from "../../store/useRestaurantStore";
 import { useOrderStore } from "../../store/useOrderStore";
@@ -87,10 +88,13 @@ const RestaurantPage = () => {
       loading: s.loading,
     })),
   );
-  const { addToCart, cartCount } = useOrderStore(
+  const { addToCart, clearCart, cartCount, cartRestaurantId, cart } = useOrderStore(
     useShallow((s) => ({
       addToCart: s.addToCart,
+      clearCart: s.clearCart,
       cartCount: s.cartCount,
+      cartRestaurantId: s.cartRestaurantId,
+      cart: s.cart,
     })),
   );
   const { favoriteIds, toggle } = useFavoriteStore(
@@ -240,12 +244,28 @@ const RestaurantPage = () => {
       0,
     );
 
-  const handleAddMenuItem = (item) => {
+  const handleAddMenuItem = async (item) => {
     const groups = getActiveOptionGroups(item);
+    const needsConfirm = cartRestaurantId && cartRestaurantId !== id && cart.length > 0;
+
     if (groups.length === 0) {
-      addToCart(item, id);
+      await addToCart(item, id);
       return;
     }
+
+    if (needsConfirm) {
+      const confirmed = await new Promise((resolve) => {
+        const tg = window.Telegram?.WebApp;
+        if (tg?.showConfirm) {
+          tg.showConfirm("Заменить корзину?\nТекущие товары будут удалены.", resolve);
+        } else {
+          resolve(window.confirm("Заменить корзину? Текущие товары будут удалены."));
+        }
+      });
+      if (!confirmed) return;
+      await clearCart();
+    }
+
     setCustomizingItem(item);
     setSelectedOptionIds(
       groups.flatMap((g) =>
@@ -308,6 +328,12 @@ const RestaurantPage = () => {
         <div className="restaurant-hero-overlay" />
         <div className="restaurant-hero-info">
           <div className="restaurant-hero-name">{restaurant.name}</div>
+          {restaurant.address && (
+            <div style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.75)", marginBottom: 6, display: "flex", alignItems: "center", gap: 4 }}>
+              <MapPin size={12} weight="bold" />
+              {restaurant.address}
+            </div>
+          )}
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {rating != null && (
               <span
@@ -390,8 +416,17 @@ const RestaurantPage = () => {
         </div>
 
         {loading ? (
-          <div className="loading-center">
-            <div className="spinner" />
+          <div className="menu-list">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="menu-item" style={{ pointerEvents: "none" }}>
+                <div className="menu-item-img skeleton" style={{ minHeight: 90, borderRadius: "var(--r-sm)" }} />
+                <div style={{ flex: 1, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div className="skeleton" style={{ width: "65%", height: 14 }} />
+                  <div className="skeleton" style={{ width: "85%", height: 11 }} />
+                  <div className="skeleton" style={{ width: "35%", height: 14, marginTop: 4 }} />
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="menu-list">

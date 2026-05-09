@@ -5,15 +5,20 @@ import {
   createBrowserRouter,
   Outlet,
   useNavigate,
+  useNavigationType,
+  useLocation,
 } from "react-router-dom";
 
 import { useAuthStore } from "./store/useAuthStore";
 import { useOrderStore } from "./store/useOrderStore";
 import { useFavoriteStore } from "./store/useFavoriteStore";
+import { useNotificationStore } from "./store/useNotificationStore";
 import { authExistingUser, initTelegramApp } from "./telegram/init";
 import { tg } from "./telegram/sdk";
 import RegisterPage from "./pages/auth/RegisterPage";
 import BottomNav from "./components/BottomNav";
+import ErrorBoundary from "./components/ui/ErrorBoundary";
+import ActiveOrderBanner from "./components/ActiveOrderBanner";
 
 const LazyHome = lazy(() => import("./pages/home/HomePage"));
 const LazyRestaurant = lazy(() => import("./pages/restaurant/RestaurantPage"));
@@ -21,6 +26,9 @@ const LazyOrders = lazy(() => import("./pages/orders/OrdersPage"));
 const LazyOrderStatus = lazy(() => import("./pages/orders/OrderStatusPage"));
 const LazyProfile = lazy(() => import("./pages/profile/ProfilePage"));
 const LazyFavorites = lazy(() => import("./pages/profile/FavoritesPage"));
+const LazyNotifications = lazy(() => import("./pages/notifications/NotificationsPage"));
+const LazyVendorProfile = lazy(() => import("./pages/profile/VendorProfilePage"));
+const LazyStaffProfile = lazy(() => import("./pages/profile/StaffProfilePage"));
 
 const Spinner = () => (
   <div
@@ -59,15 +67,22 @@ const GlobalCartFab = () => {
   );
 };
 
-const Layout = () => (
-  <>
-    <Suspense fallback={<Spinner />}>
-      <Outlet />
-    </Suspense>
-    <GlobalCartFab />
-    <BottomNav />
-  </>
-);
+const Layout = () => {
+  const navigationType = useNavigationType();
+  const location = useLocation();
+  return (
+    <>
+      <ActiveOrderBanner />
+      <Suspense fallback={null}>
+        <div key={location.key} className={navigationType !== "POP" ? "page-enter" : ""}>
+          <Outlet />
+        </div>
+      </Suspense>
+      <GlobalCartFab />
+      <BottomNav />
+    </>
+  );
+};
 
 const router = createBrowserRouter([
   {
@@ -79,6 +94,9 @@ const router = createBrowserRouter([
       { path: "/orders/:id", element: <LazyOrderStatus /> },
       { path: "/profile", element: <LazyProfile /> },
       { path: "/favorites", element: <LazyFavorites /> },
+      { path: "/notifications", element: <LazyNotifications /> },
+      { path: "/vendor-profile", element: <LazyVendorProfile /> },
+      { path: "/staff-profile", element: <LazyStaffProfile /> },
       { path: "*", element: <Navigate to="/" replace /> },
     ],
   },
@@ -97,8 +115,13 @@ export default function App() {
 
   const fetchMe = useAuthStore((s) => s.fetchMe);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
   const fetchCart = useOrderStore((s) => s.fetchCart);
+  const fetchActiveOrder = useOrderStore((s) => s.fetchActiveOrder);
   const loadFavorites = useFavoriteStore((s) => s.loadFavorites);
+  const fetchNotifications = useNotificationStore((s) => s.fetchNotifications);
+  const connectWs = useNotificationStore((s) => s.connectWs);
+  const disconnectWs = useNotificationStore((s) => s.disconnectWs);
 
   useEffect(() => {
     applyTelegramTheme();
@@ -131,8 +154,17 @@ export default function App() {
     if (isAuthenticated) {
       fetchCart();
       loadFavorites();
+      fetchActiveOrder();
     }
-  }, [isAuthenticated, fetchCart, loadFavorites]);
+  }, [isAuthenticated, fetchCart, loadFavorites, fetchActiveOrder]);
+
+  useEffect(() => {
+    if (isAuthenticated && user?.id) {
+      fetchNotifications();
+      connectWs(user.id);
+      return () => disconnectWs();
+    }
+  }, [isAuthenticated, user?.id, fetchNotifications, connectWs, disconnectWs]);
 
   if (appState === "loading") return <Spinner />;
 
@@ -146,5 +178,11 @@ export default function App() {
     );
   }
 
-  return <RouterProvider router={router} />;
+  return (
+    <div className="app-ready">
+      <ErrorBoundary>
+        <RouterProvider router={router} />
+      </ErrorBoundary>
+    </div>
+  );
 }

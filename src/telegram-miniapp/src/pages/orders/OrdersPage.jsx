@@ -6,6 +6,7 @@ import {
   CheckCircle,
   CaretRight,
   HandPalm,
+  X,
 } from "@phosphor-icons/react";
 import { useOrderStore } from "../../store/useOrderStore";
 import { useShallow } from "zustand/react/shallow";
@@ -20,12 +21,12 @@ const STATUS_CONFIG = {
     icon: <Clock weight="bold" />,
   },
   ACCEPTED: {
-    label: "Ожидается",
+    label: "Принят",
     color: "#3b82f6",
     icon: <CheckCircle weight="bold" />,
   },
   READY: {
-    label: "Ожидается",
+    label: "Готово",
     color: "#22c55e",
     icon: <HandPalm weight="bold" />,
   },
@@ -33,6 +34,11 @@ const STATUS_CONFIG = {
     label: "Выполнено",
     color: "#6b7280",
     icon: <CheckCircle weight="fill" />,
+  },
+  CANCELLED: {
+    label: "Отменён",
+    color: "#ef4444",
+    icon: <X weight="bold" />,
   },
 };
 
@@ -84,7 +90,7 @@ const OrdersPage = () => {
       : orders;
 
   return (
-    <div style={{ padding: "16px 16px 100px" }}>
+    <div style={{ padding: "16px 16px calc(var(--bottom-tab-h, 68px) + 24px)" }}>
       <div
         style={{
           display: "flex",

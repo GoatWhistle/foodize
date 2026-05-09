@@ -97,7 +97,7 @@ const HomePage = () => {
           )}
         </div>
 
-        {loading ? (
+        {loading && publicRestaurants.length === 0 ? (
           <div className="loading-center">
             <div className="spinner" />
           </div>
@@ -107,7 +107,7 @@ const HomePage = () => {
             subtitle="Попробуйте другой поиск или уберите фильтры"
           />
         ) : (
-          <>
+          <div className={loading ? "loading-dim" : undefined}>
             <div className="restaurants-grid">
               {publicRestaurants.map((r) => (
                 <RestaurantCard
@@ -126,7 +126,7 @@ const HomePage = () => {
               totalPages={totalPages}
               onPageChange={setPage}
             />
-          </>
+          </div>
         )}
       </div>
     </div>

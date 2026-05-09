@@ -15,6 +15,9 @@ class CacheRepository(ABC):
     async def exists(self, key: str) -> bool: ...
 
     @abstractmethod
+    async def set_nx(self, key: str, value: str, ttl: int | None = None) -> bool: ...
+
+    @abstractmethod
     async def sadd(self, key: str, *values: str) -> None: ...
 
     @abstractmethod

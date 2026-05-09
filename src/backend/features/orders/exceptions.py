@@ -23,7 +23,7 @@ class MenuItemRestaurantMismatchException(AppException):
 
 class OrderNotCancellableException(RuleException):
     status_code: int = HTTPStatus.CONFLICT
-    detail: str = "Order can only be cancelled when in PENDING status"
+    detail: str = "Order can only be cancelled when in PENDING or ACCEPTED status"
 
 
 class InvalidStatusTransitionException(AppException):

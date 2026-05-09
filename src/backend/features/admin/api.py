@@ -1,5 +1,8 @@
+import logging
 import uuid
 from datetime import UTC, date, datetime, timedelta
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import Response
@@ -215,14 +218,15 @@ async def batch_approve_restaurants(
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[dict]:
-    results = []
+    approved, failed = [], []
     for rid in body.ids:
         try:
             await service.moderate_restaurant(session, rid, "APPROVED")
-            results.append(str(rid))
+            approved.append(str(rid))
         except Exception:
-            pass
-    return build_response({"approved": results})
+            logger.exception("batch_approve_restaurants failed for id=%s", rid)
+            failed.append(str(rid))
+    return build_response({"approved": approved, "failed": failed})
 
 
 @router.post("/restaurants/batch-reject")
@@ -231,14 +235,15 @@ async def batch_reject_restaurants(
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[dict]:
-    results = []
+    rejected, failed = [], []
     for rid in body.ids:
         try:
             await service.moderate_restaurant(session, rid, "REJECTED", body.reason)
-            results.append(str(rid))
+            rejected.append(str(rid))
         except Exception:
-            pass
-    return build_response({"rejected": results})
+            logger.exception("batch_reject_restaurants failed for id=%s", rid)
+            failed.append(str(rid))
+    return build_response({"rejected": rejected, "failed": failed})
 
 
 @router.get(
@@ -329,14 +334,15 @@ async def batch_approve_vendors(
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[dict]:
-    results = []
+    approved, failed = [], []
     for vid in body.ids:
         try:
             await service.moderate_vendor(session, vid, "APPROVED")
-            results.append(str(vid))
+            approved.append(str(vid))
         except Exception:
-            pass
-    return build_response({"approved": results})
+            logger.exception("batch_approve_vendors failed for id=%s", vid)
+            failed.append(str(vid))
+    return build_response({"approved": approved, "failed": failed})
 
 
 @router.post("/vendors/batch-reject")
@@ -345,14 +351,15 @@ async def batch_reject_vendors(
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[dict]:
-    results = []
+    rejected, failed = [], []
     for vid in body.ids:
         try:
             await service.moderate_vendor(session, vid, "REJECTED", body.reason)
-            results.append(str(vid))
+            rejected.append(str(vid))
         except Exception:
-            pass
-    return build_response({"rejected": results})
+            logger.exception("batch_reject_vendors failed for id=%s", vid)
+            failed.append(str(vid))
+    return build_response({"rejected": rejected, "failed": failed})
 
 
 @router.get("/vendors/{vendor_id}", response_model=SuccessResponse[AdminVendorResponse])

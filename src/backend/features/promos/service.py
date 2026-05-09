@@ -111,5 +111,7 @@ async def apply_promo(
     else:
         new_total = max(0, order_total - promo.discount_value)
 
-    await crud.increment_used_count(session, promo)
+    incremented = await crud.increment_used_count(session, promo)
+    if not incremented:
+        raise PromoUsageLimitException()
     return new_total
