@@ -1,3 +1,4 @@
+import asyncio
 import json
 import uuid
 
@@ -60,6 +61,18 @@ async def order_status_ws(
 
                     if current_status in ("COMPLETED", "CANCELLED"):
                         break
+
+            # Non-blocking read to check for pings/disconnects
+            try:
+                client_message = await asyncio.wait_for(websocket.receive_text(), timeout=0.01)
+                try:
+                    client_data = json.loads(client_message)
+                    if client_data.get("type") == "ping":
+                        await websocket.send_text(json.dumps({"type": "pong"}))
+                except json.JSONDecodeError:
+                    pass
+            except asyncio.TimeoutError:
+                pass
 
     except WebSocketDisconnect:
         pass
@@ -135,6 +148,18 @@ async def display_board_ws(
                 async with db_helper.session_factory() as session:
                     rows = await get_active_orders_for_display(session, restaurant_id)
                     await websocket.send_text(json.dumps(_build_display_board(rows)))
+
+            # Non-blocking read to check for pings/disconnects
+            try:
+                client_message = await asyncio.wait_for(websocket.receive_text(), timeout=0.01)
+                try:
+                    client_data = json.loads(client_message)
+                    if client_data.get("type") == "ping":
+                        await websocket.send_text(json.dumps({"type": "pong"}))
+                except json.JSONDecodeError:
+                    pass
+            except asyncio.TimeoutError:
+                pass
     except WebSocketDisconnect:
         pass
     finally:
@@ -191,6 +216,18 @@ async def restaurant_orders_ws(
                 if isinstance(data_str, bytes):
                     data_str = data_str.decode("utf-8")
                 await websocket.send_text(json.dumps({"event": data_str}))
+
+            # Non-blocking read to check for pings/disconnects
+            try:
+                client_message = await asyncio.wait_for(websocket.receive_text(), timeout=0.01)
+                try:
+                    client_data = json.loads(client_message)
+                    if client_data.get("type") == "ping":
+                        await websocket.send_text(json.dumps({"type": "pong"}))
+                except json.JSONDecodeError:
+                    pass
+            except asyncio.TimeoutError:
+                pass
     except WebSocketDisconnect:
         pass
     finally:

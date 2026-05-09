@@ -96,22 +96,86 @@ const OrderStatusPage = () => {
 
   if (!currentOrder) {
     return (
-      <div className="status-screen" style={{ justifyContent: "flex-start", padding: "24px 16px calc(var(--bottom-tab-h, 68px) + 24px)" }}>
-        <div className="skeleton" style={{ width: 160, height: 48, borderRadius: "var(--r-md)", marginBottom: 24, alignSelf: "center" }} />
-        <div style={{ width: "100%", maxWidth: 480, background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--r-md)", padding: 18, marginBottom: 14 }}>
-          <div className="skeleton" style={{ width: 80, height: 11, marginBottom: 16 }} />
+      <div
+        className="status-screen"
+        style={{
+          justifyContent: "flex-start",
+          padding: "24px 16px calc(var(--bottom-tab-h, 68px) + 24px)",
+        }}
+      >
+        <div
+          className="skeleton"
+          style={{
+            width: 160,
+            height: 48,
+            borderRadius: "var(--r-md)",
+            marginBottom: 24,
+            alignSelf: "center",
+          }}
+        />
+        <div
+          style={{
+            width: "100%",
+            maxWidth: 480,
+            background: "var(--bg-card)",
+            border: "1px solid var(--border)",
+            borderRadius: "var(--r-md)",
+            padding: 18,
+            marginBottom: 14,
+          }}
+        >
+          <div
+            className="skeleton"
+            style={{ width: 80, height: 11, marginBottom: 16 }}
+          />
           {[1, 2, 3].map((i) => (
-            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                padding: "10px 0",
+                borderBottom: "1px solid var(--border)",
+              }}
+            >
               <div className="skeleton" style={{ width: "58%", height: 14 }} />
               <div className="skeleton" style={{ width: "18%", height: 14 }} />
             </div>
           ))}
         </div>
-        <div style={{ width: "100%", maxWidth: 480, background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--r-md)", padding: 18 }}>
+        <div
+          style={{
+            width: "100%",
+            maxWidth: 480,
+            background: "var(--bg-card)",
+            border: "1px solid var(--border)",
+            borderRadius: "var(--r-md)",
+            padding: 18,
+          }}
+        >
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0" }}>
-              <div className="skeleton" style={{ width: 24, height: 24, borderRadius: "50%", flexShrink: 0 }} />
-              <div className="skeleton" style={{ width: `${40 + i * 10}%`, height: 13 }} />
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                padding: "10px 0",
+              }}
+            >
+              <div
+                className="skeleton"
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: "50%",
+                  flexShrink: 0,
+                }}
+              />
+              <div
+                className="skeleton"
+                style={{ width: `${40 + i * 10}%`, height: 13 }}
+              />
             </div>
           ))}
         </div>
@@ -160,23 +224,28 @@ const OrderStatusPage = () => {
   return (
     <div
       className="status-screen"
-      style={{ justifyContent: "flex-start", padding: "24px 16px calc(var(--bottom-tab-h, 68px) + 24px)" }}
+      style={{
+        justifyContent: "flex-start",
+        padding: "24px 16px calc(var(--bottom-tab-h, 68px) + 24px)",
+      }}
     >
       <OrderStatusBadge status={currentOrder.status} />
 
       {currentOrder.status === "CANCELLED" && (
-        <div style={{
-          width: "100%",
-          maxWidth: 480,
-          background: "rgba(239,68,68,0.08)",
-          border: "1px solid rgba(239,68,68,0.2)",
-          borderRadius: "var(--r-md)",
-          padding: "12px 16px",
-          marginBottom: 14,
-          fontSize: "0.85rem",
-          color: "#ef4444",
-          fontWeight: 600,
-        }}>
+        <div
+          style={{
+            width: "100%",
+            maxWidth: 480,
+            background: "rgba(239,68,68,0.08)",
+            border: "1px solid rgba(239,68,68,0.2)",
+            borderRadius: "var(--r-md)",
+            padding: "12px 16px",
+            marginBottom: 14,
+            fontSize: "0.85rem",
+            color: "#ef4444",
+            fontWeight: 600,
+          }}
+        >
           Заказ был отменён
         </div>
       )}
@@ -424,11 +493,24 @@ const OrderStatusPage = () => {
       )}
 
       {/* Actions */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", maxWidth: 480 }}>
-        {(currentOrder.status === "PENDING" || currentOrder.status === "ACCEPTED") && (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+          width: "100%",
+          maxWidth: 480,
+        }}
+      >
+        {(currentOrder.status === "PENDING" ||
+          currentOrder.status === "ACCEPTED") && (
           <button
             className="btn btn-secondary"
-            style={{ width: "100%", color: "var(--color-error)", borderColor: "var(--color-error-border)" }}
+            style={{
+              width: "100%",
+              color: "var(--color-error)",
+              borderColor: "var(--color-error-border)",
+            }}
             onClick={handleCancel}
             disabled={cancelling}
           >
@@ -436,38 +518,39 @@ const OrderStatusPage = () => {
           </button>
         )}
         <div style={{ display: "flex", gap: 10 }}>
-        {isReady && (
+          {isReady && (
+            <button
+              className="btn btn-primary"
+              style={{ flex: 1, background: "#22c55e", borderColor: "#22c55e" }}
+              onClick={handleComplete}
+              disabled={completing}
+              id="complete-order-btn"
+            >
+              {completing ? "..." : "✓ Получил"}
+            </button>
+          )}
+          {(currentOrder.status === "COMPLETED" ||
+            currentOrder.status === "CANCELLED") && (
+            <button
+              className="btn btn-primary"
+              style={{ flex: 1, background: "var(--fire)" }}
+              onClick={async () => {
+                const repeat = useOrderStore.getState().repeatOrder;
+                await repeat(currentOrder);
+                navigate(`/restaurant/${currentOrder.restaurant_id}`);
+              }}
+            >
+              Повторить заказ
+            </button>
+          )}
           <button
-            className="btn btn-primary"
-            style={{ flex: 1, background: "#22c55e", borderColor: "#22c55e" }}
-            onClick={handleComplete}
-            disabled={completing}
-            id="complete-order-btn"
+            className="btn btn-secondary"
+            style={{ flex: 2 }}
+            onClick={() => navigate("/orders")}
+            id="back-to-orders-btn"
           >
-            {completing ? "..." : "✓ Получил"}
+            ← К заказам
           </button>
-        )}
-        {(currentOrder.status === "COMPLETED" || currentOrder.status === "CANCELLED") && (
-          <button
-            className="btn btn-primary"
-            style={{ flex: 1, background: "var(--fire)" }}
-            onClick={async () => {
-              const repeat = useOrderStore.getState().repeatOrder;
-              await repeat(currentOrder);
-              navigate(`/restaurant/${currentOrder.restaurant_id}`);
-            }}
-          >
-            Повторить заказ
-          </button>
-        )}
-        <button
-          className="btn btn-secondary"
-          style={{ flex: 2 }}
-          onClick={() => navigate("/orders")}
-          id="back-to-orders-btn"
-        >
-          ← К заказам
-        </button>
         </div>
       </div>
     </div>

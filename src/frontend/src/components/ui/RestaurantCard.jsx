@@ -7,11 +7,7 @@ import {
   Storefront,
   MapPin,
   Star,
-  Heart,
 } from '@phosphor-icons/react';
-import { useAuthStore } from '../../store/useAuthStore';
-import { useFavoriteStore } from '../../store/useFavoriteStore';
-import { useShallow } from 'zustand/react/shallow';
 
 const CATEGORY_ICONS = {
   SHAURMA: <Fire size={52} weight="fill" />,
@@ -23,14 +19,6 @@ const CATEGORY_ICONS = {
 
 const RestaurantCard = ({ restaurant, onClick }) => {
   const cardRef = useRef(null);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const { favoriteIds, toggle } = useFavoriteStore(
-    useShallow((s) => ({
-      favoriteIds: s.favoriteIds,
-      toggle: s.toggle,
-    }))
-  );
-  const isFav = favoriteIds.has(restaurant.id);
 
   useEffect(() => {
     const el = cardRef.current;
@@ -63,7 +51,6 @@ const RestaurantCard = ({ restaurant, onClick }) => {
       onKeyDown={(e) => e.key === 'Enter' && onClick?.()}
       aria-label={`Ресторан ${restaurant.name}`}
     >
-      {/* Photo */}
       <div className="card-photo-wrap">
         {restaurant.photo_url ? (
           <img
@@ -78,10 +65,8 @@ const RestaurantCard = ({ restaurant, onClick }) => {
         )}
       </div>
 
-      {/* Scrim */}
       <div className="card-scrim" />
 
-      {/* Open / Closed badge */}
       {restaurant.is_open != null && (
         <div
           className={`card-status-badge card-status-badge--${restaurant.is_open ? 'open' : 'closed'}`}
@@ -93,28 +78,11 @@ const RestaurantCard = ({ restaurant, onClick }) => {
         </div>
       )}
 
-      {/* Heart / Favourite button */}
-      {isAuthenticated && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            toggle(restaurant.id);
-          }}
-          className={`card-fav-btn${isFav ? ' card-fav-btn--active' : ''}`}
-          aria-label={isFav ? 'Убрать из избранного' : 'Добавить в избранное'}
-          aria-pressed={isFav}
-        >
-          <Heart size={15} weight={isFav ? 'fill' : 'regular'} />
-        </button>
-      )}
-
-      {/* Rating badge */}
       <div className="card-rating-badge">
         <Star size={13} weight="fill" color="var(--fire)" />
         <span>{rating ? rating.toFixed(1) : '0.0'}</span>
       </div>
 
-      {/* Content */}
       <div className="card-body">
         <h2 className="card-title">{restaurant.name}</h2>
         <div className="card-tags card-reveal">

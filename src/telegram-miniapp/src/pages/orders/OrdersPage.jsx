@@ -90,7 +90,9 @@ const OrdersPage = () => {
       : orders;
 
   return (
-    <div style={{ padding: "16px 16px calc(var(--bottom-tab-h, 68px) + 24px)" }}>
+    <div
+      style={{ padding: "16px 16px calc(var(--bottom-tab-h, 68px) + 24px)" }}
+    >
       <div
         style={{
           display: "flex",

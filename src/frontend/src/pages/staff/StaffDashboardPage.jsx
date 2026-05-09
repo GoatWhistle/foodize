@@ -340,6 +340,18 @@ const KanbanCard = ({
   const [cancelReason, setCancelReason] = useState('');
   const nextStatus = NEXT_STATUS[order.status];
   const nextLabel = NEXT_LABEL[order.status];
+  const elapsed = useElapsedSeconds(
+    order.status === 'ACCEPTED' ? order.created_at : null
+  );
+  const elapsedMins = Math.floor(elapsed / 60);
+  const delayUrgency =
+    order.status === 'ACCEPTED'
+      ? elapsedMins >= 15
+        ? 'critical'
+        : elapsedMins >= 8
+          ? 'warning'
+          : null
+      : null;
   const canCancel = order.status === 'PENDING' || order.status === 'ACCEPTED';
 
   return (
@@ -366,7 +378,7 @@ const KanbanCard = ({
         style={{
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'baseline',
+          alignItems: 'center',
           gap: 8,
         }}
       >
@@ -379,15 +391,37 @@ const KanbanCard = ({
         >
           #{getOrderDisplayId(order)}
         </span>
-        <span
-          style={{
-            fontSize: '0.8rem',
-            color: 'var(--text-3)',
-            fontWeight: 600,
-          }}
-        >
-          {order.total_price} ₽
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {delayUrgency && (
+            <span
+              style={{
+                fontSize: '0.7rem',
+                fontWeight: 800,
+                color: delayUrgency === 'critical' ? '#ef4444' : '#f59e0b',
+                background:
+                  delayUrgency === 'critical'
+                    ? 'rgba(239,68,68,0.12)'
+                    : 'rgba(245,158,11,0.1)',
+                border: `1px solid ${delayUrgency === 'critical' ? '#ef4444' : '#f59e0b'}`,
+                borderRadius: 99,
+                padding: '2px 8px',
+              }}
+            >
+              {delayUrgency === 'critical'
+                ? `🔥 ${elapsedMins}м`
+                : `⏱ ${elapsedMins}м`}
+            </span>
+          )}
+          <span
+            style={{
+              fontSize: '0.8rem',
+              color: 'var(--text-3)',
+              fontWeight: 600,
+            }}
+          >
+            {order.total_price} ₽
+          </span>
+        </div>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -672,12 +706,27 @@ const KanbanColumn = ({
   );
 };
 
+const useElapsedSeconds = (startIso) => {
+  const [seconds, setSeconds] = useState(
+    startIso ? Math.floor((Date.now() - new Date(startIso)) / 1000) : 0
+  );
+  useEffect(() => {
+    if (!startIso) return;
+    const id = setInterval(() => {
+      setSeconds(Math.floor((Date.now() - new Date(startIso)) / 1000));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [startIso]);
+  return seconds;
+};
+
 const StaffDashboardPage = () => {
   const [profile, setProfile] = useState(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileError, setProfileError] = useState('');
 
   const [orders, setOrders] = useState([]);
+
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [updating, setUpdating] = useState(null);
   const [activeTab, setActiveTab] = useState('orders');
@@ -1020,42 +1069,77 @@ const StaffDashboardPage = () => {
               <div className="spinner" />
             </div>
           ) : (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: 16,
-                alignItems: 'start',
-              }}
-            >
-              {COLUMNS.map((col) => {
-                const colOrders = orders.filter((o) =>
-                  col.statuses.includes(o.status)
+            <>
+              {(() => {
+                const criticalOrders = orders.filter(
+                  (o) =>
+                    o.status === 'ACCEPTED' &&
+                    Math.floor((Date.now() - new Date(o.created_at)) / 60000) >=
+                      15
                 );
-                return (
-                  <KanbanColumn
-                    key={col.id}
-                    column={col}
-                    orders={colOrders}
-                    onAdvance={handleAdvance}
-                    onCancel={handleCancelOrder}
-                    updating={updating}
-                    draggingId={draggingOrderId}
-                    onDragStart={(order) => {
-                      draggingOrderRef.current = order;
-                      setDraggingOrderId(order.id);
+                return criticalOrders.length > 0 ? (
+                  <div
+                    style={{
+                      padding: '10px 16px',
+                      marginBottom: 12,
+                      background: 'rgba(239,68,68,0.1)',
+                      border: '1px solid #ef4444',
+                      borderRadius: 'var(--r-md)',
+                      color: '#ef4444',
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
                     }}
-                    onDragEnd={() => {
-                      setTimeout(() => {
-                        draggingOrderRef.current = null;
-                        setDraggingOrderId(null);
-                      }, 0);
-                    }}
-                    onDrop={handleDrop}
-                  />
-                );
-              })}
-            </div>
+                  >
+                    🔥 {criticalOrders.length}{' '}
+                    {criticalOrders.length === 1
+                      ? 'заказ задерживается'
+                      : criticalOrders.length < 5
+                        ? 'заказа задерживается'
+                        : 'заказов задерживается'}{' '}
+                    — проверьте принятые
+                  </div>
+                ) : null;
+              })()}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: 16,
+                  alignItems: 'start',
+                }}
+              >
+                {COLUMNS.map((col) => {
+                  const colOrders = orders.filter((o) =>
+                    col.statuses.includes(o.status)
+                  );
+                  return (
+                    <KanbanColumn
+                      key={col.id}
+                      column={col}
+                      orders={colOrders}
+                      onAdvance={handleAdvance}
+                      onCancel={handleCancelOrder}
+                      updating={updating}
+                      draggingId={draggingOrderId}
+                      onDragStart={(order) => {
+                        draggingOrderRef.current = order;
+                        setDraggingOrderId(order.id);
+                      }}
+                      onDragEnd={() => {
+                        setTimeout(() => {
+                          draggingOrderRef.current = null;
+                          setDraggingOrderId(null);
+                        }, 0);
+                      }}
+                      onDrop={handleDrop}
+                    />
+                  );
+                })}
+              </div>
+            </>
           )}
         </>
       )}

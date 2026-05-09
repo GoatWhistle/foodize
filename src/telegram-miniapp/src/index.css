@@ -1502,8 +1502,12 @@ select.form-input option {
   transition: opacity 0.15s;
 }
 @keyframes shimmer {
-  from { background-position: -200% 0; }
-  to   { background-position: 200% 0; }
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
 }
 .skeleton {
   background: linear-gradient(
@@ -1517,8 +1521,12 @@ select.form-input option {
   border-radius: var(--r-xs);
 }
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 .app-ready {
   animation: fadeIn var(--dur-sm) ease;

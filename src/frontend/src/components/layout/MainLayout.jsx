@@ -19,10 +19,11 @@ const MainLayout = () => {
   const navigate = useNavigate();
 
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const { cart, placeOrder } = useOrderStore(
+  const { cart, placeOrder, cartTotal } = useOrderStore(
     useShallow((s) => ({
       cart: s.cart,
       placeOrder: s.placeOrder,
+      cartTotal: s.cartTotal,
     }))
   );
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -105,11 +106,14 @@ const MainLayout = () => {
           onClick={() => setIsCartOpen(true)}
           aria-label="Открыть корзину"
         >
-          <ShoppingCart size={20} weight="fill" />
-          <span>Корзина</span>
-          <span className={`cart-badge${badgePop ? ' cart-badge-pop' : ''}`}>
-            {cartItemsCount}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <ShoppingCart size={20} weight="fill" />
+            <span>Корзина</span>
+            <span className={`cart-badge${badgePop ? ' cart-badge-pop' : ''}`}>
+              {cartItemsCount}
+            </span>
+          </div>
+          <span style={{ fontWeight: 800 }}>{cartTotal()} ₽</span>
         </button>
       )}
 

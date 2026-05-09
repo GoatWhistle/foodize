@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { Component } from "react";
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -15,33 +15,33 @@ class ErrorBoundary extends Component {
       return (
         <div
           style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: '40vh',
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "40vh",
             gap: 16,
             padding: 24,
-            textAlign: 'center',
+            textAlign: "center",
           }}
         >
           <div
             style={{
               fontWeight: 700,
-              fontSize: '1.1rem',
-              color: 'var(--text-1)',
+              fontSize: "1.1rem",
+              color: "var(--text-1)",
             }}
           >
             Что-то пошло не так
           </div>
           <div
             style={{
-              fontSize: '0.85rem',
-              color: 'var(--text-3)',
+              fontSize: "0.85rem",
+              color: "var(--text-3)",
               maxWidth: 320,
             }}
           >
-            {this.state.error?.message ?? 'Неизвестная ошибка'}
+            {this.state.error?.message ?? "Неизвестная ошибка"}
           </div>
           <button
             className="btn btn-secondary"

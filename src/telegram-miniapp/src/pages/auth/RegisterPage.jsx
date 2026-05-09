@@ -42,7 +42,10 @@ export default function RegisterPage({ initData, prefillPhone, onSuccess }) {
       onSuccess();
     } catch (err) {
       setError(
-        translateApiError(err, "Не удалось зарегистрироваться. Проверьте данные."),
+        translateApiError(
+          err,
+          "Не удалось зарегистрироваться. Проверьте данные.",
+        ),
       );
     } finally {
       setLoading(false);
@@ -125,7 +128,10 @@ export default function RegisterPage({ initData, prefillPhone, onSuccess }) {
             style={prefillPhone ? { opacity: 0.6, cursor: "not-allowed" } : {}}
           />
           {phoneError && (
-            <div className="form-error" style={{ fontSize: "0.78rem", marginTop: 4 }}>
+            <div
+              className="form-error"
+              style={{ fontSize: "0.78rem", marginTop: 4 }}
+            >
               {phoneError}
             </div>
           )}

@@ -158,7 +158,10 @@ const ProfilePage = () => {
       : user?.name || "Пользователь";
 
   return (
-    <div className="profile-page" style={{ paddingBottom: "calc(var(--bottom-tab-h, 68px) + 24px)" }}>
+    <div
+      className="profile-page"
+      style={{ paddingBottom: "calc(var(--bottom-tab-h, 68px) + 24px)" }}
+    >
       {/* Header */}
       <div className="profile-header" style={{ position: "relative" }}>
         <div className="profile-avatar">

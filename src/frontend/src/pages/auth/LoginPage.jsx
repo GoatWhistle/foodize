@@ -4,6 +4,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { ROUTES } from '../../constants/routes';
 import FoodizeLogo from '../../components/ui/FoodizeLogo';
 import { translateApiError } from '../../utils/translateApiError';
+import { formatPhoneNumber, extractPhoneNumber } from '../../utils/phone';
 
 const AuthVisual = () => (
   <div className="auth-visual">
@@ -37,7 +38,8 @@ const LoginPage = () => {
     setError('');
     setIsLoading(true);
     try {
-      await login({ phone_number: phoneNumber, password });
+      const cleanPhone = extractPhoneNumber(phoneNumber);
+      await login({ phone_number: cleanPhone, password });
       navigate(ROUTES.HOME);
     } catch (err) {
       setError(translateApiError(err, 'Неверный телефон или пароль'));
@@ -76,7 +78,9 @@ const LoginPage = () => {
                 type="tel"
                 placeholder="+7 (999) 000-00-00"
                 value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
+                onChange={(e) =>
+                  setPhoneNumber(formatPhoneNumber(e.target.value))
+                }
                 required
                 autoComplete="tel"
                 autoFocus

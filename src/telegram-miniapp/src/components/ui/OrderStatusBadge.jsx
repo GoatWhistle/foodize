@@ -74,7 +74,14 @@ const OrderStatusBadge = ({ status }) => {
         <div style={{ marginBottom: 12, color: "#ef4444" }}>
           <XCircle size={80} weight="fill" />
         </div>
-        <p style={{ fontWeight: 800, fontSize: "1.6rem", letterSpacing: "-0.03em", color: "#ef4444" }}>
+        <p
+          style={{
+            fontWeight: 800,
+            fontSize: "1.6rem",
+            letterSpacing: "-0.03em",
+            color: "#ef4444",
+          }}
+        >
           Отменён
         </p>
         <p style={{ color: "var(--text-3)", marginTop: 8 }}>

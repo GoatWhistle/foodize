@@ -1,54 +1,156 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 import { useOrderStore } from '../../store/useOrderStore';
-import OrderStatusBadge from '../../components/ui/OrderStatusBadge';
 import { ROUTES } from '../../constants/routes';
 import { orderService } from '../../services/orderService';
 import { createOrderWebSocket } from '../../services/api';
 import { ORDER_STATUS_RU } from '../../utils/locales';
 
-const STATUS_LABEL_RU = ORDER_STATUS_RU;
-
 const TERMINAL_STATUSES = new Set(['COMPLETED', 'CANCELLED']);
 const STATUS_FLOW = ['PENDING', 'ACCEPTED', 'READY', 'COMPLETED'];
 
-const getOrderDisplayId = (order) => order.display_id ?? order.id.slice(0, 8);
-
-const extractEvents = (response) => {
-  if (Array.isArray(response?.data?.data)) return response.data.data;
-  if (Array.isArray(response?.data)) return response.data;
-  return [];
+const STATUS_PILL = {
+  PENDING: { label: 'Новый', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
+  ACCEPTED: { label: 'Принят', color: '#f97316', bg: 'rgba(249,115,22,0.12)' },
+  READY: {
+    label: 'Готов к выдаче',
+    color: '#22c55e',
+    bg: 'rgba(34,197,94,0.12)',
+  },
+  COMPLETED: { label: 'Выдан', color: '#6b7280', bg: 'rgba(107,114,128,0.1)' },
+  CANCELLED: { label: 'Отменён', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
 };
 
-const getOrderStages = (order, events) => {
-  const eventByStatus = new Map(
-    (events || []).map((event) => [event.new_status, event])
+const fmtTime = (iso) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return isNaN(d)
+    ? ''
+    : d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+};
+
+const useEtaText = (estimatedReadyAt, status) => {
+  const compute = useCallback(() => {
+    if (
+      TERMINAL_STATUSES.has(status) ||
+      status === 'READY' ||
+      !estimatedReadyAt
+    )
+      return '';
+    const diff = Math.round((new Date(estimatedReadyAt) - Date.now()) / 60000);
+    return diff > 0
+      ? `Будет готов через ~${diff} мин`
+      : 'Задерживаемся, скоро будет';
+  }, [estimatedReadyAt, status]);
+  const [text, setText] = useState(compute);
+  useEffect(() => {
+    setText(compute());
+    if (
+      TERMINAL_STATUSES.has(status) ||
+      status === 'READY' ||
+      !estimatedReadyAt
+    )
+      return;
+    const id = setInterval(() => setText(compute()), 30_000);
+    return () => clearInterval(id);
+  }, [estimatedReadyAt, status, compute]);
+  return text;
+};
+
+const HorizontalSteps = ({ order }) => {
+  const currentIndex =
+    order.status === 'CANCELLED' ? -1 : STATUS_FLOW.indexOf(order.status);
+
+  return (
+    <div style={{ width: '100%', maxWidth: 380, marginTop: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+        {STATUS_FLOW.map((status, i) => {
+          const state =
+            order.status === 'CANCELLED'
+              ? 'next'
+              : i < currentIndex
+                ? 'done'
+                : i === currentIndex
+                  ? 'current'
+                  : 'next';
+          const dotColor =
+            state === 'done'
+              ? 'var(--color-success)'
+              : state === 'current'
+                ? 'var(--fire)'
+                : 'var(--border)';
+          const isActiveLine =
+            i === currentIndex + 1 &&
+            order.status !== 'CANCELLED' &&
+            order.status !== 'COMPLETED';
+          const lineColor =
+            i <= currentIndex && order.status !== 'CANCELLED'
+              ? 'var(--color-success)'
+              : 'var(--border)';
+
+          return (
+            <Fragment key={status}>
+              {i > 0 && (
+                <div
+                  className={isActiveLine ? 'order-step-line--active' : ''}
+                  style={{
+                    flex: 1,
+                    height: 2,
+                    background: isActiveLine ? undefined : lineColor,
+                    marginTop: 5,
+                    transition: isActiveLine ? 'none' : 'background 0.4s',
+                  }}
+                />
+              )}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <div
+                  style={{
+                    width: 12,
+                    height: 12,
+                    borderRadius: '50%',
+                    background: dotColor,
+                    flexShrink: 0,
+                    transition: 'background 0.4s',
+                    boxShadow:
+                      state === 'done'
+                        ? '0 0 0 3px var(--color-success-bg)'
+                        : state === 'current'
+                          ? `0 0 0 3px var(--fire)33`
+                          : 'none',
+                  }}
+                />
+                <div
+                  style={{
+                    fontSize: '0.68rem',
+                    fontWeight: state === 'current' ? 800 : 500,
+                    color:
+                      state === 'next'
+                        ? 'var(--text-3)'
+                        : state === 'current'
+                          ? 'var(--fire)'
+                          : 'var(--color-success)',
+                    textAlign: 'center',
+                    lineHeight: 1.2,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {ORDER_STATUS_RU[status] ?? status}
+                </div>
+              </div>
+            </Fragment>
+          );
+        })}
+      </div>
+    </div>
   );
-
-  if (order.status === 'CANCELLED') {
-    return STATUS_FLOW.map((status) => ({
-      status,
-      at: status === 'PENDING' ? order.created_at : eventByStatus.get(status)?.created_at,
-      state: eventByStatus.has(status) || status === 'PENDING' ? 'done' : 'next',
-    }));
-  }
-
-  const currentIndex = STATUS_FLOW.indexOf(order.status);
-
-  return STATUS_FLOW.map((status, index) => ({
-    status,
-    at:
-      status === 'PENDING'
-        ? order.created_at
-        : eventByStatus.get(status)?.created_at,
-    state:
-      index < currentIndex
-        ? 'done'
-        : index === currentIndex
-          ? 'current'
-          : 'next',
-  }));
 };
 
 const OrderStatusPage = () => {
@@ -62,58 +164,86 @@ const OrderStatusPage = () => {
   );
   const wsRef = useRef(null);
   const [completing, setCompleting] = useState(false);
-  const [events, setEvents] = useState([]);
   const [completeError, setCompleteError] = useState('');
+  const [cancelling, setCancelling] = useState(false);
+  const [showBonAppetit, setShowBonAppetit] = useState(false);
 
-  const loadEvents = useCallback(async () => {
-    try {
-      const res = await orderService.getOrderEvents(id);
-      setEvents(extractEvents(res));
-    } catch {}
-  }, [id]);
+  const loadOrder = useCallback(() => fetchOrder(id), [id, fetchOrder]);
 
   useEffect(() => {
-    fetchOrder(id);
-    loadEvents();
+    loadOrder();
 
     wsRef.current = createOrderWebSocket(
       id,
       (data) => {
         if (data.error) return;
         useOrderStore.setState({ currentOrder: data });
-        loadEvents();
       },
       () => {
         if (
           !TERMINAL_STATUSES.has(useOrderStore.getState().currentOrder?.status)
         ) {
-          fetchOrder(id);
+          loadOrder();
         }
       }
     );
 
     return () => wsRef.current?.close();
-  }, [id, fetchOrder, loadEvents]);
+  }, [id, loadOrder]);
+
+  useEffect(() => {
+    if (currentOrder?.status === 'COMPLETED') {
+      const key = `order_seen_${id}`;
+      if (!localStorage.getItem(key)) {
+        localStorage.setItem(key, '1');
+        setShowBonAppetit(true);
+      }
+    }
+  }, [currentOrder?.status, id]);
+
+  const etaText = useEtaText(
+    currentOrder?.estimated_ready_at,
+    currentOrder?.status
+  );
 
   if (!currentOrder) {
     return (
       <div className="status-screen">
-        <div className="skeleton" style={{ width: 160, height: 52, borderRadius: 'var(--r-md)', marginBottom: 12 }} />
-        <div className="skeleton" style={{ width: 100, height: 14, marginBottom: 32 }} />
-        <div style={{ width: '100%', maxWidth: 380, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 20, marginBottom: 16 }}>
-          <div className="skeleton" style={{ width: 90, height: 11, marginBottom: 16 }} />
+        <div
+          className="skeleton"
+          style={{ width: 60, height: 14, marginBottom: 8, borderRadius: 4 }}
+        />
+        <div
+          className="skeleton"
+          style={{ width: 120, height: 64, borderRadius: 8, marginBottom: 16 }}
+        />
+        <div
+          className="skeleton"
+          style={{ width: 280, height: 32, borderRadius: 20, marginBottom: 24 }}
+        />
+        <div
+          style={{
+            width: '100%',
+            maxWidth: 380,
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-lg)',
+            padding: 20,
+            marginBottom: 16,
+          }}
+        >
           {[1, 2, 3].map((i) => (
-            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 0', borderBottom: '1px solid var(--border)' }}>
+            <div
+              key={i}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                padding: '9px 0',
+                borderBottom: '1px solid var(--border)',
+              }}
+            >
               <div className="skeleton" style={{ width: '58%', height: 14 }} />
               <div className="skeleton" style={{ width: '18%', height: 14 }} />
-            </div>
-          ))}
-        </div>
-        <div style={{ width: '100%', maxWidth: 380, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: 20 }}>
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0' }}>
-              <div className="skeleton" style={{ width: 24, height: 24, borderRadius: '50%', flexShrink: 0 }} />
-              <div className="skeleton" style={{ width: `${38 + i * 10}%`, height: 13 }} />
             </div>
           ))}
         </div>
@@ -121,9 +251,9 @@ const OrderStatusPage = () => {
     );
   }
 
-  const isReady =
-    currentOrder.status === 'READY' || currentOrder.status === 'COMPLETED';
-  const stages = getOrderStages(currentOrder, events);
+  const pill = STATUS_PILL[currentOrder.status] || STATUS_PILL.PENDING;
+  const isReady = currentOrder.status === 'READY';
+  const isDone = TERMINAL_STATUSES.has(currentOrder.status);
 
   const handleComplete = async () => {
     setCompleting(true);
@@ -138,44 +268,146 @@ const OrderStatusPage = () => {
     }
   };
 
+  const handleCancel = async () => {
+    setCancelling(true);
+    try {
+      await orderService.cancelOrder(id, null);
+      await fetchOrder(id);
+    } catch {
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   return (
     <div
       className={`status-screen page-enter${isReady ? ' status-ready-flash' : ''}`}
     >
-      <OrderStatusBadge
-        status={currentOrder.status}
-        cancellationReason={currentOrder.cancellation_reason}
-      />
-
-      <div
-        style={{
-          marginTop: 18,
-          fontWeight: 800,
-          color: 'var(--text-2)',
-        }}
-      >
-        Заказ #{getOrderDisplayId(currentOrder)}
+      {/* Номер заказа */}
+      <div style={{ textAlign: 'center' }}>
+        <div
+          style={{
+            fontSize: '0.78rem',
+            color: 'var(--text-3)',
+            fontWeight: 600,
+            letterSpacing: '0.04em',
+            marginBottom: 2,
+          }}
+        >
+          № заказа
+        </div>
+        <div
+          style={{
+            fontSize: '4rem',
+            fontWeight: 900,
+            color: 'var(--text-1)',
+            lineHeight: 1,
+            letterSpacing: '-0.04em',
+          }}
+        >
+          {currentOrder.display_id}
+        </div>
       </div>
 
+      {/* Статус-пилл */}
       <div
         style={{
-          marginTop: 40,
+          marginTop: 10,
+          display: 'inline-flex',
+          alignItems: 'center',
+          padding: '5px 14px',
+          borderRadius: 99,
+          background: pill.bg,
+          color: pill.color,
+          fontWeight: 800,
+          fontSize: '0.85rem',
+          border: `1px solid ${pill.color}44`,
+        }}
+      >
+        {pill.label}
+      </div>
+
+      {/* Причина отмены */}
+      {currentOrder.status === 'CANCELLED' &&
+        currentOrder.cancellation_reason && (
+          <div
+            style={{
+              marginTop: 8,
+              fontSize: '0.82rem',
+              color: 'var(--text-2)',
+              textAlign: 'center',
+              maxWidth: 300,
+            }}
+          >
+            {currentOrder.cancellation_reason}
+          </div>
+        )}
+
+      {/* Горизонтальные этапы */}
+      <HorizontalSteps order={currentOrder} />
+
+      {/* ETA / сообщение статуса */}
+      <div style={{ marginTop: 16, textAlign: 'center', minHeight: 40 }}>
+        {isReady ? (
+          <div
+            style={{
+              fontWeight: 700,
+              fontSize: '0.95rem',
+              color: 'var(--color-success)',
+            }}
+          >
+            Подойдите к стойке — заказ ждёт вас!
+          </div>
+        ) : etaText ? (
+          <div
+            style={{
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              color: etaText.startsWith('Задерж') ? '#f97316' : 'var(--text-2)',
+            }}
+          >
+            {etaText}
+          </div>
+        ) : null}
+        {showBonAppetit && (
+          <div
+            style={{
+              fontWeight: 700,
+              fontSize: '0.95rem',
+              color: 'var(--color-success)',
+              marginTop: 4,
+            }}
+          >
+            Приятного аппетита! 🎉
+          </div>
+        )}
+        <div
+          style={{ marginTop: 4, fontSize: '0.78rem', color: 'var(--text-3)' }}
+        >
+          Оформлен в {fmtTime(currentOrder.created_at)}
+        </div>
+      </div>
+
+      {/* Состав заказа */}
+      <div
+        style={{
+          marginTop: 20,
           width: '100%',
           maxWidth: 380,
           background: 'var(--bg-card)',
           border: '1px solid var(--border)',
           borderRadius: 'var(--radius-lg)',
-          padding: '20px',
+          padding: '18px 20px',
         }}
       >
         <div
           style={{
             fontWeight: 700,
-            fontSize: '0.75rem',
+            fontSize: '0.72rem',
             letterSpacing: '0.06em',
             textTransform: 'uppercase',
             color: 'var(--text-3)',
-            marginBottom: 14,
+            marginBottom: 12,
           }}
         >
           Состав заказа
@@ -187,27 +419,38 @@ const OrderStatusPage = () => {
               key={item.id}
               style={{
                 display: 'flex',
-                justifyContent: 'space-between',
                 alignItems: 'center',
                 padding: '8px 0',
                 borderBottom: '1px solid var(--border)',
                 fontSize: '0.9rem',
+                gap: 8,
               }}
             >
-              <span style={{ fontWeight: 600, marginRight: 8 }}>
+              <span
+                style={{
+                  fontWeight: 700,
+                  color: 'var(--text-3)',
+                  minWidth: 28,
+                }}
+              >
                 ×{item.quantity}
               </span>
-              <div style={{ flex: 1 }}>
-                <div style={{ color: 'var(--text-1)', fontWeight: 500 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div
+                  style={{
+                    color: 'var(--text-1)',
+                    fontWeight: 500,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
                   {item.menu_item_name}
-                </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>
-                  {item.menu_item_category}
                 </div>
                 {item.selected_options?.length > 0 && (
                   <div
                     style={{
-                      marginTop: 3,
+                      marginTop: 2,
                       fontSize: '0.72rem',
                       color: 'var(--text-3)',
                       lineHeight: 1.35,
@@ -215,19 +458,15 @@ const OrderStatusPage = () => {
                   >
                     {item.selected_options
                       .map(
-                        (option) =>
-                          `${option.name}${
-                            option.price_delta
-                              ? ` +${option.price_delta} ₽`
-                              : ''
-                          }`
+                        (o) =>
+                          `${o.name}${o.price_delta ? ` +${o.price_delta} ₽` : ''}`
                       )
                       .join(', ')}
                   </div>
                 )}
               </div>
-              <span style={{ fontWeight: 700 }}>
-                {item.price_at_purchase} ₽
+              <span style={{ fontWeight: 700, flexShrink: 0 }}>
+                {item.price_at_purchase * item.quantity} ₽
               </span>
             </div>
           ))}
@@ -236,9 +475,9 @@ const OrderStatusPage = () => {
           style={{
             display: 'flex',
             justifyContent: 'space-between',
-            marginTop: 14,
+            marginTop: 12,
             fontWeight: 800,
-            fontSize: '1.1rem',
+            fontSize: '1rem',
             letterSpacing: '-0.02em',
           }}
         >
@@ -247,145 +486,44 @@ const OrderStatusPage = () => {
             {currentOrder.total_price} ₽
           </span>
         </div>
-
-        {currentOrder.estimated_ready_at && !isReady && (
-          <div
-            style={{
-              marginTop: 12,
-              paddingTop: 12,
-              borderTop: '1px solid var(--border)',
-              fontSize: '0.85rem',
-              color: 'var(--text-2)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-            }}
-          >
-            <span style={{ fontWeight: 700, color: 'var(--fire)' }}>
-              Ожидаем к
-            </span>
-            {new Date(currentOrder.estimated_ready_at).toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </div>
-        )}
-
-        {currentOrder.ready_at && isReady && (
-          <div
-            style={{
-              marginTop: 12,
-              paddingTop: 12,
-              borderTop: '1px solid var(--border)',
-              fontSize: '0.85rem',
-              color: 'var(--text-2)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-            }}
-          >
-            <span style={{ fontWeight: 700, color: 'var(--fire)' }}>
-              Готов в
-            </span>
-            {new Date(currentOrder.ready_at).toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </div>
-        )}
       </div>
 
-      <div
-        style={{
-          marginTop: 16,
-          width: '100%',
-          maxWidth: 380,
-          background: 'var(--bg-card)',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-lg)',
-          padding: '20px',
-        }}
-      >
+      {/* Ресторан */}
+      {(currentOrder.restaurant_name || currentOrder.restaurant_address) && (
         <div
           style={{
-            fontWeight: 700,
-            fontSize: '0.75rem',
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-            color: 'var(--text-3)',
-            marginBottom: 14,
+            marginTop: 12,
+            width: '100%',
+            maxWidth: 380,
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '14px 20px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 3,
           }}
         >
-          Этапы заказа
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {stages.map((stage, i) => (
-            <div key={stage.status} style={{ display: 'flex', gap: 12 }}>
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                }}
-              >
-                <div
-                  className={`order-stage-dot order-stage-dot--${stage.state}`}
-                  style={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: '50%',
-                    background:
-                      stage.state === 'current'
-                        ? 'var(--fire)'
-                        : stage.state === 'done'
-                          ? 'var(--color-success)'
-                          : 'var(--border)',
-                  }}
-                />
-                {i !== stages.length - 1 && (
-                  <div
-                    style={{
-                      width: 2,
-                      flex: 1,
-                      background: 'var(--border)',
-                      marginTop: 4,
-                      minHeight: 20,
-                    }}
-                  />
-                )}
-              </div>
-              <div>
-                <div
-                  style={{
-                    fontSize: '0.85rem',
-                    fontWeight: 700,
-                    color:
-                      stage.state === 'next'
-                        ? 'var(--text-3)'
-                        : 'var(--text-1)',
-                  }}
-                >
-                  {STATUS_LABEL_RU[stage.status] ?? stage.status}
-                  {stage.state === 'current' && (
-                    <span style={{ color: 'var(--fire)', marginLeft: 8 }}>
-                      сейчас
-                    </span>
-                  )}
-                </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>
-                  {stage.at
-                    ? new Date(stage.at).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })
-                    : 'ожидается'}
-                </div>
-              </div>
+          {currentOrder.restaurant_name && (
+            <div
+              style={{
+                fontWeight: 700,
+                fontSize: '0.9rem',
+                color: 'var(--text-1)',
+              }}
+            >
+              {currentOrder.restaurant_name}
             </div>
-          ))}
+          )}
+          {currentOrder.restaurant_address && (
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-3)' }}>
+              {currentOrder.restaurant_address}
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
+      {/* Ошибка */}
       {completeError && (
         <div
           className="form-error"
@@ -394,35 +532,32 @@ const OrderStatusPage = () => {
           {completeError}
         </div>
       )}
+
+      {/* Кнопки */}
       <div
         style={{
           display: 'flex',
-          gap: '10px',
-          marginTop: 12,
+          gap: 10,
+          marginTop: 16,
           width: '100%',
           maxWidth: 380,
         }}
       >
-        {currentOrder.status === 'READY' && (
+        {isReady && (
           <button
             className="btn btn-primary"
             style={{
               flex: 1,
               background: 'var(--color-success)',
               borderColor: 'var(--color-success)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6,
             }}
             onClick={handleComplete}
             disabled={completing}
-            id="complete-order-btn"
           >
             {completing ? 'Подтверждение...' : '✓ Получил'}
           </button>
         )}
-        {(currentOrder.status === 'COMPLETED' || currentOrder.status === 'CANCELLED') && (
+        {isDone && (
           <button
             className="btn btn-primary"
             style={{ flex: 1, background: 'var(--fire)' }}
@@ -437,13 +572,26 @@ const OrderStatusPage = () => {
             Повторить заказ
           </button>
         )}
+        {currentOrder.status === 'PENDING' && (
+          <button
+            className="btn btn-secondary"
+            style={{
+              flex: 1,
+              color: 'var(--error)',
+              borderColor: 'var(--error)',
+            }}
+            onClick={handleCancel}
+            disabled={cancelling}
+          >
+            {cancelling ? 'Отмена...' : 'Отменить'}
+          </button>
+        )}
         <button
           className="btn btn-secondary"
-          style={{ flex: 2 }}
+          style={{ flex: isDone ? 1 : 2 }}
           onClick={() => navigate(ROUTES.ORDERS)}
-          id="back-to-orders-btn"
         >
-          ← Закрыть
+          ← Мои заказы
         </button>
       </div>
     </div>

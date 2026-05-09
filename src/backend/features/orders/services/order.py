@@ -182,11 +182,20 @@ async def place_order(
         for index, item in enumerate(order_data.items)
     }
 
+    total_orders = await order_crud.count_orders_by_user_id(
+        session, user_id, exclude_status=OrderStatus.CANCELLED
+    )
+    is_first_order = total_orders == 0
+
     order = await _create_order(session, order_data, user_id, menu_items, selected_options_by_item)
 
     if order_data.promo_code:
         new_total = await promo_service.apply_promo(
-            session, order_data.promo_code, order_data.restaurant_id, order.total_price
+            session,
+            order_data.promo_code,
+            order_data.restaurant_id,
+            order.total_price,
+            is_first_order=is_first_order,
         )
         if new_total != order.total_price:
             order.total_price = new_total
@@ -464,3 +473,48 @@ async def get_order_events(
 ) -> list[OrderEventResponse]:
     events = await order_crud.get_events_by_order_id(session, order_id)
     return [OrderEventResponse.model_validate(e) for e in events]
+
+
+async def force_cancel_order(
+    session: AsyncSession,
+    order_id: uuid.UUID,
+    actor: User,
+    reason: str,
+) -> OrderResponse:
+    order = await order_crud.get_order_by_id(session, order_id)
+    if not order:
+        raise OrderNotFoundException()
+
+    old_status = OrderStatus(order.status)
+    order.cancellation_reason = reason
+    updated = await order_crud.update_order_status(session, order, OrderStatus.CANCELLED)
+
+    await order_crud.create_order_event(
+        session,
+        order_id=order.id,
+        actor_id=actor.id,
+        actor_permissions=actor.permissions,
+        old_status=old_status,
+        new_status=OrderStatus.CANCELLED,
+    )
+
+    await enqueue_event(
+        session,
+        OrderStatusChangedEvent(
+            order_id=order.id,
+            user_id=order.user_id,
+            restaurant_id=order.restaurant_id,
+            restaurant_name=order.restaurant.name,
+            old_status=old_status,
+            new_status=OrderStatus.CANCELLED,
+            total_price=order.total_price,
+        ),
+    )
+
+    await session.commit()
+    await get_redis_cache().publish(f"order_status:{order.id}", OrderStatus.CANCELLED.value)
+    await get_redis_cache().publish(
+        f"restaurant_orders:{order.restaurant_id}",
+        f"status_changed:{OrderStatus.CANCELLED.value}",
+    )
+    return OrderResponse.model_validate(updated)

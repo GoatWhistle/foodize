@@ -9,7 +9,14 @@ function getDayLabel(diffDays) {
   if (diffDays === 1) return "Вчера";
   const n = diffDays % 100;
   const m = diffDays % 10;
-  const suffix = n >= 11 && n <= 14 ? "дней" : m === 1 ? "день" : m >= 2 && m <= 4 ? "дня" : "дней";
+  const suffix =
+    n >= 11 && n <= 14
+      ? "дней"
+      : m === 1
+        ? "день"
+        : m >= 2 && m <= 4
+          ? "дня"
+          : "дней";
   return `${diffDays} ${suffix} назад`;
 }
 
@@ -40,12 +47,40 @@ function formatTime(iso) {
 const NotificationSkeleton = () => (
   <div style={{ padding: "0 0 8px" }}>
     {[1, 2, 3, 4].map((i) => (
-      <div key={i} style={{ display: "flex", gap: 12, padding: "14px 16px", borderBottom: "1px solid var(--border)" }}>
-        <div className="skeleton" style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0, marginTop: 5 }} />
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
-          <div className="skeleton" style={{ width: `${55 + i * 8}%`, height: 13 }} />
-          <div className="skeleton" style={{ width: `${70 + i * 5}%`, height: 11 }} />
-          <div className="skeleton" style={{ width: 40, height: 10, marginTop: 2 }} />
+      <div
+        key={i}
+        style={{
+          display: "flex",
+          gap: 12,
+          padding: "14px 16px",
+          borderBottom: "1px solid var(--border)",
+        }}
+      >
+        <div
+          className="skeleton"
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+            flexShrink: 0,
+            marginTop: 5,
+          }}
+        />
+        <div
+          style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}
+        >
+          <div
+            className="skeleton"
+            style={{ width: `${55 + i * 8}%`, height: 13 }}
+          />
+          <div
+            className="skeleton"
+            style={{ width: `${70 + i * 5}%`, height: 11 }}
+          />
+          <div
+            className="skeleton"
+            style={{ width: 40, height: 10, marginTop: 2 }}
+          />
         </div>
       </div>
     ))}
@@ -109,7 +144,14 @@ export default function NotificationsPage() {
           zIndex: 10,
         }}
       >
-        <h1 style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text-1)", margin: 0 }}>
+        <h1
+          style={{
+            fontSize: "1.1rem",
+            fontWeight: 700,
+            color: "var(--text-1)",
+            margin: 0,
+          }}
+        >
           Уведомления
         </h1>
         <div style={{ display: "flex", gap: 8 }}>
@@ -175,7 +217,9 @@ export default function NotificationsPage() {
                     alignItems: "flex-start",
                     gap: 12,
                     padding: "12px 16px",
-                    background: n.is_read ? "transparent" : "var(--brand-alpha)",
+                    background: n.is_read
+                      ? "transparent"
+                      : "var(--brand-alpha)",
                     borderBottom: "1px solid var(--border)",
                     cursor: n.is_read ? "default" : "pointer",
                   }}
@@ -203,8 +247,16 @@ export default function NotificationsPage() {
                     >
                       {n.title}
                     </div>
-                    <div style={{ fontSize: "0.8rem", color: "var(--text-2)" }}>{n.message}</div>
-                    <div style={{ fontSize: "0.72rem", color: "var(--text-3)", marginTop: 4 }}>
+                    <div style={{ fontSize: "0.8rem", color: "var(--text-2)" }}>
+                      {n.message}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "0.72rem",
+                        color: "var(--text-3)",
+                        marginTop: 4,
+                      }}
+                    >
                       {formatTime(n.created_at)}
                     </div>
                   </div>
@@ -232,7 +284,14 @@ export default function NotificationsPage() {
                 disabled={loadingMore}
                 onClick={handleLoadMore}
               >
-                {loadingMore ? <span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> : "Загрузить ещё"}
+                {loadingMore ? (
+                  <span
+                    className="spinner"
+                    style={{ width: 16, height: 16, borderWidth: 2 }}
+                  />
+                ) : (
+                  "Загрузить ещё"
+                )}
               </button>
             </div>
           )}

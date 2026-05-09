@@ -18,6 +18,7 @@ import {
   ArrowsClockwise,
   ChartLineUp,
   MonitorPlay,
+  QrCode,
 } from '@phosphor-icons/react';
 import { useRestaurantStore } from '../../store/useRestaurantStore';
 import { useModalStore } from '../../store/useModalStore';
@@ -32,12 +33,15 @@ import { ROUTES } from '../../constants/routes';
 import EmptyState from '../../components/ui/EmptyState';
 import Pagination from '../../components/ui/Pagination';
 import OrderDetailsModal from '../../components/ui/OrderDetailsModal';
+import QRCodeModal from '../../components/ui/QRCodeModal';
 import {
   RevenueChart,
   HourlyLoadChart,
   CategoryRevenueChart,
   AOVDynamicsChart,
   KPICards,
+  TopItemsChart,
+  OrderStatusPieChart,
 } from '../../components/dashboard/DashboardCharts';
 import {
   ORDER_STATUS_RU,
@@ -211,6 +215,7 @@ const VendorDashboardPage = () => {
   const [updatingOrderId, setUpdatingOrderId] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const wsRef = useRef(null);
+  const [showQr, setShowQr] = useState(false);
 
   const [formLoading, setFormLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
@@ -1054,6 +1059,9 @@ const VendorDashboardPage = () => {
                 borderTop: '1px solid var(--border)',
                 marginTop: 8,
                 paddingTop: 8,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 4,
               }}
             >
               <a
@@ -1078,6 +1086,22 @@ const VendorDashboardPage = () => {
                 <MonitorPlay size={18} weight="bold" />
                 Открыть табло
               </a>
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowQr(true)}
+                style={{
+                  justifyContent: 'flex-start',
+                  border: 'none',
+                  padding: '10px 14px',
+                  gap: 10,
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  color: 'var(--text-2)',
+                }}
+              >
+                <QrCode size={18} />
+                QR
+              </button>
             </div>
           </div>
 
@@ -2693,6 +2717,23 @@ const VendorDashboardPage = () => {
                     marginTop: 20,
                   }}
                 >
+                  {finance && (
+                    <>
+                      <OrderStatusPieChart
+                        data={{
+                          Завершены: finance.completed_orders,
+                          'В процессе': Math.max(
+                            0,
+                            finance.total_orders -
+                              finance.completed_orders -
+                              finance.cancelled_orders
+                          ),
+                          Отменены: finance.cancelled_orders,
+                        }}
+                      />
+                      <TopItemsChart data={finance.top_items || []} />
+                    </>
+                  )}
                   {advancedAnalytics && (
                     <>
                       <HourlyLoadChart
@@ -2838,6 +2879,13 @@ const VendorDashboardPage = () => {
             )}
           </div>
         </div>
+      )}
+
+      {showQr && selectedRestaurant && (
+        <QRCodeModal
+          restaurant={selectedRestaurant}
+          onClose={() => setShowQr(false)}
+        />
       )}
     </div>
   );

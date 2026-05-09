@@ -1,6 +1,6 @@
-import { create } from 'zustand';
-import { notificationService } from '../services/notificationService';
-import { createNotificationWebSocket } from '../services/api';
+import { create } from "zustand";
+import { notificationService } from "../services/notificationService";
+import { createNotificationWebSocket } from "../services/api";
 
 export const useNotificationStore = create((set, get) => ({
   notifications: [],
@@ -11,7 +11,10 @@ export const useNotificationStore = create((set, get) => ({
 
   fetchNotifications: async (page = 1) => {
     try {
-      const res = await notificationService.getNotifications({ page, size: 20 });
+      const res = await notificationService.getNotifications({
+        page,
+        size: 20,
+      });
       const { items, total, unread_count } = res.data;
       set((s) => ({
         notifications: page === 1 ? items : [...s.notifications, ...items],
@@ -58,9 +61,10 @@ export const useNotificationStore = create((set, get) => ({
         return {
           notifications: s.notifications.filter((n) => n.id !== id),
           total: Math.max(0, s.total - 1),
-          unreadCount: removed && !removed.is_read
-            ? Math.max(0, s.unreadCount - 1)
-            : s.unreadCount,
+          unreadCount:
+            removed && !removed.is_read
+              ? Math.max(0, s.unreadCount - 1)
+              : s.unreadCount,
         };
       });
     } catch {}
@@ -84,7 +88,9 @@ export const useNotificationStore = create((set, get) => ({
         unreadCount: s.unreadCount + 1,
       }));
       try {
-        window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred('success');
+        window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred(
+          "success",
+        );
       } catch {}
     });
 

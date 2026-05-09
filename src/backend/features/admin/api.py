@@ -2,8 +2,6 @@ import logging
 import uuid
 from datetime import UTC, date, datetime, timedelta
 
-logger = logging.getLogger(__name__)
-
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import Response
 from pydantic import BaseModel
@@ -37,6 +35,8 @@ from shared.permissions import (
 )
 from shared.response import build_list_response, build_response
 from shared.schemas.response import SuccessListResponse, SuccessResponse
+
+logger = logging.getLogger(__name__)
 
 
 class SetPermissionsRequest(BaseModel):

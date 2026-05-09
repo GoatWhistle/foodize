@@ -1401,37 +1401,52 @@ input[type='date'].form-input::-webkit-calendar-picker-indicator:hover {
   font-variant-numeric: tabular-nums;
 }
 
-/* Cart FAB */
+/* Cart FAB (Sticky Checkout on Mobile) */
 .cart-fab {
   position: fixed;
-  bottom: calc(var(--bottom-tab-h) + 12px);
-  right: 24px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
   background: var(--fire);
   color: var(--fire-text);
-  border-radius: 100px;
-  padding: 14px 22px;
+  border-radius: 0;
+  padding: 18px 24px calc(18px + env(safe-area-inset-bottom, 0));
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: space-between;
   font-weight: var(--weight-display);
-  font-size: var(--text-base);
+  font-size: var(--text-md);
   letter-spacing: 0.01em;
   font-variant-numeric: tabular-nums;
-  box-shadow: 0 10px 28px var(--fire-glow);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
   z-index: 50;
   transition: all var(--dur-sm) var(--ease-out);
+  border: none;
+  cursor: pointer;
 }
 .cart-fab:hover {
   background: var(--fire-dim);
-  transform: translateY(-3px) scale(1.04);
-  box-shadow: var(--shadow-fire);
 }
 .cart-fab:active {
-  transform: scale(0.94);
+  transform: scale(0.98);
 }
 @media (min-width: 600px) {
   .cart-fab {
     bottom: 24px;
+    right: 24px;
+    left: auto;
+    width: auto;
+    border-radius: 100px;
+    padding: 14px 22px;
+    gap: 16px;
+    box-shadow: 0 10px 28px var(--fire-glow);
+  }
+  .cart-fab:hover {
+    transform: translateY(-3px) scale(1.04);
+  }
+  .cart-fab:active {
+    transform: scale(0.94);
   }
 }
 
@@ -1713,7 +1728,7 @@ input[type='date'].form-input::-webkit-calendar-picker-indicator:hover {
 }
 
 .search-bar-wrap {
-  padding: var(--space-md) var(--gutter);
+  padding: var(--space-sm) var(--gutter);
   position: sticky;
   top: var(--nav-h);
   background: rgba(250, 250, 247, 0.9);
@@ -1721,9 +1736,16 @@ input[type='date'].form-input::-webkit-calendar-picker-indicator:hover {
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 [data-theme='dark'] .search-bar-wrap {
   background: rgba(18, 19, 21, 0.9);
+}
+
+.hide-mobile {
+  display: inline;
 }
 
 .search-bar {
@@ -1734,7 +1756,7 @@ input[type='date'].form-input::-webkit-calendar-picker-indicator:hover {
   background: var(--bg-card);
   border: 1px solid var(--border-mid);
   border-radius: var(--r-md);
-  padding: 12px 20px 12px 48px;
+  padding: 12px 40px 12px 48px;
   font-size: var(--text-md);
   font-weight: var(--weight-body);
   color: var(--text-1);
@@ -1742,6 +1764,27 @@ input[type='date'].form-input::-webkit-calendar-picker-indicator:hover {
   transition:
     border-color var(--dur-sm),
     box-shadow var(--dur-sm);
+  -webkit-appearance: none;
+  appearance: none;
+}
+/* Скрываем нативный крестик браузера — делаем свой ниже */
+.search-bar input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='%236b5d4a' d='M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: contain;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+.search-bar input::-webkit-search-cancel-button:hover {
+  opacity: 1;
+}
+[data-theme='dark'] .search-bar input::-webkit-search-cancel-button {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='%23a0a8b8' d='M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z'/%3E%3C/svg%3E");
 }
 .search-bar input:focus {
   border-color: var(--fire);
@@ -1818,6 +1861,11 @@ input[type='date'].form-input::-webkit-calendar-picker-indicator:hover {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
+  transition: opacity 0.25s ease;
+}
+.restaurants-grid--loading {
+  opacity: 0.5;
+  pointer-events: none;
 }
 @media (min-width: 600px) {
   .restaurants-grid {
@@ -1830,6 +1878,44 @@ input[type='date'].form-input::-webkit-calendar-picker-indicator:hover {
   .restaurants-grid {
     grid-template-columns: repeat(3, 1fr);
   }
+}
+
+/* Fade-in wrapper for each card */
+@keyframes card-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.restaurant-card-fade {
+  animation: card-fade-in 0.3s ease both;
+}
+
+/* Skeleton card shimmer */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+.restaurant-card-skeleton {
+  border-radius: var(--r-lg);
+  min-height: 200px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    var(--bg-raised) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 800px 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  border: 1px solid var(--border);
 }
 
 /* ─── Restaurant Detail Page ───────────────────────────────────────────── */
@@ -2254,8 +2340,12 @@ input[type='date'].form-input::-webkit-calendar-picker-indicator:hover {
   pointer-events: none;
 }
 @keyframes shimmer {
-  from { background-position: -200% 0; }
-  to   { background-position: 200% 0; }
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
 }
 .skeleton {
   background: linear-gradient(
@@ -2354,6 +2444,28 @@ input[type='date'].form-input::-webkit-calendar-picker-indicator:hover {
     transform: scale(1.18);
     box-shadow: 0 0 0 7px transparent;
   }
+}
+
+@keyframes step-line-travel {
+  0% {
+    background-position: 200% center;
+  }
+  100% {
+    background-position: -100% center;
+  }
+}
+
+.order-step-line--active {
+  background: linear-gradient(
+    90deg,
+    var(--border) 0%,
+    var(--border) 35%,
+    var(--fire) 50%,
+    var(--border) 65%,
+    var(--border) 100%
+  );
+  background-size: 300% 100%;
+  animation: step-line-travel 1.6s ease-in-out infinite;
 }
 
 @keyframes promo-in {
@@ -2603,7 +2715,11 @@ input[type='date'].form-input::-webkit-calendar-picker-indicator:hover {
   }
 
   .search-bar-wrap {
-    padding: 12px var(--gutter) 10px;
+    padding: 10px var(--gutter);
+    gap: 8px;
+  }
+  .hide-mobile {
+    display: none;
   }
   .restaurants-section {
     padding: 0 var(--gutter);

@@ -20,16 +20,20 @@ import {
   Coffee,
   DotsThree,
   PencilSimple,
+  Heart,
+  ShareNetwork,
 } from '@phosphor-icons/react';
 import { useRestaurantStore } from '../../store/useRestaurantStore';
 import { useOrderStore } from '../../store/useOrderStore';
 import MenuItemCard from '../../components/ui/MenuItemCard';
+import ShareModal from '../../components/ui/ShareModal';
 import Pagination from '../../components/ui/Pagination';
 import { reviewService } from '../../services/reviewService';
 import { staffService } from '../../services/staffService';
 import { restaurantService } from '../../services/restaurantService';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useModalStore } from '../../store/useModalStore';
+import { useFavoriteStore } from '../../store/useFavoriteStore';
 import { useShallow } from 'zustand/react/shallow';
 
 const CATEGORY_ICONS = {
@@ -216,6 +220,7 @@ const RestaurantPage = () => {
   const [rating, setRating] = useState(null);
   const [reviewCount, setReviewCount] = useState(null);
   const restaurant = restaurantData ?? { id, name: 'Ресторан', address: '' };
+  const restaurantUUID = restaurantData?.id?.toString() ?? null;
 
   const { fetchMenu, menus, loading } = useRestaurantStore(
     useShallow((s) => ({
@@ -232,6 +237,7 @@ const RestaurantPage = () => {
 
   const [activeCategory, setActiveCategory] = useState('ALL');
   const [showReviewsModal, setShowReviewsModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [reviewFormOpen, setReviewFormOpen] = useState(false);
   const [reviewsList, setReviewsList] = useState([]);
   const [reviewsPage, setReviewsPage] = useState(1);
@@ -242,6 +248,10 @@ const RestaurantPage = () => {
   const [reviewSuccess, setReviewSuccess] = useState(false);
   const currentUser = useAuthStore((s) => s.user);
   const requestConfirm = useModalStore((s) => s.requestConfirm);
+  const { favoriteIds, toggle: toggleFavorite } = useFavoriteStore(
+    useShallow((s) => ({ favoriteIds: s.favoriteIds, toggle: s.toggle }))
+  );
+  const isFav = favoriteIds.has(restaurantUUID ?? id);
 
   const [showStaffModal, setShowStaffModal] = useState(false);
   const [staffMessage, setStaffMessage] = useState('');
@@ -251,47 +261,65 @@ const RestaurantPage = () => {
   const [selectedOptionIds, setSelectedOptionIds] = useState([]);
   const [customizeError, setCustomizeError] = useState('');
 
-  const menuItems = menus[id] || [];
+  const menuItems = menus[restaurantUUID ?? id] || [];
 
   const myReview =
     reviewsList.find((r) => r.user_id === currentUser?.id) ?? null;
   const otherReviews = reviewsList.filter((r) => r.user_id !== currentUser?.id);
   const canReview = currentUser?.permissions?.includes('reviews.create');
 
-  const loadReviews = useCallback(() => {
-    setReviewsLoading(true);
-    reviewService
-      .getReviews(id, { page: reviewsPage, size: 10 })
-      .then((res) => {
-        const list = Array.isArray(res.data?.data) ? res.data.data : [];
-        setReviewsList(list);
-        setReviewsTotal(res.data?.pagination?.total || 0);
-      })
-      .finally(() => setReviewsLoading(false));
-  }, [id, reviewsPage]);
+  const loadReviews = useCallback(
+    (rid) => {
+      const target = rid ?? restaurantUUID;
+      if (!target) return;
+      setReviewsLoading(true);
+      reviewService
+        .getReviews(target, { page: reviewsPage, size: 10 })
+        .then((res) => {
+          const list = Array.isArray(res.data?.data) ? res.data.data : [];
+          setReviewsList(list);
+          setReviewsTotal(res.data?.pagination?.total || 0);
+        })
+        .finally(() => setReviewsLoading(false));
+    },
+    [restaurantUUID, reviewsPage]
+  );
 
-  const refreshRating = useCallback(() => {
-    reviewService
-      .getRating(id)
-      .then((res) => {
-        const d = res.data?.data;
-        setRating(d?.average_rating ?? d?.rating ?? null);
-        setReviewCount(d?.review_count ?? null);
-      })
-      .catch(() => {});
-  }, [id]);
+  const refreshRating = useCallback(
+    (rid) => {
+      const target = rid ?? restaurantUUID;
+      if (!target) return;
+      reviewService
+        .getRating(target)
+        .then((res) => {
+          const d = res.data?.data;
+          setRating(d?.average_rating ?? d?.rating ?? null);
+          setReviewCount(d?.review_count ?? null);
+        })
+        .catch(() => {});
+    },
+    [restaurantUUID]
+  );
 
   useEffect(() => {
-    fetchMenu(id);
     if (!location.state?.restaurant) {
       restaurantService
         .getById(id)
         .then((res) => setRestaurantData(res.data.data))
         .catch(() => {});
     }
-    refreshRating();
-    loadReviews();
-  }, [id, fetchMenu, location.state, loadReviews, refreshRating]);
+  }, [id, location.state]);
+
+  useEffect(() => {
+    if (!restaurantUUID) return;
+    fetchMenu(restaurantUUID);
+    refreshRating(restaurantUUID);
+  }, [restaurantUUID, fetchMenu, refreshRating]);
+
+  useEffect(() => {
+    if (!restaurantUUID) return;
+    loadReviews(restaurantUUID);
+  }, [restaurantUUID, loadReviews]);
 
   const openReviewForm = () => {
     setReviewError('');
@@ -308,21 +336,22 @@ const RestaurantPage = () => {
     e.preventDefault();
     setReviewError('');
     try {
+      const rid = restaurantUUID ?? id;
       if (myReview) {
-        await reviewService.updateMyReview(id, {
+        await reviewService.updateMyReview(rid, {
           text: reviewForm.text || null,
           rating: reviewForm.rating,
         });
       } else {
-        await reviewService.createReview(id, {
+        await reviewService.createReview(rid, {
           text: reviewForm.text || null,
           rating: reviewForm.rating,
         });
       }
       setReviewFormOpen(false);
       setReviewSuccess(true);
-      loadReviews();
-      refreshRating();
+      loadReviews(rid);
+      refreshRating(rid);
       window.setTimeout(() => setReviewSuccess(false), 2200);
     } catch (err) {
       setReviewError(translateApiError(err, 'Не удалось отправить отзыв'));
@@ -337,9 +366,9 @@ const RestaurantPage = () => {
       danger: true,
       onConfirm: async () => {
         try {
-          await reviewService.deleteReview(id, reviewId);
+          await reviewService.deleteReview(restaurantUUID ?? id, reviewId);
           setReviewsList((prev) => prev.filter((r) => r.id !== reviewId));
-          refreshRating();
+          refreshRating(restaurantUUID ?? id);
         } catch (err) {
           setReviewError(translateApiError(err, 'Не удалось удалить отзыв'));
         }
@@ -352,7 +381,9 @@ const RestaurantPage = () => {
     setStaffError('');
     setStaffLoading(true);
     try {
-      await staffService.createRequest(id, { message: staffMessage });
+      await staffService.createRequest(restaurantUUID ?? id, {
+        message: staffMessage,
+      });
       setShowStaffModal(false);
       setStaffMessage('');
     } catch {
@@ -400,7 +431,7 @@ const RestaurantPage = () => {
   const handleAddMenuItem = (item) => {
     const groups = getActiveOptionGroups(item);
     if (groups.length === 0) {
-      addToCart(item, id);
+      addToCart(item, restaurantUUID ?? id);
       return;
     }
     setCustomizingItem(item);
@@ -457,7 +488,7 @@ const RestaurantPage = () => {
 
     addToCart(
       customizingItem,
-      id,
+      restaurantUUID ?? id,
       getSelectedOptions(customizingItem, selectedOptionIds)
     );
     setCustomizingItem(null);
@@ -506,25 +537,76 @@ const RestaurantPage = () => {
               {restaurant.description}
             </p>
           )}
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={() => {
-              setShowReviewsModal(true);
-              setReviewFormOpen(false);
-            }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              background: 'rgba(255,255,255,0.12)',
-              backdropFilter: 'blur(8px)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              color: '#fff',
-            }}
-          >
-            <Star size={14} weight="fill" color="#fbbf24" />
-            {reviewsButtonLabel}
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => {
+                setShowReviewsModal(true);
+                setReviewFormOpen(false);
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: 'rgba(255,255,255,0.12)',
+                backdropFilter: 'blur(8px)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                color: '#fff',
+              }}
+            >
+              <Star size={14} weight="fill" color="#fbbf24" />
+              {reviewsButtonLabel}
+            </button>
+            <button
+              onClick={() => setShowShareModal(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.12)',
+                backdropFilter: 'blur(8px)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                color: '#fff',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+                flexShrink: 0,
+              }}
+              aria-label="Поделиться рестораном"
+            >
+              <ShareNetwork size={16} weight="bold" />
+            </button>
+            {currentUser && (
+              <button
+                onClick={() => toggleFavorite(restaurant.id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 36,
+                  height: 36,
+                  borderRadius: '50%',
+                  background: isFav
+                    ? 'rgba(239, 68, 68, 0.15)'
+                    : 'rgba(255,255,255,0.12)',
+                  backdropFilter: 'blur(8px)',
+                  border: isFav
+                    ? '1px solid var(--error)'
+                    : '1px solid rgba(255,255,255,0.2)',
+                  color: isFav ? 'var(--error)' : '#fff',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                  flexShrink: 0,
+                }}
+                aria-label={isFav ? 'Убрать из избранного' : 'В избранное'}
+                aria-pressed={isFav}
+              >
+                <Heart size={16} weight={isFav ? 'fill' : 'regular'} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -546,12 +628,36 @@ const RestaurantPage = () => {
         {loading ? (
           <div className="menu-list">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="menu-item" style={{ pointerEvents: 'none' }}>
-                <div className="menu-item-img skeleton" style={{ minHeight: 90, borderRadius: 'var(--r-sm)' }} />
-                <div style={{ flex: 1, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <div className="skeleton" style={{ width: '65%', height: 14 }} />
-                  <div className="skeleton" style={{ width: '85%', height: 11 }} />
-                  <div className="skeleton" style={{ width: '35%', height: 14, marginTop: 4 }} />
+              <div
+                key={i}
+                className="menu-item"
+                style={{ pointerEvents: 'none' }}
+              >
+                <div
+                  className="menu-item-img skeleton"
+                  style={{ minHeight: 90, borderRadius: 'var(--r-sm)' }}
+                />
+                <div
+                  style={{
+                    flex: 1,
+                    padding: '10px 12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 8,
+                  }}
+                >
+                  <div
+                    className="skeleton"
+                    style={{ width: '65%', height: 14 }}
+                  />
+                  <div
+                    className="skeleton"
+                    style={{ width: '85%', height: 11 }}
+                  />
+                  <div
+                    className="skeleton"
+                    style={{ width: '35%', height: 14, marginTop: 4 }}
+                  />
                 </div>
               </div>
             ))}
@@ -1073,6 +1179,13 @@ const RestaurantPage = () => {
             </button>
           </div>
         </div>
+      )}
+
+      {showShareModal && (
+        <ShareModal
+          restaurant={restaurant}
+          onClose={() => setShowShareModal(false)}
+        />
       )}
     </div>
   );

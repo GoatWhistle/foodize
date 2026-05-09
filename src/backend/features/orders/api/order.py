@@ -23,6 +23,7 @@ from features.orders.schemas.order_event import OrderEventResponse
 from features.orders.services import order as service
 from features.restaurants.models import Restaurant
 from features.users.models import User
+from middlewares.limiter import limiter
 from shared.dependencies import require_permission
 from shared.enums.order_status import OrderStatus
 from shared.enums.permissions import Permission
@@ -56,7 +57,9 @@ async def verify_order_read_access(session: AsyncSession, order: Order, current_
     response_model=SuccessResponse[OrderResponse],
     status_code=status.HTTP_201_CREATED,
 )
+@limiter.limit("10/minute")
 async def create_order(
+    request: Request,
     order_in: OrderCreate,
     idempotency_key: str | None = Header(None, alias="Idempotency-Key"),
     current_user: User = Depends(require_permission(Permission.ORDERS_CREATE)),

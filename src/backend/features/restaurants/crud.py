@@ -1,3 +1,4 @@
+import secrets
 import uuid
 
 from sqlalchemy import func, select
@@ -10,7 +11,10 @@ from features.restaurants.schemas import RestaurantCreate, RestaurantUpdate
 async def create_restaurant(
     session: AsyncSession, restaurant_data: RestaurantCreate, vendor_id: uuid.UUID
 ) -> Restaurant:
-    new_restaurant = Restaurant(**restaurant_data.model_dump(), vendor_id=vendor_id)
+    display_id = secrets.token_hex(4)
+    new_restaurant = Restaurant(
+        **restaurant_data.model_dump(), vendor_id=vendor_id, display_id=display_id
+    )
     session.add(new_restaurant)
     await session.commit()
     return new_restaurant
@@ -53,6 +57,12 @@ async def get_restaurant_by_id(
     session: AsyncSession, restaurant_id: uuid.UUID
 ) -> Restaurant | None:
     return await session.get(Restaurant, restaurant_id)
+
+
+async def get_restaurant_by_display_id(session: AsyncSession, display_id: str) -> Restaurant | None:
+    stmt = select(Restaurant).where(Restaurant.display_id == display_id)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
 
 
 async def count_restaurants(

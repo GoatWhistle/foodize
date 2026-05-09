@@ -74,18 +74,27 @@ const MenuItemCard = ({ item, onAdd }) => {
         <div
           style={{
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
             gap: 6,
-            flexWrap: 'wrap',
           }}
         >
-          <div className="menu-item-name">{item.name}</div>
-          {featured && (
-            <span className="menu-item-popular-badge">
-              <Star size={9} weight="fill" />
-              Хит
-            </span>
-          )}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              flexWrap: 'wrap',
+            }}
+          >
+            <div className="menu-item-name">{item.name}</div>
+            {featured && (
+              <span className="menu-item-popular-badge">
+                <Star size={9} weight="fill" />
+                Хит
+              </span>
+            )}
+          </div>
         </div>
         {item.description && (
           <div className="menu-item-desc">{item.description}</div>

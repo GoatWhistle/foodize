@@ -89,13 +89,22 @@ export const useOrderStore = create((set, get) => ({
       lineKey,
     };
 
-    if (cartRestaurantId && cartRestaurantId !== restaurantId && cart.length > 0) {
+    if (
+      cartRestaurantId &&
+      cartRestaurantId !== restaurantId &&
+      cart.length > 0
+    ) {
       const confirmed = await new Promise((resolve) => {
         const tg = window.Telegram?.WebApp;
         if (tg?.showConfirm) {
-          tg.showConfirm("Заменить корзину?\nТекущие товары будут удалены.", resolve);
+          tg.showConfirm(
+            "Заменить корзину?\nТекущие товары будут удалены.",
+            resolve,
+          );
         } else {
-          resolve(window.confirm("Заменить корзину? Текущие товары будут удалены."));
+          resolve(
+            window.confirm("Заменить корзину? Текущие товары будут удалены."),
+          );
         }
       });
       if (!confirmed) return false;

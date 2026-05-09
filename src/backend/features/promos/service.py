@@ -14,6 +14,7 @@ from features.promos.exceptions import (
 from features.promos.models import Promo
 from features.promos.schemas import PromoCreate, PromoResponse, PromoValidateResponse
 from features.restaurants.exceptions import RestaurantNotFoundException
+from shared.exceptions.base import AppException
 
 
 async def create_promo(
@@ -58,7 +59,12 @@ async def deactivate_promo(
     return PromoResponse.model_validate(updated)
 
 
-def _validate_promo_active(promo: Promo, restaurant_id: uuid.UUID) -> None:
+def _validate_promo_active(
+    promo: Promo,
+    restaurant_id: uuid.UUID,
+    order_total: int | None = None,
+    is_first_order: bool = False,
+) -> None:
     if promo.restaurant_id != restaurant_id:
         raise PromoRestaurantMismatchException()
     if not promo.is_active:
@@ -67,6 +73,11 @@ def _validate_promo_active(promo: Promo, restaurant_id: uuid.UUID) -> None:
         raise PromoNotActiveException()
     if promo.max_uses is not None and promo.used_count >= promo.max_uses:
         raise PromoUsageLimitException()
+    if promo.first_order_only and not is_first_order:
+        raise AppException(status_code=400, detail="promo_first_order_only")
+    if promo.min_order_amount is not None and order_total is not None:
+        if order_total < promo.min_order_amount:
+            raise AppException(status_code=400, detail="promo_min_order_amount")
 
 
 async def validate_promo(
@@ -74,11 +85,14 @@ async def validate_promo(
     code: str,
     restaurant_id: uuid.UUID,
     order_total: int | None = None,
+    is_first_order: bool = False,
 ) -> PromoValidateResponse:
     promo = await crud.get_promo_by_code(session, code)
     if not promo:
         raise PromoNotFoundException()
-    _validate_promo_active(promo, restaurant_id)
+    _validate_promo_active(
+        promo, restaurant_id, order_total=order_total, is_first_order=is_first_order
+    )
 
     discounted_amount: int | None = None
     if order_total is not None:
@@ -92,6 +106,8 @@ async def validate_promo(
         discount_type=promo.discount_type,
         discount_value=promo.discount_value,
         discounted_amount=discounted_amount,
+        first_order_only=promo.first_order_only,
+        min_order_amount=promo.min_order_amount,
     )
 
 
@@ -100,11 +116,14 @@ async def apply_promo(
     code: str,
     restaurant_id: uuid.UUID,
     order_total: int,
+    is_first_order: bool = False,
 ) -> int:
     promo = await crud.get_promo_by_code(session, code)
     if not promo:
         raise PromoNotFoundException()
-    _validate_promo_active(promo, restaurant_id)
+    _validate_promo_active(
+        promo, restaurant_id, order_total=order_total, is_first_order=is_first_order
+    )
 
     if promo.discount_type == "PERCENT":
         new_total = max(0, order_total - int(order_total * promo.discount_value / 100))

@@ -5,6 +5,7 @@ import { ROUTES } from '../../constants/routes';
 import FoodizeLogo from '../../components/ui/FoodizeLogo';
 import { translateApiError } from '../../utils/translateApiError';
 import { useShallow } from 'zustand/react/shallow';
+import { formatPhoneNumber, extractPhoneNumber } from '../../utils/phone';
 
 const AuthVisual = () => (
   <div className="auth-visual">
@@ -44,12 +45,13 @@ const RegisterPage = () => {
     setError('');
     setIsLoading(true);
     try {
+      const cleanPhone = extractPhoneNumber(phone);
       await register({
         name,
-        phone_number: phone,
+        phone_number: cleanPhone,
         password,
       });
-      await login({ phone_number: phone, password });
+      await login({ phone_number: cleanPhone, password });
       navigate(ROUTES.HOME);
     } catch (err) {
       setError(translateApiError(err, 'Ошибка при регистрации'));
@@ -105,7 +107,7 @@ const RegisterPage = () => {
                 type="tel"
                 placeholder="+7 (999) 000-00-00"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => setPhone(formatPhoneNumber(e.target.value))}
                 required
                 autoComplete="tel"
               />

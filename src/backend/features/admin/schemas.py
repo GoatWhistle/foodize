@@ -91,6 +91,7 @@ class ModerationDecision(BaseModel):
 
 class AdminRestaurantResponse(BaseModel):
     id: uuid.UUID
+    display_id: str | None = None
     name: str
     address: str
     vendor_id: uuid.UUID

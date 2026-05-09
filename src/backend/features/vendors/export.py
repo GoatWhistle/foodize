@@ -4,6 +4,7 @@ from datetime import date
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.admin import crud as admin_crud
+from features.admin.crud import CATEGORY_RU, STATUS_RU
 from features.admin.export import _build_analytics_pdf, _build_finance_pdf, _make_csv
 from features.menu.crud import get_menu_items
 from features.menu.models import MenuItem
@@ -49,7 +50,7 @@ async def export_orders_csv(
             getattr(o, "display_id", None) or str(o.id)[:8],
             o.user.name if o.user else "",
             o.restaurant.name if o.restaurant else "",
-            o.status,
+            STATUS_RU.get(o.status, o.status),
             len(o.items or []),
             o.total_price,
             o.created_at.strftime("%Y-%m-%d %H:%M"),
@@ -80,7 +81,7 @@ async def export_menu_csv(
         [
             str(item.id),
             item.name,
-            item.category or "",
+            CATEGORY_RU.get(item.category, item.category or ""),
             item.price,
             "Да" if item.is_available else "Нет",
             str(item.restaurant_id),

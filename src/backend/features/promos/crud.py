@@ -68,9 +68,7 @@ async def increment_used_count(session: AsyncSession, promo: Promo) -> bool:
     stmt = (
         update(Promo)
         .where(Promo.id == promo.id)
-        .where(
-            (Promo.max_uses == None) | (Promo.used_count < Promo.max_uses)  # noqa: E711
-        )
+        .where((Promo.max_uses == None) | (Promo.used_count < Promo.max_uses))  # noqa: E711
         .values(used_count=Promo.used_count + 1)
     )
     result = await session.execute(stmt)

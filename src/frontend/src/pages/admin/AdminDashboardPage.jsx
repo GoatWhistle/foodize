@@ -15,11 +15,14 @@ import {
   Rows,
   Prohibit,
   Monitor,
+  ShieldWarning,
+  QrCode,
 } from '@phosphor-icons/react';
 import { useDebounce } from '../../hooks/useDebounce';
 import { adminService } from '../../services/adminService';
 import EmptyState from '../../components/ui/EmptyState';
 import OrderDetailsModal from '../../components/ui/OrderDetailsModal';
+import QRCodeModal from '../../components/ui/QRCodeModal';
 import Pagination from '../../components/ui/Pagination';
 import { useModalStore } from '../../store/useModalStore';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -30,6 +33,9 @@ import {
   AOVDynamicsChart,
   UsersByRoleChart,
   KPICards,
+  TopItemsChart,
+  TopRestaurantsChart,
+  OrderStatusPieChart,
 } from '../../components/dashboard/DashboardCharts';
 import {
   ORDER_STATUS_RU,
@@ -520,6 +526,7 @@ const AdminDashboardPage = () => {
   const [exportLoading, setExportLoading] = useState(false);
   const [selectedVendorIds, setSelectedVendorIds] = useState(new Set());
   const [selectedRestaurantIds, setSelectedRestaurantIds] = useState(new Set());
+  const [qrRestaurant, setQrRestaurant] = useState(null);
   const [selectedUserIds, setSelectedUserIds] = useState(new Set());
   const [selectedReviewIds, setSelectedReviewIds] = useState(new Set());
   const [batchLoading, setBatchLoading] = useState(false);
@@ -1115,6 +1122,7 @@ const AdminDashboardPage = () => {
     { id: 'stats', label: 'Статистика', icon: <ChartLineUp size={18} /> },
     { id: 'users', label: 'Пользователи', icon: <UsersThree size={18} /> },
     { id: 'orders', label: 'Заказы', icon: <Package size={18} /> },
+    { id: 'resolution', label: 'Модерация', icon: <ShieldWarning size={18} /> },
     { id: 'restaurants', label: 'Рестораны', icon: <Storefront size={18} /> },
     { id: 'vendors', label: 'Вендоры', icon: <UsersThree size={18} /> },
     { id: 'reviews', label: 'Отзывы', icon: <Star size={18} /> },
@@ -1301,6 +1309,25 @@ const AdminDashboardPage = () => {
         {activeTab === 'stats' && stats?.users_by_role && (
           <div style={{ marginTop: 16 }}>
             <UsersByRoleChart data={stats.users_by_role} />
+            {stats.orders_by_status && (
+              <div
+                style={{
+                  marginTop: 20,
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                  gap: 20,
+                }}
+              >
+                <OrderStatusPieChart
+                  data={Object.fromEntries(
+                    Object.entries(stats.orders_by_status).map(([k, v]) => [
+                      translate(ORDER_STATUS_RU, k),
+                      v,
+                    ])
+                  )}
+                />
+              </div>
+            )}
           </div>
         )}
 
@@ -1474,83 +1501,68 @@ const AdminDashboardPage = () => {
             {finance && (
               <>
                 <KPICards finance={finance} />
-                <RevenueChart data={finance.revenue_by_day || []} />
-
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
-                    gap: 20,
-                    marginTop: 20,
-                    marginBottom: 20,
-                  }}
-                >
-                  {advancedAnalytics && (
-                    <>
-                      <HourlyLoadChart
-                        data={advancedAnalytics.hourly_load || []}
-                      />
-                      <CategoryRevenueChart
-                        data={(advancedAnalytics.category_revenue || []).map(
-                          (item) => ({
-                            ...item,
-                            label: translate(CATEGORY_RU, item.label),
-                          })
-                        )}
-                      />
-                      <AOVDynamicsChart
-                        data={advancedAnalytics.aov_dynamics || []}
-                      />
-                    </>
-                  )}
-                </div>
                 <div
                   style={{
                     display: 'grid',
                     gridTemplateColumns: '1fr 1fr',
-                    gap: 12,
+                    gap: 20,
                   }}
                 >
-                  <div style={{ ...cardStyle, padding: 18 }}>
+                  <RevenueChart data={finance.revenue_by_day || []} />
+                  {advancedAnalytics && (
+                    <AOVDynamicsChart
+                      data={advancedAnalytics.aov_dynamics || []}
+                    />
+                  )}
+                  <TopItemsChart data={finance.top_items || []} />
+                  {advancedAnalytics && (
+                    <CategoryRevenueChart
+                      data={(advancedAnalytics.category_revenue || []).map(
+                        (item) => ({
+                          ...item,
+                          label: translate(CATEGORY_RU, item.label),
+                        })
+                      )}
+                    />
+                  )}
+                  {advancedAnalytics && (
+                    <HourlyLoadChart
+                      data={advancedAnalytics.hourly_load || []}
+                    />
+                  )}
+                  {financeFilters.restaurant_id ? (
                     <div
                       style={{
-                        color: 'var(--text-1)',
-                        fontWeight: 900,
-                        marginBottom: 12,
+                        padding: '14px 18px',
+                        borderRadius: 'var(--r-md)',
+                        background: 'var(--bg-surface)',
+                        border: '1px solid var(--border)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 12,
+                        fontSize: '0.85rem',
+                        color: 'var(--text-2)',
                       }}
                     >
-                      Топ ресторанов
-                    </div>
-                    {(finance.top_restaurants || []).map((item) => (
-                      <div
-                        key={item.restaurant_id}
-                        style={{ color: 'var(--text-2)', marginBottom: 8 }}
+                      <span>
+                        Топ ресторанов скрыт — активен фильтр по ресторану
+                      </span>
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() =>
+                          setFinanceFilters((prev) => ({
+                            ...prev,
+                            restaurant_id: '',
+                          }))
+                        }
                       >
-                        {item.name}: <b>{item.revenue} ₽</b> ·{' '}
-                        {item.orders_count} заказов
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ ...cardStyle, padding: 18 }}>
-                    <div
-                      style={{
-                        color: 'var(--text-1)',
-                        fontWeight: 900,
-                        marginBottom: 12,
-                      }}
-                    >
-                      Топ блюд
+                        Сбросить фильтр
+                      </button>
                     </div>
-                    {(finance.top_items || []).map((item) => (
-                      <div
-                        key={item.menu_item_id}
-                        style={{ color: 'var(--text-2)', marginBottom: 8 }}
-                      >
-                        {item.name}: <b>{item.quantity} шт.</b> · {item.revenue}{' '}
-                        ₽
-                      </div>
-                    ))}
-                  </div>
+                  ) : (
+                    <TopRestaurantsChart data={finance.top_restaurants || []} />
+                  )}
                 </div>
               </>
             )}
@@ -2072,6 +2084,187 @@ const AdminDashboardPage = () => {
                     )}
                   </div>
                 </button>
+              );
+            })}
+            <Pagination
+              page={ordersPage}
+              totalPages={Math.ceil(ordersTotal / PAGE_SIZE)}
+              onPageChange={setOrdersPage}
+            />
+          </ListSection>
+        )}
+
+        {activeTab === 'resolution' && (
+          <ListSection
+            loading={ordersLoading}
+            emptyTitle="Проблемных заказов не найдено"
+            items={orders}
+          >
+            <div
+              style={{
+                marginBottom: 16,
+                display: 'flex',
+                gap: 12,
+                alignItems: 'center',
+              }}
+            >
+              <ShieldWarning size={32} color="var(--error)" />
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.2rem' }}>
+                  Центр Модерации
+                </h3>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-3)' }}>
+                  Инструменты ручной отмены и возврата средств для любых
+                  заказов.
+                </div>
+              </div>
+            </div>
+            <div style={wideFilterGridStyle}>
+              <input
+                className="form-input"
+                style={filterControlStyle}
+                placeholder="ID заказа, телефон клиента"
+                value={orderSearchRaw}
+                onChange={(event) => {
+                  setOrdersPage(1);
+                  setOrderSearchRaw(event.target.value);
+                }}
+              />
+              <select
+                className="form-input"
+                style={filterControlStyle}
+                value={orderFilters.status}
+                onChange={(event) => {
+                  setOrdersPage(1);
+                  setOrderFilters((prev) => ({
+                    ...prev,
+                    status: event.target.value,
+                  }));
+                }}
+              >
+                <option value="">Все статусы</option>
+                <option value="PENDING">Новые</option>
+                <option value="ACCEPTED">Принятые</option>
+                <option value="READY">Готовы</option>
+                <option value="COMPLETED">Выданы (Требуют возврата?)</option>
+              </select>
+            </div>
+            {orders.map((o) => {
+              const cfg = STATUS_MAP[o.status] || {
+                label: o.status,
+                className: 'pending',
+                icon: <Package />,
+              };
+              return (
+                <div
+                  key={o.id}
+                  style={{
+                    ...cardStyle,
+                    padding: 16,
+                    textAlign: 'left',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 10,
+                    width: '100%',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                      alignItems: 'flex-start',
+                    }}
+                  >
+                    <div>
+                      <div
+                        style={{
+                          color: 'var(--text-3)',
+                          fontSize: '0.74rem',
+                          fontWeight: 800,
+                        }}
+                      >
+                        Заказ #{orderTitle(o)}
+                      </div>
+                      <div
+                        style={{
+                          color: 'var(--text-1)',
+                          fontWeight: 900,
+                          fontSize: '1.05rem',
+                          marginTop: 2,
+                        }}
+                      >
+                        {o.total_price} ₽
+                      </div>
+                    </div>
+                    <span className={`order-status-badge ${cfg.className}`}>
+                      {cfg.icon} {cfg.label}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 3,
+                      color: 'var(--text-3)',
+                      fontSize: '0.84rem',
+                    }}
+                  >
+                    <div>
+                      <b style={{ color: 'var(--text-2)' }}>
+                        {o.customer_name || 'Клиент'}
+                      </b>
+                      {o.customer_phone && <span> · {o.customer_phone}</span>}
+                    </div>
+                    {(o.restaurant_name || o.restaurant_address) && (
+                      <div>
+                        {o.restaurant_name && (
+                          <b style={{ color: 'var(--text-2)' }}>
+                            {o.restaurant_name}
+                          </b>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => setSelectedOrder(o)}
+                    >
+                      Подробности
+                    </button>
+                    {o.status !== 'CANCELLED' && (
+                      <button
+                        className="btn btn-sm"
+                        style={{ background: 'var(--error)', color: 'white' }}
+                        onClick={() => {
+                          setReasonDialog({
+                            title: 'Принудительная отмена',
+                            message: `Вы уверены, что хотите отменить заказ #${orderTitle(o)}?`,
+                            confirmLabel: 'Отменить',
+                            onConfirm: async (reason) => {
+                              try {
+                                await adminService.forceCancelOrder(
+                                  o.id,
+                                  reason
+                                );
+                                setOrdersPage(1);
+                              } catch (err) {
+                                console.error('Failed to force cancel', err);
+                                alert(
+                                  'Ошибка отмены: ' +
+                                    (err.response?.data?.detail || err.message)
+                                );
+                              }
+                            },
+                          });
+                        }}
+                      >
+                        Принудительная отмена / Возврат
+                      </button>
+                    )}
+                  </div>
+                </div>
               );
             })}
             <Pagination
@@ -2929,6 +3122,14 @@ const AdminDashboardPage = () => {
             </button>
             <button
               className="btn btn-secondary"
+              style={{ marginTop: 8 }}
+              onClick={() => setQrRestaurant(selectedRestaurant)}
+            >
+              <QrCode size={16} />
+              QR
+            </button>
+            <button
+              className="btn btn-secondary"
               style={{ marginTop: 8, color: 'var(--error)' }}
               onClick={() => handleDeleteRestaurant(selectedRestaurant.id)}
             >
@@ -3223,6 +3424,13 @@ const AdminDashboardPage = () => {
               {batchLoading ? '...' : 'Отклонить выбранных'}
             </button>
           </div>
+        )}
+
+        {qrRestaurant && (
+          <QRCodeModal
+            restaurant={qrRestaurant}
+            onClose={() => setQrRestaurant(null)}
+          />
         )}
       </div>
     </div>

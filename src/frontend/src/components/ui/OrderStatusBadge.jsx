@@ -1,4 +1,4 @@
-import { MapPin, CheckCircle, Smiley, XCircle } from '@phosphor-icons/react';
+import { MapPin, CheckCircle, XCircle } from '@phosphor-icons/react';
 
 const OrderStatusBadge = ({ status, cancellationReason }) => {
   if (status === 'PENDING' || status === 'ACCEPTED') {
@@ -37,21 +37,17 @@ const OrderStatusBadge = ({ status, cancellationReason }) => {
     return (
       <div className="status-icon-wrap status-ready-flash">
         <div style={{ marginBottom: 12, color: 'var(--color-success)' }}>
-          {status === 'COMPLETED' ? (
-            <Smiley size={80} weight="fill" />
-          ) : (
-            <CheckCircle size={80} weight="fill" />
-          )}
+          <CheckCircle size={80} weight="fill" />
         </div>
         <p
           className={`status-ready-text status-heading${status === 'READY' ? ' status-ready-urge' : ''}`}
           style={{ color: 'var(--color-success)' }}
         >
-          {status === 'COMPLETED' ? 'Приятного аппетита!' : 'Забирай!'}
+          {status === 'COMPLETED' ? 'Заказ получен' : 'Забирай!'}
         </p>
         <p className="status-sub" style={{ fontWeight: 600 }}>
           {status === 'COMPLETED'
-            ? 'Заказ уже получен'
+            ? 'Заказ уже выдан'
             : 'Заказ ждёт тебя на кассе'}
         </p>
       </div>

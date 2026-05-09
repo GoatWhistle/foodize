@@ -8,7 +8,7 @@ CERTS_DIR := $(BACKEND_DIR)/certs
 JWT_PRIVATE_KEY := $(CERTS_DIR)/jwt-private.pem
 JWT_PUBLIC_KEY := $(CERTS_DIR)/jwt-public.pem
 
-.PHONY: help sync lint test openapi keys certs build up down stop logs run seed
+.PHONY: help sync lint test openapi keys certs build up down stop logs run seed backup restore
 
 help:
 	@echo " "
@@ -25,6 +25,9 @@ help:
 	@echo "  down            - Stop and remove containers (use SERVICE=... to stop and remove a specific service)"
 	@echo "  stop            - Stop running containers (use SERVICE=... to stop a specific service)"
 	@echo "  logs            - View containers logs (use SERVICE=... to specific containers logs and/or LOGS_TAIL=... to set logs length)"
+	@echo " "
+	@echo "  backup          - Backup PostgreSQL database (env: PG_CONTAINER, BACKUP_DIR, KEEP_LAST)"
+	@echo "  restore FILE=.. - Restore PostgreSQL database from a .dump file"
 	@echo " "
 
 seed:
@@ -138,3 +141,11 @@ logs:
 		echo " " \
 		docker compose logs -f; \
 	fi
+
+FILE ?=
+
+backup:
+	@bash tools/backup.sh
+
+restore:
+	@bash tools/restore.sh "$(FILE)"

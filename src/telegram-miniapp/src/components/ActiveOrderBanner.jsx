@@ -71,7 +71,13 @@ export default function ActiveOrderBanner() {
       }}
     >
       <div>
-        <div style={{ fontSize: "0.75rem", color: "var(--text-3)", marginBottom: 1 }}>
+        <div
+          style={{
+            fontSize: "0.75rem",
+            color: "var(--text-3)",
+            marginBottom: 1,
+          }}
+        >
           Заказ #{activeOrder.display_id ?? activeOrder.id?.slice(0, 8)}
         </div>
         <div

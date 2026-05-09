@@ -70,7 +70,7 @@ async def publish_pending_events(
     return published
 
 
-async def run_outbox_publisher(poll_interval: float = 1.0) -> None:
+async def run_outbox_publisher(poll_interval: float = 5.0) -> None:
     logger.info("Outbox publisher started")
     while True:
         try:

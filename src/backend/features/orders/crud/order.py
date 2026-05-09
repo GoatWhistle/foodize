@@ -76,10 +76,13 @@ async def count_orders_by_user_id(
     session: AsyncSession,
     user_id: uuid.UUID,
     status: OrderStatus | None = None,
+    exclude_status: OrderStatus | None = None,
 ) -> int:
     stmt = select(func.count()).select_from(Order).where(Order.user_id == user_id)
     if status is not None:
         stmt = stmt.where(Order.status == status.value)
+    if exclude_status is not None:
+        stmt = stmt.where(Order.status != exclude_status.value)
     result = await session.execute(stmt)
     return result.scalar_one()
 

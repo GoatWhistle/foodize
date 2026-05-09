@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from database import db_helper
@@ -26,6 +27,19 @@ async def _notify_user(user_id, title: str, message: str) -> None:
     data = NotificationResponse.model_validate(notification).model_dump_json()
     redis_client = get_redis_cache()
     await redis_client.publish(f"user_notifications:{user_id}", data)
+
+
+async def _schedule_feedback_request(
+    user_id, restaurant_name: str, delay_seconds: int = 1800
+) -> None:
+    """Sends a feedback request after a delay (e.g. 30 minutes)."""
+    await asyncio.sleep(delay_seconds)
+    title = "Оцените ваш заказ ⭐️"
+    message = (
+        f"Как вам заказ из {restaurant_name}? Пожалуйста, оставьте отзыв"
+        " в мини-приложении, это поможет ресторану стать лучше!"
+    )
+    await _notify_user(user_id, title, message)
 
 
 async def handle_order_placed(event: OrderPlacedEvent) -> None:
@@ -66,5 +80,9 @@ async def handle_order_status_changed(event: OrderStatusChangedEvent) -> None:
     if event.new_status == OrderStatus.READY:
         title = "Заказ готов!"
         message = f"Ваш заказ из {event.restaurant_name} готов к выдаче. Приятного аппетита!"
+
+    if event.new_status == OrderStatus.COMPLETED:
+        # Schedule feedback loop for 30 mins later
+        asyncio.create_task(_schedule_feedback_request(event.user_id, event.restaurant_name, 1800))
 
     await _notify_user(event.user_id, title, message)

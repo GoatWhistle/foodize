@@ -70,7 +70,14 @@ export default function VendorProfilePage() {
   return (
     <div style={{ paddingBottom: 80 }}>
       <div style={{ padding: "16px 16px 8px" }}>
-        <h1 style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text-1)", margin: 0 }}>
+        <h1
+          style={{
+            fontSize: "1.1rem",
+            fontWeight: 700,
+            color: "var(--text-1)",
+            margin: 0,
+          }}
+        >
           Кабинет вендора
         </h1>
       </div>
@@ -89,12 +96,26 @@ export default function VendorProfilePage() {
       >
         {STATUS_ICON[status]}
         <div>
-          <div style={{ fontSize: "0.8rem", color: "var(--text-3)" }}>Статус заявки</div>
-          <div style={{ fontSize: "0.95rem", fontWeight: 600, color: "var(--text-1)" }}>
+          <div style={{ fontSize: "0.8rem", color: "var(--text-3)" }}>
+            Статус заявки
+          </div>
+          <div
+            style={{
+              fontSize: "0.95rem",
+              fontWeight: 600,
+              color: "var(--text-1)",
+            }}
+          >
             {STATUS_LABEL[status] ?? status}
           </div>
           {vendor?.rejection_reason && (
-            <div style={{ fontSize: "0.78rem", color: "var(--fire)", marginTop: 2 }}>
+            <div
+              style={{
+                fontSize: "0.78rem",
+                color: "var(--fire)",
+                marginTop: 2,
+              }}
+            >
               {vendor.rejection_reason}
             </div>
           )}
@@ -104,13 +125,27 @@ export default function VendorProfilePage() {
       {status === "APPROVED" && (
         <>
           <div style={{ padding: "12px 16px 6px" }}>
-            <div style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text-3)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            <div
+              style={{
+                fontSize: "0.8rem",
+                fontWeight: 600,
+                color: "var(--text-3)",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+              }}
+            >
               Мои рестораны
             </div>
           </div>
 
           {restaurants.length === 0 ? (
-            <div style={{ padding: "12px 16px", color: "var(--text-3)", fontSize: "0.88rem" }}>
+            <div
+              style={{
+                padding: "12px 16px",
+                color: "var(--text-3)",
+                fontSize: "0.88rem",
+              }}
+            >
               Нет ресторанов. Создайте первый в веб-версии Foodize.
             </div>
           ) : (
@@ -127,10 +162,18 @@ export default function VendorProfilePage() {
               >
                 <Storefront size={20} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--text-1)" }}>
+                  <div
+                    style={{
+                      fontSize: "0.9rem",
+                      fontWeight: 600,
+                      color: "var(--text-1)",
+                    }}
+                  >
                     {r.name}
                   </div>
-                  <div style={{ fontSize: "0.78rem", color: "var(--text-3)" }}>{r.address}</div>
+                  <div style={{ fontSize: "0.78rem", color: "var(--text-3)" }}>
+                    {r.address}
+                  </div>
                 </div>
                 <div
                   style={{
@@ -150,7 +193,9 @@ export default function VendorProfilePage() {
               className="btn btn-secondary"
               style={{ width: "100%", fontSize: "0.85rem" }}
               onClick={() =>
-                tg?.showAlert?.("Управление меню и настройки доступны в веб-версии Foodize")
+                tg?.showAlert?.(
+                  "Управление меню и настройки доступны в веб-версии Foodize",
+                )
               }
             >
               Управление рестораном — веб-версия
@@ -160,8 +205,15 @@ export default function VendorProfilePage() {
       )}
 
       {status === "PENDING" && (
-        <div style={{ padding: "12px 16px", fontSize: "0.85rem", color: "var(--text-2)" }}>
-          Ваша заявка на рассмотрении у администратора. Обычно это занимает до 24 часов.
+        <div
+          style={{
+            padding: "12px 16px",
+            fontSize: "0.85rem",
+            color: "var(--text-2)",
+          }}
+        >
+          Ваша заявка на рассмотрении у администратора. Обычно это занимает до
+          24 часов.
         </div>
       )}
     </div>

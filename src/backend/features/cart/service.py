@@ -3,12 +3,12 @@ import logging
 
 from fastapi import Depends
 
-logger = logging.getLogger(__name__)
-
 from infra.cache.base import CacheRepository
 from infra.cache.redis import get_redis_cache
 
 from .schemas import CartResponse, CartUpdate
+
+logger = logging.getLogger(__name__)
 
 _CART_TTL_SECONDS = 86400
 

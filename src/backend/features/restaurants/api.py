@@ -31,10 +31,10 @@ router = APIRouter(prefix="/restaurants", tags=["Restaurants"])
 
 @router.get("/public/{restaurant_id}", response_model=SuccessResponse[RestaurantResponse])
 async def read_public_restaurant(
-    restaurant_id: uuid.UUID,
+    restaurant_id: str,
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[RestaurantResponse]:
-    result = await service.get_restaurant_public(session=session, restaurant_id=restaurant_id)
+    result = await service.get_restaurant_public(session=session, identifier=restaurant_id)
     return build_response(result)
 
 

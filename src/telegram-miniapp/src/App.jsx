@@ -26,8 +26,12 @@ const LazyOrders = lazy(() => import("./pages/orders/OrdersPage"));
 const LazyOrderStatus = lazy(() => import("./pages/orders/OrderStatusPage"));
 const LazyProfile = lazy(() => import("./pages/profile/ProfilePage"));
 const LazyFavorites = lazy(() => import("./pages/profile/FavoritesPage"));
-const LazyNotifications = lazy(() => import("./pages/notifications/NotificationsPage"));
-const LazyVendorProfile = lazy(() => import("./pages/profile/VendorProfilePage"));
+const LazyNotifications = lazy(
+  () => import("./pages/notifications/NotificationsPage"),
+);
+const LazyVendorProfile = lazy(
+  () => import("./pages/profile/VendorProfilePage"),
+);
 const LazyStaffProfile = lazy(() => import("./pages/profile/StaffProfilePage"));
 
 const Spinner = () => (
@@ -74,7 +78,10 @@ const Layout = () => {
     <>
       <ActiveOrderBanner />
       <Suspense fallback={null}>
-        <div key={location.key} className={navigationType !== "POP" ? "page-enter" : ""}>
+        <div
+          key={location.key}
+          className={navigationType !== "POP" ? "page-enter" : ""}
+        >
           <Outlet />
         </div>
       </Suspense>

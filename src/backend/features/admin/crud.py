@@ -33,6 +33,26 @@ from shared.permissions import (
     serialize_permissions,
 )
 
+CATEGORY_RU = {
+    "SHAURMA": "Шаурма",
+    "BURGER": "Бургеры",
+    "PIZZA": "Пицца",
+    "SUSHI": "Суши и Роллы",
+    "DRINK": "Напитки",
+    "SNACK": "Снеки",
+    "DESSERT": "Десерты",
+    "SOUP": "Супы",
+    "SALAD": "Салаты",
+}
+
+STATUS_RU = {
+    "PENDING": "Ожидается",
+    "ACCEPTED": "Принят",
+    "READY": "Готово",
+    "COMPLETED": "Завершен",
+    "CANCELLED": "Отменен",
+}
+
 
 def _infer_role(permissions: list[str]) -> str:
     perm_set = set(permissions)
@@ -241,6 +261,7 @@ async def get_all_restaurants(
     return [
         AdminRestaurantResponse(
             id=row[0].id,
+            display_id=row[0].display_id,
             name=row[0].name,
             address=row[0].address,
             vendor_id=row[0].vendor_id,
@@ -310,6 +331,7 @@ async def get_restaurant_by_id(
     restaurant = row[0]
     return AdminRestaurantResponse(
         id=restaurant.id,
+        display_id=restaurant.display_id,
         name=restaurant.name,
         address=restaurant.address,
         vendor_id=restaurant.vendor_id,
@@ -811,7 +833,10 @@ async def get_advanced_analytics(
         .group_by(MenuItem.category)
     )
     category_revenue = [
-        AnalyticsPoint(label=row[0], value=int(row[1] or 0)) for row in category_rows.all()
+        AnalyticsPoint(
+            label=CATEGORY_RU.get(row[0], row[0] or "Без категории"), value=int(row[1] or 0)
+        )
+        for row in category_rows.all()
     ]
 
     aov_rows = await session.execute(

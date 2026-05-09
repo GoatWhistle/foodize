@@ -70,8 +70,6 @@ async def handle_order_status_changed(event: dict, bot: Bot) -> None:
         f"Сумма: {format_price(total)}"
     )
     try:
-        await bot.send_message(
-            chat_id=telegram_id, text=text, reply_markup=_mini_app_keyboard()
-        )
+        await bot.send_message(chat_id=telegram_id, text=text, reply_markup=_mini_app_keyboard())
     except Exception as e:
         logger.warning("Failed to send status_changed notification: %s", e)

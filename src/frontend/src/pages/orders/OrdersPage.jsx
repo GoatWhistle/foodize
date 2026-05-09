@@ -42,10 +42,8 @@ const STATUS_CONFIG = {
 };
 
 const STATUS_FILTERS = [
-  { key: '', label: 'Все' },
   { key: 'ACTIVE', label: 'Активные' },
-  { key: 'COMPLETED', label: 'Выданные' },
-  { key: 'CANCELLED', label: 'Отменённые' },
+  { key: 'DONE', label: 'Завершённые' },
 ];
 
 import { useShallow } from 'zustand/react/shallow';
@@ -63,25 +61,22 @@ const OrdersPage = () => {
   );
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ACTIVE');
   const size = 20;
 
   useEffect(() => {
-    const apiStatus =
-      statusFilter === 'COMPLETED' || statusFilter === 'CANCELLED'
-        ? statusFilter
-        : undefined;
-    fetchMyOrders({ page, size, status: apiStatus });
-  }, [fetchMyOrders, page, statusFilter]);
+    fetchMyOrders({ page, size });
+  }, [fetchMyOrders, page]);
 
   const totalPages = Math.ceil(ordersTotal / size);
   const visibleOrders =
     statusFilter === 'ACTIVE'
       ? orders.filter(
-          (order) =>
-            order.status !== 'COMPLETED' && order.status !== 'CANCELLED'
+          (o) => o.status !== 'COMPLETED' && o.status !== 'CANCELLED'
         )
-      : orders;
+      : orders.filter(
+          (o) => o.status === 'COMPLETED' || o.status === 'CANCELLED'
+        );
 
   return (
     <div className="page-enter" style={{ padding: '28px var(--gutter, 20px)' }}>
@@ -133,15 +128,17 @@ const OrdersPage = () => {
       ) : visibleOrders.length === 0 ? (
         <EmptyState
           title={
-            statusFilter ? 'Заказов с таким статусом нет' : 'Заказов пока нет'
+            statusFilter === 'ACTIVE'
+              ? 'Активных заказов нет'
+              : 'Завершённых заказов нет'
           }
           subtitle={
-            statusFilter
-              ? 'Попробуйте выбрать другую категорию'
-              : 'Сделайте первый заказ — это займёт меньше минуты'
+            statusFilter === 'ACTIVE'
+              ? 'Сделайте первый заказ — это займёт меньше минуты'
+              : 'Здесь появятся выданные и отменённые заказы'
           }
           action={
-            !statusFilter
+            statusFilter === 'ACTIVE'
               ? {
                   label: 'Выбрать заведение',
                   onClick: () => navigate(ROUTES.HOME),

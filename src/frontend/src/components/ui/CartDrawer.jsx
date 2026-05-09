@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Plus, Minus, Trash, Tag, X } from '@phosphor-icons/react';
 import { useOrderStore } from '../../store/useOrderStore';
+import { useRestaurantStore } from '../../store/useRestaurantStore';
 import { useShallow } from 'zustand/react/shallow';
 import OrderButton from './OrderButton';
 import { promoService } from '../../services/promoService';
@@ -18,6 +19,7 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
       }))
     );
   const total = useOrderStore((s) => s.cartTotal());
+  const menu = useRestaurantStore((s) => s.menus[cartRestaurantId]) || [];
   const drawerRef = useRef(null);
 
   const [promoCode, setPromoCode] = useState('');
@@ -86,6 +88,19 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
       (sum, option) => sum + (Number(option.price_delta) || 0),
       0
     );
+
+  const cartItemIds = new Set(cart.map((i) => i.menuItem.id));
+  const upsellItems = menu
+    .filter(
+      (i) =>
+        !cartItemIds.has(i.id) &&
+        i.is_available !== false &&
+        (i.category === 'DRINK' ||
+          i.category === 'SNACK' ||
+          Number(i.price) <= 250)
+    )
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 3);
 
   if (!cart.length) return null;
 
@@ -178,6 +193,73 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
               );
             })}
           </div>
+
+          {upsellItems.length > 0 && (
+            <div style={{ marginBottom: 20 }}>
+              <h3
+                style={{
+                  fontSize: '0.9rem',
+                  fontWeight: 700,
+                  marginBottom: 12,
+                  color: 'var(--text-2)',
+                }}
+              >
+                Не забудьте добавить
+              </h3>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 10,
+                  overflowX: 'auto',
+                  paddingBottom: 8,
+                  scrollbarWidth: 'none',
+                }}
+              >
+                {upsellItems.map((item) => (
+                  <div
+                    key={item.id}
+                    style={{
+                      flex: '0 0 auto',
+                      width: 140,
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--r-sm)',
+                      padding: 10,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 6,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: '0.8rem',
+                        fontWeight: 600,
+                        color: 'var(--text-1)',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {item.name}
+                    </div>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 800 }}>
+                      {item.price} ₽
+                    </div>
+                    <button
+                      className="btn btn-secondary btn-sm"
+                      style={{
+                        marginTop: 'auto',
+                        fontSize: '0.75rem',
+                        padding: '4px 8px',
+                      }}
+                      onClick={() => addToCart(item, cartRestaurantId)}
+                    >
+                      <Plus size={12} /> Добавить
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Promo code */}
           {!appliedPromo ? (

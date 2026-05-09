@@ -81,11 +81,20 @@ def _apply_restaurant_filters(
 
 async def get_restaurant_public(
     session: AsyncSession,
-    restaurant_id: uuid.UUID,
+    identifier: str | uuid.UUID,
 ) -> RestaurantResponse:
+    try:
+        if isinstance(identifier, str):
+            parsed_uuid = uuid.UUID(identifier)
+        else:
+            parsed_uuid = identifier
+        where_clause = Restaurant.id == parsed_uuid
+    except ValueError:
+        where_clause = Restaurant.display_id == str(identifier)
+
     result = await session.execute(
         _apply_restaurant_filters(
-            select(Restaurant).where(Restaurant.id == restaurant_id),
+            select(Restaurant).where(where_clause),
             None,
             None,
             None,

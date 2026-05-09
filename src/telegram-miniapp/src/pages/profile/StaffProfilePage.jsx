@@ -60,7 +60,14 @@ export default function StaffProfilePage() {
   return (
     <div style={{ paddingBottom: 80 }}>
       <div style={{ padding: "16px 16px 8px" }}>
-        <h1 style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text-1)", margin: 0 }}>
+        <h1
+          style={{
+            fontSize: "1.1rem",
+            fontWeight: 700,
+            color: "var(--text-1)",
+            margin: 0,
+          }}
+        >
           Кабинет сотрудника
         </h1>
       </div>
@@ -80,11 +87,25 @@ export default function StaffProfilePage() {
         >
           <CookingPot size={20} color="var(--fire)" />
           <div>
-            <div style={{ fontSize: "0.8rem", color: "var(--text-3)" }}>Ресторан</div>
-            <div style={{ fontSize: "0.95rem", fontWeight: 600, color: "var(--text-1)" }}>
+            <div style={{ fontSize: "0.8rem", color: "var(--text-3)" }}>
+              Ресторан
+            </div>
+            <div
+              style={{
+                fontSize: "0.95rem",
+                fontWeight: 600,
+                color: "var(--text-1)",
+              }}
+            >
               {profile.restaurant_name ?? profile.restaurant_id ?? "—"}
             </div>
-            <div style={{ fontSize: "0.78rem", color: "var(--text-3)", marginTop: 2 }}>
+            <div
+              style={{
+                fontSize: "0.78rem",
+                color: "var(--text-3)",
+                marginTop: 2,
+              }}
+            >
               Управление заказами доступно в веб-версии Foodize
             </div>
           </div>
@@ -104,19 +125,39 @@ export default function StaffProfilePage() {
         >
           {STATUS_ICON[application.status] ?? STATUS_ICON.PENDING}
           <div>
-            <div style={{ fontSize: "0.8rem", color: "var(--text-3)" }}>Статус заявки</div>
-            <div style={{ fontSize: "0.95rem", fontWeight: 600, color: "var(--text-1)" }}>
+            <div style={{ fontSize: "0.8rem", color: "var(--text-3)" }}>
+              Статус заявки
+            </div>
+            <div
+              style={{
+                fontSize: "0.95rem",
+                fontWeight: 600,
+                color: "var(--text-1)",
+              }}
+            >
               {STATUS_LABEL[application.status] ?? application.status}
             </div>
             {application.status === "PENDING" && (
-              <div style={{ fontSize: "0.78rem", color: "var(--text-2)", marginTop: 2 }}>
+              <div
+                style={{
+                  fontSize: "0.78rem",
+                  color: "var(--text-2)",
+                  marginTop: 2,
+                }}
+              >
                 Ожидайте ответа от ресторана
               </div>
             )}
           </div>
         </div>
       ) : (
-        <div style={{ padding: "16px", fontSize: "0.88rem", color: "var(--text-3)" }}>
+        <div
+          style={{
+            padding: "16px",
+            fontSize: "0.88rem",
+            color: "var(--text-3)",
+          }}
+        >
           Нет активных заявок. Подайте заявку через страницу ресторана.
         </div>
       )}

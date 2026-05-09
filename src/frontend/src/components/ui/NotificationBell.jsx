@@ -11,7 +11,9 @@ const getDateStart = (date) =>
   new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
 const getDayLabel = (value) => {
+  if (!value) return 'Недавно';
   const date = new Date(value);
+  if (isNaN(date.getTime())) return 'Недавно';
   const today = getDateStart(new Date());
   const day = getDateStart(date);
   const diff = Math.round((today - day) / MS_PER_DAY);
@@ -73,7 +75,7 @@ const NotificationBell = () => {
 
     // Open WebSocket
     wsRef.current = createNotificationWebSocket(user.id, (msg) => {
-      // msg is the NotificationResponse
+      if (!msg?.id) return;
       setNotifications((prev) => [msg, ...prev]);
       setUnreadCount((c) => c + 1);
     });
@@ -139,11 +141,15 @@ const NotificationBell = () => {
     setLoadingMore(true);
     try {
       const nextPage = page + 1;
-      const res = await notificationService.getNotifications({ page: nextPage, size: 20 });
+      const res = await notificationService.getNotifications({
+        page: nextPage,
+        size: 20,
+      });
       setNotifications((prev) => [...prev, ...(res.data.items || [])]);
       setTotal(res.data.total || 0);
       setPage(nextPage);
-    } catch {} finally {
+    } catch {
+    } finally {
       setLoadingMore(false);
     }
   };
@@ -343,13 +349,12 @@ const NotificationBell = () => {
                                 whiteSpace: 'nowrap',
                               }}
                             >
-                              {new Date(n.created_at).toLocaleTimeString(
-                                'ru-RU',
-                                {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                }
-                              )}
+                              {n.created_at && !isNaN(new Date(n.created_at))
+                                ? new Date(n.created_at).toLocaleTimeString(
+                                    'ru-RU',
+                                    { hour: '2-digit', minute: '2-digit' }
+                                  )
+                                : ''}
                             </span>
                             <button
                               onClick={(e) => handleDelete(n.id, e)}

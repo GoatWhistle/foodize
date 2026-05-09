@@ -12,6 +12,7 @@ class RestaurantCreate(BaseModel):
 
 class RestaurantResponse(BaseModel):
     id: uuid.UUID
+    display_id: str | None = None
     name: str
     address: str
     description: str | None = None
