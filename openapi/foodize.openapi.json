@@ -4093,6 +4093,35 @@
             }
           },
           {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "default",
+                "rating",
+                "popularity_7d"
+              ],
+              "type": "string",
+              "default": "default",
+              "title": "Sort"
+            }
+          },
+          {
+            "name": "direction",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "type": "string",
+              "default": "desc",
+              "title": "Direction"
+            }
+          },
+          {
             "name": "page",
             "in": "query",
             "required": false,
@@ -9160,6 +9189,11 @@
           "review_count": {
             "type": "integer",
             "title": "Review Count",
+            "default": 0
+          },
+          "orders_count_7d": {
+            "type": "integer",
+            "title": "Orders Count 7D",
             "default": 0
           },
           "moderation_status": {

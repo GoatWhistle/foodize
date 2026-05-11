@@ -22,6 +22,7 @@ class RestaurantResponse(BaseModel):
     photo_url: str | None = None
     average_rating: float = 0.0
     review_count: int = 0
+    orders_count_7d: int = 0
     moderation_status: str = "PENDING"
     rejection_reason: str | None = None
 

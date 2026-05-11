@@ -26,6 +26,7 @@ import { reviewService } from "../../services/reviewService";
 import { restaurantService } from "../../services/restaurantService";
 import { BackButton } from "../../telegram/sdk";
 import MenuItemCard from "../../components/ui/MenuItemCard";
+import ProductSheet from "../../components/ui/ProductSheet";
 import CartDrawer from "../../components/ui/CartDrawer";
 
 const CATEGORY_ICONS = {
@@ -68,9 +69,7 @@ const RestaurantPage = () => {
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewError, setReviewError] = useState("");
   const [reviewSuccess, setReviewSuccess] = useState(false);
-  const [customizingItem, setCustomizingItem] = useState(null);
-  const [selectedOptionIds, setSelectedOptionIds] = useState([]);
-  const [customizeError, setCustomizeError] = useState("");
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [showCart, setShowCart] = useState(false);
   const currentUser = useAuthStore((s) => s.user);
   const [reviewDeleteId, setReviewDeleteId] = useState(null);
@@ -82,14 +81,11 @@ const RestaurantPage = () => {
       loading: s.loading,
     })),
   );
-  const { addToCart, clearCart, cartCount, cartRestaurantId, cart } =
+  const { addToCart, cartCount } =
     useOrderStore(
       useShallow((s) => ({
         addToCart: s.addToCart,
-        clearCart: s.clearCart,
         cartCount: s.cartCount,
-        cartRestaurantId: s.cartRestaurantId,
-        cart: s.cart,
       })),
     );
   const { favoriteIds, toggle } = useFavoriteStore(
@@ -202,102 +198,13 @@ const RestaurantPage = () => {
       ? allItems
       : allItems.filter((i) => i.category === activeCategory);
 
-  const getActiveOptionGroups = (item) =>
-    (item?.option_groups || [])
-      .filter((g) => g.is_active !== false)
-      .map((g) => ({
-        ...g,
-        options: (g.options || []).filter((o) => o.is_available !== false),
-      }))
-      .filter((g) => g.options.length > 0);
-
-  const getSelectedOptions = (item, ids) => {
-    const s = new Set(ids);
-    return getActiveOptionGroups(item)
-      .flatMap((g) => g.options)
-      .filter((o) => s.has(o.id));
+  const openProduct = (item) => {
+    setSelectedProduct(item);
   };
 
-  const getCustomizedPrice = (item, ids) =>
-    (Number(item?.price) || 0) +
-    getSelectedOptions(item, ids).reduce(
-      (sum, o) => sum + (Number(o.price_delta) || 0),
-      0,
-    );
-
-  const handleAddMenuItem = async (item) => {
-    const groups = getActiveOptionGroups(item);
-    const needsConfirm =
-      cartRestaurantId && cartRestaurantId !== id && cart.length > 0;
-
-    if (groups.length === 0) {
-      await addToCart(item, id);
-      return;
-    }
-
-    if (needsConfirm) {
-      const confirmed = await new Promise((resolve) => {
-        const tg = window.Telegram?.WebApp;
-        if (tg?.showConfirm) {
-          tg.showConfirm(
-            "Заменить корзину?\nТекущие товары будут удалены.",
-            resolve,
-          );
-        } else {
-          resolve(
-            window.confirm("Заменить корзину? Текущие товары будут удалены."),
-          );
-        }
-      });
-      if (!confirmed) return;
-      await clearCart();
-    }
-
-    setCustomizingItem(item);
-    setSelectedOptionIds(
-      groups.flatMap((g) =>
-        g.is_required && g.selection_type === "single" ? [g.options[0].id] : [],
-      ),
-    );
-    setCustomizeError("");
-  };
-
-  const toggleOption = (group, option) => {
-    setCustomizeError("");
-    setSelectedOptionIds((cur) => {
-      const groupIds = group.options.map((o) => o.id);
-      if (group.selection_type === "single")
-        return [...cur.filter((oid) => !groupIds.includes(oid)), option.id];
-      if (cur.includes(option.id))
-        return cur.filter((oid) => oid !== option.id);
-      if (
-        group.max_selected &&
-        cur.filter((oid) => groupIds.includes(oid)).length >= group.max_selected
-      )
-        return cur;
-      return [...cur, option.id];
-    });
-  };
-
-  const handleConfirmCustomization = () => {
-    for (const group of getActiveOptionGroups(customizingItem)) {
-      const groupIds = group.options.map((o) => o.id);
-      if (
-        selectedOptionIds.filter((oid) => groupIds.includes(oid)).length <
-        group.min_selected
-      ) {
-        setCustomizeError(`Выберите: ${group.name}`);
-        return;
-      }
-    }
-    addToCart(
-      customizingItem,
-      id,
-      getSelectedOptions(customizingItem, selectedOptionIds),
-    );
-    setCustomizingItem(null);
-    setSelectedOptionIds([]);
-    setCustomizeError("");
+  const handleProductAdd = ({ item, selectedOptions, quantity }) => {
+    addToCart(item, id, selectedOptions, quantity);
+    setSelectedProduct(null);
   };
 
   return (
@@ -454,7 +361,7 @@ const RestaurantPage = () => {
               <MenuItemCard
                 key={item.id}
                 item={item}
-                onAdd={handleAddMenuItem}
+                onSelect={openProduct}
               />
             ))}
           </div>
@@ -472,140 +379,14 @@ const RestaurantPage = () => {
 
       {showCart && <CartDrawer onClose={() => setShowCart(false)} />}
 
-
-      {customizingItem && (
-        <div className="modal-overlay" style={{ zIndex: 3000 }}>
-          <div className="modal-content" style={{ maxWidth: 460, padding: 24 }}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-                marginBottom: 16,
-              }}
-            >
-              <div>
-                <div style={{ fontWeight: 800, fontSize: "1rem" }}>
-                  {customizingItem.name}
-                </div>
-                <div style={{ color: "var(--text-3)", fontSize: "0.8rem" }}>
-                  Настройте блюдо
-                </div>
-              </div>
-              <button
-                style={{
-                  background: "none",
-                  border: "none",
-                  fontSize: 20,
-                  cursor: "pointer",
-                }}
-                onClick={() => setCustomizingItem(null)}
-              >
-                ✕
-              </button>
-            </div>
-            {getActiveOptionGroups(customizingItem).map((group) => {
-              const groupIds = group.options.map((o) => o.id);
-              const selectedCount = selectedOptionIds.filter((oid) =>
-                groupIds.includes(oid),
-              ).length;
-              return (
-                <div key={group.id} style={{ marginBottom: 16 }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      marginBottom: 8,
-                    }}
-                  >
-                    <span style={{ fontWeight: 800, fontSize: "0.88rem" }}>
-                      {group.name}
-                    </span>
-                    <span
-                      style={{ color: "var(--text-3)", fontSize: "0.72rem" }}
-                    >
-                      {group.is_required ? "Обязательно" : "По желанию"}
-                      {group.max_selected ? ` · до ${group.max_selected}` : ""}
-                    </span>
-                  </div>
-                  {group.options.map((option) => {
-                    const checked = selectedOptionIds.includes(option.id);
-                    const disabled =
-                      !checked &&
-                      group.max_selected &&
-                      selectedCount >= group.max_selected;
-                    return (
-                      <label
-                        key={option.id}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          padding: "9px 12px",
-                          border: "1px solid var(--border)",
-                          borderRadius: 8,
-                          marginBottom: 6,
-                          background: checked
-                            ? "var(--fire-subtle)"
-                            : "var(--bg-card)",
-                          opacity: disabled ? 0.5 : 1,
-                          cursor: disabled ? "not-allowed" : "pointer",
-                        }}
-                      >
-                        <span
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 8,
-                          }}
-                        >
-                          <input
-                            type={
-                              group.selection_type === "single"
-                                ? "radio"
-                                : "checkbox"
-                            }
-                            name={`group-${group.id}`}
-                            checked={checked}
-                            disabled={!!disabled}
-                            onChange={() => toggleOption(group, option)}
-                          />
-                          <span style={{ fontSize: "0.85rem" }}>
-                            {option.name}
-                          </span>
-                        </span>
-                        {option.price_delta > 0 && (
-                          <span
-                            style={{
-                              color: "var(--fire)",
-                              fontWeight: 800,
-                              fontSize: "0.82rem",
-                            }}
-                          >
-                            +{option.price_delta} ₽
-                          </span>
-                        )}
-                      </label>
-                    );
-                  })}
-                </div>
-              );
-            })}
-            {customizeError && (
-              <div className="form-error" style={{ marginBottom: 12 }}>
-                {customizeError}
-              </div>
-            )}
-            <button
-              className="btn btn-primary btn-full"
-              onClick={handleConfirmCustomization}
-            >
-              Добавить за{" "}
-              {getCustomizedPrice(customizingItem, selectedOptionIds)} ₽
-            </button>
-          </div>
-        </div>
+      {selectedProduct && (
+        <ProductSheet
+          item={selectedProduct}
+          onClose={() => setSelectedProduct(null)}
+          onAdd={handleProductAdd}
+        />
       )}
+
 
       {reviewDeleteId && (
         <div className="modal-overlay" style={{ zIndex: 5000 }}>

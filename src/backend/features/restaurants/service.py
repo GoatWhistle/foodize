@@ -1,9 +1,11 @@
 import uuid
+from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import func, select
+from sqlalchemy import asc, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from features.orders.models.order import Order
 from features.restaurants import crud
 from features.restaurants.dependencies import get_restaurant_and_check_ownership
 from features.restaurants.exceptions import RestaurantNotFoundException
@@ -92,17 +94,36 @@ async def get_restaurant_public(
     except ValueError:
         where_clause = Restaurant.display_id == str(identifier)
 
+    since = datetime.now(timezone.utc) - timedelta(days=7)
+    popularity_subquery = (
+        select(Order.restaurant_id, func.count(Order.id).label("orders_count_7d"))
+        .where(Order.created_at >= since)
+        .group_by(Order.restaurant_id)
+        .subquery()
+    )
     result = await session.execute(
         _apply_restaurant_filters(
-            select(Restaurant).where(where_clause),
+            select(
+                Restaurant,
+                func.coalesce(popularity_subquery.c.orders_count_7d, 0).label(
+                    "orders_count_7d"
+                ),
+            )
+            .outerjoin(
+                popularity_subquery,
+                popularity_subquery.c.restaurant_id == Restaurant.id,
+            )
+            .where(where_clause),
             None,
             None,
             None,
         )
     )
-    restaurant = result.scalar_one_or_none()
-    if not restaurant:
+    row = result.one_or_none()
+    if not row:
         raise RestaurantNotFoundException()
+    restaurant = row[0]
+    restaurant.orders_count_7d = int(row[1] or 0)
     return RestaurantResponse.model_validate(restaurant)
 
 
@@ -111,19 +132,43 @@ async def get_all_restaurants_public(
     name: str | None = None,
     is_hiring: bool | None = None,
     is_open: bool | None = None,
+    sort: str = "default",
+    direction: str = "desc",
     page: int = 1,
     size: int = 20,
 ) -> tuple[list[RestaurantResponse], int]:
     offset = (page - 1) * size
+    since = datetime.now(timezone.utc) - timedelta(days=7)
+    popularity_subquery = (
+        select(Order.restaurant_id, func.count(Order.id).label("orders_count_7d"))
+        .where(Order.created_at >= since)
+        .group_by(Order.restaurant_id)
+        .subquery()
+    )
+    popularity_expr = func.coalesce(popularity_subquery.c.orders_count_7d, 0)
 
     query = _apply_restaurant_filters(
-        select(Restaurant),
+        select(Restaurant, popularity_expr.label("orders_count_7d")).outerjoin(
+            popularity_subquery,
+            popularity_subquery.c.restaurant_id == Restaurant.id,
+        ),
         name,
         is_hiring,
         is_open,
     )
+    sort_direction = asc if direction == "asc" else desc
+    if sort == "rating":
+        query = query.order_by(sort_direction(Restaurant.average_rating), Restaurant.name)
+    elif sort == "popularity_7d":
+        query = query.order_by(sort_direction(popularity_expr), Restaurant.name)
+    else:
+        query = query.order_by(Restaurant.name)
     result = await session.execute(query.offset(offset).limit(size))
-    restaurants = [RestaurantResponse.model_validate(r) for r in result.scalars().all()]
+    restaurants = []
+    for row in result.all():
+        restaurant = row[0]
+        restaurant.orders_count_7d = int(row[1] or 0)
+        restaurants.append(RestaurantResponse.model_validate(restaurant))
 
     total_query = _apply_restaurant_filters(
         select(func.count(Restaurant.id)), name, is_hiring, is_open

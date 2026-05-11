@@ -1,6 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MagnifyingGlass, Storefront, Faders } from '@phosphor-icons/react';
+import {
+  MagnifyingGlass,
+  Storefront,
+  Faders,
+  SortAscending,
+  SortDescending,
+  Star,
+  ChartBar,
+} from '@phosphor-icons/react';
 import RestaurantCard from '../../components/ui/RestaurantCard';
 import EmptyState from '../../components/ui/EmptyState';
 import Pagination from '../../components/ui/Pagination';
@@ -12,6 +20,8 @@ import { ROUTES } from '../../constants/routes';
 const HomePage = () => {
   const [search, setSearch] = useState('');
   const [onlyOpen, setOnlyOpen] = useState(false);
+  const [sort, setSort] = useState('default');
+  const [direction, setDirection] = useState('desc');
   const [showFilters, setShowFilters] = useState(false);
   const { isAuthenticated } = useAuthStore(
     useShallow((s) => ({ isAuthenticated: s.isAuthenticated }))
@@ -47,19 +57,21 @@ const HomePage = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [search, onlyOpen]);
+  }, [search, onlyOpen, sort, direction]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
       fetchPublicRestaurants({
         name: search || undefined,
         is_open: onlyOpen ? true : undefined,
+        sort,
+        direction,
         page,
         size,
       });
     }, 400);
     return () => clearTimeout(handler);
-  }, [search, onlyOpen, page, fetchPublicRestaurants]);
+  }, [search, onlyOpen, sort, direction, page, fetchPublicRestaurants]);
 
   const handleCardClick = (restaurant) => {
     if (!isAuthenticated) {
@@ -91,35 +103,20 @@ const HomePage = () => {
         </div>
         <div style={{ position: 'relative' }} ref={filterRef}>
           <button
-            className={`btn ${showFilters || onlyOpen ? 'btn-primary' : 'btn-secondary'}`}
-            onClick={() => setShowFilters(!showFilters)}
+            className={`btn btn-icon ${showFilters ? 'btn-primary' : 'btn-secondary'}${onlyOpen || sort !== 'default' ? ' btn-icon-active' : ''}`}
+            onClick={() => setShowFilters((value) => !value)}
             aria-expanded={showFilters}
             aria-label="Открыть фильтры"
             style={{
               height: '46px',
-              padding: '0 16px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
+              width: '46px',
+              padding: 0,
+              display: 'grid',
+              placeItems: 'center',
               borderRadius: 'var(--radius-md)',
-              position: 'relative',
             }}
           >
             <Faders size={18} weight="bold" />
-            {onlyOpen && !showFilters && (
-              <span
-                style={{
-                  position: 'absolute',
-                  top: 6,
-                  right: 6,
-                  width: 7,
-                  height: 7,
-                  borderRadius: '50%',
-                  background: 'var(--color-success)',
-                  border: '1.5px solid var(--bg-card)',
-                }}
-              />
-            )}
           </button>
 
           {showFilters && (
@@ -141,24 +138,74 @@ const HomePage = () => {
                 gap: '12px',
               }}
             >
-              <h4
-                style={{
-                  margin: 0,
-                  fontSize: '0.9rem',
-                  color: 'var(--text-1)',
-                }}
+              <label
+                className="sort-chip sort-chip-checkbox"
               >
-                Параметры поиска
-              </h4>
-              <label className="form-check" style={{ margin: 0 }}>
                 <input
                   type="checkbox"
                   checked={onlyOpen}
-                  onChange={(e) => setOnlyOpen(e.target.checked)}
+                  onChange={() => setOnlyOpen((value) => !value)}
                 />
-                <span className="form-check-label">Открыто</span>
+                Открыто
               </label>
-              {/* Будущие фильтры можно добавлять сюда */}
+              <div className="home-sort-panel">
+                <button
+                  type="button"
+                  className={`sort-chip${sort === 'default' ? ' active' : ''}`}
+                  onClick={() => {
+                    if (sort === 'default') return;
+                    setSort('default');
+                  }}
+                >
+                  По умолчанию
+                </button>
+                <button
+                  type="button"
+                  className={`sort-chip${sort === 'rating' ? ' active' : ''}`}
+                  onClick={() => {
+                    if (sort === 'rating') {
+                      setDirection((value) => (value === 'desc' ? 'asc' : 'desc'))
+                    } else {
+                      setSort('rating');
+                    }
+                  }}
+                >
+                  <Star size={14} weight="fill" />
+                  Оценка
+                  {sort === 'rating' && (
+                    <span className="sort-direction-icon">
+                      {direction === 'desc' ? (
+                        <SortDescending size={14} weight="bold" />
+                      ) : (
+                        <SortAscending size={14} weight="bold" />
+                      )}
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className={`sort-chip${sort === 'popularity_7d' ? ' active' : ''}`}
+                  onClick={() => {
+                    if (sort === 'popularity_7d') {
+                      setDirection((value) => (value === 'desc' ? 'asc' : 'desc'))
+                    } else {
+                      setSort('popularity_7d');
+                    }
+                  }}
+                >
+                  <ChartBar size={14} weight="bold" />
+                  Популярность
+                  {sort === 'popularity_7d' && (
+                    <span className="sort-direction-icon">
+                      {direction === 'desc' ? (
+                        <SortDescending size={14} weight="bold" />
+                      ) : (
+                        <SortAscending size={14} weight="bold" />
+                      )}
+                    </span>
+                  )}
+                </button>
+              </div>
             </div>
           )}
         </div>

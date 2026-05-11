@@ -1,4 +1,5 @@
 import uuid
+from typing import Literal
 
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -44,6 +45,8 @@ async def read_public_restaurants(
     name: str | None = Query(None, max_length=128),
     is_hiring: bool | None = Query(None),
     is_open: bool | None = Query(None),
+    sort: Literal["default", "rating", "popularity_7d"] = Query("default"),
+    direction: Literal["asc", "desc"] = Query("desc"),
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
@@ -53,6 +56,8 @@ async def read_public_restaurants(
         name=name,
         is_hiring=is_hiring,
         is_open=is_open,
+        sort=sort,
+        direction=direction,
         page=page,
         size=size,
     )

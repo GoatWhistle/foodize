@@ -5,7 +5,6 @@ import {
   BowlFood,
   CookingPot,
   Clock,
-  Plus,
   Leaf,
   Cookie,
   Coffee,
@@ -25,17 +24,24 @@ const CATEGORY_ICONS = {
   DEFAULT: <CookingPot size={36} />,
 };
 
-const formatPrice = (kopecks) => `${kopecks} ₽`;
+const formatPrice = (value) => `${value} ₽`;
 
-const MenuItemCard = ({ item, onAdd }) => {
+const MenuItemCard = ({ item, onSelect }) => {
   const icon =
     CATEGORY_ICONS[item.category?.toUpperCase()] || CATEGORY_ICONS.DEFAULT;
   const unavailable = item.is_available === false;
+  const optionGroups = (item.option_groups || []).filter(
+    (group) => group.is_active !== false && (group.options || []).length > 0,
+  );
 
   return (
-    <div
+    <button
+      type="button"
       className="menu-item"
       style={unavailable ? { opacity: 0.45, filter: "grayscale(0.6)" } : {}}
+      onClick={() => !unavailable && onSelect?.(item)}
+      disabled={unavailable}
+      aria-label={`Открыть ${item.name}`}
     >
       <div className="menu-item-img" style={{ minHeight: "90px" }}>
         {item.photo_url ? (
@@ -72,53 +78,9 @@ const MenuItemCard = ({ item, onAdd }) => {
         <div className="menu-item-footer">
           <span className="menu-item-price">{formatPrice(item.price)}</span>
           {unavailable ? (
-            <span
-              className="tag-pill"
-              style={{
-                fontSize: "0.68rem",
-                background: "var(--bg-raised)",
-                color: "var(--error)",
-                border: "1px solid var(--color-error-border)",
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-              }}
-            >
-              Недоступно
-            </span>
+            <span className="tag-pill">Недоступно</span>
           ) : (
-            <span
-              className="tag-pill"
-              style={{
-                fontSize: "0.68rem",
-                background: "var(--bg-raised)",
-                color: "var(--text-3)",
-                backdropFilter: "none",
-                border: "1px solid var(--border)",
-                display: "flex",
-                alignItems: "center",
-                gap: "4px",
-              }}
-            >
+            <span className="tag-pill">
               <Clock size={11} />~{item.prep_time_minutes || 15} мин
             </span>
           )}
-        </div>
-      </div>
-
-      <div className="menu-item-side">
-        {!unavailable && (
-          <button
-            className="add-btn"
-            onClick={() => onAdd?.(item)}
-            aria-label={`Добавить ${item.name}`}
-          >
-            <Plus size={18} weight="bold" />
-          </button>
-        )}
-      </div>
-    </div>
-  );
-};
-
-export default MenuItemCard;

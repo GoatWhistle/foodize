@@ -26,6 +26,7 @@ import {
 import { useRestaurantStore } from '../../store/useRestaurantStore';
 import { useOrderStore } from '../../store/useOrderStore';
 import MenuItemCard from '../../components/ui/MenuItemCard';
+import ProductSheet from '../../components/ui/ProductSheet';
 import ShareModal from '../../components/ui/ShareModal';
 import Pagination from '../../components/ui/Pagination';
 import { reviewService } from '../../services/reviewService';
@@ -257,9 +258,7 @@ const RestaurantPage = () => {
   const [staffMessage, setStaffMessage] = useState('');
   const [staffLoading, setStaffLoading] = useState(false);
   const [staffError, setStaffError] = useState('');
-  const [customizingItem, setCustomizingItem] = useState(null);
-  const [selectedOptionIds, setSelectedOptionIds] = useState([]);
-  const [customizeError, setCustomizeError] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
   const menuItems = menus[restaurantUUID ?? id] || [];
 
@@ -403,97 +402,9 @@ const RestaurantPage = () => {
       ? availableMenuItems
       : availableMenuItems.filter((i) => i.category === activeCategory);
 
-  const getActiveOptionGroups = (item) =>
-    (item?.option_groups || [])
-      .filter((group) => group.is_active !== false)
-      .map((group) => ({
-        ...group,
-        options: (group.options || []).filter(
-          (option) => option.is_available !== false
-        ),
-      }))
-      .filter((group) => group.options.length > 0);
-
-  const getSelectedOptions = (item, ids) => {
-    const idsSet = new Set(ids);
-    return getActiveOptionGroups(item)
-      .flatMap((group) => group.options)
-      .filter((option) => idsSet.has(option.id));
-  };
-
-  const getCustomizedPrice = (item, ids) =>
-    (Number(item?.price) || 0) +
-    getSelectedOptions(item, ids).reduce(
-      (sum, option) => sum + (Number(option.price_delta) || 0),
-      0
-    );
-
-  const handleAddMenuItem = (item) => {
-    const groups = getActiveOptionGroups(item);
-    if (groups.length === 0) {
-      addToCart(item, restaurantUUID ?? id);
-      return;
-    }
-    setCustomizingItem(item);
-    setSelectedOptionIds(
-      groups.flatMap((group) =>
-        group.is_required && group.selection_type === 'single'
-          ? [group.options[0].id]
-          : []
-      )
-    );
-    setCustomizeError('');
-  };
-
-  const toggleOption = (group, option) => {
-    setCustomizeError('');
-    setSelectedOptionIds((current) => {
-      const groupOptionIds = group.options.map((item) => item.id);
-      const hasOption = current.includes(option.id);
-
-      if (group.selection_type === 'single') {
-        return [
-          ...current.filter((id) => !groupOptionIds.includes(id)),
-          option.id,
-        ];
-      }
-
-      if (hasOption) {
-        return current.filter((id) => id !== option.id);
-      }
-
-      if (group.max_selected) {
-        const selectedInGroup = current.filter((id) =>
-          groupOptionIds.includes(id)
-        );
-        if (selectedInGroup.length >= group.max_selected) return current;
-      }
-
-      return [...current, option.id];
-    });
-  };
-
-  const handleConfirmCustomization = () => {
-    const groups = getActiveOptionGroups(customizingItem);
-    for (const group of groups) {
-      const groupOptionIds = group.options.map((option) => option.id);
-      const selectedCount = selectedOptionIds.filter((optionId) =>
-        groupOptionIds.includes(optionId)
-      ).length;
-      if (selectedCount < group.min_selected) {
-        setCustomizeError(`Выберите: ${group.name}`);
-        return;
-      }
-    }
-
-    addToCart(
-      customizingItem,
-      restaurantUUID ?? id,
-      getSelectedOptions(customizingItem, selectedOptionIds)
-    );
-    setCustomizingItem(null);
-    setSelectedOptionIds([]);
-    setCustomizeError('');
+  const handleProductAdd = ({ item, selectedOptions, quantity }) => {
+    addToCart(item, restaurantUUID ?? id, selectedOptions, quantity);
+    setSelectedProduct(null);
   };
 
   const reviewsButtonLabel = (() => {
@@ -668,7 +579,7 @@ const RestaurantPage = () => {
               <MenuItemCard
                 key={item.id}
                 item={item}
-                onAdd={handleAddMenuItem}
+                onSelect={setSelectedProduct}
               />
             ))}
           </div>
@@ -684,6 +595,14 @@ const RestaurantPage = () => {
           </button>
         )}
       </div>
+
+      {selectedProduct && (
+        <ProductSheet
+          item={selectedProduct}
+          onClose={() => setSelectedProduct(null)}
+          onAdd={handleProductAdd}
+        />
+      )}
 
       {showStaffModal && (
         <div className="modal-overlay" style={{ zIndex: 3000 }}>
@@ -1009,174 +928,6 @@ const RestaurantPage = () => {
                 </div>
               )}
             </div>
-          </div>
-        </div>
-      )}
-
-      {customizingItem && (
-        <div className="modal-overlay" style={{ zIndex: 3000 }}>
-          <div
-            className="modal-content"
-            style={{ maxWidth: '460px', padding: '28px' }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                gap: 16,
-                marginBottom: 18,
-              }}
-            >
-              <div>
-                <h3
-                  style={{
-                    fontSize: '1.05rem',
-                    fontWeight: 800,
-                    marginBottom: 4,
-                  }}
-                >
-                  {customizingItem.name}
-                </h3>
-                <div style={{ color: 'var(--text-3)', fontSize: '0.82rem' }}>
-                  Настройте блюдо под себя
-                </div>
-              </div>
-              <button
-                type="button"
-                className="btn btn-secondary btn-sm"
-                onClick={() => setCustomizingItem(null)}
-                aria-label="Закрыть"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {getActiveOptionGroups(customizingItem).map((group) => {
-                const groupOptionIds = group.options.map((option) => option.id);
-                const selectedCount = selectedOptionIds.filter((optionId) =>
-                  groupOptionIds.includes(optionId)
-                ).length;
-
-                return (
-                  <div key={group.id}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        gap: 12,
-                        marginBottom: 8,
-                      }}
-                    >
-                      <div style={{ fontWeight: 800, fontSize: '0.88rem' }}>
-                        {group.name}
-                      </div>
-                      <div
-                        style={{
-                          color: 'var(--text-3)',
-                          fontSize: '0.72rem',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {group.is_required ? 'Обязательно' : 'По желанию'}
-                        {group.max_selected
-                          ? ` • до ${group.max_selected}`
-                          : ''}
-                      </div>
-                    </div>
-
-                    <div
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 8,
-                      }}
-                    >
-                      {group.options.map((option) => {
-                        const checked = selectedOptionIds.includes(option.id);
-                        const disabled =
-                          !checked &&
-                          group.max_selected &&
-                          selectedCount >= group.max_selected;
-
-                        return (
-                          <label
-                            key={option.id}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              gap: 12,
-                              padding: '10px 12px',
-                              border: '1px solid var(--border)',
-                              borderRadius: 'var(--radius-md)',
-                              background: checked
-                                ? 'var(--fire-subtle)'
-                                : 'var(--bg-card)',
-                              opacity: disabled ? 0.5 : 1,
-                              cursor: disabled ? 'not-allowed' : 'pointer',
-                            }}
-                          >
-                            <span
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 10,
-                                minWidth: 0,
-                              }}
-                            >
-                              <input
-                                type={
-                                  group.selection_type === 'single'
-                                    ? 'radio'
-                                    : 'checkbox'
-                                }
-                                name={`option-group-${group.id}`}
-                                checked={checked}
-                                disabled={disabled}
-                                onChange={() => toggleOption(group, option)}
-                              />
-                              <span style={{ fontSize: '0.86rem' }}>
-                                {option.name}
-                              </span>
-                            </span>
-                            {option.price_delta > 0 && (
-                              <span
-                                style={{
-                                  color: 'var(--fire)',
-                                  fontWeight: 800,
-                                  fontSize: '0.82rem',
-                                  whiteSpace: 'nowrap',
-                                }}
-                              >
-                                +{option.price_delta} ₽
-                              </span>
-                            )}
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {customizeError && (
-              <div className="form-error" style={{ marginTop: 14 }}>
-                {customizeError}
-              </div>
-            )}
-
-            <button
-              type="button"
-              className="btn btn-primary btn-full"
-              onClick={handleConfirmCustomization}
-              style={{ marginTop: 18 }}
-            >
-              Добавить за{' '}
-              {getCustomizedPrice(customizingItem, selectedOptionIds)} ₽
-            </button>
           </div>
         </div>
       )}

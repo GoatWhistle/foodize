@@ -2793,6 +2793,11 @@ export interface components {
        */
       review_count: number;
       /**
+       * Orders Count 7D
+       * @default 0
+       */
+      orders_count_7d: number;
+      /**
        * Moderation Status
        * @default PENDING
        */
@@ -5537,6 +5542,8 @@ export interface operations {
         name?: string | null;
         is_hiring?: boolean | null;
         is_open?: boolean | null;
+        sort?: "default" | "rating" | "popularity_7d";
+        direction?: "asc" | "desc";
         page?: number;
         size?: number;
       };

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import {
   Fire,
   Hamburger,
@@ -6,7 +5,6 @@ import {
   BowlFood,
   CookingPot,
   Clock,
-  Plus,
   Leaf,
   Cookie,
   Coffee,
@@ -27,21 +25,26 @@ const CATEGORY_ICONS = {
   DEFAULT: <CookingPot size={36} />,
 };
 
-const formatPrice = (kopecks) => `${kopecks} ₽`;
+const formatPrice = (value) => `${value} ₽`;
 
-const MenuItemCard = ({ item, onAdd }) => {
-  const [justAdded, setJustAdded] = useState(false);
+const MenuItemCard = ({ item, onSelect }) => {
   const icon =
     CATEGORY_ICONS[item.category?.toUpperCase()] || CATEGORY_ICONS.DEFAULT;
   const unavailable = item.is_available === false;
   const featured = item.is_popular === true;
+  const optionGroups = (item.option_groups || []).filter(
+    (group) => group.is_active !== false && (group.options || []).length > 0
+  );
 
   return (
-    <div
+    <button
+      type="button"
       className={`menu-item${featured ? ' menu-item--featured' : ''}`}
       style={unavailable ? { opacity: 0.45, filter: 'grayscale(0.6)' } : {}}
+      onClick={() => !unavailable && onSelect?.(item)}
+      disabled={unavailable}
+      aria-label={`Открыть ${item.name}`}
     >
-      {/* Photo / Placeholder */}
       <div className="menu-item-img" style={{ minHeight: '90px' }}>
         {item.photo_url ? (
           <img src={item.photo_url} alt={item.name} loading="lazy" />
@@ -69,32 +72,15 @@ const MenuItemCard = ({ item, onAdd }) => {
         )}
       </div>
 
-      {/* Info */}
       <div className="menu-item-info">
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-            gap: 6,
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              flexWrap: 'wrap',
-            }}
-          >
-            <div className="menu-item-name">{item.name}</div>
-            {featured && (
-              <span className="menu-item-popular-badge">
-                <Star size={9} weight="fill" />
-                Хит
-              </span>
-            )}
-          </div>
+        <div className="menu-item-name-row">
+          <div className="menu-item-name">{item.name}</div>
+          {featured && (
+            <span className="menu-item-popular-badge">
+              <Star size={9} weight="fill" />
+              Хит
+            </span>
+          )}
         </div>
         {item.description && (
           <div className="menu-item-desc">{item.description}</div>
@@ -136,24 +122,12 @@ const MenuItemCard = ({ item, onAdd }) => {
         </div>
       </div>
 
-      {/* Add button */}
       <div className="menu-item-side">
         {!unavailable && (
-          <button
-            className={`add-btn${justAdded ? ' add-btn-pulse' : ''}`}
-            onClick={() => {
-              onAdd?.(item);
-              setJustAdded(false);
-              window.requestAnimationFrame(() => setJustAdded(true));
-              window.setTimeout(() => setJustAdded(false), 520);
-            }}
-            aria-label={`Добавить ${item.name}`}
-          >
-            <Plus size={18} weight="bold" />
-          </button>
+          <span className="menu-item-choose" aria-hidden="true">+</span>
         )}
       </div>
-    </div>
+    </button>
   );
 };
 

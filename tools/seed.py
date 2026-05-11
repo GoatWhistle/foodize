@@ -17,10 +17,14 @@ from sqlalchemy import select
 
 from database import db_helper
 from features.favorites.crud import create_favorite, get_favorite
-from features.menu.crud import create_menu_item
+from features.menu.crud import (
+    create_menu_item,
+    create_option_group,
+    get_menu_item_by_id,
+)
 from features.menu.models import MenuItem
-from features.menu.schemas import MenuItemCreate
-from features.orders.models import Order, OrderItem
+from features.menu.schemas import MenuItemCreate, MenuItemOptionGroupCreate
+from features.orders.models import Order, OrderItem, OrderItemOption
 from features.promos.crud import create_promo
 from features.promos.schemas import PromoCreate
 from features.restaurants.crud import create_restaurant
@@ -44,6 +48,105 @@ from shared.permissions import (
     permissions_with,
     serialize_permissions,
 )
+
+OPTION_GROUP_PRESETS = {
+    "Шаурма классик": [
+        {
+            "name": "Соус",
+            "selection_type": "single",
+            "is_required": True,
+            "min_selected": 1,
+            "max_selected": 1,
+            "sort_order": 10,
+            "options": [
+                {"name": "Чесночный", "price_delta": 0, "sort_order": 0},
+                {"name": "Томатный", "price_delta": 0, "sort_order": 1},
+                {"name": "Острый", "price_delta": 15, "sort_order": 2},
+            ],
+        },
+        {
+            "name": "Добавки",
+            "selection_type": "multiple",
+            "is_required": False,
+            "min_selected": 0,
+            "max_selected": 2,
+            "sort_order": 20,
+            "options": [
+                {"name": "Сыр", "price_delta": 40, "sort_order": 0},
+                {"name": "Халапеньо", "price_delta": 25, "sort_order": 1},
+            ],
+        },
+    ],
+    "Чизбургер": [
+        {
+            "name": "Соус",
+            "selection_type": "single",
+            "is_required": True,
+            "min_selected": 1,
+            "max_selected": 1,
+            "sort_order": 10,
+            "options": [
+                {"name": "Кетчуп", "price_delta": 0, "sort_order": 0},
+                {"name": "Майонез", "price_delta": 0, "sort_order": 1},
+                {"name": "Барбекю", "price_delta": 20, "sort_order": 2},
+            ],
+        },
+        {
+            "name": "Дополнительно",
+            "selection_type": "multiple",
+            "is_required": False,
+            "min_selected": 0,
+            "max_selected": 3,
+            "sort_order": 20,
+            "options": [
+                {"name": "Бекон", "price_delta": 60, "sort_order": 0},
+                {"name": "Грибы", "price_delta": 35, "sort_order": 1},
+            ],
+        },
+    ],
+    "Ролл Калифорния": [
+        {
+            "name": "Соус",
+            "selection_type": "single",
+            "is_required": True,
+            "min_selected": 1,
+            "max_selected": 1,
+            "sort_order": 10,
+            "options": [
+                {"name": "Соевый", "price_delta": 0, "sort_order": 0},
+                {"name": "Унаги", "price_delta": 20, "sort_order": 1},
+            ],
+        },
+    ],
+    "Маргарита": [
+        {
+            "name": "Дополнительный сыр",
+            "selection_type": "single",
+            "is_required": False,
+            "min_selected": 0,
+            "max_selected": 1,
+            "sort_order": 10,
+            "options": [
+                {"name": "Пармезан", "price_delta": 50, "sort_order": 0},
+            ],
+        },
+    ],
+}
+
+
+async def _create_sample_option_groups(session, item):
+    presets = OPTION_GROUP_PRESETS.get(item.name)
+    if not presets:
+        return []
+    created_groups = []
+    for preset in presets:
+        group = await create_option_group(
+            session,
+            item,
+            MenuItemOptionGroupCreate(**preset),
+        )
+        created_groups.append(group)
+    return created_groups
 
 
 SEED_USERS = [
@@ -185,8 +288,18 @@ SEED_RESTAURANTS = [
             },
         ],
         "promos": [
-            {"code": "SHAUR10", "discount_type": "PERCENT", "discount_value": 10, "max_uses": 100},
-            {"code": "FIRST50", "discount_type": "FIXED", "discount_value": 50, "max_uses": 50},
+            {
+                "code": "SHAUR10",
+                "discount_type": "PERCENT",
+                "discount_value": 10,
+                "max_uses": 100,
+            },
+            {
+                "code": "FIRST50",
+                "discount_type": "FIXED",
+                "discount_value": 50,
+                "max_uses": 50,
+            },
         ],
     },
     {
@@ -251,7 +364,12 @@ SEED_RESTAURANTS = [
             },
         ],
         "promos": [
-            {"code": "BURGER15", "discount_type": "PERCENT", "discount_value": 15, "max_uses": 200},
+            {
+                "code": "BURGER15",
+                "discount_type": "PERCENT",
+                "discount_value": 15,
+                "max_uses": 200,
+            },
         ],
     },
     {
@@ -316,8 +434,18 @@ SEED_RESTAURANTS = [
             },
         ],
         "promos": [
-            {"code": "SUSHI20", "discount_type": "PERCENT", "discount_value": 20, "max_uses": 50},
-            {"code": "TOKYO100", "discount_type": "FIXED", "discount_value": 100, "max_uses": 30},
+            {
+                "code": "SUSHI20",
+                "discount_type": "PERCENT",
+                "discount_value": 20,
+                "max_uses": 50,
+            },
+            {
+                "code": "TOKYO100",
+                "discount_type": "FIXED",
+                "discount_value": 100,
+                "max_uses": 30,
+            },
         ],
     },
     {
@@ -375,16 +503,27 @@ SEED_RESTAURANTS = [
             },
         ],
         "promos": [
-            {"code": "PIZZA10", "discount_type": "PERCENT", "discount_value": 10, "max_uses": 150},
+            {
+                "code": "PIZZA10",
+                "discount_type": "PERCENT",
+                "discount_value": 10,
+                "max_uses": 150,
+            },
         ],
     },
 ]
 
 REVIEW_TEXTS = [
-    (5, "Отличное место! Шаурма свежая, всё горячее, персонал вежливый. Буду приходить снова."),
+    (
+        5,
+        "Отличное место! Шаурма свежая, всё горячее, персонал вежливый. Буду приходить снова.",
+    ),
     (5, "Лучшие роллы в городе, без преувеличений. Рыба свежайшая, подача красивая."),
     (4, "Вкусно, быстро, цены адекватные. Единственный минус — очередь в обед."),
-    (4, "Бургеры отличные, котлета сочная. Картошка могла быть горячее, но в целом зашло."),
+    (
+        4,
+        "Бургеры отличные, котлета сочная. Картошка могла быть горячее, но в целом зашло.",
+    ),
     (5, "Пицца просто огонь! Тесто воздушное, начинки много. Рекомендую четыре сыра."),
     (3, "Нормально, но ждал дольше, чем обещали. На вкус без нареканий."),
     (5, "Мисо-суп восхитительный, рамен тоже. Атмосфера приятная, вернусь с друзьями."),
@@ -421,7 +560,11 @@ async def seed():
 
             user = await create_user(
                 session,
-                UserCreate(name=u["name"], phone_number=u["phone_number"], password=u["password"]),
+                UserCreate(
+                    name=u["name"],
+                    phone_number=u["phone_number"],
+                    password=u["password"],
+                ),
             )
             await update_user(
                 session,
@@ -497,6 +640,7 @@ async def seed():
                             ),
                             restaurant.id,
                         )
+                        await _create_sample_option_groups(session, mi)
                         items.append(mi)
                     restaurant_items[str(restaurant.id)] = items
                     print(f"    {len(items)} menu items")
@@ -529,32 +673,56 @@ async def seed():
         print("\n── Staff ───────────────────────────────")
         staff_data = next((u for u in SEED_USERS if u["role"] == "staff"), None)
         if staff_data and all_restaurants:
-            staff_user = await _get_or_load_user(session, staff_data["phone_number"], created_users)
+            staff_user = await _get_or_load_user(
+                session, staff_data["phone_number"], created_users
+            )
             if staff_user:
-                existing_profile = await get_staff_profile_by_user_id(session, staff_user.id)
+                existing_profile = await get_staff_profile_by_user_id(
+                    session, staff_user.id
+                )
                 if existing_profile is None:
-                    await create_staff_profile(session, staff_user.id, all_restaurants[0].id)
+                    await create_staff_profile(
+                        session, staff_user.id, all_restaurants[0].id
+                    )
                     print(f"  {staff_data['name']} → '{all_restaurants[0].name}'")
                 else:
                     print("  skip (exists)")
 
         superuser_data = next((u for u in SEED_USERS if u["role"] == "superuser"), None)
         if superuser_data and all_restaurants:
-            su = await _get_or_load_user(session, superuser_data["phone_number"], created_users)
+            su = await _get_or_load_user(
+                session, superuser_data["phone_number"], created_users
+            )
             if su:
+                su.permissions = permissions_with(
+                    su.permissions, CUSTOMER_PERMISSIONS | VENDOR_PERMISSIONS
+                )
+                await session.commit()
+
                 vendor = await get_vendor_by_user_id(session, su.id)
                 if vendor is None:
                     vendor = await create_vendor_profile(session, su, VendorCreate())
                     vendor.approval_status = "APPROVED"
                     await session.commit()
                     print("  superuser vendor profile created")
+
+                assigned_restaurant = all_restaurants[0]
+                if assigned_restaurant.vendor_id != vendor.id:
+                    assigned_restaurant.vendor_id = vendor.id
+                    await session.commit()
+                    print(
+                        f"  superuser assigned as vendor for '{assigned_restaurant.name}'"
+                    )
+
                 existing_staff = await get_staff_profile_by_user_id(session, su.id)
                 if existing_staff is None:
-                    await create_staff_profile(session, su.id, all_restaurants[0].id)
-                    print(f"  superuser staff profile → '{all_restaurants[0].name}'")
+                    await create_staff_profile(session, su.id, assigned_restaurant.id)
+                    print(f"  superuser staff profile → '{assigned_restaurant.name}'")
 
         print("\n── Orders ──────────────────────────────")
-        customer_phones = [u["phone_number"] for u in SEED_USERS if u["role"] == "customer"]
+        customer_phones = [
+            u["phone_number"] for u in SEED_USERS if u["role"] == "customer"
+        ]
         order_statuses_cycle = [
             OrderStatus.COMPLETED,
             OrderStatus.COMPLETED,
@@ -589,12 +757,10 @@ async def seed():
                     continue
 
                 selected = random.sample(items, k=min(2, len(items)))
-                total_price = sum(mi.price * random.randint(1, 2) for mi in selected)
-
                 order = Order(
                     user_id=customer.id,
                     restaurant_id=restaurant.id,
-                    total_price=total_price,
+                    total_price=0,
                 )
                 session.add(order)
                 await session.flush()
@@ -608,6 +774,34 @@ async def seed():
                         price_at_purchase=mi.price,
                     )
                     session.add(order_item)
+                    await session.flush()
+                    item_total = mi.price * qty
+
+                    full_item = await get_menu_item_by_id(session, mi.id)
+                    if full_item is not None and full_item.option_groups:
+                        for group in full_item.option_groups:
+                            if group.is_active is False:
+                                continue
+                            available_options = [
+                                option
+                                for option in group.options
+                                if option.is_available is not False
+                            ]
+                            if not available_options:
+                                continue
+                            if group.is_required or random.random() < 0.6:
+                                selected_option = random.choice(available_options)
+                                session.add(
+                                    OrderItemOption(
+                                        order_item_id=order_item.id,
+                                        option_id=selected_option.id,
+                                        name_snapshot=selected_option.name,
+                                        price_delta_snapshot=selected_option.price_delta,
+                                    )
+                                )
+                                item_total += selected_option.price_delta * qty
+
+                    order.total_price += item_total
 
                 target_status = order_statuses_cycle[idx % len(order_statuses_cycle)]
                 path = [OrderStatus.ACCEPTED, OrderStatus.READY, OrderStatus.COMPLETED]
@@ -634,7 +828,9 @@ async def seed():
 
         print("\n── Reviews ─────────────────────────────")
         completed_orders = [
-            (o, u, r) for o, u, r in all_placed_orders if o.status == OrderStatus.COMPLETED.value
+            (o, u, r)
+            for o, u, r in all_placed_orders
+            if o.status == OrderStatus.COMPLETED.value
         ]
         review_pool = list(REVIEW_TEXTS)
         random.shuffle(review_pool)

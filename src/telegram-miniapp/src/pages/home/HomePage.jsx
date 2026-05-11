@@ -1,6 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { MagnifyingGlass } from "@phosphor-icons/react";
+import {
+  MagnifyingGlass,
+  SortAscending,
+  SortDescending,
+  Star,
+  ChartBar,
+} from "@phosphor-icons/react";
 import { useRestaurantStore } from "../../store/useRestaurantStore";
 import { useShallow } from "zustand/react/shallow";
 import RestaurantCard from "../../components/ui/RestaurantCard";
@@ -11,6 +17,8 @@ const HomePage = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [onlyOpen, setOnlyOpen] = useState(false);
+  const [sort, setSort] = useState("default");
+  const [direction, setDirection] = useState("desc");
   const [page, setPage] = useState(1);
   const size = 20;
 
@@ -33,10 +41,12 @@ const HomePage = () => {
     fetchPublicRestaurants({
       name: search || undefined,
       is_open: onlyOpen ? true : undefined,
+      sort,
+      direction,
       page,
       size,
     });
-  }, [search, onlyOpen, page, fetchPublicRestaurants]);
+  }, [search, onlyOpen, sort, direction, page, fetchPublicRestaurants]);
 
   useEffect(() => {
     const timer = setTimeout(load, 350);
@@ -79,6 +89,55 @@ const HomePage = () => {
           />
           Только открытые
         </label>
+        <div className="home-sort-panel">
+          <button
+            type="button"
+            className={`sort-chip${sort === "default" ? " active" : ""}`}
+            onClick={() => {
+              setSort("default");
+              setPage(1);
+            }}
+          >
+            По умолчанию
+          </button>
+          <button
+            type="button"
+            className={`sort-chip${sort === "rating" ? " active" : ""}`}
+            onClick={() => {
+              setSort("rating");
+              setPage(1);
+            }}
+          >
+            <Star size={14} weight="fill" /> Оценка
+          </button>
+          <button
+            type="button"
+            className={`sort-chip${sort === "popularity_7d" ? " active" : ""}`}
+            onClick={() => {
+              setSort("popularity_7d");
+              setPage(1);
+            }}
+          >
+            <ChartBar size={14} weight="bold" /> Популярность
+          </button>
+          {sort !== "default" && (
+            <button
+              type="button"
+              className="sort-chip sort-chip-icon"
+              onClick={() => {
+                setDirection((value) => (value === "desc" ? "asc" : "desc"));
+                setPage(1);
+              }}
+              aria-label="Изменить направление сортировки"
+            >
+              {direction === "desc" ? (
+                <SortDescending size={16} weight="bold" />
+              ) : (
+                <SortAscending size={16} weight="bold" />
+              )}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="restaurants-section">

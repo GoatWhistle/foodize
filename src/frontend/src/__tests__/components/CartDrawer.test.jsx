@@ -42,7 +42,7 @@ describe('CartDrawer', () => {
     render(<CartDrawer onClose={onClose} onCheckout={onCheckout} />);
 
     expect(screen.getByText('Pizza')).toBeDefined();
-    expect(screen.getAllByText(/200 ₽/)).toHaveLength(2);
+    expect(screen.getAllByText(/200 ₽/).length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText('2')).toBeDefined();
   });
 

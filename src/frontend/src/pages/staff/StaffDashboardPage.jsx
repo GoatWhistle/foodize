@@ -119,7 +119,7 @@ const ApplicationStatus = () => {
     staffService
       .getMyApplication()
       .then((res) => setApplication(res.data.data))
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, []);
 
@@ -561,8 +561,10 @@ const KanbanCard = ({
           {canCancel && onCancel && (
             <button
               style={{
-                height: 36,
-                width: 36,
+                height: 44,
+                minHeight: 44,
+                width: 44,
+                minWidth: 44,
                 borderRadius: 'var(--r-sm)',
                 border: '1px solid #ef444466',
                 background: 'transparent',
@@ -1075,7 +1077,7 @@ const StaffDashboardPage = () => {
                   (o) =>
                     o.status === 'ACCEPTED' &&
                     Math.floor((Date.now() - new Date(o.created_at)) / 60000) >=
-                      15
+                    15
                 );
                 return criticalOrders.length > 0 ? (
                   <div

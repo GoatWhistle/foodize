@@ -4,6 +4,7 @@ import { useOrderStore } from '../../store/useOrderStore';
 import { useRestaurantStore } from '../../store/useRestaurantStore';
 import { useShallow } from 'zustand/react/shallow';
 import OrderButton from './OrderButton';
+import ProductSheet from './ProductSheet';
 import { promoService } from '../../services/promoService';
 import { translateApiError } from '../../utils/translateApiError';
 
@@ -27,6 +28,7 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
   const [promoError, setPromoError] = useState('');
   const [promoLoading, setPromoLoading] = useState(false);
   const [comment, setComment] = useState('');
+  const [upsellProduct, setUpsellProduct] = useState(null);
 
   const handleOverlayClick = (e) => {
     if (drawerRef.current && !drawerRef.current.contains(e.target)) onClose();
@@ -73,6 +75,7 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
     appliedPromo?.discounted_amount != null
       ? appliedPromo.discounted_amount
       : total;
+  const discountAmount = Math.max(0, total - finalTotal);
 
   const getSelectedOptionIds = (item) =>
     item.selectedOptionIds ??
@@ -111,7 +114,20 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
 
         {/* Scrollable items area */}
         <div className="cart-inner">
-          <h2 className="cart-title">Корзина</h2>
+          <div className="cart-header">
+            <div>
+              <h2 className="cart-title">Корзина</h2>
+              <p>{cart.length} позиций · {total} ₽</p>
+            </div>
+            <button
+              type="button"
+              className="cart-close-btn"
+              onClick={onClose}
+              aria-label="Закрыть корзину"
+            >
+              <X size={18} weight="bold" />
+            </button>
+          </div>
 
           <div className="cart-items">
             {cart.map((cartItem) => {
@@ -122,27 +138,31 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
 
               return (
                 <div key={lineKey} className="cart-item">
+                  <div className="cart-item-thumb">
+                    {menuItem.photo_url || menuItem.image_url ? (
+                      <img
+                        src={menuItem.photo_url || menuItem.image_url}
+                        alt={menuItem.name}
+                      />
+                    ) : (
+                      <span>{menuItem.name?.slice(0, 1) || 'F'}</span>
+                    )}
+                  </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <span className="cart-item-name">{menuItem.name}</span>
+                    <span className="cart-item-unit">
+                      {getLinePrice(cartItem)} ₽ за шт.
+                    </span>
                     {selectedOptions.length > 0 && (
-                      <div
-                        style={{
-                          marginTop: 3,
-                          fontSize: '0.72rem',
-                          lineHeight: 1.35,
-                          color: 'var(--text-3)',
-                        }}
-                      >
-                        {selectedOptions
-                          .map(
-                            (option) =>
-                              `${option.name}${
-                                option.price_delta
-                                  ? ` +${option.price_delta} ₽`
-                                  : ''
-                              }`
-                          )
-                          .join(', ')}
+                      <div className="cart-item-options">
+                        {selectedOptions.map((option) => (
+                          <span key={option.id ?? option.option_id}>
+                            {option.name}
+                            {option.price_delta
+                              ? ` +${option.price_delta} ₽`
+                              : ''}
+                          </span>
+                        ))}
                       </div>
                     )}
                   </div>
@@ -178,15 +198,7 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
                     </button>
                   </div>
 
-                  <span
-                    style={{
-                      fontWeight: 700,
-                      minWidth: 64,
-                      textAlign: 'right',
-                      fontSize: '0.9rem',
-                      color: 'var(--text-1)',
-                    }}
-                  >
+                  <span className="cart-item-line-total">
                     {getLinePrice(cartItem) * quantity} ₽
                   </span>
                 </div>
@@ -251,9 +263,9 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
                         fontSize: '0.75rem',
                         padding: '4px 8px',
                       }}
-                      onClick={() => addToCart(item, cartRestaurantId)}
+                      onClick={() => setUpsellProduct(item)}
                     >
-                      <Plus size={12} /> Добавить
+                      <Plus size={12} /> Выбрать
                     </button>
                   </div>
                 ))}
@@ -376,33 +388,26 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
 
         {/* Sticky footer: total + checkout */}
         <div className="cart-footer">
-          <div className="cart-total">
+          <div className="cart-summary">
             {appliedPromo && (
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  fontSize: '0.8rem',
-                  color: 'var(--text-3)',
-                  textDecoration: 'line-through',
-                  marginBottom: 4,
-                }}
-              >
-                <span>Без скидки</span>
-                <span>{total} ₽</span>
+              <div>
+                <span>Скидка</span>
+                <strong style={{ color: 'var(--color-success)' }}>
+                  −{discountAmount} ₽
+                </strong>
               </div>
             )}
-            <span className="cart-total-label">
-              {appliedPromo ? 'Итого со скидкой' : 'Итого'}
-            </span>
-            <span
-              className="cart-total-value"
-              style={
-                appliedPromo ? { color: 'var(--color-success)' } : undefined
-              }
-            >
-              {finalTotal} ₽
-            </span>
+            <div className="cart-total">
+              <span className="cart-total-label">Итого</span>
+              <span
+                className="cart-total-value"
+                style={
+                  appliedPromo ? { color: 'var(--color-success)' } : undefined
+                }
+              >
+                {finalTotal} ₽
+              </span>
+            </div>
           </div>
 
           <OrderButton
@@ -419,6 +424,17 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
             </div>
           )}
         </div>
+
+        {upsellProduct && (
+          <ProductSheet
+            item={upsellProduct}
+            onClose={() => setUpsellProduct(null)}
+            onAdd={({ item, selectedOptions, quantity }) => {
+              addToCart(item, cartRestaurantId, selectedOptions, quantity);
+              setUpsellProduct(null);
+            }}
+          />
+        )}
       </div>
     </div>
   );

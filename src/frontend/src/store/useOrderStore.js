@@ -75,16 +75,22 @@ export const useOrderStore = create((set, get) => ({
     await cartService.updateCart(payload);
   },
 
-  addToCart: async (menuItem, restaurantId, selectedOptions = []) => {
+  addToCart: async (
+    menuItem,
+    restaurantId,
+    selectedOptions = [],
+    quantity = 1
+  ) => {
     const { cart, cartRestaurantId } = get();
     const normalizedOptions = uniqueOptions(selectedOptions);
+    const safeQuantity = Math.max(1, Number(quantity) || 1);
     const selectedOptionIds = normalizedOptions.map(
       (option) => option.id ?? option.option_id
     );
     const lineKey = getLineKey(menuItem.id, selectedOptionIds);
     const nextItem = {
       menuItem,
-      quantity: 1,
+      quantity: safeQuantity,
       selectedOptionIds,
       selectedOptions: normalizedOptions.map((option) => ({
         option_id: option.id ?? option.option_id,
@@ -108,7 +114,7 @@ export const useOrderStore = create((set, get) => ({
         set({
           cart: cart.map((i) =>
             getLineKey(i.menuItem.id, getOptionIds(i)) === lineKey
-              ? { ...i, quantity: i.quantity + 1 }
+              ? { ...i, quantity: i.quantity + safeQuantity }
               : i
           ),
         });

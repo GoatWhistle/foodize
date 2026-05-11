@@ -4,7 +4,6 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import RestaurantPage from '../../pages/restaurant/RestaurantPage';
 import { useOrderStore } from '../../store/useOrderStore';
 
-// Mock Stores
 vi.mock('../../store/useRestaurantStore', () => ({
   useRestaurantStore: (sel) => {
     const state = {
@@ -95,15 +94,14 @@ describe('RestaurantPage', () => {
     });
   });
 
-  const renderWithRouter = () => {
-    return render(
+  const renderWithRouter = () =>
+    render(
       <MemoryRouter initialEntries={['/restaurants/mock-1']}>
         <Routes>
           <Route path="/restaurants/:id" element={<RestaurantPage />} />
         </Routes>
       </MemoryRouter>
     );
-  };
 
   it('renders restaurant info and menu items', () => {
     renderWithRouter();
@@ -112,29 +110,29 @@ describe('RestaurantPage', () => {
     expect(screen.getByText('300 ₽')).toBeDefined();
   });
 
-  it('calls addToCart when + button is clicked', () => {
+  it('opens product sheet and adds configured item to cart', () => {
     renderWithRouter();
 
-    const addBtns = screen.getAllByRole('button', { name: /Добавить/ });
-    fireEvent.click(addBtns[0]);
+    fireEvent.click(
+      screen.getByRole('button', { name: /Открыть Classic Shaurma/ })
+    );
     fireEvent.click(screen.getByText('Добавить мясо'));
-    fireEvent.click(screen.getByText('Добавить за 380 ₽'));
+    fireEvent.click(screen.getByText(/Добавить · 380 ₽/));
 
     expect(addToCartMock).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'm1' }),
       'mock-1',
-      [expect.objectContaining({ id: 'o1' })]
+      [expect.objectContaining({ id: 'o1' })],
+      1
     );
   });
 
   it('filters menu items by category', () => {
     renderWithRouter();
 
-    // Show all by default (2 items)
     expect(screen.getByText('Classic Shaurma')).toBeDefined();
     expect(screen.getByText('Veggie Burger')).toBeDefined();
 
-    // Click Burger category chip (in the filters list)
     fireEvent.click(screen.getAllByText('Бургеры')[0]);
 
     expect(screen.queryByText('Classic Shaurma')).toBeNull();
