@@ -6,6 +6,7 @@ import { translateApiError } from "../../utils/translateApiError";
 const PHONE_RE = /^\+?[0-9]{7,15}$/;
 
 export default function RegisterPage({ initData, prefillPhone, onSuccess }) {
+  const isLogin = localStorage.getItem("foodize_tg_logged_out") === "1";
   const [phone, setPhone] = useState(prefillPhone ?? "");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,7 +38,7 @@ export default function RegisterPage({ initData, prefillPhone, onSuccess }) {
     setError("");
     setLoading(true);
     try {
-      await completeTelegramAuth(initData, phone, name);
+      await completeTelegramAuth(initData, phone, name.trim() || "Telegram User");
       await fetchMe();
       onSuccess();
     } catch (err) {
@@ -91,7 +92,7 @@ export default function RegisterPage({ initData, prefillPhone, onSuccess }) {
             margin: 0,
           }}
         >
-          Добро пожаловать
+          {isLogin ? "Вход в аккаунт" : "Добро пожаловать"}
         </h1>
         <p
           style={{
@@ -101,7 +102,9 @@ export default function RegisterPage({ initData, prefillPhone, onSuccess }) {
             marginBottom: 32,
           }}
         >
-          Введите данные для регистрации
+          {isLogin
+            ? "Введите телефон аккаунта, в который хотите войти"
+            : "Введите данные для регистрации"}
         </p>
       </div>
 
@@ -137,19 +140,21 @@ export default function RegisterPage({ initData, prefillPhone, onSuccess }) {
           )}
         </div>
 
-        <div className="form-group">
-          <label className="form-label">Ваше имя</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="form-input"
-            placeholder="Имя"
-            required
-            minLength={1}
-            maxLength={128}
-          />
-        </div>
+        {!isLogin && (
+          <div className="form-group">
+            <label className="form-label">Ваше имя</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="form-input"
+              placeholder="Имя"
+              required
+              minLength={1}
+              maxLength={128}
+            />
+          </div>
+        )}
 
         {error && <div className="form-error">{error}</div>}
 
@@ -159,7 +164,7 @@ export default function RegisterPage({ initData, prefillPhone, onSuccess }) {
           disabled={loading}
           style={{ marginTop: 4, borderRadius: "var(--r-md)" }}
         >
-          {loading ? "Загрузка..." : "Продолжить"}
+          {loading ? "Загрузка..." : isLogin ? "Войти" : "Продолжить"}
         </button>
       </form>
     </div>

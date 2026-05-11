@@ -1066,6 +1066,15 @@ export const telegramAuthApiV1TelegramAuthPost = (
     options
   );
 
+export const telegramLogoutApiV1TelegramLogoutPost = (
+  options?: RequestOptions<paths['/api/v1/telegram/logout']['post']>
+) =>
+  request<paths['/api/v1/telegram/logout']['post']>(
+    'post',
+    '/api/v1/telegram/logout',
+    options
+  );
+
 export const telegramBotLinkPhoneApiV1TelegramBotLinkPhonePost = (
   options?: RequestOptions<paths['/api/v1/telegram/bot/link-phone']['post']>
 ) =>

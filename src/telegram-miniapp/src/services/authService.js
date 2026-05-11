@@ -11,5 +11,6 @@ export const authService = {
     }),
   telegramAuth: (initData) =>
     api.post("/telegram/auth", { init_data: initData }),
+  telegramLogout: () => api.post("/telegram/logout"),
   getMe: () => api.get("/users/me"),
 };

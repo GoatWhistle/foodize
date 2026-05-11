@@ -17,6 +17,7 @@ certs/
 .vite
 .openapi-certs/
 coverage/
+.ngrok/
 
 setting.local.json
 .claude/

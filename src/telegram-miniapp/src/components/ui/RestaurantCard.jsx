@@ -8,6 +8,7 @@ import {
   MapPin,
   Star,
   Heart,
+  Circle,
 } from "@phosphor-icons/react";
 import { useFavoriteStore } from "../../store/useFavoriteStore";
 import { useShallow } from "zustand/react/shallow";
@@ -77,49 +78,21 @@ const RestaurantCard = ({ restaurant, onClick }) => {
 
       <div className="card-scrim" />
 
-      {restaurant.is_open != null && (
-        <div
-          style={{
-            position: "absolute",
-            top: 14,
-            left: 14,
-            zIndex: 2,
-            display: "flex",
-            alignItems: "center",
-            gap: 5,
-            background: restaurant.is_open
-              ? "rgba(255,255,255,0.88)"
-              : "rgba(255,255,255,0.78)",
-            backdropFilter: "blur(8px)",
-            border: `1px solid ${restaurant.is_open ? "rgba(34,197,94,0.4)" : "rgba(107,114,128,0.3)"}`,
-            borderRadius: "var(--r-xs)",
-            padding: "4px 9px",
-          }}
-        >
-          <span
-            style={{
-              width: 7,
-              height: 7,
-              borderRadius: "50%",
-              background: restaurant.is_open ? "#22c55e" : "#6b7280",
-              flexShrink: 0,
-              boxShadow: restaurant.is_open
-                ? "0 0 6px rgba(34,197,94,0.7)"
-                : "none",
-            }}
-          />
-          <span
-            style={{
-              fontSize: "0.62rem",
-              fontWeight: 800,
-              letterSpacing: "0.05em",
-              color: restaurant.is_open ? "#22c55e" : "#9ca3af",
-            }}
+      <div className="card-top-row">
+        {restaurant.is_open != null && (
+          <div
+            className={`card-open-badge${restaurant.is_open ? " open" : ""}`}
           >
+            <Circle size={7} weight="fill" />
             {restaurant.is_open ? "Открыто" : "Закрыто"}
-          </span>
+          </div>
+        )}
+
+        <div className="card-rating-badge">
+          <Star size={13} weight="fill" color="var(--fire, #f59e0b)" />
+          <span>{rating ? rating.toFixed(1) : "0.0"}</span>
         </div>
-      )}
+      </div>
 
       <button
         onClick={(e) => {
@@ -153,11 +126,6 @@ const RestaurantCard = ({ restaurant, onClick }) => {
           color={isFav ? "#ef4444" : "rgba(255,255,255,0.8)"}
         />
       </button>
-
-      <div className="card-rating-badge">
-        <Star size={13} weight="fill" color="var(--fire, #f59e0b)" />
-        <span>{rating ? rating.toFixed(1) : "0.0"}</span>
-      </div>
 
       <div className="card-body">
         <h2 className="card-title">{restaurant.name}</h2>

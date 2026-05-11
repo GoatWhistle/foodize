@@ -6,9 +6,6 @@ import {
   SignOut,
   PencilSimple,
   Crown,
-  Storefront,
-  CookingPot,
-  Sparkle,
   LockKey,
   CaretRight,
   Check,
@@ -22,8 +19,6 @@ import { hasPermission, PERMISSIONS } from "../../utils/permissions";
 import { useShallow } from "zustand/react/shallow";
 import { BackButton } from "../../telegram/sdk";
 import { userService } from "../../services/userService";
-import { vendorService } from "../../services/vendorService";
-import { staffService } from "../../services/staffService";
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -54,14 +49,6 @@ const ProfilePage = () => {
   const [pwError, setPwError] = useState("");
   const [pwSuccess, setPwSuccess] = useState(false);
 
-  // Role checks
-  const [isVendor, setIsVendor] = useState(false);
-  const [checkingVendor, setCheckingVendor] = useState(true);
-  const [isStaff, setIsStaff] = useState(false);
-  const [checkingStaff, setCheckingStaff] = useState(true);
-  const [vendorLoading, setVendorLoading] = useState(false);
-  const [vendorError, setVendorError] = useState("");
-
   useEffect(() => {
     if (BackButton) {
       BackButton.show();
@@ -73,20 +60,6 @@ const ProfilePage = () => {
       };
     }
   }, [navigate]);
-
-  useEffect(() => {
-    vendorService
-      .getMyProfile()
-      .then(() => setIsVendor(true))
-      .catch(() => setIsVendor(false))
-      .finally(() => setCheckingVendor(false));
-
-    staffService
-      .getMyProfile()
-      .then(() => setIsStaff(true))
-      .catch(() => setIsStaff(false))
-      .finally(() => setCheckingStaff(false));
-  }, []);
 
   const startEdit = () => {
     setEditForm({
@@ -133,23 +106,9 @@ const ProfilePage = () => {
     }
   };
 
-  const handleBecomeVendor = async () => {
-    setVendorLoading(true);
-    setVendorError("");
-    try {
-      await vendorService.createProfile({ description: "" });
-      await fetchMe();
-      setIsVendor(true);
-    } catch {
-      setVendorError("Не удалось стать вендором");
-    } finally {
-      setVendorLoading(false);
-    }
-  };
-
-  const handleLogout = () => {
-    logout();
-    navigate("/");
+  const handleLogout = async () => {
+    await logout();
+    window.location.assign("/");
   };
 
   const displayName =
@@ -307,12 +266,6 @@ const ProfilePage = () => {
         )}
       </div>
 
-      {vendorError && (
-        <div className="form-error" style={{ margin: "12px 16px" }}>
-          {vendorError}
-        </div>
-      )}
-
       {/* Menu */}
       <div className="profile-menu">
         {/* Orders */}
@@ -372,46 +325,6 @@ const ProfilePage = () => {
             <CaretRight size={16} color="var(--text-3)" />
           </div>
         )}
-
-        {/* Staff */}
-        {!checkingStaff && isStaff && (
-          <div
-            className="profile-menu-item"
-            onClick={() => navigate("/staff-profile")}
-          >
-            <CookingPot size={18} color="var(--fire)" />
-            <span style={{ flex: 1 }}>Кабинет сотрудника</span>
-            <CaretRight size={16} color="var(--text-3)" />
-          </div>
-        )}
-
-        {/* Vendor */}
-        {!checkingVendor &&
-          (isVendor ? (
-            <div
-              className="profile-menu-item"
-              onClick={() => navigate("/vendor-profile")}
-            >
-              <Storefront size={18} />
-              <span style={{ flex: 1 }}>Кабинет вендора</span>
-              <CaretRight size={16} color="var(--text-3)" />
-            </div>
-          ) : (
-            <div
-              className="profile-menu-item"
-              onClick={handleBecomeVendor}
-              style={{
-                pointerEvents: vendorLoading ? "none" : "auto",
-                opacity: vendorLoading ? 0.6 : 1,
-              }}
-            >
-              <Sparkle size={18} color="var(--fire)" />
-              <span style={{ flex: 1 }}>
-                {vendorLoading ? "Загрузка..." : "Стать вендором"}
-              </span>
-              <CaretRight size={16} color="var(--text-3)" />
-            </div>
-          ))}
 
         {/* Change Password */}
         <div

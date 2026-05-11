@@ -1548,6 +1548,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/telegram/logout": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Telegram Logout */
+    post: operations["telegram_logout_api_v1_telegram_logout_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/telegram/bot/link-phone": {
     parameters: {
       query?: never;
@@ -1731,6 +1748,8 @@ export interface components {
        * Format: uuid
        */
       id: string;
+      /** Display Id */
+      display_id?: string | null;
       /** Name */
       name: string;
       /** Address */
@@ -2619,6 +2638,15 @@ export interface components {
       max_uses?: number | null;
       /** Expires At */
       expires_at?: string | null;
+      /**
+       * First Order Only
+       * @default false
+       */
+      first_order_only: boolean;
+      /** Min Order Amount */
+      min_order_amount?: number | null;
+      /** Menu Category */
+      menu_category?: string | null;
     };
     /** PromoResponse */
     PromoResponse: {
@@ -2651,6 +2679,12 @@ export interface components {
        * Format: date-time
        */
       created_at: string;
+      /** First Order Only */
+      first_order_only: boolean;
+      /** Min Order Amount */
+      min_order_amount: number | null;
+      /** Menu Category */
+      menu_category: string | null;
     };
     /** PromoValidateRequest */
     PromoValidateRequest: {
@@ -2661,6 +2695,13 @@ export interface components {
        * Format: uuid
        */
       restaurant_id: string;
+      /** Order Total */
+      order_total?: number | null;
+      /**
+       * Is First Order
+       * @default false
+       */
+      is_first_order: boolean;
     };
     /** PromoValidateResponse */
     PromoValidateResponse: {
@@ -2672,6 +2713,13 @@ export interface components {
       discount_value: number;
       /** Discounted Amount */
       discounted_amount?: number | null;
+      /**
+       * First Order Only
+       * @default false
+       */
+      first_order_only: boolean;
+      /** Min Order Amount */
+      min_order_amount?: number | null;
     };
     /** RatingResponse */
     RatingResponse: {
@@ -2709,6 +2757,8 @@ export interface components {
        * Format: uuid
        */
       id: string;
+      /** Display Id */
+      display_id?: string | null;
       /** Name */
       name: string;
       /** Address */
@@ -6594,6 +6644,26 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  telegram_logout_api_v1_telegram_logout_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SuccessResponse_UserRead_"];
         };
       };
     };

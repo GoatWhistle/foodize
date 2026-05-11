@@ -5,6 +5,6 @@ export const orderService = {
   getMyOrders: (params) => api.get("/orders/me", { params }),
   getById: (id) => api.get(`/orders/${id}`),
   completeOrder: (id) => api.post(`/orders/${id}/complete`),
-  cancelOrder: (id) => api.post(`/orders/${id}/cancel`),
+  cancelOrder: (id, reason = null) => api.post(`/orders/${id}/cancel`, { reason }),
   getOrderEvents: (id) => api.get(`/orders/${id}/events`),
 };

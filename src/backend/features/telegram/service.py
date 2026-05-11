@@ -61,6 +61,11 @@ async def _cache_telegram_id(user_id: str, telegram_id: int) -> None:
     await cache.set(f"user_tg:{user_id}", str(telegram_id), ttl=86400 * 30)
 
 
+async def _delete_cached_telegram_id(user_id: str) -> None:
+    cache = get_redis_cache()
+    await cache.delete(f"user_tg:{user_id}")
+
+
 def _make_tokens(user: User) -> TokenResponse:
     access_token = create_access_token(user.id, str(user.phone_number))
     refresh_token = create_refresh_token(user.id, str(user.phone_number))
@@ -155,6 +160,15 @@ async def link_phone_from_bot(
     await session.refresh(new_user)
     await _cache_telegram_id(str(new_user.id), telegram_id)
     return new_user
+
+
+async def unlink_telegram_for_user(session: AsyncSession, user: User) -> User:
+    user.telegram_id = None
+    user.telegram_username = None
+    await session.commit()
+    await session.refresh(user)
+    await _delete_cached_telegram_id(str(user.id))
+    return user
 
 
 async def telegram_auth_existing(session: AsyncSession, init_data: str) -> TokenResponse:

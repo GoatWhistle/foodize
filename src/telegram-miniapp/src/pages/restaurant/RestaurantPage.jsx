@@ -5,7 +5,6 @@ import {
   Star,
   ShoppingCart,
   ChatCircle,
-  Briefcase,
   Pizza,
   Hamburger,
   BowlFood,
@@ -25,7 +24,6 @@ import { useAuthStore } from "../../store/useAuthStore";
 import { useShallow } from "zustand/react/shallow";
 import { reviewService } from "../../services/reviewService";
 import { restaurantService } from "../../services/restaurantService";
-import { staffService } from "../../services/staffService";
 import { BackButton } from "../../telegram/sdk";
 import MenuItemCard from "../../components/ui/MenuItemCard";
 import CartDrawer from "../../components/ui/CartDrawer";
@@ -74,10 +72,6 @@ const RestaurantPage = () => {
   const [selectedOptionIds, setSelectedOptionIds] = useState([]);
   const [customizeError, setCustomizeError] = useState("");
   const [showCart, setShowCart] = useState(false);
-  const [showStaffModal, setShowStaffModal] = useState(false);
-  const [staffMessage, setStaffMessage] = useState("");
-  const [staffLoading, setStaffLoading] = useState(false);
-  const [staffError, setStaffError] = useState("");
   const currentUser = useAuthStore((s) => s.user);
   const [reviewDeleteId, setReviewDeleteId] = useState(null);
 
@@ -197,20 +191,6 @@ const RestaurantPage = () => {
     }
   };
 
-  const handleStaffSubmit = async (e) => {
-    e.preventDefault();
-    setStaffError("");
-    setStaffLoading(true);
-    try {
-      await staffService.createRequest(id, { message: staffMessage });
-      setShowStaffModal(false);
-      setStaffMessage("");
-    } catch {
-      setStaffError("Ошибка при отправке заявки");
-    } finally {
-      setStaffLoading(false);
-    }
-  };
 
   const allItems = menuItems.filter((i) => i.is_available !== false);
   const categories = [
@@ -481,13 +461,6 @@ const RestaurantPage = () => {
         )}
       </div>
 
-      {/* Hiring button */}
-      {restaurant.is_hiring && (
-        <button className="hiring-hint" onClick={() => setShowStaffModal(true)}>
-          <Briefcase size={14} weight="bold" />
-          Заведение ищет сотрудников — откликнуться
-        </button>
-      )}
 
       {count > 0 && (
         <button className="cart-fab" onClick={() => setShowCart(true)}>
@@ -499,73 +472,6 @@ const RestaurantPage = () => {
 
       {showCart && <CartDrawer onClose={() => setShowCart(false)} />}
 
-      {/* Staff application modal */}
-      {showStaffModal && (
-        <div className="modal-overlay" style={{ zIndex: 3000 }}>
-          <div className="modal-content" style={{ maxWidth: 440, padding: 24 }}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 20,
-              }}
-            >
-              <div style={{ fontWeight: 800, fontSize: "1.05rem" }}>
-                Работа в {restaurant.name}
-              </div>
-              <button
-                style={{
-                  background: "none",
-                  border: "none",
-                  fontSize: 20,
-                  cursor: "pointer",
-                  color: "var(--text-3)",
-                }}
-                onClick={() => setShowStaffModal(false)}
-              >
-                ✕
-              </button>
-            </div>
-            <p
-              style={{
-                fontSize: "0.9rem",
-                color: "var(--text-2)",
-                marginBottom: 16,
-                lineHeight: 1.6,
-              }}
-            >
-              Хотите работать в{" "}
-              <span style={{ color: "var(--fire)", fontWeight: 700 }}>
-                {restaurant.name}
-              </span>
-              ?
-            </p>
-            <form
-              onSubmit={handleStaffSubmit}
-              style={{ display: "flex", flexDirection: "column", gap: 12 }}
-            >
-              <textarea
-                className="form-input"
-                placeholder="Расскажите о себе..."
-                value={staffMessage}
-                onChange={(e) => setStaffMessage(e.target.value)}
-                rows={4}
-                required
-                style={{ resize: "vertical" }}
-              />
-              {staffError && <div className="form-error">{staffError}</div>}
-              <button
-                className="btn btn-primary btn-full"
-                type="submit"
-                disabled={staffLoading}
-              >
-                {staffLoading ? "Отправка..." : "Отправить заявку"}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
 
       {customizingItem && (
         <div className="modal-overlay" style={{ zIndex: 3000 }}>

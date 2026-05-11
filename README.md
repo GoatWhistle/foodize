@@ -56,6 +56,7 @@ make build     # build Docker services
 make up        # start Docker services
 make down      # stop and remove Docker services
 make logs      # follow Docker logs
+make tg        # start local Telegram bot testing through ngrok
 ```
 
 ## Backend
@@ -183,6 +184,14 @@ docker compose up -d --force-recreate backend telegram-miniapp telegram-bot
 ```
 
 ### Local Mini App Through Ngrok
+
+The shortcut command for local Telegram testing is:
+
+```bash
+make tg
+```
+
+It starts the required Docker services, exposes the Mini App through ngrok, writes the HTTPS ngrok URL into `.env`, and recreates the Telegram services that read those values. Keep the command running while testing if it started ngrok in the current terminal.
 
 The Mini App dev server runs on:
 

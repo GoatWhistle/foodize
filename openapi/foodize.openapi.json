@@ -4007,7 +4007,6 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid",
               "title": "Restaurant Id"
             }
           }
@@ -6078,6 +6077,32 @@
         }
       }
     },
+    "/api/v1/telegram/logout": {
+      "post": {
+        "tags": [
+          "Telegram"
+        ],
+        "summary": "Telegram Logout",
+        "operationId": "telegram_logout_api_v1_telegram_logout_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_UserRead_"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearerWithCookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/telegram/bot/link-phone": {
       "post": {
         "tags": [
@@ -6524,6 +6549,17 @@
             "type": "string",
             "format": "uuid",
             "title": "Id"
+          },
+          "display_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Id"
           },
           "name": {
             "type": "string",
@@ -8761,6 +8797,34 @@
               }
             ],
             "title": "Expires At"
+          },
+          "first_order_only": {
+            "type": "boolean",
+            "title": "First Order Only",
+            "default": false
+          },
+          "min_order_amount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Order Amount"
+          },
+          "menu_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Menu Category"
           }
         },
         "type": "object",
@@ -8831,6 +8895,32 @@
             "type": "string",
             "format": "date-time",
             "title": "Created At"
+          },
+          "first_order_only": {
+            "type": "boolean",
+            "title": "First Order Only"
+          },
+          "min_order_amount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Order Amount"
+          },
+          "menu_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Menu Category"
           }
         },
         "type": "object",
@@ -8844,7 +8934,10 @@
           "used_count",
           "expires_at",
           "is_active",
-          "created_at"
+          "created_at",
+          "first_order_only",
+          "min_order_amount",
+          "menu_category"
         ],
         "title": "PromoResponse"
       },
@@ -8858,6 +8951,22 @@
             "type": "string",
             "format": "uuid",
             "title": "Restaurant Id"
+          },
+          "order_total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Total"
+          },
+          "is_first_order": {
+            "type": "boolean",
+            "title": "Is First Order",
+            "default": false
           }
         },
         "type": "object",
@@ -8891,6 +9000,22 @@
               }
             ],
             "title": "Discounted Amount"
+          },
+          "first_order_only": {
+            "type": "boolean",
+            "title": "First Order Only",
+            "default": false
+          },
+          "min_order_amount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Order Amount"
           }
         },
         "type": "object",
@@ -8970,6 +9095,17 @@
             "type": "string",
             "format": "uuid",
             "title": "Id"
+          },
+          "display_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Id"
           },
           "name": {
             "type": "string",

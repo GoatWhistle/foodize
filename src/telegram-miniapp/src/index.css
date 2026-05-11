@@ -512,11 +512,13 @@ select.form-input option {
 /* ─── Restaurant Cards ─────────────────────────────────────────────────── */
 .restaurant-card {
   position: relative;
+  display: flex;
+  flex-direction: column;
   border-radius: var(--r-md);
   overflow: hidden;
   cursor: pointer;
   background: var(--bg-card);
-  aspect-ratio: 3/2;
+  min-height: 196px;
   border: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
   opacity: 0;
@@ -542,14 +544,29 @@ select.form-input option {
   transform: translateY(0);
 }
 .restaurant-card:hover .card-title {
-  transform: translateY(-2px);
+  color: var(--fire);
 }
 
 .card-photo-wrap {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  height: 94px;
+  flex-shrink: 0;
   overflow: hidden;
 }
+
+.card-top-row {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  pointer-events: none;
+}
+
 .card-photo {
   width: 100%;
   height: 100%;
@@ -569,31 +586,35 @@ select.form-input option {
 
 .card-scrim {
   position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to top,
-    rgba(0, 0, 0, 0.74) 0%,
-    rgba(0, 0, 0, 0.32) 45%,
-    rgba(0, 0, 0, 0.05) 100%
-  );
+  inset: 0 0 auto;
+  height: 94px;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.38), transparent 70%);
+  pointer-events: none;
 }
 
 .card-body {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 16px;
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  min-width: 0;
 }
 
 .card-title {
   font-family: var(--font-sans);
-  font-size: 1.08rem;
+  font-size: 0.98rem;
   font-weight: 850;
-  color: var(--white);
-  margin-bottom: 10px;
+  color: var(--text-1);
   line-height: 1.2;
-  transition: transform var(--dur-md) var(--ease-out);
+  min-height: 2.4em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  transition: color var(--dur-md) var(--ease-out);
 }
 
 .card-tags {
@@ -601,21 +622,24 @@ select.form-input option {
   gap: 6px;
   flex-wrap: wrap;
   align-items: center;
+  padding-right: 42px;
 }
 
 .tag-pill {
-  background: rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(8px);
-  color: var(--white);
-  border-radius: 100px;
-  padding: 4px 10px;
-  font-size: 0.68rem;
+  max-width: 100%;
+  background: var(--bg-surface);
+  color: var(--text-2);
+  border-radius: var(--r-xs);
+  padding: 5px 8px;
+  font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  line-height: 1.25;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .tag-pill.orange {
   background: var(--fire);
@@ -623,25 +647,48 @@ select.form-input option {
 }
 
 .card-rating-badge {
-  position: absolute;
-  top: 14px;
-  right: 14px;
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  padding: 5px 10px;
+  padding: 5px 8px;
   border-radius: var(--r-xs);
   display: flex;
   align-items: center;
   gap: 5px;
-  z-index: 2;
+  flex-shrink: 0;
 }
 .card-rating-badge span {
   color: var(--white);
   font-weight: 800;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   line-height: 1;
+}
+
+.card-open-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 5px 8px;
+  border-radius: var(--r-xs);
+  background: rgba(255, 255, 255, 0.9);
+  color: #6b7280;
+  border: 1px solid rgba(107, 114, 128, 0.25);
+  font-size: 0.68rem;
+  line-height: 1;
+  font-weight: 850;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.card-open-badge.open {
+  color: #16a34a;
+  border-color: rgba(34, 197, 94, 0.38);
 }
 
 .card-reveal {
@@ -1033,20 +1080,22 @@ select.form-input option {
 /* Cart FAB */
 .cart-fab {
   position: fixed;
-  bottom: calc(var(--bottom-tab-h) + 12px);
-  right: 24px;
+  left: 14px;
+  right: 14px;
+  bottom: calc(var(--bottom-tab-h) + env(safe-area-inset-bottom, 0px) + 12px);
   background: var(--fire);
   color: var(--fire-text);
-  border-radius: 100px;
-  padding: 14px 22px;
+  border-radius: var(--r-md);
+  padding: 14px 18px;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
   font-weight: 800;
   font-size: 0.9rem;
   letter-spacing: 0.01em;
   box-shadow: 0 10px 28px var(--fire-glow);
-  z-index: 50;
+  z-index: 260;
   transition: all var(--dur-sm) var(--ease-spring);
 }
 .cart-fab:hover {
@@ -1621,8 +1670,9 @@ select.form-input option {
   }
 
   .cart-fab {
-    bottom: calc(var(--bottom-tab-h) + 12px);
+    left: 14px;
     right: 14px;
+    bottom: calc(var(--bottom-tab-h) + env(safe-area-inset-bottom, 0px) + 12px);
     padding: 11px 14px;
     font-size: 0.85rem;
   }
@@ -1664,16 +1714,15 @@ select.form-input option {
   .btn-sm {
     padding: 7px 12px;
   }
-
   .card-body {
-    padding: 14px;
+    padding: 12px;
   }
   .card-title {
-    font-size: 1.1rem;
+    font-size: 0.98rem;
   }
 
   .restaurant-card {
-    aspect-ratio: 1.55 / 1;
+    min-height: 196px;
   }
 
   .order-card {

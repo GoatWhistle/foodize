@@ -16,7 +16,11 @@ export const useAuthStore = create((set) => ({
     }
   },
 
-  logout: () => {
+  logout: async () => {
+    try {
+      await authService.telegramLogout();
+      localStorage.setItem("foodize_tg_logged_out", "1");
+    } catch {}
     sessionStorage.clear();
     set({ user: null, isAuthenticated: false });
   },

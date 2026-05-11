@@ -8,7 +8,6 @@ from aiogram.types import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     ReplyKeyboardMarkup,
-    ReplyKeyboardRemove,
     Message,
     WebAppInfo,
 )
@@ -18,6 +17,7 @@ from config import bot_config
 router = Router()
 
 PHONE_RE = re.compile(r"^\+?[0-9][0-9\s().-]{6,20}$")
+RESTART_TEXT = "🔄 Перезапустить бота"
 
 
 def _mini_app_keyboard() -> InlineKeyboardMarkup | None:
@@ -38,10 +38,11 @@ def _mini_app_keyboard() -> InlineKeyboardMarkup | None:
 def _phone_keyboard() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
+            [KeyboardButton(text=RESTART_TEXT)],
             [KeyboardButton(text="Поделиться телефоном", request_contact=True)],
         ],
         resize_keyboard=True,
-        one_time_keyboard=True,
+        one_time_keyboard=False,
         input_field_placeholder="+79990000000",
     )
 
@@ -103,7 +104,7 @@ async def _link_phone(message: Message, phone_number: str) -> bool:
     await message.answer(
         "Готово, телефон привязан к Telegram.\n\n"
         "Теперь можно открыть Foodize и пользоваться сервисом.",
-        reply_markup=ReplyKeyboardRemove(),
+        reply_markup=_phone_keyboard(),
     )
     mini_app_keyboard = _mini_app_keyboard()
     if mini_app_keyboard:
@@ -127,6 +128,11 @@ async def cmd_start(message: Message) -> None:
         "Если вы уже привязали телефон, открывайте Foodize:",
         reply_markup=_mini_app_keyboard(),
     )
+
+
+@router.message(lambda message: message.text == RESTART_TEXT)
+async def handle_restart_button(message: Message) -> None:
+    await cmd_start(message)
 
 
 @router.message(lambda message: message.contact is not None)

@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
 from features.auth.schemas import TokenResponse
+from features.auth.service import get_current_user
 from features.telegram import service
 from features.telegram.schemas import (
     TelegramBotLinkRequest,
@@ -12,6 +13,7 @@ from features.telegram.schemas import (
     TelegramCheckResponse,
     TelegramRegisterRequest,
 )
+from features.users.models import User
 from features.users.schemas import UserRead
 from settings.config.app_config import settings
 from shared.exceptions import AccessDeniedException
@@ -53,6 +55,15 @@ async def telegram_auth(
     return build_response(result)
 
 
+@router.post("/logout", response_model=SuccessResponse[UserRead])
+async def telegram_logout(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> SuccessResponse[UserRead]:
+    result = await service.unlink_telegram_for_user(session=session, user=current_user)
+    return build_response(UserRead.model_validate(result))
+
+
 @router.post("/bot/link-phone", response_model=SuccessResponse[UserRead])
 async def telegram_bot_link_phone(
     data: TelegramBotLinkRequest,
@@ -72,3 +83,4 @@ async def telegram_bot_link_phone(
         name=data.name,
     )
     return build_response(UserRead.model_validate(result))
+

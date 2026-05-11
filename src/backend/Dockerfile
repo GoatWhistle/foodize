@@ -4,7 +4,7 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV UV_SYSTEM_PYTHON=1
 
-COPY --from=ghcr.io/astral-sh/uv:0.6.0 /uv /uvx /bin/
+RUN pip install --no-cache-dir uv==0.6.0
 
 WORKDIR /backend
 

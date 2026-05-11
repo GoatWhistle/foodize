@@ -29,10 +29,6 @@ const LazyFavorites = lazy(() => import("./pages/profile/FavoritesPage"));
 const LazyNotifications = lazy(
   () => import("./pages/notifications/NotificationsPage"),
 );
-const LazyVendorProfile = lazy(
-  () => import("./pages/profile/VendorProfilePage"),
-);
-const LazyStaffProfile = lazy(() => import("./pages/profile/StaffProfilePage"));
 
 const Spinner = () => (
   <div
@@ -102,8 +98,6 @@ const router = createBrowserRouter([
       { path: "/profile", element: <LazyProfile /> },
       { path: "/favorites", element: <LazyFavorites /> },
       { path: "/notifications", element: <LazyNotifications /> },
-      { path: "/vendor-profile", element: <LazyVendorProfile /> },
-      { path: "/staff-profile", element: <LazyStaffProfile /> },
       { path: "*", element: <Navigate to="/" replace /> },
     ],
   },
@@ -141,8 +135,13 @@ export default function App() {
   useEffect(() => {
     async function boot() {
       const result = await initTelegramApp();
+      const forceLogin = localStorage.getItem("foodize_tg_logged_out") === "1";
 
-      if (result.status === "registered") {
+      if (forceLogin && result.initData) {
+        setInitData(result.initData);
+        setPrefillPhone(null);
+        setAppState("register");
+      } else if (result.status === "registered") {
         await authExistingUser(result.initData);
         await fetchMe();
         setAppState("ready");
@@ -180,7 +179,10 @@ export default function App() {
       <RegisterPage
         initData={initData}
         prefillPhone={prefillPhone}
-        onSuccess={() => setAppState("ready")}
+        onSuccess={() => {
+          localStorage.removeItem("foodize_tg_logged_out");
+          setAppState("ready");
+        }}
       />
     );
   }

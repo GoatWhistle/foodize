@@ -8,7 +8,7 @@ CERTS_DIR := $(BACKEND_DIR)/certs
 JWT_PRIVATE_KEY := $(CERTS_DIR)/jwt-private.pem
 JWT_PUBLIC_KEY := $(CERTS_DIR)/jwt-public.pem
 
-.PHONY: help sync lint test openapi keys certs build up down stop logs run seed backup restore
+.PHONY: help sync lint test openapi keys certs build up down stop logs run seed tg backup restore
 
 help:
 	@echo " "
@@ -19,6 +19,7 @@ help:
 	@echo "  test            - Run all project tests"
 	@echo "  openapi         - Export OpenAPI schema and generate typed frontend clients"
 	@echo "  keys, certs     - Generate RSA keys for JWT auth (use FORCE=1 to overwrite)"
+	@echo "  tg              - Start local Telegram bot testing through ngrok"
 	@echo " "
 	@echo "  build           - Build docker containers (use SERVICE=... to build a specific service)"
 	@echo "  up              - Start containers (use SERVICE=... to start a specific service)"
@@ -32,6 +33,9 @@ help:
 
 seed:
 	docker compose exec -e PYTHONPATH=/backend backend python /tools/seed.py
+
+tg:
+	@bash tools/tg.sh
 
 sync:
 	cd "$(BACKEND_DIR)" && pip install uv && uv sync
