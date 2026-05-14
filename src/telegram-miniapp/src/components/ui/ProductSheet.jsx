@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   BowlFood,
   Clock,
@@ -44,6 +45,28 @@ const getSelectedOptions = (groups, ids) => {
   return groups
     .flatMap((group) => group.options)
     .filter((option) => idsSet.has(option.id));
+};
+
+const getMinSelected = (group) =>
+  group.is_required
+    ? Math.max(1, Number(group.min_selected) || 0)
+    : Number(group.min_selected) || 0;
+
+const getGroupHint = (group) => {
+  const min = getMinSelected(group);
+  const max = group.selection_type === "single" ? 1 : group.max_selected;
+
+  if (group.selection_type === "single") {
+    return group.is_required ? "Обязательно выбрать 1" : "Можно выбрать 1";
+  }
+
+  if (group.is_required && max) {
+    return min === max ? `Выберите ${min}` : `Выберите от ${min} до ${max}`;
+  }
+
+  if (group.is_required) return `Выберите минимум ${min}`;
+  if (max) return `Можно выбрать до ${max}`;
+  return "Можно выбрать несколько";
 };
 
 const ProductSheet = ({ item, onClose, onAdd }) => {
@@ -105,7 +128,7 @@ const ProductSheet = ({ item, onClose, onAdd }) => {
       const selectedCount = selectedOptionIds.filter((optionId) =>
         groupOptionIds.includes(optionId),
       ).length;
-      if (selectedCount < group.min_selected) {
+      if (selectedCount < getMinSelected(group)) {
         setError(`Выберите: ${group.name}`);
         return;
       }
@@ -113,11 +136,15 @@ const ProductSheet = ({ item, onClose, onAdd }) => {
     onAdd?.({ item, selectedOptions, quantity });
   };
 
-  return (
+  const sheet = (
     <div className="product-sheet-overlay" onMouseDown={(event) => {
       if (event.target === event.currentTarget) onClose?.();
     }}>
-      <section className="product-sheet" role="dialog" aria-modal="true">
+      <section
+        className={`product-sheet${groups.length === 0 ? " product-sheet--compact" : ""}`}
+        role="dialog"
+        aria-modal="true"
+      >
         <button
           className="product-sheet-close"
           type="button"
@@ -162,10 +189,7 @@ const ProductSheet = ({ item, onClose, onAdd }) => {
                   <div key={group.id} className="product-option-group">
                     <div className="product-option-group-head">
                       <strong>{group.name}</strong>
-                      <span>
-                        {group.is_required ? "Обязательно" : "По желанию"}
-                        {group.max_selected ? ` · до ${group.max_selected}` : ""}
-                      </span>
+                      <span>{getGroupHint(group)}</span>
                     </div>
                     <div className="product-option-list">
                       {group.options.map((option) => {
@@ -205,6 +229,8 @@ const ProductSheet = ({ item, onClose, onAdd }) => {
                 );
               })}
             </div>
+          )}
+
           {error && <div className="form-error">{error}</div>}
         </div>
         <div className="product-sheet-footer">
@@ -232,6 +258,8 @@ const ProductSheet = ({ item, onClose, onAdd }) => {
       </section>
     </div>
   );
+
+  return createPortal(sheet, document.body);
 };
 
 export default ProductSheet;

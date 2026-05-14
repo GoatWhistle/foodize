@@ -8,6 +8,7 @@ import {
   useNavigationType,
   useLocation,
 } from "react-router-dom";
+import { ShoppingCart } from "@phosphor-icons/react";
 
 import { useAuthStore } from "./store/useAuthStore";
 import { useOrderStore } from "./store/useOrderStore";
@@ -61,7 +62,8 @@ const GlobalCartFab = () => {
         navigate("/restaurant/" + useOrderStore.getState().cartRestaurantId)
       }
     >
-      🛒 Корзина
+      <ShoppingCart size={22} weight="bold" />
+      <span className="cart-fab-label">Корзина</span>
       <span className="cart-badge">{count}</span>
     </button>
   );
@@ -109,6 +111,22 @@ function applyTelegramTheme() {
   document.documentElement.setAttribute("data-theme", scheme);
 }
 
+function applyTelegramViewport() {
+  if (typeof window === "undefined") return;
+
+  const viewportHeight =
+    Number(tg?.viewportHeight) ||
+    Number(window.visualViewport?.height) ||
+    window.innerHeight;
+
+  if (viewportHeight) {
+    document.documentElement.style.setProperty(
+      "--tg-viewport-h",
+      `${Math.floor(viewportHeight)}px`,
+    );
+  }
+}
+
 export default function App() {
   const [appState, setAppState] = useState("loading");
   const [initData, setInitData] = useState("");
@@ -130,6 +148,25 @@ export default function App() {
       tg.onEvent("themeChanged", applyTelegramTheme);
       return () => tg.offEvent("themeChanged", applyTelegramTheme);
     }
+  }, []);
+
+  useEffect(() => {
+    applyTelegramViewport();
+
+    const handleViewportChange = () => applyTelegramViewport();
+
+    tg?.onEvent?.("viewportChanged", handleViewportChange);
+    window.visualViewport?.addEventListener("resize", handleViewportChange);
+    window.addEventListener("resize", handleViewportChange);
+
+    return () => {
+      tg?.offEvent?.("viewportChanged", handleViewportChange);
+      window.visualViewport?.removeEventListener(
+        "resize",
+        handleViewportChange,
+      );
+      window.removeEventListener("resize", handleViewportChange);
+    };
   }, []);
 
   useEffect(() => {

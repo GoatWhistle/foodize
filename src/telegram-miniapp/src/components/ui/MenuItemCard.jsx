@@ -84,3 +84,21 @@ const MenuItemCard = ({ item, onSelect }) => {
               <Clock size={11} />~{item.prep_time_minutes || 15} мин
             </span>
           )}
+        </div>
+      </div>
+
+      <div className="menu-item-side">
+        {!unavailable && optionGroups.length > 0 && (
+          <span className="menu-item-options-hint">Допы</span>
+        )}
+        {!unavailable && (
+          <span className="menu-item-choose" aria-hidden="true">
+            +
+          </span>
+        )}
+      </div>
+    </button>
+  );
+};
+
+export default MenuItemCard;

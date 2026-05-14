@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import {
   Heart,
@@ -24,10 +25,14 @@ import { useAuthStore } from "../../store/useAuthStore";
 import { useShallow } from "zustand/react/shallow";
 import { reviewService } from "../../services/reviewService";
 import { restaurantService } from "../../services/restaurantService";
+import { translateApiError } from "../../utils/translateApiError";
 import { BackButton } from "../../telegram/sdk";
 import MenuItemCard from "../../components/ui/MenuItemCard";
 import ProductSheet from "../../components/ui/ProductSheet";
 import CartDrawer from "../../components/ui/CartDrawer";
+
+const Portal = ({ children }) =>
+  typeof document === "undefined" ? null : createPortal(children, document.body);
 
 const CATEGORY_ICONS = {
   SHAURMA: <Fire size={14} />,
@@ -67,6 +72,7 @@ const RestaurantPage = () => {
   const [reviewsList, setReviewsList] = useState([]);
   const [reviewForm, setReviewForm] = useState({ rating: 5, text: "" });
   const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewError, setReviewError] = useState("");
   const [reviewSuccess, setReviewSuccess] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -143,21 +149,57 @@ const RestaurantPage = () => {
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
     setReviewError("");
-    if (!reviewForm.text.trim()) {
+    const text = reviewForm.text.trim();
+    if (!text) {
       setReviewError("Напишите текст");
       return;
     }
+    setReviewSubmitting(true);
+    const payload = {
+      text,
+      rating: reviewForm.rating,
+    };
     try {
-      await reviewService.createReview(id, {
-        text: reviewForm.text,
-        rating: reviewForm.rating,
-      });
+      let res;
+      try {
+        res = await reviewService.createReview(id, payload);
+      } catch (err) {
+        const detail = err?.response?.data?.detail;
+        if (
+          err?.response?.status === 409 ||
+          detail === "You have already reviewed this restaurant"
+        ) {
+          res = await reviewService.updateMyReview(id, payload);
+        } else {
+          throw err;
+        }
+      }
+      const savedReview = res?.data?.data;
       setReviewSuccess(true);
       setReviewForm({ rating: 5, text: "" });
       window.setTimeout(() => setReviewSuccess(false), 2200);
-      loadReviews();
-    } catch {
-      setReviewError("Не удалось отправить");
+      if (savedReview?.id) {
+        setReviewsList((prev) => [
+          savedReview,
+          ...prev.filter((review) => review.id !== savedReview.id),
+        ]);
+      } else {
+        loadReviews();
+      }
+      reviewService
+        .getRating(id)
+        .then((ratingRes) => {
+          const val =
+            ratingRes.data?.data?.average_rating ??
+            ratingRes.data?.data?.rating ??
+            null;
+          setRating(val);
+        })
+        .catch(() => {});
+    } catch (err) {
+      setReviewError(translateApiError(err, "Не удалось отправить отзыв"));
+    } finally {
+      setReviewSubmitting(false);
     }
   };
 
@@ -369,15 +411,21 @@ const RestaurantPage = () => {
       </div>
 
 
-      {count > 0 && (
-        <button className="cart-fab" onClick={() => setShowCart(true)}>
-          <ShoppingCart size={20} weight="bold" />
-          Корзина
-          <span className="cart-badge">{count}</span>
-        </button>
+      {count > 0 && !showCart && (
+        <Portal>
+          <button className="cart-fab" onClick={() => setShowCart(true)}>
+            <ShoppingCart size={20} weight="bold" />
+            <span className="cart-fab-label">Корзина</span>
+            <span className="cart-badge">{count}</span>
+          </button>
+        </Portal>
       )}
 
-      {showCart && <CartDrawer onClose={() => setShowCart(false)} />}
+      {showCart && (
+        <Portal>
+          <CartDrawer onClose={() => setShowCart(false)} />
+        </Portal>
+      )}
 
       {selectedProduct && (
         <ProductSheet
@@ -389,61 +437,71 @@ const RestaurantPage = () => {
 
 
       {reviewDeleteId && (
-        <div className="modal-overlay" style={{ zIndex: 5000 }}>
+        <Portal>
           <div
-            className="modal-content"
-            style={{
-              padding: 20,
-              borderRadius: 14,
-              maxWidth: 360,
-            }}
+            className="modal-overlay restaurant-modal-overlay"
+            style={{ zIndex: 5000 }}
           >
-            <h3 style={{ margin: 0, fontSize: "1rem" }}>Удалить отзыв?</h3>
-            <p
+            <div
+              className="modal-content review-delete-modal"
               style={{
-                color: "var(--text-3)",
-                fontSize: "0.88rem",
-                lineHeight: 1.45,
-                margin: "10px 0 18px",
+                padding: 20,
+                borderRadius: 14,
+                maxWidth: 360,
               }}
             >
-              Точно ли вы хотите удалить этот отзыв?
-            </p>
-            <div
-              style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}
-            >
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setReviewDeleteId(null)}
+              <h3 style={{ margin: 0, fontSize: "1rem" }}>Удалить отзыв?</h3>
+              <p
+                style={{
+                  color: "var(--text-3)",
+                  fontSize: "0.88rem",
+                  lineHeight: 1.45,
+                  margin: "10px 0 18px",
+                }}
               >
-                Отмена
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={confirmReviewDelete}
-                style={{ background: "#ef4444" }}
+                Точно ли вы хотите удалить этот отзыв?
+              </p>
+              <div
+                style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}
               >
-                Удалить
-              </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setReviewDeleteId(null)}
+                >
+                  Отмена
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={confirmReviewDelete}
+                  style={{ background: "#ef4444" }}
+                >
+                  Удалить
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </Portal>
       )}
 
       {showReviews && (
-        <div className="modal-overlay" style={{ zIndex: 3000 }}>
+        <Portal>
           <div
-            className="modal-content"
-            style={{
-              maxWidth: 500,
-              maxHeight: "85vh",
-              display: "flex",
-              flexDirection: "column",
-              padding: 24,
-            }}
+            className="modal-overlay restaurant-modal-overlay"
+            style={{ zIndex: 3000 }}
           >
+            <div
+              className="modal-content reviews-modal"
+              style={{
+                maxWidth: 500,
+                maxHeight: "calc(var(--tg-viewport-h, 100dvh) - 24px)",
+                display: "flex",
+                flexDirection: "column",
+                minHeight: 0,
+                padding: 24,
+              }}
+            >
             <div
               style={{
                 display: "flex",
@@ -467,7 +525,10 @@ const RestaurantPage = () => {
                 ✕
               </button>
             </div>
-            <div style={{ overflowY: "auto", flex: 1 }}>
+            <div
+              className="reviews-modal-scroll"
+              style={{ overflowY: "auto", flex: 1, minHeight: 0 }}
+            >
               {reviewSuccess && (
                 <div
                   style={{
@@ -543,9 +604,10 @@ const RestaurantPage = () => {
                 <button
                   type="submit"
                   className="btn btn-primary btn-full"
+                  disabled={reviewSubmitting}
                   style={{ borderRadius: 8 }}
                 >
-                  Опубликовать
+                  {reviewSubmitting ? "Публикуем..." : "Опубликовать"}
                 </button>
               </form>
               {reviewsLoading ? (
@@ -658,6 +720,7 @@ const RestaurantPage = () => {
             </div>
           </div>
         </div>
+        </Portal>
       )}
     </div>
   );
