@@ -1,17 +1,26 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { X, DownloadSimple, QrCode } from '@phosphor-icons/react';
 
-const QRCodeModal = ({ restaurant, onClose }) => {
+const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }) => {
   const canvasRef = useRef(null);
+  const [type, setType] = useState(initialType);
 
   const miniAppUrl = import.meta.env.VITE_MINI_APP_URL || '';
   const webUrl = import.meta.env.VITE_WEB_URL || window.location.origin;
+  const botUsername = (import.meta.env.VITE_BOT_USERNAME || '').replace(
+    /^@/,
+    ''
+  );
 
   const publicId = restaurant.display_id || restaurant.id;
-  const deepLink = miniAppUrl
-    ? `${miniAppUrl}?startapp=restaurant_${publicId}`
-    : `${webUrl}/restaurants/${publicId}`;
+  const siteLink = `${webUrl.replace(/\/$/, '')}/restaurant/${publicId}`;
+  const telegramLink = botUsername
+    ? `https://t.me/${botUsername}?start=restaurant_${publicId}`
+    : miniAppUrl
+      ? `${miniAppUrl}?startapp=restaurant_${publicId}`
+      : siteLink;
+  const deepLink = type === 'telegram' ? telegramLink : siteLink;
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -34,7 +43,7 @@ const QRCodeModal = ({ restaurant, onClose }) => {
       });
       const a = document.createElement('a');
       a.href = dataUrl;
-      a.download = `qr_${restaurant.name.replace(/\s+/g, '_')}.png`;
+      a.download = `qr_${type}_${restaurant.name.replace(/\s+/g, '_')}.png`;
       a.click();
     } catch {}
   };
@@ -96,6 +105,30 @@ const QRCodeModal = ({ restaurant, onClose }) => {
           При сканировании откроется страница{' '}
           <strong style={{ color: 'var(--text-1)' }}>{restaurant.name}</strong>
         </p>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: 6,
+            marginBottom: 16,
+          }}
+        >
+          {[
+            ['site', 'Сайт'],
+            ['telegram', 'Telegram'],
+          ].map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              className={type === value ? 'btn btn-primary' : 'btn btn-secondary'}
+              onClick={() => setType(value)}
+              style={{ height: 36, fontSize: '0.78rem' }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
 
         <canvas
           ref={canvasRef}

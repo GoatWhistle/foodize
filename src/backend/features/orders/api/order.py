@@ -1,3 +1,4 @@
+import uuid
 from datetime import date
 
 from fastapi import APIRouter, Depends, Header, Query, Request, status
@@ -14,6 +15,7 @@ from features.orders.models import Order
 from features.orders.schemas.order import (
     OrderCancelRequest,
     OrderCreate,
+    OrderLoadEstimate,
     OrderResponse,
     OrderStatusUpdate,
 )
@@ -68,6 +70,21 @@ async def create_order(
         order_data=order_in,
         user_id=current_user.id,
         idempotency_key=idempotency_key,
+    )
+    return build_response(result)
+
+
+@router.get(
+    "/estimate/{restaurant_id}",
+    response_model=SuccessResponse[OrderLoadEstimate],
+)
+async def read_order_load_estimate(
+    restaurant_id: uuid.UUID,
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> SuccessResponse[OrderLoadEstimate]:
+    result = await service.estimate_restaurant_load(
+        session=session,
+        restaurant_id=restaurant_id,
     )
     return build_response(result)
 

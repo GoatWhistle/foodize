@@ -2,6 +2,7 @@ import api from './api';
 
 export const orderService = {
   create: (data, config = {}) => api.post('/orders/', data, config),
+  getEstimate: (restaurantId) => api.get(`/orders/estimate/${restaurantId}`),
   getMyOrders: (config) => api.get('/orders/me', config),
   getById: (id) => api.get(`/orders/${id}`),
   getByRestaurant: (restaurantId, params) =>

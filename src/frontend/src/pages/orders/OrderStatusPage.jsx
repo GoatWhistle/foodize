@@ -565,7 +565,11 @@ const OrderStatusPage = () => {
               const repeat = useOrderStore.getState().repeatOrder;
               await repeat(currentOrder);
               navigate(
-                ROUTES.RESTAURANT.replace(':id', currentOrder.restaurant_id)
+                ROUTES.RESTAURANT.replace(
+                  ':id',
+                  currentOrder.restaurant_display_id ||
+                    currentOrder.restaurant_id
+                )
               );
             }}
           >

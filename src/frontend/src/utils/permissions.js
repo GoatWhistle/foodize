@@ -98,8 +98,13 @@ export const PERMISSION_PRESET_RU = {
 export const normalizePermissions = (permissions = []) =>
   Array.isArray(permissions) ? permissions : [];
 
-export const hasPermission = (user, permission) =>
-  normalizePermissions(user?.permissions).includes(permission);
+export const hasPermission = (user, permission) => {
+  const permissions = normalizePermissions(user?.permissions);
+  return (
+    permissions.includes(permission) ||
+    permissions.includes(PERMISSIONS.ADMIN_ACCESS)
+  );
+};
 
 export const inferPermissionPreset = (permissions = []) => {
   const set = new Set(normalizePermissions(permissions));

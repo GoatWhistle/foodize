@@ -53,6 +53,8 @@ const ERROR_MAP = {
     "Запрос уже обрабатывается, подождите",
   "Restaurant not found": "Ресторан не найден",
   "Restaurant is currently closed": "Ресторан сейчас закрыт",
+  "Restaurant is temporarily not accepting orders":
+    "Заведение временно поставило приём заказов на паузу",
   "Duplicate options selected": "Одна и та же опция выбрана дважды",
   "Selected option not found":
     "Одна из выбранных опций больше недоступна. Обновите меню и попробуйте снова",

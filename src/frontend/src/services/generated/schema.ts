@@ -1309,6 +1309,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/orders/estimate/{restaurant_id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read Order Load Estimate */
+    get: operations['read_order_load_estimate_api_v1_orders_estimate__restaurant_id__get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/orders/me': {
     parameters: {
       query?: never;
@@ -1576,6 +1593,40 @@ export interface paths {
     put?: never;
     /** Telegram Bot Link Phone */
     post: operations['telegram_bot_link_phone_api_v1_telegram_bot_link_phone_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/telegram/bot/vendor-status': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Telegram Bot Vendor Status */
+    post: operations['telegram_bot_vendor_status_api_v1_telegram_bot_vendor_status_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/telegram/bot/orders': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Telegram Bot Orders */
+    post: operations['telegram_bot_orders_api_v1_telegram_bot_orders_post'];
     delete?: never;
     options?: never;
     head?: never;
@@ -2012,6 +2063,8 @@ export interface components {
       | 'SALAD'
       | 'SNACK'
       | 'DRINK'
+      | 'SOUP'
+      | 'DESSERT'
       | 'OTHER';
     /** ChangePasswordRequest */
     ChangePasswordRequest: {
@@ -2482,6 +2535,30 @@ export interface components {
        */
       selected_options: components['schemas']['OrderItemOptionResponse'][];
     };
+    /** OrderLoadEstimate */
+    OrderLoadEstimate: {
+      /**
+       * Restaurant Id
+       * Format: uuid
+       */
+      restaurant_id: string;
+      /** Ordering Available */
+      ordering_available: boolean;
+      /** Reason */
+      reason?: string | null;
+      /** Active Orders Count */
+      active_orders_count: number;
+      /** Max Active Orders */
+      max_active_orders?: number | null;
+      /** Avg Prep Time Minutes */
+      avg_prep_time_minutes: number;
+      /** Estimated Wait Min Minutes */
+      estimated_wait_min_minutes: number;
+      /** Estimated Wait Max Minutes */
+      estimated_wait_max_minutes: number;
+      /** Paused Until */
+      paused_until?: string | null;
+    };
     /** OrderResponse */
     OrderResponse: {
       /**
@@ -2505,6 +2582,8 @@ export interface components {
        * Format: uuid
        */
       restaurant_id: string;
+      /** Restaurant Display Id */
+      restaurant_display_id?: string | null;
       /** Restaurant Name */
       restaurant_name?: string | null;
       /** Restaurant Address */
@@ -2749,6 +2828,13 @@ export interface components {
        * @default true
        */
       is_open: boolean;
+      /**
+       * Avg Prep Time Minutes
+       * @default 15
+       */
+      avg_prep_time_minutes: number;
+      /** Max Active Orders */
+      max_active_orders?: number | null;
     };
     /** RestaurantResponse */
     RestaurantResponse: {
@@ -2780,6 +2866,20 @@ export interface components {
        * @default true
        */
       is_open: boolean;
+      /**
+       * Is Ordering Paused
+       * @default false
+       */
+      is_ordering_paused: boolean;
+      /** Ordering Paused Until */
+      ordering_paused_until?: string | null;
+      /**
+       * Avg Prep Time Minutes
+       * @default 15
+       */
+      avg_prep_time_minutes: number;
+      /** Max Active Orders */
+      max_active_orders?: number | null;
       /** Photo Url */
       photo_url?: string | null;
       /**
@@ -2805,6 +2905,11 @@ export interface components {
       /** Rejection Reason */
       rejection_reason?: string | null;
     };
+    /**
+     * RestaurantSort
+     * @enum {string}
+     */
+    RestaurantSort: 'default' | 'rating' | 'popularity_7d';
     /** RestaurantUpdate */
     RestaurantUpdate: {
       /** Name */
@@ -2817,6 +2922,14 @@ export interface components {
       is_hiring?: boolean | null;
       /** Is Open */
       is_open?: boolean | null;
+      /** Is Ordering Paused */
+      is_ordering_paused?: boolean | null;
+      /** Ordering Paused Until */
+      ordering_paused_until?: string | null;
+      /** Avg Prep Time Minutes */
+      avg_prep_time_minutes?: number | null;
+      /** Max Active Orders */
+      max_active_orders?: number | null;
       /** Photo Url */
       photo_url?: string | null;
     };
@@ -2866,6 +2979,11 @@ export interface components {
       /** Permissions */
       permissions: components['schemas']['Permission'][];
     };
+    /**
+     * SortDirection
+     * @enum {string}
+     */
+    SortDirection: 'asc' | 'desc';
     /** StaffMemberResponse */
     StaffMemberResponse: {
       /**
@@ -3048,6 +3166,13 @@ export interface components {
       pagination: components['schemas']['Pagination'];
       meta?: components['schemas']['Meta'];
     };
+    /** SuccessListResponse[TelegramBotOrderSummary] */
+    SuccessListResponse_TelegramBotOrderSummary_: {
+      /** Data */
+      data: components['schemas']['TelegramBotOrderSummary'][];
+      pagination: components['schemas']['Pagination'];
+      meta?: components['schemas']['Meta'];
+    };
     /** SuccessResponse[AdminRestaurantResponse] */
     SuccessResponse_AdminRestaurantResponse_: {
       data: components['schemas']['AdminRestaurantResponse'];
@@ -3103,6 +3228,11 @@ export interface components {
       data: components['schemas']['MenuItemResponse'];
       meta?: components['schemas']['Meta'];
     };
+    /** SuccessResponse[OrderLoadEstimate] */
+    SuccessResponse_OrderLoadEstimate_: {
+      data: components['schemas']['OrderLoadEstimate'];
+      meta?: components['schemas']['Meta'];
+    };
     /** SuccessResponse[OrderResponse] */
     SuccessResponse_OrderResponse_: {
       data: components['schemas']['OrderResponse'];
@@ -3146,6 +3276,11 @@ export interface components {
     /** SuccessResponse[StaffRequestResponse] */
     SuccessResponse_StaffRequestResponse_: {
       data: components['schemas']['StaffRequestResponse'];
+      meta?: components['schemas']['Meta'];
+    };
+    /** SuccessResponse[TelegramBotVendorStatusResponse] */
+    SuccessResponse_TelegramBotVendorStatusResponse_: {
+      data: components['schemas']['TelegramBotVendorStatusResponse'];
       meta?: components['schemas']['Meta'];
     };
     /** SuccessResponse[TelegramCheckResponse] */
@@ -3192,6 +3327,43 @@ export interface components {
       phone_number: string;
       /** Name */
       name: string;
+    };
+    /** TelegramBotOrderSummary */
+    TelegramBotOrderSummary: {
+      /** Id */
+      id: string;
+      /** Display Id */
+      display_id: number;
+      /** Status */
+      status: string;
+      /** Restaurant Name */
+      restaurant_name?: string | null;
+      /** Total Price */
+      total_price: number;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
+    /** TelegramBotOrdersRequest */
+    TelegramBotOrdersRequest: {
+      /** Telegram Id */
+      telegram_id: number;
+    };
+    /** TelegramBotVendorStatusRequest */
+    TelegramBotVendorStatusRequest: {
+      /** Telegram Id */
+      telegram_id: number;
+    };
+    /** TelegramBotVendorStatusResponse */
+    TelegramBotVendorStatusResponse: {
+      /** Is Vendor */
+      is_vendor: boolean;
+      /** Approval Status */
+      approval_status?: string | null;
+      /** Rejection Reason */
+      rejection_reason?: string | null;
     };
     /** TelegramCheckRequest */
     TelegramCheckRequest: {
@@ -5542,8 +5714,8 @@ export interface operations {
         name?: string | null;
         is_hiring?: boolean | null;
         is_open?: boolean | null;
-        sort?: 'default' | 'rating' | 'popularity_7d';
-        direction?: 'asc' | 'desc';
+        sort?: components['schemas']['RestaurantSort'];
+        direction?: components['schemas']['SortDirection'];
         page?: number;
         size?: number;
       };
@@ -6156,6 +6328,37 @@ export interface operations {
       };
     };
   };
+  read_order_load_estimate_api_v1_orders_estimate__restaurant_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        restaurant_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SuccessResponse_OrderLoadEstimate_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   read_my_orders_api_v1_orders_me_get: {
     parameters: {
       query?: {
@@ -6697,6 +6900,76 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['SuccessResponse_UserRead_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  telegram_bot_vendor_status_api_v1_telegram_bot_vendor_status_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        'X-Telegram-Bot-Secret'?: string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TelegramBotVendorStatusRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SuccessResponse_TelegramBotVendorStatusResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  telegram_bot_orders_api_v1_telegram_bot_orders_post: {
+    parameters: {
+      query?: never;
+      header?: {
+        'X-Telegram-Bot-Secret'?: string;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TelegramBotOrdersRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SuccessListResponse_TelegramBotOrderSummary_'];
         };
       };
       /** @description Validation Error */

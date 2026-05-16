@@ -6,6 +6,7 @@ from datetime import date, datetime, timedelta, timezone
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from features.admin.audit_log import service as audit_service
 from features.menu.models import MenuItem, MenuItemOption
 from features.notifications.events import OrderPlacedEvent, OrderStatusChangedEvent
 from features.notifications.outbox_service import enqueue_event
@@ -26,6 +27,7 @@ from features.orders.models import IdempotencyKey, Order, OrderItem, OrderItemOp
 from features.orders.schemas.order import (
     OrderCancelRequest,
     OrderCreate,
+    OrderLoadEstimate,
     OrderResponse,
     OrderStatusUpdate,
 )
@@ -50,6 +52,59 @@ _ALLOWED_TRANSITIONS: dict[OrderStatus, set[OrderStatus]] = {
 }
 
 _CANCELLABLE_STATUSES = {OrderStatus.PENDING, OrderStatus.ACCEPTED}
+
+
+def _is_ordering_paused(restaurant) -> bool:
+    if getattr(restaurant, "is_ordering_paused", False) is not True:
+        return False
+    paused_until = restaurant.ordering_paused_until
+    if paused_until is None:
+        return True
+    if paused_until.tzinfo is None:
+        paused_until = paused_until.replace(tzinfo=timezone.utc)
+    return paused_until > datetime.now(timezone.utc)
+
+
+async def estimate_restaurant_load(
+    session: AsyncSession,
+    restaurant_id: uuid.UUID,
+) -> OrderLoadEstimate:
+    restaurant = await restaurant_crud.get_restaurant_by_id(session, restaurant_id)
+    if not restaurant:
+        raise RestaurantNotFoundException()
+
+    active_orders = await order_crud.count_active_orders_by_restaurant_id(session, restaurant.id)
+    if not isinstance(active_orders, int):
+        active_orders = 0
+    avg_prep_time = getattr(restaurant, "avg_prep_time_minutes", 15)
+    if not isinstance(avg_prep_time, int):
+        avg_prep_time = 15
+    max_active_orders = getattr(restaurant, "max_active_orders", None)
+    if not isinstance(max_active_orders, int):
+        max_active_orders = None
+    hours = await get_working_hours(session, restaurant.id)
+    is_open = restaurant.is_open
+    if hours and is_open_now(hours) is False:
+        is_open = False
+    queue_multiplier = 1
+    if max_active_orders:
+        queue_multiplier = max(1, active_orders // max_active_orders + 1)
+
+    wait_min = max(avg_prep_time, avg_prep_time * queue_multiplier)
+    wait_max = wait_min + max(10, avg_prep_time)
+    paused = _is_ordering_paused(restaurant)
+
+    return OrderLoadEstimate(
+        restaurant_id=restaurant.id,
+        ordering_available=not paused and is_open,
+        reason="PAUSED" if paused else ("CLOSED" if not is_open else None),
+        active_orders_count=active_orders,
+        max_active_orders=max_active_orders,
+        avg_prep_time_minutes=avg_prep_time,
+        estimated_wait_min_minutes=wait_min,
+        estimated_wait_max_minutes=wait_max,
+        paused_until=restaurant.ordering_paused_until if paused else None,
+    )
 
 
 def _validate_transition(old: OrderStatus, new: OrderStatus) -> None:
@@ -158,6 +213,8 @@ async def place_order(
         raise RestaurantNotFoundException()
     if not restaurant.is_open:
         raise RestaurantClosedException()
+    if _is_ordering_paused(restaurant):
+        raise RestaurantClosedException(detail="Restaurant is temporarily not accepting orders")
 
     working_hours = await get_working_hours(session, restaurant.id)
     if working_hours:
@@ -194,7 +251,16 @@ async def place_order(
     )
     is_first_order = total_orders == 0
 
-    order = await _create_order(session, order_data, user_id, menu_items, selected_options_by_item)
+    load = await estimate_restaurant_load(session, restaurant.id)
+    order = await _create_order(
+        session,
+        order_data,
+        user_id,
+        menu_items,
+        selected_options_by_item,
+        estimated_ready_at=datetime.now(timezone.utc)
+        + timedelta(minutes=load.estimated_wait_max_minutes),
+    )
 
     if order_data.promo_code:
         new_total = await promo_service.apply_promo(
@@ -242,6 +308,7 @@ async def _create_order(
     user_id: uuid.UUID,
     menu_items: dict,
     selected_options_by_item: dict[int, list[MenuItemOption]],
+    estimated_ready_at: datetime | None = None,
 ) -> Order:
     total_price = sum(
         (
@@ -256,6 +323,7 @@ async def _create_order(
         restaurant_id=order_data.restaurant_id,
         total_price=total_price,
         comment=order_data.comment,
+        estimated_ready_at=estimated_ready_at,
     )
     session.add(order)
     await session.flush()
@@ -507,6 +575,14 @@ async def force_cancel_order(
         actor_permissions=actor.permissions,
         old_status=old_status,
         new_status=OrderStatus.CANCELLED,
+    )
+    await audit_service.log_action(
+        session,
+        actor_id=actor.id,
+        action="FORCE_CANCEL_ORDER",
+        entity_type="order",
+        entity_id=order.id,
+        details={"reason": reason, "old_status": old_status.value},
     )
 
     await enqueue_event(

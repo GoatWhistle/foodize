@@ -4,9 +4,12 @@ import json
 import time
 from urllib.parse import parse_qsl
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from features.auth.schemas import TokenResponse
+from features.orders.models import Order
 from features.telegram.crud import get_user_by_phone, get_user_by_telegram_id
 from features.telegram.exceptions import (
     InvalidTelegramInitDataException,
@@ -14,8 +17,10 @@ from features.telegram.exceptions import (
 )
 from features.telegram.schemas import TelegramCheckResponse
 from features.users.models import User
+from features.vendors.models import VendorProfile
 from infra.cache.redis import get_redis_cache
 from settings.config.app_config import settings
+from shared.enums.order_status import OrderStatus
 from shared.permissions import CUSTOMER_PERMISSIONS, serialize_permissions
 from utils.JWT import create_access_token, create_refresh_token
 
@@ -99,6 +104,42 @@ async def telegram_check(session: AsyncSession, init_data: str) -> TelegramCheck
 
     phone = tg_user.get("phone_number")
     return TelegramCheckResponse(status="new_user", phone_number=phone)
+
+
+async def get_vendor_status_for_telegram_id(
+    session: AsyncSession, telegram_id: int
+) -> VendorProfile | None:
+    user = await get_user_by_telegram_id(session, telegram_id)
+    if not user:
+        return None
+
+    result = await session.execute(
+        select(VendorProfile).where(VendorProfile.user_id == user.id)
+    )
+    return result.scalar_one_or_none()
+
+
+async def get_active_orders_for_telegram_id(
+    session: AsyncSession, telegram_id: int, limit: int = 3
+) -> list[Order]:
+    user = await get_user_by_telegram_id(session, telegram_id)
+    if not user:
+        return []
+
+    active_statuses = [
+        OrderStatus.PENDING.value,
+        OrderStatus.ACCEPTED.value,
+        OrderStatus.READY.value,
+    ]
+    result = await session.execute(
+        select(Order)
+        .where(Order.user_id == user.id)
+        .where(Order.status.in_(active_statuses))
+        .options(selectinload(Order.restaurant))
+        .order_by(Order.created_at.desc())
+        .limit(limit)
+    )
+    return list(result.scalars().all())
 
 
 async def telegram_register(

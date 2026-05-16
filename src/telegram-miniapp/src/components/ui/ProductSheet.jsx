@@ -69,11 +69,12 @@ const getGroupHint = (group) => {
   return "Можно выбрать несколько";
 };
 
-const ProductSheet = ({ item, onClose, onAdd }) => {
+const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }) => {
   const [selectedOptionIds, setSelectedOptionIds] = useState([]);
   const [quantity, setQuantity] = useState(1);
   const [error, setError] = useState("");
   const groups = useMemo(() => getActiveOptionGroups(item), [item]);
+  const isClosed = isRestaurantOpen === false;
   const icon =
     CATEGORY_ICONS[item?.category?.toUpperCase()] || CATEGORY_ICONS.DEFAULT;
 
@@ -123,6 +124,11 @@ const ProductSheet = ({ item, onClose, onAdd }) => {
   };
 
   const handleAdd = () => {
+    if (isClosed) {
+      setError("Заведение сейчас закрыто и не принимает заказы");
+      return;
+    }
+
     for (const group of groups) {
       const groupOptionIds = group.options.map((option) => option.id);
       const selectedCount = selectedOptionIds.filter((optionId) =>
@@ -255,7 +261,9 @@ const ProductSheet = ({ item, onClose, onAdd }) => {
             </button>
           </div>
           <button className="btn btn-primary product-add" onClick={handleAdd}>
-            Добавить · {formatPrice(unitPrice * quantity)}
+            {isClosed
+              ? "Заведение закрыто"
+              : `Добавить · ${formatPrice(unitPrice * quantity)}`}
           </button>
         </div>
       </section>

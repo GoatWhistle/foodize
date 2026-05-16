@@ -108,6 +108,7 @@ const RestaurantPage = () => {
   const menuItems = menus[id] || [];
   const isFav = favoriteIds.has(id);
   const count = cartCount ? cartCount() : 0;
+  const isRestaurantOpen = restaurant.is_open !== false;
 
   useEffect(() => {
     if (BackButton) {
@@ -250,10 +251,12 @@ const RestaurantPage = () => {
       : allItems.filter((i) => i.category === activeCategory);
 
   const openProduct = (item) => {
+    if (!isRestaurantOpen) return;
     setSelectedProduct(item);
   };
 
   const handleProductAdd = ({ item, selectedOptions, quantity }) => {
+    if (!isRestaurantOpen) return;
     addToCart(item, id, selectedOptions, quantity);
     setSelectedProduct(null);
   };
@@ -371,6 +374,22 @@ const RestaurantPage = () => {
       </div>
 
       <div className="restaurant-content">
+        {!isRestaurantOpen && (
+          <div
+            style={{
+              padding: "12px 14px",
+              background: "rgba(239,68,68,0.1)",
+              border: "1px solid rgba(239,68,68,0.35)",
+              borderRadius: "var(--r-md)",
+              color: "#ef4444",
+              fontSize: "0.84rem",
+              fontWeight: 800,
+              marginBottom: 14,
+            }}
+          >
+            Заведение сейчас закрыто и не принимает заказы
+          </div>
+        )}
         <div className="menu-categories-scroll">
           {categories.map((cat) => (
             <button
@@ -425,7 +444,12 @@ const RestaurantPage = () => {
         ) : (
           <div className="menu-list">
             {filtered.map((item) => (
-              <MenuItemCard key={item.id} item={item} onSelect={openProduct} />
+              <MenuItemCard
+                key={item.id}
+                item={item}
+                onSelect={openProduct}
+                isRestaurantOpen={isRestaurantOpen}
+              />
             ))}
           </div>
         )}
@@ -443,7 +467,10 @@ const RestaurantPage = () => {
 
       {showCart && (
         <Portal>
-          <CartDrawer onClose={() => setShowCart(false)} />
+          <CartDrawer
+            onClose={() => setShowCart(false)}
+            isRestaurantOpen={isRestaurantOpen}
+          />
         </Portal>
       )}
 
@@ -452,6 +479,7 @@ const RestaurantPage = () => {
           item={selectedProduct}
           onClose={() => setSelectedProduct(null)}
           onAdd={handleProductAdd}
+          isRestaurantOpen={isRestaurantOpen}
         />
       )}
 
@@ -804,7 +832,8 @@ const RestaurantPage = () => {
                 >
                   {workingHours.map((wh) => {
                     const days = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
-                    const dayName = days[wh.day_of_week - 1];
+                    const dayName =
+                      days[wh.day_of_week] ?? days[wh.day_of_week - 1] ?? "";
                     return (
                       <div
                         key={wh.day_of_week}

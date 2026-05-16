@@ -563,7 +563,12 @@ const OrderStatusPage = () => {
             onClick={async () => {
               const repeat = useOrderStore.getState().repeatOrder;
               await repeat(currentOrder);
-              navigate(`/restaurant/${currentOrder.restaurant_id}`);
+              navigate(
+                `/restaurant/${
+                  currentOrder.restaurant_display_id ||
+                  currentOrder.restaurant_id
+                }`,
+              );
             }}
           >
             Повторить заказ

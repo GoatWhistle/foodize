@@ -8,6 +8,7 @@ export const useNotificationStore = create((set, get) => ({
   total: 0,
   page: 1,
   _ws: null,
+  connectionStatus: "closed",
 
   fetchNotifications: async (page = 1) => {
     try {
@@ -81,22 +82,34 @@ export const useNotificationStore = create((set, get) => ({
     const existing = get()._ws;
     if (existing) return;
 
-    const ws = createNotificationWebSocket(userId, (data) => {
-      if (data.type === "connected") {
-        get().fetchNotifications(1);
-        return;
-      }
-      set((s) => ({
-        notifications: [data, ...s.notifications],
-        total: s.total + 1,
-        unreadCount: s.unreadCount + 1,
-      }));
-      try {
-        window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred(
-          "success",
-        );
-      } catch {}
-    });
+    set({ connectionStatus: "connecting" });
+
+    const ws = createNotificationWebSocket(
+      userId,
+      (data) => {
+        if (data.type === "connected") {
+          get().fetchNotifications(1);
+          return;
+        }
+        set((s) => ({
+          notifications: [data, ...s.notifications],
+          total: s.total + 1,
+          unreadCount: s.unreadCount + 1,
+        }));
+        try {
+          window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred(
+            "success",
+          );
+        } catch {}
+      },
+      () => set({ connectionStatus: "closed" }),
+      (connectionStatus) => {
+        set({ connectionStatus });
+        if (connectionStatus === "connected") {
+          get().fetchNotifications(1);
+        }
+      },
+    );
 
     set({ _ws: ws });
   },
@@ -105,7 +118,7 @@ export const useNotificationStore = create((set, get) => ({
     const ws = get()._ws;
     if (ws) {
       ws.close();
-      set({ _ws: null });
+      set({ _ws: null, connectionStatus: "closed" });
     }
   },
 }));

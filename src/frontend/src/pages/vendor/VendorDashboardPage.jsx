@@ -74,6 +74,17 @@ const toDateInputValue = (date) => {
   return `${year}-${month}-${day}`;
 };
 
+const toDateTimeLocalValue = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const offsetMs = date.getTimezoneOffset() * 60000;
+  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
+};
+
+const fromDateTimeLocalValue = (value) =>
+  value ? new Date(value).toISOString() : null;
+
 const getOrderDateKey = (order) => {
   if (!order?.created_at) return 'unknown';
   return toDateInputValue(new Date(order.created_at));
@@ -104,6 +115,52 @@ const formatOrderDateGroup = (dateKey) => {
     year: 'numeric',
   }).format(date);
 };
+
+const getPromoConditionLabels = (promo) => {
+  const labels = [];
+  if (promo.first_order_only) labels.push('только первый заказ');
+  if (promo.min_order_amount) labels.push(`от ${promo.min_order_amount} ₽`);
+  if (promo.menu_category) {
+    labels.push(CATEGORY_RU[promo.menu_category] || promo.menu_category);
+  }
+  return labels;
+};
+
+const ListSkeleton = ({ rows = 3 }) => (
+  <div style={{ display: 'grid', gap: 10 }}>
+    {Array.from({ length: rows }).map((_, index) => (
+      <div
+        key={index}
+        className="skeleton"
+        style={{ height: 64, borderRadius: 'var(--radius-md)' }}
+      />
+    ))}
+  </div>
+);
+
+const AnalyticsSkeleton = () => (
+  <div style={{ display: 'grid', gap: 16 }}>
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+        gap: 12,
+      }}
+    >
+      {[1, 2, 3, 4].map((item) => (
+        <div
+          key={item}
+          className="skeleton"
+          style={{ height: 88, borderRadius: 'var(--radius-md)' }}
+        />
+      ))}
+    </div>
+    <div
+      className="skeleton"
+      style={{ height: 240, borderRadius: 'var(--radius-md)' }}
+    />
+  </div>
+);
 
 const groupOrdersByDate = (orders) =>
   orders.reduce((groups, order) => {
@@ -192,7 +249,12 @@ const VendorDashboardPage = () => {
   const [showAddRestaurant, setShowAddRestaurant] = useState(false);
   const [activeTab, setActiveTab] = useState('menu');
 
-  const [newRestaurant, setNewRestaurant] = useState({ name: '', address: '' });
+  const [newRestaurant, setNewRestaurant] = useState({
+    name: '',
+    address: '',
+    avg_prep_time_minutes: 15,
+    max_active_orders: '',
+  });
   const [editRestaurant, setEditRestaurant] = useState(null);
 
   const [showAddItem, setShowAddItem] = useState(false);
@@ -217,6 +279,7 @@ const VendorDashboardPage = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const wsRef = useRef(null);
   const [showQr, setShowQr] = useState(false);
+  const [qrType, setQrType] = useState('site');
 
   const [formLoading, setFormLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
@@ -380,10 +443,22 @@ const VendorDashboardPage = () => {
     setFormLoading(true);
     setFormError('');
     try {
-      const r = await createRestaurant(newRestaurant);
+      const r = await createRestaurant({
+        ...newRestaurant,
+        avg_prep_time_minutes:
+          Number(newRestaurant.avg_prep_time_minutes) || 15,
+        max_active_orders: newRestaurant.max_active_orders
+          ? Number(newRestaurant.max_active_orders)
+          : null,
+      });
       setSelectedRestaurant(r);
       setShowAddRestaurant(false);
-      setNewRestaurant({ name: '', address: '' });
+      setNewRestaurant({
+        name: '',
+        address: '',
+        avg_prep_time_minutes: 15,
+        max_active_orders: '',
+      });
     } catch (err) {
       setFormError(translateApiError(err, 'Ошибка создания'));
     } finally {
@@ -469,6 +544,14 @@ const VendorDashboardPage = () => {
       description: patch.description?.trim() || null,
       is_open: patch.is_open ?? false,
       is_hiring: patch.is_hiring ?? false,
+      is_ordering_paused: patch.is_ordering_paused ?? false,
+      ordering_paused_until: patch.ordering_paused_until
+        ? fromDateTimeLocalValue(patch.ordering_paused_until)
+        : null,
+      avg_prep_time_minutes: Number(patch.avg_prep_time_minutes) || 15,
+      max_active_orders: patch.max_active_orders
+        ? Number(patch.max_active_orders)
+        : null,
       ...(patch.photo_url != null ? { photo_url: patch.photo_url } : {}),
     };
     try {
@@ -807,7 +890,7 @@ const VendorDashboardPage = () => {
       ]);
       setFinance(finRes.data.data);
       setAdvancedAnalytics(advRes.data.data);
-    } catch (err) {
+    } catch {
     } finally {
       setFinanceLoading(false);
       setAnalyticsLoading(false);
@@ -947,6 +1030,34 @@ const VendorDashboardPage = () => {
                 setNewRestaurant({ ...newRestaurant, address: e.target.value })
               }
               required
+            />
+            <input
+              className="form-input"
+              type="number"
+              min="1"
+              max="240"
+              placeholder="Среднее время приготовления, минут"
+              value={newRestaurant.avg_prep_time_minutes}
+              onChange={(e) =>
+                setNewRestaurant({
+                  ...newRestaurant,
+                  avg_prep_time_minutes: e.target.value,
+                })
+              }
+            />
+            <input
+              className="form-input"
+              type="number"
+              min="1"
+              max="1000"
+              placeholder="Мягкий лимит активных заказов"
+              value={newRestaurant.max_active_orders}
+              onChange={(e) =>
+                setNewRestaurant({
+                  ...newRestaurant,
+                  max_active_orders: e.target.value,
+                })
+              }
             />
             <button
               type="submit"
@@ -1175,7 +1286,10 @@ const VendorDashboardPage = () => {
               </a>
               <button
                 className="btn btn-secondary"
-                onClick={() => setShowQr(true)}
+                onClick={() => {
+                  setQrType('site');
+                  setShowQr(true);
+                }}
                 style={{
                   justifyContent: 'flex-start',
                   border: 'none',
@@ -1187,7 +1301,26 @@ const VendorDashboardPage = () => {
                 }}
               >
                 <QrCode size={18} />
-                QR
+                QR для сайта
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  setQrType('telegram');
+                  setShowQr(true);
+                }}
+                style={{
+                  justifyContent: 'flex-start',
+                  border: 'none',
+                  padding: '10px 14px',
+                  gap: 10,
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  color: 'var(--text-2)',
+                }}
+              >
+                <QrCode size={18} />
+                QR для Telegram
               </button>
             </div>
           </div>
@@ -2448,9 +2581,7 @@ const VendorDashboardPage = () => {
                 )}
 
                 {promosLoading && promosList.length === 0 ? (
-                  <div className="loading-center">
-                    <div className="spinner" />
-                  </div>
+                  <ListSkeleton rows={3} />
                 ) : promosList.length === 0 ? (
                   <EmptyState
                     icon={<Tag size={36} />}
@@ -2460,78 +2591,96 @@ const VendorDashboardPage = () => {
                 ) : (
                   <div className={promosLoading ? 'loading-dim' : undefined}>
                     {promosList.map((promo) => (
-                      <div
-                        key={promo.id}
-                        style={{
-                          background: 'var(--bg-card)',
-                          border: `1px solid ${promo.is_active ? 'var(--border)' : 'var(--border-faint, var(--border))'}`,
-                          borderRadius: 'var(--radius-md)',
-                          padding: '14px 16px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 12,
-                          opacity: promo.is_active ? 1 : 0.5,
-                        }}
-                      >
-                        <Tag
-                          size={18}
-                          weight="bold"
-                          color={
-                            promo.is_active ? 'var(--fire)' : 'var(--text-3)'
-                          }
-                        />
-                        <div style={{ flex: 1 }}>
+                      (() => {
+                        const conditionLabels = getPromoConditionLabels(promo);
+                        return (
                           <div
+                            key={promo.id}
                             style={{
-                              fontWeight: 800,
-                              fontSize: '0.95rem',
-                              fontFamily: 'monospace',
+                              background: 'var(--bg-card)',
+                              border: `1px solid ${promo.is_active ? 'var(--border)' : 'var(--border-faint, var(--border))'}`,
+                              borderRadius: 'var(--radius-md)',
+                              padding: '14px 16px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 12,
+                              opacity: promo.is_active ? 1 : 0.5,
                             }}
                           >
-                            {promo.code}
+                            <Tag
+                              size={18}
+                              weight="bold"
+                              color={
+                                promo.is_active
+                                  ? 'var(--fire)'
+                                  : 'var(--text-3)'
+                              }
+                            />
+                            <div style={{ flex: 1 }}>
+                              <div
+                                style={{
+                                  fontWeight: 800,
+                                  fontSize: '0.95rem',
+                                  fontFamily: 'monospace',
+                                }}
+                              >
+                                {promo.code}
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: '0.78rem',
+                                  color: 'var(--text-3)',
+                                  marginTop: 2,
+                                }}
+                              >
+                                {promo.discount_type === 'PERCENT'
+                                  ? `${promo.discount_value}%`
+                                  : `${promo.discount_value} ₽`}
+                                {' • '}
+                                {promo.used_count}/{promo.max_uses ?? '∞'} исп.
+                                {promo.expires_at
+                                  ? ` • до ${new Date(promo.expires_at).toLocaleDateString()}`
+                                  : ''}
+                              </div>
+                              {conditionLabels.length > 0 && (
+                                <div
+                                  style={{
+                                    fontSize: '0.72rem',
+                                    color: 'var(--text-3)',
+                                    marginTop: 4,
+                                  }}
+                                >
+                                  Условия: {conditionLabels.join(' • ')}
+                                </div>
+                              )}
+                            </div>
+                            <span
+                              style={{
+                                fontSize: '0.65rem',
+                                fontWeight: 800,
+                                padding: '3px 8px',
+                                borderRadius: '100px',
+                                background: promo.is_active
+                                  ? 'rgba(34,197,94,0.12)'
+                                  : 'rgba(107,114,128,0.12)',
+                                color: promo.is_active ? '#22c55e' : '#6b7280',
+                                border: `1px solid ${promo.is_active ? 'rgba(34,197,94,0.3)' : 'rgba(107,114,128,0.2)'}`,
+                              }}
+                            >
+                              {promo.is_active ? 'Активен' : 'Завершён'}
+                            </span>
+                            {promo.is_active && (
+                              <button
+                                className="btn-icon-sm danger"
+                                onClick={() => handleDeactivatePromo(promo.code)}
+                                title="Деактивировать"
+                              >
+                                <Trash size={14} />
+                              </button>
+                            )}
                           </div>
-                          <div
-                            style={{
-                              fontSize: '0.78rem',
-                              color: 'var(--text-3)',
-                              marginTop: 2,
-                            }}
-                          >
-                            {promo.discount_type === 'PERCENT'
-                              ? `${promo.discount_value}%`
-                              : `${promo.discount_value} ₽`}
-                            {' • '}
-                            {promo.used_count}/{promo.max_uses ?? '∞'} исп.
-                            {promo.expires_at
-                              ? ` • до ${new Date(promo.expires_at).toLocaleDateString()}`
-                              : ''}
-                          </div>
-                        </div>
-                        <span
-                          style={{
-                            fontSize: '0.65rem',
-                            fontWeight: 800,
-                            padding: '3px 8px',
-                            borderRadius: '100px',
-                            background: promo.is_active
-                              ? 'rgba(34,197,94,0.12)'
-                              : 'rgba(107,114,128,0.12)',
-                            color: promo.is_active ? '#22c55e' : '#6b7280',
-                            border: `1px solid ${promo.is_active ? 'rgba(34,197,94,0.3)' : 'rgba(107,114,128,0.2)'}`,
-                          }}
-                        >
-                          {promo.is_active ? 'Активен' : 'Завершён'}
-                        </span>
-                        {promo.is_active && (
-                          <button
-                            className="btn-icon-sm danger"
-                            onClick={() => handleDeactivatePromo(promo.code)}
-                            title="Деактивировать"
-                          >
-                            <Trash size={14} />
-                          </button>
-                        )}
-                      </div>
+                        );
+                      })()
                     ))}
                   </div>
                 )}
@@ -2570,9 +2719,7 @@ const VendorDashboardPage = () => {
                 )}
 
                 {workingHoursLoading && workingHours.length === 0 ? (
-                  <div className="loading-center">
-                    <div className="spinner" />
-                  </div>
+                  <ListSkeleton rows={7} />
                 ) : (
                   <div
                     className={workingHoursLoading ? 'loading-dim' : undefined}
@@ -2942,9 +3089,7 @@ const VendorDashboardPage = () => {
                   </button>
                 </div>
                 {financeLoading && !finance && (
-                  <div className="loading-center">
-                    <div className="spinner" />
-                  </div>
+                  <AnalyticsSkeleton />
                 )}
                 {finance && <KPICards finance={finance} />}
                 {finance && (
@@ -3095,6 +3240,95 @@ const VendorDashboardPage = () => {
                     <input
                       type="checkbox"
                       checked={
+                        editRestaurant?.is_ordering_paused ??
+                        selectedRestaurant.is_ordering_paused ??
+                        false
+                      }
+                      onChange={(e) =>
+                        setEditRestaurant({
+                          ...(editRestaurant || selectedRestaurant),
+                          is_ordering_paused: e.target.checked,
+                        })
+                      }
+                    />
+                    <span className="form-check-label">
+                      Пауза приёма заказов
+                    </span>
+                  </label>
+                  <div>
+                    <label
+                      style={{ fontSize: '0.8rem', color: 'var(--text-3)' }}
+                    >
+                      Пауза до
+                    </label>
+                    <input
+                      className="form-input"
+                      type="datetime-local"
+                      value={toDateTimeLocalValue(
+                        editRestaurant?.ordering_paused_until ??
+                          selectedRestaurant.ordering_paused_until
+                      )}
+                      onChange={(e) =>
+                        setEditRestaurant({
+                          ...(editRestaurant || selectedRestaurant),
+                          ordering_paused_until: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label
+                      style={{ fontSize: '0.8rem', color: 'var(--text-3)' }}
+                    >
+                      Среднее время приготовления, минут
+                    </label>
+                    <input
+                      className="form-input"
+                      type="number"
+                      min="1"
+                      max="240"
+                      value={
+                        editRestaurant?.avg_prep_time_minutes ??
+                        selectedRestaurant.avg_prep_time_minutes ??
+                        15
+                      }
+                      onChange={(e) =>
+                        setEditRestaurant({
+                          ...(editRestaurant || selectedRestaurant),
+                          avg_prep_time_minutes: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label
+                      style={{ fontSize: '0.8rem', color: 'var(--text-3)' }}
+                    >
+                      Мягкий лимит активных заказов
+                    </label>
+                    <input
+                      className="form-input"
+                      type="number"
+                      min="1"
+                      max="1000"
+                      placeholder="Без лимита"
+                      value={
+                        editRestaurant?.max_active_orders ??
+                        selectedRestaurant.max_active_orders ??
+                        ''
+                      }
+                      onChange={(e) =>
+                        setEditRestaurant({
+                          ...(editRestaurant || selectedRestaurant),
+                          max_active_orders: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <label className="form-check">
+                    <input
+                      type="checkbox"
+                      checked={
                         editRestaurant?.is_hiring ??
                         selectedRestaurant.is_hiring ??
                         false
@@ -3125,6 +3359,7 @@ const VendorDashboardPage = () => {
       {showQr && selectedRestaurant && (
         <QRCodeModal
           restaurant={selectedRestaurant}
+          initialType={qrType}
           onClose={() => setShowQr(false)}
         />
       )}

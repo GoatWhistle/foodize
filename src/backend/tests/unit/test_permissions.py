@@ -18,6 +18,9 @@ class TestRolePermissions:
     def test_admin_has_every_permission(self):
         assert ADMIN_PERMISSIONS == frozenset(Permission)
 
+    def test_admin_access_grants_every_permission(self):
+        assert has_permission([Permission.ADMIN_ACCESS.value], Permission.MENU_MANAGE)
+
     def test_vendor_can_manage_menu_but_customer_cannot(self):
         assert has_permission(VENDOR_PERMISSIONS, Permission.MENU_MANAGE)
         assert not has_permission(CUSTOMER_PERMISSIONS, Permission.MENU_MANAGE)

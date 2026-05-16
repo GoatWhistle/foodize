@@ -1,4 +1,4 @@
-FROM node:22.17.0-alpine AS base
+FROM node:20-alpine AS base
 WORKDIR /miniapp
 COPY package*.json ./
 RUN npm install

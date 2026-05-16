@@ -64,9 +64,40 @@ const AUDIT_ACTION_LABELS = {
   REJECT_RESTAURANT: 'Отклонён ресторан',
   DEACTIVATE_USER: 'Деактивирован пользователь',
   ACTIVATE_USER: 'Активирован пользователь',
-  CHANGE_PERMISSIONS: 'Изменены права пользователя',
+  UPDATE_PERMISSIONS: 'Изменены права пользователя',
+  CREATE_MENU_ITEM: 'Создан пункт меню',
+  UPDATE_MENU_ITEM: 'Изменён пункт меню',
+  DELETE_MENU_ITEM: 'Удалён пункт меню',
+  TOGGLE_MENU_ITEM: 'Изменена доступность пункта меню',
+  CREATE_PROMO: 'Создан промокод',
+  DEACTIVATE_PROMO: 'Деактивирован промокод',
+  FORCE_CANCEL_ORDER: 'Заказ отменён администратором',
   DELETE_REVIEW: 'Удален отзыв',
 };
+
+const AnalyticsSkeleton = () => (
+  <div style={{ display: 'grid', gap: 16 }}>
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+        gap: 12,
+      }}
+    >
+      {[1, 2, 3, 4].map((item) => (
+        <div
+          key={item}
+          className="skeleton"
+          style={{ height: 92, borderRadius: 'var(--radius-md)' }}
+        />
+      ))}
+    </div>
+    <div
+      className="skeleton"
+      style={{ height: 260, borderRadius: 'var(--radius-md)' }}
+    />
+  </div>
+);
 
 const STATUS_MAP = {
   PENDING: {
@@ -547,6 +578,7 @@ const AdminDashboardPage = () => {
   const [selectedVendorIds, setSelectedVendorIds] = useState(new Set());
   const [selectedRestaurantIds, setSelectedRestaurantIds] = useState(new Set());
   const [qrRestaurant, setQrRestaurant] = useState(null);
+  const [qrType, setQrType] = useState('site');
   const [selectedUserIds, setSelectedUserIds] = useState(new Set());
   const [selectedReviewIds, setSelectedReviewIds] = useState(new Set());
   const [batchLoading, setBatchLoading] = useState(false);
@@ -814,7 +846,7 @@ const AdminDashboardPage = () => {
       ]);
       setFinance(finRes.data.data);
       setAdvancedAnalytics(advRes.data.data);
-    } catch (err) {
+    } catch {
       setActionError('Не удалось загрузить аналитику');
     } finally {
       setFinanceLoading(false);
@@ -1513,9 +1545,7 @@ const AdminDashboardPage = () => {
               </button>
             </div>
             {financeLoading && !finance && (
-              <div className="loading-center">
-                <div className="spinner" />
-              </div>
+              <AnalyticsSkeleton />
             )}
             {finance && (
               <>
@@ -3141,10 +3171,24 @@ const AdminDashboardPage = () => {
             <button
               className="btn btn-secondary"
               style={{ marginTop: 8 }}
-              onClick={() => setQrRestaurant(selectedRestaurant)}
+              onClick={() => {
+                setQrType('site');
+                setQrRestaurant(selectedRestaurant);
+              }}
             >
               <QrCode size={16} />
-              QR
+              QR для сайта
+            </button>
+            <button
+              className="btn btn-secondary"
+              style={{ marginTop: 8 }}
+              onClick={() => {
+                setQrType('telegram');
+                setQrRestaurant(selectedRestaurant);
+              }}
+            >
+              <QrCode size={16} />
+              QR для Telegram
             </button>
             <button
               className="btn btn-secondary"
@@ -3447,6 +3491,7 @@ const AdminDashboardPage = () => {
         {qrRestaurant && (
           <QRCodeModal
             restaurant={qrRestaurant}
+            initialType={qrType}
             onClose={() => setQrRestaurant(null)}
           />
         )}

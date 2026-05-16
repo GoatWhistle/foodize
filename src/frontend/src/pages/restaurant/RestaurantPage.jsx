@@ -1037,7 +1037,8 @@ const RestaurantPage = () => {
               >
                 {workingHours.map((wh) => {
                   const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-                  const dayName = days[wh.day_of_week - 1];
+                  const dayName =
+                    days[wh.day_of_week] ?? days[wh.day_of_week - 1] ?? '';
                   return (
                     <div
                       key={wh.day_of_week}

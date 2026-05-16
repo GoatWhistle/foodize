@@ -120,6 +120,27 @@ async def count_orders_by_restaurant_id(
     return result.scalar_one()
 
 
+async def count_active_orders_by_restaurant_id(
+    session: AsyncSession,
+    restaurant_id: uuid.UUID,
+) -> int:
+    stmt = (
+        select(func.count())
+        .select_from(Order)
+        .where(
+            Order.restaurant_id == restaurant_id,
+            Order.status.in_(
+                [
+                    OrderStatus.PENDING.value,
+                    OrderStatus.ACCEPTED.value,
+                ]
+            ),
+        )
+    )
+    result = await session.execute(stmt)
+    return result.scalar_one()
+
+
 async def update_order_status(
     session: AsyncSession, order: Order, new_status: OrderStatus
 ) -> Order:

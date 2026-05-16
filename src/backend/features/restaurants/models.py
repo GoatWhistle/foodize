@@ -1,7 +1,8 @@
 import uuid
+from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base, CreatedAtMixin, DeletedAtMixin, IdUuidPkMixin, UpdatedAtMixin
@@ -28,6 +29,14 @@ class Restaurant(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMix
     vendor_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("vendor_profiles.id"))
     is_hiring: Mapped[bool] = mapped_column(default=True, server_default="true")
     is_open: Mapped[bool] = mapped_column(default=True, server_default="true")
+    is_ordering_paused: Mapped[bool] = mapped_column(default=False, server_default="false")
+    ordering_paused_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    avg_prep_time_minutes: Mapped[int] = mapped_column(
+        Integer, default=15, server_default="15", nullable=False
+    )
+    max_active_orders: Mapped[int | None] = mapped_column(Integer, nullable=True)
     is_active: Mapped[bool] = mapped_column(default=True, server_default="true")
     photo_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
     moderation_status: Mapped[str] = mapped_column(

@@ -929,6 +929,17 @@ export const createOrderApiV1OrdersPost = (
 ) =>
   request<paths["/api/v1/orders/"]["post"]>("post", "/api/v1/orders/", options);
 
+export const readOrderLoadEstimateApiV1OrdersEstimateRestaurantIdGet = (
+  options?: RequestOptions<
+    paths["/api/v1/orders/estimate/{restaurant_id}"]["get"]
+  >,
+) =>
+  request<paths["/api/v1/orders/estimate/{restaurant_id}"]["get"]>(
+    "get",
+    "/api/v1/orders/estimate/{restaurant_id}",
+    options,
+  );
+
 export const readMyOrdersApiV1OrdersMeGet = (
   options?: RequestOptions<paths["/api/v1/orders/me"]["get"]>,
 ) =>
@@ -1093,6 +1104,24 @@ export const telegramBotLinkPhoneApiV1TelegramBotLinkPhonePost = (
   request<paths["/api/v1/telegram/bot/link-phone"]["post"]>(
     "post",
     "/api/v1/telegram/bot/link-phone",
+    options,
+  );
+
+export const telegramBotVendorStatusApiV1TelegramBotVendorStatusPost = (
+  options?: RequestOptions<paths["/api/v1/telegram/bot/vendor-status"]["post"]>,
+) =>
+  request<paths["/api/v1/telegram/bot/vendor-status"]["post"]>(
+    "post",
+    "/api/v1/telegram/bot/vendor-status",
+    options,
+  );
+
+export const telegramBotOrdersApiV1TelegramBotOrdersPost = (
+  options?: RequestOptions<paths["/api/v1/telegram/bot/orders"]["post"]>,
+) =>
+  request<paths["/api/v1/telegram/bot/orders"]["post"]>(
+    "post",
+    "/api/v1/telegram/bot/orders",
     options,
   );
 

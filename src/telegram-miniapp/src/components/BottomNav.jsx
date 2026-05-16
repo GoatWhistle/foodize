@@ -12,6 +12,9 @@ const BottomNav = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const unreadCount = useNotificationStore((s) => s.unreadCount);
+  const connectionStatus = useNotificationStore((s) => s.connectionStatus);
+  const hasConnectionIssue =
+    connectionStatus === "reconnecting" || connectionStatus === "closed";
 
   const isActive = (path) =>
     path === "/" ? pathname === "/" : pathname.startsWith(path);
@@ -21,6 +24,7 @@ const BottomNav = () => {
       {TABS.map(({ path, icon: Icon, label }) => {
         const active = isActive(path);
         const showBadge = path === "/profile" && unreadCount > 0;
+        const showConnectionBadge = path === "/profile" && hasConnectionIssue;
         return (
           <button
             key={path}
@@ -51,6 +55,21 @@ const BottomNav = () => {
                 >
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
+              )}
+              {showConnectionBadge && !showBadge && (
+                <span
+                  title="Нет соединения с уведомлениями"
+                  style={{
+                    position: "absolute",
+                    top: -2,
+                    right: -4,
+                    width: 9,
+                    height: 9,
+                    background: "#ef4444",
+                    borderRadius: "50%",
+                    border: "2px solid var(--bg-base)",
+                  }}
+                />
               )}
             </span>
             <span className="bottom-tab-label">{label}</span>

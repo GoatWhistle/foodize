@@ -4097,14 +4097,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "enum": [
-                "default",
-                "rating",
-                "popularity_7d"
-              ],
-              "type": "string",
-              "default": "default",
-              "title": "Sort"
+              "$ref": "#/components/schemas/RestaurantSort",
+              "default": "default"
             }
           },
           {
@@ -4112,13 +4106,8 @@
             "in": "query",
             "required": false,
             "schema": {
-              "enum": [
-                "asc",
-                "desc"
-              ],
-              "type": "string",
-              "default": "desc",
-              "title": "Direction"
+              "$ref": "#/components/schemas/SortDirection",
+              "default": "desc"
             }
           },
           {
@@ -4346,7 +4335,6 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid",
               "title": "Restaurant Id"
             }
           }
@@ -5244,6 +5232,49 @@
         }
       }
     },
+    "/api/v1/orders/estimate/{restaurant_id}": {
+      "get": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Read Order Load Estimate",
+        "operationId": "read_order_load_estimate_api_v1_orders_estimate__restaurant_id__get",
+        "parameters": [
+          {
+            "name": "restaurant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Restaurant Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_OrderLoadEstimate_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/orders/me": {
       "get": {
         "tags": [
@@ -5519,7 +5550,6 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid",
               "title": "Order Id"
             }
           }
@@ -5567,7 +5597,6 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid",
               "title": "Order Id"
             }
           }
@@ -5625,7 +5654,6 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid",
               "title": "Order Id"
             }
           }
@@ -5673,7 +5701,6 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid",
               "title": "Order Id"
             }
           }
@@ -6168,6 +6195,112 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SuccessResponse_UserRead_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/telegram/bot/vendor-status": {
+      "post": {
+        "tags": [
+          "Telegram"
+        ],
+        "summary": "Telegram Bot Vendor Status",
+        "operationId": "telegram_bot_vendor_status_api_v1_telegram_bot_vendor_status_post",
+        "parameters": [
+          {
+            "name": "X-Telegram-Bot-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "X-Telegram-Bot-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TelegramBotVendorStatusRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_TelegramBotVendorStatusResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/telegram/bot/orders": {
+      "post": {
+        "tags": [
+          "Telegram"
+        ],
+        "summary": "Telegram Bot Orders",
+        "operationId": "telegram_bot_orders_api_v1_telegram_bot_orders_post",
+        "parameters": [
+          {
+            "name": "X-Telegram-Bot-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "X-Telegram-Bot-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TelegramBotOrdersRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessListResponse_TelegramBotOrderSummary_"
                 }
               }
             }
@@ -7249,6 +7382,8 @@
           "SALAD",
           "SNACK",
           "DRINK",
+          "SOUP",
+          "DESSERT",
           "OTHER"
         ],
         "title": "Category"
@@ -8437,6 +8572,79 @@
         ],
         "title": "OrderItemResponse"
       },
+      "OrderLoadEstimate": {
+        "properties": {
+          "restaurant_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Restaurant Id"
+          },
+          "ordering_available": {
+            "type": "boolean",
+            "title": "Ordering Available"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "active_orders_count": {
+            "type": "integer",
+            "title": "Active Orders Count"
+          },
+          "max_active_orders": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Active Orders"
+          },
+          "avg_prep_time_minutes": {
+            "type": "integer",
+            "title": "Avg Prep Time Minutes"
+          },
+          "estimated_wait_min_minutes": {
+            "type": "integer",
+            "title": "Estimated Wait Min Minutes"
+          },
+          "estimated_wait_max_minutes": {
+            "type": "integer",
+            "title": "Estimated Wait Max Minutes"
+          },
+          "paused_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paused Until"
+          }
+        },
+        "type": "object",
+        "required": [
+          "restaurant_id",
+          "ordering_available",
+          "active_orders_count",
+          "avg_prep_time_minutes",
+          "estimated_wait_min_minutes",
+          "estimated_wait_max_minutes"
+        ],
+        "title": "OrderLoadEstimate"
+      },
       "OrderResponse": {
         "properties": {
           "id": {
@@ -8479,6 +8687,17 @@
             "type": "string",
             "format": "uuid",
             "title": "Restaurant Id"
+          },
+          "restaurant_display_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Restaurant Display Id"
           },
           "restaurant_name": {
             "anyOf": [
@@ -9109,6 +9328,26 @@
             "type": "boolean",
             "title": "Is Open",
             "default": true
+          },
+          "avg_prep_time_minutes": {
+            "type": "integer",
+            "maximum": 240.0,
+            "minimum": 1.0,
+            "title": "Avg Prep Time Minutes",
+            "default": 15
+          },
+          "max_active_orders": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1000.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Active Orders"
           }
         },
         "type": "object",
@@ -9170,6 +9409,39 @@
             "title": "Is Open",
             "default": true
           },
+          "is_ordering_paused": {
+            "type": "boolean",
+            "title": "Is Ordering Paused",
+            "default": false
+          },
+          "ordering_paused_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ordering Paused Until"
+          },
+          "avg_prep_time_minutes": {
+            "type": "integer",
+            "title": "Avg Prep Time Minutes",
+            "default": 15
+          },
+          "max_active_orders": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Active Orders"
+          },
           "photo_url": {
             "anyOf": [
               {
@@ -9221,6 +9493,15 @@
           "vendor_id"
         ],
         "title": "RestaurantResponse"
+      },
+      "RestaurantSort": {
+        "type": "string",
+        "enum": [
+          "default",
+          "rating",
+          "popularity_7d"
+        ],
+        "title": "RestaurantSort"
       },
       "RestaurantUpdate": {
         "properties": {
@@ -9283,6 +9564,55 @@
               }
             ],
             "title": "Is Open"
+          },
+          "is_ordering_paused": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Ordering Paused"
+          },
+          "ordering_paused_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ordering Paused Until"
+          },
+          "avg_prep_time_minutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 240.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Prep Time Minutes"
+          },
+          "max_active_orders": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1000.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Active Orders"
           },
           "photo_url": {
             "anyOf": [
@@ -9406,6 +9736,14 @@
           "permissions"
         ],
         "title": "SetPermissionsRequest"
+      },
+      "SortDirection": {
+        "type": "string",
+        "enum": [
+          "asc",
+          "desc"
+        ],
+        "title": "SortDirection"
       },
       "StaffMemberResponse": {
         "properties": {
@@ -9904,6 +10242,29 @@
         ],
         "title": "SuccessListResponse[StaffRequestResponse]"
       },
+      "SuccessListResponse_TelegramBotOrderSummary_": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/TelegramBotOrderSummary"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "title": "SuccessListResponse[TelegramBotOrderSummary]"
+      },
       "SuccessResponse_AdminRestaurantResponse_": {
         "properties": {
           "data": {
@@ -10069,6 +10430,21 @@
         ],
         "title": "SuccessResponse[MenuItemResponse]"
       },
+      "SuccessResponse_OrderLoadEstimate_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OrderLoadEstimate"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessResponse[OrderLoadEstimate]"
+      },
       "SuccessResponse_OrderResponse_": {
         "properties": {
           "data": {
@@ -10203,6 +10579,21 @@
           "data"
         ],
         "title": "SuccessResponse[StaffRequestResponse]"
+      },
+      "SuccessResponse_TelegramBotVendorStatusResponse_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TelegramBotVendorStatusResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessResponse[TelegramBotVendorStatusResponse]"
       },
       "SuccessResponse_TelegramCheckResponse_": {
         "properties": {
@@ -10339,6 +10730,112 @@
           "name"
         ],
         "title": "TelegramBotLinkRequest"
+      },
+      "TelegramBotOrderSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "display_id": {
+            "type": "integer",
+            "title": "Display Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "restaurant_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Restaurant Name"
+          },
+          "total_price": {
+            "type": "integer",
+            "title": "Total Price"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "display_id",
+          "status",
+          "total_price",
+          "created_at"
+        ],
+        "title": "TelegramBotOrderSummary"
+      },
+      "TelegramBotOrdersRequest": {
+        "properties": {
+          "telegram_id": {
+            "type": "integer",
+            "title": "Telegram Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "telegram_id"
+        ],
+        "title": "TelegramBotOrdersRequest"
+      },
+      "TelegramBotVendorStatusRequest": {
+        "properties": {
+          "telegram_id": {
+            "type": "integer",
+            "title": "Telegram Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "telegram_id"
+        ],
+        "title": "TelegramBotVendorStatusRequest"
+      },
+      "TelegramBotVendorStatusResponse": {
+        "properties": {
+          "is_vendor": {
+            "type": "boolean",
+            "title": "Is Vendor"
+          },
+          "approval_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval Status"
+          },
+          "rejection_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rejection Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "is_vendor"
+        ],
+        "title": "TelegramBotVendorStatusResponse"
       },
       "TelegramCheckRequest": {
         "properties": {

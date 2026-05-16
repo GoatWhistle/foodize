@@ -131,6 +131,7 @@ export default function App() {
   const [appState, setAppState] = useState("loading");
   const [initData, setInitData] = useState("");
   const [prefillPhone, setPrefillPhone] = useState(null);
+  const [pendingStartParam, setPendingStartParam] = useState(null);
 
   const fetchMe = useAuthStore((s) => s.fetchMe);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -190,6 +191,7 @@ export default function App() {
       } else if (result.status === "new_user") {
         setInitData(result.initData);
         setPrefillPhone(result.phone_number ?? null);
+        setPendingStartParam(result.start_param ?? null);
         setAppState("register");
       } else {
         setAppState("ready");
@@ -233,6 +235,10 @@ export default function App() {
         prefillPhone={prefillPhone}
         onSuccess={() => {
           localStorage.removeItem("foodize_tg_logged_out");
+          if (pendingStartParam) {
+            handleDeepLink(pendingStartParam);
+            setPendingStartParam(null);
+          }
           setAppState("ready");
         }}
       />

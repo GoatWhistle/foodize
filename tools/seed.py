@@ -243,6 +243,8 @@ SEED_RESTAURANTS = [
             "Работаем с 2015 года."
         ),
         "is_hiring": True,
+        "avg_prep_time_minutes": 7,
+        "max_active_orders": 12,
         "items": [
             {
                 "name": "Шаурма классик",
@@ -312,6 +314,8 @@ SEED_RESTAURANTS = [
             "Нет ничего лишнего — только мясо, хлеб и вкус."
         ),
         "is_hiring": False,
+        "avg_prep_time_minutes": 12,
+        "max_active_orders": 18,
         "items": [
             {
                 "name": "Чизбургер",
@@ -382,6 +386,8 @@ SEED_RESTAURANTS = [
             "Рыба доставляется ежедневно, рис — только японский."
         ),
         "is_hiring": True,
+        "avg_prep_time_minutes": 20,
+        "max_active_orders": 10,
         "items": [
             {
                 "name": "Ролл Калифорния",
@@ -458,6 +464,8 @@ SEED_RESTAURANTS = [
             "моцарелла Fior di Latte. Доставка за 25 минут или пицца бесплатно."
         ),
         "is_hiring": True,
+        "avg_prep_time_minutes": 18,
+        "max_active_orders": 14,
         "items": [
             {
                 "name": "Маргарита",
@@ -625,7 +633,12 @@ async def seed():
                 if restaurant is None:
                     restaurant = await create_restaurant(
                         session,
-                        RestaurantCreate(name=rd["name"], address=rd["address"]),
+                        RestaurantCreate(
+                            name=rd["name"],
+                            address=rd["address"],
+                            avg_prep_time_minutes=rd.get("avg_prep_time_minutes", 15),
+                            max_active_orders=rd.get("max_active_orders"),
+                        ),
                         vendor.id,
                     )
                     restaurant.moderation_status = "APPROVED"
@@ -679,6 +692,10 @@ async def seed():
                 restaurant.rejection_reason = None
                 restaurant.description = rd["description"]
                 restaurant.is_hiring = rd.get("is_hiring", True)
+                restaurant.is_ordering_paused = False
+                restaurant.ordering_paused_until = None
+                restaurant.avg_prep_time_minutes = rd.get("avg_prep_time_minutes", 15)
+                restaurant.max_active_orders = rd.get("max_active_orders")
                 await session.commit()
 
                 all_restaurants.append(restaurant)

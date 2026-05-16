@@ -180,15 +180,21 @@ class ReliableWebSocket {
   }
 }
 
-export function createOrderWebSocket(orderId, onMessage, onClose) {
+export function createOrderWebSocket(orderId, onMessage, onClose, onStatusChange) {
   return new ReliableWebSocket(
     `${WS_BASE}/api/v1/ws/orders/${orderId}`,
     onMessage,
     onClose,
+    onStatusChange,
   );
 }
 
-export function createNotificationWebSocket(userId, onMessage, onClose) {
+export function createNotificationWebSocket(
+  userId,
+  onMessage,
+  onClose,
+  onStatusChange,
+) {
   return new ReliableWebSocket(
     () => {
       const token = sessionStorage.getItem("access_token") || "";
@@ -196,5 +202,6 @@ export function createNotificationWebSocket(userId, onMessage, onClose) {
     },
     onMessage,
     onClose,
+    onStatusChange,
   );
 }

@@ -26,10 +26,11 @@ const CATEGORY_ICONS = {
 
 const formatPrice = (value) => `${value} ₽`;
 
-const MenuItemCard = ({ item, onSelect }) => {
+const MenuItemCard = ({ item, onSelect, isRestaurantOpen = true }) => {
   const icon =
     CATEGORY_ICONS[item.category?.toUpperCase()] || CATEGORY_ICONS.DEFAULT;
-  const unavailable = item.is_available === false;
+  const isClosed = isRestaurantOpen === false;
+  const unavailable = item.is_available === false || isClosed;
   const optionGroups = (item.option_groups || []).filter(
     (group) => group.is_active !== false && (group.options || []).length > 0,
   );
@@ -78,7 +79,9 @@ const MenuItemCard = ({ item, onSelect }) => {
         <div className="menu-item-footer">
           <span className="menu-item-price">{formatPrice(item.price)}</span>
           {unavailable ? (
-            <span className="tag-pill">Недоступно</span>
+            <span className="tag-pill">
+              {isClosed ? "Закрыто" : "Недоступно"}
+            </span>
           ) : (
             <span className="tag-pill">
               <Clock size={11} />~{item.prep_time_minutes || 15} мин

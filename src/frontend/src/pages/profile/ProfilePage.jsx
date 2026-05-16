@@ -59,6 +59,9 @@ const ProfilePage = () => {
   const [pwLoading, setPwLoading] = useState(false);
   const [pwError, setPwError] = useState('');
   const [pwSuccess, setPwSuccess] = useState(false);
+  const isAdmin = hasPermission(user, PERMISSIONS.ADMIN_ACCESS);
+  const canOpenVendorDashboard =
+    isAdmin || vendorProfile?.approval_status === 'APPROVED';
 
   useEffect(() => {
     vendorService
@@ -218,7 +221,7 @@ const ProfilePage = () => {
         </div>
 
         {/* Admin */}
-        {hasPermission(user, PERMISSIONS.ADMIN_ACCESS) && (
+        {isAdmin && (
           <div
             id="profile-admin-dashboard-link"
             className="profile-menu-item"
@@ -254,8 +257,8 @@ const ProfilePage = () => {
 
         {/* Vendor */}
         {!checkingVendor &&
-          (isVendor ? (
-            vendorProfile?.approval_status === 'APPROVED' ? (
+          (isVendor || isAdmin ? (
+            canOpenVendorDashboard ? (
               <div
                 id="profile-vendor-dashboard-link"
                 className="profile-menu-item"

@@ -1,11 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
-import { Plus, Minus, Trash, Tag, X } from '@phosphor-icons/react';
+import {
+  Clock,
+  Plus,
+  Minus,
+  Trash,
+  Tag,
+  WarningCircle,
+  X,
+} from '@phosphor-icons/react';
 import { useOrderStore } from '../../store/useOrderStore';
 import { useRestaurantStore } from '../../store/useRestaurantStore';
 import { useShallow } from 'zustand/react/shallow';
 import OrderButton from './OrderButton';
 import ProductSheet from './ProductSheet';
 import { promoService } from '../../services/promoService';
+import { orderService } from '../../services/orderService';
 import { translateApiError } from '../../utils/translateApiError';
 
 const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
@@ -29,6 +38,8 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
   const [promoLoading, setPromoLoading] = useState(false);
   const [comment, setComment] = useState('');
   const [upsellProduct, setUpsellProduct] = useState(null);
+  const [loadEstimate, setLoadEstimate] = useState(null);
+  const [estimateLoading, setEstimateLoading] = useState(false);
 
   const handleOverlayClick = (e) => {
     if (drawerRef.current && !drawerRef.current.contains(e.target)) onClose();
@@ -45,6 +56,31 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
     setPromoCode('');
     setPromoError('');
     setComment('');
+  }, [cartRestaurantId]);
+
+  useEffect(() => {
+    if (!cartRestaurantId) {
+      setLoadEstimate(null);
+      return;
+    }
+
+    let cancelled = false;
+    setEstimateLoading(true);
+    orderService
+      .getEstimate(cartRestaurantId)
+      .then((res) => {
+        if (!cancelled) setLoadEstimate(res.data?.data || null);
+      })
+      .catch(() => {
+        if (!cancelled) setLoadEstimate(null);
+      })
+      .finally(() => {
+        if (!cancelled) setEstimateLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [cartRestaurantId]);
 
   const handleApplyPromo = async () => {
@@ -76,6 +112,15 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
       ? appliedPromo.discounted_amount
       : total;
   const discountAmount = Math.max(0, total - finalTotal);
+  const hasQueueWarning =
+    loadEstimate &&
+    loadEstimate.ordering_available &&
+    (loadEstimate.estimated_wait_min_minutes >
+      loadEstimate.avg_prep_time_minutes + 10 ||
+      (loadEstimate.max_active_orders &&
+        loadEstimate.active_orders_count >= loadEstimate.max_active_orders));
+  const orderingUnavailable =
+    loadEstimate && loadEstimate.ordering_available === false;
 
   const getSelectedOptionIds = (item) =>
     item.selectedOptionIds ??
@@ -371,6 +416,76 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
             }}
           />
 
+          {estimateLoading && (
+            <div
+              style={{
+                marginTop: 16,
+                padding: '10px 12px',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--r-md)',
+                color: 'var(--text-3)',
+                fontSize: '0.85rem',
+                fontWeight: 700,
+              }}
+            >
+              Проверяем очередь...
+            </div>
+          )}
+
+          {loadEstimate && (
+            <div
+              style={{
+                marginTop: 16,
+                padding: '12px 14px',
+                borderRadius: 'var(--r-md)',
+                border: orderingUnavailable
+                  ? '1px solid var(--error)'
+                  : hasQueueWarning
+                    ? '1px solid #f59e0b'
+                    : '1px solid var(--border)',
+                background: orderingUnavailable
+                  ? 'rgba(239, 68, 68, 0.1)'
+                  : hasQueueWarning
+                    ? 'rgba(245, 158, 11, 0.12)'
+                    : 'var(--bg-card)',
+                display: 'flex',
+                gap: 10,
+                alignItems: 'flex-start',
+              }}
+            >
+              {orderingUnavailable ? (
+                <WarningCircle size={18} weight="fill" color="var(--error)" />
+              ) : (
+                <Clock
+                  size={18}
+                  weight="fill"
+                  color={hasQueueWarning ? '#f59e0b' : 'var(--text-3)'}
+                />
+              )}
+              <div style={{ flex: 1 }}>
+                <div
+                  style={{
+                    fontSize: '0.86rem',
+                    fontWeight: 800,
+                    color: orderingUnavailable
+                      ? 'var(--error)'
+                      : 'var(--text-1)',
+                    marginBottom: 2,
+                  }}
+                >
+                  {orderingUnavailable
+                    ? 'Заведение временно не принимает заказы'
+                    : `Ожидание примерно ${loadEstimate.estimated_wait_min_minutes}-${loadEstimate.estimated_wait_max_minutes} мин.`}
+                </div>
+                {!orderingUnavailable && (
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-3)' }}>
+                    Активных заказов в очереди: {loadEstimate.active_orders_count}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <button
             className="btn btn-ghost btn-full"
             style={{
@@ -416,8 +531,9 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
             className="btn-full"
             onClick={() => onCheckout(appliedPromo?.code ?? null, comment)}
             isLoading={isLoading}
+            disabled={orderingUnavailable}
           >
-            Оформить заказ
+            {orderingUnavailable ? 'Приём заказов на паузе' : 'Оформить заказ'}
           </OrderButton>
 
           {error && (

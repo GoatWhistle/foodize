@@ -14,6 +14,18 @@ class OrderCreate(BaseModel):
     comment: str | None = Field(None, max_length=500)
 
 
+class OrderLoadEstimate(BaseModel):
+    restaurant_id: uuid.UUID
+    ordering_available: bool
+    reason: str | None = None
+    active_orders_count: int
+    max_active_orders: int | None = None
+    avg_prep_time_minutes: int
+    estimated_wait_min_minutes: int
+    estimated_wait_max_minutes: int
+    paused_until: datetime | None = None
+
+
 class OrderStatusUpdate(BaseModel):
     status: OrderStatus
     estimated_ready_in_minutes: int | None = Field(None, ge=1, le=240)
@@ -31,6 +43,7 @@ class OrderResponse(BaseModel):
     customer_name: str | None = None
     customer_phone: str | None = None
     restaurant_id: uuid.UUID
+    restaurant_display_id: str | None = None
     restaurant_name: str | None = None
     restaurant_address: str | None = None
     status: OrderStatus
@@ -76,6 +89,7 @@ class OrderResponse(BaseModel):
 
         restaurant = getattr(data, "restaurant", None)
         if restaurant is not None:
+            result["restaurant_display_id"] = restaurant.display_id
             result["restaurant_name"] = restaurant.name
             result["restaurant_address"] = restaurant.address
 
