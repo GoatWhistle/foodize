@@ -468,10 +468,9 @@ async def set_vendor_moderation(
     if status == ModerationStatus.APPROVED.value:
         if not has_permission(vendor.user.permissions, Permission.ADMIN_ACCESS):
             vendor.user.permissions = permissions_with(vendor.user.permissions, VENDOR_PERMISSIONS)
-        else:
-            for restaurant in vendor.restaurants or []:
-                restaurant.moderation_status = ModerationStatus.APPROVED.value
-                restaurant.rejection_reason = None
+        for restaurant in vendor.restaurants or []:
+            restaurant.moderation_status = ModerationStatus.APPROVED.value
+            restaurant.rejection_reason = None
     await session.commit()
     await session.refresh(vendor)
     return vendor

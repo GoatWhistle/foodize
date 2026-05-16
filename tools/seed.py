@@ -606,6 +606,13 @@ async def seed():
                 await session.commit()
                 print(f"  vendor profile → {vu['name']}")
 
+            if vendor is not None and (
+                vendor.approval_status != "APPROVED" or vendor.rejection_reason is not None
+            ):
+                vendor.approval_status = "APPROVED"
+                vendor.rejection_reason = None
+                await session.commit()
+
             for rd in SEED_RESTAURANTS:
                 if rd["vendor_index"] != i:
                     continue
@@ -667,6 +674,12 @@ async def seed():
                         )
                     )
                     restaurant_items[str(restaurant.id)] = list(result.scalars().all())
+
+                restaurant.moderation_status = "APPROVED"
+                restaurant.rejection_reason = None
+                restaurant.description = rd["description"]
+                restaurant.is_hiring = rd.get("is_hiring", True)
+                await session.commit()
 
                 all_restaurants.append(restaurant)
 
