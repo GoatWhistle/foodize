@@ -2,6 +2,8 @@ import uuid
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from shared.enums.moderation_status import ModerationStatus
+
 
 class RestaurantCreate(BaseModel):
     name: str = Field(min_length=1, max_length=128)
@@ -23,7 +25,7 @@ class RestaurantResponse(BaseModel):
     average_rating: float = 0.0
     review_count: int = 0
     orders_count_7d: int = 0
-    moderation_status: str = "PENDING"
+    moderation_status: str = ModerationStatus.PENDING.value
     rejection_reason: str | None = None
 
     model_config = ConfigDict(from_attributes=True)

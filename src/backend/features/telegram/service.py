@@ -8,7 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.auth.schemas import TokenResponse
 from features.telegram.crud import get_user_by_phone, get_user_by_telegram_id
-from features.telegram.exceptions import InvalidTelegramInitDataException
+from features.telegram.exceptions import (
+    InvalidTelegramInitDataException,
+    MalformedTelegramInitDataException,
+)
 from features.telegram.schemas import TelegramCheckResponse
 from features.users.models import User
 from infra.cache.redis import get_redis_cache
@@ -23,13 +26,21 @@ def _validate_init_data(init_data: str) -> dict:
     try:
         parsed = dict(parse_qsl(init_data, strict_parsing=True))
     except Exception:
-        raise InvalidTelegramInitDataException()
+        raise MalformedTelegramInitDataException()
 
     received_hash = parsed.pop("hash", None)
     if not received_hash:
-        raise InvalidTelegramInitDataException()
+        raise MalformedTelegramInitDataException(detail="Missing hash")
 
-    auth_date = int(parsed.get("auth_date", 0))
+    auth_date_raw = parsed.get("auth_date")
+    if not auth_date_raw:
+        raise MalformedTelegramInitDataException(detail="Missing auth_date")
+
+    try:
+        auth_date = int(auth_date_raw)
+    except (ValueError, TypeError):
+        raise MalformedTelegramInitDataException(detail="Invalid auth_date")
+
     if time.time() - auth_date > _INIT_DATA_MAX_AGE:
         raise InvalidTelegramInitDataException(detail="initData expired")
 
@@ -51,9 +62,12 @@ def _validate_init_data(init_data: str) -> dict:
 def _extract_tg_user(parsed: dict) -> dict:
     raw = parsed.get("user", "{}")
     try:
-        return json.loads(raw)
+        data = json.loads(raw)
+        if "id" not in data:
+            raise MalformedTelegramInitDataException(detail="Missing user id")
+        return data
     except (json.JSONDecodeError, TypeError):
-        raise InvalidTelegramInitDataException(detail="Invalid user payload")
+        raise MalformedTelegramInitDataException(detail="Invalid user payload")
 
 
 async def _cache_telegram_id(user_id: str, telegram_id: int) -> None:

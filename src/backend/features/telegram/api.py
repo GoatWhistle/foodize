@@ -1,6 +1,7 @@
 import secrets
+from http import HTTPStatus
 
-from fastapi import APIRouter, Depends, Header
+from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
@@ -15,6 +16,7 @@ from features.telegram.schemas import (
 )
 from features.users.models import User
 from features.users.schemas import UserRead
+from infra.cache.redis import get_redis_cache
 from settings.config.app_config import settings
 from shared.exceptions import AccessDeniedException
 from shared.response import build_response
@@ -75,6 +77,14 @@ async def telegram_bot_link_phone(
     ):
         raise AccessDeniedException(detail="Invalid bot secret")
 
+    redis = get_redis_cache().get_raw_client()
+    key = f"rl:link_phone:{data.telegram_id}"
+    reqs = await redis.incr(key)
+    if reqs == 1:
+        await redis.expire(key, 3600)
+    if reqs > 5:
+        raise HTTPException(status_code=HTTPStatus.TOO_MANY_REQUESTS, detail="Rate limit exceeded")
+
     result = await service.link_phone_from_bot(
         session=session,
         telegram_id=data.telegram_id,
@@ -83,4 +93,3 @@ async def telegram_bot_link_phone(
         name=data.name,
     )
     return build_response(UserRead.model_validate(result))
-

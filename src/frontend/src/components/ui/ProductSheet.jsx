@@ -46,14 +46,18 @@ const getSelectedOptions = (groups, ids) => {
     .filter((option) => idsSet.has(option.id));
 };
 
-const ProductSheet = ({ item, onClose, onAdd }) => {
+const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }) => {
   const [selectedOptionIds, setSelectedOptionIds] = useState([]);
   const [quantity, setQuantity] = useState(1);
   const [error, setError] = useState('');
 
+  const isClosed = isRestaurantOpen === false;
   const groups = useMemo(() => getActiveOptionGroups(item), [item]);
-  const categoryKey =
-    (item?.category_name ?? item?.category ?? '').toUpperCase();
+  const categoryKey = (
+    item?.category_name ??
+    item?.category ??
+    ''
+  ).toUpperCase();
   const icon = CATEGORY_ICONS[categoryKey] || CATEGORY_ICONS.DEFAULT;
 
   useEffect(() => {
@@ -155,7 +159,9 @@ const ProductSheet = ({ item, onClose, onAdd }) => {
         <div className="product-sheet-body">
           <div className="product-sheet-head">
             <h2>{item.name}</h2>
-            {item.description && <p className="product-sheet-desc">{item.description}</p>}
+            {item.description && (
+              <p className="product-sheet-desc">{item.description}</p>
+            )}
           </div>
 
           <div className="product-sheet-price-row">
@@ -164,8 +170,8 @@ const ProductSheet = ({ item, onClose, onAdd }) => {
             </div>
             <div className="product-sheet-meta">
               <span>
-                <Clock size={14} weight="bold" />~
-                {item.prep_time_minutes || 15} мин
+                <Clock size={14} weight="bold" />~{item.prep_time_minutes || 15}{' '}
+                мин
               </span>
             </div>
           </div>
@@ -254,8 +260,12 @@ const ProductSheet = ({ item, onClose, onAdd }) => {
               <Plus size={16} weight="bold" />
             </button>
           </div>
-          <button className="btn btn-primary product-add" onClick={handleAdd}>
-            Добавить · {formatPrice(total)}
+          <button
+            className="btn btn-primary product-add"
+            onClick={handleAdd}
+            disabled={isClosed}
+          >
+            {isClosed ? 'Закрыто' : `Добавить · ${formatPrice(total)}`}
           </button>
         </div>
       </section>

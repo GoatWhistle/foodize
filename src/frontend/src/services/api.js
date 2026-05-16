@@ -76,20 +76,33 @@ const WS_BASE_URL = (
   .replace(/\/api\/v1$/, '');
 
 class ReliableWebSocket {
-  constructor(urlOrFactory, onMessage, onClose) {
+  constructor(urlOrFactory, onMessage, onClose, onStatusChange) {
     this.urlOrFactory = urlOrFactory;
     this.onMessage = onMessage;
     this.onClose = onClose;
+    this.onStatusChange = onStatusChange;
     this.ws = null;
     this.reconnectAttempts = 0;
-    this.maxReconnectAttempts = 12;
+    this.maxReconnectAttempts = 20;
     this.isClosed = false;
     this.pingInterval = null;
+    this.pongTimeout = null;
+    this.status = 'connecting';
     this.connect();
+  }
+
+  updateStatus(newStatus) {
+    if (this.status === newStatus) return;
+    this.status = newStatus;
+    this.onStatusChange?.(newStatus);
   }
 
   connect() {
     if (this.isClosed) return;
+    this.updateStatus(
+      this.reconnectAttempts > 0 ? 'reconnecting' : 'connecting'
+    );
+
     const url =
       typeof this.urlOrFactory === 'function'
         ? this.urlOrFactory()
@@ -97,23 +110,23 @@ class ReliableWebSocket {
     this.ws = new WebSocket(url);
 
     this.ws.onopen = () => {
-      this.pingInterval = setInterval(() => {
-        if (this.ws.readyState === WebSocket.OPEN) {
-          this.ws.send(JSON.stringify({ type: 'ping' }));
-        }
-      }, 30000);
+      this.reconnectAttempts = 0;
+      this.updateStatus('connected');
+      this.startHeartbeat();
     };
 
     this.ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        if (data.type === 'pong') return;
+        if (data.type === 'pong') {
+          this.resetPongTimeout();
+          return;
+        }
         if (data.type === 'connected') {
           this.reconnectAttempts = 0;
           return;
         }
         if (data.error) return;
-        this.reconnectAttempts = 0;
         this.onMessage(data);
       } catch {}
     };
@@ -123,6 +136,7 @@ class ReliableWebSocket {
       if (!this.isClosed) {
         this.reconnect();
       } else {
+        this.updateStatus('closed');
         this.onClose?.();
       }
     };
@@ -132,12 +146,32 @@ class ReliableWebSocket {
     };
   }
 
+  startHeartbeat() {
+    this.pingInterval = setInterval(() => {
+      if (this.ws?.readyState === WebSocket.OPEN) {
+        this.ws.send(JSON.stringify({ type: 'ping' }));
+        this.resetPongTimeout();
+      }
+    }, 30000);
+  }
+
+  resetPongTimeout() {
+    if (this.pongTimeout) clearTimeout(this.pongTimeout);
+    this.pongTimeout = setTimeout(() => {
+      console.warn('WS heartbeat timeout, reconnecting...');
+      this.ws?.close();
+    }, 10000); // 10 seconds to wait for pong
+  }
+
   reconnect() {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      this.updateStatus('closed');
       this.onClose?.();
       return;
     }
-    const delay = Math.min(1000 * Math.pow(1.5, this.reconnectAttempts), 30000);
+    this.updateStatus('reconnecting');
+    // 1s, 2s, 4s, 8s, 16s, max 30s
+    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
     this.reconnectAttempts++;
     setTimeout(() => this.connect(), delay);
   }
@@ -147,6 +181,10 @@ class ReliableWebSocket {
       clearInterval(this.pingInterval);
       this.pingInterval = null;
     }
+    if (this.pongTimeout) {
+      clearTimeout(this.pongTimeout);
+      this.pongTimeout = null;
+    }
   }
 
   close() {
@@ -155,6 +193,7 @@ class ReliableWebSocket {
     if (this.ws) {
       this.ws.onclose = null;
       this.ws.close();
+      this.updateStatus('closed');
       this.onClose?.();
     }
   }

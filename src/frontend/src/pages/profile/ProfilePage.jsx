@@ -35,6 +35,7 @@ const ProfilePage = () => {
 
   const [isVendor, setIsVendor] = useState(false);
   const [checkingVendor, setCheckingVendor] = useState(true);
+  const [vendorProfile, setVendorProfile] = useState(null);
   const [isStaff, setIsStaff] = useState(false);
   const [checkingStaff, setCheckingStaff] = useState(true);
   const [vendorLoading, setVendorLoading] = useState(false);
@@ -48,6 +49,7 @@ const ProfilePage = () => {
     first_name: '',
     last_name: '',
     middle_name: '',
+    email: '',
   });
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState('');
@@ -61,8 +63,14 @@ const ProfilePage = () => {
   useEffect(() => {
     vendorService
       .getMyProfile()
-      .then(() => setIsVendor(true))
-      .catch(() => setIsVendor(false))
+      .then((profile) => {
+        setIsVendor(true);
+        setVendorProfile(profile);
+      })
+      .catch(() => {
+        setIsVendor(false);
+        setVendorProfile(null);
+      })
       .finally(() => setCheckingVendor(false));
 
     staffService
@@ -81,12 +89,13 @@ const ProfilePage = () => {
     setVendorLoading(true);
     setVendorError('');
     try {
-      await vendorService.createProfile({ description: '' });
-      await fetchMe();
+      const profile = await vendorService.createProfile({ description: '' });
       setIsVendor(true);
-      navigate(ROUTES.VENDOR_DASHBOARD);
-    } catch {
-      setVendorError('Не удалось стать вендором');
+      setVendorProfile(profile);
+    } catch (err) {
+      setVendorError(translateApiError(err, 'Не удалось стать вендором'));
+      setVendorLoading(false);
+    } finally {
       setVendorLoading(false);
     }
   };
@@ -98,6 +107,7 @@ const ProfilePage = () => {
         first_name: user?.first_name ?? '',
         last_name: user?.last_name ?? '',
         middle_name: user?.middle_name ?? '',
+        email: user?.email ?? '',
       });
       setEditError('');
       setEditSuccess(false);
@@ -245,19 +255,48 @@ const ProfilePage = () => {
         {/* Vendor */}
         {!checkingVendor &&
           (isVendor ? (
-            <div
-              id="profile-vendor-dashboard-link"
-              className="profile-menu-item"
-              onClick={() => navigate(ROUTES.VENDOR_DASHBOARD)}
-            >
+            vendorProfile?.approval_status === 'APPROVED' ? (
               <div
-                style={{ display: 'flex', alignItems: 'center', gap: '14px' }}
+                id="profile-vendor-dashboard-link"
+                className="profile-menu-item"
+                onClick={() => navigate(ROUTES.VENDOR_DASHBOARD)}
               >
-                <Storefront size={20} weight="bold" />
-                <span>Кабинет вендора</span>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: '14px' }}
+                >
+                  <Storefront size={20} weight="bold" />
+                  <span>Кабинет вендора</span>
+                </div>
+                <CaretRight size={16} color="var(--text-3)" />
               </div>
-              <CaretRight size={16} color="var(--text-3)" />
-            </div>
+            ) : (
+              <div
+                id="profile-vendor-pending-status"
+                className="profile-menu-item"
+                style={{
+                  pointerEvents: 'none',
+                  opacity: 0.6,
+                }}
+              >
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: '14px' }}
+                >
+                  <Storefront size={20} weight="bold" />
+                  <div>
+                    <div>Кабинет вендора</div>
+                    <div
+                      style={{
+                        fontSize: '0.75rem',
+                        color: 'var(--text-3)',
+                        marginTop: 2,
+                      }}
+                    >
+                      Ожидание одобрения администратором
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
           ) : (
             <div
               id="profile-become-vendor-link"
@@ -378,6 +417,25 @@ const ProfilePage = () => {
                   value={editForm.middle_name}
                   onChange={(e) =>
                     setEditForm((f) => ({ ...f, middle_name: e.target.value }))
+                  }
+                />
+                <label
+                  style={{
+                    fontSize: '0.78rem',
+                    color: 'var(--text-3)',
+                    fontWeight: 700,
+                    marginTop: 4,
+                  }}
+                >
+                  Email
+                </label>
+                <input
+                  className="form-input"
+                  type="email"
+                  placeholder="Email"
+                  value={editForm.email}
+                  onChange={(e) =>
+                    setEditForm((f) => ({ ...f, email: e.target.value }))
                   }
                 />
                 {editError && (

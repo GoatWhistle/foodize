@@ -29,6 +29,7 @@ const AuthVisual = () => (
 const RegisterPage = () => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -49,6 +50,7 @@ const RegisterPage = () => {
       await register({
         name,
         phone_number: cleanPhone,
+        email: email || null,
         password,
       });
       await login({ phone_number: cleanPhone, password });
@@ -110,6 +112,21 @@ const RegisterPage = () => {
                 onChange={(e) => setPhone(formatPhoneNumber(e.target.value))}
                 required
                 autoComplete="tel"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="reg-email">
+                Email (необязательно)
+              </label>
+              <input
+                id="reg-email"
+                className="form-input"
+                type="email"
+                placeholder="mail@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
               />
             </div>
 

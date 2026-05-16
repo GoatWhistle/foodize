@@ -10,6 +10,7 @@ class AppException(Exception):
             self.status_code = status_code
         if detail is not None:
             self.detail = detail
+        super().__init__(self.detail)
 
 
 class BadRequestException(AppException):

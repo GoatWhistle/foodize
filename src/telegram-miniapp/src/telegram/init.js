@@ -1,13 +1,15 @@
 import { authService } from "../services/authService";
-import { expandApp, getTelegramInitData, readyApp } from "./sdk";
+import { expandApp, getStartParam, getTelegramInitData, readyApp } from "./sdk";
 
 export async function initTelegramApp() {
   readyApp();
   expandApp();
 
   const initData = getTelegramInitData();
+  const startParam = getStartParam();
+
   if (!initData) {
-    return { status: "no_init_data" };
+    return { status: "no_init_data", start_param: startParam };
   }
 
   try {
@@ -17,9 +19,10 @@ export async function initTelegramApp() {
       status: result.status,
       phone_number: result.phone_number,
       initData,
+      start_param: startParam,
     };
   } catch {
-    return { status: "error" };
+    return { status: "error", start_param: startParam };
   }
 }
 

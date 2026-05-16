@@ -210,7 +210,8 @@ const VendorDashboardPage = () => {
   const [ordersPage, setOrdersPage] = useState(1);
   const [ordersTotal, setOrdersTotal] = useState(0);
   const [ordersStatusFilter, setOrdersStatusFilter] = useState('');
-  const [ordersDateFilter, setOrdersDateFilter] = useState('');
+  const [ordersDateFromFilter, setOrdersDateFromFilter] = useState('');
+  const [ordersDateToFilter, setOrdersDateToFilter] = useState('');
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [updatingOrderId, setUpdatingOrderId] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -240,6 +241,9 @@ const VendorDashboardPage = () => {
     discount_value: '',
     max_uses: '',
     expires_at: '',
+    first_order_only: false,
+    min_order_amount: '',
+    menu_category: '',
   });
   const [promoFormLoading, setPromoFormLoading] = useState(false);
 
@@ -404,6 +408,13 @@ const VendorDashboardPage = () => {
         ...(promoForm.expires_at
           ? { expires_at: new Date(promoForm.expires_at).toISOString() }
           : {}),
+        first_order_only: promoForm.first_order_only,
+        ...(promoForm.min_order_amount
+          ? { min_order_amount: parseInt(promoForm.min_order_amount, 10) }
+          : {}),
+        ...(promoForm.menu_category
+          ? { menu_category: promoForm.menu_category }
+          : {}),
       };
       await promoService.create(payload);
       setPromoForm({
@@ -412,6 +423,9 @@ const VendorDashboardPage = () => {
         discount_value: '',
         max_uses: '',
         expires_at: '',
+        first_order_only: false,
+        min_order_amount: '',
+        menu_category: '',
       });
       setShowPromoForm(false);
       const res = await promoService.list();
@@ -584,8 +598,8 @@ const VendorDashboardPage = () => {
           page: ordersPage,
           size: 20,
           status: ordersStatusFilter || undefined,
-          date_from: ordersDateFilter || undefined,
-          date_to: ordersDateFilter || undefined,
+          date_from: ordersDateFromFilter || undefined,
+          date_to: ordersDateToFilter || undefined,
         });
         const list = Array.isArray(res.data?.data) ? res.data.data : [];
         setRestaurantOrders(list);
@@ -603,13 +617,24 @@ const VendorDashboardPage = () => {
         if (!silent) setOrdersLoading(false);
       }
     },
-    [selectedRestaurant, ordersPage, ordersStatusFilter, ordersDateFilter]
+    [
+      selectedRestaurant,
+      ordersPage,
+      ordersStatusFilter,
+      ordersDateFromFilter,
+      ordersDateToFilter,
+    ]
   );
 
   useEffect(() => {
     if (selectedRestaurant && activeTab === 'orders') {
       fetchVendorOrders();
-      if (ordersPage === 1 && !ordersStatusFilter && !ordersDateFilter) {
+      if (
+        ordersPage === 1 &&
+        !ordersStatusFilter &&
+        !ordersDateFromFilter &&
+        !ordersDateToFilter
+      ) {
         wsRef.current = createRestaurantOrdersWebSocket(
           selectedRestaurant.id,
           () => {
@@ -629,7 +654,8 @@ const VendorDashboardPage = () => {
     activeTab,
     ordersPage,
     ordersStatusFilter,
-    ordersDateFilter,
+    ordersDateFromFilter,
+    ordersDateToFilter,
     fetchVendorOrders,
   ]);
 
@@ -782,7 +808,6 @@ const VendorDashboardPage = () => {
       setFinance(finRes.data.data);
       setAdvancedAnalytics(advRes.data.data);
     } catch (err) {
-      console.error('Analytics fetch error:', err?.response?.data || err);
     } finally {
       setFinanceLoading(false);
       setAnalyticsLoading(false);
@@ -876,6 +901,12 @@ const VendorDashboardPage = () => {
           <button
             className="btn btn-primary btn-sm"
             onClick={() => setShowAddRestaurant(!showAddRestaurant)}
+            disabled={vendorProfile?.approval_status !== 'APPROVED'}
+            title={
+              vendorProfile?.approval_status !== 'APPROVED'
+                ? 'Дождитесь одобрения профиля'
+                : ''
+            }
           >
             <Plus size={16} /> Добавить
           </button>
@@ -929,8 +960,30 @@ const VendorDashboardPage = () => {
 
         {loading &&
         (!Array.isArray(restaurants) || restaurants.length === 0) ? (
-          <div className="loading-center">
-            <div className="spinner" />
+          <div className="restaurant-list">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="restaurant-row"
+                style={{ opacity: 1, cursor: 'default' }}
+              >
+                <div style={{ flex: 1 }}>
+                  <div
+                    className="skeleton"
+                    style={{
+                      width: '60%',
+                      height: 16,
+                      marginBottom: 8,
+                      borderRadius: 4,
+                    }}
+                  />
+                  <div
+                    className="skeleton"
+                    style={{ width: '40%', height: 12, borderRadius: 4 }}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
         ) : !Array.isArray(restaurants) || restaurants.length === 0 ? (
           <EmptyState
@@ -951,6 +1004,22 @@ const VendorDashboardPage = () => {
                     style={{ display: 'flex', alignItems: 'center', gap: 8 }}
                   >
                     {r.name}
+                    {r.display_id && (
+                      <span
+                        style={{
+                          fontSize: '0.7rem',
+                          color: 'var(--text-3)',
+                          fontFamily: 'monospace',
+                          background: 'var(--bg-surface)',
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          border: '1px solid var(--border)',
+                          fontWeight: 'normal',
+                        }}
+                      >
+                        @{r.display_id}
+                      </span>
+                    )}
                     {r.moderation_status === 'PENDING' && (
                       <span
                         className="order-status-badge pending"
@@ -1009,12 +1078,30 @@ const VendorDashboardPage = () => {
               style={{
                 fontWeight: 800,
                 fontSize: '1rem',
-                marginBottom: 12,
+                marginBottom: selectedRestaurant.display_id ? 4 : 12,
                 color: 'var(--text-1)',
               }}
             >
               {selectedRestaurant.name}
             </div>
+            {selectedRestaurant.display_id && (
+              <div
+                style={{
+                  fontSize: '0.75rem',
+                  color: 'var(--text-3)',
+                  marginBottom: 12,
+                  fontFamily: 'monospace',
+                  background: 'var(--bg-surface)',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  display: 'inline-block',
+                  border: '1px solid var(--border)',
+                  alignSelf: 'flex-start',
+                }}
+              >
+                @{selectedRestaurant.display_id}
+              </div>
+            )}
             {[
               { id: 'menu', label: 'Меню', icon: <ForkKnife size={18} /> },
               { id: 'orders', label: 'Заказы', icon: <Package size={18} /> },
@@ -1564,7 +1651,56 @@ const VendorDashboardPage = () => {
                   </form>
                 )}
 
-                {selectedMenu.length === 0 ? (
+                {loading && selectedMenu.length === 0 ? (
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 10,
+                    }}
+                  >
+                    {[1, 2, 3, 4].map((i) => (
+                      <div
+                        key={i}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '12px 16px',
+                          background: 'var(--bg-card)',
+                          border: '1px solid var(--border)',
+                          borderRadius: 'var(--radius-md)',
+                        }}
+                      >
+                        <div
+                          style={{
+                            flex: 1,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 8,
+                          }}
+                        >
+                          <div
+                            className="skeleton"
+                            style={{
+                              width: '30%',
+                              height: 16,
+                              borderRadius: 4,
+                            }}
+                          />
+                          <div
+                            className="skeleton"
+                            style={{
+                              width: '70%',
+                              height: 12,
+                              borderRadius: 4,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : selectedMenu.length === 0 ? (
                   <EmptyState
                     title="Меню пустое"
                     subtitle="Добавьте первую позицию"
@@ -1860,32 +1996,78 @@ const VendorDashboardPage = () => {
                   <input
                     className="form-input"
                     type="date"
-                    value={ordersDateFilter}
+                    value={ordersDateFromFilter}
                     onChange={(e) => {
-                      setOrdersDateFilter(e.target.value);
+                      setOrdersDateFromFilter(e.target.value);
                       setOrdersPage(1);
                     }}
-                    style={{ maxWidth: 180, height: 36, fontSize: '0.82rem' }}
-                    aria-label="Дата заказов"
+                    style={{ maxWidth: 140, height: 36, fontSize: '0.82rem' }}
+                    aria-label="Дата с"
                   />
-                  {ordersDateFilter && (
+                  <span style={{ color: 'var(--text-3)', fontSize: '0.9rem' }}>
+                    —
+                  </span>
+                  <input
+                    className="form-input"
+                    type="date"
+                    value={ordersDateToFilter}
+                    onChange={(e) => {
+                      setOrdersDateToFilter(e.target.value);
+                      setOrdersPage(1);
+                    }}
+                    style={{ maxWidth: 140, height: 36, fontSize: '0.82rem' }}
+                    aria-label="Дата по"
+                  />
+                  {(ordersDateFromFilter || ordersDateToFilter) && (
                     <button
                       type="button"
                       className="btn btn-secondary btn-sm"
                       onClick={() => {
-                        setOrdersDateFilter('');
+                        setOrdersDateFromFilter('');
+                        setOrdersDateToFilter('');
                         setOrdersPage(1);
                       }}
                     >
-                      Сбросить дату
+                      Сбросить период
                     </button>
                   )}
                 </div>
                 {ordersLoading &&
                 (!Array.isArray(restaurantOrders) ||
                   restaurantOrders.length === 0) ? (
-                  <div className="loading-center">
-                    <div className="spinner" />
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 12,
+                    }}
+                  >
+                    {[1, 2].map((i) => (
+                      <div
+                        key={i}
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 8,
+                        }}
+                      >
+                        <div
+                          className="skeleton"
+                          style={{
+                            width: '100px',
+                            height: 12,
+                            borderRadius: 4,
+                          }}
+                        />
+                        {[1, 2].map((j) => (
+                          <div
+                            key={j}
+                            className="order-card skeleton"
+                            style={{ height: 80, border: 'none' }}
+                          />
+                        ))}
+                      </div>
+                    ))}
                   </div>
                 ) : !Array.isArray(restaurantOrders) ||
                   restaurantOrders.length === 0 ? (
@@ -2186,6 +2368,65 @@ const VendorDashboardPage = () => {
                         }
                       />
                     </div>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 1fr',
+                        gap: 8,
+                      }}
+                    >
+                      <input
+                        className="form-input"
+                        type="number"
+                        placeholder="Мин. сумма (не обяз.)"
+                        min={1}
+                        value={promoForm.min_order_amount}
+                        onChange={(e) =>
+                          setPromoForm((f) => ({
+                            ...f,
+                            min_order_amount: e.target.value,
+                          }))
+                        }
+                      />
+                      <select
+                        className="form-input"
+                        value={promoForm.menu_category}
+                        onChange={(e) =>
+                          setPromoForm((f) => ({
+                            ...f,
+                            menu_category: e.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">Все категории</option>
+                        {Object.entries(CATEGORY_RU).map(([k, v]) => (
+                          <option key={k} value={k}>
+                            {v}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <label
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        fontSize: '0.85rem',
+                        marginBottom: 4,
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={promoForm.first_order_only}
+                        onChange={(e) =>
+                          setPromoForm((f) => ({
+                            ...f,
+                            first_order_only: e.target.checked,
+                          }))
+                        }
+                      />
+                      Только для первого заказа
+                    </label>
                     <div style={{ display: 'flex', gap: 8 }}>
                       <button
                         className="btn btn-primary btn-sm"

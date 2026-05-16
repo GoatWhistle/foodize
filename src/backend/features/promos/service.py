@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from features.admin.audit_log import service as audit_service
 from features.promos import crud
 from features.promos.exceptions import (
     PromoAlreadyExistsException,
@@ -14,6 +15,7 @@ from features.promos.exceptions import (
 from features.promos.models import Promo
 from features.promos.schemas import PromoCreate, PromoResponse, PromoValidateResponse
 from features.restaurants.exceptions import RestaurantNotFoundException
+from shared.enums.discount_type import DiscountType
 from shared.exceptions.base import AppException
 
 
@@ -21,6 +23,7 @@ async def create_promo(
     session: AsyncSession,
     data: PromoCreate,
     vendor_restaurant_ids: list[uuid.UUID],
+    actor_id: uuid.UUID | None = None,
 ) -> PromoResponse:
     if data.restaurant_id not in vendor_restaurant_ids:
         raise RestaurantNotFoundException()
@@ -30,6 +33,16 @@ async def create_promo(
         raise PromoAlreadyExistsException()
 
     promo = await crud.create_promo(session, data)
+
+    await audit_service.log_action(
+        session,
+        actor_id=actor_id,
+        action="CREATE_PROMO",
+        entity_type="promo",
+        entity_id=promo.id,
+        details={"code": promo.code, "restaurant_id": str(promo.restaurant_id)},
+    )
+    await session.commit()
     return PromoResponse.model_validate(promo)
 
 
@@ -51,11 +64,22 @@ async def deactivate_promo(
     session: AsyncSession,
     code: str,
     vendor_restaurant_ids: list[uuid.UUID],
+    actor_id: uuid.UUID | None = None,
 ) -> PromoResponse:
     promo = await crud.get_promo_by_code(session, code)
     if not promo or promo.restaurant_id not in vendor_restaurant_ids:
         raise PromoNotFoundException()
     updated = await crud.deactivate_promo(session, promo)
+
+    await audit_service.log_action(
+        session,
+        actor_id=actor_id,
+        action="DEACTIVATE_PROMO",
+        entity_type="promo",
+        entity_id=updated.id,
+        details={"code": code},
+    )
+    await session.commit()
     return PromoResponse.model_validate(updated)
 
 
@@ -96,7 +120,7 @@ async def validate_promo(
 
     discounted_amount: int | None = None
     if order_total is not None:
-        if promo.discount_type == "PERCENT":
+        if promo.discount_type == DiscountType.PERCENT.value:
             discounted_amount = max(0, order_total - int(order_total * promo.discount_value / 100))
         else:
             discounted_amount = max(0, order_total - promo.discount_value)
@@ -125,7 +149,7 @@ async def apply_promo(
         promo, restaurant_id, order_total=order_total, is_first_order=is_first_order
     )
 
-    if promo.discount_type == "PERCENT":
+    if promo.discount_type == DiscountType.PERCENT.value:
         new_total = max(0, order_total - int(order_total * promo.discount_value / 100))
     else:
         new_total = max(0, order_total - promo.discount_value)

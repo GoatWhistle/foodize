@@ -138,9 +138,7 @@ const HomePage = () => {
                 gap: '12px',
               }}
             >
-              <label
-                className="sort-chip sort-chip-checkbox"
-              >
+              <label className="sort-chip sort-chip-checkbox">
                 <input
                   type="checkbox"
                   checked={onlyOpen}
@@ -164,7 +162,9 @@ const HomePage = () => {
                   className={`sort-chip${sort === 'rating' ? ' active' : ''}`}
                   onClick={() => {
                     if (sort === 'rating') {
-                      setDirection((value) => (value === 'desc' ? 'asc' : 'desc'))
+                      setDirection((value) =>
+                        value === 'desc' ? 'asc' : 'desc'
+                      );
                     } else {
                       setSort('rating');
                     }
@@ -187,7 +187,9 @@ const HomePage = () => {
                   className={`sort-chip${sort === 'popularity_7d' ? ' active' : ''}`}
                   onClick={() => {
                     if (sort === 'popularity_7d') {
-                      setDirection((value) => (value === 'desc' ? 'asc' : 'desc'))
+                      setDirection((value) =>
+                        value === 'desc' ? 'asc' : 'desc'
+                      );
                     } else {
                       setSort('popularity_7d');
                     }

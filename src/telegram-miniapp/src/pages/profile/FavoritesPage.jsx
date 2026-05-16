@@ -111,9 +111,12 @@ const FavoritesPage = () => {
                 cursor: "pointer",
               }}
               onClick={() =>
-                navigate(`/restaurant/${restaurant.id}`, {
-                  state: { restaurant },
-                })
+                navigate(
+                  `/restaurant/${restaurant.display_id || restaurant.id}`,
+                  {
+                    state: { restaurant },
+                  },
+                )
               }
             >
               {/* Status dot */}

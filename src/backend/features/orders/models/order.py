@@ -24,7 +24,7 @@ class Order(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
     status: Mapped[str] = mapped_column(
         String,
         default=OrderStatus.PENDING.value,
-        server_default="PENDING",
+        server_default=OrderStatus.PENDING.value,
         nullable=False,
     )
     total_price: Mapped[int]

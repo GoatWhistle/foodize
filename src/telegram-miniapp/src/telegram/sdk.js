@@ -8,6 +8,10 @@ export function getTelegramUser() {
   return tg?.initDataUnsafe?.user ?? null;
 }
 
+export function getStartParam() {
+  return tg?.initDataUnsafe?.start_param ?? "";
+}
+
 export function expandApp() {
   tg?.expand();
 }

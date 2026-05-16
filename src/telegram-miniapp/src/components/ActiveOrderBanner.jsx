@@ -47,7 +47,7 @@ export default function ActiveOrderBanner() {
       wsRef.current?.close();
       wsRef.current = null;
     };
-  }, [activeOrder?.id]);
+  }, [activeOrder, setActiveOrder, clearActiveOrder]);
 
   if (!activeOrder || !STATUS_LABEL[activeOrder.status]) return null;
 

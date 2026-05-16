@@ -9,7 +9,6 @@ from httpx import ASGITransport, AsyncClient
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from factories import make_user
-from shared.enums.roles import UserRole
 
 from database.db_helper import db_helper
 from features.auth.service import get_current_user
@@ -42,12 +41,12 @@ def default_user() -> User:
 
 @pytest.fixture
 def vendor_user() -> User:
-    return make_user(user_role=UserRole.VENDOR)
+    return make_user(user_role="vendor")
 
 
 @pytest.fixture
 def admin_user() -> User:
-    return make_user(user_role=UserRole.ADMIN)
+    return make_user(user_role="admin")
 
 
 @pytest.fixture

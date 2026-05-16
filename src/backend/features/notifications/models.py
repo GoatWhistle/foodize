@@ -13,8 +13,6 @@ class NotificationType(str, enum.Enum):
 
 
 class Notification(Base, IdUuidPkMixin, CreatedAtMixin):
-    __tablename__ = "notifications"
-
     user_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )

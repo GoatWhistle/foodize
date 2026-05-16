@@ -32,13 +32,12 @@ from features.orders.schemas.order import (
 from features.orders.schemas.order_event import OrderEventResponse
 from features.promos import service as promo_service
 from features.restaurants import crud as restaurant_crud
-from features.restaurants.exceptions import (
-    RestaurantClosedException,
-    RestaurantNotFoundException,
-)
+from features.restaurants.exceptions import RestaurantClosedException, RestaurantNotFoundException
+from features.restaurants.working_hours_crud import get_working_hours, is_open_now
 from features.users.models import User
 from infra.cache.redis import get_redis_cache
 from shared.enums.order_status import OrderStatus
+from shared.enums.selection_type import SelectionType
 from shared.exceptions import BadRequestException
 from shared.permissions import CUSTOMER_PERMISSIONS, serialize_permissions
 
@@ -92,7 +91,7 @@ def _validate_item_options(
             raise BadRequestException(detail=f"Not enough options selected for {group.name}")
         if group.max_selected is not None and selected_count > group.max_selected:
             raise BadRequestException(detail=f"Too many options selected for {group.name}")
-        if group.selection_type == "single" and selected_count > 1:
+        if group.selection_type == SelectionType.SINGLE.value and selected_count > 1:
             raise BadRequestException(detail=f"Only one option can be selected for {group.name}")
 
     return selected_options
@@ -160,6 +159,14 @@ async def place_order(
     if not restaurant.is_open:
         raise RestaurantClosedException()
 
+    working_hours = await get_working_hours(session, restaurant.id)
+    if working_hours:
+        is_open = is_open_now(working_hours)
+        if is_open is False:
+            raise RestaurantClosedException(
+                detail="Restaurant is currently closed (outside working hours)"
+            )
+
     menu_item_ids = [item.menu_item_id for item in order_data.items]
     menu_items = await order_item_crud.get_menu_items_by_ids(session, menu_item_ids)
 
@@ -204,6 +211,7 @@ async def place_order(
         session,
         OrderPlacedEvent(
             order_id=order.id,
+            order_display_id=str(order.display_id),
             user_id=order.user_id,
             restaurant_id=order.restaurant_id,
             restaurant_name=restaurant.name,
@@ -362,6 +370,7 @@ async def change_order_status(
         session,
         OrderStatusChangedEvent(
             order_id=order.id,
+            order_display_id=str(order.display_id),
             user_id=order.user_id,
             restaurant_id=order.restaurant_id,
             restaurant_name=order.restaurant.name,
@@ -381,10 +390,10 @@ async def change_order_status(
 
 async def complete_order(
     session: AsyncSession,
-    order_id: uuid.UUID,
+    identifier: str | uuid.UUID,
     user_id: uuid.UUID,
 ) -> OrderResponse:
-    order = await order_crud.get_order_by_id(session, order_id)
+    order = await order_crud.get_order_by_identifier(session, str(identifier))
     if not order:
         raise OrderNotFoundException()
     if order.user_id != user_id:
@@ -405,6 +414,7 @@ async def complete_order(
         session,
         OrderStatusChangedEvent(
             order_id=order.id,
+            order_display_id=str(order.display_id),
             user_id=order.user_id,
             restaurant_id=order.restaurant_id,
             restaurant_name=order.restaurant.name,
@@ -424,11 +434,11 @@ async def complete_order(
 
 async def cancel_order(
     session: AsyncSession,
-    order_id: uuid.UUID,
+    identifier: str | uuid.UUID,
     user_id: uuid.UUID,
     cancel_data: OrderCancelRequest,
 ) -> OrderResponse:
-    order = await order_crud.get_order_by_id(session, order_id)
+    order = await order_crud.get_order_by_identifier(session, str(identifier))
     if not order:
         raise OrderNotFoundException()
     if order.user_id != user_id:
@@ -450,6 +460,7 @@ async def cancel_order(
         session,
         OrderStatusChangedEvent(
             order_id=order.id,
+            order_display_id=str(order.display_id),
             user_id=order.user_id,
             restaurant_id=order.restaurant_id,
             restaurant_name=order.restaurant.name,
@@ -502,6 +513,7 @@ async def force_cancel_order(
         session,
         OrderStatusChangedEvent(
             order_id=order.id,
+            order_display_id=str(order.display_id),
             user_id=order.user_id,
             restaurant_id=order.restaurant_id,
             restaurant_name=order.restaurant.name,

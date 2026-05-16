@@ -29,7 +29,7 @@ async def create_promo(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[PromoResponse]:
     restaurant_ids = await promos_crud.get_restaurant_ids_by_vendor(session, vendor.id)
-    result = await service.create_promo(session, data, restaurant_ids)
+    result = await service.create_promo(session, data, restaurant_ids, actor_id=_user.id)
     return build_response(result)
 
 
@@ -55,7 +55,7 @@ async def deactivate_promo(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> None:
     restaurant_ids = await promos_crud.get_restaurant_ids_by_vendor(session, vendor.id)
-    await service.deactivate_promo(session, code, restaurant_ids)
+    await service.deactivate_promo(session, code, restaurant_ids, actor_id=_user.id)
 
 
 @router.post("/validate", response_model=SuccessResponse[PromoValidateResponse])

@@ -15,15 +15,20 @@ from features.restaurants.schemas import (
     RestaurantResponse,
     RestaurantUpdate,
 )
+from features.restaurants.working_hours import WorkingHours
+from features.restaurants.working_hours_crud import get_working_hours, is_open_now
 from features.vendors.models import VendorProfile
+from shared.enums.moderation_status import ModerationStatus
 from shared.enums.permissions import Permission
+from shared.enums.restaurant_sort import RestaurantSort
+from shared.enums.sort_direction import SortDirection
+from shared.exceptions.rules import AccessDeniedException
 from shared.permissions import has_permission
 
 
 async def create_restaurant_for_vendor(
     session: AsyncSession, restaurant_data: RestaurantCreate, vendor_id: uuid.UUID
 ) -> RestaurantResponse:
-    restaurant = await crud.create_restaurant(session, restaurant_data, vendor_id)
     vendor = (
         await session.execute(
             select(VendorProfile)
@@ -31,8 +36,14 @@ async def create_restaurant_for_vendor(
             .options(selectinload(VendorProfile.user))
         )
     ).scalar_one_or_none()
+    if not vendor:
+        raise AccessDeniedException()
+    if vendor.approval_status != ModerationStatus.APPROVED.value:
+        raise AccessDeniedException(detail="Vendor account is not approved yet")
+
+    restaurant = await crud.create_restaurant(session, restaurant_data, vendor_id)
     if vendor and has_permission(vendor.user.permissions, Permission.RESTAURANTS_MODERATE):
-        restaurant.moderation_status = "APPROVED"
+        restaurant.moderation_status = ModerationStatus.APPROVED.value
         restaurant.rejection_reason = None
         await session.commit()
         await session.refresh(restaurant)
@@ -77,7 +88,7 @@ def _apply_restaurant_filters(
         query = query.where(Restaurant.is_hiring == is_hiring)
     if is_open is not None:
         query = query.where(Restaurant.is_open == is_open)
-    query = query.where(Restaurant.moderation_status == "APPROVED")
+    query = query.where(Restaurant.moderation_status == ModerationStatus.APPROVED.value)
     return query
 
 
@@ -105,9 +116,7 @@ async def get_restaurant_public(
         _apply_restaurant_filters(
             select(
                 Restaurant,
-                func.coalesce(popularity_subquery.c.orders_count_7d, 0).label(
-                    "orders_count_7d"
-                ),
+                func.coalesce(popularity_subquery.c.orders_count_7d, 0).label("orders_count_7d"),
             )
             .outerjoin(
                 popularity_subquery,
@@ -124,7 +133,14 @@ async def get_restaurant_public(
         raise RestaurantNotFoundException()
     restaurant = row[0]
     restaurant.orders_count_7d = int(row[1] or 0)
-    return RestaurantResponse.model_validate(restaurant)
+    response = RestaurantResponse.model_validate(restaurant)
+
+    if response.is_open:
+        wh = await get_working_hours(session, response.id)
+        if wh and is_open_now(wh) is False:
+            response.is_open = False
+
+    return response
 
 
 async def get_all_restaurants_public(
@@ -132,8 +148,8 @@ async def get_all_restaurants_public(
     name: str | None = None,
     is_hiring: bool | None = None,
     is_open: bool | None = None,
-    sort: str = "default",
-    direction: str = "desc",
+    sort: str = RestaurantSort.DEFAULT.value,
+    direction: str = SortDirection.DESC.value,
     page: int = 1,
     size: int = 20,
 ) -> tuple[list[RestaurantResponse], int]:
@@ -156,19 +172,36 @@ async def get_all_restaurants_public(
         is_hiring,
         is_open,
     )
-    sort_direction = asc if direction == "asc" else desc
-    if sort == "rating":
+    sort_direction = asc if direction == SortDirection.ASC.value else desc
+    if sort == RestaurantSort.RATING.value:
         query = query.order_by(sort_direction(Restaurant.average_rating), Restaurant.name)
-    elif sort == "popularity_7d":
+    elif sort == RestaurantSort.POPULARITY_7D.value:
         query = query.order_by(sort_direction(popularity_expr), Restaurant.name)
     else:
         query = query.order_by(Restaurant.name)
     result = await session.execute(query.offset(offset).limit(size))
     restaurants = []
+    rest_ids = []
     for row in result.all():
         restaurant = row[0]
         restaurant.orders_count_7d = int(row[1] or 0)
+        rest_ids.append(restaurant.id)
         restaurants.append(RestaurantResponse.model_validate(restaurant))
+
+    if rest_ids:
+        wh_result = await session.execute(
+            select(WorkingHours).where(WorkingHours.restaurant_id.in_(rest_ids))
+        )
+        wh_rows = wh_result.scalars().all()
+        wh_map = {}
+        for wh in wh_rows:
+            wh_map.setdefault(wh.restaurant_id, []).append(wh)
+
+        for r in restaurants:
+            if r.is_open:
+                hours = wh_map.get(r.id)
+                if hours and is_open_now(hours) is False:
+                    r.is_open = False
 
     total_query = _apply_restaurant_filters(
         select(func.count(Restaurant.id)), name, is_hiring, is_open

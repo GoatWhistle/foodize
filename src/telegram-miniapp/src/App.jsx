@@ -181,6 +181,11 @@ export default function App() {
       } else if (result.status === "registered") {
         await authExistingUser(result.initData);
         await fetchMe();
+
+        if (result.start_param) {
+          handleDeepLink(result.start_param);
+        }
+
         setAppState("ready");
       } else if (result.status === "new_user") {
         setInitData(result.initData);
@@ -192,6 +197,16 @@ export default function App() {
     }
     boot();
   }, [fetchMe]);
+
+  function handleDeepLink(param) {
+    if (param.startsWith("order_")) {
+      const orderId = param.replace("order_", "");
+      window.history.replaceState(null, "", `/orders/${orderId}`);
+    } else if (param.startsWith("restaurant_")) {
+      const restaurantId = param.replace("restaurant_", "");
+      window.history.replaceState(null, "", `/restaurant/${restaurantId}`);
+    }
+  }
 
   useEffect(() => {
     if (isAuthenticated) {

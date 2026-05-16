@@ -2,10 +2,12 @@ import secrets
 import uuid
 
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.restaurants.models import Restaurant
 from features.restaurants.schemas import RestaurantCreate, RestaurantUpdate
+from shared.exceptions.existence import AlreadyExistsException
 
 
 async def create_restaurant(
@@ -16,7 +18,11 @@ async def create_restaurant(
         **restaurant_data.model_dump(), vendor_id=vendor_id, display_id=display_id
     )
     session.add(new_restaurant)
-    await session.commit()
+    try:
+        await session.commit()
+    except IntegrityError as e:
+        await session.rollback()
+        raise AlreadyExistsException(detail="Restaurant with this address already exists") from e
     return new_restaurant
 
 
@@ -25,7 +31,11 @@ async def update_restaurant(
 ) -> Restaurant:
     for key, value in update_data.model_dump(exclude_unset=True).items():
         setattr(restaurant, key, value)
-    await session.commit()
+    try:
+        await session.commit()
+    except IntegrityError as e:
+        await session.rollback()
+        raise AlreadyExistsException(detail="Restaurant with this address already exists") from e
     await session.refresh(restaurant)
     return restaurant
 

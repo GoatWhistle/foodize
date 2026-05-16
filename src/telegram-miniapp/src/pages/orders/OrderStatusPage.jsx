@@ -1,53 +1,53 @@
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useShallow } from 'zustand/react/shallow';
-import { useOrderStore } from '../../store/useOrderStore';
-import { orderService } from '../../services/orderService';
-import { createOrderWebSocket } from '../../services/api';
-import { ORDER_STATUS_RU } from '../../utils/locales';
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useShallow } from "zustand/react/shallow";
+import { useOrderStore } from "../../store/useOrderStore";
+import { orderService } from "../../services/orderService";
+import { createOrderWebSocket } from "../../services/api";
+import { ORDER_STATUS_RU } from "../../utils/locales";
 
-const TERMINAL_STATUSES = new Set(['COMPLETED', 'CANCELLED']);
-const STATUS_FLOW = ['PENDING', 'ACCEPTED', 'READY', 'COMPLETED'];
+const TERMINAL_STATUSES = new Set(["COMPLETED", "CANCELLED"]);
+const STATUS_FLOW = ["PENDING", "ACCEPTED", "READY", "COMPLETED"];
 
 const STATUS_PILL = {
-  PENDING: { label: 'Новый', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
-  ACCEPTED: { label: 'Принят', color: '#f97316', bg: 'rgba(249,115,22,0.12)' },
+  PENDING: { label: "Новый", color: "#f59e0b", bg: "rgba(245,158,11,0.12)" },
+  ACCEPTED: { label: "Принят", color: "#f97316", bg: "rgba(249,115,22,0.12)" },
   READY: {
-    label: 'Готов к выдаче',
-    color: '#22c55e',
-    bg: 'rgba(34,197,94,0.12)',
+    label: "Готов к выдаче",
+    color: "#22c55e",
+    bg: "rgba(34,197,94,0.12)",
   },
-  COMPLETED: { label: 'Выдан', color: '#6b7280', bg: 'rgba(107,114,128,0.1)' },
-  CANCELLED: { label: 'Отменён', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
+  COMPLETED: { label: "Выдан", color: "#6b7280", bg: "rgba(107,114,128,0.1)" },
+  CANCELLED: { label: "Отменён", color: "#ef4444", bg: "rgba(239,68,68,0.1)" },
 };
 
 const fmtTime = (iso) => {
-  if (!iso) return '';
+  if (!iso) return "";
   const d = new Date(iso);
   return isNaN(d)
-    ? ''
-    : d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    ? ""
+    : d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
 };
 
 const useEtaText = (estimatedReadyAt, status) => {
   const compute = useCallback(() => {
     if (
       TERMINAL_STATUSES.has(status) ||
-      status === 'READY' ||
+      status === "READY" ||
       !estimatedReadyAt
     )
-      return '';
+      return "";
     const diff = Math.round((new Date(estimatedReadyAt) - Date.now()) / 60000);
     return diff > 0
       ? `Будет готов через ~${diff} мин`
-      : 'Задерживаемся, скоро будет';
+      : "Задерживаемся, скоро будет";
   }, [estimatedReadyAt, status]);
   const [text, setText] = useState(compute);
   useEffect(() => {
     setText(compute());
     if (
       TERMINAL_STATUSES.has(status) ||
-      status === 'READY' ||
+      status === "READY" ||
       !estimatedReadyAt
     )
       return;
@@ -59,54 +59,54 @@ const useEtaText = (estimatedReadyAt, status) => {
 
 const HorizontalSteps = ({ order }) => {
   const currentIndex =
-    order.status === 'CANCELLED' ? -1 : STATUS_FLOW.indexOf(order.status);
+    order.status === "CANCELLED" ? -1 : STATUS_FLOW.indexOf(order.status);
 
   return (
-    <div style={{ width: '100%', maxWidth: 380, marginTop: 24 }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+    <div style={{ width: "100%", maxWidth: 380, marginTop: 24 }}>
+      <div style={{ display: "flex", alignItems: "flex-start" }}>
         {STATUS_FLOW.map((status, i) => {
           const state =
-            order.status === 'CANCELLED'
-              ? 'next'
+            order.status === "CANCELLED"
+              ? "next"
               : i < currentIndex
-                ? 'done'
+                ? "done"
                 : i === currentIndex
-                  ? 'current'
-                  : 'next';
+                  ? "current"
+                  : "next";
           const dotColor =
-            state === 'done'
-              ? 'var(--color-success)'
-              : state === 'current'
-                ? 'var(--fire)'
-                : 'var(--border)';
+            state === "done"
+              ? "var(--color-success)"
+              : state === "current"
+                ? "var(--fire)"
+                : "var(--border)";
           const isActiveLine =
             i === currentIndex + 1 &&
-            order.status !== 'CANCELLED' &&
-            order.status !== 'COMPLETED';
+            order.status !== "CANCELLED" &&
+            order.status !== "COMPLETED";
           const lineColor =
-            i <= currentIndex && order.status !== 'CANCELLED'
-              ? 'var(--color-success)'
-              : 'var(--border)';
+            i <= currentIndex && order.status !== "CANCELLED"
+              ? "var(--color-success)"
+              : "var(--border)";
 
           return (
             <Fragment key={status}>
               {i > 0 && (
                 <div
-                  className={isActiveLine ? 'order-step-line--active' : ''}
+                  className={isActiveLine ? "order-step-line--active" : ""}
                   style={{
                     flex: 1,
                     height: 2,
                     background: isActiveLine ? undefined : lineColor,
                     marginTop: 5,
-                    transition: isActiveLine ? 'none' : 'background 0.4s',
+                    transition: isActiveLine ? "none" : "background 0.4s",
                   }}
                 />
               )}
               <div
                 style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
                   gap: 6,
                 }}
               >
@@ -114,31 +114,31 @@ const HorizontalSteps = ({ order }) => {
                   style={{
                     width: 12,
                     height: 12,
-                    borderRadius: '50%',
+                    borderRadius: "50%",
                     background: dotColor,
                     flexShrink: 0,
-                    transition: 'background 0.4s',
+                    transition: "background 0.4s",
                     boxShadow:
-                      state === 'done'
-                        ? '0 0 0 3px var(--color-success-bg)'
-                        : state === 'current'
+                      state === "done"
+                        ? "0 0 0 3px var(--color-success-bg)"
+                        : state === "current"
                           ? `0 0 0 3px var(--fire)33`
-                          : 'none',
+                          : "none",
                   }}
                 />
                 <div
                   style={{
-                    fontSize: '0.68rem',
-                    fontWeight: state === 'current' ? 800 : 500,
+                    fontSize: "0.68rem",
+                    fontWeight: state === "current" ? 800 : 500,
                     color:
-                      state === 'next'
-                        ? 'var(--text-3)'
-                        : state === 'current'
-                          ? 'var(--fire)'
-                          : 'var(--color-success)',
-                    textAlign: 'center',
+                      state === "next"
+                        ? "var(--text-3)"
+                        : state === "current"
+                          ? "var(--fire)"
+                          : "var(--color-success)",
+                    textAlign: "center",
                     lineHeight: 1.2,
-                    whiteSpace: 'nowrap',
+                    whiteSpace: "nowrap",
                   }}
                 >
                   {ORDER_STATUS_RU[status] ?? status}
@@ -159,11 +159,11 @@ const OrderStatusPage = () => {
     useShallow((s) => ({
       fetchOrder: s.fetchOrder,
       currentOrder: s.currentOrder,
-    }))
+    })),
   );
   const wsRef = useRef(null);
   const [completing, setCompleting] = useState(false);
-  const [completeError, setCompleteError] = useState('');
+  const [completeError, setCompleteError] = useState("");
   const [cancelling, setCancelling] = useState(false);
   const [showBonAppetit, setShowBonAppetit] = useState(false);
 
@@ -184,17 +184,17 @@ const OrderStatusPage = () => {
         ) {
           loadOrder();
         }
-      }
+      },
     );
 
     return () => wsRef.current?.close();
   }, [id, loadOrder]);
 
   useEffect(() => {
-    if (currentOrder?.status === 'COMPLETED') {
+    if (currentOrder?.status === "COMPLETED") {
       const key = `order_seen_${id}`;
       if (!localStorage.getItem(key)) {
-        localStorage.setItem(key, '1');
+        localStorage.setItem(key, "1");
         setShowBonAppetit(true);
       }
     }
@@ -202,7 +202,7 @@ const OrderStatusPage = () => {
 
   const etaText = useEtaText(
     currentOrder?.estimated_ready_at,
-    currentOrder?.status
+    currentOrder?.status,
   );
 
   if (!currentOrder) {
@@ -222,11 +222,11 @@ const OrderStatusPage = () => {
         />
         <div
           style={{
-            width: '100%',
+            width: "100%",
             maxWidth: 380,
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-lg)',
+            background: "var(--bg-card)",
+            border: "1px solid var(--border)",
+            borderRadius: "var(--radius-lg)",
             padding: 20,
             marginBottom: 16,
           }}
@@ -235,14 +235,14 @@ const OrderStatusPage = () => {
             <div
               key={i}
               style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                padding: '9px 0',
-                borderBottom: '1px solid var(--border)',
+                display: "flex",
+                justifyContent: "space-between",
+                padding: "9px 0",
+                borderBottom: "1px solid var(--border)",
               }}
             >
-              <div className="skeleton" style={{ width: '58%', height: 14 }} />
-              <div className="skeleton" style={{ width: '18%', height: 14 }} />
+              <div className="skeleton" style={{ width: "58%", height: 14 }} />
+              <div className="skeleton" style={{ width: "18%", height: 14 }} />
             </div>
           ))}
         </div>
@@ -251,17 +251,17 @@ const OrderStatusPage = () => {
   }
 
   const pill = STATUS_PILL[currentOrder.status] || STATUS_PILL.PENDING;
-  const isReady = currentOrder.status === 'READY';
+  const isReady = currentOrder.status === "READY";
   const isDone = TERMINAL_STATUSES.has(currentOrder.status);
 
   const handleComplete = async () => {
     setCompleting(true);
-    setCompleteError('');
+    setCompleteError("");
     try {
       await orderService.completeOrder(id);
       await fetchOrder(id);
     } catch {
-      setCompleteError('Не удалось подтвердить получение');
+      setCompleteError("Не удалось подтвердить получение");
     } finally {
       setCompleting(false);
     }
@@ -280,16 +280,16 @@ const OrderStatusPage = () => {
 
   return (
     <div
-      className={`status-screen page-enter${isReady ? ' status-ready-flash' : ''}`}
+      className={`status-screen page-enter${isReady ? " status-ready-flash" : ""}`}
     >
       {/* Номер заказа */}
-      <div style={{ textAlign: 'center' }}>
+      <div style={{ textAlign: "center" }}>
         <div
           style={{
-            fontSize: '0.78rem',
-            color: 'var(--text-3)',
+            fontSize: "0.78rem",
+            color: "var(--text-3)",
             fontWeight: 600,
-            letterSpacing: '0.04em',
+            letterSpacing: "0.04em",
             marginBottom: 2,
           }}
         >
@@ -297,11 +297,11 @@ const OrderStatusPage = () => {
         </div>
         <div
           style={{
-            fontSize: '4rem',
+            fontSize: "4rem",
             fontWeight: 900,
-            color: 'var(--text-1)',
+            color: "var(--text-1)",
             lineHeight: 1,
-            letterSpacing: '-0.04em',
+            letterSpacing: "-0.04em",
           }}
         >
           {currentOrder.display_id}
@@ -312,14 +312,14 @@ const OrderStatusPage = () => {
       <div
         style={{
           marginTop: 10,
-          display: 'inline-flex',
-          alignItems: 'center',
-          padding: '5px 14px',
+          display: "inline-flex",
+          alignItems: "center",
+          padding: "5px 14px",
           borderRadius: 99,
           background: pill.bg,
           color: pill.color,
           fontWeight: 800,
-          fontSize: '0.85rem',
+          fontSize: "0.85rem",
           border: `1px solid ${pill.color}44`,
         }}
       >
@@ -327,14 +327,14 @@ const OrderStatusPage = () => {
       </div>
 
       {/* Причина отмены */}
-      {currentOrder.status === 'CANCELLED' &&
+      {currentOrder.status === "CANCELLED" &&
         currentOrder.cancellation_reason && (
           <div
             style={{
               marginTop: 8,
-              fontSize: '0.82rem',
-              color: 'var(--text-2)',
-              textAlign: 'center',
+              fontSize: "0.82rem",
+              color: "var(--text-2)",
+              textAlign: "center",
               maxWidth: 300,
             }}
           >
@@ -346,13 +346,13 @@ const OrderStatusPage = () => {
       <HorizontalSteps order={currentOrder} />
 
       {/* ETA / сообщение статуса */}
-      <div style={{ marginTop: 16, textAlign: 'center', minHeight: 40 }}>
+      <div style={{ marginTop: 16, textAlign: "center", minHeight: 40 }}>
         {isReady ? (
           <div
             style={{
               fontWeight: 700,
-              fontSize: '0.95rem',
-              color: 'var(--color-success)',
+              fontSize: "0.95rem",
+              color: "var(--color-success)",
             }}
           >
             Подойдите к стойке — заказ ждёт вас!
@@ -361,8 +361,8 @@ const OrderStatusPage = () => {
           <div
             style={{
               fontWeight: 600,
-              fontSize: '0.9rem',
-              color: etaText.startsWith('Задерж') ? '#f97316' : 'var(--text-2)',
+              fontSize: "0.9rem",
+              color: etaText.startsWith("Задерж") ? "#f97316" : "var(--text-2)",
             }}
           >
             {etaText}
@@ -372,8 +372,8 @@ const OrderStatusPage = () => {
           <div
             style={{
               fontWeight: 700,
-              fontSize: '0.95rem',
-              color: 'var(--color-success)',
+              fontSize: "0.95rem",
+              color: "var(--color-success)",
               marginTop: 4,
             }}
           >
@@ -381,7 +381,7 @@ const OrderStatusPage = () => {
           </div>
         )}
         <div
-          style={{ marginTop: 4, fontSize: '0.78rem', color: 'var(--text-3)' }}
+          style={{ marginTop: 4, fontSize: "0.78rem", color: "var(--text-3)" }}
         >
           Оформлен в {fmtTime(currentOrder.created_at)}
         </div>
@@ -391,21 +391,21 @@ const OrderStatusPage = () => {
       <div
         style={{
           marginTop: 20,
-          width: '100%',
+          width: "100%",
           maxWidth: 380,
-          background: 'var(--bg-card)',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-lg)',
-          padding: '18px 20px',
+          background: "var(--bg-card)",
+          border: "1px solid var(--border)",
+          borderRadius: "var(--radius-lg)",
+          padding: "18px 20px",
         }}
       >
         <div
           style={{
             fontWeight: 700,
-            fontSize: '0.72rem',
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-            color: 'var(--text-3)',
+            fontSize: "0.72rem",
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            color: "var(--text-3)",
             marginBottom: 12,
           }}
         >
@@ -417,18 +417,18 @@ const OrderStatusPage = () => {
             <div
               key={item.id}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '8px 0',
-                borderBottom: '1px solid var(--border)',
-                fontSize: '0.9rem',
+                display: "flex",
+                alignItems: "center",
+                padding: "8px 0",
+                borderBottom: "1px solid var(--border)",
+                fontSize: "0.9rem",
                 gap: 8,
               }}
             >
               <span
                 style={{
                   fontWeight: 700,
-                  color: 'var(--text-3)',
+                  color: "var(--text-3)",
                   minWidth: 28,
                 }}
               >
@@ -437,11 +437,11 @@ const OrderStatusPage = () => {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
                   style={{
-                    color: 'var(--text-1)',
+                    color: "var(--text-1)",
                     fontWeight: 500,
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
                   }}
                 >
                   {item.menu_item_name}
@@ -450,17 +450,17 @@ const OrderStatusPage = () => {
                   <div
                     style={{
                       marginTop: 2,
-                      fontSize: '0.72rem',
-                      color: 'var(--text-3)',
+                      fontSize: "0.72rem",
+                      color: "var(--text-3)",
                       lineHeight: 1.35,
                     }}
                   >
                     {item.selected_options
                       .map(
                         (o) =>
-                          `${o.name}${o.price_delta ? ` +${o.price_delta} ₽` : ''}`
+                          `${o.name}${o.price_delta ? ` +${o.price_delta} ₽` : ""}`,
                       )
-                      .join(', ')}
+                      .join(", ")}
                   </div>
                 )}
               </div>
@@ -472,16 +472,16 @@ const OrderStatusPage = () => {
 
         <div
           style={{
-            display: 'flex',
-            justifyContent: 'space-between',
+            display: "flex",
+            justifyContent: "space-between",
             marginTop: 12,
             fontWeight: 800,
-            fontSize: '1rem',
-            letterSpacing: '-0.02em',
+            fontSize: "1rem",
+            letterSpacing: "-0.02em",
           }}
         >
           <span>Итого</span>
-          <span style={{ color: 'var(--fire)' }}>
+          <span style={{ color: "var(--fire)" }}>
             {currentOrder.total_price} ₽
           </span>
         </div>
@@ -492,14 +492,14 @@ const OrderStatusPage = () => {
         <div
           style={{
             marginTop: 12,
-            width: '100%',
+            width: "100%",
             maxWidth: 380,
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '14px 20px',
-            display: 'flex',
-            flexDirection: 'column',
+            background: "var(--bg-card)",
+            border: "1px solid var(--border)",
+            borderRadius: "var(--radius-lg)",
+            padding: "14px 20px",
+            display: "flex",
+            flexDirection: "column",
             gap: 3,
           }}
         >
@@ -507,15 +507,15 @@ const OrderStatusPage = () => {
             <div
               style={{
                 fontWeight: 700,
-                fontSize: '0.9rem',
-                color: 'var(--text-1)',
+                fontSize: "0.9rem",
+                color: "var(--text-1)",
               }}
             >
               {currentOrder.restaurant_name}
             </div>
           )}
           {currentOrder.restaurant_address && (
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-3)' }}>
+            <div style={{ fontSize: "0.8rem", color: "var(--text-3)" }}>
               {currentOrder.restaurant_address}
             </div>
           )}
@@ -526,7 +526,7 @@ const OrderStatusPage = () => {
       {completeError && (
         <div
           className="form-error"
-          style={{ marginTop: 16, maxWidth: 380, width: '100%' }}
+          style={{ marginTop: 16, maxWidth: 380, width: "100%" }}
         >
           {completeError}
         </div>
@@ -535,10 +535,10 @@ const OrderStatusPage = () => {
       {/* Кнопки */}
       <div
         style={{
-          display: 'flex',
+          display: "flex",
           gap: 10,
           marginTop: 16,
-          width: '100%',
+          width: "100%",
           maxWidth: 380,
         }}
       >
@@ -547,19 +547,19 @@ const OrderStatusPage = () => {
             className="btn btn-primary"
             style={{
               flex: 1,
-              background: 'var(--color-success)',
-              borderColor: 'var(--color-success)',
+              background: "var(--color-success)",
+              borderColor: "var(--color-success)",
             }}
             onClick={handleComplete}
             disabled={completing}
           >
-            {completing ? 'Подтверждение...' : '✓ Получил'}
+            {completing ? "Подтверждение..." : "✓ Получил"}
           </button>
         )}
         {isDone && (
           <button
             className="btn btn-primary"
-            style={{ flex: 1, background: 'var(--fire)' }}
+            style={{ flex: 1, background: "var(--fire)" }}
             onClick={async () => {
               const repeat = useOrderStore.getState().repeatOrder;
               await repeat(currentOrder);
@@ -569,24 +569,24 @@ const OrderStatusPage = () => {
             Повторить заказ
           </button>
         )}
-        {currentOrder.status === 'PENDING' && (
+        {currentOrder.status === "PENDING" && (
           <button
             className="btn btn-secondary"
             style={{
               flex: 1,
-              color: 'var(--error)',
-              borderColor: 'var(--error)',
+              color: "var(--error)",
+              borderColor: "var(--error)",
             }}
             onClick={handleCancel}
             disabled={cancelling}
           >
-            {cancelling ? 'Отмена...' : 'Отменить'}
+            {cancelling ? "Отмена..." : "Отменить"}
           </button>
         )}
         <button
           className="btn btn-secondary"
           style={{ flex: isDone ? 1 : 2 }}
-          onClick={() => navigate('/orders')}
+          onClick={() => navigate("/orders")}
         >
           ← Мои заказы
         </button>

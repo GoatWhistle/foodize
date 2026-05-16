@@ -82,6 +82,10 @@ export const useNotificationStore = create((set, get) => ({
     if (existing) return;
 
     const ws = createNotificationWebSocket(userId, (data) => {
+      if (data.type === "connected") {
+        get().fetchNotifications(1);
+        return;
+      }
       set((s) => ({
         notifications: [data, ...s.notifications],
         total: s.total + 1,

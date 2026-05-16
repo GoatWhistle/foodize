@@ -39,9 +39,12 @@ const FavoritesPage = () => {
   };
 
   const handleCardClick = (restaurant) => {
-    navigate(ROUTES.RESTAURANT.replace(':id', restaurant.id), {
-      state: { restaurant },
-    });
+    navigate(
+      ROUTES.RESTAURANT.replace(':id', restaurant.display_id || restaurant.id),
+      {
+        state: { restaurant },
+      }
+    );
   };
 
   return (

@@ -9,4 +9,6 @@ class Category(enum.Enum):
     SALAD = "SALAD"
     SNACK = "SNACK"
     DRINK = "DRINK"
+    SOUP = "SOUP"
+    DESSERT = "DESSERT"
     OTHER = "OTHER"

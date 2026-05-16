@@ -45,6 +45,7 @@ async def create_menu_item(
         restaurant_id=restaurant_id,
         item_data=item_in,
         vendor_id=current_vendor.id,
+        actor_id=_user.id,
     )
     return build_response(result)
 
@@ -64,6 +65,7 @@ async def update_menu_item(
         item_id=item_id,
         item_data=item_in,
         vendor_id=current_vendor.id,
+        actor_id=_user.id,
     )
     return build_response(result)
 
@@ -81,6 +83,7 @@ async def delete_menu_item(
         restaurant_id=restaurant_id,
         item_id=item_id,
         vendor_id=current_vendor.id,
+        actor_id=_user.id,
     )
 
 
@@ -102,6 +105,7 @@ async def toggle_item_availability(
         item_id=item_id,
         is_available=data.is_available,
         vendor_id=current_vendor.id,
+        actor_id=_user.id,
     )
     return build_response(result)
 

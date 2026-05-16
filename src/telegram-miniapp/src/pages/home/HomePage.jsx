@@ -173,7 +173,7 @@ const HomePage = () => {
                   key={r.id}
                   restaurant={r}
                   onClick={() =>
-                    navigate(`/restaurant/${r.id}`, {
+                    navigate(`/restaurant/${r.display_id || r.id}`, {
                       state: { restaurant: r },
                     })
                   }

@@ -3,6 +3,7 @@ import uuid
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from shared.enums.category import Category
+from shared.enums.selection_type import SelectionType
 
 
 class MenuItemCreate(BaseModel):
@@ -52,7 +53,10 @@ class MenuItemOptionResponse(BaseModel):
 
 class MenuItemOptionGroupCreate(BaseModel):
     name: str = Field(min_length=1, max_length=128)
-    selection_type: str = Field("multiple", pattern="^(single|multiple)$")
+    selection_type: str = Field(
+        SelectionType.MULTIPLE.value,
+        pattern=f"^({SelectionType.SINGLE.value}|{SelectionType.MULTIPLE.value})$",
+    )
     is_required: bool = False
     min_selected: int = Field(0, ge=0, le=50)
     max_selected: int | None = Field(None, ge=1, le=50)
@@ -61,7 +65,7 @@ class MenuItemOptionGroupCreate(BaseModel):
 
     @model_validator(mode="after")
     def validate_selection_limits(self):
-        if self.selection_type == "single":
+        if self.selection_type == SelectionType.SINGLE.value:
             self.max_selected = 1
         if self.is_required and self.min_selected == 0:
             self.min_selected = 1
@@ -72,7 +76,9 @@ class MenuItemOptionGroupCreate(BaseModel):
 
 class MenuItemOptionGroupUpdate(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=128)
-    selection_type: str | None = Field(None, pattern="^(single|multiple)$")
+    selection_type: str | None = Field(
+        None, pattern=f"^({SelectionType.SINGLE.value}|{SelectionType.MULTIPLE.value})$"
+    )
     is_required: bool | None = None
     min_selected: int | None = Field(None, ge=0, le=50)
     max_selected: int | None = Field(None, ge=1, le=50)

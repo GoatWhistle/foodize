@@ -48,6 +48,20 @@ const MainLayout = () => {
     previousCartItemsCount.current = cartItemsCount;
   }, [cartItemsCount]);
 
+  useEffect(() => {
+    const tg = window.Telegram?.WebApp;
+    if (tg?.initDataUnsafe?.start_param) {
+      const startParam = tg.initDataUnsafe.start_param;
+      if (startParam.startsWith('restaurant_')) {
+        const displayId = startParam.replace('restaurant_', '');
+        navigate(ROUTES.RESTAURANT.replace(':id', displayId));
+      } else if (startParam.startsWith('order_')) {
+        const displayId = startParam.replace('order_', '');
+        navigate(ROUTES.ORDER_STATUS.replace(':id', displayId));
+      }
+    }
+  }, [navigate]);
+
   const handleCheckout = async (promoCode = null, comment = '') => {
     setIsLoading(true);
     setError('');

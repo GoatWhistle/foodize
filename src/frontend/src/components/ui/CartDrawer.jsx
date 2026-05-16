@@ -117,7 +117,9 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
           <div className="cart-header">
             <div>
               <h2 className="cart-title">Корзина</h2>
-              <p>{cart.length} позиций · {total} ₽</p>
+              <p>
+                {cart.length} позиций · {total} ₽
+              </p>
             </div>
             <button
               type="button"

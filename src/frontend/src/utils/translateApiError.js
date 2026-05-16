@@ -77,6 +77,8 @@ const ERROR_MAP = {
   'Promo code already exists': 'Промокод с таким кодом уже существует',
   'Only VENDOR and STAFF can access orders':
     'Доступ только для вендоров и сотрудников',
+  'Restaurant with this address already exists':
+    'Ресторан с таким адресом уже существует',
 };
 
 export function translateApiError(err, fallback) {

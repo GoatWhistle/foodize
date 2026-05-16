@@ -839,10 +839,12 @@ input[type='date'].form-input::-webkit-calendar-picker-indicator:hover {
 .card-scrim {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top,
-      rgba(0, 0, 0, 0.74) 0%,
-      rgba(0, 0, 0, 0.32) 45%,
-      rgba(0, 0, 0, 0.05) 100%);
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.74) 0%,
+    rgba(0, 0, 0, 0.32) 45%,
+    rgba(0, 0, 0, 0.05) 100%
+  );
 }
 
 .card-body {
@@ -1693,14 +1695,18 @@ input[type='date'].form-input::-webkit-calendar-picker-indicator:hover {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 80% 80% at 50% 50%,
+    radial-gradient(
+      ellipse 80% 80% at 50% 50%,
       rgba(245, 158, 11, 0.12) 0%,
-      transparent 70%),
-    repeating-linear-gradient(45deg,
+      transparent 70%
+    ),
+    repeating-linear-gradient(
+      45deg,
       transparent,
       transparent 40px,
       rgba(255, 255, 255, 0.015) 40px,
-      rgba(255, 255, 255, 0.015) 41px);
+      rgba(255, 255, 255, 0.015) 41px
+    );
 }
 
 .auth-visual-content {
@@ -2041,10 +2047,12 @@ input[type='date'].form-input::-webkit-calendar-picker-indicator:hover {
 .restaurant-card-skeleton {
   border-radius: var(--r-lg);
   min-height: 200px;
-  background: linear-gradient(90deg,
-      var(--bg-card) 25%,
-      var(--bg-raised) 50%,
-      var(--bg-card) 75%);
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    var(--bg-raised) 50%,
+    var(--bg-card) 75%
+  );
   background-size: 800px 100%;
   animation: skeleton-shimmer 1.4s ease-in-out infinite;
   border: 1px solid var(--border);
@@ -2514,10 +2522,12 @@ input[type='date'].form-input::-webkit-calendar-picker-indicator:hover {
 }
 
 .skeleton {
-  background: linear-gradient(90deg,
-      var(--bg-card) 25%,
-      var(--border) 50%,
-      var(--bg-card) 75%);
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    var(--border) 50%,
+    var(--bg-card) 75%
+  );
   background-size: 200% 100%;
   animation: shimmer 1.4s infinite;
   border-radius: var(--r-xs);
@@ -2547,7 +2557,6 @@ input[type='date'].form-input::-webkit-calendar-picker-indicator:hover {
 }
 
 @keyframes float {
-
   0%,
   100% {
     transform: translateY(0);
@@ -2612,7 +2621,6 @@ input[type='date'].form-input::-webkit-calendar-picker-indicator:hover {
 }
 
 @keyframes stage-pulse {
-
   0%,
   100% {
     box-shadow: 0 0 0 0 var(--fire-glow);
@@ -2624,7 +2632,6 @@ input[type='date'].form-input::-webkit-calendar-picker-indicator:hover {
 }
 
 @keyframes stage-dot-pulse {
-
   0%,
   100% {
     transform: scale(1);
@@ -2648,12 +2655,14 @@ input[type='date'].form-input::-webkit-calendar-picker-indicator:hover {
 }
 
 .order-step-line--active {
-  background: linear-gradient(90deg,
-      var(--border) 0%,
-      var(--border) 35%,
-      var(--fire) 50%,
-      var(--border) 65%,
-      var(--border) 100%);
+  background: linear-gradient(
+    90deg,
+    var(--border) 0%,
+    var(--border) 35%,
+    var(--fire) 50%,
+    var(--border) 65%,
+    var(--border) 100%
+  );
   background-size: 300% 100%;
   animation: step-line-travel 1.6s ease-in-out infinite;
 }
@@ -2706,7 +2715,6 @@ input[type='date'].form-input::-webkit-calendar-picker-indicator:hover {
 }
 
 @keyframes ready-urge {
-
   0%,
   100% {
     transform: scale(1);
@@ -3008,7 +3016,6 @@ input[type='date'].form-input::-webkit-calendar-picker-indicator:hover {
 }
 
 @media (prefers-reduced-motion: reduce) {
-
   *,
   *::before,
   *::after {
@@ -3063,7 +3070,9 @@ input[type='date'].form-input::-webkit-calendar-picker-indicator:hover {
   justify-content: center;
   line-height: 1;
   box-shadow: 0 2px 8px var(--fire-glow);
-  transition: transform var(--dur-sm) var(--ease-out), box-shadow var(--dur-sm) var(--ease-out);
+  transition:
+    transform var(--dur-sm) var(--ease-out),
+    box-shadow var(--dur-sm) var(--ease-out);
 }
 
 .menu-item:hover .menu-item-choose,
@@ -3407,7 +3416,7 @@ input[type='date'].form-input::-webkit-calendar-picker-indicator:hover {
   margin-bottom: 12px;
 }
 
-.cart-summary>div {
+.cart-summary > div {
   display: flex;
   justify-content: space-between;
   gap: 12px;
@@ -3448,7 +3457,9 @@ input[type='date'].form-input::-webkit-calendar-picker-indicator:hover {
   border-color: var(--fire);
   background: var(--fire-subtle);
   color: var(--fire);
-  box-shadow: 0 0 0 1px rgba(245, 124, 0, 0.18), 0 0 0 4px rgba(245, 124, 0, 0.08);
+  box-shadow:
+    0 0 0 1px rgba(245, 124, 0, 0.18),
+    0 0 0 4px rgba(245, 124, 0, 0.08);
 }
 
 .btn-icon {
@@ -3479,7 +3490,9 @@ input[type='date'].form-input::-webkit-calendar-picker-indicator:hover {
 }
 
 .btn-icon-active {
-  box-shadow: 0 0 0 1px var(--fire), 0 0 0 3px rgba(245, 124, 0, 0.12);
+  box-shadow:
+    0 0 0 1px var(--fire),
+    0 0 0 3px rgba(245, 124, 0, 0.12);
 }
 
 .sort-chip-checkbox {
@@ -3513,7 +3526,9 @@ input[type='date'].form-input::-webkit-calendar-picker-indicator:hover {
   border-radius: 999px;
   background: var(--bg-surface);
   color: var(--text-2);
-  transition: background 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .sort-chip-icon:hover,

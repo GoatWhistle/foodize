@@ -3,6 +3,7 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
+from shared.enums.moderation_status import ModerationStatus
 from shared.enums.permissions import Permission
 
 
@@ -104,7 +105,7 @@ class AdminRestaurantResponse(BaseModel):
     average_rating: float = 0.0
     review_count: int = 0
     orders_count: int = 0
-    moderation_status: str = "PENDING"
+    moderation_status: str = ModerationStatus.PENDING.value
     rejection_reason: str | None = None
     created_at: datetime
 
@@ -117,7 +118,7 @@ class AdminVendorResponse(BaseModel):
     name: str | None = None
     phone_number: str | None = None
     restaurants_count: int = 0
-    approval_status: str = "PENDING"
+    approval_status: str = ModerationStatus.PENDING.value
     rejection_reason: str | None = None
     created_at: datetime
 

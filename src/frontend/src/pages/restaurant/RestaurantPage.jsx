@@ -22,6 +22,7 @@ import {
   PencilSimple,
   Heart,
   ShareNetwork,
+  Info,
 } from '@phosphor-icons/react';
 import { useRestaurantStore } from '../../store/useRestaurantStore';
 import { useOrderStore } from '../../store/useOrderStore';
@@ -239,6 +240,8 @@ const RestaurantPage = () => {
   const [activeCategory, setActiveCategory] = useState('ALL');
   const [showReviewsModal, setShowReviewsModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [workingHours, setWorkingHours] = useState([]);
   const [reviewFormOpen, setReviewFormOpen] = useState(false);
   const [reviewsList, setReviewsList] = useState([]);
   const [reviewsPage, setReviewsPage] = useState(1);
@@ -313,6 +316,10 @@ const RestaurantPage = () => {
     if (!restaurantUUID) return;
     fetchMenu(restaurantUUID);
     refreshRating(restaurantUUID);
+    restaurantService
+      .getWorkingHours(restaurantUUID)
+      .then((res) => setWorkingHours(res.data?.data || []))
+      .catch(() => {});
   }, [restaurantUUID, fetchMenu, refreshRating]);
 
   useEffect(() => {
@@ -469,6 +476,22 @@ const RestaurantPage = () => {
               {reviewsButtonLabel}
             </button>
             <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => setShowInfoModal(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: 'rgba(255,255,255,0.12)',
+                backdropFilter: 'blur(8px)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                color: '#fff',
+              }}
+            >
+              <Info size={14} weight="bold" />
+              Инфо
+            </button>
+            <button
               onClick={() => setShowShareModal(true)}
               style={{
                 display: 'flex',
@@ -522,6 +545,26 @@ const RestaurantPage = () => {
       </div>
 
       <div className="restaurant-content">
+        {restaurant.is_open === false && (
+          <div
+            style={{
+              padding: '12px 16px',
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid var(--error)',
+              borderRadius: 'var(--r-md)',
+              color: 'var(--error)',
+              fontSize: '0.85rem',
+              fontWeight: 800,
+              marginBottom: 16,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
+          >
+            <ShieldWarning size={18} weight="fill" />
+            Заведение временно закрыто и не принимает заказы
+          </div>
+        )}
         <div className="menu-categories-scroll">
           {categories.map((cat) => (
             <button
@@ -580,6 +623,7 @@ const RestaurantPage = () => {
                 key={item.id}
                 item={item}
                 onSelect={setSelectedProduct}
+                isRestaurantOpen={restaurant.is_open !== false}
               />
             ))}
           </div>
@@ -601,6 +645,7 @@ const RestaurantPage = () => {
           item={selectedProduct}
           onClose={() => setSelectedProduct(null)}
           onAdd={handleProductAdd}
+          isRestaurantOpen={restaurant.is_open !== false}
         />
       )}
 
@@ -937,6 +982,88 @@ const RestaurantPage = () => {
           restaurant={restaurant}
           onClose={() => setShowShareModal(false)}
         />
+      )}
+
+      {showInfoModal && (
+        <div
+          className="modal-overlay"
+          onClick={(e) => {
+            if (e.target.classList.contains('modal-overlay'))
+              setShowInfoModal(false);
+          }}
+        >
+          <div
+            className="modal-content info-modal"
+            style={{ padding: 24, maxWidth: 400 }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 16,
+              }}
+            >
+              <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>
+                Информация
+              </h2>
+              <button
+                onClick={() => setShowInfoModal(false)}
+                style={{
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '50%',
+                  width: 32,
+                  height: 32,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: 'var(--text-2)',
+                }}
+              >
+                <X size={16} weight="bold" />
+              </button>
+            </div>
+
+            <h3
+              style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: 12 }}
+            >
+              Рабочие часы
+            </h3>
+            {workingHours.length > 0 ? (
+              <div
+                style={{ display: 'flex', flexDirection: 'column', gap: 10 }}
+              >
+                {workingHours.map((wh) => {
+                  const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+                  const dayName = days[wh.day_of_week - 1];
+                  return (
+                    <div
+                      key={wh.day_of_week}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        fontSize: '0.95rem',
+                      }}
+                    >
+                      <span style={{ color: 'var(--text-2)' }}>{dayName}</span>
+                      <span style={{ fontWeight: 600 }}>
+                        {wh.is_open
+                          ? `${wh.opening_time.slice(0, 5)} - ${wh.closing_time.slice(0, 5)}`
+                          : 'Выходной'}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div style={{ fontSize: '0.95rem', color: 'var(--text-3)' }}>
+                Не указаны
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

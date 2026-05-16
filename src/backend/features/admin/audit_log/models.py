@@ -8,8 +8,6 @@ from database import Base, CreatedAtMixin, IdUuidPkMixin
 
 
 class AuditLog(Base, IdUuidPkMixin, CreatedAtMixin):
-    __tablename__ = "audit_logs"
-
     actor_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )

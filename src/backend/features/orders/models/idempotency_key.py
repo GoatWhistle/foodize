@@ -12,7 +12,6 @@ if TYPE_CHECKING:
 
 
 class IdempotencyKey(Base, IdUuidPkMixin, CreatedAtMixin):
-    __tablename__ = "idempotency_keys"
     __table_args__ = (
         UniqueConstraint("user_id", "key", name="uq_idempotency_keys_user_key"),
         {"extend_existing": True},

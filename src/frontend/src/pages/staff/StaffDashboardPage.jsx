@@ -119,7 +119,7 @@ const ApplicationStatus = () => {
     staffService
       .getMyApplication()
       .then((res) => setApplication(res.data.data))
-      .catch(() => { })
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
@@ -909,7 +909,7 @@ const StaffDashboardPage = () => {
           i.id === item.id ? { ...i, is_available: !newVal } : i
         )
       );
-      alert('Не удалось изменить статус блюда');
+      setMenuError('Не удалось изменить статус блюда');
     }
   };
 
@@ -1077,7 +1077,7 @@ const StaffDashboardPage = () => {
                   (o) =>
                     o.status === 'ACCEPTED' &&
                     Math.floor((Date.now() - new Date(o.created_at)) / 60000) >=
-                    15
+                      15
                 );
                 return criticalOrders.length > 0 ? (
                   <div

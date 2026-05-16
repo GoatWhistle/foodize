@@ -15,3 +15,8 @@ class AuthException(AppException):
 
 class InvalidCredentialsException(AuthException):
     detail: str = "Invalid phone number or password"
+
+
+class AlreadyExistsException(AppException):
+    status_code: int = HTTPStatus.CONFLICT
+    detail: str = "Object already exists"

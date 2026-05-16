@@ -338,6 +338,22 @@ BOT_WEBHOOK_URL=https://bot.foodize.example
 BOT_WEBHOOK_SECRET=another-long-secret
 ```
 
+## Backup & Restore
+
+To backup and restore the PostgreSQL database using Docker, you can use the `pg_dump` and `pg_restore` tools.
+
+**Backup database:**
+```bash
+make backup
+```
+This will create a SQL dump of your local PostgreSQL database in the project root folder.
+
+**Restore database:**
+```bash
+make restore FILE=backup.sql
+```
+This will drop the existing database schema, recreate it, and restore the data from the specified dump file.
+
 ## Monitoring
 
 Start Prometheus and Grafana with:

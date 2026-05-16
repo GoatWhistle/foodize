@@ -36,6 +36,11 @@ jobs:
       - name: Run Tests
         run: uv run pytest --cov=. --cov-report=xml
 
+      - name: Run Alembic check
+        run: |
+          uv run alembic upgrade head
+          uv run alembic check
+
   frontend-ci:
     runs-on: ubuntu-latest
     defaults:

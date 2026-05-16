@@ -1,4 +1,3 @@
-import uuid
 from datetime import date
 
 from fastapi import APIRouter, Depends, Header, Query, Request, status
@@ -6,7 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
 from features.auth.service import get_current_user
-from features.orders.crud.order import get_order_by_id
 from features.orders.dependencies import (
     get_order_for_staff_or_vendor,
     get_restaurant_staff_or_vendor,
@@ -128,11 +126,11 @@ async def update_order_status(
 @router.get("/{order_id}/events", response_model=SuccessListResponse[OrderEventResponse])
 async def read_order_events(
     request: Request,
-    order_id: uuid.UUID,
+    order_id: str,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessListResponse[OrderEventResponse]:
-    order = await get_order_by_id(session, order_id)
+    order = await service.order_crud.get_order_by_identifier(session, order_id)
     if not order:
         raise NotFoundException(detail="Order not found")
 
@@ -146,7 +144,7 @@ async def read_order_events(
 
 @router.post("/{order_id}/cancel", response_model=SuccessResponse[OrderResponse])
 async def cancel_order(
-    order_id: uuid.UUID,
+    order_id: str,
     cancel_in: OrderCancelRequest,
     current_user: User = Depends(require_permission(Permission.ORDERS_READ_OWN)),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
@@ -162,7 +160,7 @@ async def cancel_order(
 
 @router.post("/{order_id}/complete", response_model=SuccessResponse[OrderResponse])
 async def complete_order(
-    order_id: uuid.UUID,
+    order_id: str,
     current_user: User = Depends(require_permission(Permission.ORDERS_READ_OWN)),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[OrderResponse]:
@@ -174,11 +172,11 @@ async def complete_order(
 
 @router.get("/{order_id}", response_model=SuccessResponse[OrderResponse])
 async def read_order(
-    order_id: uuid.UUID,
+    order_id: str,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[OrderResponse]:
-    order = await get_order_by_id(session, order_id)
+    order = await service.order_crud.get_order_by_identifier(session, order_id)
     if not order:
         raise NotFoundException(detail="Order not found")
 

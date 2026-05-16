@@ -38,7 +38,11 @@ export default function RegisterPage({ initData, prefillPhone, onSuccess }) {
     setError("");
     setLoading(true);
     try {
-      await completeTelegramAuth(initData, phone, name.trim() || "Telegram User");
+      await completeTelegramAuth(
+        initData,
+        phone,
+        name.trim() || "Telegram User",
+      );
       await fetchMe();
       onSuccess();
     } catch (err) {

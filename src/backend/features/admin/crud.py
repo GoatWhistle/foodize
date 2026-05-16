@@ -23,8 +23,11 @@ from features.restaurants.models import Restaurant
 from features.reviews.models import Review
 from features.users.models import User
 from features.vendors.models import VendorProfile
+from shared.enums.category import Category
+from shared.enums.moderation_status import ModerationStatus
 from shared.enums.order_status import OrderStatus
 from shared.enums.permissions import Permission
+from shared.enums.roles import UserRole
 from shared.permissions import (
     VENDOR_PERMISSIONS,
     has_permission,
@@ -34,35 +37,35 @@ from shared.permissions import (
 )
 
 CATEGORY_RU = {
-    "SHAURMA": "Шаурма",
-    "BURGER": "Бургеры",
-    "PIZZA": "Пицца",
-    "SUSHI": "Суши и Роллы",
-    "DRINK": "Напитки",
-    "SNACK": "Снеки",
-    "DESSERT": "Десерты",
-    "SOUP": "Супы",
-    "SALAD": "Салаты",
+    Category.SHAURMA.value: "Шаурма",
+    Category.BURGER.value: "Бургеры",
+    Category.PIZZA.value: "Пицца",
+    Category.SUSHI.value: "Суши и Роллы",
+    Category.DRINK.value: "Напитки",
+    Category.SNACK.value: "Снеки",
+    Category.DESSERT.value: "Десерты",
+    Category.SOUP.value: "Супы",
+    Category.SALAD.value: "Салаты",
 }
 
 STATUS_RU = {
-    "PENDING": "Ожидается",
-    "ACCEPTED": "Принят",
-    "READY": "Готово",
-    "COMPLETED": "Завершен",
-    "CANCELLED": "Отменен",
+    OrderStatus.PENDING.value: "Ожидается",
+    OrderStatus.ACCEPTED.value: "Принят",
+    OrderStatus.READY.value: "Готово",
+    OrderStatus.COMPLETED.value: "Завершен",
+    OrderStatus.CANCELLED.value: "Отменен",
 }
 
 
 def _infer_role(permissions: list[str]) -> str:
     perm_set = set(permissions)
     if Permission.ADMIN_ACCESS.value in perm_set:
-        return "ADMIN"
-    if Permission.VENDORS_READ_OWN.value in perm_set:
-        return "VENDOR"
-    if Permission.STAFF_PROFILE_READ.value in perm_set:
-        return "STAFF"
-    return "CUSTOMER"
+        return UserRole.ADMIN.value
+    if Permission.RESTAURANTS_CREATE.value in perm_set:
+        return UserRole.VENDOR.value
+    if Permission.ORDERS_MANAGE_STATUS.value in perm_set:
+        return UserRole.STAFF.value
+    return UserRole.CUSTOMER.value
 
 
 async def get_all_users(
@@ -93,6 +96,20 @@ async def count_all_users(
     role: str | None = None,
     search: str | None = None,
 ) -> int:
+    if role is None:
+        stmt = select(func.count()).select_from(User)
+        if search:
+            pattern = f"%{search}%"
+            stmt = stmt.where(
+                (User.name.ilike(pattern))
+                | (User.phone_number.ilike(pattern))
+                | (User.first_name.ilike(pattern))
+                | (User.last_name.ilike(pattern))
+            )
+        result = await session.execute(stmt)
+        return result.scalar_one()
+
+    # If role filter is active, we still need to fetch to apply _infer_role
     stmt = select(User)
     if search:
         pattern = f"%{search}%"
@@ -103,10 +120,8 @@ async def count_all_users(
             | (User.last_name.ilike(pattern))
         )
     result = await session.execute(stmt)
-    users = list(result.scalars().all())
-    if role is not None:
-        users = [u for u in users if _infer_role(u.permissions or []) == role]
-    return len(users)
+    users = result.scalars().all()
+    return len([u for u in users if _infer_role(u.permissions or []) == role])
 
 
 async def get_user_by_id(session: AsyncSession, user_id: uuid.UUID) -> User | None:
@@ -290,17 +305,34 @@ async def count_all_restaurants(
     moderation_status: str | None = None,
     min_rating: float | None = None,
 ) -> int:
-    data = await get_all_restaurants(
-        session=session,
-        search=search,
-        vendor_search=vendor_search,
-        is_open=is_open,
-        moderation_status=moderation_status,
-        min_rating=min_rating,
-        offset=0,
-        limit=100000,
+    avg_rating = func.coalesce(func.avg(Review.rating), 0)
+    stmt = (
+        select(Restaurant.id)
+        .join(VendorProfile, VendorProfile.id == Restaurant.vendor_id)
+        .join(User, User.id == VendorProfile.user_id)
+        .outerjoin(
+            Review,
+            and_(Review.restaurant_id == Restaurant.id, Review.deleted_at.is_(None)),
+        )
+        .where(Restaurant.is_active.is_(True))
+        .group_by(Restaurant.id, User.name, User.phone_number)
     )
-    return len(data)
+
+    if search:
+        stmt = stmt.where(Restaurant.name.ilike(f"%{search}%"))
+    if vendor_search:
+        pattern = f"%{vendor_search}%"
+        stmt = stmt.where((User.name.ilike(pattern)) | (User.phone_number.ilike(pattern)))
+    if is_open is not None:
+        stmt = stmt.where(Restaurant.is_open == is_open)
+    if moderation_status:
+        stmt = stmt.where(Restaurant.moderation_status == moderation_status)
+    if min_rating is not None:
+        stmt = stmt.having(avg_rating >= min_rating)
+
+    count_stmt = select(func.count()).select_from(stmt.subquery())
+    result = await session.execute(count_stmt)
+    return result.scalar_one()
 
 
 async def get_restaurant_by_id(
@@ -432,13 +464,13 @@ async def set_vendor_moderation(
     reason: str | None = None,
 ) -> VendorProfile:
     vendor.approval_status = status
-    vendor.rejection_reason = reason if status == "REJECTED" else None
-    if status == "APPROVED":
+    vendor.rejection_reason = reason if status == ModerationStatus.REJECTED.value else None
+    if status == ModerationStatus.APPROVED.value:
         if not has_permission(vendor.user.permissions, Permission.ADMIN_ACCESS):
             vendor.user.permissions = permissions_with(vendor.user.permissions, VENDOR_PERMISSIONS)
         else:
             for restaurant in vendor.restaurants or []:
-                restaurant.moderation_status = "APPROVED"
+                restaurant.moderation_status = ModerationStatus.APPROVED.value
                 restaurant.rejection_reason = None
     await session.commit()
     await session.refresh(vendor)
@@ -452,7 +484,7 @@ async def set_restaurant_moderation(
     reason: str | None = None,
 ) -> Restaurant:
     restaurant.moderation_status = status
-    restaurant.rejection_reason = reason if status == "REJECTED" else None
+    restaurant.rejection_reason = reason if status == ModerationStatus.REJECTED.value else None
     await session.commit()
     await session.refresh(restaurant)
     return restaurant
@@ -724,19 +756,24 @@ async def get_finance_analytics(
 async def get_platform_stats(session: AsyncSession) -> PlatformStats:
     users_result = await session.execute(select(User.permissions))
     users_by_permission: dict[str, int] = {}
-    users_by_role: dict[str, int] = {"CUSTOMER": 0, "VENDOR": 0, "STAFF": 0, "ADMIN": 0}
+    users_by_role: dict[str, int] = {
+        UserRole.CUSTOMER.value: 0,
+        UserRole.VENDOR.value: 0,
+        UserRole.STAFF.value: 0,
+        UserRole.ADMIN.value: 0,
+    }
     for permissions in users_result.scalars().all():
         perm_set = set(serialize_permissions(permissions))
         for permission in perm_set:
             users_by_permission[permission] = users_by_permission.get(permission, 0) + 1
-        if "admin.access" in perm_set:
-            users_by_role["ADMIN"] += 1
-        elif "vendors.read_own" in perm_set:
-            users_by_role["VENDOR"] += 1
-        elif "staff.profile_read" in perm_set:
-            users_by_role["STAFF"] += 1
+        if Permission.ADMIN_ACCESS.value in perm_set:
+            users_by_role[UserRole.ADMIN.value] += 1
+        elif Permission.RESTAURANTS_CREATE.value in perm_set:
+            users_by_role[UserRole.VENDOR.value] += 1
+        elif Permission.ORDERS_MANAGE_STATUS.value in perm_set:
+            users_by_role[UserRole.STAFF.value] += 1
         else:
-            users_by_role["CUSTOMER"] += 1
+            users_by_role[UserRole.CUSTOMER.value] += 1
 
     orders_by_status_rows = await session.execute(
         select(Order.status, func.count()).group_by(Order.status)
@@ -751,7 +788,7 @@ async def get_platform_stats(session: AsyncSession) -> PlatformStats:
     total_vendors_result = await session.execute(
         select(func.count())
         .select_from(VendorProfile)
-        .where(VendorProfile.approval_status == "APPROVED")
+        .where(VendorProfile.approval_status == ModerationStatus.APPROVED.value)
     )
     total_vendors = total_vendors_result.scalar_one()
 
@@ -776,7 +813,9 @@ async def get_platform_stats(session: AsyncSession) -> PlatformStats:
     return PlatformStats(
         users_by_permission=users_by_permission,
         users_by_role=users_by_role,
-        total_users=users_by_role["CUSTOMER"] + users_by_role["STAFF"] + users_by_role["VENDOR"],
+        total_users=users_by_role[UserRole.CUSTOMER.value]
+        + users_by_role[UserRole.STAFF.value]
+        + users_by_role[UserRole.VENDOR.value],
         orders_by_status=orders_by_status,
         total_restaurants=total_restaurants,
         total_vendors=total_vendors,

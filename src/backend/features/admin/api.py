@@ -26,6 +26,7 @@ from features.admin.schemas import (
 )
 from features.orders.schemas.order import OrderResponse
 from features.users.models import User
+from shared.enums.moderation_status import ModerationStatus
 from shared.enums.order_status import OrderStatus
 from shared.enums.permissions import Permission
 from shared.permissions import (
@@ -105,31 +106,35 @@ async def read_user(
 @router.delete("/users/{user_id}", response_model=SuccessResponse[AdminUserResponse])
 async def delete_user(
     user_id: uuid.UUID,
-    _: User = Depends(require_admin),
+    actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminUserResponse]:
     result = await service.deactivate_user_service(session, user_id)
+    await audit_service.log_action(session, actor.id, "DEACTIVATE_USER", "user", user_id)
+    await session.commit()
     return build_response(result)
 
 
 @router.post("/users/{user_id}/activate", response_model=SuccessResponse[AdminUserResponse])
 async def activate_user(
     user_id: uuid.UUID,
-    _: User = Depends(require_admin),
+    actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminUserResponse]:
     result = await service.activate_user_service(session, user_id)
+    await audit_service.log_action(session, actor.id, "ACTIVATE_USER", "user", user_id)
+    await session.commit()
     return build_response(result)
 
 
 @router.post("/users/{user_id}/grant-admin", response_model=SuccessResponse[AdminUserResponse])
 async def grant_admin_permissions(
     user_id: uuid.UUID,
-    _: User = Depends(require_admin),
+    actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminUserResponse]:
     result = await service.set_user_permissions(
-        session, user_id, serialize_permissions(ADMIN_PERMISSIONS)
+        session, user_id, serialize_permissions(ADMIN_PERMISSIONS), actor_id=actor.id
     )
     return build_response(result)
 
@@ -138,10 +143,12 @@ async def grant_admin_permissions(
 async def change_user_permissions(
     user_id: uuid.UUID,
     body: SetPermissionsRequest,
-    _: User = Depends(require_admin),
+    actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminUserResponse]:
-    result = await service.set_user_permissions(session, user_id, body.permissions)
+    result = await service.set_user_permissions(
+        session, user_id, body.permissions, actor_id=actor.id
+    )
     return build_response(result)
 
 
@@ -151,7 +158,7 @@ async def reset_my_permissions(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminUserResponse]:
     result = await service.set_user_permissions(
-        session, user.id, serialize_permissions(CUSTOMER_PERMISSIONS)
+        session, user.id, serialize_permissions(CUSTOMER_PERMISSIONS), actor_id=user.id
     )
     return build_response(result)
 
@@ -215,34 +222,44 @@ async def read_restaurants(
 @router.post("/restaurants/batch-approve")
 async def batch_approve_restaurants(
     body: BatchIdsRequest,
-    _: User = Depends(require_admin),
+    actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[dict]:
     approved, failed = [], []
     for rid in body.ids:
         try:
-            await service.moderate_restaurant(session, rid, "APPROVED")
+            await service.moderate_restaurant(session, rid, ModerationStatus.APPROVED.value)
+            await audit_service.log_action(
+                session, actor.id, "APPROVE_RESTAURANT", "restaurant", rid
+            )
             approved.append(str(rid))
         except Exception:
             logger.exception("batch_approve_restaurants failed for id=%s", rid)
             failed.append(str(rid))
+    await session.commit()
     return build_response({"approved": approved, "failed": failed})
 
 
 @router.post("/restaurants/batch-reject")
 async def batch_reject_restaurants(
     body: BatchRejectRequest,
-    _: User = Depends(require_admin),
+    actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[dict]:
     rejected, failed = [], []
     for rid in body.ids:
         try:
-            await service.moderate_restaurant(session, rid, "REJECTED", body.reason)
+            await service.moderate_restaurant(
+                session, rid, ModerationStatus.REJECTED.value, body.reason
+            )
+            await audit_service.log_action(
+                session, actor.id, "REJECT_RESTAURANT", "restaurant", rid, {"reason": body.reason}
+            )
             rejected.append(str(rid))
         except Exception:
             logger.exception("batch_reject_restaurants failed for id=%s", rid)
             failed.append(str(rid))
+    await session.commit()
     return build_response({"rejected": rejected, "failed": failed})
 
 
@@ -281,11 +298,9 @@ async def approve_restaurant(
     actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminRestaurantResponse]:
-    result = await service.moderate_restaurant(session, restaurant_id, "APPROVED")
-    await audit_service.log_action(
-        session, actor.id, "APPROVE_RESTAURANT", "restaurant", restaurant_id
+    result = await service.moderate_restaurant(
+        session, restaurant_id, ModerationStatus.APPROVED.value, actor_id=actor.id
     )
-    await session.commit()
     return build_response(result)
 
 
@@ -299,11 +314,9 @@ async def reject_restaurant(
     actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminRestaurantResponse]:
-    result = await service.moderate_restaurant(session, restaurant_id, "REJECTED", body.reason)
-    await audit_service.log_action(
-        session, actor.id, "REJECT_RESTAURANT", "restaurant", restaurant_id, {"reason": body.reason}
+    result = await service.moderate_restaurant(
+        session, restaurant_id, ModerationStatus.REJECTED.value, body.reason, actor_id=actor.id
     )
-    await session.commit()
     return build_response(result)
 
 
@@ -331,34 +344,42 @@ async def read_vendors(
 @router.post("/vendors/batch-approve")
 async def batch_approve_vendors(
     body: BatchIdsRequest,
-    _: User = Depends(require_admin),
+    actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[dict]:
     approved, failed = [], []
     for vid in body.ids:
         try:
-            await service.moderate_vendor(session, vid, "APPROVED")
+            await service.moderate_vendor(session, vid, ModerationStatus.APPROVED.value)
+            await audit_service.log_action(session, actor.id, "APPROVE_VENDOR", "vendor", vid)
             approved.append(str(vid))
         except Exception:
             logger.exception("batch_approve_vendors failed for id=%s", vid)
             failed.append(str(vid))
+    await session.commit()
     return build_response({"approved": approved, "failed": failed})
 
 
 @router.post("/vendors/batch-reject")
 async def batch_reject_vendors(
     body: BatchRejectRequest,
-    _: User = Depends(require_admin),
+    actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[dict]:
     rejected, failed = [], []
     for vid in body.ids:
         try:
-            await service.moderate_vendor(session, vid, "REJECTED", body.reason)
+            await service.moderate_vendor(
+                session, vid, ModerationStatus.REJECTED.value, body.reason
+            )
+            await audit_service.log_action(
+                session, actor.id, "REJECT_VENDOR", "vendor", vid, {"reason": body.reason}
+            )
             rejected.append(str(vid))
         except Exception:
             logger.exception("batch_reject_vendors failed for id=%s", vid)
             failed.append(str(vid))
+    await session.commit()
     return build_response({"rejected": rejected, "failed": failed})
 
 
@@ -375,10 +396,12 @@ async def read_vendor(
 @router.delete("/vendors/{vendor_id}", response_model=SuccessResponse[AdminVendorResponse])
 async def delete_vendor(
     vendor_id: uuid.UUID,
-    _: User = Depends(require_admin),
+    actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminVendorResponse]:
     result = await service.delete_vendor_service(session, vendor_id)
+    await audit_service.log_action(session, actor.id, "DEACTIVATE_VENDOR", "vendor", vendor_id)
+    await session.commit()
     return build_response(result)
 
 
@@ -388,9 +411,9 @@ async def approve_vendor(
     actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminVendorResponse]:
-    result = await service.moderate_vendor(session, vendor_id, "APPROVED")
-    await audit_service.log_action(session, actor.id, "APPROVE_VENDOR", "vendor", vendor_id)
-    await session.commit()
+    result = await service.moderate_vendor(
+        session, vendor_id, ModerationStatus.APPROVED.value, actor_id=actor.id
+    )
     return build_response(result)
 
 
@@ -401,11 +424,9 @@ async def reject_vendor(
     actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminVendorResponse]:
-    result = await service.moderate_vendor(session, vendor_id, "REJECTED", body.reason)
-    await audit_service.log_action(
-        session, actor.id, "REJECT_VENDOR", "vendor", vendor_id, {"reason": body.reason}
+    result = await service.moderate_vendor(
+        session, vendor_id, ModerationStatus.REJECTED.value, body.reason, actor_id=actor.id
     )
-    await session.commit()
     return build_response(result)
 
 
@@ -431,10 +452,12 @@ async def read_reviews(
 @router.delete("/reviews/batch")
 async def batch_delete_reviews(
     body: BatchIdsRequest,
-    _: User = Depends(require_admin),
+    actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> dict:
     count = await crud.batch_delete_reviews(session, body.ids)
+    for rid in body.ids:
+        await audit_service.log_action(session, actor.id, "DELETE_REVIEW", "review", rid)
     await session.commit()
     return {"affected": count}
 
@@ -442,10 +465,12 @@ async def batch_delete_reviews(
 @router.delete("/reviews/{review_id}", response_model=SuccessResponse[AdminReviewResponse])
 async def delete_review(
     review_id: uuid.UUID,
-    _: User = Depends(require_admin),
+    actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminReviewResponse]:
     result = await service.delete_review_service(session, review_id)
+    await audit_service.log_action(session, actor.id, "DELETE_REVIEW", "review", review_id)
+    await session.commit()
     return build_response(result)
 
 

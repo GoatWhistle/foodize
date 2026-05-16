@@ -59,8 +59,13 @@ const PAGE_SIZE = 20;
 const AUDIT_ACTION_LABELS = {
   APPROVE_VENDOR: 'Одобрен вендор',
   REJECT_VENDOR: 'Отклонён вендор',
+  DEACTIVATE_VENDOR: 'Деактивирован вендор',
   APPROVE_RESTAURANT: 'Одобрен ресторан',
   REJECT_RESTAURANT: 'Отклонён ресторан',
+  DEACTIVATE_USER: 'Деактивирован пользователь',
+  ACTIVATE_USER: 'Активирован пользователь',
+  CHANGE_PERMISSIONS: 'Изменены права пользователя',
+  DELETE_REVIEW: 'Удален отзыв',
 };
 
 const STATUS_MAP = {
@@ -226,8 +231,23 @@ const DetailModal = ({ title, subtitle, onClose, loading, children }) => (
       </div>
       <div style={{ padding: 22, overflowY: 'auto' }}>
         {loading ? (
-          <div className="loading-center">
-            <div className="spinner" />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div
+              className="skeleton"
+              style={{ width: '100%', height: 24, borderRadius: 4 }}
+            />
+            <div
+              className="skeleton"
+              style={{ width: '80%', height: 16, borderRadius: 4 }}
+            />
+            <div
+              className="skeleton"
+              style={{ width: '90%', height: 16, borderRadius: 4 }}
+            />
+            <div
+              className="skeleton"
+              style={{ width: '60%', height: 16, borderRadius: 4 }}
+            />
           </div>
         ) : (
           children
@@ -795,7 +815,6 @@ const AdminDashboardPage = () => {
       setFinance(finRes.data.data);
       setAdvancedAnalytics(advRes.data.data);
     } catch (err) {
-      console.error('Finance fetch error:', err);
       setActionError('Не удалось загрузить аналитику');
     } finally {
       setFinanceLoading(false);
@@ -2250,8 +2269,7 @@ const AdminDashboardPage = () => {
                                 );
                                 setOrdersPage(1);
                               } catch (err) {
-                                console.error('Failed to force cancel', err);
-                                alert(
+                                setActionError(
                                   'Ошибка отмены: ' +
                                     (err.response?.data?.detail || err.message)
                                 );
@@ -3442,8 +3460,32 @@ const ListSection = ({ loading, emptyTitle, items, children }) => {
 
   if (loading && isEmpty) {
     return (
-      <div className="loading-center">
-        <div className="spinner" />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div
+            key={i}
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--r-md)',
+              padding: 16,
+            }}
+          >
+            <div
+              className="skeleton"
+              style={{
+                width: '30%',
+                height: 16,
+                marginBottom: 8,
+                borderRadius: 4,
+              }}
+            />
+            <div
+              className="skeleton"
+              style={{ width: '70%', height: 12, borderRadius: 4 }}
+            />
+          </div>
+        ))}
       </div>
     );
   }

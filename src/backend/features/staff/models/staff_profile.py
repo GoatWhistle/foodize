@@ -17,7 +17,7 @@ class StaffProfile(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
     restaurant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("restaurants.id"))
 
     role: Mapped[str] = mapped_column(
-        String, default=StaffRole.COOK.value, server_default="COOK", nullable=False
+        String, default=StaffRole.COOK.value, server_default=StaffRole.COOK.value, nullable=False
     )
 
     user: Mapped["User"] = relationship(back_populates="staff_profile")

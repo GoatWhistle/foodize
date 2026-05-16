@@ -27,14 +27,12 @@ const CATEGORY_ICONS = {
 
 const formatPrice = (value) => `${value} ₽`;
 
-const MenuItemCard = ({ item, onSelect }) => {
+const MenuItemCard = ({ item, onSelect, isRestaurantOpen = true }) => {
   const icon =
     CATEGORY_ICONS[item.category?.toUpperCase()] || CATEGORY_ICONS.DEFAULT;
-  const unavailable = item.is_available === false;
+  const isClosed = isRestaurantOpen === false;
+  const unavailable = item.is_available === false || isClosed;
   const featured = item.is_popular === true;
-  const optionGroups = (item.option_groups || []).filter(
-    (group) => group.is_active !== false && (group.options || []).length > 0
-  );
 
   return (
     <button
@@ -100,7 +98,7 @@ const MenuItemCard = ({ item, onSelect }) => {
                 gap: 4,
               }}
             >
-              Недоступно
+              {isClosed ? 'Закрыто' : 'Недоступно'}
             </span>
           ) : (
             <span
@@ -124,7 +122,9 @@ const MenuItemCard = ({ item, onSelect }) => {
 
       <div className="menu-item-side">
         {!unavailable && (
-          <span className="menu-item-choose" aria-hidden="true">+</span>
+          <span className="menu-item-choose" aria-hidden="true">
+            +
+          </span>
         )}
       </div>
     </button>

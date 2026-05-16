@@ -6,6 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base, CreatedAtMixin, DeletedAtMixin, IdUuidPkMixin, UpdatedAtMixin
 from database.mixins.name_str import NameStrMixin
+from shared.enums.moderation_status import ModerationStatus
 
 if TYPE_CHECKING:
     from features.favorites.models import Favorite
@@ -30,7 +31,10 @@ class Restaurant(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMix
     is_active: Mapped[bool] = mapped_column(default=True, server_default="true")
     photo_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
     moderation_status: Mapped[str] = mapped_column(
-        String, default="PENDING", server_default="PENDING", nullable=False
+        String,
+        default=ModerationStatus.PENDING.value,
+        server_default=ModerationStatus.PENDING.value,
+        nullable=False,
     )
     rejection_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
     average_rating: Mapped[float] = mapped_column(default=0.0, server_default="0.0")

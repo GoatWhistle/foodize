@@ -20,7 +20,7 @@ class StaffRequest(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
     status: Mapped[str] = mapped_column(
         String,
         default=StaffRequestStatus.PENDING.value,
-        server_default="PENDING",
+        server_default=StaffRequestStatus.PENDING.value,
         nullable=False,
     )
     user: Mapped["User"] = relationship(back_populates="staff_requests")

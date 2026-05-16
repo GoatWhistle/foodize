@@ -1,7 +1,7 @@
 import uuid
-from typing import Literal
 
 from fastapi import APIRouter, Depends, Query, Request
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
@@ -22,6 +22,8 @@ from features.vendors.dependencies import get_current_vendor
 from features.vendors.models import VendorProfile
 from shared.dependencies import require_permission
 from shared.enums.permissions import Permission
+from shared.enums.restaurant_sort import RestaurantSort
+from shared.enums.sort_direction import SortDirection
 from shared.exceptions.existence import NotFoundException
 from shared.exceptions.rules import AccessDeniedException
 from shared.response import build_list_response, build_response
@@ -45,8 +47,8 @@ async def read_public_restaurants(
     name: str | None = Query(None, max_length=128),
     is_hiring: bool | None = Query(None),
     is_open: bool | None = Query(None),
-    sort: Literal["default", "rating", "popularity_7d"] = Query("default"),
-    direction: Literal["asc", "desc"] = Query("desc"),
+    sort: RestaurantSort = Query(RestaurantSort.DEFAULT),
+    direction: SortDirection = Query(SortDirection.DESC),
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
@@ -113,10 +115,21 @@ async def read_my_restaurants(
     response_model=SuccessResponse[list[WorkingHoursRead]],
 )
 async def read_working_hours(
-    restaurant_id: uuid.UUID,
+    restaurant_id: str,
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[list[WorkingHoursRead]]:
-    rows = await get_working_hours(session, restaurant_id)
+    try:
+        parsed_uuid = uuid.UUID(restaurant_id)
+        where_clause = Restaurant.id == parsed_uuid
+    except ValueError:
+        where_clause = Restaurant.display_id == restaurant_id
+
+    result = await session.execute(select(Restaurant.id).where(where_clause))
+    real_id = result.scalar_one_or_none()
+    if not real_id:
+        raise NotFoundException(detail="Restaurant not found")
+
+    rows = await get_working_hours(session, real_id)
     return build_response([WorkingHoursRead.model_validate(r) for r in rows])
 
 

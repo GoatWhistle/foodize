@@ -10,12 +10,14 @@ from database.db_helper import db_helper
 from features.notifications.outbox import OutboxEvent
 from infra.messaging.base import MessagePublisher
 from infra.messaging.rabbitmq import get_rabbitmq_publisher
+from shared.enums.event_type import EventType
+from shared.enums.outbox_status import OutboxStatus
 
 logger = logging.getLogger(__name__)
 
 _ROUTING = {
-    "order.placed": "order.placed",
-    "order.status_changed": "order.status_changed",
+    EventType.ORDER_PLACED.value: EventType.ORDER_PLACED.value,
+    EventType.ORDER_STATUS_CHANGED.value: EventType.ORDER_STATUS_CHANGED.value,
 }
 
 
@@ -42,7 +44,7 @@ async def publish_pending_events(
     now = datetime.now(timezone.utc)
     result = await session.execute(
         select(OutboxEvent)
-        .where(OutboxEvent.status == "PENDING")
+        .where(OutboxEvent.status == OutboxStatus.PENDING.value)
         .where(OutboxEvent.next_attempt_at <= now)
         .order_by(OutboxEvent.created_at)
         .limit(limit)
@@ -60,7 +62,7 @@ async def publish_pending_events(
             event.next_attempt_at = now + timedelta(seconds=delay_seconds)
             logger.exception("Outbox publish failed event_id=%s", event.event_id)
         else:
-            event.status = "PUBLISHED"
+            event.status = OutboxStatus.PUBLISHED.value
             event.published_at = datetime.now(timezone.utc)
             event.last_error = None
             published += 1

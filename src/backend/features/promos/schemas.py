@@ -4,10 +4,12 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from shared.enums.discount_type import DiscountType
+
 
 class PromoCreate(BaseModel):
     code: str = Field(..., min_length=3, max_length=64)
-    discount_type: Literal["PERCENT", "FIXED"]
+    discount_type: Literal[DiscountType.PERCENT.value, DiscountType.FIXED.value]
     discount_value: int = Field(..., ge=1)
     restaurant_id: uuid.UUID
     max_uses: int | None = Field(None, ge=1)

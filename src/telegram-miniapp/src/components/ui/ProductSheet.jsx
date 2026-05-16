@@ -137,9 +137,12 @@ const ProductSheet = ({ item, onClose, onAdd }) => {
   };
 
   const sheet = (
-    <div className="product-sheet-overlay" onMouseDown={(event) => {
-      if (event.target === event.currentTarget) onClose?.();
-    }}>
+    <div
+      className="product-sheet-overlay"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose?.();
+      }}
+    >
       <section
         className={`product-sheet${groups.length === 0 ? " product-sheet--compact" : ""}`}
         role="dialog"
@@ -173,8 +176,8 @@ const ProductSheet = ({ item, onClose, onAdd }) => {
             </div>
             <div className="product-sheet-meta">
               <span>
-                <Clock size={14} weight="bold" />~
-                {item.prep_time_minutes || 15} мин
+                <Clock size={14} weight="bold" />~{item.prep_time_minutes || 15}{" "}
+                мин
               </span>
             </div>
           </div>

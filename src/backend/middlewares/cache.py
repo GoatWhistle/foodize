@@ -1,6 +1,7 @@
 import hashlib
 
 from fastapi import Request, Response
+from redis.exceptions import RedisError
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
@@ -63,7 +64,11 @@ class AutoCacheMiddleware(BaseHTTPMiddleware):
 
         if method == "GET":
             cache_key = self._make_cache_key(request)
-            cached = await cache.get(cache_key)
+            try:
+                cached = await cache.get(cache_key)
+            except RedisError:
+                return await call_next(request)
+
             if cached:
                 return Response(content=cached, media_type="application/json")
 
@@ -74,9 +79,12 @@ class AutoCacheMiddleware(BaseHTTPMiddleware):
                 async for chunk in response.body_iterator:
                     chunks.append(chunk if isinstance(chunk, bytes) else chunk.encode())
                 body = b"".join(chunks)
-                await cache.set(cache_key, body.decode(), ttl=self.ttl)
-                tag_key = self._make_tag_key(path)
-                await cache.sadd(tag_key, cache_key)
+                try:
+                    await cache.set(cache_key, body.decode(), ttl=self.ttl)
+                    tag_key = self._make_tag_key(path)
+                    await cache.sadd(tag_key, cache_key)
+                except RedisError:
+                    pass
                 return Response(
                     content=body,
                     status_code=response.status_code,
@@ -88,7 +96,10 @@ class AutoCacheMiddleware(BaseHTTPMiddleware):
 
         if method in _MUTATING_METHODS:
             tag_key = self._make_tag_key(path)
-            keys = await cache.smembers(tag_key)
-            await cache.delete_many(*keys, tag_key)
+            try:
+                keys = await cache.smembers(tag_key)
+                await cache.delete_many(*keys, tag_key)
+            except RedisError:
+                pass
 
         return await call_next(request)

@@ -35,6 +35,38 @@ def _mini_app_keyboard() -> InlineKeyboardMarkup | None:
     )
 
 
+def _restaurant_keyboard(display_id: str, name: str) -> InlineKeyboardMarkup | None:
+    if not bot_config.mini_app_url:
+        return None
+    url = f"{bot_config.mini_app_url.rstrip('/')}/restaurant/{display_id}"
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=f"Открыть {name}" if name else "Открыть ресторан",
+                    web_app=WebAppInfo(url=url),
+                )
+            ]
+        ]
+    )
+
+
+def _order_deep_link_keyboard(order_display_id: str) -> InlineKeyboardMarkup | None:
+    if not bot_config.mini_app_url:
+        return None
+    url = f"{bot_config.mini_app_url.rstrip('/')}/orders/{order_display_id}"
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=f"Открыть заказ #{order_display_id}",
+                    web_app=WebAppInfo(url=url),
+                )
+            ]
+        ]
+    )
+
+
 def _phone_keyboard() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
@@ -118,6 +150,47 @@ async def _link_phone(message: Message, phone_number: str) -> bool:
 
 @router.message(CommandStart())
 async def cmd_start(message: Message) -> None:
+    # Parse deep link param: /start restaurant_{display_id} or /start order_{display_id}
+    args = message.text.split(maxsplit=1)[1] if message.text and " " in message.text else ""
+
+    if args.startswith("restaurant_"):
+        display_id = args[len("restaurant_") :].strip()
+        # Try to fetch restaurant name for a nicer button label
+        restaurant_name = ""
+        if bot_config.backend_url and display_id:
+            try:
+                async with httpx.AsyncClient(timeout=5) as client:
+                    resp = await client.get(
+                        f"{bot_config.backend_url.rstrip('/')}/api/v1/restaurants/public/{display_id}"
+                    )
+                    if resp.status_code == 200:
+                        restaurant_name = resp.json().get("data", {}).get("name", "")
+            except Exception:
+                pass
+        keyboard = _restaurant_keyboard(display_id, restaurant_name)
+        if keyboard:
+            await message.answer(
+                f"Добро пожаловать в <b>Foodize</b>! 🍽\n\n"
+                f"Открыть заведение <b>{restaurant_name or display_id}</b>:",
+                reply_markup=keyboard,
+            )
+        else:
+            await message.answer("Добро пожаловать в <b>Foodize</b>!")
+        return
+
+    if args.startswith("order_"):
+        order_display_id = args[len("order_") :].strip()
+        keyboard = _order_deep_link_keyboard(order_display_id)
+        if keyboard:
+            await message.answer(
+                f"Открыть заказ <b>#{order_display_id}</b>:",
+                reply_markup=keyboard,
+            )
+        else:
+            await message.answer("Добро пожаловать в <b>Foodize</b>!")
+        return
+
+    # Default /start — no deep link
     await message.answer(
         "Добро пожаловать в <b>Foodize</b>!\n\n"
         "Можно сразу открыть сервис или сначала привязать номер телефона.\n"

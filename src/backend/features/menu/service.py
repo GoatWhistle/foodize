@@ -2,6 +2,7 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from features.admin.audit_log import service as audit_service
 from features.menu import crud
 from features.menu.exceptions import MenuItemNotFoundException
 from features.menu.models import MenuItem, MenuItemOption, MenuItemOptionGroup
@@ -25,11 +26,22 @@ async def add_menu_item(
     restaurant_id: uuid.UUID,
     item_data: MenuItemCreate,
     vendor_id: uuid.UUID,
+    actor_id: uuid.UUID | None = None,
 ) -> MenuItemResponse:
     await get_restaurant_and_check_ownership(
         session=session, restaurant_id=restaurant_id, vendor_id=vendor_id
     )
     item = await crud.create_menu_item(session, item_data, restaurant_id)
+
+    await audit_service.log_action(
+        session,
+        actor_id=actor_id,
+        action="CREATE_MENU_ITEM",
+        entity_type="menu_item",
+        entity_id=item.id,
+        details={"restaurant_id": str(restaurant_id), "name": item.name},
+    )
+    await session.commit()
     return MenuItemResponse.model_validate(item)
 
 
@@ -66,9 +78,25 @@ async def update_menu_item_for_vendor(
     item_id: uuid.UUID,
     item_data: MenuItemUpdate,
     vendor_id: uuid.UUID,
+    actor_id: uuid.UUID | None = None,
 ) -> MenuItemResponse:
     item = await _get_owned_menu_item(session, restaurant_id, item_id, vendor_id)
+    old_data = {
+        "name": item.name,
+        "price": item.price,
+        "is_available": item.is_available,
+    }
     updated = await crud.update_menu_item(session, item, item_data)
+
+    await audit_service.log_action(
+        session,
+        actor_id=actor_id,
+        action="UPDATE_MENU_ITEM",
+        entity_type="menu_item",
+        entity_id=updated.id,
+        details={"old": old_data, "new": item_data.model_dump(exclude_unset=True)},
+    )
+    await session.commit()
     return MenuItemResponse.model_validate(updated)
 
 
@@ -77,9 +105,20 @@ async def delete_menu_item_for_vendor(
     restaurant_id: uuid.UUID,
     item_id: uuid.UUID,
     vendor_id: uuid.UUID,
+    actor_id: uuid.UUID | None = None,
 ) -> None:
     item = await _get_owned_menu_item(session, restaurant_id, item_id, vendor_id)
     await crud.delete_menu_item(session, item)
+
+    await audit_service.log_action(
+        session,
+        actor_id=actor_id,
+        action="DELETE_MENU_ITEM",
+        entity_type="menu_item",
+        entity_id=item_id,
+        details={"restaurant_id": str(restaurant_id), "name": item.name},
+    )
+    await session.commit()
 
 
 async def _get_owned_option_group(
@@ -193,10 +232,22 @@ async def toggle_item_availability_for_vendor(
     item_id: uuid.UUID,
     is_available: bool,
     vendor_id: uuid.UUID,
+    actor_id: uuid.UUID | None = None,
 ) -> MenuItemResponse:
     item = await _get_owned_menu_item(session, restaurant_id, item_id, vendor_id)
     item.is_available = is_available
     await session.commit()
+
+    await audit_service.log_action(
+        session,
+        actor_id=actor_id,
+        action="TOGGLE_MENU_ITEM",
+        entity_type="menu_item",
+        entity_id=item_id,
+        details={"is_available": is_available, "restaurant_id": str(restaurant_id)},
+    )
+    await session.commit()
+
     loaded = await crud.get_menu_item_by_id(session, item.id)
     return MenuItemResponse.model_validate(loaded)
 

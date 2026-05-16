@@ -111,11 +111,7 @@ const router = createBrowserRouter([
   },
   {
     path: ROUTES.DISPLAY_BOARD,
-    element: (
-      <ProtectedRoute>
-        <DisplayBoardPage />
-      </ProtectedRoute>
-    ),
+    element: <DisplayBoardPage />,
   },
   {
     path: '*',

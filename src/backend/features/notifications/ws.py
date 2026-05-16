@@ -4,6 +4,7 @@ import uuid
 
 import jwt
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from uvicorn.protocols.utils import ClientDisconnected
 
 from database import db_helper
 from features.users.dependencies import get_user_by_id
@@ -11,6 +12,20 @@ from infra.cache.redis import get_redis_cache
 from utils.JWT import decode_jwt
 
 router = APIRouter(prefix="/ws", tags=["WebSockets"])
+
+
+async def _safe_send_text(websocket: WebSocket, payload: str) -> None:
+    try:
+        await websocket.send_text(payload)
+    except (WebSocketDisconnect, ClientDisconnected):
+        raise WebSocketDisconnect
+
+
+async def _safe_send_json(websocket: WebSocket, payload: dict) -> None:
+    try:
+        await websocket.send_json(payload)
+    except (WebSocketDisconnect, ClientDisconnected):
+        raise WebSocketDisconnect
 
 
 @router.websocket("/notifications/{user_id}")
@@ -22,7 +37,7 @@ async def user_notifications_ws(
     await websocket.accept()
 
     if not token:
-        await websocket.send_text(json.dumps({"error": "not_authenticated"}))
+        await _safe_send_text(websocket, json.dumps({"error": "not_authenticated"}))
         await websocket.close()
         return
 
@@ -30,19 +45,19 @@ async def user_notifications_ws(
         payload = decode_jwt(token)
         token_user_id = uuid.UUID(payload.get("sub", ""))
     except (jwt.InvalidTokenError, ValueError, AttributeError):
-        await websocket.send_text(json.dumps({"error": "invalid_token"}))
+        await _safe_send_text(websocket, json.dumps({"error": "invalid_token"}))
         await websocket.close()
         return
 
     if token_user_id != user_id:
-        await websocket.send_text(json.dumps({"error": "forbidden"}))
+        await _safe_send_text(websocket, json.dumps({"error": "forbidden"}))
         await websocket.close()
         return
 
     async with db_helper.session_factory() as session:
         user = await get_user_by_id(session, token_user_id)
         if user is None or not user.is_active:
-            await websocket.send_text(json.dumps({"error": "not_authenticated"}))
+            await _safe_send_text(websocket, json.dumps({"error": "not_authenticated"}))
             await websocket.close()
             return
 
@@ -50,7 +65,7 @@ async def user_notifications_ws(
     pubsub = redis_client.pubsub()
     channel = f"user_notifications:{user_id}"
     await pubsub.subscribe(channel)
-    await websocket.send_text(json.dumps({"type": "connected"}))
+    await _safe_send_text(websocket, json.dumps({"type": "connected"}))
 
     try:
 
@@ -61,7 +76,7 @@ async def user_notifications_ws(
                     if isinstance(data_str, bytes):
                         data_str = data_str.decode("utf-8")
                     try:
-                        await websocket.send_json(json.loads(data_str))
+                        await _safe_send_json(websocket, json.loads(data_str))
                     except json.JSONDecodeError:
                         pass
 
@@ -72,7 +87,7 @@ async def user_notifications_ws(
                     try:
                         client_data = json.loads(client_message)
                         if client_data.get("type") == "ping":
-                            await websocket.send_text(json.dumps({"type": "pong"}))
+                            await _safe_send_text(websocket, json.dumps({"type": "pong"}))
                     except json.JSONDecodeError:
                         pass
             except WebSocketDisconnect:
@@ -84,5 +99,9 @@ async def user_notifications_ws(
         done, pending = await asyncio.wait([t1, t2], return_when=asyncio.FIRST_COMPLETED)
         for task in pending:
             task.cancel()
+        for task in done:
+            task.result()
+    except WebSocketDisconnect:
+        pass
     finally:
         await pubsub.unsubscribe(channel)

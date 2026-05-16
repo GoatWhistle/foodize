@@ -42,7 +42,7 @@ async def order_status_ws(
             data = OrderResponse.model_validate(order).model_dump(mode="json")
             await websocket.send_text(json.dumps(data))
 
-            if last_status in ("COMPLETED", "CANCELLED"):
+            if last_status in (OrderStatus.COMPLETED.value, OrderStatus.CANCELLED.value):
                 return
 
         while True:
@@ -59,7 +59,7 @@ async def order_status_ws(
                         data = OrderResponse.model_validate(order).model_dump(mode="json")
                         await websocket.send_text(json.dumps(data))
 
-                    if current_status in ("COMPLETED", "CANCELLED"):
+                    if current_status in (OrderStatus.COMPLETED.value, OrderStatus.CANCELLED.value):
                         break
 
             # Non-blocking read to check for pings/disconnects

@@ -334,7 +334,7 @@ Backend написан на Python 3.13, FastAPI, SQLAlchemy async, Alembic, Pyd
 - Отмена заказа с причинами и правилами по времени.
 - Чат или быстрые сообщения по заказу: "опоздаю", "заменить блюдо", "нет ингредиента".
 - Online payment-ready architecture: payment intent, provider webhook, refund, reconciliation, без обязательной немедленной интеграции.
-- Загрузка фотографий в S3-compatible storage с moderation flow.
+- Загрузка фотографий в S3-compatible storage with moderation flow.
 - Рекомендации на основе истории заказов после накопления данных.
 
 ### P2: наблюдаемость и эксплуатация
@@ -353,17 +353,355 @@ Backend написан на Python 3.13, FastAPI, SQLAlchemy async, Alembic, Pyd
 - Mobile-first checkout: sticky cart summary, быстрый повтор заказа, понятные ошибки промокода/опций.
 - Admin/vendor dashboards с адаптивными таблицами, фильтрами, сохранением состояния и понятными bulk actions.
 
-## Приоритетный план улучшений
+## План задач для релиза
 
-1. Починить frontend lint в `StaffDashboardPage.jsx` и `VendorDashboardPage.jsx`, затем сделать lint обязательным gate.
-2. Встроить OpenAPI generation в CI: `make openapi` + проверка, что schema и generated clients не изменились.
-3. Расширить `README.md`: быстрый старт, env, Docker, локальный запуск, тесты, миграции, OpenAPI, Telegram.
-4. Выровнять Node.js версии в CI, Dockerfile и локальном окружении.
-5. Привести кодировку русских строк/комментариев к UTF-8 и убрать mojibake.
-6. Описать order state machine и покрыть переходы тестами.
-7. Добавить idempotency keys и durable order timeline для создания/изменения заказа.
-8. Реализовать outbox для order events и надежную доставку уведомлений.
-9. Добавить Playwright smoke-tests для главного customer flow и staff/vendor order flow.
-10. Добавить audit log для admin/vendor/staff действий.
-11. Усилить Telegram production-flow: initData signature tests, webhook docs, deep links, delivery retries.
-12. Добавить Grafana dashboards/alerts и backup/restore runbook.
+> Анализ выполнен 2026-05-16. Охвачены: backend, frontend, telegram-miniapp, telegram-bot, все README.
+> S3 / загрузка фото исключены по требованию.
+
+> **Важное архитектурное ограничение:** Telegram Miniapp предназначена **только** для покупателей. Кабинетов вендора, сотрудника и администратора в миниаппке нет и не должно быть — они существуют исключительно на сайте (frontend). Все задачи, относящиеся к этим ролям, касаются только сайта и бота.
+
+---
+
+### Резюме состояния проекта
+
+**Что реально работает:**
+- Backend: REST API, все ключевые endpoints, order state machine с переходами и event log, idempotency keys, outbox для событий, WebSocket статусов заказов и ресторанных событий, notifications WS, Telegram initData auth, promos с min_order_amount / first_order_only / menu_category, рабочие часы, reviews с verified purchase, admin CRUD полный (включая batch-actions, export CSV/PDF, audit log), vendor finance + analytics, staff kanban + stop-list.
+- Frontend: все страницы есть (home, auth, restaurant, orders, order status, vendor dashboard, staff dashboard, admin dashboard, profile, favorites, display board). Vendor/admin dashboards — крупные файлы (~2900 и ~3500 строк), функциональны.
+- Miniapp: все страницы (home, restaurant, orders, order status, profile, favorites, notifications), Telegram boot flow, notifications store с WS.
+- Bot: /start, phone linking, order notifications (order.placed, order.status_changed).
+
+**Что отсутствует / сломано / не готово к релизу:**
+Подробно по приоритетам ниже.
+
+---
+
+### P0 — Блокеры релиза (критические проблемы)
+
+#### 1. Frontend lint сломан — CI не работает как quality gate
+
+**Проблема:** `StaffDashboardPage.jsx` и `VendorDashboardPage.jsx` содержат lint-ошибки (useEffect с missing deps, console.log, etc.). CI падает на lint-шаге, что делает его бесполезным как гарантию качества.
+
+**Что сделать:**
+- Починить все ESLint-ошибки в `StaffDashboardPage.jsx` и `VendorDashboardPage.jsx`
+- Убедиться, что `npm run lint` проходит без ошибок в обоих проектах (frontend + miniapp)
+- В CI сделать lint обязательным gate (не `continue-on-error`)
+
+---
+
+#### 2. WebSocket: нет reconnect/backoff/heartbeat
+
+**Проблема:** В `OrderStatusPage.jsx` и `StaffDashboardPage.jsx` WebSocket открывается через `createOrderWebSocket` / `createRestaurantOrdersWebSocket`, но при разрыве соединения — fallback только один раз (`onclose -> loadOrder()`). Нет exponential backoff, нет heartbeat, нет стратегии при длительном отключении. На мобильном (Telegram miniapp) это критично.
+
+**Что сделать:**
+- ✅ Реализована функция-обёртка WebSocket с автоматическим reconnect и exponential backoff.
+- ✅ Применено в OrderStatusPage, VendorDashboardPage, StaffDashboardPage.
+- ✅ Поддержан Heartbeat (ping/pong).
+
+---
+
+#### 3. Vendor approval flow: вендор может работать без одобрения админа
+
+**Проблема:** В `ProfilePage.jsx` кнопка "Стать вендором" вызывает `vendorService.createProfile()` и **сразу** редиректит на vendor dashboard. В backend `VendorProfile` имеет `approval_status` (PENDING по умолчанию), но frontend не проверяет этот статус и не блокирует доступ до одобрения. Вендор с PENDING-статусом видит полный dashboard и может создавать рестораны.
+
+**Что сделать:**
+- ✅ Backend: при `approval_status == PENDING` запрещено создание ресторана (403).
+- ✅ Frontend: в `VendorDashboardPage.jsx` добавлена проверка статуса и блокировка действий до одобрения.
+- ✅ ProfilePage: редирект блокируется до получения APPROVED.
+
+---
+
+#### 4. Ресторан с PENDING moderation_status виден в публичном списке
+
+**Проблема:** Нужно проверить, что endpoint `GET /api/v1/restaurants/` (публичный список) фильтрует по `moderation_status == APPROVED` и `is_active == True`. Если ресторан создан вендором, но ещё не одобрен — он не должен быть виден покупателям.
+
+**Что сделать:**
+- Проверить `restaurants/service.py` → `get_public_restaurants()` на наличие фильтра `moderation_status = "APPROVED"`
+- Добавить фильтр если отсутствует + миграцию если нужно
+
+---
+
+#### 5. Telegram initData: нет теста на атакующие случаи
+
+**Проблема:** Telegram initData валидируется на backend (`/telegram/`), но нет тестов с невалидной/просроченной/поддельной подписью. В production это дыра в аутентификации miniapp.
+
+**Что сделать:**
+- ✅ Добавлены unit-тесты для `telegram/service.py` (12 тестов).
+- ✅ Реализована дифференциация 400 (malformed) и 401 (invalid/expired).
+- ✅ Строгая валидация JSON в `user` поле.
+
+---
+
+### P1 — Критично для релиза (без этого продукт неполный)
+
+#### 6. Отсутствует vendor approval flow в admin UI
+
+**Проблема:** В `AdminDashboardPage.jsx` есть таб "vendors" с batch approve/reject. Но нет явного уведомления вендора о решении (только смена статуса). Также нет "vendor onboarding" — пути для нового вендора, который понимает, что происходит.
+
+**Что сделать:**
+- Telegram-бот: добавить хендлер `/vendor_status` или уведомление при смене `approval_status` вендора (через audit log или отдельный event)
+- Frontend VendorDashboardPage: показывать бейдж статуса ресторана (`moderation_status`) в списке ресторанов вендора с пояснением
+
+---
+
+#### 7. Промокоды: frontend не показывает все возможности модели
+
+**Проблема:** Модель `Promo` поддерживает `first_order_only`, `min_order_amount`, `menu_category`. Но форма создания промокода в `VendorDashboardPage.jsx` (строки ~237-244) содержит только: `code`, `discount_type`, `discount_value`, `max_uses`, `expires_at`. Поля `first_order_only`, `min_order_amount`, `menu_category` недоступны из UI.
+
+**Что сделать:**
+- В форме создания промокода добавить поля: "Только первый заказ" (checkbox), "Минимальная сумма заказа" (number), "Категория меню" (select)
+- При отображении активных промокодов — показывать все применённые условия
+
+---
+
+#### 8. RestaurantPage: можно делать заказ из закрытого ресторана
+**Статус: ✅ Выполнено**
+- ✅ Блокировка добавления в корзину в MenuItemCard и ProductSheet.
+- ✅ Информационный баннер на странице ресторана.
+- ✅ Передача статуса is_open через компоненты.
+
+---
+
+#### 9. Miniapp: нет deep link в конкретный ресторан/заказ из бота
+
+**Проблема:** Бот отправляет кнопку "Открыть Foodize" (открывает главную miniapp). Но при уведомлении об изменении статуса заказа пользователь должен попасть сразу на страницу этого заказа.
+
+> **Важно:** В качестве идентификатора в deep links всегда использовать `display_id` ресторана (поле уже есть в модели `Restaurant`), а не UUID. Для заказов — `display_id` заказа.
+
+**Что сделать:**
+- ✅ Bot handlers: передают `startapp` параметр.
+- ✅ Miniapp `App.jsx`: обрабатывает `start_param` (order_XXX, restaurant_YYY) и выполняет редирект.
+- ✅ SDK: добавлена функция `getStartParam`.
+
+---
+
+#### 10. Уведомления miniapp: WS подключается без retry при ошибке
+
+**Проблема:** В `App.jsx` miniapp `connectWs(user.id)` подключает WS для уведомлений. Но `useNotificationStore` не имеет reconnect-логики. При разрыве — уведомления перестают приходить до перезагрузки.
+
+**Что сделать:**
+- В `useNotificationStore` / `notificationService` добавить reconnect with backoff (аналогично п.2)
+- Показывать пользователю индикатор "нет соединения" в BottomNav badge или отдельном элементе
+
+---
+
+#### 11. Нет страницы / состояния для staff-заявки с ACCEPTED status
+**Статус: ✅ Выполнено**
+- ✅ Backend автоматически создает StaffProfile при одобрении заявки.
+- ✅ Frontend корректно отображает кабинет сотрудника после одобрения.
+
+---
+
+#### 12. Display board: требует аутентификации, но предназначен для публичных экранов
+
+**Проблема:** В `App.jsx` маршрут `/display-board` обёрнут в `<ProtectedRoute>`. Display Board (экран для кухни/зала) должен быть доступен без логина или через специальный PIN-код.
+
+**Что сделать:**
+- Убрать `ProtectedRoute` с маршрута `/display-board`
+- Добавить защиту через `?token=` параметр (short-lived token) или PIN
+- Backend: добавить endpoint для получения display-board данных с ограниченным доступом (только статусы PENDING/ACCEPTED/READY, без персональных данных)
+
+---
+
+#### 13. Vendor export: экспорт заказов формирует неверный date_from/date_to
+**Статус: ✅ Выполнено**
+- ✅ В VendorDashboardPage добавлены раздельные поля выбора даты "С" и "По".
+- ✅ Экспорт учитывает выбранный диапазон.
+
+---
+
+#### 14. Отсутствует email-поле в регистрации / profile
+**Статус: ✅ Выполнено**
+- ✅ Поле email добавлено в форму регистрации (необязательно).
+- ✅ Поле email добавлено в редактирование профиля.
+- ✅ Backend поддерживает сохранение email.
+
+---
+
+#### 15. Bot: нет обработки ошибки "пользователь заблокировал бота"
+
+**Проблема:** В `notifications/handlers.py` при `bot.send_message` ловится `Exception` и логируется warning. Но `aiogram` при `Forbidden` (пользователь заблокировал бота) должен деактивировать `telegram_id` в Redis чтобы не делать лишние запросы.
+
+**Что сделать:**
+- ✅ Обработка `TelegramForbiddenError` реализована.
+- ✅ Автоматическая деактивация `user_tg:{user_id}` в Redis при блокировке бота.
+
+---
+
+### P2 — Важно для хорошего UX
+
+#### 16. Skeleton-загрузка: часть компонентов показывает спиннер вместо skeleton
+
+**Проблема:** `OrderStatusPage.jsx` имеет красивый skeleton. Но `VendorDashboardPage`, `AdminDashboardPage` — показывают `<div className="spinner"/>` при загрузке таблиц. Опыт мигания контента плохой.
+
+**Что сделать:**
+- Добавить skeleton-rows для таблиц в AdminDashboardPage (users, orders, restaurants, vendors, reviews)
+- Добавить skeleton для карточек статистики (stats tab)
+
+---
+
+#### 17. Miniapp: кнопка "Повторить заказ" ведёт по `restaurant.id` (UUID), а не `display_id`
+
+**Проблема:** В `OrderStatusPage.jsx` frontend (строка ~567): `navigate(ROUTES.RESTAURANT.replace(':id', currentOrder.restaurant_id))` — использует UUID. Miniapp тоже navigates по `r.id` (строка ~176 home page). Это работает, но URL `restaurant/a3b2c1...` некрасив.
+
+**Что сделать:**
+- В `OrderResponse` добавить поле `restaurant_display_id` (уже есть `display_id` у Restaurant)
+- Обновить navigate: `restaurant_display_id || restaurant_id`
+
+---
+
+#### 18. Vendor: нет валидации при создании ресторана — дублирующийся адрес
+
+**Проблема:** `Restaurant.address` имеет `unique=True` на уровне БД. При попытке создать второй ресторан с тем же адресом backend вернёт 500 или 422. Frontend показывает непонятную ошибку.
+
+**Что сделать:**
+- Backend: добавить явную проверку уникальности адреса с `409 Conflict` и понятным сообщением
+- Frontend: `translateApiError` должен обрабатывать этот случай
+
+---
+
+#### 19. Admin audit log: отображается только 4 типа событий
+
+**Проблема:** В `AdminDashboardPage.jsx` константа `AUDIT_ACTION_LABELS` содержит только 4 значения: APPROVE_VENDOR, REJECT_VENDOR, APPROVE_RESTAURANT, REJECT_RESTAURANT. Но в backend `audit_service.log_action` вызывается только для этих 4 действий. Изменения меню, промокодов, статусов заказов — не логируются.
+
+**Что сделать:**
+- ✅ Добавлен Audit Logging для:
+  - Создание/изменение/удаление/toggle menu item.
+  - Создание/деактивация промокода.
+  - Модерация вендоров и ресторанов.
+  - Изменение прав доступа (permissions).
+- ✅ Централизованная логика в сервисном слое с actor_id.
+
+---
+
+#### 20. Telegram-бот: нет команды /orders для просмотра активных заказов
+
+**Проблема:** Бот умеет только: `/start`, share phone, открыть miniapp. Нет inline-команд для просмотра заказов прямо в боте.
+
+**Что сделать:**
+- Добавить хендлер `/orders` в `handlers/`:
+  - Запрашивает у backend активные заказы пользователя (через bot API secret или Telegram ID lookup)
+  - Отображает последние 3 заказа с кнопками перехода в miniapp
+- Добавить регистрацию команды в `main.py`
+
+---
+
+#### 21. Miniapp profile: нет возможности выйти из аккаунта (разлинковать Telegram)
+
+**Проблема:** В miniapp `ProfilePage` нет кнопки выхода. Есть `localStorage.setItem("foodize_tg_logged_out", "1")` использование в `App.jsx` (строка ~175), то есть механизм logout задуман, но в UI кнопки нет.
+
+**Что сделать:**
+- В `ProfilePage.jsx` (miniapp) добавить кнопку "Выйти" или "Сменить аккаунт"
+- При нажатии: `localStorage.setItem("foodize_tg_logged_out", "1")` + `window.location.reload()`
+- Показывать сообщение что для входа нужно заново открыть miniapp через бота
+
+---
+
+#### 22. Miniapp: навигация в RestaurantPage использует UUID, а не display_id
+
+**Проблема:** `HomePage.jsx` miniapp (строка ~176): `navigate("/restaurant/${r.id}", ...)` — использует UUID. В frontend-версии аналогичная строка уже обновлена на `display_id || id`. В miniapp — нет.
+
+**Что сделать:**
+- Заменить на `navigate("/restaurant/${r.display_id || r.id}", ...)`
+
+---
+
+#### 23. Нет rate-limiting на endpoint регистрации в miniapp/Telegram
+
+**Проблема:** `POST /api/v1/telegram/bot/link-phone` и `POST /api/v1/register` используют `@limiter.limit("10/minute")`. Но Telegram bot-токен позволяет отправлять массовые запросы с разных аккаунтов. Нужна дополнительная защита.
+
+**Что сделать:**
+- Добавить rate limit на `link-phone` по `telegram_id` (не только по IP): `5/hour` per telegram_id
+- Логировать подозрительные попытки
+
+---
+
+#### 24. Vendor: display_id ресторана и QR-код в vendor dashboard
+**Статус: ✅ Выполнено**
+- ✅ В VendorDashboardPage и AdminDashboardPage добавлены QR-коды для Telegram.
+- ✅ URL формат: `https://t.me/{BOT_USERNAME}?start=restaurant_{display_id}`.
+- ✅ display_id отображается в карточках ресторанов.
+
+---
+
+#### 25. Frontend: ProductPage (RestaurantPage) не показывает рабочие часы публично
+**Статус: ✅ Выполнено**
+- ✅ Рабочие часы отображаются в модальном окне информации о ресторане.
+- ✅ Данные доступны публично без авторизации.
+
+---
+
+#### 26. Уведомления: бот не отправляет display_id заказа
+
+**Проблема:** В `handle_order_placed` и `handle_order_status_changed` (bot handlers) текст сообщения не содержит номер заказа. Пользователь не знает, о каком заказе идёт речь если их несколько.
+
+**Что сделать:**
+- В `OrderPlacedEvent` и `OrderStatusChangedEvent` (backend `notifications/events.py`) добавить поле `display_id`
+- Обновить bot handlers: включить `#display_id` в текст уведомления
+- Обновить OpenAPI и generated clients
+
+---
+
+### P3 — Желательно до релиза
+
+#### 27. CI: OpenAPI contract check не встроен в pipeline
+
+**Проблема:** `make openapi` генерирует clients, но CI не проверяет что они актуальны. Если backend изменился без regeneration — frontend молча работает со старым контрактом.
+
+**Что сделать:**
+- В `.github/workflows/ci.yml` добавить шаг:
+  ```yaml
+  - run: make openapi
+  - run: git diff --exit-code -- openapi/foodize.openapi.json src/frontend/src/services/generated src/telegram-miniapp/src/services/generated
+  ```
+
+---
+
+#### 28. Alembic: нет проверки миграций в CI
+
+**Что сделать:**
+- Добавить в CI: `alembic check` (проверка что нет unpplied миграций) + `alembic upgrade head` на чистой БД
+
+---
+
+#### 29. Нет retry/dead-letter для RabbitMQ consumer в боте
+
+**Проблема:** В `bot/notifications/consumer.py` `requeue=False` — при ошибке обработки сообщение теряется. Нет DLQ.
+
+**Что сделать:**
+- Настроить `x-dead-letter-exchange` для очередей бота
+- При ошибке — requeue с ограничением по количеству попыток (max 3), затем DLQ
+- Добавить метрику consumer lag
+
+---
+
+#### 30. Нет `.nvmrc` / единой версии Node.js
+**Статус: ✅ Выполнено**
+- ✅ Файл `.nvmrc` создан в корне проекта (версия 20).
+- ✅ Версии Node.js синхронизированы.
+
+---
+
+#### 31. Backup/restore PostgreSQL не документирован
+
+**Что сделать:**
+- Добавить в `README.md` раздел "Backup & Restore" с командами `pg_dump` / `pg_restore`
+- Добавить в `Makefile`: `make backup` и `make restore`
+
+---
+
+### Задача #32 (P2) — Telegram QR в vendor/admin кабинетах
+
+**Контекст:** Вендор/администратор должен иметь возможность распечатать/показать QR-код на Telegram бота, при сканировании которого покупатель попадает в бота, а бот открывает miniapp сразу на странице конкретного ресторана.
+
+**Полный flow:**
+1. Вендор нажимает "QR для Telegram" в dashboard
+2. Генерируется QR с URL: `https://t.me/{BOT_USERNAME}?start=restaurant_{display_id}`
+3. Покупатель сканирует → Telegram открывает бота → бот получает `/start restaurant_{display_id}`
+4. Bot `start.py` обрабатывает параметр → отправляет кнопку "Открыть {restaurant_name}" с `WebAppInfo(url=f"{mini_app_url}/restaurant/{display_id}")`
+5. Miniapp открывается на странице нужного ресторана
+
+**Что сделать:**
+- Frontend: добавить кнопку "QR для Telegram" (отдельно от существующего QR на сайт) в `VendorDashboardPage.jsx` и `AdminDashboardPage.jsx`
+- `QRCodeModal.jsx`: добавить переключатель `Сайт / Telegram` с соответствующими URL
+- Bot `handlers/start.py`: распарсить `start_param` вида `restaurant_{display_id}`, найти ресторан по display_id через API-запрос, отправить inline-кнопку с WebApp URL
+- Backend: добавить публичный endpoint `GET /api/v1/restaurants/by-display/{display_id}` (только name + display_id) для бота (или использовать существующий)
