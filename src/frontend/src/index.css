@@ -1794,6 +1794,30 @@ input[type='date'].form-input::-webkit-calendar-picker-indicator:hover {
   gap: 18px;
 }
 
+.password-strength {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.password-strength-track {
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--r-xs);
+  background: var(--bg-raised);
+}
+
+.password-strength-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition:
+    width var(--dur-sm) var(--ease-out),
+    background var(--dur-sm) var(--ease-out);
+}
+
 .auth-footer {
   margin-top: 24px;
   font-size: var(--text-base);

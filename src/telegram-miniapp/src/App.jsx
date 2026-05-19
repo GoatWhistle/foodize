@@ -16,6 +16,7 @@ import { useFavoriteStore } from "./store/useFavoriteStore";
 import { useNotificationStore } from "./store/useNotificationStore";
 import { authExistingUser, initTelegramApp } from "./telegram/init";
 import { tg } from "./telegram/sdk";
+import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
 import BottomNav from "./components/BottomNav";
 import ErrorBoundary from "./components/ui/ErrorBoundary";
@@ -175,10 +176,10 @@ export default function App() {
       const result = await initTelegramApp();
       const forceLogin = localStorage.getItem("foodize_tg_logged_out") === "1";
 
-      if (forceLogin && result.initData) {
-        setInitData(result.initData);
+      if (forceLogin) {
+        setInitData(result.initData ?? "");
         setPrefillPhone(null);
-        setAppState("register");
+        setAppState("login");
       } else if (result.status === "registered") {
         await authExistingUser(result.initData);
         await fetchMe();
@@ -227,6 +228,18 @@ export default function App() {
   }, [isAuthenticated, user?.id, fetchNotifications, connectWs, disconnectWs]);
 
   if (appState === "loading") return <Spinner />;
+
+  if (appState === "login") {
+    return (
+      <LoginPage
+        initData={initData}
+        onSuccess={() => {
+          localStorage.removeItem("foodize_tg_logged_out");
+          setAppState("ready");
+        }}
+      />
+    );
+  }
 
   if (appState === "register") {
     return (

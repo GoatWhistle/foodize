@@ -1,6 +1,8 @@
 import api from "./api";
 
 export const authService = {
+  login: (data) => api.post("/login", data),
+  logout: () => api.post("/logout"),
   telegramCheck: (initData) =>
     api.post("/telegram/check", { init_data: initData }),
   telegramRegister: (initData, phoneNumber, name) =>

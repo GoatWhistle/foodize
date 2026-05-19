@@ -107,6 +107,10 @@ async def login_user(
     response: Response,
 ) -> TokenResponse:
     user = await get_user_by_phone_or_401(session, user_data)
+    return issue_user_tokens(user=user, response=response)
+
+
+def issue_user_tokens(user: User, response: Response) -> TokenResponse:
     access_token = create_access_token(user.id, str(user.phone_number))
     refresh_token = create_refresh_token(user.id, str(user.phone_number))
     _set_auth_cookies(response, access_token, refresh_token)

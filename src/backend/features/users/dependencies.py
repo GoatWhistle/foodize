@@ -15,7 +15,11 @@ async def get_user_by_phone_or_401(
     user_data: UserLogin,
 ) -> User:
     user = await get_user_by_phone(session, user_data.phone_number)
-    if not user or not validate_password(user_data.password, user.hashed_password):
+    if (
+        not user
+        or not user.hashed_password
+        or not validate_password(user_data.password, user.hashed_password)
+    ):
         raise InvalidCredentialsException()
     return user
 

@@ -43,7 +43,9 @@ async def change_my_password(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> None:
-    if not validate_password(data.old_password, current_user.hashed_password):
+    if not current_user.hashed_password or not validate_password(
+        data.old_password, current_user.hashed_password
+    ):
         raise AuthException(detail="Wrong password")
     await crud.update_user_password(session, current_user, data.new_password)
 

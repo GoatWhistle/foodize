@@ -1,7 +1,15 @@
 export const tg = window.Telegram?.WebApp ?? null;
 
+export const TELEGRAM_INIT_DATA_STORAGE_KEY = "foodize_tg_init_data";
+
 export function getTelegramInitData() {
-  return tg?.initData ?? "";
+  const initData = tg?.initData ?? "";
+  if (initData) {
+    sessionStorage.setItem(TELEGRAM_INIT_DATA_STORAGE_KEY, initData);
+    return initData;
+  }
+
+  return sessionStorage.getItem(TELEGRAM_INIT_DATA_STORAGE_KEY) ?? "";
 }
 
 export function getTelegramUser() {
@@ -38,6 +46,19 @@ export function showAlert(message, callback) {
 
 export function showConfirm(message, callback) {
   tg?.showConfirm(message, callback);
+}
+
+export function requestTelegramContact() {
+  return new Promise((resolve, reject) => {
+    if (!tg?.requestContact) {
+      reject(new Error("Telegram contact request is not available"));
+      return;
+    }
+
+    tg.requestContact((granted) => {
+      resolve(Boolean(granted));
+    });
+  });
 }
 
 export const BackButton = tg?.BackButton ?? null;

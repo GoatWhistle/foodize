@@ -1,30 +1,38 @@
 import hashlib
 import hmac
 import json
+import secrets
 import time
 from urllib.parse import parse_qsl
 
+import httpx
+from fastapi import Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from features.auth.schemas import TokenResponse
+from features.auth.service import issue_user_tokens
 from features.orders.models import Order
 from features.telegram.crud import get_user_by_phone, get_user_by_telegram_id
 from features.telegram.exceptions import (
     InvalidTelegramInitDataException,
     MalformedTelegramInitDataException,
 )
-from features.telegram.schemas import TelegramCheckResponse
+from features.telegram.schemas import TelegramCheckResponse, TelegramSiteLoginResponse
 from features.users.models import User
 from features.vendors.models import VendorProfile
 from infra.cache.redis import get_redis_cache
 from settings.config.app_config import settings
+from shared.exceptions.existence import AuthException, NotFoundException
 from shared.enums.order_status import OrderStatus
 from shared.permissions import CUSTOMER_PERMISSIONS, serialize_permissions
-from utils.JWT import create_access_token, create_refresh_token
+from utils.JWT import create_access_token, create_refresh_token, hash_password
 
 _INIT_DATA_MAX_AGE = 86400
+_SITE_LOGIN_CODE_TTL = 300
+_SITE_LOGIN_CODE_PREFIX = "telegram_site_login:"
+_SITE_LOGIN_RATE_PREFIX = "telegram_site_login_rate:"
 
 
 def _validate_init_data(init_data: str) -> dict:
@@ -237,3 +245,71 @@ async def telegram_auth_existing(session: AsyncSession, init_data: str) -> Token
 
     await _cache_telegram_id(str(user.id), telegram_id)
     return _make_tokens(user)
+
+
+async def request_site_login_code(session: AsyncSession, phone_number: str) -> None:
+    user = await get_user_by_phone(session, phone_number)
+    if not user:
+        raise NotFoundException(detail="User with this phone was not found")
+    if not user.telegram_id:
+        raise AuthException(detail="Telegram is not linked to this account")
+    if not settings.telegram.bot_token:
+        raise AuthException(detail="Telegram bot is not configured")
+
+    cache = get_redis_cache()
+    rate_key = f"{_SITE_LOGIN_RATE_PREFIX}{phone_number}"
+    raw_client = cache.get_raw_client()
+    requests_count = await raw_client.incr(rate_key)
+    if requests_count == 1:
+        await raw_client.expire(rate_key, 300)
+    if requests_count > 5:
+        raise AuthException(detail="Too many code requests")
+
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    await cache.set(f"{_SITE_LOGIN_CODE_PREFIX}{phone_number}", code, ttl=_SITE_LOGIN_CODE_TTL)
+
+    async with httpx.AsyncClient(timeout=10) as client:
+        response = await client.post(
+            f"https://api.telegram.org/bot{settings.telegram.bot_token}/sendMessage",
+            json={
+                "chat_id": user.telegram_id,
+                "text": f"Код входа на сайт Foodize: {code}\n\nЕсли это были не вы, просто проигнорируйте сообщение.",
+            },
+        )
+        response.raise_for_status()
+
+
+async def verify_site_login_code(
+    session: AsyncSession,
+    phone_number: str,
+    code: str,
+    response: Response,
+) -> TelegramSiteLoginResponse:
+    cache = get_redis_cache()
+    key = f"{_SITE_LOGIN_CODE_PREFIX}{phone_number}"
+    stored_code = await cache.get(key)
+    if not stored_code or not secrets.compare_digest(stored_code, code):
+        raise AuthException(detail="Invalid Telegram code")
+
+    user = await get_user_by_phone(session, phone_number)
+    if not user or not user.telegram_id:
+        raise AuthException(detail="Telegram is not linked to this account")
+
+    await cache.delete(key)
+    tokens = issue_user_tokens(user=user, response=response)
+    return TelegramSiteLoginResponse(
+        access_token=tokens.access_token,
+        refresh_token=tokens.refresh_token,
+        token_type=tokens.token_type,
+        requires_password=not bool(user.hashed_password),
+    )
+
+
+async def set_site_password(session: AsyncSession, user: User, password: str) -> User:
+    if user.hashed_password:
+        raise AuthException(detail="Password is already set")
+
+    user.hashed_password = hash_password(password)
+    await session.commit()
+    await session.refresh(user)
+    return user

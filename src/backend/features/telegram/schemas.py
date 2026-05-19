@@ -50,4 +50,25 @@ class TelegramBotOrderSummary(BaseModel):
     created_at: datetime
 
 
+class TelegramSiteLoginStartRequest(BaseModel):
+    phone_number: str = Field(min_length=7, max_length=16, pattern=r"^\+?[0-9]{7,15}$")
+
+
+class TelegramSiteLoginStartResponse(BaseModel):
+    message: str = "Code sent"
+
+
+class TelegramSiteLoginVerifyRequest(BaseModel):
+    phone_number: str = Field(min_length=7, max_length=16, pattern=r"^\+?[0-9]{7,15}$")
+    code: str = Field(min_length=4, max_length=8, pattern=r"^[0-9]+$")
+
+
+class TelegramSiteLoginResponse(TokenResponse):
+    requires_password: bool = False
+
+
+class TelegramSitePasswordRequest(BaseModel):
+    password: str = Field(min_length=8, max_length=128)
+
+
 TelegramAuthResponse = TokenResponse

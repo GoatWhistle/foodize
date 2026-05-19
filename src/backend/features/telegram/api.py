@@ -2,7 +2,7 @@ import logging
 import secrets
 from http import HTTPStatus
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
@@ -18,6 +18,11 @@ from features.telegram.schemas import (
     TelegramCheckRequest,
     TelegramCheckResponse,
     TelegramRegisterRequest,
+    TelegramSiteLoginResponse,
+    TelegramSiteLoginStartRequest,
+    TelegramSiteLoginStartResponse,
+    TelegramSiteLoginVerifyRequest,
+    TelegramSitePasswordRequest,
 )
 from features.users.models import User
 from features.users.schemas import UserRead
@@ -65,6 +70,50 @@ async def telegram_auth(
 ) -> SuccessResponse[TokenResponse]:
     result = await service.telegram_auth_existing(session=session, init_data=data.init_data)
     return build_response(result)
+
+
+@router.post(
+    "/site-login/request-code",
+    response_model=SuccessResponse[TelegramSiteLoginStartResponse],
+)
+async def telegram_site_login_request_code(
+    data: TelegramSiteLoginStartRequest,
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> SuccessResponse[TelegramSiteLoginStartResponse]:
+    await service.request_site_login_code(session=session, phone_number=data.phone_number)
+    return build_response(TelegramSiteLoginStartResponse())
+
+
+@router.post(
+    "/site-login/verify",
+    response_model=SuccessResponse[TelegramSiteLoginResponse],
+)
+async def telegram_site_login_verify(
+    data: TelegramSiteLoginVerifyRequest,
+    response: Response,
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> SuccessResponse[TelegramSiteLoginResponse]:
+    result = await service.verify_site_login_code(
+        session=session,
+        phone_number=data.phone_number,
+        code=data.code,
+        response=response,
+    )
+    return build_response(result)
+
+
+@router.post("/site-login/password", response_model=SuccessResponse[UserRead])
+async def telegram_site_login_set_password(
+    data: TelegramSitePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> SuccessResponse[UserRead]:
+    result = await service.set_site_password(
+        session=session,
+        user=current_user,
+        password=data.password,
+    )
+    return build_response(UserRead.model_validate(result))
 
 
 @router.post("/logout", response_model=SuccessResponse[UserRead])

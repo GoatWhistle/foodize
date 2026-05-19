@@ -19,6 +19,7 @@ class UserCreate(UserBase):
 class UserRead(UserBase):
     id: uuid.UUID
     permissions: list[Permission]
+    has_password: bool = False
     first_name: str | None = None
     last_name: str | None = None
     middle_name: str | None = None

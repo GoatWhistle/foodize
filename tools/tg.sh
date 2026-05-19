@@ -195,7 +195,8 @@ if ! grep -q '^TELEGRAM__BOT_API_SECRET=.' "$ENV_FILE"; then
 fi
 
 echo "Starting Telegram local services..."
-docker compose up -d pg redis rabbitmq backend telegram-miniapp
+docker compose up -d pg redis rabbitmq backend
+docker compose up -d --force-recreate --renew-anon-volumes telegram-miniapp
 
 echo "Waiting for the Mini App on http://localhost:$MINIAPP_PORT ..."
 MINIAPP_READY=""

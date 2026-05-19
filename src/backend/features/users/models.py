@@ -39,3 +39,7 @@ class User(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin):
     staff_requests: Mapped[list["StaffRequest"]] = relationship(back_populates="user")
     reviews: Mapped[list["Review"]] = relationship(back_populates="user")
     favorites: Mapped[list["Favorite"]] = relationship(back_populates="user")
+
+    @property
+    def has_password(self) -> bool:
+        return bool(self.hashed_password)

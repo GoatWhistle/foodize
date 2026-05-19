@@ -2395,3 +2395,66 @@ select.form-input option {
   width: 36px;
   padding: 0;
 }
+
+/* ─── Mini App Auth ────────────────────────────────────────────────────── */
+.mini-auth-page {
+  min-height: var(--tg-viewport-h, 100vh);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 28px 20px calc(28px + env(safe-area-inset-bottom, 0px));
+  background: var(--bg);
+}
+
+.mini-auth-brand {
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto 28px;
+  text-align: center;
+}
+
+.mini-auth-logo {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  border-radius: var(--r-lg);
+  background: var(--fire);
+  box-shadow: 0 8px 24px var(--fire-glow);
+}
+
+.mini-auth-logo span {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.mini-auth-title {
+  margin: 0;
+  color: var(--text-1);
+  font-family: var(--font-sans);
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.mini-auth-subtitle {
+  margin: 6px 0 0;
+  color: var(--text-3);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.mini-auth-form {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0 auto;
+}
+
+.mini-telegram-login {
+  min-height: 48px;
+  color: var(--text-1);
+}
