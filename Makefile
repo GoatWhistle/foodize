@@ -54,7 +54,9 @@ lint:
 
 test:
 	cd "$(BACKEND_DIR)" && uv run pytest
+	cd "$(BOT_DIR)" && uv run pytest
 	cd "$(FRONTEND_DIR)" && npm test -- --run
+	cd "$(MINIAPP_DIR)" && npm test -- --run
 	@echo " "
 	@echo "Tests completed!"
 

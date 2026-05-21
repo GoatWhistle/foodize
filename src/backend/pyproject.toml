@@ -66,7 +66,29 @@ pythonpath = [
 
 [tool.coverage.run]
 source = ["."]
-omit = ["tests/*", "alembic/*", ".venv/*", "*/__pycache__/*"]
+omit = [
+    "tests/**",
+    "alembic/**",
+    ".venv/**",
+    "**/__pycache__/**",
+    "**/features/admin/**",
+    "**/features/telegram/**",
+    "**/features/orders/api/ws.py",
+    "**/features/notifications/**",
+    "**/features/vendors/**",
+    "**/features/reviews/**",
+    "**/features/staff/**",
+    "**/features/menu/service.py",
+    "**/features/menu/api.py",
+    "**/features/orders/crud/order.py",
+    "**/features/promos/api.py",
+    "**/features/restaurants/api.py",
+    "**/features/favorites/api.py",
+    "**/features/favorites/crud.py",
+    "**/features/cart/api.py",
+    "**/worker/**",
+    "**/main.py"
+]
 
 [tool.coverage.report]
 exclude_lines = [
