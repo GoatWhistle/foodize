@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import RestaurantPage from '../../pages/restaurant/RestaurantPage';
@@ -58,16 +58,21 @@ vi.mock('../../store/useOrderStore', () => ({
 
 vi.mock('../../services/restaurantService', () => ({
   restaurantService: {
-    getById: vi
-      .fn()
-      .mockResolvedValue({ data: { id: 'mock-1', name: 'Test Restaurant' } }),
+    getById: vi.fn().mockResolvedValue({
+      data: { data: { id: 'mock-1', name: 'Test Restaurant' } },
+    }),
+    getWorkingHours: vi.fn().mockResolvedValue({ data: { data: [] } }),
   },
 }));
 
 vi.mock('../../services/reviewService', () => ({
   reviewService: {
-    getRating: vi.fn().mockResolvedValue({ data: { average_rating: 4.5 } }),
-    getReviews: vi.fn().mockResolvedValue({ data: [] }),
+    getRating: vi
+      .fn()
+      .mockResolvedValue({ data: { data: { average_rating: 4.5 } } }),
+    getReviews: vi
+      .fn()
+      .mockResolvedValue({ data: { data: [], pagination: { total: 0 } } }),
     createReview: vi.fn().mockResolvedValue({}),
   },
 }));
@@ -103,21 +108,29 @@ describe('RestaurantPage', () => {
       </MemoryRouter>
     );
 
-  it('renders restaurant info and menu items', () => {
+  it('renders restaurant info and menu items', async () => {
     renderWithRouter();
 
+    expect(await screen.findByText('Test Restaurant')).toBeDefined();
     expect(screen.getByText('Classic Shaurma')).toBeDefined();
     expect(screen.getByText('300 ₽')).toBeDefined();
   });
 
-  it('opens product sheet and adds configured item to cart', () => {
+  it('opens product sheet and adds configured item to cart', async () => {
     renderWithRouter();
 
-    fireEvent.click(
-      screen.getByRole('button', { name: /Открыть Classic Shaurma/ })
-    );
-    fireEvent.click(screen.getByText('Добавить мясо'));
-    fireEvent.click(screen.getByText(/Добавить · 380 ₽/));
+    expect(await screen.findByText('Test Restaurant')).toBeDefined();
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole('button', { name: /Открыть Classic Shaurma/ })
+      );
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Добавить мясо'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText(/Добавить · 380 ₽/));
+    });
 
     expect(addToCartMock).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'm1' }),
@@ -127,13 +140,16 @@ describe('RestaurantPage', () => {
     );
   });
 
-  it('filters menu items by category', () => {
+  it('filters menu items by category', async () => {
     renderWithRouter();
 
+    expect(await screen.findByText('Test Restaurant')).toBeDefined();
     expect(screen.getByText('Classic Shaurma')).toBeDefined();
     expect(screen.getByText('Veggie Burger')).toBeDefined();
 
-    fireEvent.click(screen.getAllByText('Бургеры')[0]);
+    await act(async () => {
+      fireEvent.click(screen.getAllByText('Бургеры')[0]);
+    });
 
     expect(screen.queryByText('Classic Shaurma')).toBeNull();
     expect(screen.getByText('Veggie Burger')).toBeDefined();

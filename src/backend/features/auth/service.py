@@ -47,6 +47,17 @@ def _set_auth_cookies(response: Response, access_token: str, refresh_token: str)
     )
 
 
+def _get_bearer_token(request: Request) -> str | None:
+    headers = getattr(request, "headers", {}) or {}
+    raw_header = headers.get("authorization") or headers.get("Authorization")
+    if not isinstance(raw_header, str):
+        return None
+    scheme, _, token = raw_header.partition(" ")
+    if scheme.lower() != "bearer" or not token:
+        return None
+    return token
+
+
 class OAuth2PasswordBearerWithCookie(OAuth2PasswordBearer):
     async def __call__(self, request: Request) -> str | None:
         token = request.cookies.get("access_token")
@@ -123,7 +134,7 @@ async def logout_user(request: Request, response: Response) -> None:
     cache = get_redis_cache()
     now = int(time.time())
 
-    access_token = request.cookies.get("access_token")
+    access_token = request.cookies.get("access_token") or _get_bearer_token(request)
     if access_token:
         try:
             payload = decode_jwt(access_token)
@@ -135,7 +146,7 @@ async def logout_user(request: Request, response: Response) -> None:
         except Exception:
             logger.warning("logout: failed to blacklist access token")
 
-    refresh_token = request.cookies.get("refresh_token")
+    refresh_token = request.cookies.get("refresh_token") or request.headers.get("x-refresh-token")
     if refresh_token:
         try:
             payload = decode_jwt(refresh_token)
@@ -156,7 +167,7 @@ async def refresh_user_token(
     response: Response,
     session: AsyncSession,
 ) -> TokenResponse:
-    token = request.cookies.get("refresh_token")
+    token = request.cookies.get("refresh_token") or _get_bearer_token(request)
     if not token:
         raise AuthException(detail="Refresh token missing")
     try:

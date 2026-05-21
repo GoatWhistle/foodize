@@ -35,7 +35,8 @@ const getPasswordStrength = (value) => {
   if (/\d/.test(value)) score += 1;
   if (/[^A-Za-z0-9]/.test(value)) score += 1;
 
-  if (!value) return { score: 0, label: 'Введите пароль', color: 'var(--border-mid)' };
+  if (!value)
+    return { score: 0, label: 'Введите пароль', color: 'var(--border-mid)' };
   if (score <= 2) return { score, label: 'Слабый пароль', color: '#ef4444' };
   if (score <= 4) return { score, label: 'Средний пароль', color: '#f59e0b' };
   return { score, label: 'Сильный пароль', color: '#22c55e' };
@@ -65,14 +66,19 @@ const LoginPage = () => {
   const [telegramCode, setTelegramCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [profileForm, setProfileForm] = useState({ first_name: '', last_name: '' });
+  const [profileForm, setProfileForm] = useState({
+    first_name: '',
+    last_name: '',
+  });
   const [authMode, setAuthMode] = useState('password');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const login = useAuthStore((s) => s.login);
   const loginWithTelegramCode = useAuthStore((s) => s.loginWithTelegramCode);
-  const setTelegramSitePassword = useAuthStore((s) => s.setTelegramSitePassword);
+  const setTelegramSitePassword = useAuthStore(
+    (s) => s.setTelegramSitePassword
+  );
   const fetchMe = useAuthStore((s) => s.fetchMe);
   const navigate = useNavigate();
 
@@ -173,14 +179,14 @@ const LoginPage = () => {
               ? 'Придумайте пароль'
               : authMode === 'telegram-phone'
                 ? 'Вход через Telegram'
-              : 'С возвращением'}
+                : 'С возвращением'}
           </h1>
           <p className="auth-subheading">
             {authMode === 'set-password'
               ? 'Он понадобится для обычного входа на сайте. Имя и фамилию можно поправить сразу.'
               : authMode === 'telegram-phone'
                 ? 'Введите номер аккаунта, и мы отправим код в Telegram'
-              : 'Войдите, чтобы сделать заказ'}
+                : 'Войдите, чтобы сделать заказ'}
           </p>
 
           {error && (
@@ -336,7 +342,9 @@ const LoginPage = () => {
                   placeholder="000000"
                   value={telegramCode}
                   onChange={(e) =>
-                    setTelegramCode(e.target.value.replace(/\D/g, '').slice(0, 6))
+                    setTelegramCode(
+                      e.target.value.replace(/\D/g, '').slice(0, 6)
+                    )
                   }
                   required
                   autoFocus
@@ -363,7 +371,11 @@ const LoginPage = () => {
           )}
 
           {authMode === 'set-password' && (
-            <form className="auth-form" onSubmit={handlePasswordSetup} noValidate>
+            <form
+              className="auth-form"
+              onSubmit={handlePasswordSetup}
+              noValidate
+            >
               <div className="form-group">
                 <label className="form-label" htmlFor="telegram-first-name">
                   Имя
@@ -424,7 +436,10 @@ const LoginPage = () => {
               </div>
 
               <div className="form-group">
-                <label className="form-label" htmlFor="telegram-confirm-password">
+                <label
+                  className="form-label"
+                  htmlFor="telegram-confirm-password"
+                >
                   Повторите пароль
                 </label>
                 <input

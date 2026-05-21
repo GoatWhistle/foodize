@@ -24,8 +24,8 @@ from features.users.models import User
 from features.vendors.models import VendorProfile
 from infra.cache.redis import get_redis_cache
 from settings.config.app_config import settings
-from shared.exceptions.existence import AuthException, NotFoundException
 from shared.enums.order_status import OrderStatus
+from shared.exceptions.existence import AuthException, NotFoundException
 from shared.permissions import CUSTOMER_PERMISSIONS, serialize_permissions
 from utils.JWT import create_access_token, create_refresh_token, hash_password
 
@@ -121,9 +121,7 @@ async def get_vendor_status_for_telegram_id(
     if not user:
         return None
 
-    result = await session.execute(
-        select(VendorProfile).where(VendorProfile.user_id == user.id)
-    )
+    result = await session.execute(select(VendorProfile).where(VendorProfile.user_id == user.id))
     return result.scalar_one_or_none()
 
 
@@ -268,12 +266,17 @@ async def request_site_login_code(session: AsyncSession, phone_number: str) -> N
     code = f"{secrets.randbelow(1_000_000):06d}"
     await cache.set(f"{_SITE_LOGIN_CODE_PREFIX}{phone_number}", code, ttl=_SITE_LOGIN_CODE_TTL)
 
+    message = (
+        f"Код входа на сайт Foodize: {code}\n\n"
+        "Если это были не вы, просто проигнорируйте сообщение."
+    )
+
     async with httpx.AsyncClient(timeout=10) as client:
         response = await client.post(
             f"https://api.telegram.org/bot{settings.telegram.bot_token}/sendMessage",
             json={
                 "chat_id": user.telegram_id,
-                "text": f"Код входа на сайт Foodize: {code}\n\nЕсли это были не вы, просто проигнорируйте сообщение.",
+                "text": message,
             },
         )
         response.raise_for_status()

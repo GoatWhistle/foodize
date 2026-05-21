@@ -68,16 +68,10 @@ describe('OrderStatusPage', () => {
     expect(screen.getByText('Бургер')).toBeDefined();
   });
 
-  it('polls for order updates', async () => {
+  it('fetches the order on mount', async () => {
     renderWithRouter();
 
     expect(fetchOrderMock).toHaveBeenCalledTimes(1);
-
-    await act(async () => {
-      vi.advanceTimersByTime(5000);
-    });
-
-    expect(fetchOrderMock).toHaveBeenCalledTimes(2);
   });
 
   it('stops polling when status is ready', async () => {

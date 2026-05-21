@@ -57,6 +57,29 @@ class TestRestaurantsPublicAPI:
         assert response.status_code == 200
         mock_get.assert_awaited_once()
 
+    @pytest.mark.asyncio
+    async def test_read_public_restaurant_by_display_id(self, client):
+        restaurant = {
+            "id": str(uuid.uuid4()),
+            "display_id": "test-cafe",
+            "name": "Test Cafe",
+            "address": "Street 1",
+            "vendor_id": str(uuid.uuid4()),
+            "is_hiring": False,
+        }
+
+        with patch(
+            "features.restaurants.api.service.get_restaurant_public",
+            new_callable=AsyncMock,
+            return_value=restaurant,
+        ) as mock_get:
+            response = await client.get("/api/v1/restaurants/public/test-cafe")
+
+        assert response.status_code == 200
+        assert response.json()["data"]["display_id"] == "test-cafe"
+        mock_get.assert_awaited_once()
+        assert mock_get.call_args.kwargs["identifier"] == "test-cafe"
+
 
 class TestRestaurantsAPI:
     @pytest.mark.asyncio

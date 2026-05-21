@@ -6133,6 +6133,134 @@
         }
       }
     },
+    "/api/v1/telegram/site-login/request-code": {
+      "post": {
+        "tags": [
+          "Telegram"
+        ],
+        "summary": "Telegram Site Login Request Code",
+        "operationId": "telegram_site_login_request_code_api_v1_telegram_site_login_request_code_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TelegramSiteLoginStartRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_TelegramSiteLoginStartResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/telegram/site-login/verify": {
+      "post": {
+        "tags": [
+          "Telegram"
+        ],
+        "summary": "Telegram Site Login Verify",
+        "operationId": "telegram_site_login_verify_api_v1_telegram_site_login_verify_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TelegramSiteLoginVerifyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_TelegramSiteLoginResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/telegram/site-login/password": {
+      "post": {
+        "tags": [
+          "Telegram"
+        ],
+        "summary": "Telegram Site Login Set Password",
+        "operationId": "telegram_site_login_set_password_api_v1_telegram_site_login_password_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TelegramSitePasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_UserRead_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearerWithCookie": []
+          }
+        ]
+      }
+    },
     "/api/v1/telegram/logout": {
       "post": {
         "tags": [
@@ -8396,6 +8524,18 @@
               }
             ],
             "title": "Comment"
+          },
+          "requested_pickup_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requested Pickup At"
           }
         },
         "type": "object",
@@ -8749,6 +8889,18 @@
               }
             ],
             "title": "Cancellation Reason"
+          },
+          "requested_pickup_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requested Pickup At"
           },
           "created_at": {
             "type": "string",
@@ -10610,6 +10762,36 @@
         ],
         "title": "SuccessResponse[TelegramCheckResponse]"
       },
+      "SuccessResponse_TelegramSiteLoginResponse_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TelegramSiteLoginResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessResponse[TelegramSiteLoginResponse]"
+      },
+      "SuccessResponse_TelegramSiteLoginStartResponse_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TelegramSiteLoginStartResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessResponse[TelegramSiteLoginStartResponse]"
+      },
       "SuccessResponse_TokenResponse_": {
         "properties": {
           "data": {
@@ -10902,6 +11084,100 @@
         ],
         "title": "TelegramRegisterRequest"
       },
+      "TelegramSiteLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "refresh_token": {
+            "type": "string",
+            "title": "Refresh Token"
+          },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type",
+            "default": "Bearer"
+          },
+          "requires_password": {
+            "type": "boolean",
+            "title": "Requires Password",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "refresh_token"
+        ],
+        "title": "TelegramSiteLoginResponse"
+      },
+      "TelegramSiteLoginStartRequest": {
+        "properties": {
+          "phone_number": {
+            "type": "string",
+            "maxLength": 16,
+            "minLength": 7,
+            "pattern": "^\\+?[0-9]{7,15}$",
+            "title": "Phone Number"
+          }
+        },
+        "type": "object",
+        "required": [
+          "phone_number"
+        ],
+        "title": "TelegramSiteLoginStartRequest"
+      },
+      "TelegramSiteLoginStartResponse": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Code sent"
+          }
+        },
+        "type": "object",
+        "title": "TelegramSiteLoginStartResponse"
+      },
+      "TelegramSiteLoginVerifyRequest": {
+        "properties": {
+          "phone_number": {
+            "type": "string",
+            "maxLength": 16,
+            "minLength": 7,
+            "pattern": "^\\+?[0-9]{7,15}$",
+            "title": "Phone Number"
+          },
+          "code": {
+            "type": "string",
+            "maxLength": 8,
+            "minLength": 4,
+            "pattern": "^[0-9]+$",
+            "title": "Code"
+          }
+        },
+        "type": "object",
+        "required": [
+          "phone_number",
+          "code"
+        ],
+        "title": "TelegramSiteLoginVerifyRequest"
+      },
+      "TelegramSitePasswordRequest": {
+        "properties": {
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "password"
+        ],
+        "title": "TelegramSitePasswordRequest"
+      },
       "TokenResponse": {
         "properties": {
           "access_token": {
@@ -11004,6 +11280,11 @@
             },
             "type": "array",
             "title": "Permissions"
+          },
+          "has_password": {
+            "type": "boolean",
+            "title": "Has Password",
+            "default": false
           },
           "first_name": {
             "anyOf": [

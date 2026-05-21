@@ -11,6 +11,12 @@ from features.menu.service import (
 )
 
 
+def _mock_session() -> AsyncMock:
+    session = AsyncMock()
+    session.add = MagicMock()
+    return session
+
+
 class TestMenuService:
     @pytest.mark.asyncio
     async def test_get_menu(self):
@@ -42,9 +48,10 @@ class TestMenuService:
         item.price = 1000
         item.restaurant_id = restaurant_id
         item.category = Category.PIZZA
-        item.image_url = "http://example.com/pizza.jpg"
+        item.photo_url = "http://example.com/pizza.jpg"
         item.is_available = True
         item.prep_time_minutes = 15
+        item.option_groups = []
 
         with (
             patch(
@@ -77,9 +84,10 @@ class TestMenuService:
         item.price = 800
         item.restaurant_id = restaurant_id
         item.category = Category.BURGER
-        item.image_url = "http://example.com/burger.jpg"
+        item.photo_url = "http://example.com/burger.jpg"
         item.is_available = True
         item.prep_time_minutes = 15
+        item.option_groups = []
 
         with (
             patch(
@@ -92,7 +100,7 @@ class TestMenuService:
                 return_value=item,
             ),
         ):
-            result = await add_menu_item(MagicMock(), restaurant_id, item_data, vendor_id)
+            result = await add_menu_item(_mock_session(), restaurant_id, item_data, vendor_id)
             assert result.name == "Burger"
 
     @pytest.mark.asyncio
@@ -112,10 +120,11 @@ class TestMenuService:
         item.restaurant_id = restaurant_id
         item.is_deleted = False
         item.category = Category.BURGER
-        item.image_url = "http://example.com/burger.jpg"
+        item.photo_url = "http://example.com/burger.jpg"
         item.price = 800
         item.is_available = True
         item.prep_time_minutes = 15
+        item.option_groups = []
 
         updated_item = MagicMock()
         updated_item.id = item_id
@@ -123,10 +132,11 @@ class TestMenuService:
         updated_item.description = "Original"
         updated_item.restaurant_id = restaurant_id
         updated_item.category = Category.BURGER
-        updated_item.image_url = "http://example.com/burger.jpg"
+        updated_item.photo_url = "http://example.com/burger.jpg"
         updated_item.price = 800
         updated_item.is_available = True
         updated_item.prep_time_minutes = 15
+        updated_item.option_groups = []
 
         with (
             patch(
@@ -145,7 +155,7 @@ class TestMenuService:
             ),
         ):
             result = await update_menu_item_for_vendor(
-                MagicMock(), restaurant_id, item_id, update_data, vendor_id
+                _mock_session(), restaurant_id, item_id, update_data, vendor_id
             )
             assert result.name == "Updated Burger"
 
@@ -154,7 +164,8 @@ class TestMenuService:
         restaurant_id = uuid.uuid4()
         vendor_id = uuid.uuid4()
         item_id = uuid.uuid4()
-        item = AsyncMock(id=item_id, restaurant_id=restaurant_id, is_deleted=False)
+        item = MagicMock(id=item_id, restaurant_id=restaurant_id, is_deleted=False)
+        item.name = "Burger"
 
         with (
             patch(
@@ -168,7 +179,7 @@ class TestMenuService:
             ),
             patch("features.menu.crud.delete_menu_item", new_callable=AsyncMock),
         ):
-            await delete_menu_item_for_vendor(MagicMock(), restaurant_id, item_id, vendor_id)
+            await delete_menu_item_for_vendor(_mock_session(), restaurant_id, item_id, vendor_id)
 
     @pytest.mark.asyncio
     async def test_delete_menu_item_not_found(self):

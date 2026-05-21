@@ -30,6 +30,15 @@ describe('restaurantService', () => {
     expect(result.data).toEqual(mockData);
   });
 
+  it('getById accepts public display_id identifiers', async () => {
+    const mockData = { id: 'uuid-1', display_id: 'test-cafe' };
+    mock.onGet('/restaurants/public/test-cafe').reply(200, mockData);
+
+    const result = await restaurantService.getById('test-cafe');
+
+    expect(result.data).toEqual(mockData);
+  });
+
   it('create sends POST to /restaurants/', async () => {
     const mockData = { id: '1', name: 'New Rest' };
     mock.onPost('/restaurants/').reply(201, mockData);
@@ -46,5 +55,18 @@ describe('restaurantService', () => {
       name: 'Updated Rest',
     });
     expect(result.data).toEqual(mockData);
+  });
+
+  it('working hours methods support display_id route params', async () => {
+    const hours = [{ day_of_week: 0, open_time: '09:00', close_time: '18:00' }];
+    mock.onGet('/restaurants/test-cafe/working-hours').reply(200, hours);
+    mock.onPut('/restaurants/test-cafe/working-hours').reply(200, hours);
+
+    expect((await restaurantService.getWorkingHours('test-cafe')).data).toEqual(
+      hours
+    );
+    expect(
+      (await restaurantService.setWorkingHours('test-cafe', hours)).data
+    ).toEqual(hours);
   });
 });

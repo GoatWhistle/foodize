@@ -384,6 +384,9 @@ const OrderStatusPage = () => {
           style={{ marginTop: 4, fontSize: "0.78rem", color: "var(--text-3)" }}
         >
           Оформлен в {fmtTime(currentOrder.created_at)}
+          {currentOrder.requested_pickup_at
+            ? ` · к выдаче ${fmtTime(currentOrder.requested_pickup_at)}`
+            : ""}
         </div>
       </div>
 

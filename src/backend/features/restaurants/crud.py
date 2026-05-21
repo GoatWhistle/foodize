@@ -9,11 +9,21 @@ from features.restaurants.models import Restaurant
 from features.restaurants.schemas import RestaurantCreate, RestaurantUpdate
 from shared.exceptions.existence import AlreadyExistsException
 
+_DISPLAY_ID_GENERATION_ATTEMPTS = 8
+
+
+async def _generate_unique_display_id(session: AsyncSession) -> str:
+    for _ in range(_DISPLAY_ID_GENERATION_ATTEMPTS):
+        display_id = secrets.token_hex(4)
+        if await get_restaurant_by_display_id(session, display_id) is None:
+            return display_id
+    raise AlreadyExistsException(detail="Could not generate unique restaurant display id")
+
 
 async def create_restaurant(
     session: AsyncSession, restaurant_data: RestaurantCreate, vendor_id: uuid.UUID
 ) -> Restaurant:
-    display_id = secrets.token_hex(4)
+    display_id = await _generate_unique_display_id(session)
     new_restaurant = Restaurant(
         **restaurant_data.model_dump(), vendor_id=vendor_id, display_id=display_id
     )
@@ -22,7 +32,9 @@ async def create_restaurant(
         await session.commit()
     except IntegrityError as e:
         await session.rollback()
-        raise AlreadyExistsException(detail="Restaurant with this address already exists") from e
+        raise AlreadyExistsException(
+            detail="Restaurant with this address or display id already exists"
+        ) from e
     return new_restaurant
 
 

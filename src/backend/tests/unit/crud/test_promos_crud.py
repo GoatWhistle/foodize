@@ -128,9 +128,12 @@ class TestIncrementUsedCount:
         promo = MagicMock()
         promo.used_count = 3
 
-        session = AsyncMock()
-        session.commit = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.rowcount = 1
 
-        await increment_used_count(session, promo)
-        assert promo.used_count == 4
-        session.commit.assert_awaited_once()
+        session = AsyncMock()
+        session.execute = AsyncMock(return_value=mock_result)
+
+        result = await increment_used_count(session, promo)
+        assert result is True
+        session.execute.assert_awaited_once()

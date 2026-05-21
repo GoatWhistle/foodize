@@ -52,6 +52,7 @@ _ALLOWED_TRANSITIONS: dict[OrderStatus, set[OrderStatus]] = {
 }
 
 _CANCELLABLE_STATUSES = {OrderStatus.PENDING, OrderStatus.ACCEPTED}
+_PICKUP_TIME_HORIZON_DAYS = 7
 
 
 def _is_ordering_paused(restaurant) -> bool:
@@ -158,6 +159,46 @@ def _make_request_hash(order_data: OrderCreate) -> str:
     return hashlib.sha256(raw.encode()).hexdigest()
 
 
+def _as_aware_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _validate_requested_pickup_at(
+    requested_pickup_at: datetime | None,
+    min_ready_at: datetime,
+) -> datetime | None:
+    if requested_pickup_at is None:
+        return None
+
+    pickup_at = _as_aware_utc(requested_pickup_at)
+    now = datetime.now(timezone.utc)
+    latest = now + timedelta(days=_PICKUP_TIME_HORIZON_DAYS)
+
+    if pickup_at < min_ready_at:
+        raise BadRequestException(detail="Pickup time is too soon for the current restaurant load")
+    if pickup_at > latest:
+        raise BadRequestException(
+            detail=f"Pickup time must be within {_PICKUP_TIME_HORIZON_DAYS} days"
+        )
+    return pickup_at
+
+
+def _is_open_at(hours, value: datetime) -> bool | None:
+    if not hours:
+        return None
+    pickup_at = _as_aware_utc(value)
+    day_of_week = pickup_at.weekday()
+    current_time = pickup_at.strftime("%H:%M")
+    for entry in hours:
+        if entry.day_of_week == day_of_week:
+            if entry.is_closed:
+                return False
+            return entry.open_time <= current_time < entry.close_time
+    return None
+
+
 async def _get_idempotency_record(
     session: AsyncSession,
     user_id: uuid.UUID,
@@ -252,14 +293,29 @@ async def place_order(
     is_first_order = total_orders == 0
 
     load = await estimate_restaurant_load(session, restaurant.id)
+    min_ready_at = datetime.now(timezone.utc) + timedelta(minutes=load.estimated_wait_min_minutes)
+    fallback_ready_at = datetime.now(timezone.utc) + timedelta(
+        minutes=load.estimated_wait_max_minutes
+    )
+    requested_pickup_at = _validate_requested_pickup_at(
+        order_data.requested_pickup_at,
+        min_ready_at,
+    )
+    if (
+        requested_pickup_at
+        and working_hours
+        and _is_open_at(working_hours, requested_pickup_at) is False
+    ):
+        raise RestaurantClosedException(detail="Restaurant is closed at requested pickup time")
+
     order = await _create_order(
         session,
         order_data,
         user_id,
         menu_items,
         selected_options_by_item,
-        estimated_ready_at=datetime.now(timezone.utc)
-        + timedelta(minutes=load.estimated_wait_max_minutes),
+        estimated_ready_at=requested_pickup_at or fallback_ready_at,
+        requested_pickup_at=requested_pickup_at,
     )
 
     if order_data.promo_code:
@@ -309,6 +365,7 @@ async def _create_order(
     menu_items: dict,
     selected_options_by_item: dict[int, list[MenuItemOption]],
     estimated_ready_at: datetime | None = None,
+    requested_pickup_at: datetime | None = None,
 ) -> Order:
     total_price = sum(
         (
@@ -323,6 +380,7 @@ async def _create_order(
         restaurant_id=order_data.restaurant_id,
         total_price=total_price,
         comment=order_data.comment,
+        requested_pickup_at=requested_pickup_at,
         estimated_ready_at=estimated_ready_at,
     )
     session.add(order)

@@ -2,19 +2,31 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from shared.enums.roles import UserRole
 
 from features.orders.dependencies import (
     get_order_for_staff_or_vendor,
     verify_restaurant_access,
 )
+from shared.enums.roles import UserRole
 from shared.exceptions import AccessDeniedException, NotFoundException
+from shared.permissions import (
+    CUSTOMER_PERMISSIONS,
+    STAFF_PERMISSIONS,
+    VENDOR_PERMISSIONS,
+    serialize_permissions,
+)
 
 
 def _make_user(role: str) -> MagicMock:
     user = MagicMock()
     user.id = uuid.uuid4()
     user.user_role = role
+    permissions = CUSTOMER_PERMISSIONS
+    if role == UserRole.VENDOR.value:
+        permissions = VENDOR_PERMISSIONS
+    elif role == UserRole.STAFF.value:
+        permissions = STAFF_PERMISSIONS
+    user.permissions = serialize_permissions(permissions)
     return user
 
 

@@ -4,7 +4,6 @@ import { BrowserRouter } from 'react-router-dom';
 import RegisterPage from '../../pages/auth/RegisterPage';
 import { useAuthStore } from '../../store/useAuthStore';
 
-// Mock useAuthStore
 vi.mock('../../store/useAuthStore', () => ({
   useAuthStore: vi.fn((sel) => {
     const state = {
@@ -79,8 +78,9 @@ describe('RegisterPage', () => {
       expect(registerMock).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'Test',
-          phone_number: '79991234567',
+          phone_number: '+79991234567',
           password: 'password123',
+          email: null,
         })
       );
       expect(registerMock.mock.calls[0][0]).not.toHaveProperty('user_role');
@@ -113,8 +113,9 @@ describe('RegisterPage', () => {
       expect(registerMock).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'Ivan',
-          phone_number: '111',
+          phone_number: '+7111',
           password: 'pw123456',
+          email: null,
         })
       );
       expect(registerMock.mock.calls[0][0]).not.toHaveProperty('user_role');

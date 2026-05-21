@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import ProfilePage from '../../pages/profile/ProfilePage';
 import { useAuthStore } from '../../store/useAuthStore';
 import { staffService } from '../../services/staffService';
+import { vendorService } from '../../services/vendorService';
 
 vi.mock('../../store/useAuthStore', () => ({
   useAuthStore: vi.fn((sel) => {
@@ -47,6 +48,13 @@ vi.mock('../../services/userService', () => ({
 describe('ProfilePage', () => {
   const logoutMock = vi.fn();
 
+  const waitForProfileChecks = async () => {
+    await waitFor(() => {
+      expect(vendorService.getMyProfile).toHaveBeenCalled();
+      expect(staffService.getMyProfile).toHaveBeenCalled();
+    });
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     staffService.getMyProfile.mockRejectedValue(
@@ -61,12 +69,14 @@ describe('ProfilePage', () => {
     });
   });
 
-  it('renders user info and settings action', () => {
+  it('renders user info and settings action', async () => {
     render(
       <BrowserRouter>
         <ProfilePage />
       </BrowserRouter>
     );
+
+    await waitForProfileChecks();
 
     expect(screen.getByText('Ivan Ivanov')).toBeDefined();
     expect(screen.getByText('+7999')).toBeDefined();
@@ -87,12 +97,14 @@ describe('ProfilePage', () => {
     });
   });
 
-  it('navigates to orders from menu', () => {
+  it('navigates to orders from menu', async () => {
     render(
       <BrowserRouter>
         <ProfilePage />
       </BrowserRouter>
     );
+
+    await waitForProfileChecks();
 
     fireEvent.click(screen.getByText(/Мои заказы/));
     expect(mockNavigate).toHaveBeenCalledWith('/orders');

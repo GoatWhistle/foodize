@@ -69,15 +69,25 @@ class TestGetCurrentUserDeactivated:
                 new_callable=AsyncMock,
                 return_value=user,
             ),
+            patch(
+                "features.auth.service.get_redis_cache",
+                return_value=MagicMock(exists=AsyncMock(return_value=False)),
+            ),
         ):
             with pytest.raises(AuthException):
                 await get_current_user("some_token", AsyncMock())
 
 
 class TestLogoutUser:
-    def test_deletes_both_cookies(self):
+    @pytest.mark.asyncio
+    async def test_deletes_both_cookies(self):
+        request = MagicMock()
+        request.cookies = {}
+        request.headers = {}
         response = MagicMock()
-        logout_user(response)
+
+        await logout_user(request, response)
+
         assert response.delete_cookie.call_count == 2
         calls = [call[0][0] for call in response.delete_cookie.call_args_list]
         assert "access_token" in calls

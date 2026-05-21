@@ -1,5 +1,4 @@
 import pytest
-from shared.enums.roles import UserRole
 
 from features.restaurants.crud import create_restaurant
 from features.restaurants.schemas import RestaurantCreate
@@ -15,6 +14,7 @@ from features.users.crud import create_user
 from features.users.schemas import UserCreate
 from features.vendors.crud import create_vendor_profile
 from features.vendors.schemas import VendorCreate
+from shared.enums.roles import UserRole
 
 
 @pytest.fixture

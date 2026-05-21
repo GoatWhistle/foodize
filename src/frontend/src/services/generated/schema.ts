@@ -1565,6 +1565,57 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/telegram/site-login/request-code': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Telegram Site Login Request Code */
+    post: operations['telegram_site_login_request_code_api_v1_telegram_site_login_request_code_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/telegram/site-login/verify': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Telegram Site Login Verify */
+    post: operations['telegram_site_login_verify_api_v1_telegram_site_login_verify_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/telegram/site-login/password': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Telegram Site Login Set Password */
+    post: operations['telegram_site_login_set_password_api_v1_telegram_site_login_password_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/telegram/logout': {
     parameters: {
       query?: never;
@@ -2451,6 +2502,8 @@ export interface components {
       promo_code?: string | null;
       /** Comment */
       comment?: string | null;
+      /** Requested Pickup At */
+      requested_pickup_at?: string | null;
     };
     /** OrderEventResponse */
     OrderEventResponse: {
@@ -2595,6 +2648,8 @@ export interface components {
       comment?: string | null;
       /** Cancellation Reason */
       cancellation_reason?: string | null;
+      /** Requested Pickup At */
+      requested_pickup_at?: string | null;
       /**
        * Created At
        * Format: date-time
@@ -3288,6 +3343,16 @@ export interface components {
       data: components['schemas']['TelegramCheckResponse'];
       meta?: components['schemas']['Meta'];
     };
+    /** SuccessResponse[TelegramSiteLoginResponse] */
+    SuccessResponse_TelegramSiteLoginResponse_: {
+      data: components['schemas']['TelegramSiteLoginResponse'];
+      meta?: components['schemas']['Meta'];
+    };
+    /** SuccessResponse[TelegramSiteLoginStartResponse] */
+    SuccessResponse_TelegramSiteLoginStartResponse_: {
+      data: components['schemas']['TelegramSiteLoginStartResponse'];
+      meta?: components['schemas']['Meta'];
+    };
     /** SuccessResponse[TokenResponse] */
     SuccessResponse_TokenResponse_: {
       data: components['schemas']['TokenResponse'];
@@ -3386,6 +3451,48 @@ export interface components {
       /** Name */
       name: string;
     };
+    /** TelegramSiteLoginResponse */
+    TelegramSiteLoginResponse: {
+      /** Access Token */
+      access_token: string;
+      /** Refresh Token */
+      refresh_token: string;
+      /**
+       * Token Type
+       * @default Bearer
+       */
+      token_type: string;
+      /**
+       * Requires Password
+       * @default false
+       */
+      requires_password: boolean;
+    };
+    /** TelegramSiteLoginStartRequest */
+    TelegramSiteLoginStartRequest: {
+      /** Phone Number */
+      phone_number: string;
+    };
+    /** TelegramSiteLoginStartResponse */
+    TelegramSiteLoginStartResponse: {
+      /**
+       * Message
+       * @default Code sent
+       */
+      message: string;
+    };
+    /** TelegramSiteLoginVerifyRequest */
+    TelegramSiteLoginVerifyRequest: {
+      /** Phone Number */
+      phone_number: string;
+      /** Code */
+      code: string;
+    };
+    /** TelegramSitePasswordRequest */
+    TelegramSitePasswordRequest: {
+      /** Password */
+      password: string;
+    };
     /** TokenResponse */
     TokenResponse: {
       /** Access Token */
@@ -3427,6 +3534,11 @@ export interface components {
       id: string;
       /** Permissions */
       permissions: components['schemas']['Permission'][];
+      /**
+       * Has Password
+       * @default false
+       */
+      has_password: boolean;
       /** First Name */
       first_name?: string | null;
       /** Last Name */
@@ -6845,6 +6957,105 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['SuccessResponse_TokenResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  telegram_site_login_request_code_api_v1_telegram_site_login_request_code_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TelegramSiteLoginStartRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SuccessResponse_TelegramSiteLoginStartResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  telegram_site_login_verify_api_v1_telegram_site_login_verify_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TelegramSiteLoginVerifyRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SuccessResponse_TelegramSiteLoginResponse_'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  telegram_site_login_set_password_api_v1_telegram_site_login_password_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['TelegramSitePasswordRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SuccessResponse_UserRead_'];
         };
       };
       /** @description Validation Error */

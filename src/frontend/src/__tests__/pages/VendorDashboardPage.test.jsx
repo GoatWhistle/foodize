@@ -10,8 +10,8 @@ import { BrowserRouter } from 'react-router-dom';
 import VendorDashboardPage from '../../pages/vendor/VendorDashboardPage';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useRestaurantStore } from '../../store/useRestaurantStore';
+import { vendorService } from '../../services/vendorService';
 
-// Mock Stores & Services
 vi.mock('../../store/useAuthStore', () => ({
   useAuthStore: vi.fn((sel) => {
     const state = {
@@ -43,13 +43,23 @@ vi.mock('../../services/vendorService', () => ({
     updateStaffStatus: vi.fn(),
     getStaffMembers: vi.fn().mockResolvedValue({ data: { data: [] } }),
     removeStaffMember: vi.fn().mockResolvedValue({}),
-    getMyProfile: vi.fn().mockResolvedValue({ data: {} }),
+    getMyProfile: vi
+      .fn()
+      .mockResolvedValue({ data: { data: { approval_status: 'APPROVED' } } }),
   },
 }));
 
 describe('VendorDashboardPage', () => {
   const createRestaurantMock = vi.fn();
   const logoutMock = vi.fn();
+
+  const waitForVendorEffects = async () => {
+    await waitFor(() => {
+      expect(vendorService.getMyProfile).toHaveBeenCalled();
+      expect(vendorService.getStaffRequests).toHaveBeenCalled();
+      expect(vendorService.getStaffMembers).toHaveBeenCalled();
+    });
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -74,12 +84,14 @@ describe('VendorDashboardPage', () => {
     });
   });
 
-  it('renders vendor dashboard with restaurants', () => {
+  it('renders vendor dashboard with restaurants', async () => {
     render(
       <BrowserRouter>
         <VendorDashboardPage />
       </BrowserRouter>
     );
+
+    await waitForVendorEffects();
 
     expect(screen.getByText('Дашборд вендора')).toBeDefined();
     expect(screen.getByText('My Resto')).toBeDefined();
@@ -92,7 +104,9 @@ describe('VendorDashboardPage', () => {
       </BrowserRouter>
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /Добавить/ }));
+    const addButton = await screen.findByRole('button', { name: /Добавить/ });
+    await waitFor(() => expect(addButton).not.toBeDisabled());
+    fireEvent.click(addButton);
 
     expect(screen.getByText('Новое заведение')).toBeDefined();
 
@@ -106,10 +120,14 @@ describe('VendorDashboardPage', () => {
     fireEvent.click(screen.getByText('Создать'));
 
     await waitFor(() => {
-      expect(createRestaurantMock).toHaveBeenCalledWith({
-        name: 'New Place',
-        address: 'New Addr',
-      });
+      expect(createRestaurantMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'New Place',
+          address: 'New Addr',
+          avg_prep_time_minutes: 15,
+          max_active_orders: null,
+        })
+      );
     });
   });
 

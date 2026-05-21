@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useOrderStore } from '../../store/useOrderStore';
 import { orderService } from '../../services/orderService';
+import { cartService } from '../../services/cartService';
 
 vi.mock('../../services/orderService', () => ({
   orderService: {
@@ -96,6 +97,47 @@ describe('useOrderStore', () => {
     const state = useOrderStore.getState();
     expect(state.cart).toHaveLength(0);
     expect(state.orders[0]).toEqual(mockOrder);
+  });
+
+  it('placeOrder includes promo, trimmed comment and requested pickup time', async () => {
+    const item = { id: '1', name: 'Pizza', price: 100 };
+    useOrderStore.setState({
+      cart: [
+        {
+          menuItem: item,
+          quantity: 2,
+          selectedOptionIds: ['opt-1'],
+        },
+      ],
+      cartRestaurantId: 'rest-1',
+    });
+
+    const mockOrder = { id: 'order-1', total_price: 200 };
+    orderService.create.mockResolvedValueOnce({ data: { data: mockOrder } });
+
+    await useOrderStore
+      .getState()
+      .placeOrder('SAVE10', '  no onion  ', '2026-05-21T15:30:00.000Z');
+
+    expect(orderService.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        restaurant_id: 'rest-1',
+        promo_code: 'SAVE10',
+        comment: 'no onion',
+        requested_pickup_at: '2026-05-21T15:30:00.000Z',
+        items: [
+          {
+            menu_item_id: '1',
+            quantity: 2,
+            selected_option_ids: ['opt-1'],
+          },
+        ],
+      }),
+      {
+        headers: { 'Idempotency-Key': expect.any(String) },
+      }
+    );
+    expect(cartService.clearCart).toHaveBeenCalled();
   });
 
   it('keeps the same menu item with different options as separate cart lines', async () => {

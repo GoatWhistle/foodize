@@ -22,8 +22,10 @@ def _mock_review(user_id: uuid.UUID, restaurant_id: uuid.UUID) -> MagicMock:
     r.restaurant_id = restaurant_id
     r.rating = 4
     r.text = "Good food"
+    r.user_name = None
     r.is_verified_purchase = False
     r.created_at = datetime.now(timezone.utc)
+    r.user = None
     return r
 
 
@@ -34,6 +36,8 @@ class TestCreateReviewForUser:
         self.restaurant_id = uuid.uuid4()
         mock_restaurant = MagicMock()
         mock_restaurant.id = self.restaurant_id
+        mock_restaurant.average_rating = 4.0
+        mock_restaurant.review_count = 1
 
         self.mock_get_restaurant = patch(
             "features.reviews.service.get_restaurant_by_id",
@@ -54,6 +58,11 @@ class TestCreateReviewForUser:
             "features.reviews.crud.create_review",
             new_callable=AsyncMock,
             return_value=_mock_review(self.user_id, self.restaurant_id),
+        ).start()
+        self.mock_avg_rating = patch(
+            "features.reviews.crud.get_restaurant_avg_rating",
+            new_callable=AsyncMock,
+            return_value=(4.0, 1),
         ).start()
 
         yield
@@ -160,10 +169,14 @@ class TestGetRatingForRestaurant:
     async def test_with_reviews(self, mock_db_session):
         restaurant_id = uuid.uuid4()
 
+        mock_restaurant = MagicMock()
+        mock_restaurant.average_rating = 4.5
+        mock_restaurant.review_count = 10
+
         with patch(
-            "features.reviews.crud.get_restaurant_avg_rating",
+            "features.reviews.service.get_restaurant_by_id",
             new_callable=AsyncMock,
-            return_value=(4.5, 10),
+            return_value=mock_restaurant,
         ):
             result = await get_rating_for_restaurant(mock_db_session, restaurant_id)
 
@@ -174,10 +187,14 @@ class TestGetRatingForRestaurant:
     async def test_no_reviews(self, mock_db_session):
         restaurant_id = uuid.uuid4()
 
+        mock_restaurant = MagicMock()
+        mock_restaurant.average_rating = None
+        mock_restaurant.review_count = 0
+
         with patch(
-            "features.reviews.crud.get_restaurant_avg_rating",
+            "features.reviews.service.get_restaurant_by_id",
             new_callable=AsyncMock,
-            return_value=(None, 0),
+            return_value=mock_restaurant,
         ):
             result = await get_rating_for_restaurant(mock_db_session, restaurant_id)
 

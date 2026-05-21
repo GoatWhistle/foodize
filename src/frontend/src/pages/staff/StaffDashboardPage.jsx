@@ -487,6 +487,22 @@ const KanbanCard = ({
         </div>
       )}
 
+      {order.requested_pickup_at && (
+        <div
+          style={{
+            fontSize: '0.75rem',
+            color: 'var(--text-3)',
+            fontWeight: 700,
+          }}
+        >
+          Ко времени:{' '}
+          {new Intl.DateTimeFormat('ru-RU', {
+            hour: '2-digit',
+            minute: '2-digit',
+          }).format(new Date(order.requested_pickup_at))}
+        </div>
+      )}
+
       {showCancelForm ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <textarea

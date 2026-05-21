@@ -7,13 +7,15 @@ from features.auth.service import get_current_user
 from features.vendors.dependencies import get_current_vendor
 from features.vendors.models import VendorProfile
 from main import app
+from shared.enums.moderation_status import ModerationStatus
 
 
 def make_mock_vendor_profile(user_id: uuid.UUID = None):
     vendor = VendorProfile()
     vendor.id = uuid.uuid4()
     vendor.user_id = user_id or uuid.uuid4()
-    vendor.description = "Test vendor"
+    vendor.approval_status = ModerationStatus.PENDING.value
+    vendor.rejection_reason = None
     return vendor
 
 

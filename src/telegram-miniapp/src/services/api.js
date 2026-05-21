@@ -180,9 +180,17 @@ class ReliableWebSocket {
   }
 }
 
-export function createOrderWebSocket(orderId, onMessage, onClose, onStatusChange) {
+export function createOrderWebSocket(
+  orderId,
+  onMessage,
+  onClose,
+  onStatusChange,
+) {
   return new ReliableWebSocket(
-    `${WS_BASE}/api/v1/ws/orders/${orderId}`,
+    () => {
+      const token = sessionStorage.getItem("access_token") || "";
+      return `${WS_BASE}/api/v1/ws/orders/${orderId}?token=${encodeURIComponent(token)}`;
+    },
     onMessage,
     onClose,
     onStatusChange,

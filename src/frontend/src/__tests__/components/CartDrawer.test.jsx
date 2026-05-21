@@ -1,7 +1,36 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import CartDrawer from '../../components/ui/CartDrawer';
 import { useOrderStore } from '../../store/useOrderStore';
+
+vi.mock('../../services/orderService', () => ({
+  orderService: {
+    getEstimate: vi.fn().mockResolvedValue({
+      data: {
+        data: {
+          ordering_available: true,
+          active_orders_count: 1,
+          avg_prep_time_minutes: 15,
+          estimated_wait_min_minutes: 15,
+          estimated_wait_max_minutes: 30,
+        },
+      },
+    }),
+  },
+}));
+
+vi.mock('../../services/promoService', () => ({
+  promoService: {
+    validate: vi.fn(),
+  },
+}));
+
+vi.mock('../../store/useRestaurantStore', () => ({
+  useRestaurantStore: (sel) => {
+    const state = { menus: {} };
+    return sel ? sel(state) : state;
+  },
+}));
 
 // Mock useOrderStore
 vi.mock('../../store/useOrderStore', () => {
@@ -25,6 +54,14 @@ describe('CartDrawer', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    useOrderStore.getState().cart = [];
+    useOrderStore.getState().cartRestaurantId = null;
+    useOrderStore.getState().cartTotal = vi.fn(() => 0);
+    useOrderStore.getState().cartCount = vi.fn(() => 0);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('renders null if cart is empty', () => {
@@ -54,6 +91,34 @@ describe('CartDrawer', () => {
 
     fireEvent.click(screen.getByText('Оформить заказ'));
     expect(onCheckout).toHaveBeenCalled();
+  });
+
+  it('passes scheduled pickup time to checkout', async () => {
+    vi.setSystemTime(new Date('2026-05-21T09:00:00.000Z'));
+    useOrderStore.getState().cart = [
+      { menuItem: { id: '1', name: 'P' }, quantity: 1 },
+    ];
+    useOrderStore.getState().cartRestaurantId = 'rest-1';
+    render(<CartDrawer onClose={onClose} onCheckout={onCheckout} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Ко времени/ }));
+    });
+    await act(async () => {
+      fireEvent.change(screen.getByDisplayValue('2026-05-21T12:15'), {
+        target: { value: '2026-05-21T13:30' },
+      });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Оформить заказ'));
+    });
+
+    expect(onCheckout).toHaveBeenCalledWith(
+      null,
+      '',
+      '2026-05-21T10:30:00.000Z'
+    );
+    vi.useRealTimers();
   });
 
   it('calls clearCart when cleared', () => {

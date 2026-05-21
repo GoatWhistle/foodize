@@ -1,9 +1,9 @@
 import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import jwt
 import pytest
 from factories import make_user
-from shared.enums.roles import UserRole
 
 from features.auth.schemas import TokenResponse, UserLogin
 from features.auth.service import (
@@ -13,6 +13,7 @@ from features.auth.service import (
     register_user,
 )
 from features.users.schemas import UserCreate
+from shared.enums.roles import UserRole
 from shared.exceptions.existence import AuthException, InvalidCredentialsException
 from shared.exceptions.rules import RuleException
 
@@ -130,7 +131,7 @@ class TestGetCurrentUser:
             await get_current_user(token=None, session=mock_db_session)
 
     async def test_invalid_token_raises_auth_exception(self, mock_db_session):
-        with patch("features.auth.service.decode_jwt", side_effect=Exception("invalid")):
+        with patch("features.auth.service.decode_jwt", side_effect=jwt.InvalidTokenError()):
             with pytest.raises(AuthException):
                 await get_current_user(token="bad.token.here", session=mock_db_session)
 
@@ -146,6 +147,10 @@ class TestGetCurrentUser:
                 "features.auth.service.get_user_by_id_or_404",
                 new_callable=AsyncMock,
                 return_value=user,
+            ),
+            patch(
+                "features.auth.service.get_redis_cache",
+                return_value=MagicMock(exists=AsyncMock(return_value=False)),
             ),
         ):
             result = await get_current_user(token="valid.jwt.token", session=mock_db_session)
@@ -166,7 +171,10 @@ class TestRefreshUserToken:
         mock_response = MagicMock()
 
         with (
-            patch("features.auth.service.decode_jwt", return_value={"sub": str(user.id)}),
+            patch(
+                "features.auth.service.decode_jwt",
+                return_value={"sub": str(user.id), "exp": 4_102_444_800},
+            ),
             patch(
                 "features.auth.service.get_user_by_id_or_404",
                 new_callable=AsyncMock,
@@ -174,6 +182,10 @@ class TestRefreshUserToken:
             ),
             patch("features.auth.service.create_access_token", return_value="new_acc"),
             patch("features.auth.service.create_refresh_token", return_value="new_ref"),
+            patch(
+                "features.auth.service.get_redis_cache",
+                return_value=MagicMock(set_nx=AsyncMock(return_value=True)),
+            ),
         ):
             result = await refresh_user_token(mock_request, mock_response, mock_db_session)
 
@@ -195,7 +207,7 @@ class TestRefreshUserToken:
         mock_request.cookies = {"refresh_token": "invalid"}
         mock_response = MagicMock()
 
-        with patch("features.auth.service.decode_jwt", side_effect=Exception("bad")):
+        with patch("features.auth.service.decode_jwt", side_effect=jwt.InvalidTokenError()):
             with pytest.raises(AuthException):
                 await refresh_user_token(mock_request, mock_response, mock_db_session)
 

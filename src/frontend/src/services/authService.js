@@ -5,9 +5,10 @@ export const authService = {
   login: (data) => api.post('/login', data),
   requestTelegramLoginCode: (data) =>
     api.post('/telegram/site-login/request-code', data),
-  verifyTelegramLoginCode: (data) => api.post('/telegram/site-login/verify', data),
+  verifyTelegramLoginCode: (data) =>
+    api.post('/telegram/site-login/verify', data),
   setTelegramSitePassword: (data) =>
     api.post('/telegram/site-login/password', data),
   getMe: () => api.get('/users/me'),
-  logout: () => Promise.resolve(),
+  logout: () => api.post('/logout'),
 };

@@ -23,7 +23,7 @@ describe('MainLayout', () => {
     vi.clearAllMocks();
   });
 
-  it('renders logo and navigation when authenticated', () => {
+  it('renders authenticated header actions', () => {
     render(
       <BrowserRouter>
         <MainLayout />
@@ -31,8 +31,8 @@ describe('MainLayout', () => {
     );
 
     expect(screen.getByLabelText('На главную')).toBeDefined();
-    expect(screen.getAllByText('Рестораны').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Заказы').length).toBeGreaterThan(0);
+    expect(screen.getByLabelText('Профиль')).toBeDefined();
+    expect(screen.getByLabelText('Уведомления')).toBeDefined();
   });
 
   it('shows login button when not authenticated', () => {
@@ -48,6 +48,6 @@ describe('MainLayout', () => {
     );
 
     expect(screen.getByText('Войти')).toBeDefined();
-    expect(screen.queryByText('Рестораны')).toBeNull();
+    expect(screen.queryByLabelText('Профиль')).toBeNull();
   });
 });

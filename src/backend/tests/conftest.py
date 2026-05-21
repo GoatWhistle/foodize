@@ -1,10 +1,11 @@
 import os
 import sys
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import event
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -12,13 +13,27 @@ from factories import make_user
 
 from database.db_helper import db_helper
 from features.auth.service import get_current_user
+from features.orders.models import Order
 from features.users.models import User
 from main import app
+from shared.enums.roles import UserRole
+
+_order_display_id = 1000
+
+
+@event.listens_for(Order, "before_insert")
+def _set_order_display_id_for_sqlite_tests(mapper, connection, target) -> None:
+    global _order_display_id
+    if target.display_id is None:
+        target.display_id = _order_display_id
+        _order_display_id += 1
 
 
 @pytest_asyncio.fixture
 async def mock_db_session() -> AsyncMock:
     session = AsyncMock()
+    session.add = MagicMock()
+    session.add_all = MagicMock()
     return session
 
 
@@ -41,12 +56,12 @@ def default_user() -> User:
 
 @pytest.fixture
 def vendor_user() -> User:
-    return make_user(user_role="vendor")
+    return make_user(user_role=UserRole.VENDOR.value)
 
 
 @pytest.fixture
 def admin_user() -> User:
-    return make_user(user_role="admin")
+    return make_user(user_role=UserRole.ADMIN.value)
 
 
 @pytest.fixture

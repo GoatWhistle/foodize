@@ -12,6 +12,7 @@ class OrderCreate(BaseModel):
     items: list[OrderItemCreate] = Field(..., min_length=1, max_length=50)
     promo_code: str | None = Field(None, min_length=3, max_length=64)
     comment: str | None = Field(None, max_length=500)
+    requested_pickup_at: datetime | None = None
 
 
 class OrderLoadEstimate(BaseModel):
@@ -50,6 +51,7 @@ class OrderResponse(BaseModel):
     total_price: int
     comment: str | None = None
     cancellation_reason: str | None = None
+    requested_pickup_at: datetime | None = None
     created_at: datetime
     estimated_ready_at: datetime | None = None
     ready_at: datetime | None = None
@@ -73,6 +75,7 @@ class OrderResponse(BaseModel):
             "total_price": data.total_price,
             "comment": data.comment,
             "cancellation_reason": getattr(data, "cancellation_reason", None),
+            "requested_pickup_at": getattr(data, "requested_pickup_at", None),
             "created_at": data.created_at,
             "estimated_ready_at": getattr(data, "estimated_ready_at", None),
             "ready_at": getattr(data, "ready_at", None),

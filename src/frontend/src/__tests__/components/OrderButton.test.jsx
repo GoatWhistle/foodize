@@ -28,7 +28,7 @@ describe('OrderButton', () => {
     const button = screen.getByText('Haptic');
 
     fireEvent.mouseDown(button);
-    expect(button.style.transform).toBe('scale(0.95)');
+    expect(button.style.transform).toBe('scale(0.96)');
 
     fireEvent.mouseUp(button);
     expect(button.style.transform).toBe('scale(1)');

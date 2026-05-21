@@ -39,10 +39,7 @@ async def _ensure_admin_vendor_profile(
             rejection_reason=None,
         )
         session.add(vendor)
-    elif (
-        vendor.approval_status != ModerationStatus.APPROVED.value
-        or vendor.rejection_reason
-    ):
+    elif vendor.approval_status != ModerationStatus.APPROVED.value or vendor.rejection_reason:
         vendor.approval_status = ModerationStatus.APPROVED.value
         vendor.rejection_reason = None
 
@@ -68,8 +65,7 @@ async def get_current_vendor(
         raise NotFoundException(detail="Vendor profile not found")
     vendor = loaded_user.vendor_profile
     if _is_admin(user) and (
-        vendor.approval_status != ModerationStatus.APPROVED.value
-        or vendor.rejection_reason
+        vendor.approval_status != ModerationStatus.APPROVED.value or vendor.rejection_reason
     ):
         return await _ensure_admin_vendor_profile(session, user)
     return vendor

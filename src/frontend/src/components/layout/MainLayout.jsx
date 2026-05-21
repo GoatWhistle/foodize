@@ -62,11 +62,15 @@ const MainLayout = () => {
     }
   }, [navigate]);
 
-  const handleCheckout = async (promoCode = null, comment = '') => {
+  const handleCheckout = async (
+    promoCode = null,
+    comment = '',
+    requestedPickupAt = null
+  ) => {
     setIsLoading(true);
     setError('');
     try {
-      const order = await placeOrder(promoCode, comment);
+      const order = await placeOrder(promoCode, comment, requestedPickupAt);
       setIsCartOpen(false);
       navigate(ROUTES.ORDER_STATUS.replace(':id', order.id));
     } catch (err) {

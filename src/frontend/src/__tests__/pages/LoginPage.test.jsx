@@ -4,7 +4,6 @@ import { BrowserRouter } from 'react-router-dom';
 import LoginPage from '../../pages/auth/LoginPage';
 import { useAuthStore } from '../../store/useAuthStore';
 
-// Mock useAuthStore
 vi.mock('../../store/useAuthStore', () => ({
   useAuthStore: vi.fn((selector) => {
     const state = {
@@ -72,7 +71,7 @@ describe('LoginPage', () => {
     });
   });
 
-  it('shows error message if login fails', async () => {
+  it('shows translated error message if login fails', async () => {
     const mockLogin = vi.fn().mockRejectedValueOnce({
       response: { data: { detail: 'Invalid credentials' } },
     });
@@ -90,7 +89,7 @@ describe('LoginPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Войти' }));
 
     await waitFor(() => {
-      expect(screen.getByText('Invalid credentials')).toBeDefined();
+      expect(screen.getByText('Неверный телефон или пароль')).toBeDefined();
     });
   });
 });

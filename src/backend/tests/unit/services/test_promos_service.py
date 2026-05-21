@@ -32,7 +32,16 @@ def _make_promo(
     p.expires_at = expires_at
     p.is_active = is_active
     p.created_at = datetime.now()
+    p.first_order_only = False
+    p.min_order_amount = None
+    p.menu_category = None
     return p
+
+
+def _mock_session() -> AsyncMock:
+    session = AsyncMock()
+    session.add = MagicMock()
+    return session
 
 
 class TestCreatePromo:
@@ -97,7 +106,7 @@ class TestCreatePromo:
                 return_value=promo,
             ),
         ):
-            result = await create_promo(MagicMock(), data, [restaurant_id])
+            result = await create_promo(_mock_session(), data, [restaurant_id])
             assert result.code == promo.code
 
 
@@ -185,7 +194,7 @@ class TestDeactivatePromo:
                 return_value=updated,
             ),
         ):
-            result = await deactivate_promo(MagicMock(), "TEST10", [promo.restaurant_id])
+            result = await deactivate_promo(_mock_session(), "TEST10", [promo.restaurant_id])
             assert result.is_active is False
 
 

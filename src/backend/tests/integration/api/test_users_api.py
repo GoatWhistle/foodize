@@ -9,7 +9,7 @@ from httpx import AsyncClient
 class TestUsersAPI:
     @pytest.mark.asyncio
     async def test_read_user_by_id(self, client: AsyncClient, as_user):
-        user_id = uuid.uuid4()
+        user_id = as_user.id
         mock_user = make_user(user_id=user_id, name="Target User")
 
         with patch(
@@ -86,4 +86,4 @@ class TestUsersAPI:
                 "/api/v1/users/me/change-password",
                 json={"old_password": "wrong", "new_password": "newpass123"},
             )
-        assert response.status_code == 400
+        assert response.status_code == 401

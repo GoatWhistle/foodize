@@ -41,7 +41,8 @@ api.interceptors.response.use(
           {},
           { withCredentials: true }
         );
-        const { access_token } = refreshResponse.data;
+        const tokenData = refreshResponse.data?.data ?? refreshResponse.data;
+        const { access_token } = tokenData;
         localStorage.setItem('access_token', access_token);
         originalRequest.headers.Authorization = `Bearer ${access_token}`;
         return api(originalRequest);
@@ -201,7 +202,10 @@ class ReliableWebSocket {
 
 export function createOrderWebSocket(orderId, onMessage, onClose) {
   return new ReliableWebSocket(
-    `${WS_BASE_URL}/api/v1/ws/orders/${orderId}`,
+    () => {
+      const token = localStorage.getItem('access_token') || '';
+      return `${WS_BASE_URL}/api/v1/ws/orders/${orderId}?token=${encodeURIComponent(token)}`;
+    },
     onMessage,
     onClose
   );
@@ -213,7 +217,10 @@ export function createRestaurantOrdersWebSocket(
   onClose
 ) {
   return new ReliableWebSocket(
-    `${WS_BASE_URL}/api/v1/ws/restaurants/${restaurantId}/orders`,
+    () => {
+      const token = localStorage.getItem('access_token') || '';
+      return `${WS_BASE_URL}/api/v1/ws/restaurants/${restaurantId}/orders?token=${encodeURIComponent(token)}`;
+    },
     onMessage,
     onClose
   );

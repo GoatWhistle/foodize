@@ -281,6 +281,29 @@ const OrderDetailsModal = ({
                 {formatDateTime(order.created_at)}
               </div>
             </div>
+            <div
+              style={{
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-md)',
+                padding: 12,
+              }}
+            >
+              <div
+                style={{
+                  color: 'var(--text-3)',
+                  fontSize: '0.72rem',
+                  marginBottom: 6,
+                }}
+              >
+                К выдаче
+              </div>
+              <div style={{ fontWeight: 800 }}>
+                {order.requested_pickup_at
+                  ? formatDateTime(order.requested_pickup_at)
+                  : 'Как можно скорее'}
+              </div>
+            </div>
           </div>
 
           <div

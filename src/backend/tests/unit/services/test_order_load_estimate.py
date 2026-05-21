@@ -4,7 +4,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from features.orders.services.order import estimate_restaurant_load
+from features.orders.services.order import (
+    _is_open_at,
+    _validate_requested_pickup_at,
+    estimate_restaurant_load,
+)
+from shared.exceptions import BadRequestException
 
 
 def _restaurant(
@@ -23,6 +28,21 @@ def _restaurant(
     restaurant.avg_prep_time_minutes = avg_prep_time_minutes
     restaurant.max_active_orders = max_active_orders
     return restaurant
+
+
+def _working_hours_entry(
+    *,
+    day_of_week: int,
+    open_time: str = "09:00",
+    close_time: str = "21:00",
+    is_closed: bool = False,
+):
+    entry = MagicMock()
+    entry.day_of_week = day_of_week
+    entry.open_time = open_time
+    entry.close_time = close_time
+    entry.is_closed = is_closed
+    return entry
 
 
 @pytest.mark.asyncio
@@ -81,3 +101,47 @@ async def test_estimate_restaurant_load_respects_manual_pause():
     assert estimate.ordering_available is False
     assert estimate.reason == "PAUSED"
     assert estimate.paused_until == paused_until
+
+
+def test_validate_requested_pickup_at_accepts_later_time():
+    min_ready_at = datetime.now(timezone.utc) + timedelta(minutes=20)
+    requested = min_ready_at + timedelta(minutes=15)
+
+    assert _validate_requested_pickup_at(requested, min_ready_at) == requested
+
+
+def test_validate_requested_pickup_at_rejects_too_soon_time():
+    min_ready_at = datetime.now(timezone.utc) + timedelta(minutes=20)
+    requested = min_ready_at - timedelta(minutes=1)
+
+    with pytest.raises(BadRequestException):
+        _validate_requested_pickup_at(requested, min_ready_at)
+
+
+def test_validate_requested_pickup_at_rejects_far_future_time():
+    min_ready_at = datetime.now(timezone.utc) + timedelta(minutes=20)
+    requested = datetime.now(timezone.utc) + timedelta(days=8)
+
+    with pytest.raises(BadRequestException):
+        _validate_requested_pickup_at(requested, min_ready_at)
+
+
+def test_is_open_at_accepts_time_inside_working_hours():
+    pickup_at = datetime(2026, 5, 21, 12, 30, tzinfo=timezone.utc)
+    hours = [_working_hours_entry(day_of_week=pickup_at.weekday())]
+
+    assert _is_open_at(hours, pickup_at) is True
+
+
+def test_is_open_at_rejects_time_outside_working_hours():
+    pickup_at = datetime(2026, 5, 21, 22, 0, tzinfo=timezone.utc)
+    hours = [_working_hours_entry(day_of_week=pickup_at.weekday())]
+
+    assert _is_open_at(hours, pickup_at) is False
+
+
+def test_is_open_at_rejects_closed_day():
+    pickup_at = datetime(2026, 5, 21, 12, 30, tzinfo=timezone.utc)
+    hours = [_working_hours_entry(day_of_week=pickup_at.weekday(), is_closed=True)]
+
+    assert _is_open_at(hours, pickup_at) is False

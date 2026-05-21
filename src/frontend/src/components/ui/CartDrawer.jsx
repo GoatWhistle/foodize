@@ -17,6 +17,17 @@ import { promoService } from '../../services/promoService';
 import { orderService } from '../../services/orderService';
 import { translateApiError } from '../../utils/translateApiError';
 
+const toDateTimeLocalValue = (date) => {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+};
+
+const fromDateTimeLocalValue = (value) => {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+};
+
 const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
   const { cart, cartRestaurantId, removeFromCart, addToCart, clearCart } =
     useOrderStore(
@@ -37,6 +48,8 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
   const [promoError, setPromoError] = useState('');
   const [promoLoading, setPromoLoading] = useState(false);
   const [comment, setComment] = useState('');
+  const [pickupMode, setPickupMode] = useState('asap');
+  const [requestedPickupAt, setRequestedPickupAt] = useState('');
   const [upsellProduct, setUpsellProduct] = useState(null);
   const [loadEstimate, setLoadEstimate] = useState(null);
   const [estimateLoading, setEstimateLoading] = useState(false);
@@ -56,6 +69,8 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
     setPromoCode('');
     setPromoError('');
     setComment('');
+    setPickupMode('asap');
+    setRequestedPickupAt('');
   }, [cartRestaurantId]);
 
   useEffect(() => {
@@ -121,6 +136,21 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
         loadEstimate.active_orders_count >= loadEstimate.max_active_orders));
   const orderingUnavailable =
     loadEstimate && loadEstimate.ordering_available === false;
+  const minPickupDate = new Date(
+    Date.now() +
+      Math.max(loadEstimate?.estimated_wait_min_minutes ?? 15, 1) * 60000
+  );
+  const maxPickupDate = new Date(Date.now() + 7 * 24 * 60 * 60000);
+  const minPickupValue = toDateTimeLocalValue(minPickupDate);
+  const maxPickupValue = toDateTimeLocalValue(maxPickupDate);
+  const selectedPickupIso =
+    pickupMode === 'scheduled'
+      ? fromDateTimeLocalValue(requestedPickupAt)
+      : null;
+  const pickupTooSoon =
+    pickupMode === 'scheduled' &&
+    requestedPickupAt &&
+    new Date(requestedPickupAt) < minPickupDate;
 
   const getSelectedOptionIds = (item) =>
     item.selectedOptionIds ??
@@ -416,6 +446,76 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
             }}
           />
 
+          <div
+            style={{
+              marginTop: 16,
+              padding: '12px 14px',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--r-md)',
+              background: 'var(--bg-card)',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                marginBottom: 10,
+                fontSize: '0.86rem',
+                fontWeight: 800,
+                color: 'var(--text-1)',
+              }}
+            >
+              <Clock size={16} weight="bold" />
+              Время получения
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className={`category-chip${pickupMode === 'asap' ? ' active' : ''}`}
+                onClick={() => setPickupMode('asap')}
+              >
+                Как можно скорее
+              </button>
+              <button
+                type="button"
+                className={`category-chip${pickupMode === 'scheduled' ? ' active' : ''}`}
+                onClick={() => {
+                  setPickupMode('scheduled');
+                  setRequestedPickupAt((current) => current || minPickupValue);
+                }}
+              >
+                Ко времени
+              </button>
+            </div>
+            {pickupMode === 'scheduled' && (
+              <div style={{ marginTop: 10 }}>
+                <input
+                  className="form-input"
+                  type="datetime-local"
+                  value={requestedPickupAt}
+                  min={minPickupValue}
+                  max={maxPickupValue}
+                  onChange={(e) => setRequestedPickupAt(e.target.value)}
+                  style={{ height: 40, fontSize: '0.85rem' }}
+                />
+                <div
+                  style={{
+                    marginTop: 6,
+                    fontSize: '0.76rem',
+                    color: pickupTooSoon ? 'var(--error)' : 'var(--text-3)',
+                  }}
+                >
+                  Минимум:{' '}
+                  {minPickupDate.toLocaleTimeString('ru-RU', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
           {estimateLoading && (
             <div
               style={{
@@ -479,7 +579,8 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
                 </div>
                 {!orderingUnavailable && (
                   <div style={{ fontSize: '0.78rem', color: 'var(--text-3)' }}>
-                    Активных заказов в очереди: {loadEstimate.active_orders_count}
+                    Активных заказов в очереди:{' '}
+                    {loadEstimate.active_orders_count}
                   </div>
                 )}
               </div>
@@ -529,9 +630,15 @@ const CartDrawer = ({ onClose, onCheckout, isLoading, error }) => {
 
           <OrderButton
             className="btn-full"
-            onClick={() => onCheckout(appliedPromo?.code ?? null, comment)}
+            onClick={() =>
+              onCheckout(appliedPromo?.code ?? null, comment, selectedPickupIso)
+            }
             isLoading={isLoading}
-            disabled={orderingUnavailable}
+            disabled={
+              orderingUnavailable ||
+              (pickupMode === 'scheduled' &&
+                (!selectedPickupIso || pickupTooSoon))
+            }
           >
             {orderingUnavailable ? 'Приём заказов на паузе' : 'Оформить заказ'}
           </OrderButton>

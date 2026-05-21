@@ -3,9 +3,9 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from httpx import AsyncClient
-from shared.enums.roles import UserRole
 
 from shared.enums.order_status import OrderStatus
+from shared.enums.permissions import Permission
 
 MOCK_CREATED_AT = "2026-01-01T00:00:00"
 
@@ -15,7 +15,7 @@ def _make_admin_user_dict(user_id: uuid.UUID | None = None) -> dict:
         "id": str(user_id or uuid.uuid4()),
         "name": "Admin",
         "phone_number": "79000000000",
-        "user_role": UserRole.CUSTOMER.value,
+        "permissions": [Permission.ORDERS_CREATE.value],
         "is_active": True,
         "created_at": "2026-01-01T00:00:00",
     }
@@ -178,20 +178,20 @@ class TestAdminUsers:
         assert response.json()["data"]["is_active"] is True
 
     @pytest.mark.asyncio
-    async def test_make_admin(self, client: AsyncClient, as_admin):
+    async def test_grant_admin_permissions(self, client: AsyncClient, as_admin):
         user_id = uuid.uuid4()
         mock_user = _make_admin_user_dict(user_id)
-        promoted = {**mock_user, "user_role": UserRole.ADMIN.value}
+        promoted = {**mock_user, "permissions": [Permission.ADMIN_ACCESS.value]}
 
         with patch(
-            "features.admin.service.set_user_role",
+            "features.admin.service.set_user_permissions",
             new_callable=AsyncMock,
             return_value=promoted,
         ):
-            response = await client.post(f"/api/v1/admin/users/{user_id}/make-admin")
+            response = await client.post(f"/api/v1/admin/users/{user_id}/grant-admin")
 
         assert response.status_code == 200
-        assert response.json()["data"]["user_role"] == UserRole.ADMIN.value
+        assert response.json()["data"]["permissions"] == [Permission.ADMIN_ACCESS.value]
 
 
 class TestAdminOrders:
@@ -242,7 +242,9 @@ class TestAdminStats:
     @pytest.mark.asyncio
     async def test_read_stats(self, client: AsyncClient, as_admin):
         mock_stats = {
+            "users_by_permission": {Permission.ORDERS_CREATE.value: 10},
             "users_by_role": {"CUSTOMER": 10, "VENDOR": 3, "ADMIN": 1},
+            "total_users": 14,
             "orders_by_status": {"PENDING": 5, "COMPLETED": 20},
             "total_restaurants": 4,
             "total_vendors": 3,

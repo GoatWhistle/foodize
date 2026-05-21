@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { TelegramLogo } from "@phosphor-icons/react";
 import { authExistingUser, initTelegramApp } from "../../telegram/init";
-import { getTelegramInitData, requestTelegramContact } from "../../telegram/sdk";
+import {
+  getTelegramInitData,
+  requestTelegramContact,
+} from "../../telegram/sdk";
 import { useAuthStore } from "../../store/useAuthStore";
 import { translateApiError } from "../../utils/translateApiError";
 

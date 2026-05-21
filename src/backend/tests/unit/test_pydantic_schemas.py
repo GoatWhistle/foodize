@@ -2,12 +2,12 @@ import uuid
 
 import pytest
 from pydantic import ValidationError
-from shared.enums.roles import UserRole
 
 from features.auth.schemas import TokenResponse, UserLogin
 from features.orders.schemas.order import OrderCreate
 from features.orders.schemas.order_item import OrderItemCreate
 from features.users.schemas import UserCreate, UserRead
+from shared.enums.permissions import Permission
 
 
 class TestUserLoginSchema:
@@ -36,27 +36,24 @@ class TestUserCreateSchema:
         data = UserCreate(
             name="Ivan",
             phone_number="79001234567",
-            user_role=UserRole.CUSTOMER,
             password="strongpass",
         )
         assert data.name == "Ivan"
-        assert data.user_role == UserRole.CUSTOMER
+        assert data.phone_number == "79001234567"
 
     def test_password_min_length(self):
         with pytest.raises(ValidationError):
             UserCreate(
                 name="Ivan",
                 phone_number="79001234567",
-                user_role=UserRole.CUSTOMER,
                 password="short",
             )
 
-    def test_invalid_role(self):
+    def test_invalid_phone(self):
         with pytest.raises(ValidationError):
             UserCreate(
                 name="Ivan",
-                phone_number="79001234567",
-                user_role="SUPERADMIN",
+                phone_number="abc",
                 password="strongpass",
             )
 
@@ -68,7 +65,7 @@ class TestUserReadSchema:
             id=user_id,
             name="Ivan",
             phone_number="79001234567",
-            user_role=UserRole.CUSTOMER,
+            permissions=[Permission.ORDERS_CREATE],
         )
         assert data.id == user_id
 
@@ -78,7 +75,7 @@ class TestUserReadSchema:
                 id="not-a-uuid",
                 name="Ivan",
                 phone_number="79001234567",
-                user_role=UserRole.CUSTOMER,
+                permissions=[Permission.ORDERS_CREATE],
             )
 
 

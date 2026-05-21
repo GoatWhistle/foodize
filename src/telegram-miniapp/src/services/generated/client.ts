@@ -1089,6 +1089,38 @@ export const telegramAuthApiV1TelegramAuthPost = (
     options,
   );
 
+export const telegramSiteLoginRequestCodeApiV1TelegramSiteLoginRequestCodePost =
+  (
+    options?: RequestOptions<
+      paths["/api/v1/telegram/site-login/request-code"]["post"]
+    >,
+  ) =>
+    request<paths["/api/v1/telegram/site-login/request-code"]["post"]>(
+      "post",
+      "/api/v1/telegram/site-login/request-code",
+      options,
+    );
+
+export const telegramSiteLoginVerifyApiV1TelegramSiteLoginVerifyPost = (
+  options?: RequestOptions<paths["/api/v1/telegram/site-login/verify"]["post"]>,
+) =>
+  request<paths["/api/v1/telegram/site-login/verify"]["post"]>(
+    "post",
+    "/api/v1/telegram/site-login/verify",
+    options,
+  );
+
+export const telegramSiteLoginSetPasswordApiV1TelegramSiteLoginPasswordPost = (
+  options?: RequestOptions<
+    paths["/api/v1/telegram/site-login/password"]["post"]
+  >,
+) =>
+  request<paths["/api/v1/telegram/site-login/password"]["post"]>(
+    "post",
+    "/api/v1/telegram/site-login/password",
+    options,
+  );
+
 export const telegramLogoutApiV1TelegramLogoutPost = (
   options?: RequestOptions<paths["/api/v1/telegram/logout"]["post"]>,
 ) =>

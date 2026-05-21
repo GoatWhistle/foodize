@@ -1,5 +1,4 @@
 import pytest
-from shared.enums.roles import UserRole
 
 from features.menu.crud import (
     count_menu_items,
@@ -31,6 +30,7 @@ from features.users.schemas import UserCreate
 from features.vendors.crud import create_vendor_profile
 from features.vendors.schemas import VendorCreate
 from shared.enums.category import Category
+from shared.enums.roles import UserRole
 
 
 @pytest.fixture

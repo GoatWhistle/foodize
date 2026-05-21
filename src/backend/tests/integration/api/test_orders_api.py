@@ -23,6 +23,7 @@ MOCK_CREATED_AT = "2026-01-01T00:00:00"
 def _make_mock_order_dict(order_id, user_id, restaurant_id, status=OrderStatus.PENDING, items=None):
     return {
         "id": str(order_id),
+        "display_id": 1001,
         "user_id": str(user_id),
         "restaurant_id": str(restaurant_id),
         "status": status.value,
@@ -49,8 +50,10 @@ class TestOrdersAPI:
                     "menu_item_id": str(menu_item_id),
                     "menu_item_name": "Pizza",
                     "menu_item_category": "PIZZA",
+                    "menu_item_prep_time": 10,
                     "quantity": 2,
                     "price_at_purchase": 250,
+                    "selected_options": [],
                 }
             ],
         )
@@ -93,11 +96,17 @@ class TestOrdersAPI:
         order_id = uuid.uuid4()
         mock_order = _make_mock_order_dict(order_id, as_user.id, uuid.uuid4())
 
-        with patch(
-            "features.orders.api.order.service.get_order",
-            new_callable=AsyncMock,
-            return_value=mock_order,
-        ) as mock_get:
+        with (
+            patch(
+                "features.orders.api.order.service.order_crud.get_order_by_identifier",
+                new_callable=AsyncMock,
+                return_value=mock_order,
+            ) as mock_get,
+            patch(
+                "features.orders.api.order.verify_order_read_access",
+                new_callable=AsyncMock,
+            ),
+        ):
             response = await client.get(f"/api/v1/orders/{order_id}")
 
         assert response.status_code == 200
@@ -196,7 +205,7 @@ class TestCancelOrderAPI:
             new_callable=AsyncMock,
             return_value=mock_order,
         ) as mock_cancel:
-            response = await client.post(f"/api/v1/orders/{order_id}/cancel")
+            response = await client.post(f"/api/v1/orders/{order_id}/cancel", json={})
 
         assert response.status_code == 200
         assert response.json()["data"]["status"] == OrderStatus.CANCELLED.value
@@ -211,7 +220,7 @@ class TestCancelOrderAPI:
             new_callable=AsyncMock,
             side_effect=OrderNotFoundException(),
         ):
-            response = await client.post(f"/api/v1/orders/{order_id}/cancel")
+            response = await client.post(f"/api/v1/orders/{order_id}/cancel", json={})
 
         assert response.status_code == 404
 
@@ -224,6 +233,6 @@ class TestCancelOrderAPI:
             new_callable=AsyncMock,
             side_effect=OrderNotCancellableException(),
         ):
-            response = await client.post(f"/api/v1/orders/{order_id}/cancel")
+            response = await client.post(f"/api/v1/orders/{order_id}/cancel", json={})
 
         assert response.status_code == 409

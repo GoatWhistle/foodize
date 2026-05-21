@@ -2264,6 +2264,13 @@ const VendorDashboardPage = () => {
                                 )}
                                 {order.items?.length || 0} позиц. •{' '}
                                 {order.total_price} ₽
+                                {order.requested_pickup_at && (
+                                  <>
+                                    {' '}
+                                    • к выдаче{' '}
+                                    {formatOrderTime(order.requested_pickup_at)}
+                                  </>
+                                )}
                               </div>
                               {order.items?.length > 0 && (
                                 <div
@@ -2590,7 +2597,7 @@ const VendorDashboardPage = () => {
                   />
                 ) : (
                   <div className={promosLoading ? 'loading-dim' : undefined}>
-                    {promosList.map((promo) => (
+                    {promosList.map((promo) =>
                       (() => {
                         const conditionLabels = getPromoConditionLabels(promo);
                         return (
@@ -2672,7 +2679,9 @@ const VendorDashboardPage = () => {
                             {promo.is_active && (
                               <button
                                 className="btn-icon-sm danger"
-                                onClick={() => handleDeactivatePromo(promo.code)}
+                                onClick={() =>
+                                  handleDeactivatePromo(promo.code)
+                                }
                                 title="Деактивировать"
                               >
                                 <Trash size={14} />
@@ -2681,7 +2690,7 @@ const VendorDashboardPage = () => {
                           </div>
                         );
                       })()
-                    ))}
+                    )}
                   </div>
                 )}
               </div>
@@ -3088,9 +3097,7 @@ const VendorDashboardPage = () => {
                     {exportLoading ? '...' : '↓ Аналитика PDF'}
                   </button>
                 </div>
-                {financeLoading && !finance && (
-                  <AnalyticsSkeleton />
-                )}
+                {financeLoading && !finance && <AnalyticsSkeleton />}
                 {finance && <KPICards finance={finance} />}
                 {finance && (
                   <RevenueChart data={finance.revenue_by_day || []} />

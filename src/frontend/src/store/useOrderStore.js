@@ -200,7 +200,11 @@ export const useOrderStore = create((set, get) => ({
   currentOrder: null,
   ordersLoading: false,
 
-  placeOrder: async (promoCode = null, comment = '') => {
+  placeOrder: async (
+    promoCode = null,
+    comment = '',
+    requestedPickupAt = null
+  ) => {
     const { cart, cartRestaurantId } = get();
     const trimmedComment = comment.trim();
     const payload = {
@@ -212,6 +216,7 @@ export const useOrderStore = create((set, get) => ({
       })),
       ...(promoCode ? { promo_code: promoCode } : {}),
       ...(trimmedComment ? { comment: trimmedComment } : {}),
+      ...(requestedPickupAt ? { requested_pickup_at: requestedPickupAt } : {}),
     };
     const res = await orderService.create(payload, {
       headers: { 'Idempotency-Key': makeIdempotencyKey() },

@@ -13,6 +13,7 @@ from features.restaurants.service import (
     get_my_restaurants,
     update_restaurant_for_vendor,
 )
+from shared.enums.moderation_status import ModerationStatus
 from shared.exceptions.existence import NotFoundException
 
 
@@ -20,10 +21,15 @@ def make_mock_restaurant(restaurant_id: uuid.UUID = None, vendor_id: uuid.UUID =
     r = MagicMock()
     r.id = restaurant_id or uuid.uuid4()
     r.vendor_id = vendor_id or uuid.uuid4()
+    r.display_id = "test-restaurant"
     r.name = "Test Restaurant"
     r.address = "Test Street 1"
+    r.description = None
+    r.photo_url = None
     r.is_hiring = True
     r.is_open = True
+    r.moderation_status = ModerationStatus.PENDING.value
+    r.rejection_reason = None
     return r
 
 
@@ -32,12 +38,20 @@ class TestCreateRestaurantForVendor:
         vendor_id = uuid.uuid4()
         mock_restaurant = make_mock_restaurant(vendor_id=vendor_id)
         restaurant_data = RestaurantCreate(name="Sushi Bar", address="Lenin St 1")
+        mock_vendor = MagicMock()
+        mock_vendor.approval_status = ModerationStatus.APPROVED.value
+        mock_vendor.user.permissions = []
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = mock_vendor
 
-        with patch(
-            "features.restaurants.crud.create_restaurant",
-            new_callable=AsyncMock,
-            return_value=mock_restaurant,
-        ) as mock_create:
+        with (
+            patch.object(mock_db_session, "execute", new=AsyncMock(return_value=mock_result)),
+            patch(
+                "features.restaurants.crud.create_restaurant",
+                new_callable=AsyncMock,
+                return_value=mock_restaurant,
+            ) as mock_create,
+        ):
             result = await create_restaurant_for_vendor(mock_db_session, restaurant_data, vendor_id)
 
         assert isinstance(result, RestaurantResponse)

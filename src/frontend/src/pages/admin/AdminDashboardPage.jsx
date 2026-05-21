@@ -1544,9 +1544,7 @@ const AdminDashboardPage = () => {
                 {exportLoading ? '...' : '↓ Обзор платформы PDF'}
               </button>
             </div>
-            {financeLoading && !finance && (
-              <AnalyticsSkeleton />
-            )}
+            {financeLoading && !finance && <AnalyticsSkeleton />}
             {finance && (
               <>
                 <KPICards finance={finance} />

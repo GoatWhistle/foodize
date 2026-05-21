@@ -6,7 +6,6 @@ const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }) => {
   const canvasRef = useRef(null);
   const [type, setType] = useState(initialType);
 
-  const miniAppUrl = import.meta.env.VITE_MINI_APP_URL || '';
   const webUrl = import.meta.env.VITE_WEB_URL || window.location.origin;
   const botUsername = (import.meta.env.VITE_BOT_USERNAME || '').replace(
     /^@/,
@@ -14,16 +13,24 @@ const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }) => {
   );
 
   const publicId = restaurant.display_id || restaurant.id;
-  const siteLink = `${webUrl.replace(/\/$/, '')}/restaurant/${publicId}`;
+  const siteLink = `${webUrl.replace(/\/$/, '')}/restaurants/${publicId}`;
   const telegramLink = botUsername
     ? `https://t.me/${botUsername}?start=restaurant_${publicId}`
-    : miniAppUrl
-      ? `${miniAppUrl}?startapp=restaurant_${publicId}`
-      : siteLink;
+    : '';
   const deepLink = type === 'telegram' ? telegramLink : siteLink;
 
   useEffect(() => {
     if (!canvasRef.current) return;
+    if (!deepLink) {
+      const context = canvasRef.current.getContext('2d');
+      context?.clearRect(
+        0,
+        0,
+        canvasRef.current.width,
+        canvasRef.current.height
+      );
+      return;
+    }
     QRCode.toCanvas(canvasRef.current, deepLink, {
       width: 240,
       margin: 2,
@@ -35,6 +42,7 @@ const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }) => {
   }, [deepLink]);
 
   const handleDownload = async () => {
+    if (!deepLink) return;
     try {
       const dataUrl = await QRCode.toDataURL(deepLink, {
         width: 512,
@@ -121,7 +129,9 @@ const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }) => {
             <button
               key={value}
               type="button"
-              className={type === value ? 'btn btn-primary' : 'btn btn-secondary'}
+              className={
+                type === value ? 'btn btn-primary' : 'btn btn-secondary'
+              }
               onClick={() => setType(value)}
               style={{ height: 36, fontSize: '0.78rem' }}
             >
@@ -140,17 +150,32 @@ const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }) => {
           }}
         />
 
-        <p
-          style={{
-            fontSize: '0.68rem',
-            color: 'var(--text-3)',
-            marginTop: 12,
-            wordBreak: 'break-all',
-            lineHeight: 1.4,
-          }}
-        >
-          {deepLink}
-        </p>
+        {deepLink ? (
+          <p
+            style={{
+              fontSize: '0.68rem',
+              color: 'var(--text-3)',
+              marginTop: 12,
+              wordBreak: 'break-all',
+              lineHeight: 1.4,
+            }}
+          >
+            {deepLink}
+          </p>
+        ) : (
+          <p
+            className="form-error"
+            style={{
+              fontSize: '0.72rem',
+              marginTop: 12,
+              lineHeight: 1.4,
+              textAlign: 'left',
+            }}
+          >
+            Для Telegram QR задайте VITE_BOT_USERNAME. QR должен вести в бота
+            как /start restaurant_{publicId}.
+          </p>
+        )}
 
         <button
           className="btn btn-primary"
@@ -163,6 +188,7 @@ const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }) => {
             gap: 6,
           }}
           onClick={handleDownload}
+          disabled={!deepLink}
         >
           <DownloadSimple size={16} weight="bold" />
           Скачать PNG

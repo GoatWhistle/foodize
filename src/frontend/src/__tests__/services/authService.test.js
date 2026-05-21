@@ -40,4 +40,12 @@ describe('authService', () => {
     const result = await authService.getMe();
     expect(result.data).toEqual(mockData);
   });
+
+  it('logout sends POST to /logout so backend can invalidate tokens', async () => {
+    mock.onPost('/logout').reply(204);
+
+    const result = await authService.logout();
+
+    expect(result.status).toBe(204);
+  });
 });

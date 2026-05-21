@@ -30,6 +30,9 @@ class Order(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
     total_price: Mapped[int]
     comment: Mapped[str | None] = mapped_column(String(500), nullable=True)
     cancellation_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    requested_pickup_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     estimated_ready_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

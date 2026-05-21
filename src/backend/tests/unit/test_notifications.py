@@ -10,11 +10,13 @@ from features.notifications.handlers import (
     handle_order_placed,
     handle_order_status_changed,
 )
+from features.notifications.outbox_service import enqueue_event, publish_pending_events
 from features.notifications.publisher import (
     publish_order_placed,
     publish_order_status_changed,
 )
 from shared.enums.order_status import OrderStatus
+from shared.enums.outbox_status import OutboxStatus
 
 
 def _make_placed_event() -> OrderPlacedEvent:
@@ -44,14 +46,20 @@ class TestHandlers:
     @pytest.mark.asyncio
     async def test_handle_order_placed_logs(self, caplog):
         event = _make_placed_event()
-        with caplog.at_level(logging.INFO, logger="features.notifications.handlers"):
+        with (
+            caplog.at_level(logging.INFO, logger="features.notifications.handlers"),
+            patch("features.notifications.handlers._notify_user", new_callable=AsyncMock),
+        ):
             await handle_order_placed(event)
         assert "order.placed" in caplog.text
 
     @pytest.mark.asyncio
     async def test_handle_order_status_changed_logs(self, caplog):
         event = _make_status_event()
-        with caplog.at_level(logging.INFO, logger="features.notifications.handlers"):
+        with (
+            caplog.at_level(logging.INFO, logger="features.notifications.handlers"),
+            patch("features.notifications.handlers._notify_user", new_callable=AsyncMock),
+        ):
             await handle_order_status_changed(event)
         assert "order.status_changed" in caplog.text
 
@@ -98,7 +106,10 @@ class TestConsumer:
             return_value=MagicMock(__aenter__=AsyncMock(), __aexit__=AsyncMock())
         )
 
-        with caplog.at_level(logging.INFO, logger="features.notifications.handlers"):
+        with (
+            caplog.at_level(logging.INFO, logger="features.notifications.handlers"),
+            patch("features.notifications.handlers._notify_user", new_callable=AsyncMock),
+        ):
             await _process_message(message, "order.placed")
         assert "order.placed" in caplog.text
 
@@ -111,7 +122,10 @@ class TestConsumer:
             return_value=MagicMock(__aenter__=AsyncMock(), __aexit__=AsyncMock())
         )
 
-        with caplog.at_level(logging.INFO, logger="features.notifications.handlers"):
+        with (
+            caplog.at_level(logging.INFO, logger="features.notifications.handlers"),
+            patch("features.notifications.handlers._notify_user", new_callable=AsyncMock),
+        ):
             await _process_message(message, "order.status_changed")
         assert "order.status_changed" in caplog.text
 
@@ -140,3 +154,68 @@ class TestConsumer:
             side_effect=RuntimeError("fail"),
         ):
             await _process_message(message, "order.placed")
+
+
+class TestOutboxService:
+    @pytest.mark.asyncio
+    async def test_enqueue_event_adds_outbox_record(self):
+        session = MagicMock()
+        event = _make_placed_event()
+
+        outbox = await enqueue_event(session, event)
+
+        assert outbox.event_id == event.event_id
+        assert outbox.event_type == "order.placed"
+        assert outbox.routing_key == "order.placed"
+        assert outbox.payload["order_id"] == str(event.order_id)
+        session.add.assert_called_once_with(outbox)
+
+    @pytest.mark.asyncio
+    async def test_publish_pending_events_marks_successful_events_published(self):
+        event = MagicMock()
+        event.routing_key = "order.placed"
+        event.payload = {"order_id": "1"}
+        event.status = OutboxStatus.PENDING.value
+        event.event_id = uuid.uuid4()
+        event.last_error = "old error"
+
+        result = MagicMock()
+        result.scalars.return_value.all.return_value = [event]
+        session = AsyncMock()
+        session.execute = AsyncMock(return_value=result)
+        publisher = AsyncMock()
+
+        published = await publish_pending_events(session, publisher=publisher)
+
+        assert published == 1
+        publisher.publish.assert_awaited_once_with("order.placed", {"order_id": "1"})
+        assert event.status == OutboxStatus.PUBLISHED.value
+        assert event.published_at is not None
+        assert event.last_error is None
+        session.commit.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_publish_pending_events_records_failure_and_backoff(self):
+        event = MagicMock()
+        event.routing_key = "order.placed"
+        event.payload = {"order_id": "1"}
+        event.status = OutboxStatus.PENDING.value
+        event.event_id = uuid.uuid4()
+        event.attempts = 0
+        event.next_attempt_at = None
+
+        result = MagicMock()
+        result.scalars.return_value.all.return_value = [event]
+        session = AsyncMock()
+        session.execute = AsyncMock(return_value=result)
+        publisher = AsyncMock()
+        publisher.publish.side_effect = RuntimeError("broker down")
+
+        published = await publish_pending_events(session, publisher=publisher)
+
+        assert published == 0
+        assert event.attempts == 1
+        assert event.last_error == "broker down"
+        assert event.next_attempt_at is not None
+        assert event.status == OutboxStatus.PENDING.value
+        session.commit.assert_awaited_once()

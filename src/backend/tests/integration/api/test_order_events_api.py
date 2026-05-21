@@ -8,6 +8,7 @@ from features.orders.exceptions import InvalidStatusTransitionException
 from features.orders.models import Order
 from main import app
 from shared.enums.order_status import OrderStatus
+from shared.enums.permissions import Permission
 
 
 def _make_mock_event(order_id: uuid.UUID) -> dict:
@@ -15,7 +16,7 @@ def _make_mock_event(order_id: uuid.UUID) -> dict:
         "id": str(uuid.uuid4()),
         "order_id": str(order_id),
         "actor_id": str(uuid.uuid4()),
-        "actor_role": "VENDOR",
+        "actor_permissions": [Permission.ORDERS_MANAGE_STATUS.value],
         "old_status": OrderStatus.PENDING.value,
         "new_status": OrderStatus.ACCEPTED.value,
         "created_at": "2026-04-18T12:00:00",
@@ -39,12 +40,12 @@ class TestOrderEventsAPI:
 
         with (
             patch(
-                "features.orders.api.order.get_order_by_id",
+                "features.orders.api.order.service.order_crud.get_order_by_identifier",
                 new_callable=AsyncMock,
                 return_value=mock_order,
             ),
             patch(
-                "features.orders.api.order.verify_restaurant_access",
+                "features.orders.api.order.verify_order_read_access",
                 new_callable=AsyncMock,
             ),
             patch(
@@ -69,12 +70,12 @@ class TestOrderEventsAPI:
 
         with (
             patch(
-                "features.orders.api.order.get_order_by_id",
+                "features.orders.api.order.service.order_crud.get_order_by_identifier",
                 new_callable=AsyncMock,
                 return_value=mock_order,
             ),
             patch(
-                "features.orders.api.order.verify_restaurant_access",
+                "features.orders.api.order.verify_order_read_access",
                 new_callable=AsyncMock,
             ),
             patch(
@@ -99,7 +100,7 @@ class TestOrderEventsAPI:
         mock_order = _make_mock_order(order_id, user_id=uuid.uuid4())
 
         with patch(
-            "features.orders.api.order.get_order_by_id",
+            "features.orders.api.order.service.order_crud.get_order_by_identifier",
             new_callable=AsyncMock,
             return_value=mock_order,
         ):
@@ -110,7 +111,7 @@ class TestOrderEventsAPI:
     @pytest.mark.asyncio
     async def test_read_order_events_not_found(self, client: AsyncClient, as_vendor):
         with patch(
-            "features.orders.api.order.get_order_by_id",
+            "features.orders.api.order.service.order_crud.get_order_by_identifier",
             new_callable=AsyncMock,
             return_value=None,
         ):

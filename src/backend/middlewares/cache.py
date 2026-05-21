@@ -47,7 +47,20 @@ class AutoCacheMiddleware(BaseHTTPMiddleware):
         return f"tag:{segments[0]}" if segments else "tag:root"
 
     def _is_excluded(self, path: str) -> bool:
-        return any(excluded in path for excluded in self.exclude_paths)
+        normalized_path = path.strip("/")
+        path_segments = normalized_path.split("/")
+        for excluded in self.exclude_paths:
+            normalized_excluded = excluded.strip("/")
+            excluded_segments = normalized_excluded.split("/")
+            if path_segments[: len(excluded_segments)] == excluded_segments:
+                return True
+            api_v1_prefix = ["api", "v1", *excluded_segments]
+            if path_segments[: len(api_v1_prefix)] == api_v1_prefix:
+                return True
+            api_prefix = ["api", *excluded_segments]
+            if path_segments[: len(api_prefix)] == api_prefix:
+                return True
+        return False
 
     async def dispatch(self, request: Request, call_next) -> Response:
         path = request.url.path

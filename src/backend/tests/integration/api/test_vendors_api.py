@@ -4,14 +4,17 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from httpx import AsyncClient
 
+from shared.enums.moderation_status import ModerationStatus
+
 
 class TestVendorsAPI:
     @pytest.mark.asyncio
-    async def test_create_vendor(self, client: AsyncClient, as_user):
+    async def test_create_vendor(self, client: AsyncClient, as_vendor):
         mock_vendor = {
             "id": str(uuid.uuid4()),
-            "user_id": str(uuid.uuid4()),
-            "description": "Best food here",
+            "user_id": str(as_vendor.id),
+            "approval_status": ModerationStatus.PENDING.value,
+            "rejection_reason": None,
         }
 
         with patch(
@@ -19,44 +22,26 @@ class TestVendorsAPI:
             new_callable=AsyncMock,
             return_value=mock_vendor,
         ) as mock_add:
-            response = await client.post("/api/v1/vendors/", json={"description": "Best food here"})
+            response = await client.post("/api/v1/vendors/", json={})
 
         assert response.status_code == 201
-        assert response.json()["data"]["description"] == "Best food here"
+        assert response.json()["data"]["approval_status"] == ModerationStatus.PENDING.value
         mock_add.assert_awaited_once()
 
     @pytest.mark.asyncio
     async def test_read_my_vendor_profile(self, vendor_client):
         client, vendor_profile = vendor_client
-        vendor_profile.description = "Test Desc"
+        vendor_profile.approval_status = ModerationStatus.APPROVED.value
 
         response = await client.get("/api/v1/vendors/")
         assert response.status_code == 200
         data = response.json()["data"]
-        assert data["description"] == "Test Desc"
+        assert data["approval_status"] == ModerationStatus.APPROVED.value
 
     @pytest.mark.asyncio
-    async def test_update_description(self, vendor_client):
-        client, vendor_profile = vendor_client
-        mock_updated = {
-            "id": str(uuid.uuid4()),
-            "user_id": str(vendor_profile.user_id),
-            "description": "New Desc",
-        }
-
-        with patch(
-            "features.vendors.api.service.update_description",
-            new_callable=AsyncMock,
-            return_value=mock_updated,
-        ) as mock_update:
-            response = await client.patch(
-                "/api/v1/vendors/description",
-                json={"description": "New Desc"},
-            )
-
-        assert response.status_code == 200
-        assert response.json()["data"]["description"] == "New Desc"
-        mock_update.assert_awaited_once()
+    async def test_create_vendor_requires_permission(self, client: AsyncClient, as_user):
+        response = await client.post("/api/v1/vendors/", json={})
+        assert response.status_code == 403
 
     @pytest.mark.asyncio
     async def test_create_vendor_requires_auth(self, client: AsyncClient):

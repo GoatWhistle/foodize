@@ -9,6 +9,8 @@ vi.mock('../../services/authService', () => ({
     register: vi.fn(),
     getMe: vi.fn(),
     logout: vi.fn(),
+    verifyTelegramLoginCode: vi.fn(),
+    setTelegramSitePassword: vi.fn(),
   },
 }));
 
@@ -71,5 +73,46 @@ describe('useAuthStore', () => {
     expect(state.isAuthenticated).toBe(false);
     expect(state.user).toBe(null);
     expect(localStorage.getItem('access_token')).toBe(null);
+  });
+
+  it('loginWithTelegramCode stores token, user and password requirement', async () => {
+    const mockUser = { id: 'tg-user', name: 'Telegram User' };
+    authService.verifyTelegramLoginCode.mockResolvedValueOnce({
+      data: { data: { access_token: 'tg-token', requires_password: true } },
+    });
+    authService.getMe.mockResolvedValueOnce({ data: { data: mockUser } });
+
+    const result = await useAuthStore
+      .getState()
+      .loginWithTelegramCode({ code: '123456' });
+
+    expect(result).toEqual({ requiresPassword: true });
+    expect(localStorage.getItem('access_token')).toBe('tg-token');
+    expect(useAuthStore.getState().user).toEqual(mockUser);
+    expect(useAuthStore.getState().isAuthenticated).toBe(true);
+  });
+
+  it('setTelegramSitePassword refreshes current user after saving password', async () => {
+    const mockUser = { id: 'tg-user', name: 'Telegram User' };
+    authService.setTelegramSitePassword.mockResolvedValueOnce({});
+    authService.getMe.mockResolvedValueOnce({ data: { data: mockUser } });
+
+    await useAuthStore.getState().setTelegramSitePassword('strongpassword');
+
+    expect(authService.setTelegramSitePassword).toHaveBeenCalledWith({
+      password: 'strongpassword',
+    });
+    expect(useAuthStore.getState().user).toEqual(mockUser);
+    expect(useAuthStore.getState().isAuthenticated).toBe(true);
+  });
+
+  it('fetchMe clears auth state when current user request fails', async () => {
+    useAuthStore.setState({ isAuthenticated: true, user: { id: '1' } });
+    authService.getMe.mockRejectedValueOnce(new Error('expired'));
+
+    await useAuthStore.getState().fetchMe();
+
+    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+    expect(useAuthStore.getState().user).toBe(null);
   });
 });

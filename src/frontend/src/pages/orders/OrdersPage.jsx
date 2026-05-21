@@ -50,6 +50,14 @@ import { useShallow } from 'zustand/react/shallow';
 
 const getOrderDisplayId = (order) => order.display_id ?? order.id.slice(0, 8);
 
+const formatOrderTime = (value) => {
+  if (!value) return '';
+  return new Intl.DateTimeFormat('ru-RU', {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value));
+};
+
 const OrdersPage = () => {
   const { orders, ordersTotal, fetchMyOrders, ordersLoading } = useOrderStore(
     useShallow((s) => ({
@@ -176,6 +184,9 @@ const OrdersPage = () => {
                       style={{ fontSize: '0.78rem', color: 'var(--text-3)' }}
                     >
                       {order.items?.length || 0} позиций
+                      {order.requested_pickup_at
+                        ? ` · к ${formatOrderTime(order.requested_pickup_at)}`
+                        : ''}
                     </div>
                   </div>
 

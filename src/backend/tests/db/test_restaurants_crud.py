@@ -1,13 +1,13 @@
 import uuid
 
 import pytest
-from shared.enums.roles import UserRole
 
 from features.restaurants.crud import (
     count_restaurants,
     count_vendor_restaurants,
     create_restaurant,
     get_all_restaurants,
+    get_restaurant_by_display_id,
     get_restaurant_by_id,
     get_vendor_restaurants,
     update_restaurant,
@@ -17,6 +17,7 @@ from features.users.crud import create_user
 from features.users.schemas import UserCreate
 from features.vendors.crud import create_vendor_profile
 from features.vendors.schemas import VendorCreate
+from shared.enums.roles import UserRole
 
 
 async def _make_vendor(db_session, phone: str):
@@ -42,6 +43,44 @@ async def test_create_restaurant_crud(db_session):
     assert restaurant.id is not None
     assert restaurant.name == "My Rest"
     assert restaurant.vendor_id == vendor_profile.id
+    assert restaurant.display_id
+
+
+@pytest.mark.asyncio
+async def test_get_restaurant_by_display_id(db_session):
+    vendor_profile = await _make_vendor(db_session, "79001234572")
+    restaurant = await create_restaurant(
+        db_session,
+        RestaurantCreate(name="Display Find", address="Display Addr"),
+        vendor_profile.id,
+    )
+
+    fetched = await get_restaurant_by_display_id(db_session, restaurant.display_id)
+
+    assert fetched is not None
+    assert fetched.id == restaurant.id
+    assert await get_restaurant_by_display_id(db_session, "missing-display-id") is None
+
+
+@pytest.mark.asyncio
+async def test_create_restaurant_retries_display_id_collision(db_session, monkeypatch):
+    vendor_profile = await _make_vendor(db_session, "79001234573")
+    ids = iter(["taken-id", "taken-id", "free-id"])
+    monkeypatch.setattr("features.restaurants.crud.secrets.token_hex", lambda _: next(ids))
+
+    first = await create_restaurant(
+        db_session,
+        RestaurantCreate(name="First", address="First Addr"),
+        vendor_profile.id,
+    )
+    second = await create_restaurant(
+        db_session,
+        RestaurantCreate(name="Second", address="Second Addr"),
+        vendor_profile.id,
+    )
+
+    assert first.display_id == "taken-id"
+    assert second.display_id == "free-id"
 
 
 @pytest.mark.asyncio

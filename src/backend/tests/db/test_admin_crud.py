@@ -1,5 +1,4 @@
 import pytest
-from shared.enums.roles import UserRole
 
 from features.admin.crud import (
     count_all_orders,
@@ -20,6 +19,8 @@ from features.vendors.crud import create_vendor_profile
 from features.vendors.schemas import VendorCreate
 from shared.enums.category import Category
 from shared.enums.order_status import OrderStatus
+from shared.enums.roles import UserRole
+from shared.permissions import VENDOR_PERMISSIONS, serialize_permissions
 
 
 @pytest.fixture
@@ -30,9 +31,9 @@ async def seeded_db(db_session):
             name="VendorA",
             phone_number="79009001001",
             password="strongpassword",
-            user_role=UserRole.VENDOR,
         ),
     )
+    vendor_user.permissions = serialize_permissions(VENDOR_PERMISSIONS)
     vendor_profile = await create_vendor_profile(db_session, vendor_user, VendorCreate())
 
     customer = await create_user(
@@ -41,7 +42,6 @@ async def seeded_db(db_session):
             name="CustomerA",
             phone_number="79009001002",
             password="strongpassword",
-            user_role=UserRole.CUSTOMER,
         ),
     )
 
@@ -153,11 +153,11 @@ async def test_count_all_orders(db_session, seeded_db):
 async def test_get_platform_stats(db_session, seeded_db):
     stats = await get_platform_stats(db_session)
 
-    assert stats["total_restaurants"] == 1
-    assert isinstance(stats["users_by_role"], dict)
-    assert isinstance(stats["orders_by_status"], dict)
+    assert stats.total_restaurants == 1
+    assert isinstance(stats.users_by_role, dict)
+    assert isinstance(stats.orders_by_status, dict)
 
-    assert stats["users_by_role"].get(UserRole.VENDOR.value, 0) == 1
-    assert stats["users_by_role"].get(UserRole.CUSTOMER.value, 0) == 1
+    assert stats.users_by_role.get(UserRole.VENDOR.value, 0) == 1
+    assert stats.users_by_role.get(UserRole.CUSTOMER.value, 0) == 1
 
-    assert stats["orders_by_status"].get(OrderStatus.PENDING.value, 0) == 1
+    assert stats.orders_by_status.get(OrderStatus.PENDING.value, 0) == 1

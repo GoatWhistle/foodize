@@ -8,9 +8,10 @@ vi.mock('../../store/useOrderStore', () => ({
   useOrderStore: vi.fn((sel) => {
     const state = {
       orders: [
-        { id: 'order-1', total_price: 500, status: 'pending', items: [1] },
-        { id: 'order-2', total_price: 1000, status: 'ready', items: [2] },
+        { id: 'order-1', total_price: 500, status: 'PENDING', items: [1] },
+        { id: 'order-2', total_price: 1000, status: 'READY', items: [2] },
       ],
+      ordersTotal: 2,
       fetchMyOrders: vi.fn(),
       ordersLoading: false,
     };
@@ -57,10 +58,11 @@ describe('OrdersPage', () => {
     );
   });
 
-  it('shows empty state if no orders', () => {
+  it('shows empty state if no active orders', () => {
     vi.mocked(useOrderStore).mockImplementation((sel) => {
       const state = {
         orders: [],
+        ordersTotal: 0,
         fetchMyOrders: vi.fn(),
         ordersLoading: false,
       };
@@ -73,6 +75,6 @@ describe('OrdersPage', () => {
       </BrowserRouter>
     );
 
-    expect(screen.getByText('Заказов пока нет')).toBeDefined();
+    expect(screen.getByText('Активных заказов нет')).toBeDefined();
   });
 });

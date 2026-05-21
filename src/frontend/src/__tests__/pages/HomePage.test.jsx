@@ -49,7 +49,7 @@ describe('HomePage', () => {
     vi.clearAllMocks();
   });
 
-  it('renders search bar and open-only filter', () => {
+  it('renders search bar and open filter inside filter menu', () => {
     render(
       <BrowserRouter>
         <HomePage />
@@ -59,7 +59,9 @@ describe('HomePage', () => {
     expect(
       screen.getByPlaceholderText('Поиск ресторана или адреса...')
     ).toBeDefined();
-    expect(screen.getByText('Только открытые')).toBeDefined();
+
+    fireEvent.click(screen.getByLabelText('Открыть фильтры'));
+    expect(screen.getByText('Открыто')).toBeDefined();
   });
 
   it('renders all restaurant cards', () => {

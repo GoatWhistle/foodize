@@ -11,7 +11,12 @@ from features.orders.exceptions import (
     OrderNotCancellableException,
     OrderNotFoundException,
 )
-from features.orders.schemas.order import OrderCreate, OrderResponse
+from features.orders.schemas.order import (
+    OrderCancelRequest,
+    OrderCreate,
+    OrderLoadEstimate,
+    OrderResponse,
+)
 from features.orders.schemas.order_item import OrderItemCreate
 from features.orders.services.order import (
     cancel_order,
@@ -34,6 +39,8 @@ def make_mock_menu_item(
     item.id = item_id
     item.price = price
     item.restaurant_id = restaurant_id or uuid.uuid4()
+    item.is_available = True
+    item.prep_time_minutes = 10
     item.option_groups = []
     return item
 
@@ -42,6 +49,10 @@ def make_mock_restaurant(restaurant_id: uuid.UUID, is_open: bool = True):
     r = MagicMock()
     r.id = restaurant_id
     r.is_open = is_open
+    r.is_ordering_paused = False
+    r.ordering_paused_until = None
+    r.avg_prep_time_minutes = 15
+    r.max_active_orders = None
     return r
 
 
@@ -50,15 +61,35 @@ def make_mock_order(
 ):
     order = MagicMock()
     order.id = order_id
+    order.display_id = 1001
     order.user_id = user_id
     order.restaurant_id = uuid.uuid4()
     order.status = status
     order.total_price = 500
+    order.comment = None
+    order.cancellation_reason = None
+    order.requested_pickup_at = None
+    order.created_at = "2026-01-01T00:00:00+00:00"
+    order.estimated_ready_at = None
     order.ready_at = None
     order.items = []
+    order.user = None
     order.restaurant = MagicMock()
+    order.restaurant.display_id = "test-restaurant"
     order.restaurant.name = "Test Restaurant"
+    order.restaurant.address = "Test Address"
     return order
+
+
+def make_load_estimate(restaurant_id: uuid.UUID) -> OrderLoadEstimate:
+    return OrderLoadEstimate(
+        restaurant_id=restaurant_id,
+        ordering_available=True,
+        active_orders_count=0,
+        avg_prep_time_minutes=15,
+        estimated_wait_min_minutes=15,
+        estimated_wait_max_minutes=30,
+    )
 
 
 class TestPlaceOrder:
@@ -87,13 +118,42 @@ class TestPlaceOrder:
                 return_value={item_id: mock_menu_item},
             ),
             patch(
+                "features.orders.crud.order_item.get_options_by_ids",
+                new_callable=AsyncMock,
+                return_value={},
+            ),
+            patch(
+                "features.orders.services.order.get_working_hours",
+                new_callable=AsyncMock,
+                return_value=[],
+            ),
+            patch(
+                "features.orders.crud.order.count_orders_by_user_id",
+                new_callable=AsyncMock,
+                return_value=0,
+            ),
+            patch(
+                "features.orders.services.order.estimate_restaurant_load",
+                new_callable=AsyncMock,
+                return_value=make_load_estimate(restaurant_id),
+            ),
+            patch(
                 "features.orders.services.order._create_order",
                 new_callable=AsyncMock,
                 return_value=mock_order,
             ),
             patch(
-                "features.orders.services.order.publish_order_placed",
+                "features.orders.crud.order.get_order_by_id",
                 new_callable=AsyncMock,
+                return_value=mock_order,
+            ),
+            patch(
+                "features.orders.services.order.enqueue_event",
+                new_callable=AsyncMock,
+            ),
+            patch(
+                "features.orders.services.order.get_redis_cache",
+                return_value=MagicMock(publish=AsyncMock()),
             ),
         ):
             result = await place_order(mock_db_session, order_data, user.id)
@@ -148,6 +208,11 @@ class TestPlaceOrder:
                 new_callable=AsyncMock,
                 return_value={item_id: wrong_restaurant_item},
             ),
+            patch(
+                "features.orders.services.order.get_working_hours",
+                new_callable=AsyncMock,
+                return_value=[],
+            ),
         ):
             with pytest.raises(MenuItemRestaurantMismatchException):
                 await place_order(mock_db_session, order_data, uuid.uuid4())
@@ -174,6 +239,11 @@ class TestPlaceOrder:
                 new_callable=AsyncMock,
                 return_value={item_id_1: make_mock_menu_item(item_id_1)},
             ),
+            patch(
+                "features.orders.services.order.get_working_hours",
+                new_callable=AsyncMock,
+                return_value=[],
+            ),
         ):
             with pytest.raises(MenuItemsNotFoundException):
                 await place_order(mock_db_session, order_data, uuid.uuid4())
@@ -194,6 +264,11 @@ class TestPlaceOrder:
                 "features.orders.crud.order_item.get_menu_items_by_ids",
                 new_callable=AsyncMock,
                 return_value={},
+            ),
+            patch(
+                "features.orders.services.order.get_working_hours",
+                new_callable=AsyncMock,
+                return_value=[],
             ),
         ):
             with pytest.raises(MenuItemsNotFoundException):
@@ -259,13 +334,37 @@ class TestPlaceOrder:
                 return_value={option_id: mock_option},
             ),
             patch(
+                "features.orders.services.order.get_working_hours",
+                new_callable=AsyncMock,
+                return_value=[],
+            ),
+            patch(
+                "features.orders.crud.order.count_orders_by_user_id",
+                new_callable=AsyncMock,
+                return_value=0,
+            ),
+            patch(
+                "features.orders.services.order.estimate_restaurant_load",
+                new_callable=AsyncMock,
+                return_value=make_load_estimate(restaurant_id),
+            ),
+            patch(
                 "features.orders.services.order._create_order",
                 new_callable=AsyncMock,
                 return_value=mock_order,
             ) as create_order_mock,
             patch(
-                "features.orders.services.order.publish_order_placed",
+                "features.orders.crud.order.get_order_by_id",
                 new_callable=AsyncMock,
+                return_value=mock_order,
+            ),
+            patch(
+                "features.orders.services.order.enqueue_event",
+                new_callable=AsyncMock,
+            ),
+            patch(
+                "features.orders.services.order.get_redis_cache",
+                return_value=MagicMock(publish=AsyncMock()),
             ),
         ):
             await place_order(mock_db_session, order_data, user.id)
@@ -307,6 +406,11 @@ class TestPlaceOrder:
                 "features.orders.crud.order_item.get_options_by_ids",
                 new_callable=AsyncMock,
                 return_value={option_id: mock_option},
+            ),
+            patch(
+                "features.orders.services.order.get_working_hours",
+                new_callable=AsyncMock,
+                return_value=[],
             ),
         ):
             with pytest.raises(BadRequestException):
@@ -404,12 +508,12 @@ class TestCancelOrder:
 
         with (
             patch(
-                "features.orders.crud.order.get_order_by_id",
+                "features.orders.crud.order.get_order_by_identifier",
                 new_callable=AsyncMock,
                 return_value=mock_order,
             ),
             patch(
-                "features.orders.crud.order.cancel_order",
+                "features.orders.crud.order.update_order_status",
                 new_callable=AsyncMock,
                 return_value=cancelled,
             ) as mock_cancel,
@@ -418,11 +522,15 @@ class TestCancelOrder:
                 new_callable=AsyncMock,
             ),
             patch(
-                "features.orders.services.order.publish_order_status_changed",
+                "features.orders.services.order.enqueue_event",
                 new_callable=AsyncMock,
             ),
+            patch(
+                "features.orders.services.order.get_redis_cache",
+                return_value=MagicMock(publish=AsyncMock()),
+            ),
         ):
-            result = await cancel_order(mock_db_session, order_id, user_id)
+            result = await cancel_order(mock_db_session, order_id, user_id, OrderCancelRequest())
 
         mock_cancel.assert_awaited_once()
         assert isinstance(result, OrderResponse)
@@ -434,31 +542,33 @@ class TestCancelOrder:
         mock_order = make_mock_order(order_id, owner_id, OrderStatus.PENDING.value)
 
         with patch(
-            "features.orders.crud.order.get_order_by_id",
+            "features.orders.crud.order.get_order_by_identifier",
             new_callable=AsyncMock,
             return_value=mock_order,
         ):
             with pytest.raises(OrderAccessDeniedException):
-                await cancel_order(mock_db_session, order_id, other_id)
+                await cancel_order(mock_db_session, order_id, other_id, OrderCancelRequest())
 
     async def test_cancel_non_pending_raises(self, mock_db_session):
         user_id = uuid.uuid4()
         order_id = uuid.uuid4()
-        mock_order = make_mock_order(order_id, user_id, OrderStatus.ACCEPTED.value)
+        mock_order = make_mock_order(order_id, user_id, OrderStatus.COMPLETED.value)
 
         with patch(
-            "features.orders.crud.order.get_order_by_id",
+            "features.orders.crud.order.get_order_by_identifier",
             new_callable=AsyncMock,
             return_value=mock_order,
         ):
             with pytest.raises(OrderNotCancellableException):
-                await cancel_order(mock_db_session, order_id, user_id)
+                await cancel_order(mock_db_session, order_id, user_id, OrderCancelRequest())
 
     async def test_cancel_not_found_raises(self, mock_db_session):
         with patch(
-            "features.orders.crud.order.get_order_by_id",
+            "features.orders.crud.order.get_order_by_identifier",
             new_callable=AsyncMock,
             return_value=None,
         ):
             with pytest.raises(OrderNotFoundException):
-                await cancel_order(mock_db_session, uuid.uuid4(), uuid.uuid4())
+                await cancel_order(
+                    mock_db_session, uuid.uuid4(), uuid.uuid4(), OrderCancelRequest()
+                )
