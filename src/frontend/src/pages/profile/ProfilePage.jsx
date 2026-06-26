@@ -68,7 +68,7 @@ const ProfilePage = () => {
       .getMyProfile()
       .then((profile) => {
         setIsVendor(true);
-        setVendorProfile(profile);
+        setVendorProfile(profile.data?.data ?? null);
       })
       .catch(() => {
         setIsVendor(false);
@@ -94,7 +94,7 @@ const ProfilePage = () => {
     try {
       const profile = await vendorService.createProfile({ description: '' });
       setIsVendor(true);
-      setVendorProfile(profile);
+      setVendorProfile(profile.data?.data ?? null);
     } catch (err) {
       setVendorError(translateApiError(err, 'Не удалось стать вендором'));
       setVendorLoading(false);

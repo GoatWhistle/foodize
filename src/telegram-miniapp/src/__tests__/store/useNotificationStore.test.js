@@ -19,12 +19,13 @@ vi.mock("../../services/api", () => ({
 
 describe("useNotificationStore", () => {
   beforeEach(() => {
+    // Reset the module-level socket between tests.
+    useNotificationStore.getState().disconnectWs();
     useNotificationStore.setState({
       notifications: [],
       unreadCount: 0,
       total: 0,
       page: 1,
-      _ws: null,
       connectionStatus: "closed",
     });
     vi.clearAllMocks();
@@ -230,24 +231,27 @@ describe("useNotificationStore", () => {
   });
 
   it("should disconnect from WebSocket", () => {
-    const mockWs = {
-      close: vi.fn(),
-    };
-    useNotificationStore.setState({ _ws: mockWs, connectionStatus: "connected" });
+    const mockWs = { close: vi.fn() };
+    createNotificationWebSocket.mockReturnValueOnce(mockWs);
+    useNotificationStore.getState().connectWs("user-1");
 
     useNotificationStore.getState().disconnectWs();
 
     expect(mockWs.close).toHaveBeenCalled();
-    expect(useNotificationStore.getState()._ws).toBeNull();
     expect(useNotificationStore.getState().connectionStatus).toBe("closed");
+
+    // After disconnect the socket is gone, so a fresh connect opens a new one.
+    createNotificationWebSocket.mockReturnValueOnce({ close: vi.fn() });
+    useNotificationStore.getState().connectWs("user-1");
+    expect(createNotificationWebSocket).toHaveBeenCalledTimes(2);
   });
 
   it("should ignore connect if already connected", () => {
-    const mockWs = {};
-    useNotificationStore.setState({ _ws: mockWs });
+    createNotificationWebSocket.mockReturnValueOnce({ close: vi.fn() });
+    useNotificationStore.getState().connectWs("user-1");
+    expect(createNotificationWebSocket).toHaveBeenCalledTimes(1);
 
     useNotificationStore.getState().connectWs("user-1");
-
-    expect(createNotificationWebSocket).not.toHaveBeenCalled();
+    expect(createNotificationWebSocket).toHaveBeenCalledTimes(1);
   });
 });

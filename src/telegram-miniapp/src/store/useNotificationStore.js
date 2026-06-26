@@ -2,12 +2,16 @@ import { create } from "zustand";
 import { notificationService } from "../services/notificationService";
 import { createNotificationWebSocket } from "../services/api";
 
+// Kept outside reactive state on purpose: the WebSocket is a circular object,
+// and storing it in the store makes state serialization (React DevTools / the
+// error overlay) recurse forever ("Maximum call stack size exceeded").
+let wsInstance = null;
+
 export const useNotificationStore = create((set, get) => ({
   notifications: [],
   unreadCount: 0,
   total: 0,
   page: 1,
-  _ws: null,
   connectionStatus: "closed",
 
   fetchNotifications: async (page = 1) => {
@@ -79,12 +83,11 @@ export const useNotificationStore = create((set, get) => ({
   },
 
   connectWs: (userId) => {
-    const existing = get()._ws;
-    if (existing) return;
+    if (wsInstance) return;
 
     set({ connectionStatus: "connecting" });
 
-    const ws = createNotificationWebSocket(
+    wsInstance = createNotificationWebSocket(
       userId,
       (data) => {
         if (data.type === "connected") {
@@ -110,15 +113,13 @@ export const useNotificationStore = create((set, get) => ({
         }
       },
     );
-
-    set({ _ws: ws });
   },
 
   disconnectWs: () => {
-    const ws = get()._ws;
-    if (ws) {
-      ws.close();
-      set({ _ws: null, connectionStatus: "closed" });
+    if (wsInstance) {
+      wsInstance.close();
+      wsInstance = null;
+      set({ connectionStatus: "closed" });
     }
   },
 }));

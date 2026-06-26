@@ -549,6 +549,110 @@ async def _get_or_load_user(session, phone: str, created_users: dict) -> User | 
     return user
 
 
+SPECIAL_VENDOR_PHONE = "+79608185075"
+SPECIAL_VENDOR_RESTAURANT = "Борода"
+SPECIAL_VENDOR_ADDRESS = "ул. Бородинская, 1"
+SPECIAL_VENDOR_ITEMS = [
+    {
+        "name": "Шава гавайская",
+        "description": "Шаурма с ананасом, курицей и сыром",
+        "price": 7777,
+        "category": Category.SHAURMA,
+        "prep_time_minutes": 12,
+    },
+    {
+        "name": "Кола",
+        "description": "Газировка 0.5 л",
+        "price": 150,
+        "category": Category.DRINK,
+        "prep_time_minutes": 1,
+    },
+    {
+        "name": "Апельсиновый сок",
+        "description": "Свежевыжатый, 0.3 л",
+        "price": 250,
+        "category": Category.DRINK,
+        "prep_time_minutes": 2,
+    },
+    {
+        "name": "Айран",
+        "description": "Кисломолочный напиток, 0.5 л",
+        "price": 120,
+        "category": Category.DRINK,
+        "prep_time_minutes": 1,
+    },
+]
+
+
+async def _promote_special_vendor(session) -> None:
+    """If a user with SPECIAL_VENDOR_PHONE exists, make them a vendor and give
+    them the 'Борода' restaurant with a small menu. Idempotent: safe to re-run."""
+    result = await session.execute(
+        select(User).where(User.phone_number == SPECIAL_VENDOR_PHONE)
+    )
+    user = result.scalar_one_or_none()
+    if user is None:
+        print(f"  skip special vendor: no user {SPECIAL_VENDOR_PHONE}")
+        return
+
+    user.permissions = permissions_with(
+        user.permissions, CUSTOMER_PERMISSIONS | VENDOR_PERMISSIONS
+    )
+    await session.commit()
+
+    vendor = await get_vendor_by_user_id(session, user.id)
+    if vendor is None:
+        vendor = await create_vendor_profile(session, user, VendorCreate())
+        print(f"  vendor profile → {user.name} ({SPECIAL_VENDOR_PHONE})")
+    vendor.approval_status = "APPROVED"
+    vendor.rejection_reason = None
+    await session.commit()
+
+    result = await session.execute(
+        select(Restaurant).where(
+            Restaurant.vendor_id == vendor.id,
+            Restaurant.name == SPECIAL_VENDOR_RESTAURANT,
+        )
+    )
+    restaurant = result.scalar_one_or_none()
+    if restaurant is None:
+        restaurant = await create_restaurant(
+            session,
+            RestaurantCreate(
+                name=SPECIAL_VENDOR_RESTAURANT,
+                address=SPECIAL_VENDOR_ADDRESS,
+                avg_prep_time_minutes=15,
+            ),
+            vendor.id,
+        )
+        restaurant.moderation_status = "APPROVED"
+        restaurant.description = "Шаурма и напитки от Бороды"
+        await session.commit()
+        print(f"  restaurant '{SPECIAL_VENDOR_RESTAURANT}'")
+
+    existing = await session.execute(
+        select(MenuItem.name).where(MenuItem.restaurant_id == restaurant.id)
+    )
+    existing_names = {name for (name,) in existing.all()}
+    added = 0
+    for item in SPECIAL_VENDOR_ITEMS:
+        if item["name"] in existing_names:
+            continue
+        await create_menu_item(
+            session,
+            MenuItemCreate(
+                name=item["name"],
+                description=item["description"],
+                price=item["price"],
+                category=item["category"],
+                prep_time_minutes=item["prep_time_minutes"],
+            ),
+            restaurant.id,
+        )
+        added += 1
+    print(f"    +{added} menu items for '{SPECIAL_VENDOR_RESTAURANT}'")
+
+
 async def seed():
     print("Seeding demo data...\n")
 
@@ -915,6 +1019,9 @@ async def seed():
                     print(f"  fav: {customer.name} → {restaurant.name}")
                 else:
                     print("  skip fav (exists)")
+
+        print("\n── Special vendor ──────────────────────")
+        await _promote_special_vendor(session)
 
     await db_helper.dispose()
 

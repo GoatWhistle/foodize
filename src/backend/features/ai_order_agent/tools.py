@@ -171,6 +171,16 @@ def build_order_executor(
         )
         for r in results:
             r["category"] = CATEGORY_RU.get(r["category"], r["category"])
+        if not results:
+            return _dumps(
+                {
+                    "results": [],
+                    "message": (
+                        "Сейчас нет доступных ресторанов или блюд. Повторять поиск не нужно — "
+                        "сообщи об этом пользователю."
+                    ),
+                }
+            )
         return _dumps({"results": results})
 
     async def _view_cart(_args: dict) -> str:
