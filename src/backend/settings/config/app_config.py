@@ -5,6 +5,7 @@ from settings.config.runtime import (
     ApiPrefix,
     AuthConfig,
     CorsConfig,
+    LLMConfig,
     LogsConfig,
     RunConfig,
     TelegramConfig,
@@ -21,6 +22,7 @@ class AppConfig(BaseConfig):
     cors: CorsConfig = CorsConfig()
     logs: LogsConfig = LogsConfig()
     telegram: TelegramConfig = TelegramConfig()
+    llm: LLMConfig = LLMConfig()
 
 
 settings = AppConfig()  # type: ignore[call-arg]

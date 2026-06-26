@@ -193,7 +193,7 @@ async def get_all_restaurants_public(
             select(WorkingHours).where(WorkingHours.restaurant_id.in_(rest_ids))
         )
         wh_rows = wh_result.scalars().all()
-        wh_map = {}
+        wh_map: dict[uuid.UUID, list[WorkingHours]] = {}
         for wh in wh_rows:
             wh_map.setdefault(wh.restaurant_id, []).append(wh)
 

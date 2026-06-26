@@ -1,5 +1,6 @@
 import os
 import sys
+from collections.abc import AsyncGenerator
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -38,7 +39,7 @@ async def mock_db_session() -> AsyncMock:
 
 
 @pytest_asyncio.fixture
-async def client(mock_db_session: AsyncMock) -> AsyncClient:
+async def client(mock_db_session: AsyncMock) -> AsyncGenerator[AsyncClient, None]:
     async def _override_session():
         yield mock_db_session
 

@@ -19,7 +19,6 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
         structlog.contextvars.clear_contextvars()
         structlog.contextvars.bind_contextvars(request_id=request_id)
 
-        # If user is present (e.g. injected by auth middleware earlier)
         if hasattr(request.state, "user") and request.state.user:
             structlog.contextvars.bind_contextvars(user_id=request.state.user.id)
 

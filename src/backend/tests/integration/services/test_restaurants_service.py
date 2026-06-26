@@ -17,7 +17,9 @@ from shared.enums.moderation_status import ModerationStatus
 from shared.exceptions.existence import NotFoundException
 
 
-def make_mock_restaurant(restaurant_id: uuid.UUID = None, vendor_id: uuid.UUID = None):
+def make_mock_restaurant(
+    restaurant_id: uuid.UUID | None = None, vendor_id: uuid.UUID | None = None
+):
     r = MagicMock()
     r.id = restaurant_id or uuid.uuid4()
     r.vendor_id = vendor_id or uuid.uuid4()

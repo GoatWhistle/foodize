@@ -25,16 +25,16 @@ class RedisCache(CacheRepository):
         await self._client.delete(key)
 
     async def exists(self, key: str) -> bool:
-        return bool(await self._client.exists(key))
+        return bool(await self._client.exists(key))  # type: ignore[misc]
 
     async def set_nx(self, key: str, value: str, ttl: int | None = None) -> bool:
         return bool(await self._client.set(key, value, ex=ttl, nx=True))
 
     async def sadd(self, key: str, *values: str) -> None:
-        await self._client.sadd(key, *values)
+        await self._client.sadd(key, *values)  # type: ignore[misc]
 
     async def smembers(self, key: str):
-        result = await self._client.smembers(key)
+        result = await self._client.smembers(key)  # type: ignore[misc]
         return set(result)
 
     async def delete_many(self, *keys: str) -> None:

@@ -22,8 +22,6 @@ async def _notify_user(user_id, title: str, message: str) -> None:
             type=NotificationType.ORDER_STATUS,
         )
 
-    # We serialize the notification explicitly to json string using pydantic's model_dump_json
-    # Notice that pydantic handles UUID and datetime serialization.
     data = NotificationResponse.model_validate(notification).model_dump_json()
     redis_client = get_redis_cache()
     await redis_client.publish(f"user_notifications:{user_id}", data)
@@ -82,7 +80,6 @@ async def handle_order_status_changed(event: OrderStatusChangedEvent) -> None:
         message = f"Ваш заказ из {event.restaurant_name} готов к выдаче. Приятного аппетита!"
 
     if event.new_status == OrderStatus.COMPLETED:
-        # Schedule feedback loop for 30 mins later
         asyncio.create_task(_schedule_feedback_request(event.user_id, event.restaurant_name, 1800))
 
     await _notify_user(event.user_id, title, message)

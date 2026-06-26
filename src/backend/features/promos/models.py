@@ -15,7 +15,7 @@ class Promo(Base, IdUuidPkMixin, CreatedAtMixin):
     __tablename__ = "promos"
 
     code: Mapped[str] = mapped_column(String(64), unique=True, index=True)
-    discount_type: Mapped[str] = mapped_column(String(16))  # PERCENT | FIXED
+    discount_type: Mapped[str] = mapped_column(String(16))
     discount_value: Mapped[int]
     restaurant_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("restaurants.id", ondelete="CASCADE")

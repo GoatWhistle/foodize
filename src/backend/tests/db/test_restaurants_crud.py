@@ -17,7 +17,6 @@ from features.users.crud import create_user
 from features.users.schemas import UserCreate
 from features.vendors.crud import create_vendor_profile
 from features.vendors.schemas import VendorCreate
-from shared.enums.roles import UserRole
 
 
 async def _make_vendor(db_session, phone: str):
@@ -27,7 +26,6 @@ async def _make_vendor(db_session, phone: str):
             name="Vendor",
             phone_number=phone,
             password="strongpassword",
-            user_role=UserRole.VENDOR,
         ),
     )
     return await create_vendor_profile(db_session, user, VendorCreate())

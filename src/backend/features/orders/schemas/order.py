@@ -62,7 +62,6 @@ class OrderResponse(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def flatten_relations(cls, data):
-        # If already a plain dict (e.g. from JSON or nested validation), pass through
         if isinstance(data, dict):
             return data
 

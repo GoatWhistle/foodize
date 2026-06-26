@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Sequence
 from datetime import date
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,7 +14,8 @@ from features.admin.schemas import (
     FinanceAnalytics,
     PlatformStats,
 )
-from features.orders.schemas.order import OrderResponse
+from features.orders.models import Order
+from features.restaurants.models import Restaurant
 from features.users.models import User
 from shared.enums.order_status import OrderStatus
 from shared.enums.permissions import Permission
@@ -53,7 +55,7 @@ async def activate_user_service(session: AsyncSession, user_id: uuid.UUID) -> Us
 async def set_user_permissions(
     session: AsyncSession,
     user_id: uuid.UUID,
-    permissions: list[Permission | str],
+    permissions: Sequence[Permission | str],
     actor_id: uuid.UUID | None = None,
 ) -> User:
     user = await get_user_or_404(session, user_id)
@@ -84,7 +86,7 @@ async def get_orders_list(
     date_to: date | None = None,
     offset: int = 0,
     limit: int = 20,
-) -> tuple[list[OrderResponse], int]:
+) -> tuple[list[Order], int]:
     data = await crud.get_all_orders(
         session,
         status=status,
@@ -277,8 +279,8 @@ async def moderate_restaurant(
     reason: str | None = None,
     actor_id: uuid.UUID | None = None,
 ) -> AdminRestaurantResponse:
-    restaurant = await crud.get_restaurant_by_id(session, restaurant_id)
-    if not restaurant:
+    restaurant = await session.get(Restaurant, restaurant_id)
+    if not restaurant or not restaurant.is_active:
         raise NotFoundException()
     old_status = restaurant.moderation_status
     updated = await crud.set_restaurant_moderation(session, restaurant, status, reason)

@@ -50,7 +50,6 @@ const FavoritesPage = () => {
     <div
       style={{ padding: "16px 16px calc(var(--bottom-tab-h, 68px) + 24px)" }}
     >
-      {/* Header */}
       <div
         style={{
           display: "flex",
@@ -119,7 +118,6 @@ const FavoritesPage = () => {
                 )
               }
             >
-              {/* Status dot */}
               <div
                 style={{
                   width: 10,
@@ -133,7 +131,6 @@ const FavoritesPage = () => {
                 }}
               />
 
-              {/* Info */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
                   style={{
@@ -169,7 +166,6 @@ const FavoritesPage = () => {
                 </div>
               </div>
 
-              {/* Badges */}
               <div
                 style={{
                   display: "flex",
@@ -205,7 +201,6 @@ const FavoritesPage = () => {
                 )}
               </div>
 
-              {/* Unfavorite button */}
               <button
                 style={{
                   width: 34,

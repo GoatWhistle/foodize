@@ -34,6 +34,7 @@ import EmptyState from '../../components/ui/EmptyState';
 import Pagination from '../../components/ui/Pagination';
 import OrderDetailsModal from '../../components/ui/OrderDetailsModal';
 import QRCodeModal from '../../components/ui/QRCodeModal';
+import VendorAdvisorPanel from './VendorAdvisorPanel';
 import {
   RevenueChart,
   HourlyLoadChart,
@@ -1219,6 +1220,11 @@ const VendorDashboardPage = () => {
               {
                 id: 'analytics',
                 label: 'Аналитика',
+                icon: <ChartLineUp size={18} />,
+              },
+              {
+                id: 'ai',
+                label: 'ИИ-аналитик',
                 icon: <ChartLineUp size={18} />,
               },
               { id: 'promos', label: 'Промокоды', icon: <Tag size={18} /> },
@@ -3147,6 +3153,10 @@ const VendorDashboardPage = () => {
                   )}
                 </div>
               </div>
+            )}
+
+            {activeTab === 'ai' && (
+              <VendorAdvisorPanel restaurantId={selectedRestaurant.id} />
             )}
 
             {activeTab === 'settings' && (

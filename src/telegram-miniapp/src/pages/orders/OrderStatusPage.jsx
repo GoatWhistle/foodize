@@ -282,7 +282,6 @@ const OrderStatusPage = () => {
     <div
       className={`status-screen page-enter${isReady ? " status-ready-flash" : ""}`}
     >
-      {/* Номер заказа */}
       <div style={{ textAlign: "center" }}>
         <div
           style={{
@@ -308,7 +307,6 @@ const OrderStatusPage = () => {
         </div>
       </div>
 
-      {/* Статус-пилл */}
       <div
         style={{
           marginTop: 10,
@@ -326,7 +324,6 @@ const OrderStatusPage = () => {
         {pill.label}
       </div>
 
-      {/* Причина отмены */}
       {currentOrder.status === "CANCELLED" &&
         currentOrder.cancellation_reason && (
           <div
@@ -342,10 +339,8 @@ const OrderStatusPage = () => {
           </div>
         )}
 
-      {/* Горизонтальные этапы */}
       <HorizontalSteps order={currentOrder} />
 
-      {/* ETA / сообщение статуса */}
       <div style={{ marginTop: 16, textAlign: "center", minHeight: 40 }}>
         {isReady ? (
           <div
@@ -390,7 +385,6 @@ const OrderStatusPage = () => {
         </div>
       </div>
 
-      {/* Состав заказа */}
       <div
         style={{
           marginTop: 20,
@@ -490,7 +484,6 @@ const OrderStatusPage = () => {
         </div>
       </div>
 
-      {/* Ресторан */}
       {(currentOrder.restaurant_name || currentOrder.restaurant_address) && (
         <div
           style={{
@@ -525,7 +518,6 @@ const OrderStatusPage = () => {
         </div>
       )}
 
-      {/* Ошибка */}
       {completeError && (
         <div
           className="form-error"
@@ -535,7 +527,6 @@ const OrderStatusPage = () => {
         </div>
       )}
 
-      {/* Кнопки */}
       <div
         style={{
           display: "flex",

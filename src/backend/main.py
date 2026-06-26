@@ -45,12 +45,6 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.state.limiter = limiter
 
-# Middleware execution order (outermost → innermost):
-# 1. SlowAPIMiddleware           — rate limiting
-# 2. CORSMiddleware              — preflight
-# 3. SecurityHeadersMiddleware   — security headers
-# 4. AutoCacheMiddleware         — cache layer (public GET endpoints only)
-# 5. RequestIDMiddleware         — timing + request_id
 app.add_middleware(RequestIDMiddleware)
 app.add_middleware(AutoCacheMiddleware, ttl=300)
 app.add_middleware(SecurityHeadersMiddleware)
@@ -62,7 +56,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 app.add_exception_handler(RequestValidationError, request_validation_error_handler)  # type: ignore[arg-type]
 app.add_exception_handler(AppException, app_exception_handler)  # type: ignore[arg-type]
 app.add_exception_handler(StarletteHTTPException, http_exception_handler)  # type: ignore[arg-type]

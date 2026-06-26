@@ -111,7 +111,6 @@ async def order_status_ws(
                     if current_status in (OrderStatus.COMPLETED.value, OrderStatus.CANCELLED.value):
                         break
 
-            # Non-blocking read to check for pings/disconnects
             try:
                 client_message = await asyncio.wait_for(websocket.receive_text(), timeout=0.01)
                 try:
@@ -198,7 +197,6 @@ async def display_board_ws(
                     rows = await get_active_orders_for_display(session, restaurant_id)
                     await websocket.send_text(json.dumps(_build_display_board(rows)))
 
-            # Non-blocking read to check for pings/disconnects
             try:
                 client_message = await asyncio.wait_for(websocket.receive_text(), timeout=0.01)
                 try:
@@ -266,7 +264,6 @@ async def restaurant_orders_ws(
                     data_str = data_str.decode("utf-8")
                 await websocket.send_text(json.dumps({"event": data_str}))
 
-            # Non-blocking read to check for pings/disconnects
             try:
                 client_message = await asyncio.wait_for(websocket.receive_text(), timeout=0.01)
                 try:

@@ -3,17 +3,23 @@ import sys
 
 import sentry_sdk
 import structlog
+from sentry_sdk.integrations import Integration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
 from settings.config.app_config import settings
 
+_fastapi_integration: type[Integration] | None
 try:
-    from sentry_sdk.integrations.fastapi import FastAPIIntegration
+    from sentry_sdk.integrations.fastapi import FastApiIntegration
+
+    _fastapi_integration = FastApiIntegration
 except ImportError:
     try:
-        from sentry_sdk.integrations.starlette import StarletteIntegration as FastAPIIntegration
+        from sentry_sdk.integrations.starlette import StarletteIntegration
+
+        _fastapi_integration = StarletteIntegration
     except ImportError:
-        FastAPIIntegration = None
+        _fastapi_integration = None
 
 LOGGER_NAME = "foodize"
 
@@ -27,9 +33,9 @@ def configure_logging() -> None:
     )
 
     if settings.logs.sentry_dsn:
-        integrations = [SqlalchemyIntegration()]
-        if FastAPIIntegration is not None:
-            integrations.insert(0, FastAPIIntegration())
+        integrations: list[Integration] = [SqlalchemyIntegration()]
+        if _fastapi_integration is not None:
+            integrations.insert(0, _fastapi_integration())
 
         sentry_sdk.init(
             dsn=settings.logs.sentry_dsn,

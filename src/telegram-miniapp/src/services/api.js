@@ -141,7 +141,7 @@ class ReliableWebSocket {
     this.pongTimeout = setTimeout(() => {
       console.warn("WS heartbeat timeout, reconnecting...");
       this.ws?.close();
-    }, 10000); // 10 seconds to wait for pong
+    }, 10000);
   }
 
   reconnect() {
@@ -151,7 +151,7 @@ class ReliableWebSocket {
       return;
     }
     this.updateStatus("reconnecting");
-    // 1s, 2s, 4s, 8s, 16s, max 30s
+
     const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
     this.reconnectAttempts++;
     setTimeout(() => this.connect(), delay);

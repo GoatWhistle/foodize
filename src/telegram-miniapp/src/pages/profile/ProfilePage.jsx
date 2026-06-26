@@ -31,7 +31,6 @@ const ProfilePage = () => {
     })),
   );
 
-  // Edit profile
   const [editMode, setEditMode] = useState(false);
   const [editForm, setEditForm] = useState({
     name: "",
@@ -42,7 +41,6 @@ const ProfilePage = () => {
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState("");
 
-  // Password change
   const [showPassword, setShowPassword] = useState(false);
   const [pwForm, setPwForm] = useState({ old_password: "", new_password: "" });
   const [pwLoading, setPwLoading] = useState(false);
@@ -121,7 +119,6 @@ const ProfilePage = () => {
       className="profile-page"
       style={{ paddingBottom: "calc(var(--bottom-tab-h, 68px) + 24px)" }}
     >
-      {/* Header */}
       <div className="profile-header" style={{ position: "relative" }}>
         <div className="profile-avatar">
           {editMode ? (
@@ -266,16 +263,13 @@ const ProfilePage = () => {
         )}
       </div>
 
-      {/* Menu */}
       <div className="profile-menu">
-        {/* Orders */}
         <div className="profile-menu-item" onClick={() => navigate("/orders")}>
           <Package size={18} />
           <span style={{ flex: 1 }}>Мои заказы</span>
           <CaretRight size={16} color="var(--text-3)" />
         </div>
 
-        {/* Favorites */}
         <div
           className="profile-menu-item"
           onClick={() => navigate("/favorites")}
@@ -285,7 +279,6 @@ const ProfilePage = () => {
           <CaretRight size={16} color="var(--text-3)" />
         </div>
 
-        {/* Notifications */}
         <div
           className="profile-menu-item"
           onClick={() => navigate("/notifications")}
@@ -310,7 +303,6 @@ const ProfilePage = () => {
           <CaretRight size={16} color="var(--text-3)" />
         </div>
 
-        {/* Admin */}
         {hasPermission(user, PERMISSIONS.ADMIN_ACCESS) && (
           <div
             className="profile-menu-item"
@@ -326,7 +318,6 @@ const ProfilePage = () => {
           </div>
         )}
 
-        {/* Change Password */}
         <div
           className="profile-menu-item"
           onClick={() => {
@@ -407,7 +398,6 @@ const ProfilePage = () => {
 
         <div className="divider" style={{ margin: "8px 0" }} />
 
-        {/* Logout */}
         <div className="profile-menu-item danger" onClick={handleLogout}>
           <SignOut size={18} />
           <span style={{ flex: 1 }}>Выйти</span>

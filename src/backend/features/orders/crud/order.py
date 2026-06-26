@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Sequence
 from datetime import date, datetime, timezone
 from typing import Any
 
@@ -155,7 +156,7 @@ async def create_order_event(
     session: AsyncSession,
     order_id: uuid.UUID,
     actor_id: uuid.UUID,
-    actor_permissions: list[Permission | str],
+    actor_permissions: Sequence[Permission | str],
     old_status: OrderStatus,
     new_status: OrderStatus,
 ) -> OrderEvent:

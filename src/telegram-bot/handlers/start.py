@@ -269,12 +269,10 @@ async def cmd_orders(message: Message) -> None:
 
 @router.message(CommandStart())
 async def cmd_start(message: Message) -> None:
-    # Parse deep link param: /start restaurant_{display_id} or /start order_{display_id}
     args = message.text.split(maxsplit=1)[1] if message.text and " " in message.text else ""
 
     if args.startswith("restaurant_"):
         display_id = args[len("restaurant_") :].strip()
-        # Try to fetch restaurant name for a nicer button label
         restaurant_name = ""
         if bot_config.backend_url and display_id:
             try:
@@ -309,7 +307,6 @@ async def cmd_start(message: Message) -> None:
             await message.answer("Добро пожаловать в <b>Foodize</b>!")
         return
 
-    # Default /start — no deep link
     await message.answer(
         "Добро пожаловать в <b>Foodize</b>!\n\n"
         "Можно сразу открыть сервис или сначала привязать номер телефона.\n"

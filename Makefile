@@ -127,24 +127,16 @@ LOGS_TAIL ?=
 
 logs:
 	@if [ -n "$(SERVICE)" ] && [ -n "$(LOGS_TAIL)" ]; then \
-  		echo " " \
-  		echo "Showing last $(LOGS_TAIL) lines from service: $(SERVICE)"; \
-  		echo " " \
+		echo "Showing last $(LOGS_TAIL) lines from service: $(SERVICE)"; \
 		docker compose logs -f --tail=$(LOGS_TAIL) $(SERVICE); \
 	elif [ -n "$(SERVICE)" ]; then \
-	  	echo " " \
-	  	echo "Following logs from service: $(SERVICE)"; \
-  		echo " " \
+		echo "Following logs from service: $(SERVICE)"; \
 		docker compose logs -f $(SERVICE); \
 	elif [ -n "$(LOGS_TAIL)" ]; then \
-	    echo " " \
-	  	echo "Showing last $(LOGS_TAIL) lines from all services"; \
-		echo " " \
+		echo "Showing last $(LOGS_TAIL) lines from all services"; \
 		docker compose logs -f --tail=$(LOGS_TAIL); \
 	else \
-	  	echo " " \
-	  	echo "Following logs from all services"; \
-		echo " " \
+		echo "Following logs from all services"; \
 		docker compose logs -f; \
 	fi
 

@@ -72,7 +72,7 @@ async def increment_used_count(session: AsyncSession, promo: Promo) -> bool:
         .values(used_count=Promo.used_count + 1)
     )
     result = await session.execute(stmt)
-    return result.rowcount == 1
+    return result.rowcount == 1  # type: ignore[attr-defined]
 
 
 async def deactivate_promo(session: AsyncSession, promo: Promo) -> Promo:

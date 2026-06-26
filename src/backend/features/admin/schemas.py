@@ -74,8 +74,8 @@ class AnalyticsPoint(BaseModel):
 
 
 class CohortPoint(BaseModel):
-    cohort: str  # e.g. "2024-05"
-    day: int  # 0, 1, 7, 30
+    cohort: str
+    day: int
     retention: float
 
 

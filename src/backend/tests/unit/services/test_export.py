@@ -113,7 +113,9 @@ class MockReview:
 async def test_export_users_csv():
     mock_session = AsyncMock(spec=AsyncSession)
     mock_users = [MockUser()]
-    with patch("features.admin.crud.get_all_users", new_callable=AsyncMock, return_value=mock_users):
+    with patch(
+        "features.admin.crud.get_all_users", new_callable=AsyncMock, return_value=mock_users
+    ):
         res = await export_users_csv(mock_session)
         assert isinstance(res, bytes)
         assert b"test@example.com" in res
@@ -123,7 +125,9 @@ async def test_export_users_csv():
 async def test_export_orders_csv():
     mock_session = AsyncMock(spec=AsyncSession)
     mock_orders = [MockOrder()]
-    with patch("features.admin.crud.get_all_orders", new_callable=AsyncMock, return_value=mock_orders):
+    with patch(
+        "features.admin.crud.get_all_orders", new_callable=AsyncMock, return_value=mock_orders
+    ):
         res = await export_orders_csv(mock_session)
         assert isinstance(res, bytes)
         assert b"1001" in res or b"COMPLETED" in res
@@ -133,7 +137,9 @@ async def test_export_orders_csv():
 async def test_export_restaurants_csv():
     mock_session = AsyncMock(spec=AsyncSession)
     mock_rests = [MockRestaurant()]
-    with patch("features.admin.crud.get_all_restaurants", new_callable=AsyncMock, return_value=mock_rests):
+    with patch(
+        "features.admin.crud.get_all_restaurants", new_callable=AsyncMock, return_value=mock_rests
+    ):
         res = await export_restaurants_csv(mock_session)
         assert isinstance(res, bytes)
         assert b"Rest 1" in res
@@ -143,7 +149,9 @@ async def test_export_restaurants_csv():
 async def test_export_vendors_csv():
     mock_session = AsyncMock(spec=AsyncSession)
     mock_vendors = [MockVendor()]
-    with patch("features.admin.crud.get_all_vendors", new_callable=AsyncMock, return_value=mock_vendors):
+    with patch(
+        "features.admin.crud.get_all_vendors", new_callable=AsyncMock, return_value=mock_vendors
+    ):
         res = await export_vendors_csv(mock_session)
         assert isinstance(res, bytes)
 
@@ -152,7 +160,9 @@ async def test_export_vendors_csv():
 async def test_export_reviews_csv():
     mock_session = AsyncMock(spec=AsyncSession)
     mock_reviews = [MockReview()]
-    with patch("features.admin.crud.get_all_reviews", new_callable=AsyncMock, return_value=mock_reviews):
+    with patch(
+        "features.admin.crud.get_all_reviews", new_callable=AsyncMock, return_value=mock_reviews
+    ):
         res = await export_reviews_csv(mock_session, min_rating=1, max_rating=5)
         assert isinstance(res, bytes)
         assert b"Great!" in res
@@ -169,7 +179,9 @@ async def test_export_finance_pdf():
                 restaurant_id=uuid.uuid4(), name="Rest 1", revenue=1000, orders_count=2
             )
         ],
-        top_items=[FinanceTopItem(menu_item_id=uuid.uuid4(), name="Dish 1", quantity=5, revenue=500)],
+        top_items=[
+            FinanceTopItem(menu_item_id=uuid.uuid4(), name="Dish 1", quantity=5, revenue=500)
+        ],
         cancelled_orders=1,
         total_orders=10,
         completed_orders=9,
@@ -178,7 +190,11 @@ async def test_export_finance_pdf():
         revenue_growth_pct=10.0,
     )
     with (
-        patch("features.admin.crud.get_finance_analytics", new_callable=AsyncMock, return_value=mock_analytics),
+        patch(
+            "features.admin.crud.get_finance_analytics",
+            new_callable=AsyncMock,
+            return_value=mock_analytics,
+        ),
         patch("features.admin.export._PDF", DummyPDF),
     ):
         res = await export_finance_pdf(mock_session, date.today(), date.today())
@@ -195,7 +211,11 @@ async def test_export_analytics_pdf():
         retention=[],
     )
     with (
-        patch("features.admin.crud.get_advanced_analytics", new_callable=AsyncMock, return_value=mock_analytics),
+        patch(
+            "features.admin.crud.get_advanced_analytics",
+            new_callable=AsyncMock,
+            return_value=mock_analytics,
+        ),
         patch("features.admin.export._PDF", DummyPDF),
     ):
         res = await export_analytics_pdf(mock_session)
@@ -215,7 +235,11 @@ async def test_export_overview_pdf():
         growth={"users": [StatsGrowthPoint(date=date.today(), count=1)]},
     )
     with (
-        patch("features.admin.crud.get_platform_stats", new_callable=AsyncMock, return_value=mock_stats),
+        patch(
+            "features.admin.crud.get_platform_stats",
+            new_callable=AsyncMock,
+            return_value=mock_stats,
+        ),
         patch("features.admin.export._PDF", DummyPDF),
     ):
         res = await export_overview_pdf(mock_session)

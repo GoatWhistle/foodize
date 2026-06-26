@@ -11,7 +11,7 @@ from features.restaurants.service import (
 from shared.enums.moderation_status import ModerationStatus
 
 
-def _make_row(restaurant_id: uuid.UUID = None, vendor_id: uuid.UUID = None):
+def _make_row(restaurant_id: uuid.UUID | None = None, vendor_id: uuid.UUID | None = None):
     restaurant = MagicMock()
     restaurant.id = restaurant_id or uuid.uuid4()
     restaurant.vendor_id = vendor_id or uuid.uuid4()

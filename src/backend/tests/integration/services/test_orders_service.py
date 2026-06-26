@@ -276,7 +276,7 @@ class TestPlaceOrder:
 
     async def test_place_order_empty_items(self, mock_db_session):
         restaurant_id = uuid.uuid4()
-        with pytest.raises(Exception):  # OrderCreate enforces min_length=1
+        with pytest.raises(Exception):
             OrderCreate(restaurant_id=restaurant_id, items=[])
 
     async def test_selected_options_are_validated_and_passed_to_create_order(self, mock_db_session):

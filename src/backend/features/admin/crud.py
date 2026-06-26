@@ -10,6 +10,7 @@ from features.admin.schemas import (
     AdminReviewResponse,
     AdvancedAnalytics,
     AnalyticsPoint,
+    CohortPoint,
     FinanceAnalytics,
     FinanceSeriesPoint,
     FinanceTopItem,
@@ -109,18 +110,17 @@ async def count_all_users(
         result = await session.execute(stmt)
         return result.scalar_one()
 
-    # If role filter is active, we still need to fetch to apply _infer_role
-    stmt = select(User)
+    user_stmt = select(User)
     if search:
         pattern = f"%{search}%"
-        stmt = stmt.where(
+        user_stmt = user_stmt.where(
             (User.name.ilike(pattern))
             | (User.phone_number.ilike(pattern))
             | (User.first_name.ilike(pattern))
             | (User.last_name.ilike(pattern))
         )
-    result = await session.execute(stmt)
-    users = result.scalars().all()
+    user_result = await session.execute(user_stmt)
+    users = user_result.scalars().all()
     return len([u for u in users if _infer_role(u.permissions or []) == role])
 
 
@@ -552,17 +552,17 @@ async def delete_review(session: AsyncSession, review: Review) -> Review:
 
 async def batch_deactivate_users(session: AsyncSession, ids: list[uuid.UUID]) -> int:
     result = await session.execute(update(User).where(User.id.in_(ids)).values(is_active=False))
-    return result.rowcount
+    return result.rowcount  # type: ignore[attr-defined]
 
 
 async def batch_activate_users(session: AsyncSession, ids: list[uuid.UUID]) -> int:
     result = await session.execute(update(User).where(User.id.in_(ids)).values(is_active=True))
-    return result.rowcount
+    return result.rowcount  # type: ignore[attr-defined]
 
 
 async def batch_delete_reviews(session: AsyncSession, ids: list[uuid.UUID]) -> int:
     result = await session.execute(delete(Review).where(Review.id.in_(ids)))
-    return result.rowcount
+    return result.rowcount  # type: ignore[attr-defined]
 
 
 async def _count_by_day(
@@ -896,7 +896,7 @@ async def get_advanced_analytics(
     days_count = (end_date - start_date).days + 1
     aov_dynamics = _finance_points(aov_counts, start_date, days_count)
 
-    retention = []
+    retention: list[CohortPoint] = []
 
     return AdvancedAnalytics(
         hourly_load=hourly_load,

@@ -36,7 +36,6 @@ def generate_valid_init_data(
         "query_id": "test_query_123",
     }
 
-    # Generate correct hash
     secret_key = hmac.new(
         b"WebAppData",
         settings.telegram.bot_token.encode(),
@@ -86,7 +85,6 @@ class TestValidateInitData:
 
     def test_expired_init_data(self):
         """Test that expired initData (> 86400s old) raises exception."""
-        # Create initData with auth_date from 25 hours ago
         expired_auth_date = int(time.time()) - (86400 + 3600)
         init_data = generate_valid_init_data(override_auth_date=expired_auth_date)
 
@@ -102,7 +100,6 @@ class TestValidateInitData:
             "user": user_data,
             "auth_date": str(auth_date),
             "query_id": "test_query_123",
-            # Intentionally missing hash
         }
 
         init_data = urlencode(data_dict)
@@ -119,7 +116,6 @@ class TestValidateInitData:
             "query_id": "test_query_123",
         }
 
-        # Generate hash without auth_date
         secret_key = hmac.new(
             b"WebAppData",
             settings.telegram.bot_token.encode(),
@@ -151,7 +147,6 @@ class TestValidateInitData:
             "query_id": "test_query_123",
         }
 
-        # Generate correct hash for this malformed data
         secret_key = hmac.new(
             b"WebAppData",
             settings.telegram.bot_token.encode(),
@@ -199,7 +194,6 @@ class TestEdgeCases:
 
     def test_edge_case_auth_date_within_limit(self):
         """Test that auth_date just within limit (86400s) is accepted."""
-        # 86399 seconds ago should be valid
         auth_date = int(time.time()) - 86399
         init_data = generate_valid_init_data(override_auth_date=auth_date)
 

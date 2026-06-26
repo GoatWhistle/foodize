@@ -91,7 +91,7 @@ async def delete_notification(
     )
     result = await session.execute(stmt)
     await session.commit()
-    return result.rowcount > 0
+    return result.rowcount > 0  # type: ignore[attr-defined]
 
 
 async def delete_all_notifications(session: AsyncSession, user_id: uuid.UUID) -> None:

@@ -16,13 +16,12 @@ _FONT_BOLD_PATH = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 
 
 class _PDF(FPDF):
-    # Brand colors (RGB)
-    _BRAND = (255, 75, 0)  # Foodize orange/red
-    _HEADER_BG = (20, 20, 30)  # Dark header background
-    _SECTION_BG = (245, 246, 250)  # Light section header bg
-    _ROW_ALT = (252, 252, 255)  # Alternating row tint
-    _BORDER_CLR = (210, 213, 220)  # Table border color
-    _TEXT_MUTED = (120, 125, 135)  # Muted text
+    _BRAND = (255, 75, 0)
+    _HEADER_BG = (20, 20, 30)
+    _SECTION_BG = (245, 246, 250)
+    _ROW_ALT = (252, 252, 255)
+    _BORDER_CLR = (210, 213, 220)
+    _TEXT_MUTED = (120, 125, 135)
 
     def __init__(self, title: str, subtitle: str = ""):
         super().__init__()
@@ -31,39 +30,33 @@ class _PDF(FPDF):
         self.set_font("dv", "", 10)
         self._title = title
         self._subtitle = subtitle
-        self._row_index = 0  # track alternating rows
+        self._row_index = 0
         self.add_page()
         self._draw_header()
 
     def _draw_header(self) -> None:
-        # Dark header band
         self.set_fill_color(*self._HEADER_BG)
         self.rect(0, 0, self.w, 38, style="F")
 
-        # Platform name (small, muted)
         self.set_y(8)
         self.set_text_color(180, 185, 200)
         self.set_font("dv", "", 8)
         self.cell(0, 5, "FOODIZE · ПЛАТФОРМА ПРЕДЗАКАЗОВ", new_x="LMARGIN", new_y="NEXT", align="C")
 
-        # Accent rule under platform name
         self.set_draw_color(*self._BRAND)
         self.set_line_width(0.8)
         mid = self.w / 2
         self.line(mid - 20, self.get_y() + 1, mid + 20, self.get_y() + 1)
 
-        # Main title
         self.set_font("dv", "B", 15)
         self.set_text_color(255, 255, 255)
         self.cell(0, 10, self._title, new_x="LMARGIN", new_y="NEXT", align="C")
 
-        # Reset after header band
         self.set_y(44)
         self.set_text_color(0, 0, 0)
         self.set_draw_color(0, 0, 0)
         self.set_line_width(0.2)
 
-        # Generation timestamp
         self.set_font("dv", "", 8)
         self.set_text_color(*self._TEXT_MUTED)
         self.cell(
@@ -98,7 +91,6 @@ class _PDF(FPDF):
         self.set_fill_color(*self._SECTION_BG)
         self.set_draw_color(*self._BRAND)
         self.set_line_width(0.5)
-        # Left accent bar
         self.rect(self.l_margin, self.get_y(), 2.5, 8, style="F")
         self.set_x(self.l_margin + 4)
         self.set_font("dv", "B", 10)
@@ -291,7 +283,6 @@ def _build_finance_pdf(
     pdf = _PDF(title)
     pdf.set_font("dv", "", 9)
 
-    # Period info block
     period = (
         f"{date_from.strftime('%d.%m.%Y') if date_from else '—'}"
         f" — {date_to.strftime('%d.%m.%Y') if date_to else '—'}"
@@ -303,7 +294,6 @@ def _build_finance_pdf(
     pdf.info_row("Рост к предыдущему периоду", growth_str)
     pdf.ln(5)
 
-    # Summary KPI table
     pdf.section("Ключевые показатели")
     pdf.row([("Показатель", 120), ("Значение", 75)], header=True)
     revenue_fmt = f"{analytics.total_revenue:,.0f} ₽".replace(",", " ")
@@ -390,11 +380,11 @@ def _build_analytics_pdf(
 
     pdf.section("Динамика среднего чека (AOV)")
     pdf.row([("Дата", 90), ("Средний чек (₽)", 105)], header=True)
-    for point in analytics.aov_dynamics:
+    for aov_point in analytics.aov_dynamics:
         pdf.row(
             [
-                (point.date.strftime("%d.%m.%Y"), 90),
-                (f"{int(point.value):,}".replace(",", " "), 105),
+                (aov_point.date.strftime("%d.%m.%Y"), 90),
+                (f"{int(aov_point.value):,}".replace(",", " "), 105),
             ]
         )
 
@@ -427,7 +417,6 @@ async def export_overview_pdf(
 
     pdf = _PDF("Обзор платформы — Foodize")
 
-    # Top-level platform KPIs as info rows
     pdf.info_row("Всего пользователей", str(stats.total_users))
     pdf.info_row("Всего ресторанов", str(stats.total_restaurants))
     pdf.info_row("Всего вендоров", str(stats.total_vendors))
@@ -444,7 +433,6 @@ async def export_overview_pdf(
         for marker, label in ROLE_MAP.items():
             if marker in perm_key:
                 return label
-        # fallback: capitalize
         return perm_key.replace(":", " ").title()
 
     pdf.section("Состав пользователей по ролям")

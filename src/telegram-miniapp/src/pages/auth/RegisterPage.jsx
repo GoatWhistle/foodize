@@ -69,7 +69,6 @@ export default function RegisterPage({ initData, prefillPhone, onSuccess }) {
         background: "var(--bg)",
       }}
     >
-      {/* Logo / Brand */}
       <div style={{ marginBottom: 8, textAlign: "center" }}>
         <div
           style={{

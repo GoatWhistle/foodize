@@ -10,7 +10,7 @@ from main import app
 from shared.enums.moderation_status import ModerationStatus
 
 
-def make_mock_vendor_profile(user_id: uuid.UUID = None):
+def make_mock_vendor_profile(user_id: uuid.UUID | None = None):
     vendor = VendorProfile()
     vendor.id = uuid.uuid4()
     vendor.user_id = user_id or uuid.uuid4()

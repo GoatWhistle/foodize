@@ -168,7 +168,7 @@ async def cancel_order(
 ) -> SuccessResponse[OrderResponse]:
     result = await service.cancel_order(
         session=session,
-        order_id=order_id,
+        identifier=order_id,
         user_id=current_user.id,
         cancel_data=cancel_in,
     )
@@ -182,7 +182,7 @@ async def complete_order(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[OrderResponse]:
     result = await service.complete_order(
-        session=session, order_id=order_id, user_id=current_user.id
+        session=session, identifier=order_id, user_id=current_user.id
     )
     return build_response(result)
 

@@ -8,6 +8,7 @@ import FoodizeLogo from '../ui/FoodizeLogo';
 import ThemeToggle from '../ui/ThemeToggle';
 import CartDrawer from '../ui/CartDrawer';
 import NotificationBell from '../ui/NotificationBell';
+import OrderAssistant from '../ui/OrderAssistant';
 
 import { useAuthStore } from '../../store/useAuthStore';
 import { useOrderStore } from '../../store/useOrderStore';
@@ -143,6 +144,8 @@ const MainLayout = () => {
           error={error}
         />
       )}
+
+      {isAuthenticated && <OrderAssistant />}
     </div>
   );
 };

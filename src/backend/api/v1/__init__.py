@@ -1,6 +1,8 @@
 from fastapi import APIRouter
 
 from features.admin.api import router as admin_router
+from features.ai_advisor.api import router as ai_advisor_router
+from features.ai_order_agent.api import router as ai_order_router
 from features.auth.api import router as auth_router
 from features.cart.api import router as cart_router
 from features.favorites.api import router as favorites_router
@@ -22,6 +24,8 @@ router = APIRouter(
 )
 
 router.include_router(admin_router)
+router.include_router(ai_advisor_router)
+router.include_router(ai_order_router)
 router.include_router(cart_router)
 router.include_router(promos_router)
 router.include_router(auth_router)
