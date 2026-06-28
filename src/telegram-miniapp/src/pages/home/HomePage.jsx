@@ -13,7 +13,6 @@ import { useAuthStore } from "../../store/useAuthStore";
 import { useShallow } from "zustand/react/shallow";
 import RestaurantCard from "@shared/components/RestaurantCard/RestaurantCard";
 import EmptyState from "@shared/components/EmptyState/EmptyState";
-import { useFavoriteStore } from "../../store/useFavoriteStore";
 import s from "./HomePage.module.css";
 
 const getGreeting = () => {
@@ -29,9 +28,6 @@ const SIZE = 20;
 const HomePage = () => {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
-  const { favoriteIds, toggle: toggleFavorite } = useFavoriteStore(
-    useShallow((s) => ({ favoriteIds: s.favoriteIds, toggle: s.toggle })),
-  );
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -225,8 +221,6 @@ const HomePage = () => {
                       state: { restaurant: r },
                     })
                   }
-                  isFavorite={favoriteIds.has(r.id)}
-                  onFavoriteToggle={toggleFavorite}
                 />
               ))}
             </div>

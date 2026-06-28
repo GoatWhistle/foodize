@@ -1,0 +1,62 @@
+.iconWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+  padding: 24px 0;
+}
+
+@keyframes ripple-badge {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+.rippleRing {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--accent-subtle);
+  animation: ripple-badge 1.8s var(--ease-out) infinite;
+}
+
+.rippleRing:nth-child(2) {
+  animation-delay: 0.6s;
+}
+
+.rippleRing:nth-child(3) {
+  animation-delay: 1.2s;
+}
+
+@keyframes flashBg {
+  0% { background: transparent; }
+  15% { background: oklch(80% 0.06 145 / 0.12); }
+  100% { background: transparent; }
+}
+
+.readyFlash {
+  animation: flashBg 1s var(--ease-out) forwards;
+}
+
+@keyframes bounceIn {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  60% { transform: scale(1.1); }
+  80% { transform: scale(0.95); }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.readyText {
+  animation: bounceIn 0.7s var(--ease-spring) forwards;
+}

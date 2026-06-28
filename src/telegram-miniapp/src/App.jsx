@@ -14,6 +14,7 @@ import { useAuthStore } from "./store/useAuthStore";
 import { useOrderStore } from "./store/useOrderStore";
 import { useFavoriteStore } from "./store/useFavoriteStore";
 import { useNotificationStore } from "./store/useNotificationStore";
+import { useThemeStore } from "@shared/store/useThemeStore.js";
 import { authExistingUser, initTelegramApp } from "./telegram/init";
 import { tg } from "./telegram/sdk";
 import LoginPage from "./pages/auth/LoginPage";
@@ -156,8 +157,10 @@ export default function App() {
   const fetchNotifications = useNotificationStore((s) => s.fetchNotifications);
   const connectWs = useNotificationStore((s) => s.connectWs);
   const disconnectWs = useNotificationStore((s) => s.disconnectWs);
+  const initTheme = useThemeStore((s) => s.initTheme);
 
   useEffect(() => {
+    initTheme();
     applyTelegramTheme();
     if (tg) {
       tg.onEvent("themeChanged", applyTelegramTheme);

@@ -1,9 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import {
   RouterProvider,
   createBrowserRouter,
   Navigate,
+  Outlet,
 } from 'react-router-dom';
+
+const LazyLegal = lazy(() =>
+  import('@shared/components/LegalPage/LegalPage')
+);
 
 import { IconContext, MapPin, ArrowLeft } from '@phosphor-icons/react';
 
@@ -112,6 +117,16 @@ const router = createBrowserRouter([
   {
     path: ROUTES.DISPLAY_BOARD,
     element: <DisplayBoardPage />,
+  },
+  {
+    element: (
+      <Suspense fallback={null}>
+        <Outlet />
+      </Suspense>
+    ),
+    children: [
+      { path: '/legal/:doc', element: <LazyLegal /> },
+    ],
   },
   {
     path: '*',

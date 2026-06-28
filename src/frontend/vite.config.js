@@ -5,10 +5,22 @@ import path from 'path';
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: {
-      '@shared': path.resolve(__dirname, '../shared'),
-    },
-    dedupe: ['react', 'react-dom', '@phosphor-icons/react', 'zustand'],
+    alias: [
+      {
+        find: '@shared/services/api.instance.js',
+        replacement: path.resolve(__dirname, 'src/services/api.js'),
+      },
+      {
+        find: '@shared/store/useOrderStore.instance.js',
+        replacement: path.resolve(__dirname, 'src/store/useOrderStore.js'),
+      },
+      {
+        find: '@shared',
+        replacement: path.resolve(__dirname, '../shared'),
+      },
+    ],
+    dedupe: ['react', 'react-dom', 'react-router-dom', '@phosphor-icons/react', 'zustand', 'axios'],
+    modules: [path.resolve(__dirname, 'node_modules'), 'node_modules'],
   },
   server: {
     host: true,

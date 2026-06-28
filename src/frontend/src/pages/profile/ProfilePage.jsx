@@ -13,8 +13,11 @@ import {
   Heart,
   GearSix,
   CaretDown,
+  FileText,
+  Shield,
 } from '@phosphor-icons/react';
 import { useAuthStore } from '../../store/useAuthStore';
+import ThemeSwitcher from '@shared/components/ThemeSwitcher/ThemeSwitcher';
 import { ROUTES } from '../../constants/routes';
 import { vendorService } from '../../services/vendorService';
 import { staffService } from '../../services/staffService';
@@ -541,6 +544,40 @@ const ProfilePage = () => {
             )}
           </div>
         )}
+
+        <div className="divider" style={{ margin: '8px 0' }} />
+
+        <ThemeSwitcher />
+
+        <div className="divider" style={{ margin: '8px 0' }} />
+
+        <div
+          className="profile-menu-item"
+          onClick={() => navigate('/legal/terms')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && navigate('/legal/terms')}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <FileText size={20} weight="bold" />
+            <span>Условия сервиса</span>
+          </div>
+          <CaretRight size={16} />
+        </div>
+
+        <div
+          className="profile-menu-item"
+          onClick={() => navigate('/legal/privacy')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && navigate('/legal/privacy')}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <Shield size={20} weight="bold" />
+            <span>Политика конфиденциальности</span>
+          </div>
+          <CaretRight size={16} />
+        </div>
 
         <div className="divider" style={{ margin: '8px 0' }} />
 

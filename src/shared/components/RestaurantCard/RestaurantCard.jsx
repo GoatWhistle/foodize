@@ -7,7 +7,6 @@ import {
   Storefront,
   MapPin,
   Star,
-  Heart,
   Circle,
 } from "@phosphor-icons/react";
 import s from "./RestaurantCard.module.css";
@@ -20,12 +19,7 @@ const CATEGORY_ICONS = {
   DEFAULT: <Storefront size={52} weight="fill" />,
 };
 
-const RestaurantCard = ({
-  restaurant,
-  onClick,
-  isFavorite = false,
-  onFavoriteToggle,
-}) => {
+const RestaurantCard = ({ restaurant, onClick }) => {
   const cardRef = useRef(null);
 
   useEffect(() => {
@@ -84,23 +78,6 @@ const RestaurantCard = ({
             <span>{rating ? rating.toFixed(1) : "0.0"}</span>
           </div>
         </div>
-
-        {onFavoriteToggle != null && (
-          <button
-            className={`${s.favBtn}${isFavorite ? ` ${s.active}` : ""}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onFavoriteToggle(restaurant.id);
-            }}
-            aria-label={isFavorite ? "Убрать из избранного" : "В избранное"}
-          >
-            <Heart
-              size={14}
-              weight={isFavorite ? "fill" : "regular"}
-              color={isFavorite ? "#ef4444" : "rgba(255,255,255,0.9)"}
-            />
-          </button>
-        )}
       </div>
 
       <div className={s.body}>

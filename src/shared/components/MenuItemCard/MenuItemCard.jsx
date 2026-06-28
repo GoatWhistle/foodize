@@ -8,32 +8,24 @@ import {
   Coffee,
   DotsThree,
   ProhibitInset,
-  Heart,
   Plus,
 } from "@phosphor-icons/react";
 import s from "./MenuItemCard.module.css";
 
 const CATEGORY_ICONS = {
-  SHAURMA: <Fire size={32} />,
-  BURGER: <Hamburger size={32} />,
-  PIZZA: <Pizza size={32} />,
-  SUSHI: <BowlFood size={32} />,
-  SNACK: <Cookie size={32} />,
-  DRINK: <Coffee size={32} />,
-  OTHER: <DotsThree size={32} />,
-  DEFAULT: <CookingPot size={32} />,
+  SHAURMA: <Fire size={28} />,
+  BURGER: <Hamburger size={28} />,
+  PIZZA: <Pizza size={28} />,
+  SUSHI: <BowlFood size={28} />,
+  SNACK: <Cookie size={28} />,
+  DRINK: <Coffee size={28} />,
+  OTHER: <DotsThree size={28} />,
+  DEFAULT: <CookingPot size={28} />,
 };
 
 const formatPrice = (value) => `${value} ₽`;
 
-const MenuItemCard = ({
-  item,
-  onSelect,
-  isRestaurantOpen = true,
-  onHaptic,
-  isFavorite = false,
-  onFavoriteToggle,
-}) => {
+const MenuItemCard = ({ item, onSelect, isRestaurantOpen = true, onHaptic }) => {
   const icon =
     CATEGORY_ICONS[item.category?.toUpperCase()] || CATEGORY_ICONS.DEFAULT;
   const isClosed = isRestaurantOpen === false;
@@ -43,11 +35,6 @@ const MenuItemCard = ({
     if (unavailable) return;
     onHaptic?.();
     onSelect?.(item);
-  };
-
-  const handleFav = (e) => {
-    e.stopPropagation();
-    onFavoriteToggle?.(item.id);
   };
 
   return (
@@ -68,28 +55,12 @@ const MenuItemCard = ({
         )}
 
         {item.category && (
-          <span className={s.categoryTag}>
-            {item.category}
-          </span>
-        )}
-
-        {onFavoriteToggle != null && (
-          <button
-            className={s.favBtn}
-            onClick={handleFav}
-            aria-label={isFavorite ? "Убрать из избранного" : "В избранное"}
-          >
-            <Heart
-              size={14}
-              weight={isFavorite ? "fill" : "regular"}
-              color={isFavorite ? "#ef4444" : "rgba(255,255,255,0.9)"}
-            />
-          </button>
+          <span className={s.categoryTag}>{item.category}</span>
         )}
 
         {unavailable && (
           <div className={s.unavailableOverlay}>
-            <ProhibitInset size={28} color="rgba(255,255,255,0.7)" weight="bold" />
+            <ProhibitInset size={24} color="rgba(255,255,255,0.7)" weight="bold" />
           </div>
         )}
       </div>
@@ -106,7 +77,7 @@ const MenuItemCard = ({
               onClick={handleClick}
               aria-label={`Добавить ${item.name}`}
             >
-              <Plus size={16} weight="bold" />
+              <Plus size={14} weight="bold" />
             </button>
           )}
         </div>

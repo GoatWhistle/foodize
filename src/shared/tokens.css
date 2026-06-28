@@ -1,7 +1,7 @@
-/* Foodize Shared Design Tokens — Monochrome */
+/* Foodize Shared Design Tokens */
 
 :root {
-  /* ── Neutrals (warm-tinted, no cold blue shift) ── */
+  /* ── Neutrals (warm-tinted) ── */
   --n-0:   oklch(98.5% 0.004 60);
   --n-50:  oklch(96%   0.005 60);
   --n-100: oklch(92%   0.006 60);
@@ -14,11 +14,33 @@
   --n-800: oklch(18%   0.010 60);
   --n-900: oklch(12%   0.010 60);
 
+  /* ── Brand: terracotta accent ── */
+  --accent:        oklch(52% 0.13 42);
+  --accent-dim:    oklch(45% 0.11 42);
+  --accent-deep:   oklch(38% 0.09 42);
+  --accent-glow:   oklch(52% 0.13 42 / 0.24);
+  --accent-subtle: oklch(52% 0.13 42 / 0.10);
+  --accent-text:   oklch(98% 0.004 60);
+
+  /* ── Fire aliases (used across frontend + shared) ── */
+  --fire:        var(--accent);
+  --fire-dim:    var(--accent-dim);
+  --fire-deep:   var(--accent-deep);
+  --fire-glow:   var(--accent-glow);
+  --fire-subtle: var(--accent-subtle);
+  --fire-text:   var(--accent-text);
+  --shadow-fire: 0 10px 26px var(--accent-glow);
+
+  /* ── Action (CTA buttons) ── */
+  --action-bg:    var(--accent);
+  --action-fg:    var(--accent-text);
+  --action-hover: var(--accent-dim);
+
   /* ── Semantic (light theme) ── */
-  --bg:         var(--n-0);
-  --bg-card:    var(--n-50);
-  --bg-surface: var(--n-100);
-  --bg-raised:  var(--n-200);
+  --bg:         oklch(96.5% 0.006 60);
+  --bg-card:    oklch(98%   0.004 60);
+  --bg-surface: oklch(93%   0.007 60);
+  --bg-raised:  oklch(89%   0.008 60);
 
   --ink-1:   var(--n-900);
   --ink-2:   var(--n-700);
@@ -29,61 +51,43 @@
   --text-2: var(--ink-2);
   --text-3: var(--ink-3);
 
-  --action-bg:    var(--n-900);
-  --action-fg:    var(--n-0);
-  --action-hover: var(--n-700);
-
-  --accent:        var(--n-900);
-  --accent-dim:    var(--n-700);
-  --accent-subtle: oklch(12% 0.010 60 / 0.06);
-  --accent-glow:   oklch(12% 0.010 60 / 0.18);
-  --accent-text:   var(--n-0);
-  --brand:         var(--n-900);
-
   --border:     oklch(88% 0.005 60);
   --border-mid: oklch(80% 0.006 60);
   --border-hi:  oklch(70% 0.007 60);
 
-  /* ── Semantic colors ── */
-  --color-success:        oklch(48% 0.14 145);
-  --color-success-bg:     oklch(48% 0.14 145 / 0.08);
-  --color-success-border: oklch(48% 0.14 145 / 0.20);
-  --color-error:          oklch(50% 0.18 25);
-  --color-error-bg:       oklch(50% 0.18 25 / 0.07);
-  --color-error-border:   oklch(50% 0.18 25 / 0.18);
-  --color-warning:        oklch(60% 0.10 80);
-  --color-warning-bg:     oklch(60% 0.10 80 / 0.08);
-  --color-warning-border: oklch(60% 0.10 80 / 0.20);
+  /* ── Status colors ── */
+  --color-success:        oklch(52% 0.16 145);
+  --color-success-dim:    oklch(42% 0.12 145);
+  --color-success-bg:     oklch(52% 0.16 145 / 0.08);
+  --color-success-border: oklch(52% 0.16 145 / 0.22);
 
-  /* Star ratings */
-  --star: oklch(72% 0.13 80);
+  --color-warning:        oklch(62% 0.14 85);
+  --color-warning-dim:    oklch(50% 0.11 82);
+  --color-warning-bg:     oklch(62% 0.14 85 / 0.10);
+  --color-warning-border: oklch(62% 0.14 85 / 0.25);
+
+  --color-error:          oklch(52% 0.18 25);
+  --color-error-dim:      oklch(42% 0.14 25);
+  --color-error-bg:       oklch(52% 0.18 25 / 0.07);
+  --color-error-border:   oklch(52% 0.18 25 / 0.20);
+
+  --color-neutral:        oklch(50% 0.02 80);
+  --color-neutral-bg:     oklch(50% 0.02 80 / 0.10);
+  --color-neutral-border: oklch(50% 0.02 80 / 0.20);
+
+  --error: var(--color-error);
+
+  /* ── Star / saffron ── */
+  --star:    oklch(72% 0.13 80);
+  --saffron: var(--star);
+  --amber:   oklch(76% 0.16 65);
+  --gold:    var(--accent-deep);
 
   /* ── Shadows ── */
   --shadow-sm: 0 1px 2px  oklch(12% 0.010 60 / 0.06);
-  --shadow-md: 0 4px 12px oklch(12% 0.010 60 / 0.08);
-  --shadow-lg: 0 12px 32px oklch(12% 0.010 60 / 0.12);
-  --shadow-xl: 0 20px 52px oklch(12% 0.010 60 / 0.16);
-
-  /* ── Legacy aliases (keep for gradual migration) ── */
-  --mustard:        var(--n-900);
-  --mustard-dim:    var(--n-700);
-  --mustard-deep:   var(--n-600);
-  --mustard-glow:   0 6px 20px oklch(12% 0.010 60 / 0.14);
-  --mustard-subtle: oklch(12% 0.010 60 / 0.06);
-  --shadow-mustard: 0 6px 20px oklch(12% 0.010 60 / 0.14);
-
-  /* Warm name aliases used in DESIGN.md components */
-  --walnut:       var(--n-900);
-  --walnut-soft:  var(--n-800);
-  --bark:         var(--n-700);
-  --umber:        var(--n-600);
-  --dusk:         var(--n-500);
-  --sand:         var(--n-400);
-  --linen:        var(--n-300);
-  --vellum:       var(--n-100);
-  --parchment:    var(--n-50);
-  --parchment-off:var(--n-0);
-  --saffron:      var(--star);
+  --shadow-md: 0 8px 24px oklch(12% 0.010 60 / 0.08);
+  --shadow-lg: 0 16px 42px oklch(12% 0.010 60 / 0.12);
+  --shadow-xl: 0 24px 64px oklch(12% 0.010 60 / 0.14);
 
   /* ── Radius ── */
   --r-xs:   4px;
@@ -93,10 +97,42 @@
   --r-xl:   20px;
   --r-2xl:  28px;
   --r-pill: 100px;
+  /* legacy aliases */
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
 
   /* ── Typography ── */
   --font-sans:  "Manrope", -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-serif: var(--font-sans);
+  --font-serif: "Playfair Display", Georgia, serif;
+
+  --text-xs:   0.64rem;
+  --text-sm:   0.75rem;
+  --text-base: 0.875rem;
+  --text-md:   1rem;
+  --text-lg:   1.25rem;
+  --text-xl:   1.5rem;
+  --text-2xl:  2rem;
+  --text-3xl:  3rem;
+
+  --weight-body:    400;
+  --weight-ui:      600;
+  --weight-strong:  700;
+  --weight-display: 800;
+
+  --lh-tight: 1.15;
+  --lh-snug:  1.35;
+  --lh-base:  1.55;
+  --lh-loose: 1.70;
+
+  /* ── Spacing ── */
+  --space-xs:  4px;
+  --space-sm:  8px;
+  --space-md:  16px;
+  --space-lg:  24px;
+  --space-xl:  40px;
+  --space-2xl: 64px;
 
   /* ── Easing ── */
   --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
@@ -107,66 +143,163 @@
   /* ── Duration ── */
   --dur-xs: 80ms;
   --dur-sm: 160ms;
-  --dur-md: 260ms;
-  --dur-lg: 420ms;
-  --dur-xl: 600ms;
+  --dur-md: 280ms;
+  --dur-lg: 440ms;
+  --dur-xl: 700ms;
 
   /* ── Layout ── */
+  --nav-h:        64px;
   --bottom-tab-h: 64px;
   --gutter:       16px;
-  --nav-h:        0px;
   --max-w:        1100px;
+
+  /* ── Legacy warm-name aliases ── */
+  --walnut:        var(--n-900);
+  --walnut-soft:   var(--n-800);
+  --bark:          var(--n-700);
+  --umber:         var(--n-600);
+  --dusk:          var(--n-500);
+  --sand:          var(--n-400);
+  --linen:         var(--n-300);
+  --vellum:        var(--bg-card);
+  --parchment:     var(--bg);
+  --parchment-off: var(--n-0);
+  --white:         var(--n-0);
+
+  /* mustard legacy */
+  --mustard:        var(--accent);
+  --mustard-dim:    var(--accent-dim);
+  --mustard-deep:   var(--accent-deep);
+  --mustard-glow:   var(--accent-glow);
+  --mustard-subtle: var(--accent-subtle);
+  --mustard-text:   var(--accent-text);
 }
 
 /* ── Dark theme ── */
 [data-theme="dark"] {
-  --bg:         var(--n-900);
-  --bg-card:    var(--n-800);
-  --bg-surface: var(--n-700);
-  --bg-raised:  var(--n-600);
+  --bg:         oklch(14% 0.005 50);
+  --bg-card:    oklch(16.5% 0.005 50);
+  --bg-surface: oklch(19%  0.006 50);
+  --bg-raised:  oklch(22%  0.007 50);
 
-  --ink-1:   var(--n-0);
-  --ink-2:   var(--n-200);
-  --ink-3:   var(--n-400);
+  --ink-1:   oklch(96%  0.004 60);
+  --ink-2:   oklch(82%  0.006 55);
+  --ink-3:   oklch(58%  0.008 50);
   --ink-inv: var(--n-900);
 
   --text-1: var(--ink-1);
   --text-2: var(--ink-2);
   --text-3: var(--ink-3);
 
-  --action-bg:    var(--n-0);
-  --action-fg:    var(--n-900);
-  --action-hover: var(--n-200);
+  --border:     oklch(96% 0 0 / 0.08);
+  --border-mid: oklch(96% 0 0 / 0.14);
+  --border-hi:  oklch(96% 0 0 / 0.24);
 
-  --accent:        var(--n-0);
-  --accent-dim:    var(--n-200);
-  --accent-subtle: oklch(98.5% 0.004 60 / 0.08);
-  --accent-glow:   oklch(98.5% 0.004 60 / 0.18);
+  --action-bg:    var(--accent);
+  --action-fg:    var(--accent-text);
+  --action-hover: var(--accent-dim);
 
-  --border:     oklch(26% 0.009 60 / 0.60);
-  --border-mid: oklch(36% 0.008 60 / 0.70);
-  --border-hi:  oklch(48% 0.007 60 / 0.80);
+  --fire:        oklch(64% 0.19 35);
+  --fire-dim:    oklch(56% 0.17 35);
+  --fire-deep:   oklch(48% 0.14 35);
+  --fire-glow:   oklch(64% 0.19 35 / 0.28);
+  --fire-subtle: oklch(64% 0.19 35 / 0.12);
+  --fire-text:   oklch(98% 0.004 60);
+  --shadow-fire: 0 10px 26px oklch(64% 0.19 35 / 0.32);
+
+  --accent:        var(--fire);
+  --accent-dim:    var(--fire-dim);
+  --accent-deep:   var(--fire-deep);
+  --accent-glow:   var(--fire-glow);
+  --accent-subtle: var(--fire-subtle);
+  --accent-text:   var(--fire-text);
+
+  --amber: oklch(76% 0.16 65);
+  --gold:  oklch(68% 0.14 60);
+  --star:  oklch(76% 0.14 80);
+
+  --color-success:        oklch(68% 0.18 145);
+  --color-success-dim:    oklch(56% 0.14 145);
+  --color-success-bg:     oklch(68% 0.18 145 / 0.10);
+  --color-success-border: oklch(68% 0.18 145 / 0.28);
+
+  --color-warning:        oklch(76% 0.16 65);
+  --color-warning-dim:    oklch(63% 0.13 60);
+  --color-warning-bg:     oklch(76% 0.16 65 / 0.10);
+  --color-warning-border: oklch(76% 0.16 65 / 0.25);
+
+  --color-error:          oklch(64% 0.20 27);
+  --color-error-dim:      oklch(52% 0.16 27);
+  --color-error-bg:       oklch(64% 0.20 27 / 0.10);
+  --color-error-border:   oklch(64% 0.20 27 / 0.22);
+
+  --color-neutral:        oklch(60% 0.02 220);
+  --color-neutral-bg:     oklch(60% 0.02 220 / 0.12);
+  --color-neutral-border: oklch(60% 0.02 220 / 0.22);
 
   --shadow-sm: 0 1px 3px  oklch(0% 0 0 / 0.35);
-  --shadow-md: 0 4px 16px oklch(0% 0 0 / 0.40);
-  --shadow-lg: 0 12px 36px oklch(0% 0 0 / 0.50);
-  --shadow-xl: 0 20px 54px oklch(0% 0 0 / 0.60);
+  --shadow-md: 0 8px 24px oklch(0% 0 0 / 0.38);
+  --shadow-lg: 0 16px 42px oklch(0% 0 0 / 0.46);
+  --shadow-xl: 0 24px 64px oklch(0% 0 0 / 0.54);
 
-  --mustard:        var(--n-0);
-  --mustard-dim:    var(--n-200);
-  --mustard-deep:   var(--n-300);
-  --mustard-glow:   0 6px 20px oklch(98.5% 0.004 60 / 0.14);
-  --mustard-subtle: oklch(98.5% 0.004 60 / 0.06);
-  --shadow-mustard: 0 6px 20px oklch(98.5% 0.004 60 / 0.14);
+  --walnut:        var(--n-0);
+  --walnut-soft:   var(--n-50);
+  --bark:          var(--n-200);
+  --umber:         var(--n-300);
+  --dusk:          var(--n-400);
+  --sand:          var(--n-400);
+  --linen:         var(--n-600);
+  --vellum:        var(--bg-card);
+  --parchment:     var(--bg);
+  --parchment-off: var(--bg-card);
+  --white:         var(--n-0);
 
-  --walnut:       var(--n-0);
-  --walnut-soft:  var(--n-50);
-  --bark:         var(--n-200);
-  --umber:        var(--n-300);
-  --dusk:         var(--n-400);
-  --sand:         var(--n-400);
-  --linen:        var(--n-600);
-  --vellum:       var(--n-700);
-  --parchment:    var(--n-800);
-  --parchment-off:var(--n-800);
+  --mustard:        var(--accent);
+  --mustard-dim:    var(--accent-dim);
+  --mustard-deep:   var(--accent-deep);
+  --mustard-glow:   var(--accent-glow);
+  --mustard-subtle: var(--accent-subtle);
+  --mustard-text:   var(--accent-text);
+}
+
+/* ── Light explicit override ── */
+[data-theme="light"] {
+  --bg:         oklch(96.5% 0.006 60);
+  --bg-card:    oklch(98%   0.004 60);
+  --bg-surface: oklch(93%   0.007 60);
+  --bg-raised:  oklch(89%   0.008 60);
+
+  --ink-1:   var(--n-900);
+  --ink-2:   var(--n-700);
+  --ink-3:   var(--n-400);
+
+  --text-1: var(--ink-1);
+  --text-2: var(--ink-2);
+  --text-3: var(--ink-3);
+
+  --border:     oklch(88% 0.005 60);
+  --border-mid: oklch(80% 0.006 60);
+  --border-hi:  oklch(70% 0.007 60);
+
+  --fire:        oklch(52% 0.13 42);
+  --fire-dim:    oklch(45% 0.11 42);
+  --fire-deep:   oklch(38% 0.09 42);
+  --fire-glow:   oklch(52% 0.13 42 / 0.24);
+  --fire-subtle: oklch(52% 0.13 42 / 0.10);
+  --fire-text:   oklch(98% 0.004 60);
+  --shadow-fire: 0 10px 26px oklch(52% 0.13 42 / 0.24);
+
+  --accent:        var(--fire);
+  --accent-dim:    var(--fire-dim);
+  --accent-deep:   var(--fire-deep);
+  --accent-glow:   var(--fire-glow);
+  --accent-subtle: var(--fire-subtle);
+  --accent-text:   var(--fire-text);
+
+  --mustard:        var(--accent);
+  --mustard-dim:    var(--accent-dim);
+  --mustard-deep:   var(--accent-deep);
+  --mustard-glow:   var(--accent-glow);
+  --mustard-subtle: var(--accent-subtle);
+  --mustard-text:   var(--accent-text);
 }

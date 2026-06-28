@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTheme } from "../../hooks/useTheme";
+import ThemeSwitcher from "@shared/components/ThemeSwitcher/ThemeSwitcher";
 import {
   Package,
   Heart,
@@ -47,8 +47,6 @@ const ProfilePage = () => {
   );
   const ordersTotal = useOrderStore((s) => s.ordersTotal);
   const favoriteIds = useFavoriteStore((s) => s.favoriteIds);
-
-  const { mode: themeMode, setTheme } = useTheme();
 
   const [editMode, setEditMode] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -381,24 +379,7 @@ const ProfilePage = () => {
 
           <div className="divider" style={{ margin: "8px 0" }} />
 
-          <div className={s.themeRow}>
-            <span className={s.themeLabel}>Тема</span>
-            <div className={s.themeToggle}>
-              {[
-                { value: "light", label: "Светлая" },
-                { value: "system", label: "Системная" },
-                { value: "dark", label: "Тёмная" },
-              ].map(({ value, label }) => (
-                <button
-                  key={value}
-                  className={`${s.themeBtn}${themeMode === value ? ` ${s.themeBtnActive}` : ""}`}
-                  onClick={() => setTheme(value)}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <ThemeSwitcher />
 
           <div className="divider" style={{ margin: "8px 0" }} />
 

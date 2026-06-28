@@ -6,6 +6,7 @@ import { ROUTES } from '../../constants/routes';
 import { orderService } from '../../services/orderService';
 import { createOrderWebSocket } from '../../services/api';
 import { ORDER_STATUS_RU } from '../../utils/locales';
+import { useEtaText } from '@shared/hooks/useEtaText.js';
 
 const TERMINAL_STATUSES = new Set(['COMPLETED', 'CANCELLED']);
 const STATUS_FLOW = ['PENDING', 'ACCEPTED', 'READY', 'COMPLETED'];
@@ -30,33 +31,6 @@ const fmtTime = (iso) => {
     : d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 };
 
-const useEtaText = (estimatedReadyAt, status) => {
-  const compute = useCallback(() => {
-    if (
-      TERMINAL_STATUSES.has(status) ||
-      status === 'READY' ||
-      !estimatedReadyAt
-    )
-      return '';
-    const diff = Math.round((new Date(estimatedReadyAt) - Date.now()) / 60000);
-    return diff > 0
-      ? `Будет готов через ~${diff} мин`
-      : 'Задерживаемся, скоро будет';
-  }, [estimatedReadyAt, status]);
-  const [text, setText] = useState(compute);
-  useEffect(() => {
-    setText(compute());
-    if (
-      TERMINAL_STATUSES.has(status) ||
-      status === 'READY' ||
-      !estimatedReadyAt
-    )
-      return;
-    const id = setInterval(() => setText(compute()), 30_000);
-    return () => clearInterval(id);
-  }, [estimatedReadyAt, status, compute]);
-  return text;
-};
 
 const HorizontalSteps = ({ order }) => {
   const currentIndex =
