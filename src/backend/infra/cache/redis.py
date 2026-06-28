@@ -4,11 +4,23 @@ from redis.asyncio import Redis
 from infra.cache.base import CacheRepository
 from settings.config.app_config import settings
 
-_pool = aioredis.ConnectionPool.from_url(settings.redis.url, decode_responses=True)
+_pool: aioredis.ConnectionPool | None = None
+_redis_cache: "RedisCache | None" = None
+
+
+def _get_pool() -> aioredis.ConnectionPool:
+    global _pool
+    if _pool is None:
+        _pool = aioredis.ConnectionPool.from_url(
+            settings.redis.url,
+            decode_responses=True,
+            max_connections=50,
+        )
+    return _pool
 
 
 def _get_client() -> Redis:
-    return aioredis.Redis(connection_pool=_pool)
+    return aioredis.Redis(connection_pool=_get_pool())
 
 
 class RedisCache(CacheRepository):
@@ -41,6 +53,19 @@ class RedisCache(CacheRepository):
         if keys:
             await self._client.delete(*keys)
 
+    async def mget(self, *keys: str) -> list[str | None]:
+        if not keys:
+            return []
+        return await self._client.mget(*keys)  # type: ignore[return-value]
+
+    async def mset(self, mapping: dict[str, str], ttl: int | None = None) -> None:
+        if not mapping:
+            return
+        async with self._client.pipeline(transaction=False) as pipe:
+            for key, value in mapping.items():
+                pipe.set(key, value, ex=ttl)
+            await pipe.execute()
+
     async def publish(self, channel: str, message: str) -> None:
         await self._client.publish(channel, message)
 
@@ -49,8 +74,15 @@ class RedisCache(CacheRepository):
 
 
 def get_redis_cache() -> RedisCache:
-    return RedisCache(_get_client())
+    global _redis_cache
+    if _redis_cache is None:
+        _redis_cache = RedisCache(_get_client())
+    return _redis_cache
 
 
 async def close_redis_pool() -> None:
-    await _pool.aclose()
+    global _pool, _redis_cache
+    _redis_cache = None
+    if _pool is not None:
+        await _pool.aclose()
+        _pool = None

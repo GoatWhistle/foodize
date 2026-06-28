@@ -66,9 +66,14 @@ class TestCartService:
         assert result.items == []
 
     async def test_update_cart(self, mock_cache):
+        from features.cart.schemas import CartItemIn
+
         service = CartService(cache=mock_cache)
         user_id = uuid.uuid4()
-        cart_update = CartUpdate(restaurant_id=uuid.uuid4(), items=[])
+        cart_update = CartUpdate(
+            restaurant_id=uuid.uuid4(),
+            items=[CartItemIn(menu_item_id=uuid.uuid4(), name="Burger", price=200, quantity=1)],
+        )
 
         await service.update_cart(user_id, cart_update)
 

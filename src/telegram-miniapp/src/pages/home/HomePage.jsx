@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   MagnifyingGlass,
@@ -6,169 +6,217 @@ import {
   SortDescending,
   Star,
   ChartBar,
+  ForkKnife,
 } from "@phosphor-icons/react";
 import { useRestaurantStore } from "../../store/useRestaurantStore";
+import { useAuthStore } from "../../store/useAuthStore";
 import { useShallow } from "zustand/react/shallow";
-import RestaurantCard from "../../components/ui/RestaurantCard";
-import EmptyState from "../../components/ui/EmptyState";
-import Pagination from "../../components/ui/Pagination";
+import RestaurantCard from "@shared/components/RestaurantCard/RestaurantCard";
+import EmptyState from "@shared/components/EmptyState/EmptyState";
+import { useFavoriteStore } from "../../store/useFavoriteStore";
+import s from "./HomePage.module.css";
+
+const getGreeting = () => {
+  const h = new Date().getHours();
+  if (h < 5) return "Доброй ночи";
+  if (h < 12) return "Доброе утро";
+  if (h < 17) return "Добрый день";
+  return "Добрый вечер";
+};
+
+const SIZE = 20;
 
 const HomePage = () => {
   const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
+  const { favoriteIds, toggle: toggleFavorite } = useFavoriteStore(
+    useShallow((s) => ({ favoriteIds: s.favoriteIds, toggle: s.toggle })),
+  );
+
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [searching, setSearching] = useState(false);
   const [onlyOpen, setOnlyOpen] = useState(false);
   const [sort, setSort] = useState("default");
   const [direction, setDirection] = useState("desc");
   const [page, setPage] = useState(1);
-  const size = 20;
+  const [allRestaurants, setAllRestaurants] = useState([]);
+  const [hasMore, setHasMore] = useState(true);
+  const sentinelRef = useRef(null);
 
-  const {
-    publicRestaurants,
-    loading,
-    publicRestaurantsTotal,
-    fetchPublicRestaurants,
-  } = useRestaurantStore(
-    useShallow((s) => ({
-      publicRestaurants: s.publicRestaurants,
-      loading: s.loading,
-      publicRestaurantsTotal: s.publicRestaurantsTotal,
-      fetchPublicRestaurants: s.fetchPublicRestaurants,
-    })),
-  );
-  const totalPages = Math.ceil(publicRestaurantsTotal / size) || 1;
+  const { publicRestaurants, loading, publicRestaurantsTotal, fetchPublicRestaurants } =
+    useRestaurantStore(
+      useShallow((s) => ({
+        publicRestaurants: s.publicRestaurants,
+        loading: s.loading,
+        publicRestaurantsTotal: s.publicRestaurantsTotal,
+        fetchPublicRestaurants: s.fetchPublicRestaurants,
+      })),
+    );
+
+  useEffect(() => {
+    setSearching(true);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setSearching(false);
+    }, 380);
+    return () => {
+      clearTimeout(timer);
+      setSearching(false);
+    };
+  }, [search]);
+
+  const resetAndLoad = useCallback(() => {
+    setAllRestaurants([]);
+    setPage(1);
+    setHasMore(true);
+  }, []);
+
+  useEffect(() => {
+    resetAndLoad();
+  }, [debouncedSearch, onlyOpen, sort, direction, resetAndLoad]);
 
   const load = useCallback(() => {
     fetchPublicRestaurants({
-      name: search || undefined,
+      name: debouncedSearch || undefined,
       is_open: onlyOpen ? true : undefined,
       sort,
       direction,
       page,
-      size,
+      size: SIZE,
     });
-  }, [search, onlyOpen, sort, direction, page, fetchPublicRestaurants]);
+  }, [debouncedSearch, onlyOpen, sort, direction, page, fetchPublicRestaurants]);
 
   useEffect(() => {
-    const timer = setTimeout(load, 350);
-    return () => clearTimeout(timer);
+    load();
   }, [load]);
 
+  useEffect(() => {
+    if (page === 1) {
+      setAllRestaurants(publicRestaurants);
+    } else {
+      setAllRestaurants((prev) => {
+        const ids = new Set(prev.map((r) => r.id));
+        return [...prev, ...publicRestaurants.filter((r) => !ids.has(r.id))];
+      });
+    }
+    const total = publicRestaurantsTotal || 0;
+    setHasMore(page * SIZE < total);
+  }, [publicRestaurants, publicRestaurantsTotal, page]);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && hasMore && !loading) {
+          setPage((p) => p + 1);
+        }
+      },
+      { threshold: 0.1 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore, loading]);
+
+  const firstName = user?.first_name || user?.name?.split(" ")[0] || "";
+
   return (
-    <div className="home-page">
-      <div className="search-bar-wrap">
-        <div className="search-bar">
-          <MagnifyingGlass size={18} className="search-icon" />
+    <div className={s.page}>
+      {firstName && (
+        <div className={s.greeting}>
+          <div className={s.greetingLabel}>
+            {getGreeting()} <ForkKnife size={12} weight="fill" style={{ display: "inline", verticalAlign: "middle" }} />
+          </div>
+          <div className={s.greetingName}>{firstName}</div>
+        </div>
+      )}
+
+      <div className={s.searchWrap}>
+        <div className={s.search}>
+          <MagnifyingGlass size={17} className={s.searchIcon} />
           <input
             type="search"
-            placeholder="Поиск ресторана..."
+            placeholder="Поиск заведения..."
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
-              setPage(1);
             }}
           />
+          {searching && <span className={s.searchSpinner} aria-hidden="true" />}
         </div>
-        <label
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            marginTop: 10,
-            fontSize: "0.85rem",
-            color: "var(--text-2)",
-            cursor: "pointer",
-          }}
-        >
-          <input
-            type="checkbox"
-            checked={onlyOpen}
-            onChange={(e) => {
-              setOnlyOpen(e.target.checked);
-              setPage(1);
-            }}
-          />
-          Только открытые
-        </label>
-        <div className="home-sort-panel">
+
+        <div className={s.sortPanel}>
           <button
             type="button"
-            className={`sort-chip${sort === "default" ? " active" : ""}`}
-            onClick={() => {
-              setSort("default");
-              setPage(1);
-            }}
+            className={`${s.sortChip}${sort === "default" ? ` ${s.active}` : ""}`}
+            onClick={() => { setSort("default"); }}
           >
             По умолчанию
           </button>
           <button
             type="button"
-            className={`sort-chip${sort === "rating" ? " active" : ""}`}
-            onClick={() => {
-              setSort("rating");
-              setPage(1);
-            }}
+            className={`${s.sortChip}${sort === "rating" ? ` ${s.active}` : ""}`}
+            onClick={() => { setSort("rating"); }}
           >
-            <Star size={14} weight="fill" /> Оценка
+            <Star size={13} weight="fill" /> Оценка
           </button>
           <button
             type="button"
-            className={`sort-chip${sort === "popularity_7d" ? " active" : ""}`}
-            onClick={() => {
-              setSort("popularity_7d");
-              setPage(1);
-            }}
+            className={`${s.sortChip}${sort === "popularity_7d" ? ` ${s.active}` : ""}`}
+            onClick={() => { setSort("popularity_7d"); }}
           >
-            <ChartBar size={14} weight="bold" /> Популярность
+            <ChartBar size={13} weight="bold" /> Популярное
           </button>
           {sort !== "default" && (
             <button
               type="button"
-              className="sort-chip sort-chip-icon"
+              className={`${s.sortChip} ${s.sortChipIcon}`}
               onClick={() => {
-                setDirection((value) => (value === "desc" ? "asc" : "desc"));
-                setPage(1);
+                setDirection((v) => (v === "desc" ? "asc" : "desc"));
               }}
-              aria-label="Изменить направление сортировки"
+              aria-label="Направление сортировки"
             >
               {direction === "desc" ? (
-                <SortDescending size={16} weight="bold" />
+                <SortDescending size={15} weight="bold" />
               ) : (
-                <SortAscending size={16} weight="bold" />
+                <SortAscending size={15} weight="bold" />
               )}
             </button>
           )}
+          <button
+            type="button"
+            className={`${s.sortChip}${onlyOpen ? ` ${s.active}` : ""}`}
+            onClick={() => { setOnlyOpen((v) => !v); }}
+          >
+            Открытые
+          </button>
         </div>
       </div>
 
-      <div className="restaurants-section">
-        <div className="section-header">
-          <h1 className="section-title">Заведения</h1>
+      <div className={s.section}>
+        <div className={s.sectionHeader}>
+          <h1 className={s.sectionTitle}>Заведения</h1>
           {publicRestaurantsTotal > 0 && (
-            <span
-              style={{
-                fontSize: "0.85rem",
-                color: "var(--text-3)",
-                fontWeight: 600,
-              }}
-            >
+            <span style={{ fontSize: "0.82rem", color: "var(--text-3)", fontWeight: 600 }}>
               {publicRestaurantsTotal}
             </span>
           )}
         </div>
 
-        {loading && publicRestaurants.length === 0 ? (
+        {loading && allRestaurants.length === 0 ? (
           <div className="loading-center">
             <div className="spinner" />
           </div>
-        ) : publicRestaurants.length === 0 ? (
+        ) : allRestaurants.length === 0 ? (
           <EmptyState
             title="Ничего не найдено"
-            subtitle="Попробуйте другой поиск или уберите фильтры"
+            subtitle="Попробуйте другой запрос или уберите фильтры"
           />
         ) : (
-          <div className={loading ? "loading-dim" : undefined}>
-            <div className="restaurants-grid">
-              {publicRestaurants.map((r) => (
+          <>
+            <div className={s.grid}>
+              {allRestaurants.map((r) => (
                 <RestaurantCard
                   key={r.id}
                   restaurant={r}
@@ -177,15 +225,20 @@ const HomePage = () => {
                       state: { restaurant: r },
                     })
                   }
+                  isFavorite={favoriteIds.has(r.id)}
+                  onFavoriteToggle={toggleFavorite}
                 />
               ))}
             </div>
-            <Pagination
-              page={page}
-              totalPages={totalPages}
-              onPageChange={setPage}
-            />
-          </div>
+
+            <div ref={sentinelRef} style={{ height: 1, marginTop: 8 }} />
+
+            {loading && allRestaurants.length > 0 && (
+              <div className="loading-center" style={{ minHeight: 64 }}>
+                <div className="spinner" />
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

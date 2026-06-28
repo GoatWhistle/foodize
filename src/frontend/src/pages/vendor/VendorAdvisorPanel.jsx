@@ -1,5 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { ChartLineUp, ArrowsClockwise, CaretRight } from '@phosphor-icons/react';
+import {
+  ChartLineUp,
+  ArrowsClockwise,
+  CaretRight,
+} from '@phosphor-icons/react';
 import { aiAdvisorService } from '../../services/aiAdvisorService';
 
 const SUGGESTIONS = [
@@ -123,7 +127,11 @@ export default function VendorAdvisorPanel({ restaurantId }) {
             onClick={() => loadInsights(Boolean(insights))}
             style={{ display: 'flex', alignItems: 'center', gap: 6 }}
           >
-            {insights ? <ArrowsClockwise size={16} /> : <ChartLineUp size={16} />}
+            {insights ? (
+              <ArrowsClockwise size={16} />
+            ) : (
+              <ChartLineUp size={16} />
+            )}
             {insightsLoading
               ? 'Анализирую…'
               : insights
@@ -201,8 +209,7 @@ export default function VendorAdvisorPanel({ restaurantId }) {
                 lineHeight: 1.5,
               }}
             >
-              {m.content ||
-                (streaming && i === messages.length - 1 ? '…' : '')}
+              {m.content || (streaming && i === messages.length - 1 ? '…' : '')}
             </div>
           ))}
         </div>

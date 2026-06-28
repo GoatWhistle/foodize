@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from database import db_helper
 from features.users.models import User
 from shared.dependencies import require_permission
 from shared.enums.permissions import Permission
@@ -26,8 +28,9 @@ async def update_cart(
     cart_in: CartUpdate,
     current_user: User = Depends(require_permission(Permission.CART_MANAGE)),
     service: CartService = Depends(get_cart_service),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[CartResponse]:
-    await service.update_cart(str(current_user.id), cart_in)
+    await service.update_cart(str(current_user.id), cart_in, session=session)
     result = await service.get_cart(str(current_user.id))
     return build_response(result)
 

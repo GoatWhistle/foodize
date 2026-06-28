@@ -20,6 +20,8 @@ _ROUTING = {
     EventType.ORDER_STATUS_CHANGED.value: EventType.ORDER_STATUS_CHANGED.value,
 }
 
+_MAX_ATTEMPTS = 10
+
 
 async def enqueue_event(session: AsyncSession, event: BaseModel) -> OutboxEvent:
     event_type = str(getattr(event, "event_type"))
@@ -48,6 +50,7 @@ async def publish_pending_events(
         .where(OutboxEvent.next_attempt_at <= now)
         .order_by(OutboxEvent.created_at)
         .limit(limit)
+        .with_for_update(skip_locked=True)
     )
     events = list(result.scalars().all())
 
@@ -58,9 +61,17 @@ async def publish_pending_events(
         except Exception as exc:
             event.attempts += 1
             event.last_error = str(exc)
-            delay_seconds = min(300, 2 ** min(event.attempts, 8))
-            event.next_attempt_at = now + timedelta(seconds=delay_seconds)
-            logger.exception("Outbox publish failed event_id=%s", event.event_id)
+            if event.attempts >= _MAX_ATTEMPTS:
+                event.status = OutboxStatus.FAILED.value
+                logger.error(
+                    "Outbox event permanently failed event_id=%s attempts=%d",
+                    event.event_id,
+                    event.attempts,
+                )
+            else:
+                delay_seconds = min(300, 2 ** min(event.attempts, 8))
+                event.next_attempt_at = now + timedelta(seconds=delay_seconds)
+                logger.exception("Outbox publish failed event_id=%s", event.event_id)
         else:
             event.status = OutboxStatus.PUBLISHED.value
             event.published_at = datetime.now(timezone.utc)

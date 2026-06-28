@@ -1,10 +1,3 @@
-"""OpenAI-compatible implementation of ``LLMClient``.
-
-Covers OpenAI itself and any service that speaks the same chat-completions
-protocol — notably Ollama (local inference) and GigaChat — by pointing
-``base_url`` at the right endpoint.
-"""
-
 from __future__ import annotations
 
 import json
@@ -98,6 +91,8 @@ class OpenAICompatibleClient(LLMClient):
             kwargs["tool_choice"] = "auto"
 
         response = await self._client.chat.completions.create(**kwargs)
+        if not response.choices:
+            raise RuntimeError(f"LLM returned empty choices (model={self._model})")
         choice = response.choices[0]
         message = choice.message
 

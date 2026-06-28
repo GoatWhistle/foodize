@@ -1,11 +1,3 @@
-"""add requested pickup time to orders
-
-Revision ID: b2c3d4e5f6a7
-Revises: a7b8c9d0e1f2
-Create Date: 2026-05-20 00:00:00.000000
-
-"""
-
 from collections.abc import Sequence
 
 import sqlalchemy as sa

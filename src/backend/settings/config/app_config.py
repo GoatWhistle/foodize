@@ -23,6 +23,7 @@ class AppConfig(BaseConfig):
     logs: LogsConfig = LogsConfig()
     telegram: TelegramConfig = TelegramConfig()
     llm: LLMConfig = LLMConfig()
+    debug: bool = False
 
 
 settings = AppConfig()  # type: ignore[call-arg]

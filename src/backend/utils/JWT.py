@@ -27,10 +27,11 @@ def decode_jwt(
     return jwt.decode(token, public_key, algorithms=[algorithm])
 
 
-def create_jwt_token(
+def _create_jwt_token(
     user_id: uuid.UUID,
     phone_number: str,
     lifetime_seconds: int,
+    token_type: str,
 ) -> str:
     current_time_utc = datetime.now(utc)
     expire = current_time_utc + timedelta(seconds=lifetime_seconds)
@@ -39,23 +40,26 @@ def create_jwt_token(
         "phone": phone_number,
         "exp": expire,
         "iat": current_time_utc,
+        "typ": token_type,
     }
     return encode_jwt(payload=payload)
 
 
 def create_access_token(user_id: uuid.UUID, phone_number: str) -> str:
-    return create_jwt_token(
+    return _create_jwt_token(
         user_id=user_id,
         phone_number=phone_number,
         lifetime_seconds=settings.auth.access_token_lifetime_seconds,
+        token_type="access",
     )
 
 
 def create_refresh_token(user_id: uuid.UUID, phone_number: str) -> str:
-    return create_jwt_token(
+    return _create_jwt_token(
         user_id=user_id,
         phone_number=phone_number,
         lifetime_seconds=settings.auth.refresh_token_lifetime_seconds,
+        token_type="refresh",
     )
 
 

@@ -1,10 +1,3 @@
-"""Provider-agnostic LLM primitives.
-
-These types are the single contract every provider (Anthropic, OpenAI,
-Ollama, GigaChat) implements, so an agent can be written once and run against
-any model by swapping the configured provider.
-"""
-
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -22,7 +15,6 @@ class Role(str, Enum):
 
 @dataclass
 class ToolSpec:
-    """A function the model may call. ``input_schema`` is a JSON Schema object."""
 
     name: str
     description: str
@@ -31,7 +23,6 @@ class ToolSpec:
 
 @dataclass
 class ToolCall:
-    """A model's request to invoke a tool with parsed arguments."""
 
     id: str
     name: str
@@ -63,7 +54,6 @@ class LLMResponse:
 
 
 class LLMClient(ABC):
-    """Uniform surface over a chat model with tool use + streaming."""
 
     @property
     @abstractmethod
@@ -76,9 +66,7 @@ class LLMClient(ABC):
         system: str,
         messages: list[Message],
         tools: list[ToolSpec] | None = None,
-    ) -> LLMResponse:
-        """One non-streaming turn. Used to drive the tool-calling loop."""
-        ...
+    ) -> LLMResponse: ...
 
     @abstractmethod
     def stream_text(
@@ -87,6 +75,4 @@ class LLMClient(ABC):
         system: str,
         messages: list[Message],
         tools: list[ToolSpec] | None = None,
-    ) -> AsyncIterator[str]:
-        """Stream the model's text answer token-by-token (no tool round-trips)."""
-        ...
+    ) -> AsyncIterator[str]: ...

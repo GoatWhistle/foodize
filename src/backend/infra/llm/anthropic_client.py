@@ -1,5 +1,3 @@
-"""Anthropic (Claude) implementation of ``LLMClient``."""
-
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
@@ -16,12 +14,6 @@ def _to_tools(tools: list[ToolSpec]) -> list[dict[str, Any]]:
 
 
 def _to_messages(messages: list[Message]) -> list[dict[str, Any]]:
-    """Map generic messages to the Anthropic content-block shape.
-
-    Tool results must travel as ``tool_result`` blocks inside a *user* turn,
-    and parallel results belong in a single user message — so consecutive
-    TOOL messages are merged.
-    """
 
     out: list[dict[str, Any]] = []
     pending_results: list[dict[str, Any]] = []

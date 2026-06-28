@@ -1,0 +1,172 @@
+/* Foodize Shared Design Tokens — Monochrome */
+
+:root {
+  /* ── Neutrals (warm-tinted, no cold blue shift) ── */
+  --n-0:   oklch(98.5% 0.004 60);
+  --n-50:  oklch(96%   0.005 60);
+  --n-100: oklch(92%   0.006 60);
+  --n-200: oklch(86%   0.007 60);
+  --n-300: oklch(76%   0.008 60);
+  --n-400: oklch(62%   0.007 60);
+  --n-500: oklch(48%   0.007 60);
+  --n-600: oklch(36%   0.008 60);
+  --n-700: oklch(26%   0.009 60);
+  --n-800: oklch(18%   0.010 60);
+  --n-900: oklch(12%   0.010 60);
+
+  /* ── Semantic (light theme) ── */
+  --bg:         var(--n-0);
+  --bg-card:    var(--n-50);
+  --bg-surface: var(--n-100);
+  --bg-raised:  var(--n-200);
+
+  --ink-1:   var(--n-900);
+  --ink-2:   var(--n-700);
+  --ink-3:   var(--n-400);
+  --ink-inv: var(--n-0);
+
+  --text-1: var(--ink-1);
+  --text-2: var(--ink-2);
+  --text-3: var(--ink-3);
+
+  --action-bg:    var(--n-900);
+  --action-fg:    var(--n-0);
+  --action-hover: var(--n-700);
+
+  --accent:        var(--n-900);
+  --accent-dim:    var(--n-700);
+  --accent-subtle: oklch(12% 0.010 60 / 0.06);
+  --accent-glow:   oklch(12% 0.010 60 / 0.18);
+  --accent-text:   var(--n-0);
+  --brand:         var(--n-900);
+
+  --border:     oklch(88% 0.005 60);
+  --border-mid: oklch(80% 0.006 60);
+  --border-hi:  oklch(70% 0.007 60);
+
+  /* ── Semantic colors ── */
+  --color-success:        oklch(48% 0.14 145);
+  --color-success-bg:     oklch(48% 0.14 145 / 0.08);
+  --color-success-border: oklch(48% 0.14 145 / 0.20);
+  --color-error:          oklch(50% 0.18 25);
+  --color-error-bg:       oklch(50% 0.18 25 / 0.07);
+  --color-error-border:   oklch(50% 0.18 25 / 0.18);
+  --color-warning:        oklch(60% 0.10 80);
+  --color-warning-bg:     oklch(60% 0.10 80 / 0.08);
+  --color-warning-border: oklch(60% 0.10 80 / 0.20);
+
+  /* Star ratings */
+  --star: oklch(72% 0.13 80);
+
+  /* ── Shadows ── */
+  --shadow-sm: 0 1px 2px  oklch(12% 0.010 60 / 0.06);
+  --shadow-md: 0 4px 12px oklch(12% 0.010 60 / 0.08);
+  --shadow-lg: 0 12px 32px oklch(12% 0.010 60 / 0.12);
+  --shadow-xl: 0 20px 52px oklch(12% 0.010 60 / 0.16);
+
+  /* ── Legacy aliases (keep for gradual migration) ── */
+  --mustard:        var(--n-900);
+  --mustard-dim:    var(--n-700);
+  --mustard-deep:   var(--n-600);
+  --mustard-glow:   0 6px 20px oklch(12% 0.010 60 / 0.14);
+  --mustard-subtle: oklch(12% 0.010 60 / 0.06);
+  --shadow-mustard: 0 6px 20px oklch(12% 0.010 60 / 0.14);
+
+  /* Warm name aliases used in DESIGN.md components */
+  --walnut:       var(--n-900);
+  --walnut-soft:  var(--n-800);
+  --bark:         var(--n-700);
+  --umber:        var(--n-600);
+  --dusk:         var(--n-500);
+  --sand:         var(--n-400);
+  --linen:        var(--n-300);
+  --vellum:       var(--n-100);
+  --parchment:    var(--n-50);
+  --parchment-off:var(--n-0);
+  --saffron:      var(--star);
+
+  /* ── Radius ── */
+  --r-xs:   4px;
+  --r-sm:   8px;
+  --r-md:   12px;
+  --r-lg:   16px;
+  --r-xl:   20px;
+  --r-2xl:  28px;
+  --r-pill: 100px;
+
+  /* ── Typography ── */
+  --font-sans:  "Manrope", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-serif: var(--font-sans);
+
+  /* ── Easing ── */
+  --ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.26, 0.64, 1);
+  --ease-snap:   cubic-bezier(0.25, 1, 0.5, 1);
+
+  /* ── Duration ── */
+  --dur-xs: 80ms;
+  --dur-sm: 160ms;
+  --dur-md: 260ms;
+  --dur-lg: 420ms;
+  --dur-xl: 600ms;
+
+  /* ── Layout ── */
+  --bottom-tab-h: 64px;
+  --gutter:       16px;
+  --nav-h:        0px;
+  --max-w:        1100px;
+}
+
+/* ── Dark theme ── */
+[data-theme="dark"] {
+  --bg:         var(--n-900);
+  --bg-card:    var(--n-800);
+  --bg-surface: var(--n-700);
+  --bg-raised:  var(--n-600);
+
+  --ink-1:   var(--n-0);
+  --ink-2:   var(--n-200);
+  --ink-3:   var(--n-400);
+  --ink-inv: var(--n-900);
+
+  --text-1: var(--ink-1);
+  --text-2: var(--ink-2);
+  --text-3: var(--ink-3);
+
+  --action-bg:    var(--n-0);
+  --action-fg:    var(--n-900);
+  --action-hover: var(--n-200);
+
+  --accent:        var(--n-0);
+  --accent-dim:    var(--n-200);
+  --accent-subtle: oklch(98.5% 0.004 60 / 0.08);
+  --accent-glow:   oklch(98.5% 0.004 60 / 0.18);
+
+  --border:     oklch(26% 0.009 60 / 0.60);
+  --border-mid: oklch(36% 0.008 60 / 0.70);
+  --border-hi:  oklch(48% 0.007 60 / 0.80);
+
+  --shadow-sm: 0 1px 3px  oklch(0% 0 0 / 0.35);
+  --shadow-md: 0 4px 16px oklch(0% 0 0 / 0.40);
+  --shadow-lg: 0 12px 36px oklch(0% 0 0 / 0.50);
+  --shadow-xl: 0 20px 54px oklch(0% 0 0 / 0.60);
+
+  --mustard:        var(--n-0);
+  --mustard-dim:    var(--n-200);
+  --mustard-deep:   var(--n-300);
+  --mustard-glow:   0 6px 20px oklch(98.5% 0.004 60 / 0.14);
+  --mustard-subtle: oklch(98.5% 0.004 60 / 0.06);
+  --shadow-mustard: 0 6px 20px oklch(98.5% 0.004 60 / 0.14);
+
+  --walnut:       var(--n-0);
+  --walnut-soft:  var(--n-50);
+  --bark:         var(--n-200);
+  --umber:        var(--n-300);
+  --dusk:         var(--n-400);
+  --sand:         var(--n-400);
+  --linen:        var(--n-600);
+  --vellum:       var(--n-700);
+  --parchment:    var(--n-800);
+  --parchment-off:var(--n-800);
+}

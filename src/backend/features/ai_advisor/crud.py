@@ -1,10 +1,3 @@
-"""Vendor-scoped queries that complement the existing analytics in
-``features/admin/crud.py`` for the AI advisor.
-
-Everything here filters by ``vendor_id`` so the advisor can only ever see the
-calling vendor's own data.
-"""
-
 import uuid
 from datetime import UTC, date, datetime
 
@@ -33,7 +26,6 @@ async def get_bottom_items(
     restaurant_id: uuid.UUID | None = None,
     limit: int = 10,
 ) -> list[dict]:
-    """Least-sold (incl. never-sold) available menu items in the period."""
 
     start, end = _day_bounds(start_date, end_date)
     sold = case(

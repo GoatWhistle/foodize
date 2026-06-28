@@ -179,7 +179,8 @@ export default function OrderAssistant() {
               maxWidth: '85%',
               padding: '8px 12px',
               borderRadius: 'var(--radius-md)',
-              background: m.role === 'user' ? 'var(--fire)' : 'var(--bg-surface)',
+              background:
+                m.role === 'user' ? 'var(--fire)' : 'var(--bg-surface)',
               color: m.role === 'user' ? 'var(--fire-text)' : 'var(--text-1)',
               border: m.role === 'user' ? 'none' : '1px solid var(--border)',
               whiteSpace: 'pre-wrap',
@@ -204,7 +205,12 @@ export default function OrderAssistant() {
           e.preventDefault();
           send();
         }}
-        style={{ display: 'flex', gap: 8, padding: 12, borderTop: '1px solid var(--border)' }}
+        style={{
+          display: 'flex',
+          gap: 8,
+          padding: 12,
+          borderTop: '1px solid var(--border)',
+        }}
       >
         <input
           className="form-input"

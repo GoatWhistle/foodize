@@ -14,6 +14,7 @@ import {
   Coffee,
   DotsThree,
 } from "@phosphor-icons/react";
+import s from "./ProductSheet.module.css";
 
 const CATEGORY_ICONS = {
   SHAURMA: <Fire size={52} />,
@@ -144,43 +145,43 @@ const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }) => {
 
   const sheet = (
     <div
-      className="product-sheet-overlay"
+      className={s.overlay}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose?.();
       }}
     >
       <section
-        className={`product-sheet${groups.length === 0 ? " product-sheet--compact" : ""}`}
+        className={`${s.sheet}${groups.length === 0 ? ` ${s.compact}` : ""}`}
         role="dialog"
         aria-modal="true"
       >
         <button
-          className="product-sheet-close"
+          className={s.close}
           type="button"
           onClick={onClose}
           aria-label="Закрыть"
         >
           <X size={18} weight="bold" />
         </button>
-        <div className="product-sheet-media">
+        <div className={s.media}>
           {item.photo_url ? (
             <img src={item.photo_url} alt={item.name} />
           ) : (
-            <div className="product-sheet-placeholder">{icon}</div>
+            <div className={s.placeholder}>{icon}</div>
           )}
         </div>
-        <div className="product-sheet-body">
-          <div className="product-sheet-head">
+        <div className={s.body}>
+          <div className={s.head}>
             <div>
               <h2>{item.name}</h2>
               {item.description && <p>{item.description}</p>}
             </div>
           </div>
-          <div className="product-sheet-price-row">
-            <div className="product-sheet-base-price">
+          <div className={s.priceRow}>
+            <div className={s.basePrice}>
               {formatPrice(item.price)}
             </div>
-            <div className="product-sheet-meta">
+            <div className={s.meta}>
               <span>
                 <Clock size={14} weight="bold" />~{item.prep_time_minutes || 15}{" "}
                 мин
@@ -188,19 +189,19 @@ const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }) => {
             </div>
           </div>
           {groups.length > 0 && (
-            <div className="product-options">
+            <div className={s.options}>
               {groups.map((group) => {
                 const groupOptionIds = group.options.map((option) => option.id);
                 const selectedCount = selectedOptionIds.filter((optionId) =>
                   groupOptionIds.includes(optionId),
                 ).length;
                 return (
-                  <div key={group.id} className="product-option-group">
-                    <div className="product-option-group-head">
+                  <div key={group.id} className={s.optionGroup}>
+                    <div className={s.optionGroupHead}>
                       <strong>{group.name}</strong>
                       <span>{getGroupHint(group)}</span>
                     </div>
-                    <div className="product-option-list">
+                    <div className={s.optionList}>
                       {group.options.map((option) => {
                         const checked = selectedOptionIds.includes(option.id);
                         const disabled =
@@ -211,7 +212,7 @@ const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }) => {
                         return (
                           <label
                             key={option.id}
-                            className={`product-option${checked ? " is-selected" : ""}`}
+                            className={`${s.option}${checked ? ` ${s.selected}` : ""}`}
                           >
                             <span>
                               <input
@@ -242,8 +243,8 @@ const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }) => {
 
           {error && <div className="form-error">{error}</div>}
         </div>
-        <div className="product-sheet-footer">
-          <div className="product-qty">
+        <div className={s.footer}>
+          <div className={s.qty}>
             <button
               type="button"
               onClick={() => setQuantity((value) => Math.max(1, value - 1))}
@@ -260,7 +261,7 @@ const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }) => {
               <Plus size={16} weight="bold" />
             </button>
           </div>
-          <button className="btn btn-primary product-add" onClick={handleAdd}>
+          <button className={s.addBtn} onClick={handleAdd}>
             {isClosed
               ? "Заведение закрыто"
               : `Добавить · ${formatPrice(unitPrice * quantity)}`}

@@ -79,12 +79,15 @@ async def create_order(
     response_model=SuccessResponse[OrderLoadEstimate],
 )
 async def read_order_load_estimate(
-    restaurant_id: uuid.UUID,
+    restaurant_id: str,
+    current_user: User = Depends(require_permission(Permission.ORDERS_READ_OWN)),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[OrderLoadEstimate]:
+    from shared.restaurant_resolver import resolve_restaurant_uuid
+    rid = await resolve_restaurant_uuid(session, restaurant_id)
     result = await service.estimate_restaurant_load(
         session=session,
-        restaurant_id=restaurant_id,
+        restaurant_id=rid,
     )
     return build_response(result)
 

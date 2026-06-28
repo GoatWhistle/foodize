@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -249,6 +250,8 @@ async def toggle_item_availability_for_vendor(
     await session.commit()
 
     loaded = await crud.get_menu_item_by_id(session, item.id)
+    if loaded is None:
+        raise MenuItemNotFoundException()
     return MenuItemResponse.model_validate(loaded)
 
 

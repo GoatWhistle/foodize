@@ -19,7 +19,7 @@ import { tg } from "./telegram/sdk";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
 import BottomNav from "./components/BottomNav";
-import ErrorBoundary from "./components/ui/ErrorBoundary";
+import ErrorBoundary from "@shared/components/ErrorBoundary/ErrorBoundary";
 import ActiveOrderBanner from "./components/ActiveOrderBanner";
 
 const LazyHome = lazy(() => import("./pages/home/HomePage"));
@@ -31,6 +31,7 @@ const LazyFavorites = lazy(() => import("./pages/profile/FavoritesPage"));
 const LazyNotifications = lazy(
   () => import("./pages/notifications/NotificationsPage"),
 );
+const LazyLegal = lazy(() => import("./pages/legal/LegalPage"));
 
 const Spinner = () => (
   <div
@@ -101,13 +102,25 @@ const router = createBrowserRouter([
       { path: "/profile", element: <LazyProfile /> },
       { path: "/favorites", element: <LazyFavorites /> },
       { path: "/notifications", element: <LazyNotifications /> },
-      { path: "*", element: <Navigate to="/" replace /> },
     ],
   },
+  {
+    element: (
+      <Suspense fallback={null}>
+        <Outlet />
+      </Suspense>
+    ),
+    children: [
+      { path: "/legal/:doc", element: <LazyLegal /> },
+    ],
+  },
+  { path: "*", element: <Navigate to="/" replace /> },
 ]);
 
 function applyTelegramTheme() {
   if (!tg) return;
+  const saved = localStorage.getItem("foodize-theme");
+  if (saved && saved !== "system") return;
   const scheme = tg.colorScheme ?? "light";
   document.documentElement.setAttribute("data-theme", scheme);
 }

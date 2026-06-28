@@ -1,11 +1,3 @@
-"""Vendor AI advisor: system prompt + agent orchestration.
-
-Each call opens its own DB session inside the agent loop so the session stays
-alive for the whole streamed response (FastAPI tears down request-scoped
-dependencies before a StreamingResponse finishes). The vendor object is only
-read for its ``id``, so passing it detached is safe.
-"""
-
 import logging
 import uuid
 from collections.abc import AsyncIterator, Iterable
@@ -40,24 +32,15 @@ def _to_messages(items: Iterable[ChatMessageIn]) -> list[Message]:
     return [Message(role=Role(item.role), content=item.content) for item in items]
 
 
-def _parse_uuid(value: str | None) -> uuid.UUID | None:
-    if not value:
-        return None
-    try:
-        return uuid.UUID(value)
-    except (TypeError, ValueError):
-        return None
-
-
 async def stream_chat(
     vendor: VendorProfile,
     history: Iterable[ChatMessageIn],
-    restaurant_id: str | None = None,
+    restaurant_id: uuid.UUID | None = None,
 ) -> AsyncIterator[str]:
-    client = get_llm_client(AgentRole.ADVISOR)
+    client = await get_llm_client(AgentRole.ADVISOR)
     try:
         async with db_helper.session_factory() as session:
-            execute = build_advisor_executor(session, vendor, _parse_uuid(restaurant_id))
+            execute = build_advisor_executor(session, vendor, restaurant_id)
             async for chunk in stream_agent(
                 client,
                 system=SYSTEM_PROMPT,
@@ -73,15 +56,19 @@ async def stream_chat(
 
 
 async def generate_insights(vendor: VendorProfile) -> str:
-    client = get_llm_client(AgentRole.ADVISOR)
-    async with db_helper.session_factory() as session:
-        execute = build_advisor_executor(session, vendor)
-        text, _ = await run_agent(
-            client,
-            system=SYSTEM_PROMPT,
-            messages=[Message(role=Role.USER, content=INSIGHTS_PROMPT)],
-            tools=ADVISOR_TOOLS,
-            execute=execute,
-            max_steps=settings.llm.max_agent_steps,
-        )
-        return text
+    client = await get_llm_client(AgentRole.ADVISOR)
+    try:
+        async with db_helper.session_factory() as session:
+            execute = build_advisor_executor(session, vendor)
+            text, _ = await run_agent(
+                client,
+                system=SYSTEM_PROMPT,
+                messages=[Message(role=Role.USER, content=INSIGHTS_PROMPT)],
+                tools=ADVISOR_TOOLS,
+                execute=execute,
+                max_steps=settings.llm.max_agent_steps,
+            )
+            return text
+    except Exception:
+        logger.exception("advisor insights generation failed")
+        raise

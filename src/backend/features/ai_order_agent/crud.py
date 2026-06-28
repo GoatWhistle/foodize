@@ -1,9 +1,3 @@
-"""Menu search for the customer order agent.
-
-Keyword search over publicly orderable menu items. Step 6 replaces/augments
-this with vector (embedding) search + reranking for the RAG claim.
-"""
-
 import uuid
 
 from sqlalchemy import or_, select
@@ -60,7 +54,6 @@ async def list_orderable_items(
     restaurant_id: uuid.UUID | None = None,
     limit: int = 300,
 ) -> list[dict]:
-    """Candidate pool for semantic search — no text filter, freshest first."""
     stmt = (
         select(*_SELECT_COLUMNS)
         .join(Restaurant, Restaurant.id == MenuItem.restaurant_id)

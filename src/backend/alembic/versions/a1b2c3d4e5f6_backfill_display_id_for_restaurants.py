@@ -1,12 +1,3 @@
-"""Backfill display_id for existing restaurants
-
-Revision ID: a1b2c3d4e5f6
-Revises: 62da7dbc720a
-Branch Labels: None
-Depends On: None
-
-"""
-
 import secrets
 from typing import Sequence, Union
 

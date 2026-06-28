@@ -19,7 +19,6 @@ target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
-    """Run migrations in 'offline' mode."""
     db_url = os.environ.get("DB__URL")
     if not db_url:
         raise RuntimeError("DB__URL not set in environment")
@@ -48,7 +47,6 @@ def do_run_migrations(connection: Connection) -> None:
 
 
 async def run_async_migrations() -> None:
-    """Run migrations in 'online' async mode."""
     db_url = os.environ.get("DB__URL")
     if not db_url:
         raise RuntimeError("DB__URL not set in environment")
@@ -65,7 +63,6 @@ async def run_async_migrations() -> None:
 
 
 def run_migrations_online() -> None:
-    """Run migrations in 'online' mode."""
     asyncio.run(run_async_migrations())
 
 

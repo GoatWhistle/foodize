@@ -24,12 +24,23 @@ describe("permissions utility", () => {
 describe("translateApiError utility", () => {
   it("should translate exact error message", () => {
     const err = { response: { data: { detail: "Invalid credentials" } } };
-    expect(translateApiError(err, "fallback")).toBe("Неверный телефон или пароль");
+    expect(translateApiError(err, "fallback")).toBe(
+      "Неверный телефон или пароль",
+    );
   });
 
   it("should translate prefixed error message", () => {
-    const err = { response: { data: { detail: "You can publish up to 5 reviews for one restaurant: extra details" } } };
-    expect(translateApiError(err, "fallback")).toBe("Можно опубликовать до 5 отзывов на один ресторан");
+    const err = {
+      response: {
+        data: {
+          detail:
+            "You can publish up to 5 reviews for one restaurant: extra details",
+        },
+      },
+    };
+    expect(translateApiError(err, "fallback")).toBe(
+      "Можно опубликовать до 5 отзывов на один ресторан",
+    );
   });
 
   it("should return fallback or detail if untranslatable", () => {

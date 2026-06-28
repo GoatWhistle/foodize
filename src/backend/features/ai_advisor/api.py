@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import StreamingResponse
 
@@ -10,12 +12,21 @@ from infra.cache.redis import get_redis_cache
 from middlewares.limiter import limiter
 from shared.dependencies import require_permission
 from shared.enums.permissions import Permission
+from shared.exceptions import AccessDeniedException
 from shared.response import build_response
 from shared.schemas.response import SuccessResponse
 
 router = APIRouter(prefix="/ai/advisor", tags=["AI Advisor"])
 
 _INSIGHTS_TTL_SECONDS = 86_400
+
+
+def _check_restaurant_ownership(vendor: VendorProfile, restaurant_id: uuid.UUID | None) -> None:
+    if restaurant_id is None:
+        return
+    vendor_ids = {r.id for r in (vendor.restaurants or [])}
+    if restaurant_id not in vendor_ids:
+        raise AccessDeniedException()
 
 
 @router.post("/chat")
@@ -26,6 +37,7 @@ async def advisor_chat(
     _user: User = Depends(require_permission(Permission.VENDORS_ANALYTICS_READ)),
     current_vendor: VendorProfile = Depends(get_current_vendor),
 ) -> StreamingResponse:
+    _check_restaurant_ownership(current_vendor, body.restaurant_id)
     return StreamingResponse(
         service.stream_chat(current_vendor, body.messages, body.restaurant_id),
         media_type="text/plain; charset=utf-8",

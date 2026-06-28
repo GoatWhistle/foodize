@@ -2,10 +2,10 @@
 name: Foodize
 description: Food pre-ordering platform connecting customers with local restaurants
 colors:
-  mustard: "#D4A32A"
-  mustard-dim: "#B88A1E"
-  mustard-deep: "#9A7218"
-  saffron: "#E8B84B"
+  accent: "oklch(46% 0.12 42)"
+  accent-dim: "oklch(40% 0.10 42)"
+  accent-deep: "oklch(34% 0.08 42)"
+  saffron: "#c9a84c"
   parchment-dark: "#C9B99A"
   walnut: "#2E2418"
   walnut-soft: "#3D3020"

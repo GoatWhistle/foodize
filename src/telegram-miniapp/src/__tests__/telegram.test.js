@@ -78,10 +78,16 @@ describe("Telegram WebApp SDK functions", () => {
     expect(window.Telegram.WebApp.close).toHaveBeenCalled();
 
     showAlert("hello", "cb");
-    expect(window.Telegram.WebApp.showAlert).toHaveBeenCalledWith("hello", "cb");
+    expect(window.Telegram.WebApp.showAlert).toHaveBeenCalledWith(
+      "hello",
+      "cb",
+    );
 
     showConfirm("confirm", "cb");
-    expect(window.Telegram.WebApp.showConfirm).toHaveBeenCalledWith("confirm", "cb");
+    expect(window.Telegram.WebApp.showConfirm).toHaveBeenCalledWith(
+      "confirm",
+      "cb",
+    );
   });
 
   it("should resolve requestTelegramContact when granted", async () => {

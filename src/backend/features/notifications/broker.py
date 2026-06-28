@@ -22,6 +22,11 @@ class RabbitMQBroker:
         self._connection = await aio_pika.connect_robust(self._url)
         self._channel = await self._connection.channel()
         await self._channel.set_qos(prefetch_count=10)
+        await self._channel.declare_exchange(
+            "foodize.dlx",
+            aio_pika.ExchangeType.TOPIC,
+            durable=True,
+        )
         self._exchange = await self._channel.declare_exchange(
             EXCHANGE_NAME,
             EXCHANGE_TYPE,

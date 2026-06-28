@@ -1,18 +1,9 @@
-"""Add Notification model
-
-Revision ID: b1a2c3d4e5f6
-Revises: dea57a7958a8
-Create Date: 2026-05-03 14:23:00.000000
-
-"""
-
 from typing import Sequence, Union
 
 import sqlalchemy as sa
 
 from alembic import op
 
-# revision identifiers, used by Alembic.
 revision: str = "b1a2c3d4e5f6"
 down_revision: Union[str, None] = "dea57a7958a8"
 branch_labels: Union[str, Sequence[str], None] = None

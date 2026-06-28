@@ -1,12 +1,6 @@
-"""Generic tool-calling agent loop, shared by every agent in the app.
-
-The caller supplies a tool registry (``ToolExecutor``) that runs each call
-server-side — model output never touches the database directly, and any
-scoping (current user / current vendor) is enforced inside the executor.
-"""
-
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import AsyncIterator, Awaitable, Callable
 
@@ -50,7 +44,6 @@ async def run_agent(
     execute: ToolExecutor,
     max_steps: int = 8,
 ) -> tuple[str, list[Message]]:
-    """Drive the loop to completion and return ``(final_text, full_history)``."""
 
     history = list(messages)
     for _ in range(max_steps):
@@ -63,8 +56,10 @@ async def run_agent(
         history.append(
             Message(role=Role.ASSISTANT, content=response.text, tool_calls=response.tool_calls)
         )
-        for call in response.tool_calls:
-            history.append(await _run_tools(call, execute))
+        tool_results = await asyncio.gather(
+            *[_run_tools(call, execute) for call in response.tool_calls]
+        )
+        history.extend(tool_results)
 
     response = await client.complete(system=system, messages=history, tools=None)
     _log_usage(client.model, response)
@@ -81,23 +76,25 @@ async def stream_agent(
     execute: ToolExecutor,
     max_steps: int = 8,
 ) -> AsyncIterator[str]:
-    """Resolve tool calls non-streaming, then stream the final answer.
-
-    Tool rounds are not user-facing, so they run via ``complete``; only the
-    final natural-language reply is streamed token-by-token.
-    """
 
     history = list(messages)
     for _ in range(max_steps):
         response = await client.complete(system=system, messages=history, tools=tools)
         _log_usage(client.model, response)
         if not response.tool_calls:
+            history.append(Message(role=Role.ASSISTANT, content=response.text))
             break
         history.append(
             Message(role=Role.ASSISTANT, content=response.text, tool_calls=response.tool_calls)
         )
-        for call in response.tool_calls:
-            history.append(await _run_tools(call, execute))
+        tool_results = await asyncio.gather(
+            *[_run_tools(call, execute) for call in response.tool_calls]
+        )
+        history.extend(tool_results)
+    else:
+        response = await client.complete(system=system, messages=history, tools=None)
+        _log_usage(client.model, response)
+        history.append(Message(role=Role.ASSISTANT, content=response.text))
 
     async for chunk in client.stream_text(system=system, messages=history):
         yield chunk

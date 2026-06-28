@@ -27,9 +27,11 @@ import { reviewService } from "../../services/reviewService";
 import { restaurantService } from "../../services/restaurantService";
 import { translateApiError } from "../../utils/translateApiError";
 import { BackButton } from "../../telegram/sdk";
-import MenuItemCard from "../../components/ui/MenuItemCard";
+import MenuItemCard from "@shared/components/MenuItemCard/MenuItemCard";
 import ProductSheet from "../../components/ui/ProductSheet";
 import CartDrawer from "../../components/ui/CartDrawer";
+import s from "./RestaurantPage.module.css";
+import m from "../../components/ui/Modal.module.css";
 
 const Portal = ({ children }) =>
   typeof document === "undefined"
@@ -91,10 +93,11 @@ const RestaurantPage = () => {
       loading: s.loading,
     })),
   );
-  const { addToCart, cartCount } = useOrderStore(
+  const { addToCart, cartCount, cartTotal } = useOrderStore(
     useShallow((s) => ({
       addToCart: s.addToCart,
       cartCount: s.cartCount,
+      cartTotal: s.cartTotal,
     })),
   );
   const { favoriteIds, toggle } = useFavoriteStore(
@@ -104,11 +107,19 @@ const RestaurantPage = () => {
     })),
   );
 
+  const restaurantUuid = restaurantData?.id ?? null;
   const restaurant = restaurantData ?? { id, name: "Ресторан", address: "" };
-  const menuItems = menus[id] || [];
-  const isFav = favoriteIds.has(id);
+  const menuItems = menus[restaurantUuid || id] || [];
+  const isFav = favoriteIds.has(restaurantUuid || id);
   const count = cartCount ? cartCount() : 0;
+  const total = cartTotal ? cartTotal() : 0;
   const isRestaurantOpen = restaurant.is_open !== false;
+
+  const haptic = (type = "light") => {
+    try {
+      window.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.(type);
+    } catch {}
+  };
 
   useEffect(() => {
     if (BackButton) {
@@ -123,34 +134,38 @@ const RestaurantPage = () => {
   }, [navigate]);
 
   useEffect(() => {
-    fetchMenu(id);
     if (!location.state?.restaurant) {
       restaurantService
         .getById(id)
         .then((res) => setRestaurantData(res.data.data))
         .catch(() => {});
     }
-    reviewService
-      .getRating(id)
-      .then((res) => {
-        const val =
-          res.data?.data?.average_rating ?? res.data?.data?.rating ?? null;
-        setRating(val);
-      })
-      .catch(() => {});
-
     restaurantService
       .getWorkingHours(id)
       .then((res) => {
         setWorkingHours(res.data?.data || []);
       })
       .catch(() => {});
-  }, [id, fetchMenu, location.state]);
+  }, [id, location.state]);
+
+  useEffect(() => {
+    if (!restaurantUuid) return;
+    fetchMenu(restaurantUuid);
+    reviewService
+      .getRating(restaurantUuid)
+      .then((res) => {
+        const val =
+          res.data?.data?.average_rating ?? res.data?.data?.rating ?? null;
+        setRating(val);
+      })
+      .catch(() => {});
+  }, [restaurantUuid, fetchMenu]);
 
   const loadReviews = () => {
+    if (!restaurantUuid) return;
     setReviewsLoading(true);
     reviewService
-      .getReviews(id)
+      .getReviews(restaurantUuid)
       .then((res) =>
         setReviewsList(Array.isArray(res.data?.data) ? res.data.data : []),
       )
@@ -165,6 +180,7 @@ const RestaurantPage = () => {
       setReviewError("Напишите текст");
       return;
     }
+    if (!restaurantUuid) return;
     setReviewSubmitting(true);
     const payload = {
       text,
@@ -173,14 +189,14 @@ const RestaurantPage = () => {
     try {
       let res;
       try {
-        res = await reviewService.createReview(id, payload);
+        res = await reviewService.createReview(restaurantUuid, payload);
       } catch (err) {
         const detail = err?.response?.data?.detail;
         if (
           err?.response?.status === 409 ||
           detail === "You have already reviewed this restaurant"
         ) {
-          res = await reviewService.updateMyReview(id, payload);
+          res = await reviewService.updateMyReview(restaurantUuid, payload);
         } else {
           throw err;
         }
@@ -198,7 +214,7 @@ const RestaurantPage = () => {
         loadReviews();
       }
       reviewService
-        .getRating(id)
+        .getRating(restaurantUuid)
         .then((ratingRes) => {
           const val =
             ratingRes.data?.data?.average_rating ??
@@ -219,16 +235,16 @@ const RestaurantPage = () => {
   };
 
   const confirmReviewDelete = async () => {
-    if (!reviewDeleteId) return;
+    if (!reviewDeleteId || !restaurantUuid) return;
     setReviewError("");
     try {
-      await reviewService.deleteReview(id, reviewDeleteId);
+      await reviewService.deleteReview(restaurantUuid, reviewDeleteId);
       setReviewsList((prev) =>
         prev.filter((review) => review.id !== reviewDeleteId),
       );
       setReviewDeleteId(null);
       reviewService
-        .getRating(id)
+        .getRating(restaurantUuid)
         .then((res) => {
           const val =
             res.data?.data?.average_rating ?? res.data?.data?.rating ?? null;
@@ -257,25 +273,25 @@ const RestaurantPage = () => {
 
   const handleProductAdd = ({ item, selectedOptions, quantity }) => {
     if (!isRestaurantOpen) return;
-    addToCart(item, id, selectedOptions, quantity);
+    addToCart(item, restaurantUuid || id, selectedOptions, quantity);
     setSelectedProduct(null);
   };
 
   return (
     <div style={{ minHeight: "100vh", paddingBottom: count > 0 ? 80 : 20 }}>
-      <div className="restaurant-hero">
+      <div className={s.hero}>
         {restaurant.photo_url ? (
           <img
-            className="restaurant-hero-img"
+            className={s.heroImg}
             src={restaurant.photo_url}
             alt={restaurant.name}
           />
         ) : (
-          <div className="restaurant-hero-placeholder">🍽️</div>
+          <div className={s.heroPlaceholder}>🍽️</div>
         )}
-        <div className="restaurant-hero-overlay" />
-        <div className="restaurant-hero-info">
-          <div className="restaurant-hero-name">{restaurant.name}</div>
+        <div className={s.heroOverlay} />
+        <div className={s.heroInfo}>
+          <div className={s.heroName}>{restaurant.name}</div>
           {restaurant.address && (
             <div
               style={{
@@ -291,55 +307,30 @@ const RestaurantPage = () => {
               {restaurant.address}
             </div>
           )}
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div className={s.heroPills}>
             {rating != null && (
-              <span
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                  color: "var(--amber)",
-                  fontWeight: 700,
-                  fontSize: "0.9rem",
-                }}
-              >
-                <Star size={14} weight="fill" />
+              <span className={`${s.pill} ${s.pillRating}`}>
+                <Star size={13} weight="fill" />
                 {Number(rating).toFixed(1)}
               </span>
             )}
             <button
-              style={{
-                background: "rgba(255,255,255,0.15)",
-                border: "1px solid rgba(255,255,255,0.3)",
-                color: "#fff",
-                borderRadius: 20,
-                padding: "4px 12px",
-                fontSize: "0.78rem",
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-              }}
+              className={s.pill}
               onClick={() => {
+                haptic("light");
                 setShowReviews(true);
                 loadReviews();
               }}
             >
-              <ChatCircle size={14} style={{ marginRight: 4 }} />
+              <ChatCircle size={13} weight="bold" />
               Отзывы
             </button>
             <button
-              style={{
-                background: "rgba(255,255,255,0.15)",
-                border: "1px solid rgba(255,255,255,0.3)",
-                color: "#fff",
-                borderRadius: 20,
-                padding: "4px 12px",
-                fontSize: "0.78rem",
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
+              className={s.pill}
+              onClick={() => {
+                haptic("light");
+                setShowInfo(true);
               }}
-              onClick={() => setShowInfo(true)}
             >
               Инфо
             </button>
@@ -362,7 +353,7 @@ const RestaurantPage = () => {
             justifyContent: "center",
             cursor: "pointer",
           }}
-          onClick={() => toggle(id)}
+          onClick={() => toggle(restaurantUuid || id)}
           aria-label={isFav ? "Убрать из избранного" : "В избранное"}
         >
           <Heart
@@ -373,7 +364,7 @@ const RestaurantPage = () => {
         </button>
       </div>
 
-      <div className="restaurant-content">
+      <div className={s.content}>
         {!isRestaurantOpen && (
           <div
             style={{
@@ -390,7 +381,7 @@ const RestaurantPage = () => {
             Заведение сейчас закрыто и не принимает заказы
           </div>
         )}
-        <div className="menu-categories-scroll">
+        <div className={s.categoriesScroll}>
           {categories.map((cat) => (
             <button
               key={cat}
@@ -405,16 +396,16 @@ const RestaurantPage = () => {
         </div>
 
         {loading ? (
-          <div className="menu-list">
+          <div className={s.menuList}>
             {[1, 2, 3, 4, 5].map((i) => (
               <div
                 key={i}
-                className="menu-item"
-                style={{ pointerEvents: "none" }}
+                className="skeleton-wrap"
+                style={{ pointerEvents: "none", display: "flex", background: "var(--bg-card)", borderRadius: "var(--r-md)", border: "1px solid var(--border)", overflow: "hidden" }}
               >
                 <div
-                  className="menu-item-img skeleton"
-                  style={{ minHeight: 90, borderRadius: "var(--r-sm)" }}
+                  className="skeleton"
+                  style={{ width: 100, minHeight: 90, flexShrink: 0 }}
                 />
                 <div
                   style={{
@@ -442,13 +433,17 @@ const RestaurantPage = () => {
             ))}
           </div>
         ) : (
-          <div className="menu-list">
+          <div className={s.menuList}>
             {filtered.map((item) => (
               <MenuItemCard
                 key={item.id}
                 item={item}
                 onSelect={openProduct}
                 isRestaurantOpen={isRestaurantOpen}
+                showOptionHint
+                onHaptic={() => {
+                  try { window.Telegram?.WebApp?.HapticFeedback?.selectionChanged?.(); } catch {}
+                }}
               />
             ))}
           </div>
@@ -457,10 +452,18 @@ const RestaurantPage = () => {
 
       {count > 0 && !showCart && (
         <Portal>
-          <button className="cart-fab" onClick={() => setShowCart(true)}>
-            <ShoppingCart size={20} weight="bold" />
-            <span className="cart-fab-label">Корзина</span>
-            <span className="cart-badge">{count}</span>
+          <button
+            className="cart-fab"
+            onClick={() => {
+              haptic("medium");
+              setShowCart(true);
+            }}
+          >
+            <ShoppingCart size={18} weight="bold" />
+            <span className="cart-fab-label">
+              {count} {count === 1 ? "товар" : count < 5 ? "товара" : "товаров"}
+            </span>
+            <span className="cart-fab-total">{total} ₽</span>
           </button>
         </Portal>
       )}
@@ -486,11 +489,11 @@ const RestaurantPage = () => {
       {reviewDeleteId && (
         <Portal>
           <div
-            className="modal-overlay restaurant-modal-overlay"
+            className={`${m.overlay} ${m.restaurantOverlay}`}
             style={{ zIndex: 5000 }}
           >
             <div
-              className="modal-content review-delete-modal"
+              className={m.content}
               style={{
                 padding: 20,
                 borderRadius: 14,
@@ -535,11 +538,11 @@ const RestaurantPage = () => {
       {showReviews && (
         <Portal>
           <div
-            className="modal-overlay restaurant-modal-overlay"
+            className={`${m.overlay} ${m.restaurantOverlay}`}
             style={{ zIndex: 3000 }}
           >
             <div
-              className="modal-content reviews-modal"
+              className={`${m.content} ${m.reviews}`}
               style={{
                 maxWidth: 500,
                 maxHeight: "calc(var(--tg-viewport-h, 100dvh) - 24px)",
@@ -573,7 +576,7 @@ const RestaurantPage = () => {
                 </button>
               </div>
               <div
-                className="reviews-modal-scroll"
+                className={m.reviewsScroll}
                 style={{ overflowY: "auto", flex: 1, minHeight: 0 }}
               >
                 {reviewSuccess && (
@@ -773,7 +776,7 @@ const RestaurantPage = () => {
       {showInfo && (
         <Portal>
           <div
-            className="modal-overlay restaurant-modal-overlay"
+            className={`${m.overlay} ${m.restaurantOverlay}`}
             style={{ zIndex: 3000 }}
             onClick={(e) => {
               if (e.target.classList.contains("modal-overlay"))
@@ -781,7 +784,7 @@ const RestaurantPage = () => {
             }}
           >
             <div
-              className="modal-content info-modal"
+              className={m.content}
               style={{ padding: "20px" }}
             >
               <div

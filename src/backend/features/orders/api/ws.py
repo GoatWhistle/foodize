@@ -21,6 +21,14 @@ router = APIRouter()
 
 async def _authenticate_ws_user(websocket: WebSocket, token: str | None):
     if not token:
+        try:
+            raw = await asyncio.wait_for(websocket.receive_text(), timeout=10.0)
+            data = json.loads(raw)
+            token = data.get("token") if isinstance(data, dict) else None
+        except (asyncio.TimeoutError, json.JSONDecodeError, Exception):
+            token = None
+
+    if not token:
         await websocket.send_text(json.dumps({"error": "not_authenticated"}))
         await websocket.close()
         return None
@@ -72,28 +80,29 @@ async def order_status_ws(
 
     last_status: str | None = None
     redis_client = get_redis_cache().get_raw_client()
+
+    async with db_helper.session_factory() as session:
+        order = await get_order_by_id(session, order_id)
+        if order is None:
+            await websocket.send_text(json.dumps({"error": "not_found"}))
+            return
+        if not await _can_read_order(session, order, user):
+            await websocket.send_text(json.dumps({"error": "forbidden"}))
+            await websocket.close()
+            return
+
+        last_status = str(order.status)
+        data = OrderResponse.model_validate(order).model_dump(mode="json")
+        await websocket.send_text(json.dumps(data))
+
+        if last_status in (OrderStatus.COMPLETED.value, OrderStatus.CANCELLED.value):
+            return
+
     pubsub = redis_client.pubsub()
     channel = f"order_status:{order_id}"
     await pubsub.subscribe(channel)
 
     try:
-        async with db_helper.session_factory() as session:
-            order = await get_order_by_id(session, order_id)
-            if order is None:
-                await websocket.send_text(json.dumps({"error": "not_found"}))
-                return
-            if not await _can_read_order(session, order, user):
-                await websocket.send_text(json.dumps({"error": "forbidden"}))
-                await websocket.close()
-                return
-
-            last_status = str(order.status)
-            data = OrderResponse.model_validate(order).model_dump(mode="json")
-            await websocket.send_text(json.dumps(data))
-
-            if last_status in (OrderStatus.COMPLETED.value, OrderStatus.CANCELLED.value):
-                return
-
         while True:
             message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
             if message is not None:
@@ -145,30 +154,11 @@ async def display_board_ws(
     token: str | None = None,
 ) -> None:
     await websocket.accept()
-
-    if not token:
-        await websocket.send_text(json.dumps({"error": "not_authenticated"}))
-        await websocket.close()
-        return
-
-    try:
-        payload = decode_jwt(token)
-        user_id = payload.get("sub")
-        if user_id is None:
-            raise ValueError
-        parsed_user_id = uuid.UUID(user_id)
-    except (jwt.InvalidTokenError, ValueError):
-        await websocket.send_text(json.dumps({"error": "invalid_token"}))
-        await websocket.close()
+    user = await _authenticate_ws_user(websocket, token)
+    if user is None:
         return
 
     async with db_helper.session_factory() as session:
-        user = await get_user_by_id(session, parsed_user_id)
-        if user is None or not user.is_active:
-            await websocket.send_text(json.dumps({"error": "not_authenticated"}))
-            await websocket.close()
-            return
-
         if not has_permission(user.permissions, Permission.DISPLAY_BOARD_VIEW):
             await websocket.send_text(json.dumps({"error": "forbidden"}))
             await websocket.close()
@@ -220,29 +210,11 @@ async def restaurant_orders_ws(
     token: str | None = None,
 ) -> None:
     await websocket.accept()
-
-    if not token:
-        await websocket.send_text(json.dumps({"error": "not_authenticated"}))
-        await websocket.close()
-        return
-
-    try:
-        payload = decode_jwt(token)
-        user_id = payload.get("sub")
-        if user_id is None:
-            raise ValueError
-        parsed_user_id = uuid.UUID(user_id)
-    except (jwt.InvalidTokenError, ValueError):
-        await websocket.send_text(json.dumps({"error": "invalid_token"}))
-        await websocket.close()
+    user = await _authenticate_ws_user(websocket, token)
+    if user is None:
         return
 
     async with db_helper.session_factory() as session:
-        user = await get_user_by_id(session, parsed_user_id)
-        if user is None or not user.is_active:
-            await websocket.send_text(json.dumps({"error": "not_authenticated"}))
-            await websocket.close()
-            return
         try:
             await verify_restaurant_access(session, restaurant_id, user)
         except Exception:

@@ -36,10 +36,16 @@ configure_logging()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if settings.rabbitmq.is_default_insecure and not settings.debug:
+        raise RuntimeError(
+            "RABBITMQ__URL must be set to a non-default value in production. "
+            "Current value uses insecure default credentials."
+        )
     await broker.connect()
     yield
     await broker.disconnect()
     await close_redis_pool()
+    await db_helper.dispose()
 
 
 app = FastAPI(lifespan=lifespan)

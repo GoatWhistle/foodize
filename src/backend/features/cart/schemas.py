@@ -54,4 +54,4 @@ class CartItemIn(BaseModel):
 
 class CartUpdate(BaseModel):
     restaurant_id: uuid.UUID
-    items: list[CartItemIn]
+    items: list[CartItemIn] = Field(..., min_length=1)

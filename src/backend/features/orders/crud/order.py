@@ -62,6 +62,29 @@ async def get_order_by_identifier(session: AsyncSession, identifier: str) -> Ord
             return None
 
 
+async def get_order_by_identifier_for_update(
+    session: AsyncSession, identifier: str
+) -> Order | None:
+    try:
+        parsed_uuid = uuid.UUID(identifier)
+        stmt = (
+            select(Order).where(Order.id == parsed_uuid).options(*_full_options()).with_for_update()
+        )
+    except ValueError:
+        try:
+            display_id = int(identifier)
+            stmt = (
+                select(Order)
+                .where(Order.display_id == display_id)
+                .options(*_full_options())
+                .with_for_update()
+            )
+        except ValueError:
+            return None
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
 async def get_orders_by_restaurant_id(
     session: AsyncSession,
     restaurant_id: uuid.UUID,

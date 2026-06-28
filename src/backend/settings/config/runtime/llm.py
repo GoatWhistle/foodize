@@ -11,11 +11,6 @@ class LLMProvider(str, Enum):
 
 
 class LLMConfig(BaseConfig):
-    """Provider-agnostic LLM settings.
-
-    Read from the environment via the nested delimiter, e.g.
-    ``LLM__PROVIDER=anthropic`` and ``LLM__ANTHROPIC_API_KEY=...``.
-    """
 
     provider: LLMProvider = LLMProvider.ANTHROPIC
     max_output_tokens: int = 4096

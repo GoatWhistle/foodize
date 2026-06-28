@@ -11,8 +11,8 @@ const STATUS_LABEL = {
 
 const STATUS_COLOR = {
   PENDING: "var(--text-3)",
-  ACCEPTED: "var(--brand)",
-  READY: "var(--fire)",
+  ACCEPTED: "var(--mustard)",
+  READY: "var(--color-success)",
 };
 
 export default function ActiveOrderBanner() {

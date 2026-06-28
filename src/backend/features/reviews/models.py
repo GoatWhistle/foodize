@@ -10,7 +10,6 @@ if TYPE_CHECKING:
     from features.restaurants.models import Restaurant
     from features.users.models import User
 
-
 from database import DeletedAtMixin
 
 

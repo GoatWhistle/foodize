@@ -7,6 +7,7 @@ import {
 } from "../../telegram/sdk";
 import { useAuthStore } from "../../store/useAuthStore";
 import { translateApiError } from "../../utils/translateApiError";
+import s from "./AuthPage.module.css";
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -82,23 +83,23 @@ export default function LoginPage({ initData, onSuccess }) {
   };
 
   return (
-    <div className="mini-auth-page">
-      <div className="mini-auth-brand">
-        <div className="mini-auth-logo">
+    <div className={s.page}>
+      <div className={s.brand}>
+        <div className={s.logo}>
           <span>🍽️</span>
         </div>
-        <h1 className="mini-auth-title">Вход через Telegram</h1>
-        <p className="mini-auth-subtitle">
+        <h1 className={s.title}>Вход через Telegram</h1>
+        <p className={s.subtitle}>
           Нажмите кнопку ниже, чтобы вернуться в аккаунт
         </p>
       </div>
 
-      <div className="mini-auth-form">
+      <div className={s.form}>
         {error && <div className="form-error">{error}</div>}
 
         <button
           type="button"
-          className="btn btn-primary btn-full mini-telegram-login"
+          className={`btn btn-primary btn-full ${s.telegramLogin}`}
           disabled={loading}
           onClick={handleTelegramLogin}
           style={{ marginTop: 4, borderRadius: "var(--r-md)" }}

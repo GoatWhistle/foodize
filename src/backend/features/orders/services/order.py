@@ -1,9 +1,11 @@
+import asyncio
 import hashlib
 import json
 import uuid
 from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.admin.audit_log import service as audit_service
@@ -35,6 +37,7 @@ from features.orders.schemas.order_event import OrderEventResponse
 from features.promos import service as promo_service
 from features.restaurants import crud as restaurant_crud
 from features.restaurants.exceptions import RestaurantClosedException, RestaurantNotFoundException
+from features.restaurants.models import Restaurant
 from features.restaurants.working_hours_crud import get_working_hours, is_open_now
 from features.users.models import User
 from infra.cache.redis import get_redis_cache
@@ -69,8 +72,10 @@ def _is_ordering_paused(restaurant) -> bool:
 async def estimate_restaurant_load(
     session: AsyncSession,
     restaurant_id: uuid.UUID,
+    restaurant: Restaurant | None = None,
 ) -> OrderLoadEstimate:
-    restaurant = await restaurant_crud.get_restaurant_by_id(session, restaurant_id)
+    if restaurant is None:
+        restaurant = await restaurant_crud.get_restaurant_by_id(session, restaurant_id)
     if not restaurant:
         raise RestaurantNotFoundException()
 
@@ -232,7 +237,14 @@ async def _start_idempotency_record(
 
     record = IdempotencyKey(user_id=user_id, key=key, request_hash=request_hash)
     session.add(record)
-    await session.flush()
+    try:
+        await session.flush()
+    except IntegrityError:
+        await session.rollback()
+        existing = await _get_idempotency_record(session, user_id, key)
+        if existing and existing.response_json:
+            return existing
+        raise BadRequestException(detail="Idempotent request is still being processed")
     return record
 
 
@@ -292,7 +304,7 @@ async def place_order(
     )
     is_first_order = total_orders == 0
 
-    load = await estimate_restaurant_load(session, restaurant.id)
+    load = await estimate_restaurant_load(session, restaurant.id, restaurant)
     min_ready_at = datetime.now(timezone.utc) + timedelta(minutes=load.estimated_wait_min_minutes)
     fallback_ready_at = datetime.now(timezone.utc) + timedelta(
         minutes=load.estimated_wait_max_minutes
@@ -341,7 +353,6 @@ async def place_order(
             items_count=len(order_data.items),
         ),
     )
-    await session.commit()
 
     result = await order_crud.get_order_by_id(session, order.id)
     if result is None:
@@ -352,8 +363,8 @@ async def place_order(
         idempotency_record.order_id = order.id
         idempotency_record.response_json = response.model_dump(mode="json")
         idempotency_record.completed_at = datetime.now(timezone.utc)
-        await session.commit()
 
+    await session.commit()
     await get_redis_cache().publish(f"restaurant_orders:{order.restaurant_id}", "new_order")
     return response
 
@@ -386,6 +397,7 @@ async def _create_order(
     session.add(order)
     await session.flush()
 
+    order_items = []
     for index, item_data in enumerate(order_data.items):
         order_item = OrderItem(
             order_id=order.id,
@@ -393,8 +405,12 @@ async def _create_order(
             quantity=item_data.quantity,
             price_at_purchase=menu_items[item_data.menu_item_id].price,
         )
-        session.add(order_item)
-        await session.flush()
+        order_items.append((order_item, index))
+
+    session.add_all([oi for oi, _ in order_items])
+    await session.flush()
+
+    for order_item, index in order_items:
         for option in selected_options_by_item[index]:
             session.add(
                 OrderItemOption(
@@ -519,7 +535,7 @@ async def complete_order(
     identifier: str | uuid.UUID,
     user_id: uuid.UUID,
 ) -> OrderResponse:
-    order = await order_crud.get_order_by_identifier(session, str(identifier))
+    order = await order_crud.get_order_by_identifier_for_update(session, str(identifier))
     if not order:
         raise OrderNotFoundException()
     if order.user_id != user_id:
@@ -564,7 +580,7 @@ async def cancel_order(
     user_id: uuid.UUID,
     cancel_data: OrderCancelRequest,
 ) -> OrderResponse:
-    order = await order_crud.get_order_by_identifier(session, str(identifier))
+    order = await order_crud.get_order_by_identifier_for_update(session, str(identifier))
     if not order:
         raise OrderNotFoundException()
     if order.user_id != user_id:

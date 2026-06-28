@@ -1,0 +1,199 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: auto;
+  left: 0;
+  height: 100vh;
+  height: 100dvh;
+  height: var(--tg-viewport-h, 100dvh);
+  background: oklch(12% 0.010 60 / 0.38);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 200;
+  animation: fade-in var(--dur-md) var(--ease-out);
+  overflow: hidden;
+}
+
+.drawer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  z-index: 201;
+  padding: 0 0 env(safe-area-inset-bottom, 0);
+  max-height: min(86vh, calc(var(--tg-viewport-h, 100dvh) - 16px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  animation: slide-up var(--dur-lg) var(--ease-spring);
+  box-shadow: 0 -16px 54px oklch(12% 0.010 60 / 0.18);
+  border-top: 1px solid var(--border-mid);
+}
+
+.inner {
+  padding: 22px 20px 30px;
+}
+
+.handle {
+  width: 36px;
+  height: 3px;
+  background: var(--border-mid);
+  border-radius: 100px;
+  margin: 16px auto 0;
+}
+
+.title {
+  font-family: var(--font-sans);
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: var(--text-1);
+  margin: 20px 0 20px;
+  letter-spacing: -0.02em;
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--bg-card);
+}
+
+.itemName {
+  font-weight: 600;
+  font-size: 0.9rem;
+  flex: 1;
+  color: var(--text-1);
+}
+
+.itemControls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.qtyBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-xs);
+  background: var(--bg-surface);
+  color: var(--text-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  transition: all var(--dur-sm);
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.qtyBtn:active {
+  background: var(--bg-raised);
+  border-color: var(--border-mid);
+}
+
+.total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 0;
+  border-top: 1px solid var(--border-mid);
+  margin-bottom: 16px;
+}
+
+.totalLabel {
+  font-weight: 600;
+  font-size: 0.64rem;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.totalValue {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text-1);
+}
+
+.fab {
+  position: fixed;
+  right: 14px;
+  bottom: calc(var(--bottom-tab-h) + env(safe-area-inset-bottom, 0px) + 18px);
+  height: 50px;
+  background: var(--action-bg);
+  color: var(--action-fg);
+  border: 0;
+  border-radius: var(--r-pill);
+  padding: 0 18px 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: var(--shadow-lg);
+  z-index: 260;
+  transition: all var(--dur-sm) var(--ease-spring);
+  font-weight: 700;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.fabLabel {
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.fabPrice,
+.fabTotal {
+  font-size: 0.88rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+.fab:active {
+  transform: scale(0.94);
+}
+
+.badge {
+  background: oklch(98.5% 0.004 60);
+  color: var(--ink-2);
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+@media (max-width: 599px) {
+  .fab {
+    right: 14px;
+    bottom: calc(var(--bottom-tab-h) + env(safe-area-inset-bottom, 0px) + 16px);
+  }
+  .inner {
+    padding: 20px 14px 28px;
+  }
+  .item {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .itemControls {
+    order: 3;
+    margin-left: auto;
+  }
+}

@@ -508,7 +508,7 @@ class TestCancelOrder:
 
         with (
             patch(
-                "features.orders.crud.order.get_order_by_identifier",
+                "features.orders.crud.order.get_order_by_identifier_for_update",
                 new_callable=AsyncMock,
                 return_value=mock_order,
             ),
@@ -542,7 +542,7 @@ class TestCancelOrder:
         mock_order = make_mock_order(order_id, owner_id, OrderStatus.PENDING.value)
 
         with patch(
-            "features.orders.crud.order.get_order_by_identifier",
+            "features.orders.crud.order.get_order_by_identifier_for_update",
             new_callable=AsyncMock,
             return_value=mock_order,
         ):
@@ -555,7 +555,7 @@ class TestCancelOrder:
         mock_order = make_mock_order(order_id, user_id, OrderStatus.COMPLETED.value)
 
         with patch(
-            "features.orders.crud.order.get_order_by_identifier",
+            "features.orders.crud.order.get_order_by_identifier_for_update",
             new_callable=AsyncMock,
             return_value=mock_order,
         ):
@@ -564,7 +564,7 @@ class TestCancelOrder:
 
     async def test_cancel_not_found_raises(self, mock_db_session):
         with patch(
-            "features.orders.crud.order.get_order_by_identifier",
+            "features.orders.crud.order.get_order_by_identifier_for_update",
             new_callable=AsyncMock,
             return_value=None,
         ):

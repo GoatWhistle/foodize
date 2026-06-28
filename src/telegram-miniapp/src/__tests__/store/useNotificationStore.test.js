@@ -202,7 +202,7 @@ describe("useNotificationStore", () => {
         mockOnClose = onClose;
         mockOnStatusChange = onStatusChange;
         return mockWs;
-      }
+      },
     );
 
     useNotificationStore.getState().connectWs("user-1");
@@ -211,7 +211,7 @@ describe("useNotificationStore", () => {
       "user-1",
       expect.any(Function),
       expect.any(Function),
-      expect.any(Function)
+      expect.any(Function),
     );
 
     expect(useNotificationStore.getState().connectionStatus).toBe("connecting");

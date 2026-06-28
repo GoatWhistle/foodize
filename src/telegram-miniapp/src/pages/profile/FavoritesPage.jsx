@@ -4,7 +4,7 @@ import { Heart, MapPin, Briefcase } from "@phosphor-icons/react";
 import { favoriteService } from "../../services/favoriteService";
 import { useFavoriteStore } from "../../store/useFavoriteStore";
 import { BackButton } from "../../telegram/sdk";
-import EmptyState from "../../components/ui/EmptyState";
+import EmptyState from "@shared/components/EmptyState/EmptyState";
 
 const FavoritesPage = () => {
   const navigate = useNavigate();

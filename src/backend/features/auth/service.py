@@ -88,6 +88,8 @@ async def get_current_user(
         raise AuthException(detail="Token has expired")
     except jwt.InvalidTokenError:
         raise AuthException(detail="Invalid token")
+    if payload.get("typ") != "access":
+        raise AuthException(detail="Invalid token type")
     if user_id is None:
         raise AuthException()
     try:
@@ -177,6 +179,8 @@ async def refresh_user_token(
         raise AuthException(detail="Refresh token has expired")
     except jwt.InvalidTokenError:
         raise AuthException(detail="Invalid refresh token")
+    if payload.get("typ") != "refresh":
+        raise AuthException(detail="Invalid token type")
     if user_id is None:
         raise AuthException()
     try:
@@ -186,12 +190,16 @@ async def refresh_user_token(
 
     cache = get_redis_cache()
     blacklist_key = f"{_REFRESH_BLACKLIST_PREFIX}{token}"
-    ttl = max(1, payload.get("exp", 0) - int(time.time()))
+    ttl = payload.get("exp", 0) - int(time.time())
+    if ttl <= 0:
+        raise AuthException(detail="Refresh token has expired")
     blacklisted = await cache.set_nx(blacklist_key, "1", ttl=ttl)
     if not blacklisted:
         raise AuthException(detail="Refresh token already used")
 
     user = await get_user_by_id_or_404(session, parsed_user_id)
+    if not user.is_active:
+        raise AuthException(detail="Account is deactivated")
 
     access_token = create_access_token(user.id, str(user.phone_number))
     new_refresh_token = create_refresh_token(user.id, str(user.phone_number))

@@ -1,11 +1,3 @@
-"""create audit logs
-
-Revision ID: e5f6a7b8c9d2
-Revises: d4e5f6a7b8c9
-Create Date: 2026-05-08 18:00:00.000000
-
-"""
-
 from collections.abc import Sequence
 
 import sqlalchemy as sa

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 
 
@@ -21,7 +23,13 @@ class CacheRepository(ABC):
     async def sadd(self, key: str, *values: str) -> None: ...
 
     @abstractmethod
-    async def smembers(self, key: str): ...
+    async def smembers(self, key: str) -> set[str]: ...
 
     @abstractmethod
     async def delete_many(self, *keys: str) -> None: ...
+
+    @abstractmethod
+    async def mget(self, *keys: str) -> list[str | None]: ...
+
+    @abstractmethod
+    async def mset(self, mapping: dict[str, str], ttl: int | None = None) -> None: ...

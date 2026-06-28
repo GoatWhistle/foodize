@@ -17,18 +17,19 @@ async def create_user(
         hashed_password=hash_password(user_in.password),
     )
     session.add(db_user)
-    await session.commit()
+    await session.flush()
+    await session.refresh(db_user)
     return db_user
 
 
 async def update_user(session: AsyncSession, user: User, data: UserUpdate) -> User:
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(user, key, value)
-    await session.commit()
+    await session.flush()
     await session.refresh(user)
     return user
 
 
 async def update_user_password(session: AsyncSession, user: User, new_password: str) -> None:
     user.hashed_password = hash_password(new_password)
-    await session.commit()
+    await session.flush()

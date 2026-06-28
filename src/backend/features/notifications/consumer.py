@@ -37,24 +37,39 @@ async def _process_message(
     message: aio_pika.abc.AbstractIncomingMessage,
     routing_key: str,
 ) -> None:
-    async with message.process(requeue=False):
+    async with message.process(requeue=False, ignore_processed=True):
+        model_cls = _EVENT_MODELS.get(routing_key)
+        binding = next((b for b in _BINDINGS if b[1] == routing_key), None)
+        if model_cls is None or binding is None:
+            logger.error("No handler registered for routing_key=%s", routing_key)
+            await message.nack(requeue=False)
+            return
         try:
-            model_cls = _EVENT_MODELS[routing_key]
             event = model_cls.model_validate_json(message.body)
-            _, _, handler = next(b for b in _BINDINGS if b[1] == routing_key)
-            await handler(event)
+            await binding[2](event)
         except Exception:
             logger.exception("Failed to process message (routing_key=%s)", routing_key)
+            await message.nack(requeue=False)
+
+
+_background_tasks: set[asyncio.Task] = set()
 
 
 async def start_consuming() -> None:
     await broker.connect()
-    asyncio.create_task(run_outbox_publisher())
+    task = asyncio.create_task(run_outbox_publisher())
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
+
     exchange = broker.exchange
     channel = broker.channel
 
     for queue_name, routing_key, _ in _BINDINGS:
-        queue = await channel.declare_queue(queue_name, durable=True)
+        queue = await channel.declare_queue(
+            queue_name,
+            durable=True,
+            arguments={"x-dead-letter-exchange": "foodize.dlx"},
+        )
         await queue.bind(exchange, routing_key=routing_key)
         await queue.consume(partial(_process_message, routing_key=routing_key))
         logger.info("Consuming queue=%s routing_key=%s", queue_name, routing_key)

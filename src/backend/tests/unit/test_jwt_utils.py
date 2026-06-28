@@ -4,7 +4,6 @@ from unittest.mock import patch
 
 from utils.JWT import (
     create_access_token,
-    create_jwt_token,
     create_refresh_token,
     decode_jwt,
     encode_jwt,
@@ -77,13 +76,14 @@ class TestCreateJwtToken:
             return "mocked-token"
 
         with patch("utils.JWT.encode_jwt", side_effect=fake_encode):
-            token = create_jwt_token(user_id=user_id, phone_number=phone, lifetime_seconds=3600)
+            token = create_access_token(user_id=user_id, phone_number=phone)
 
         assert token == "mocked-token"
         assert captured["sub"] == str(user_id)
         assert captured["phone"] == phone
         assert "exp" in captured
         assert "iat" in captured
+        assert captured["typ"] == "access"
 
     def test_expiry_is_in_future(self):
         user_id = uuid.uuid4()
@@ -94,7 +94,7 @@ class TestCreateJwtToken:
             return "tok"
 
         with patch("utils.JWT.encode_jwt", side_effect=fake_encode):
-            create_jwt_token(user_id=user_id, phone_number="79001112233", lifetime_seconds=60)
+            create_access_token(user_id=user_id, phone_number="79001112233")
 
         now = datetime.now(timezone.utc)
         assert captured["exp"] > now
@@ -103,7 +103,7 @@ class TestCreateJwtToken:
 class TestAccessRefreshTokens:
     def test_access_token_delegates_to_create_jwt_token(self):
         user_id = uuid.uuid4()
-        with patch("utils.JWT.create_jwt_token", return_value="access") as mock_create:
+        with patch("utils.JWT._create_jwt_token", return_value="access") as mock_create:
             result = create_access_token(user_id=user_id, phone_number="79001234567")
         assert result == "access"
         args = mock_create.call_args
@@ -113,7 +113,7 @@ class TestAccessRefreshTokens:
 
     def test_refresh_token_delegates_to_create_jwt_token(self):
         user_id = uuid.uuid4()
-        with patch("utils.JWT.create_jwt_token", return_value="refresh") as mock_create:
+        with patch("utils.JWT._create_jwt_token", return_value="refresh") as mock_create:
             result = create_refresh_token(user_id=user_id, phone_number="79001234567")
         assert result == "refresh"
         mock_create.assert_called_once()
@@ -131,10 +131,10 @@ class TestAccessRefreshTokens:
             refresh_lifetime.append(kwargs["lifetime_seconds"])
             return "refresh"
 
-        with patch("utils.JWT.create_jwt_token", side_effect=capture_access):
+        with patch("utils.JWT._create_jwt_token", side_effect=capture_access):
             create_access_token(user_id=user_id, phone_number="7900")
 
-        with patch("utils.JWT.create_jwt_token", side_effect=capture_refresh):
+        with patch("utils.JWT._create_jwt_token", side_effect=capture_refresh):
             create_refresh_token(user_id=user_id, phone_number="7900")
 
         assert access_lifetime[0] < refresh_lifetime[0]

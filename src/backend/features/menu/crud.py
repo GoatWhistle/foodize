@@ -13,6 +13,7 @@ from features.menu.schemas import (
     MenuItemOptionUpdate,
     MenuItemUpdate,
 )
+from shared.enums.selection_type import SelectionType
 
 
 def _option_groups_options():
@@ -28,7 +29,7 @@ async def create_menu_item(
 
     new_item = MenuItem(**data, restaurant_id=restaurant_id)
     session.add(new_item)
-    await session.commit()
+    await session.flush()
     loaded = await get_menu_item_by_id(session, new_item.id)
     if loaded is None:
         raise RuntimeError("Created menu item was not found")
@@ -83,7 +84,7 @@ async def update_menu_item(
 
     for key, value in update_data.items():
         setattr(item, key, value)
-    await session.commit()
+    await session.flush()
     loaded = await get_menu_item_by_id(session, item.id)
     if loaded is None:
         raise RuntimeError("Updated menu item was not found")
@@ -92,7 +93,7 @@ async def update_menu_item(
 
 async def delete_menu_item(session: AsyncSession, item: MenuItem) -> None:
     item.is_deleted = True
-    await session.commit()
+    await session.flush()
 
 
 async def create_option_group(
@@ -112,7 +113,7 @@ async def create_option_group(
     for option_data in data.options:
         option_group.options.append(MenuItemOption(**option_data.model_dump()))
     session.add(option_group)
-    await session.commit()
+    await session.flush()
     await session.refresh(option_group, attribute_names=["options"])
     return option_group
 
@@ -136,16 +137,16 @@ async def update_option_group(
 ) -> MenuItemOptionGroup:
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(group, key, value)
-    if group.selection_type == "single":
+    if group.selection_type == SelectionType.SINGLE.value:
         group.max_selected = 1
-    await session.commit()
+    await session.flush()
     await session.refresh(group, attribute_names=["options"])
     return group
 
 
 async def delete_option_group(session: AsyncSession, group: MenuItemOptionGroup) -> None:
     group.is_active = False
-    await session.commit()
+    await session.flush()
 
 
 async def create_option(
@@ -155,7 +156,7 @@ async def create_option(
 ) -> MenuItemOption:
     option = MenuItemOption(group_id=group.id, **data.model_dump())
     session.add(option)
-    await session.commit()
+    await session.flush()
     await session.refresh(option)
     return option
 
@@ -171,11 +172,24 @@ async def update_option(
 ) -> MenuItemOption:
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(option, key, value)
-    await session.commit()
+    await session.flush()
     await session.refresh(option)
     return option
 
 
 async def delete_option(session: AsyncSession, option: MenuItemOption) -> None:
     option.is_available = False
-    await session.commit()
+    await session.flush()
+
+
+async def get_menu_items_by_ids_simple(
+    session: AsyncSession, item_ids: list[uuid.UUID]
+) -> dict[uuid.UUID, MenuItem]:
+    if not item_ids:
+        return {}
+    result = await session.execute(
+        select(MenuItem)
+        .where(MenuItem.id.in_(item_ids), MenuItem.is_deleted == False)  # noqa: E712
+        .options(_option_groups_options())
+    )
+    return {item.id: item for item in result.scalars().all()}

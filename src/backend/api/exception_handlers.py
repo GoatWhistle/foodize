@@ -14,9 +14,12 @@ logger = get_logger()
 
 
 async def request_validation_error_handler(request: Request, exc: RequestValidationError):
+    errors = [
+        {"loc": e.get("loc"), "msg": e.get("msg"), "type": e.get("type")} for e in exc.errors()
+    ]
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
-        content=ErrorSchema(detail=ErrorDescriptionSchema(error=str(exc))).model_dump(),
+        content=ErrorSchema(detail=ErrorDescriptionSchema(error=str(errors))).model_dump(),
     )
 
 

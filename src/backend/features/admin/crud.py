@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, date, datetime, timedelta
 
-from sqlalchemy import Text, and_, cast, delete, func, select, update
+from sqlalchemy import Text, and_, cast, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -69,6 +69,26 @@ def _infer_role(permissions: list[str]) -> str:
     return UserRole.CUSTOMER.value
 
 
+_ROLE_PERMISSION_MARKER: dict[str, str] = {
+    UserRole.ADMIN.value: Permission.ADMIN_ACCESS.value,
+    UserRole.VENDOR.value: Permission.RESTAURANTS_CREATE.value,
+    UserRole.STAFF.value: Permission.ORDERS_MANAGE_STATUS.value,
+}
+
+
+def _apply_role_filter(stmt, role: str):
+    if role == UserRole.CUSTOMER.value:
+        return stmt.where(
+            ~cast(User.permissions, Text).like(f'%"{Permission.ADMIN_ACCESS.value}"%'),
+            ~cast(User.permissions, Text).like(f'%"{Permission.RESTAURANTS_CREATE.value}"%'),
+            ~cast(User.permissions, Text).like(f'%"{Permission.ORDERS_MANAGE_STATUS.value}"%'),
+        )
+    marker = _ROLE_PERMISSION_MARKER.get(role)
+    if marker:
+        return stmt.where(cast(User.permissions, Text).like(f'%"{marker}"%'))
+    return stmt
+
+
 async def get_all_users(
     session: AsyncSession,
     role: str | None = None,
@@ -85,11 +105,10 @@ async def get_all_users(
             | (User.first_name.ilike(pattern))
             | (User.last_name.ilike(pattern))
         )
-    result = await session.execute(stmt)
-    users = list(result.scalars().all())
     if role is not None:
-        users = [u for u in users if _infer_role(u.permissions or []) == role]
-    return users[offset : offset + limit]
+        stmt = _apply_role_filter(stmt, role)
+    result = await session.execute(stmt.offset(offset).limit(limit))
+    return list(result.scalars().all())
 
 
 async def count_all_users(
@@ -97,31 +116,19 @@ async def count_all_users(
     role: str | None = None,
     search: str | None = None,
 ) -> int:
-    if role is None:
-        stmt = select(func.count()).select_from(User)
-        if search:
-            pattern = f"%{search}%"
-            stmt = stmt.where(
-                (User.name.ilike(pattern))
-                | (User.phone_number.ilike(pattern))
-                | (User.first_name.ilike(pattern))
-                | (User.last_name.ilike(pattern))
-            )
-        result = await session.execute(stmt)
-        return result.scalar_one()
-
-    user_stmt = select(User)
+    stmt = select(func.count()).select_from(User)
     if search:
         pattern = f"%{search}%"
-        user_stmt = user_stmt.where(
+        stmt = stmt.where(
             (User.name.ilike(pattern))
             | (User.phone_number.ilike(pattern))
             | (User.first_name.ilike(pattern))
             | (User.last_name.ilike(pattern))
         )
-    user_result = await session.execute(user_stmt)
-    users = user_result.scalars().all()
-    return len([u for u in users if _infer_role(u.permissions or []) == role])
+    if role is not None:
+        stmt = _apply_role_filter(stmt, role)
+    result = await session.execute(stmt)
+    return result.scalar_one()
 
 
 async def get_user_by_id(session: AsyncSession, user_id: uuid.UUID) -> User | None:
@@ -131,14 +138,14 @@ async def get_user_by_id(session: AsyncSession, user_id: uuid.UUID) -> User | No
 
 async def deactivate_user(session: AsyncSession, user: User) -> User:
     user.is_active = False
-    await session.commit()
+    await session.flush()
     await session.refresh(user)
     return user
 
 
 async def activate_user(session: AsyncSession, user: User) -> User:
     user.is_active = True
-    await session.commit()
+    await session.flush()
     await session.refresh(user)
     return user
 
@@ -440,7 +447,7 @@ async def deactivate_restaurant(
     restaurant.is_active = False
     restaurant.is_open = False
     restaurant.is_hiring = False
-    await session.commit()
+    await session.flush()
     await session.refresh(restaurant)
     return restaurant
 
@@ -452,7 +459,7 @@ async def deactivate_vendor(session: AsyncSession, vendor: VendorProfile) -> Ven
         restaurant.is_active = False
         restaurant.is_open = False
         restaurant.is_hiring = False
-    await session.commit()
+    await session.flush()
     await session.refresh(vendor)
     return vendor
 
@@ -471,7 +478,7 @@ async def set_vendor_moderation(
         for restaurant in vendor.restaurants or []:
             restaurant.moderation_status = ModerationStatus.APPROVED.value
             restaurant.rejection_reason = None
-    await session.commit()
+    await session.flush()
     await session.refresh(vendor)
     return vendor
 
@@ -484,7 +491,7 @@ async def set_restaurant_moderation(
 ) -> Restaurant:
     restaurant.moderation_status = status
     restaurant.rejection_reason = reason if status == ModerationStatus.REJECTED.value else None
-    await session.commit()
+    await session.flush()
     await session.refresh(restaurant)
     return restaurant
 
@@ -545,7 +552,7 @@ async def get_review_by_id(session: AsyncSession, review_id: uuid.UUID) -> Revie
 
 async def delete_review(session: AsyncSession, review: Review) -> Review:
     review.deleted_at = datetime.now(UTC)
-    await session.commit()
+    await session.flush()
     await session.refresh(review)
     return review
 
@@ -561,7 +568,11 @@ async def batch_activate_users(session: AsyncSession, ids: list[uuid.UUID]) -> i
 
 
 async def batch_delete_reviews(session: AsyncSession, ids: list[uuid.UUID]) -> int:
-    result = await session.execute(delete(Review).where(Review.id.in_(ids)))
+    result = await session.execute(
+        update(Review)
+        .where(Review.id.in_(ids), Review.deleted_at.is_(None))
+        .values(deleted_at=datetime.now(UTC))
+    )
     return result.rowcount  # type: ignore[attr-defined]
 
 

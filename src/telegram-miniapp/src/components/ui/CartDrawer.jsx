@@ -15,6 +15,7 @@ import { promoService } from "../../services/promoService";
 import { orderService } from "../../services/orderService";
 import { translateApiError } from "../../utils/translateApiError";
 import { useShallow } from "zustand/react/shallow";
+import s from "../CartDrawer.module.css";
 
 const toDateTimeLocalValue = (date) => {
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
@@ -136,6 +137,10 @@ const CartDrawer = ({ onClose, isRestaurantOpen = true }) => {
       return;
     }
 
+    try {
+      window.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("medium");
+    } catch {}
+
     setPlacing(true);
     setError("");
     try {
@@ -200,14 +205,14 @@ const CartDrawer = ({ onClose, isRestaurantOpen = true }) => {
   if (!cart.length) return null;
 
   return (
-    <div className="cart-overlay" onClick={handleOverlayClick}>
-      <div className="cart-drawer" ref={drawerRef}>
-        <div className="cart-handle" />
+    <div className={s.overlay} onClick={handleOverlayClick}>
+      <div className={s.drawer} ref={drawerRef}>
+        <div className={s.handle} />
 
-        <div className="cart-inner">
-          <h2 className="cart-title">Корзина</h2>
+        <div className={s.inner}>
+          <h2 className={s.title}>Корзина</h2>
 
-          <div className="cart-items">
+          <div className={s.items}>
             {cart.map((cartItem) => {
               const { menuItem, quantity } = cartItem;
               const selectedOptions = getSelectedOptions(cartItem);
@@ -215,9 +220,9 @@ const CartDrawer = ({ onClose, isRestaurantOpen = true }) => {
               const lineKey = `${menuItem.id}:${selectedOptionIds.join(",")}`;
 
               return (
-                <div key={lineKey} className="cart-item">
+                <div key={lineKey} className={s.item}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <span className="cart-item-name">{menuItem.name}</span>
+                    <span className={s.itemName}>{menuItem.name}</span>
                     {selectedOptions.length > 0 && (
                       <div
                         style={{
@@ -241,9 +246,9 @@ const CartDrawer = ({ onClose, isRestaurantOpen = true }) => {
                     )}
                   </div>
 
-                  <div className="cart-item-controls">
+                  <div className={s.itemControls}>
                     <button
-                      className="qty-btn"
+                      className={s.qtyBtn}
                       onClick={() =>
                         removeFromCart(menuItem.id, selectedOptionIds)
                       }
@@ -262,7 +267,7 @@ const CartDrawer = ({ onClose, isRestaurantOpen = true }) => {
                       {quantity}
                     </span>
                     <button
-                      className="qty-btn"
+                      className={s.qtyBtn}
                       onClick={() =>
                         addToCart(menuItem, cartRestaurantId, selectedOptions)
                       }
@@ -367,7 +372,7 @@ const CartDrawer = ({ onClose, isRestaurantOpen = true }) => {
             </div>
           )}
 
-          <div className="cart-total" style={{ marginTop: 16 }}>
+          <div className={s.total} style={{ marginTop: 16 }}>
             {appliedPromo && (
               <div
                 style={{
@@ -383,11 +388,11 @@ const CartDrawer = ({ onClose, isRestaurantOpen = true }) => {
                 <span>{total} ₽</span>
               </div>
             )}
-            <span className="cart-total-label">
+            <span className={s.totalLabel}>
               {appliedPromo ? "Итого со скидкой" : "Итого"}
             </span>
             <span
-              className="cart-total-value"
+              className={s.totalValue}
               style={appliedPromo ? { color: "#22c55e" } : undefined}
             >
               {finalTotal} ₽

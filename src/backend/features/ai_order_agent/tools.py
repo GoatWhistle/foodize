@@ -1,11 +1,6 @@
-"""Tool surface for the customer order agent.
-
-Tools wrap the existing menu / cart / orders logic. The model only passes ids
-and quantities; prices, availability and the single-restaurant rule are
-enforced from the DB here, and every operation is scoped to the current user.
-"""
-
+import hashlib
 import json
+import re
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,7 +13,7 @@ from features.menu.crud import get_menu_item_by_id
 from features.orders.schemas.order import OrderCreate, OrderItemCreate
 from features.orders.services.order import place_order
 from features.users.models import User
-from infra.cache.redis import get_redis_cache
+from infra.cache.base import CacheRepository
 from infra.llm import ToolCall, ToolExecutor, ToolSpec
 
 ORDER_TOOLS: list[ToolSpec] = [
@@ -129,10 +124,14 @@ def _existing_items(cart: CartResponse) -> list[CartItemIn]:
     return items
 
 
+_PROMO_RE = re.compile(r"^[A-Za-z0-9_\-]{1,64}$")
+
+
 def build_order_executor(
     session: AsyncSession,
     user: User,
     cart_service: CartService,
+    cache: CacheRepository,
 ) -> ToolExecutor:
     identifier = str(user.id)
 
@@ -164,7 +163,7 @@ def build_order_executor(
     async def _search(args: dict) -> str:
         results = await search_mod.semantic_search(
             session,
-            get_redis_cache(),
+            cache,
             query=args.get("query"),
             max_price=args.get("max_price"),
             restaurant_id=_parse_uuid(args.get("restaurant_id")),
@@ -279,24 +278,39 @@ def build_order_executor(
         if not cart.items or not cart.restaurant_id:
             return _dumps({"error": "cart_empty", "message": "Корзина пуста."})
 
+        raw_promo = args.get("promo_code")
+        promo_code = raw_promo if raw_promo and _PROMO_RE.match(raw_promo) else None
+
+        order_items = [
+            OrderItemCreate(
+                menu_item_id=it.menuItem.id,
+                quantity=it.quantity,
+                selected_option_ids=list(it.selected_option_ids),
+            )
+            for it in cart.items
+            if it.menuItem is not None
+        ]
+        if not order_items:
+            return _dumps({"error": "item_unavailable", "message": "Позиции недоступны."})
+
+        cart_fingerprint = hashlib.sha256(
+            f"{user.id}:{cart.restaurant_id}:"
+            + ":".join(
+                f"{it.menuItem.id}x{it.quantity}" for it in cart.items if it.menuItem is not None
+            )
+        ).hexdigest()[:32]
+
         order_in = OrderCreate(
             restaurant_id=cart.restaurant_id,
-            items=[
-                OrderItemCreate(
-                    menu_item_id=it.menuItem.id,
-                    quantity=it.quantity,
-                    selected_option_ids=list(it.selected_option_ids),
-                )
-                for it in cart.items
-            ],
-            promo_code=args.get("promo_code"),
-            comment=args.get("comment"),
+            items=order_items,
+            promo_code=promo_code,
+            comment=str(args.get("comment") or "")[:500].strip() or None,
         )
         result = await place_order(
             session=session,
             order_data=order_in,
             user_id=user.id,
-            idempotency_key=uuid.uuid4().hex,
+            idempotency_key=cart_fingerprint,
         )
         await cart_service.clear_cart(identifier)
         data = result.model_dump()

@@ -1,13 +1,14 @@
 import { MapPin, CheckCircle, Smiley, XCircle } from "@phosphor-icons/react";
+import s from "./OrderStatusBadge.module.css";
 
 const OrderStatusBadge = ({ status }) => {
   if (status === "PENDING" || status === "ACCEPTED") {
     return (
-      <div className="status-icon-wrap">
+      <div className={s.iconWrap}>
         {[0, 1, 2].map((i) => (
           <div
             key={i}
-            className="ripple-ring"
+            className={s.rippleRing}
             style={{
               width: 80,
               height: 80,
@@ -18,7 +19,7 @@ const OrderStatusBadge = ({ status }) => {
             }}
           />
         ))}
-        <div style={{ position: "relative", zIndex: 1, color: "var(--fire)" }}>
+        <div style={{ position: "relative", zIndex: 1, color: "var(--accent)" }}>
           <MapPin size={64} weight="fill" />
         </div>
         <p
@@ -40,8 +41,8 @@ const OrderStatusBadge = ({ status }) => {
 
   if (status === "READY" || status === "COMPLETED") {
     return (
-      <div className="status-icon-wrap status-ready-flash">
-        <div style={{ marginBottom: 12, color: "#22c55e" }}>
+      <div className={`${s.iconWrap} ${s.readyFlash}`}>
+        <div style={{ marginBottom: 12, color: "var(--color-success)" }}>
           {status === "COMPLETED" ? (
             <Smiley size={80} weight="fill" />
           ) : (
@@ -49,12 +50,12 @@ const OrderStatusBadge = ({ status }) => {
           )}
         </div>
         <p
-          className="status-ready-text"
+          className={s.readyText}
           style={{
             fontWeight: 800,
             fontSize: "2rem",
             letterSpacing: "-0.04em",
-            color: "#22c55e",
+            color: "var(--color-success)",
           }}
         >
           {status === "COMPLETED" ? "Приятного аппетита!" : "Забирай!"}
@@ -70,8 +71,8 @@ const OrderStatusBadge = ({ status }) => {
 
   if (status === "CANCELLED") {
     return (
-      <div className="status-icon-wrap">
-        <div style={{ marginBottom: 12, color: "#ef4444" }}>
+      <div className={s.iconWrap}>
+        <div style={{ marginBottom: 12, color: "var(--color-error)" }}>
           <XCircle size={80} weight="fill" />
         </div>
         <p
@@ -79,7 +80,7 @@ const OrderStatusBadge = ({ status }) => {
             fontWeight: 800,
             fontSize: "1.6rem",
             letterSpacing: "-0.03em",
-            color: "#ef4444",
+            color: "var(--color-error)",
           }}
         >
           Отменён

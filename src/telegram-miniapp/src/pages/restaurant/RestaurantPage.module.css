@@ -1,0 +1,130 @@
+.hero {
+  position: relative;
+  height: 38vh;
+  min-height: 220px;
+  overflow: hidden;
+  background: var(--bg-surface);
+}
+
+.heroImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(1.04) contrast(1.02);
+}
+
+.heroPlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 5rem;
+  background: linear-gradient(135deg, var(--bg-surface), var(--bg-raised));
+}
+
+.heroOverlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 74%;
+  background: linear-gradient(to top, rgba(20, 14, 6, 0.82) 0%, transparent 100%);
+}
+
+.heroInfo {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  color: var(--parchment-off);
+}
+
+.heroName {
+  font-family: var(--font-sans);
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin-bottom: 10px;
+}
+
+.heroPills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: var(--r-pill);
+  background: rgba(245, 240, 232, 0.15);
+  border: 1px solid rgba(245, 240, 232, 0.25);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--parchment-off);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--dur-sm);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pill:active {
+  background: rgba(245, 240, 232, 0.28);
+}
+
+.pillRating {
+  color: var(--star);
+  border-color: oklch(72% 0.13 80 / 0.35);
+  background: oklch(72% 0.13 80 / 0.12);
+  pointer-events: none;
+}
+
+.content {
+  padding: 0 var(--gutter);
+  padding-bottom: calc(var(--bottom-tab-h) + env(safe-area-inset-bottom, 0px) + 80px);
+}
+
+.categoriesScroll {
+  display: flex;
+  gap: 8px;
+  padding: 18px 0 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  overscroll-behavior: contain;
+}
+
+.categoriesScroll::-webkit-scrollbar {
+  display: none;
+}
+
+.menuList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+@media (max-width: 599px) {
+  .hero {
+    height: 30vh;
+    min-height: 180px;
+  }
+  .heroName {
+    font-size: 1.45rem;
+  }
+  .heroInfo {
+    bottom: 14px;
+    left: 14px;
+    right: 14px;
+  }
+  .content {
+    padding: 0 var(--gutter);
+    padding-bottom: calc(var(--bottom-tab-h) + env(safe-area-inset-bottom, 0px) + 80px);
+  }
+}

@@ -1,11 +1,3 @@
-"""add order idempotency and outbox
-
-Revision ID: c3d4e5f6a7b8
-Revises: b1a2c3d4e5f6
-Create Date: 2026-05-08 00:00:00.000000
-
-"""
-
 from collections.abc import Sequence
 
 import sqlalchemy as sa

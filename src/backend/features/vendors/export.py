@@ -21,18 +21,37 @@ async def export_orders_csv(
     status: OrderStatus | None = None,
     restaurant_id: uuid.UUID | None = None,
 ) -> bytes:
+    vendor_restaurant_ids = {r.id for r in (vendor.restaurants or [])}
+    if restaurant_id:
+        if restaurant_id not in vendor_restaurant_ids:
+            return _make_csv(
+                [
+                    "ID",
+                    "Номер",
+                    "Клиент",
+                    "Ресторан",
+                    "Статус",
+                    "Позиций",
+                    "Сумма (₽)",
+                    "Дата создания",
+                ],
+                [],
+            )
+        query_restaurant_id = restaurant_id
+    else:
+        query_restaurant_id = None
+
     orders = await admin_crud.get_all_orders(
         session,
         status=status,
         date_from=date_from,
         date_to=date_to,
+        restaurant_id=query_restaurant_id,
         offset=0,
         limit=1_000_000,
     )
-    vendor_restaurant_ids = {r.id for r in (vendor.restaurants or [])}
-    if restaurant_id:
-        vendor_restaurant_ids = {restaurant_id} & vendor_restaurant_ids
-    orders = [o for o in orders if o.restaurant_id in vendor_restaurant_ids]
+    if query_restaurant_id is None:
+        orders = [o for o in orders if o.restaurant_id in vendor_restaurant_ids]
 
     headers = [
         "ID",

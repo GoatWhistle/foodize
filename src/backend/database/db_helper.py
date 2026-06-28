@@ -14,17 +14,17 @@ class DbHelper:
     def __init__(
         self,
         url: str,
-        echo: bool = settings.db.echo,
-        echo_pool: bool = settings.db.echo_pool,
-        max_overflow: int = settings.db.max_overflow,
-        pool_size: int = settings.db.pool_size,
+        echo: bool | None = None,
+        echo_pool: bool | None = None,
+        max_overflow: int | None = None,
+        pool_size: int | None = None,
     ):
         self.engine: AsyncEngine = create_async_engine(
             url=url,
-            echo=echo,
-            echo_pool=echo_pool,
-            max_overflow=max_overflow,
-            pool_size=pool_size,
+            echo=echo if echo is not None else settings.db.echo,
+            echo_pool=echo_pool if echo_pool is not None else settings.db.echo_pool,
+            max_overflow=max_overflow if max_overflow is not None else settings.db.max_overflow,
+            pool_size=pool_size if pool_size is not None else settings.db.pool_size,
             pool_pre_ping=True,
             pool_recycle=3600,
             connect_args={
@@ -44,7 +44,12 @@ class DbHelper:
 
     async def dependency_session_getter(self) -> AsyncGenerator[AsyncSession, None]:
         async with self.session_factory() as session:
-            yield session
+            try:
+                yield session
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
 
 
 db_helper = DbHelper(url=str(settings.db.url))

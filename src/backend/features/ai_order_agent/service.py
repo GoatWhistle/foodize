@@ -1,10 +1,3 @@
-"""Customer order agent: system prompt + agent orchestration.
-
-Opens its own DB session inside the agent loop so it survives the streamed
-response. Tools are scoped to the current user; structured tool-call schemas
-(function calling) are the structured-output contract between model and app.
-"""
-
 import logging
 from collections.abc import AsyncIterator, Iterable
 
@@ -49,11 +42,12 @@ async def stream_chat(
     user: User,
     history: Iterable[OrderChatMessageIn],
 ) -> AsyncIterator[str]:
-    client = get_llm_client(AgentRole.ORDER)
-    cart_service = CartService(get_redis_cache())
+    client = await get_llm_client(AgentRole.ORDER)
+    cache = get_redis_cache()
+    cart_service = CartService(cache)
     try:
         async with db_helper.session_factory() as session:
-            execute = build_order_executor(session, user, cart_service)
+            execute = build_order_executor(session, user, cart_service, cache)
             async for chunk in stream_agent(
                 client,
                 system=SYSTEM_PROMPT,

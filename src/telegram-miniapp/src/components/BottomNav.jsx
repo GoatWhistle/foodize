@@ -1,12 +1,19 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { Storefront, Package, User } from "@phosphor-icons/react";
 import { useNotificationStore } from "../store/useNotificationStore";
+import s from "./BottomNav.module.css";
 
 const TABS = [
   { path: "/", icon: Storefront, label: "Рестораны" },
   { path: "/orders", icon: Package, label: "Заказы" },
   { path: "/profile", icon: User, label: "Профиль" },
 ];
+
+const haptic = () => {
+  try {
+    window.Telegram?.WebApp?.HapticFeedback?.selectionChanged?.();
+  } catch {}
+};
 
 const BottomNav = () => {
   const navigate = useNavigate();
@@ -20,7 +27,7 @@ const BottomNav = () => {
     path === "/" ? pathname === "/" : pathname.startsWith(path);
 
   return (
-    <div className="bottom-tab-bar">
+    <div className={s.bar}>
       {TABS.map(({ path, icon: Icon, label }) => {
         const active = isActive(path);
         const showBadge = path === "/profile" && unreadCount > 0;
@@ -28,10 +35,13 @@ const BottomNav = () => {
         return (
           <button
             key={path}
-            className={`bottom-tab${active ? " active" : ""}`}
-            onClick={() => navigate(path)}
+            className={`${s.tab}${active ? ` ${s.active}` : ""}`}
+            onClick={() => {
+              if (!active) haptic();
+              navigate(path);
+            }}
           >
-            <span className="bottom-tab-icon" style={{ position: "relative" }}>
+            <span className={s.icon}>
               <Icon size={22} weight={active ? "fill" : "regular"} />
               {showBadge && (
                 <span
@@ -39,8 +49,8 @@ const BottomNav = () => {
                     position: "absolute",
                     top: -4,
                     right: -6,
-                    background: "var(--fire)",
-                    color: "var(--fire-text, #fff)",
+                    background: "var(--ink-1)",
+                    color: "var(--ink-inv)",
                     borderRadius: "50%",
                     fontSize: 10,
                     fontWeight: 700,
@@ -65,14 +75,15 @@ const BottomNav = () => {
                     right: -4,
                     width: 9,
                     height: 9,
-                    background: "#ef4444",
+                    background: "var(--color-error)",
                     borderRadius: "50%",
-                    border: "2px solid var(--bg-base)",
+                    border: "2px solid var(--bg)",
                   }}
                 />
               )}
             </span>
-            <span className="bottom-tab-label">{label}</span>
+            <span className={s.pill} aria-hidden="true" />
+            <span className={s.label}>{label}</span>
           </button>
         );
       })}

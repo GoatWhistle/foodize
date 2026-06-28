@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import uuid
 
 from database import db_helper
 from features.notifications.crud import create_notification
@@ -11,8 +12,10 @@ from shared.enums.order_status import OrderStatus
 
 logger = logging.getLogger(__name__)
 
+_FEEDBACK_DELAY_SECONDS = 1800
 
-async def _notify_user(user_id, title: str, message: str) -> None:
+
+async def _notify_user(user_id: uuid.UUID, title: str, message: str) -> None:
     async with db_helper.session_factory() as session:
         notification = await create_notification(
             session=session,
@@ -28,9 +31,8 @@ async def _notify_user(user_id, title: str, message: str) -> None:
 
 
 async def _schedule_feedback_request(
-    user_id, restaurant_name: str, delay_seconds: int = 1800
+    user_id: uuid.UUID, restaurant_name: str, delay_seconds: int = _FEEDBACK_DELAY_SECONDS
 ) -> None:
-    """Sends a feedback request after a delay (e.g. 30 minutes)."""
     await asyncio.sleep(delay_seconds)
     title = "Оцените ваш заказ ⭐️"
     message = (
@@ -69,6 +71,7 @@ async def handle_order_status_changed(event: OrderStatusChangedEvent) -> None:
         OrderStatus.ACCEPTED: "Принят",
         OrderStatus.READY: "Готово",
         OrderStatus.COMPLETED: "Выполнено",
+        OrderStatus.CANCELLED: "Отменён",
     }
 
     status_str = status_ru.get(event.new_status, event.new_status.value)
@@ -80,6 +83,14 @@ async def handle_order_status_changed(event: OrderStatusChangedEvent) -> None:
         message = f"Ваш заказ из {event.restaurant_name} готов к выдаче. Приятного аппетита!"
 
     if event.new_status == OrderStatus.COMPLETED:
-        asyncio.create_task(_schedule_feedback_request(event.user_id, event.restaurant_name, 1800))
+        task = asyncio.create_task(
+            _schedule_feedback_request(
+                event.user_id, event.restaurant_name, _FEEDBACK_DELAY_SECONDS
+            )
+        )
+        task.add_done_callback(
+            lambda t: t.exception()
+            and logger.exception("feedback task failed", exc_info=t.exception())
+        )
 
     await _notify_user(event.user_id, title, message)

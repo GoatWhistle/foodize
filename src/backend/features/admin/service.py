@@ -61,8 +61,7 @@ async def set_user_permissions(
     user = await get_user_or_404(session, user_id)
     old_permissions = user.permissions
     user.permissions = serialize_permissions(permissions)
-    await session.commit()
-    await session.refresh(user)
+    await session.flush()
 
     await audit_service.log_action(
         session,
@@ -72,7 +71,6 @@ async def set_user_permissions(
         entity_id=user.id,
         details={"old": old_permissions, "new": user.permissions},
     )
-    await session.commit()
     return user
 
 
@@ -280,7 +278,7 @@ async def moderate_restaurant(
     actor_id: uuid.UUID | None = None,
 ) -> AdminRestaurantResponse:
     restaurant = await session.get(Restaurant, restaurant_id)
-    if not restaurant or not restaurant.is_active:
+    if not restaurant:
         raise NotFoundException()
     old_status = restaurant.moderation_status
     updated = await crud.set_restaurant_moderation(session, restaurant, status, reason)

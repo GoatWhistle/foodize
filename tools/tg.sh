@@ -32,7 +32,7 @@ get_ngrok_url() {
 
   api_json="$(fetch_ngrok_api 2>/dev/null)" || return 1
 
-  python3 - "$MINIAPP_PORT" "$api_json" <<'PY'
+  "$PYTHON_BIN" - "$MINIAPP_PORT" "$api_json" <<'PY'
 import json
 import sys
 
@@ -66,7 +66,7 @@ get_ngrok_url_from_log() {
     return 1
   fi
 
-  python3 - "$NGROK_LOG_FILE" <<'PY'
+  "$PYTHON_BIN" - "$NGROK_LOG_FILE" <<'PY'
 from pathlib import Path
 import re
 import sys
@@ -83,14 +83,14 @@ PY
 update_env_url() {
   local public_url="$1"
 
-  python3 - "$ENV_FILE" "$public_url" <<'PY'
+  "$PYTHON_BIN" - "$ENV_FILE" "$public_url" <<'PY'
 from pathlib import Path
 import sys
 
 env_path = Path(sys.argv[1])
 public_url = sys.argv[2]
 
-lines = env_path.read_text().splitlines()
+lines = env_path.read_text(encoding="utf-8", errors="replace").splitlines()
 updated_mini_app = False
 updated_telegram_mini_app = False
 next_lines = []
@@ -110,7 +110,7 @@ if not updated_mini_app:
 if not updated_telegram_mini_app:
     next_lines.append("TELEGRAM__MINI_APP_URL=${MINI_APP_URL}")
 
-env_path.write_text("\n".join(next_lines) + "\n")
+env_path.write_text("\n".join(next_lines) + "\n", encoding="utf-8")
 PY
 }
 
@@ -120,9 +120,13 @@ get_ngrok_authtoken() {
     return 0
   fi
 
-  local windows_config="/mnt/c/Users/Mikhail Khorokhorin/AppData/Local/ngrok/ngrok.yml"
+  local windows_config
+  windows_config="$(ngrok config check 2>/dev/null | grep -oP '(?<=at ).*' | tr -d '\r')"
+  if [ -z "$windows_config" ] && [ -n "${USERPROFILE:-}" ]; then
+    windows_config="$(wslpath "$USERPROFILE/AppData/Local/ngrok/ngrok.yml" 2>/dev/null || true)"
+  fi
   if [ -f "$windows_config" ]; then
-    python3 - "$windows_config" <<'PY'
+    "$PYTHON_BIN" - "$windows_config" <<'PY'
 from pathlib import Path
 import sys
 
@@ -168,9 +172,20 @@ cleanup() {
   fi
 }
 
+PYTHON_BIN=""
+for _py in python3 python python3.exe python.exe; do
+  if command -v "$_py" >/dev/null 2>&1 && "$_py" -c "import sys; sys.exit(0 if sys.version_info >= (3,8) else 1)" 2>/dev/null; then
+    PYTHON_BIN="$_py"
+    break
+  fi
+done
+if [ -z "$PYTHON_BIN" ]; then
+  echo "Python 3.8+ not found. Install Python and make sure it's in PATH."
+  exit 1
+fi
+
 require_command docker
 require_command curl
-require_command python3
 require_command ngrok
 NGROK_BIN="$(command -v ngrok)"
 
@@ -214,15 +229,13 @@ if [ -z "$MINIAPP_READY" ]; then
   exit 1
 fi
 
-prepare_ngrok_config
-NGROK_CONFIG_ARG="$(ngrok_config_arg "$NGROK_BIN")"
-
 PUBLIC_URL="$(get_ngrok_url || true)"
 
 if [ -z "$PUBLIC_URL" ]; then
+  mkdir -p "$NGROK_LOG_DIR"
   : > "$NGROK_LOG_FILE"
   echo "Starting ngrok for http://localhost:$MINIAPP_PORT ..."
-  ngrok http "$MINIAPP_PORT" --config "$NGROK_CONFIG_ARG" --log=stdout > "$NGROK_LOG_FILE" 2>&1 &
+  ngrok http "$MINIAPP_PORT" --log=stdout > "$NGROK_LOG_FILE" 2>&1 &
   NGROK_PID="$!"
   trap cleanup EXIT INT TERM
 

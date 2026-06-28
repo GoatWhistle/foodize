@@ -37,7 +37,9 @@ describe("useOrderStore", () => {
     cartService.getCart.mockResolvedValueOnce({
       data: {
         data: {
-          items: [{ menuItem: { id: "m1", name: "Pizza", price: 100 }, quantity: 2 }],
+          items: [
+            { menuItem: { id: "m1", name: "Pizza", price: 100 }, quantity: 2 },
+          ],
           restaurant_id: "rest-1",
         },
       },
@@ -132,7 +134,9 @@ describe("useOrderStore", () => {
       cartRestaurantId: "rest-1",
     });
 
-    const res = await useOrderStore.getState().addToCart(newItem, "rest-2", [], 1);
+    const res = await useOrderStore
+      .getState()
+      .addToCart(newItem, "rest-2", [], 1);
 
     expect(res).toBe(false);
     const state = useOrderStore.getState();
@@ -209,7 +213,9 @@ describe("useOrderStore", () => {
     cartService.getCart.mockResolvedValueOnce({
       data: {
         data: {
-          items: [{ menuItem: { id: "m1", name: "Pizza", price: 90 }, quantity: 2 }],
+          items: [
+            { menuItem: { id: "m1", name: "Pizza", price: 90 }, quantity: 2 },
+          ],
           restaurant_id: "rest-1",
         },
       },
@@ -223,7 +229,9 @@ describe("useOrderStore", () => {
           menu_item_name: "Pizza",
           price_at_purchase: 100,
           quantity: 2,
-          selected_options: [{ option_id: "o1", name: "Cheese", price_delta: 10 }],
+          selected_options: [
+            { option_id: "o1", name: "Cheese", price_delta: 10 },
+          ],
         },
       ],
     };
@@ -276,7 +284,10 @@ describe("useOrderStore", () => {
 
     await useOrderStore.getState().fetchActiveOrder();
 
-    expect(useOrderStore.getState().activeOrder).toEqual({ id: "o2", status: "READY" });
+    expect(useOrderStore.getState().activeOrder).toEqual({
+      id: "o2",
+      status: "READY",
+    });
   });
 
   it("should place order successfully", async () => {
@@ -292,7 +303,9 @@ describe("useOrderStore", () => {
       cartRestaurantId: "rest-1",
     });
 
-    const res = await useOrderStore.getState().placeOrder("PROMO", "Please rush", "18:00");
+    const res = await useOrderStore
+      .getState()
+      .placeOrder("PROMO", "Please rush", "18:00");
 
     expect(orderService.create).toHaveBeenCalled();
     expect(cartService.clearCart).toHaveBeenCalled();

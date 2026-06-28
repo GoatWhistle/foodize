@@ -142,7 +142,7 @@ const CartDrawer = ({ onClose }) => {
                   <div
                     style={{
                       fontWeight: 800,
-                      color: "var(--fire, #e85d04)",
+                      color: "var(--accent)",
                       fontSize: "0.85rem",
                       marginTop: 2,
                     }}
@@ -180,7 +180,7 @@ const CartDrawer = ({ onClose }) => {
                       width: 28,
                       height: 28,
                       borderRadius: "50%",
-                      background: "var(--fire, #e85d04)",
+                      background: "var(--accent)",
                       border: "none",
                       color: "#fff",
                       fontWeight: 700,
@@ -241,7 +241,7 @@ const CartDrawer = ({ onClose }) => {
             }}
           >
             <span>Итого</span>
-            <span style={{ color: "var(--fire, #e85d04)" }}>{total} ₽</span>
+            <span style={{ color: "var(--accent)" }}>{total} ₽</span>
           </div>
           {error && (
             <div className="form-error" style={{ marginBottom: 10 }}>

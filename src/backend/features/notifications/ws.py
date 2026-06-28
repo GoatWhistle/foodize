@@ -1,6 +1,9 @@
 import asyncio
 import json
+import logging
 import uuid
+
+_logger = logging.getLogger(__name__)
 
 import jwt
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
@@ -100,7 +103,8 @@ async def user_notifications_ws(
         for task in pending:
             task.cancel()
         for task in done:
-            task.result()
+            if not task.cancelled() and task.exception() is not None:
+                _logger.exception("WS task failed", exc_info=task.exception())
     except WebSocketDisconnect:
         pass
     finally:

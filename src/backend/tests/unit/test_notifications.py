@@ -11,10 +11,6 @@ from features.notifications.handlers import (
     handle_order_status_changed,
 )
 from features.notifications.outbox_service import enqueue_event, publish_pending_events
-from features.notifications.publisher import (
-    publish_order_placed,
-    publish_order_status_changed,
-)
 from shared.enums.order_status import OrderStatus
 from shared.enums.outbox_status import OutboxStatus
 
@@ -62,38 +58,6 @@ class TestHandlers:
         ):
             await handle_order_status_changed(event)
         assert "order.status_changed" in caplog.text
-
-
-class TestPublisher:
-    @pytest.mark.asyncio
-    async def test_publish_order_placed_calls_publish(self):
-        event = _make_placed_event()
-        mock_publisher = AsyncMock()
-
-        with patch(
-            "features.notifications.publisher.get_rabbitmq_publisher",
-            return_value=mock_publisher,
-        ):
-            await publish_order_placed(event)
-
-        mock_publisher.publish.assert_awaited_once()
-        call_args = mock_publisher.publish.call_args
-        assert call_args[0][0] == "order.placed"
-
-    @pytest.mark.asyncio
-    async def test_publish_order_status_changed_calls_publish(self):
-        event = _make_status_event()
-        mock_publisher = AsyncMock()
-
-        with patch(
-            "features.notifications.publisher.get_rabbitmq_publisher",
-            return_value=mock_publisher,
-        ):
-            await publish_order_status_changed(event)
-
-        mock_publisher.publish.assert_awaited_once()
-        call_args = mock_publisher.publish.call_args
-        assert call_args[0][0] == "order.status_changed"
 
 
 class TestConsumer:

@@ -10,6 +10,7 @@ from features.users.models import User
 from shared.dependencies import require_permission
 from shared.enums.permissions import Permission
 from shared.response import build_list_response, build_response
+from shared.restaurant_resolver import resolve_restaurant_uuid
 from shared.schemas.response import SuccessListResponse, SuccessResponse
 
 router = APIRouter(prefix="/favorites", tags=["Favorites"])
@@ -35,22 +36,24 @@ async def get_my_favorites(
     status_code=status.HTTP_201_CREATED,
 )
 async def add_favorite(
-    restaurant_id: uuid.UUID,
+    restaurant_id: str,
     current_user: User = Depends(require_permission(Permission.FAVORITES_MANAGE)),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[FavoriteResponse]:
+    rid = await resolve_restaurant_uuid(session, restaurant_id)
     result = await service.add_favorite(
-        session=session, user_id=current_user.id, restaurant_id=restaurant_id
+        session=session, user_id=current_user.id, restaurant_id=rid
     )
     return build_response(result)
 
 
 @router.delete("/{restaurant_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remove_favorite(
-    restaurant_id: uuid.UUID,
+    restaurant_id: str,
     current_user: User = Depends(require_permission(Permission.FAVORITES_MANAGE)),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> None:
+    rid = await resolve_restaurant_uuid(session, restaurant_id)
     await service.remove_favorite(
-        session=session, user_id=current_user.id, restaurant_id=restaurant_id
+        session=session, user_id=current_user.id, restaurant_id=rid
     )

@@ -292,7 +292,7 @@ class TestCompleteOrder:
 
         with (
             patch(
-                "features.orders.crud.order.get_order_by_identifier",
+                "features.orders.crud.order.get_order_by_identifier_for_update",
                 new_callable=AsyncMock,
                 return_value=order,
             ),
@@ -316,7 +316,7 @@ class TestCompleteOrder:
         order = make_mock_order(user_id=user_id, status=OrderStatus.PENDING.value)
 
         with patch(
-            "features.orders.crud.order.get_order_by_identifier",
+            "features.orders.crud.order.get_order_by_identifier_for_update",
             new_callable=AsyncMock,
             return_value=order,
         ):
@@ -325,7 +325,7 @@ class TestCompleteOrder:
 
     async def test_not_found(self, mock_db_session):
         with patch(
-            "features.orders.crud.order.get_order_by_identifier",
+            "features.orders.crud.order.get_order_by_identifier_for_update",
             new_callable=AsyncMock,
             return_value=None,
         ):
@@ -337,7 +337,7 @@ class TestCompleteOrder:
         order = make_mock_order(user_id=uuid.uuid4(), status=OrderStatus.READY.value)
 
         with patch(
-            "features.orders.crud.order.get_order_by_identifier",
+            "features.orders.crud.order.get_order_by_identifier_for_update",
             new_callable=AsyncMock,
             return_value=order,
         ):
@@ -400,7 +400,8 @@ class TestCreateOrder:
         )
 
         assert result.total_price == 125
-        assert session.add.call_count >= 3
+        assert session.add.call_count >= 1
+        session.add_all.assert_called_once()
 
 
 class TestGetOrderEvents:

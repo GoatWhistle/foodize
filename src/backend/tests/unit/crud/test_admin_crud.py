@@ -19,8 +19,7 @@ class TestActivateUser:
 
         result = await activate_user(session, user)
         assert user.is_active is True
-        session.commit.assert_awaited_once()
-        session.refresh.assert_awaited_once_with(user)
+        session.flush.assert_awaited_once()
         assert result == user
 
 

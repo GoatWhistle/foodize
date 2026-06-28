@@ -34,19 +34,21 @@ def test_resolve_model_rejects_unknown_provider():
         _resolve_model(AgentRole.ORDER, "telepathy", _CFG)  # type: ignore[arg-type]
 
 
-def test_get_llm_client_is_cached_per_role_and_provider():
+@pytest.mark.asyncio
+async def test_get_llm_client_is_cached_per_role_and_provider():
     factory._clients.clear()
 
-    first = get_llm_client(AgentRole.ORDER, provider=LLMProvider.OLLAMA)
-    second = get_llm_client(AgentRole.ORDER, provider=LLMProvider.OLLAMA)
+    first = await get_llm_client(AgentRole.ORDER, provider=LLMProvider.OLLAMA)
+    second = await get_llm_client(AgentRole.ORDER, provider=LLMProvider.OLLAMA)
 
     assert first is second
 
 
-def test_gigachat_routes_through_openai_compatible_client():
+@pytest.mark.asyncio
+async def test_gigachat_routes_through_openai_compatible_client():
     factory._clients.clear()
     from infra.llm.openai_compatible import OpenAICompatibleClient
 
-    client = get_llm_client(AgentRole.ADVISOR, provider=LLMProvider.GIGACHAT)
+    client = await get_llm_client(AgentRole.ADVISOR, provider=LLMProvider.GIGACHAT)
 
     assert isinstance(client, OpenAICompatibleClient)

@@ -38,7 +38,9 @@ describe("useRestaurantStore", () => {
 
     const state = useRestaurantStore.getState();
     expect(state.loading).toBe(false);
-    expect(state.publicRestaurants).toEqual([{ id: "r1", name: "Restaurant 1" }]);
+    expect(state.publicRestaurants).toEqual([
+      { id: "r1", name: "Restaurant 1" },
+    ]);
     expect(state.publicRestaurantsTotal).toBe(10);
   });
 
@@ -71,7 +73,10 @@ describe("useRestaurantStore", () => {
 
     menuService.getMenu.mockResolvedValueOnce({
       data: {
-        data: [{ id: "m1", name: "Item 1" }, { id: "m2", name: "Item 2" }],
+        data: [
+          { id: "m1", name: "Item 1" },
+          { id: "m2", name: "Item 2" },
+        ],
       },
     });
     await useRestaurantStore.getState().fetchMenu("r1", { force: true });

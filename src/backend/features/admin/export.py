@@ -124,7 +124,6 @@ class _PDF(FPDF):
             self._row_index += 1
 
     def info_row(self, label: str, value: str) -> None:
-        """Render a two-column key-value info row."""
         self.set_fill_color(*self._SECTION_BG)
         self.set_font("dv", "B", 9)
         self.set_text_color(80, 85, 100)

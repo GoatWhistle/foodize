@@ -1,11 +1,3 @@
-"""add promo extensions: first_order_only, min_order_amount, menu_category
-
-Revision ID: f6a7b8c9d0e1
-Revises: e5f6a7b8c9d2
-Create Date: 2026-05-09 12:00:00.000000
-
-"""
-
 from collections.abc import Sequence
 
 import sqlalchemy as sa

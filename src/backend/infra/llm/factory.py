@@ -1,11 +1,6 @@
-"""Resolve a configured ``LLMClient`` for a given agent role.
-
-Each agent asks for a client by role; the active provider (and the model that
-fits it) is taken from settings, so switching providers is a config change.
-"""
-
 from __future__ import annotations
 
+import asyncio
 from enum import Enum
 
 from infra.llm.base import LLMClient
@@ -19,6 +14,14 @@ class AgentRole(str, Enum):
 
 
 _clients: dict[tuple[str, str], LLMClient] = {}
+_clients_lock: asyncio.Lock | None = None
+
+
+def _get_lock() -> asyncio.Lock:
+    global _clients_lock
+    if _clients_lock is None:
+        _clients_lock = asyncio.Lock()
+    return _clients_lock
 
 
 def _resolve_model(role: AgentRole, provider: LLMProvider, cfg: LLMConfig) -> str:
@@ -73,11 +76,14 @@ def _build(provider: LLMProvider, model: str, cfg: LLMConfig) -> LLMClient:
     raise ValueError(f"Unsupported LLM provider: {provider}")
 
 
-def get_llm_client(role: AgentRole, *, provider: LLMProvider | None = None) -> LLMClient:
+async def get_llm_client(role: AgentRole, *, provider: LLMProvider | None = None) -> LLMClient:
     cfg = settings.llm
     provider = provider or cfg.provider
     model = _resolve_model(role, provider, cfg)
     key = (provider.value, model)
-    if key not in _clients:
-        _clients[key] = _build(provider, model, cfg)
-    return _clients[key]
+    if key in _clients:
+        return _clients[key]
+    async with _get_lock():
+        if key not in _clients:
+            _clients[key] = _build(provider, model, cfg)
+        return _clients[key]

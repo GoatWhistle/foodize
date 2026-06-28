@@ -1,12 +1,3 @@
-"""Tool surface for the vendor AI advisor.
-
-Each tool wraps existing analytics (``features/admin/crud.py``) or the
-vendor-scoped queries in ``features/ai_advisor/crud.py``. The executor binds a
-DB session and the current vendor, so the model only supplies high-level
-arguments (period, restaurant) — the ``vendor_id`` scope is enforced here, never
-trusted from model output.
-"""
-
 import json
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -108,7 +99,7 @@ def _restaurant_id(args: dict) -> uuid.UUID | None:
     try:
         return uuid.UUID(str(raw))
     except (TypeError, ValueError):
-        return None
+        raise ValueError(f"invalid restaurant_id: {raw!r} — provide a valid UUID")
 
 
 def build_advisor_executor(
@@ -117,19 +108,39 @@ def build_advisor_executor(
     default_restaurant_id: uuid.UUID | None = None,
 ) -> ToolExecutor:
     vendor_id = vendor.id
+    _advanced_cache: dict[tuple, object] = {}
+    _finance_cache: dict[tuple, object] = {}
 
     def resolve_restaurant(args: dict) -> uuid.UUID | None:
         return _restaurant_id(args) or default_restaurant_id
 
+    async def _get_advanced(start, end, restaurant_id):
+        key = (start, end, restaurant_id)
+        if key not in _advanced_cache:
+            _advanced_cache[key] = await get_advanced_analytics(
+                session,
+                date_from=start,
+                date_to=end,
+                vendor_id=vendor_id,
+                restaurant_id=restaurant_id,
+            )
+        return _advanced_cache[key]
+
+    async def _get_finance(start, end, restaurant_id):
+        key = (start, end, restaurant_id)
+        if key not in _finance_cache:
+            _finance_cache[key] = await get_finance_analytics(
+                session,
+                date_from=start,
+                date_to=end,
+                vendor_id=vendor_id,
+                restaurant_id=restaurant_id,
+            )
+        return _finance_cache[key]
+
     async def _sales_summary(args: dict) -> str:
         start, end = _period_range(args)
-        data = await get_finance_analytics(
-            session,
-            date_from=start,
-            date_to=end,
-            vendor_id=vendor_id,
-            restaurant_id=resolve_restaurant(args),
-        )
+        data = await _get_finance(start, end, resolve_restaurant(args))
         return _dumps(
             {
                 "period": {"from": str(start), "to": str(end)},
@@ -153,13 +164,7 @@ def build_advisor_executor(
 
     async def _peak_hours(args: dict) -> str:
         start, end = _period_range(args)
-        data = await get_advanced_analytics(
-            session,
-            date_from=start,
-            date_to=end,
-            vendor_id=vendor_id,
-            restaurant_id=resolve_restaurant(args),
-        )
+        data = await _get_advanced(start, end, resolve_restaurant(args))
         return _dumps(
             {
                 "period": {"from": str(start), "to": str(end)},
@@ -169,13 +174,7 @@ def build_advisor_executor(
 
     async def _category_breakdown(args: dict) -> str:
         start, end = _period_range(args)
-        data = await get_advanced_analytics(
-            session,
-            date_from=start,
-            date_to=end,
-            vendor_id=vendor_id,
-            restaurant_id=resolve_restaurant(args),
-        )
+        data = await _get_advanced(start, end, resolve_restaurant(args))
         return _dumps(
             {
                 "period": {"from": str(start), "to": str(end)},
@@ -188,13 +187,7 @@ def build_advisor_executor(
     async def _top_and_bottom(args: dict) -> str:
         start, end = _period_range(args)
         restaurant_id = resolve_restaurant(args)
-        finance = await get_finance_analytics(
-            session,
-            date_from=start,
-            date_to=end,
-            vendor_id=vendor_id,
-            restaurant_id=restaurant_id,
-        )
+        finance = await _get_finance(start, end, restaurant_id)
         bottom = await crud.get_bottom_items(
             session,
             vendor_id=vendor_id,

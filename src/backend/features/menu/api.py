@@ -255,10 +255,12 @@ async def delete_option(
 @router.get("/{restaurant_id}", response_model=SuccessListResponse[MenuItemResponse])
 async def read_restaurant_menu(
     request: Request,
-    restaurant_id: uuid.UUID,
+    restaurant_id: str,
     page: int = Query(1, ge=1),
     size: int = Query(50, ge=1, le=200),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessListResponse[MenuItemResponse]:
-    data, total = await service.get_menu(session, restaurant_id, page=page, size=size)
+    from shared.restaurant_resolver import resolve_restaurant_uuid
+    rid = await resolve_restaurant_uuid(session, restaurant_id)
+    data, total = await service.get_menu(session, rid, page=page, size=size)
     return build_list_response(data=data, total=total, page=page, size=size, request=request)

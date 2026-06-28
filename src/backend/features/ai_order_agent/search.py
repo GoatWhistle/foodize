@@ -1,18 +1,10 @@
-"""Semantic menu search (RAG retrieval) for the order agent.
-
-Pipeline: prefilter orderable items in SQL → embed query + candidates (Ollama
-bge-m3) → cosine similarity → hybrid rerank (small boost on literal name match)
-→ top-k. Candidate embeddings are cached in Redis (keyed by model + text hash),
-so only new/changed items are embedded. If embeddings are disabled or the
-embedding endpoint is unreachable, it falls back to keyword search.
-"""
-
+import asyncio
 import hashlib
 import json
 import logging
-import math
 import uuid
 
+import numpy as np
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.ai_order_agent import crud
@@ -30,19 +22,20 @@ def _item_text(item: dict) -> str:
 
 
 def _cache_key(model: str, text: str) -> str:
-    digest = hashlib.sha1(text.encode("utf-8")).hexdigest()
+    digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
     return f"emb:menuitem:{model}:{digest}"
 
 
 def _cosine(a: list[float], b: list[float]) -> float:
     if not a or not b or len(a) != len(b):
         return 0.0
-    dot = sum(x * y for x, y in zip(a, b))
-    norm_a = math.sqrt(sum(x * x for x in a))
-    norm_b = math.sqrt(sum(y * y for y in b))
+    va = np.asarray(a, dtype=np.float32)
+    vb = np.asarray(b, dtype=np.float32)
+    norm_a = np.linalg.norm(va)
+    norm_b = np.linalg.norm(vb)
     if norm_a == 0 or norm_b == 0:
         return 0.0
-    return dot / (norm_a * norm_b)
+    return float(np.dot(va, vb) / (norm_a * norm_b))
 
 
 async def semantic_search(
@@ -61,35 +54,43 @@ async def semantic_search(
         )
 
     try:
-        candidates = await crud.list_orderable_items(
-            session,
-            max_price=max_price,
-            restaurant_id=restaurant_id,
-            limit=cfg.embedding_candidate_limit,
+        client = await get_embedding_client()
+        model = client.model
+
+        candidates, query_result = await asyncio.gather(
+            crud.list_orderable_items(
+                session,
+                max_price=max_price,
+                restaurant_id=restaurant_id,
+                limit=cfg.embedding_candidate_limit,
+            ),
+            client.embed([query]),
         )
         if not candidates:
             return []
 
-        client = get_embedding_client()
-        model = client.model
+        query_embedding = query_result[0]
 
-        query_embedding = (await client.embed([query]))[0]
-
-        misses: list[dict] = []
         for item in candidates:
             text = _item_text(item)
             item["_text"] = text
             item["_key"] = _cache_key(model, text)
-            cached = await cache.get(item["_key"])
+
+        keys = [item["_key"] for item in candidates]
+        cached_values = await cache.mget(*keys)
+        misses: list[dict] = []
+        for item, cached in zip(candidates, cached_values):
             item["_embedding"] = json.loads(cached) if cached else None
             if item["_embedding"] is None:
                 misses.append(item)
 
         if misses:
             fresh = await client.embed([item["_text"] for item in misses])
+            new_entries: dict[str, str] = {}
             for item, embedding in zip(misses, fresh):
                 item["_embedding"] = embedding
-                await cache.set(item["_key"], json.dumps(embedding), ttl=_EMBED_TTL_SECONDS)
+                new_entries[item["_key"]] = json.dumps(embedding)
+            await cache.mset(new_entries, ttl=_EMBED_TTL_SECONDS)
 
         query_lower = query.lower()
         scored: list[tuple[float, dict]] = []
