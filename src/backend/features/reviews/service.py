@@ -1,4 +1,5 @@
 import uuid
+from decimal import Decimal
 
 from sqlalchemy import exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +15,15 @@ from shared.enums.order_status import OrderStatus
 from shared.exceptions import NotFoundException
 
 MAX_REVIEWS_PER_USER_RESTAURANT = 1
+
+
+async def _sync_restaurant_rating(
+    session: AsyncSession, restaurant, restaurant_id: uuid.UUID
+) -> None:
+    avg, count = await crud.get_restaurant_avg_rating(session, restaurant_id)
+    restaurant.average_rating = avg if avg is not None else Decimal("0.00")
+    restaurant.review_count = count
+    session.add(restaurant)
 
 
 def _review_to_response(review: Review) -> ReviewResponse:
@@ -64,10 +74,7 @@ async def create_review_for_user(
         is_verified_purchase=is_verified,
     )
 
-    avg, count = await crud.get_restaurant_avg_rating(session, restaurant_id)
-    restaurant.average_rating = avg or 0.0
-    restaurant.review_count = count
-    session.add(restaurant)
+    await _sync_restaurant_rating(session, restaurant, restaurant_id)
     await session.commit()
 
     return _review_to_response(review)
@@ -90,10 +97,7 @@ async def delete_review_for_user(
     response = _review_to_response(review)
     await crud.delete_review(session, review)
 
-    avg, count = await crud.get_restaurant_avg_rating(session, restaurant_id)
-    restaurant.average_rating = avg or 0.0
-    restaurant.review_count = count
-    session.add(restaurant)
+    await _sync_restaurant_rating(session, restaurant, restaurant_id)
     await session.commit()
 
     return response
@@ -115,10 +119,7 @@ async def update_review_for_user(
 
     updated = await crud.update_review(session, review, review_data)
 
-    avg, count = await crud.get_restaurant_avg_rating(session, restaurant_id)
-    restaurant.average_rating = avg or 0.0
-    restaurant.review_count = count
-    session.add(restaurant)
+    await _sync_restaurant_rating(session, restaurant, restaurant_id)
     await session.commit()
 
     return _review_to_response(updated)

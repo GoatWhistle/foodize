@@ -4,8 +4,8 @@ providers:
   - name: Foodize Dashboards
     orgId: 1
     type: file
-    disableDeletion: false
+    disableDeletion: true
     updateIntervalSeconds: 30
-    allowUiUpdates: true
+    allowUiUpdates: false
     options:
       path: /etc/grafana/dashboards

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   MagnifyingGlass,
@@ -9,69 +9,39 @@ import {
   Star,
   ChartBar,
 } from '@phosphor-icons/react';
-import RestaurantCard from '../../components/ui/RestaurantCard';
-import EmptyState from '../../components/ui/EmptyState';
-import Pagination from '../../components/ui/Pagination';
+import RestaurantCard from '@shared/components/RestaurantCard/RestaurantCard';
+import EmptyState from '@shared/components/EmptyState/EmptyState';
+import Pagination from '@shared/components/Pagination/Pagination';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useFavoriteStore } from '../../store/useFavoriteStore';
 import { useShallow } from 'zustand/react/shallow';
-import { useRestaurantStore } from '../../store/useRestaurantStore';
 import { ROUTES } from '../../constants/routes';
+import { useHomePageLogic } from '@shared/hooks/useHomePageLogic.js';
 
 const HomePage = () => {
-  const [search, setSearch] = useState('');
-  const [onlyOpen, setOnlyOpen] = useState(false);
-  const [sort, setSort] = useState('default');
-  const [direction, setDirection] = useState('desc');
   const [showFilters, setShowFilters] = useState(false);
+  const filterRef = useRef(null);
   const { isAuthenticated } = useAuthStore(
     useShallow((s) => ({ isAuthenticated: s.isAuthenticated }))
   );
-  const {
-    publicRestaurants,
-    publicRestaurantsTotal,
-    fetchPublicRestaurants,
-    loading,
-  } = useRestaurantStore(
-    useShallow((s) => ({
-      publicRestaurants: s.publicRestaurants,
-      publicRestaurantsTotal: s.publicRestaurantsTotal,
-      fetchPublicRestaurants: s.fetchPublicRestaurants,
-      loading: s.loading,
-    }))
+  const { favoriteIds, toggle: toggleFavorite } = useFavoriteStore(
+    useShallow((s) => ({ favoriteIds: s.favoriteIds, toggle: s.toggle }))
   );
   const navigate = useNavigate();
-  const [page, setPage] = useState(1);
+
+  const {
+    search, setSearch,
+    onlyOpen, setOnlyOpen,
+    sort, setSort,
+    direction, setDirection,
+    page, setPage,
+    allRestaurants,
+    loading,
+    publicRestaurantsTotal,
+    resetFilters,
+  } = useHomePageLogic({ pageSize: 20, infiniteScroll: false });
+
   const size = 20;
-  const filterRef = useRef(null);
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handler = (e) => {
-      if (filterRef.current && !filterRef.current.contains(e.target)) {
-        setShowFilters(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  useEffect(() => {
-    setPage(1);
-  }, [search, onlyOpen, sort, direction]);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      fetchPublicRestaurants({
-        name: search || undefined,
-        is_open: onlyOpen ? true : undefined,
-        sort,
-        direction,
-        page,
-        size,
-      });
-    }, 400);
-    return () => clearTimeout(handler);
-  }, [search, onlyOpen, sort, direction, page, fetchPublicRestaurants]);
 
   const handleCardClick = (restaurant) => {
     if (!isAuthenticated) {
@@ -79,7 +49,7 @@ const HomePage = () => {
       return;
     }
     navigate(
-      ROUTES.RESTAURANT.replace(':id', restaurant.display_id || restaurant.id),
+      ROUTES.RESTAURANT.replace(':id', restaurant.display_id),
       {
         state: { restaurant },
         viewTransition: true,
@@ -221,26 +191,23 @@ const HomePage = () => {
             className="text-muted"
             style={{ fontSize: '0.8rem', fontWeight: 600 }}
           >
-            {publicRestaurants.length}
+            {allRestaurants.length}
           </span>
         </div>
 
-        {loading && publicRestaurants.length === 0 ? (
+        {loading && allRestaurants.length === 0 ? (
           <div className="restaurants-grid">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="restaurant-card-skeleton" />
             ))}
           </div>
-        ) : publicRestaurants.length === 0 ? (
+        ) : allRestaurants.length === 0 ? (
           <EmptyState
             title="Ничего не найдено"
             subtitle="Попробуйте другой поиск или фильтр"
             action={{
               label: 'Сбросить',
-              onClick: () => {
-                setSearch('');
-                setOnlyOpen(false);
-              },
+              onClick: resetFilters,
             }}
           />
         ) : (
@@ -248,7 +215,7 @@ const HomePage = () => {
             <div
               className={`restaurants-grid${loading ? ' restaurants-grid--loading' : ''}`}
             >
-              {publicRestaurants.map((r, i) => (
+              {allRestaurants.map((r, i) => (
                 <div
                   key={r.id}
                   className="restaurant-card-fade"
@@ -257,6 +224,7 @@ const HomePage = () => {
                   <RestaurantCard
                     restaurant={r}
                     onClick={() => handleCardClick(r)}
+                    isFavorite={isAuthenticated && favoriteIds.includes(r.id)}
                   />
                 </div>
               ))}

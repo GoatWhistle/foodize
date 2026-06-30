@@ -21,6 +21,8 @@ router = APIRouter()
 
 async def _authenticate_ws_user(websocket: WebSocket, token: str | None):
     if not token:
+        token = websocket.cookies.get("access_token")
+    if not token:
         try:
             raw = await asyncio.wait_for(websocket.receive_text(), timeout=10.0)
             data = json.loads(raw)
@@ -35,12 +37,20 @@ async def _authenticate_ws_user(websocket: WebSocket, token: str | None):
 
     try:
         payload = decode_jwt(token)
+        if payload.get("typ") != "access":
+            raise ValueError("wrong token type")
         user_id = payload.get("sub")
         if user_id is None:
             raise ValueError
         parsed_user_id = uuid.UUID(user_id)
     except (jwt.InvalidTokenError, ValueError):
         await websocket.send_text(json.dumps({"error": "invalid_token"}))
+        await websocket.close()
+        return None
+
+    cache = get_redis_cache()
+    if await cache.exists(f"access_blacklist:{token}"):
+        await websocket.send_text(json.dumps({"error": "token_revoked"}))
         await websocket.close()
         return None
 

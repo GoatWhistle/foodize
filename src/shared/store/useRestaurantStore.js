@@ -2,6 +2,9 @@ import { create } from "zustand";
 import { restaurantService } from "@shared/services/restaurantService.js";
 import { menuService } from "@shared/services/menuService.js";
 
+const PUBLIC_RESTAURANTS_TTL_MS = 60_000;
+const publicRestaurantsCache = new Map();
+
 export const useRestaurantStore = create((set, get) => ({
   publicRestaurants: [],
   publicRestaurantsTotal: 0,
@@ -12,11 +15,18 @@ export const useRestaurantStore = create((set, get) => ({
   error: null,
 
   fetchPublicRestaurants: async (params = {}) => {
+    const cacheKey = JSON.stringify(params);
+    const cached = publicRestaurantsCache.get(cacheKey);
+    if (cached && Date.now() - cached.ts < PUBLIC_RESTAURANTS_TTL_MS) {
+      set({ publicRestaurants: cached.list, publicRestaurantsTotal: cached.total, loading: false });
+      return;
+    }
     set({ loading: true, error: null });
     try {
       const res = await restaurantService.getAll(params);
       const list = Array.isArray(res.data?.data) ? res.data.data : [];
       const total = res.data?.pagination?.total || list.length;
+      publicRestaurantsCache.set(cacheKey, { list, total, ts: Date.now() });
       set({ publicRestaurants: list, publicRestaurantsTotal: total, loading: false });
     } catch (e) {
       set({ error: e.message, loading: false });
@@ -49,17 +59,29 @@ export const useRestaurantStore = create((set, get) => ({
   setCurrentRestaurant: (restaurant) => set({ currentRestaurant: restaurant }),
 
   createRestaurant: async (data) => {
-    const res = await restaurantService.create(data);
-    set((s) => ({ restaurants: [...s.restaurants, res.data.data] }));
-    return res.data.data;
+    set({ error: null });
+    try {
+      const res = await restaurantService.create(data);
+      set((s) => ({ restaurants: [...s.restaurants, res.data.data] }));
+      return res.data.data;
+    } catch (e) {
+      set({ error: e.message });
+      throw e;
+    }
   },
 
   addMenuItem: async (restaurantId, data) => {
-    const res = await menuService.addItem(restaurantId, data);
-    set((s) => {
-      const currentMenu = Array.isArray(s.menus[restaurantId]) ? s.menus[restaurantId] : [];
-      return { menus: { ...s.menus, [restaurantId]: [...currentMenu, res.data.data] } };
-    });
-    return res.data.data;
+    set({ error: null });
+    try {
+      const res = await menuService.addItem(restaurantId, data);
+      set((s) => {
+        const currentMenu = Array.isArray(s.menus[restaurantId]) ? s.menus[restaurantId] : [];
+        return { menus: { ...s.menus, [restaurantId]: [...currentMenu, res.data.data] } };
+      });
+      return res.data.data;
+    } catch (e) {
+      set({ error: e.message });
+      throw e;
+    }
   },
 }));

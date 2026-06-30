@@ -76,25 +76,28 @@ async def stream_agent(
     execute: ToolExecutor,
     max_steps: int = 8,
 ) -> AsyncIterator[str]:
-
-    history = list(messages)
-    for _ in range(max_steps):
-        response = await client.complete(system=system, messages=history, tools=tools)
-        _log_usage(client.model, response)
-        if not response.tool_calls:
+    try:
+        history = list(messages)
+        for _ in range(max_steps):
+            response = await client.complete(system=system, messages=history, tools=tools)
+            _log_usage(client.model, response)
+            if not response.tool_calls:
+                history.append(Message(role=Role.ASSISTANT, content=response.text))
+                break
+            history.append(
+                Message(role=Role.ASSISTANT, content=response.text, tool_calls=response.tool_calls)
+            )
+            tool_results = await asyncio.gather(
+                *[_run_tools(call, execute) for call in response.tool_calls]
+            )
+            history.extend(tool_results)
+        else:
+            response = await client.complete(system=system, messages=history, tools=None)
+            _log_usage(client.model, response)
             history.append(Message(role=Role.ASSISTANT, content=response.text))
-            break
-        history.append(
-            Message(role=Role.ASSISTANT, content=response.text, tool_calls=response.tool_calls)
-        )
-        tool_results = await asyncio.gather(
-            *[_run_tools(call, execute) for call in response.tool_calls]
-        )
-        history.extend(tool_results)
-    else:
-        response = await client.complete(system=system, messages=history, tools=None)
-        _log_usage(client.model, response)
-        history.append(Message(role=Role.ASSISTANT, content=response.text))
 
-    async for chunk in client.stream_text(system=system, messages=history):
-        yield chunk
+        async for chunk in client.stream_text(system=system, messages=history):
+            yield chunk
+    except Exception:
+        logger.exception("stream_agent failed")
+        raise

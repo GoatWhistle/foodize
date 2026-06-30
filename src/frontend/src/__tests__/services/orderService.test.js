@@ -44,4 +44,26 @@ describe('orderService', () => {
     const result = await orderService.getOrderEvents('123');
     expect(result.data).toEqual([]);
   });
+
+  it('cancelOrder sends POST to /orders/{id}/cancel', async () => {
+    mock.onPost('/orders/123/cancel').reply(200, { id: '123', status: 'CANCELLED' });
+
+    const result = await orderService.cancelOrder('123', 'Changed mind');
+    expect(result.data).toEqual({ id: '123', status: 'CANCELLED' });
+    expect(mock.history.post[0].data).toBe(JSON.stringify({ reason: 'Changed mind' }));
+  });
+
+  it('cancelOrder sends null reason when not provided', async () => {
+    mock.onPost('/orders/456/cancel').reply(200, { id: '456' });
+
+    await orderService.cancelOrder('456');
+    expect(mock.history.post[0].data).toBe(JSON.stringify({ reason: null }));
+  });
+
+  it('completeOrder sends POST to /orders/{id}/complete', async () => {
+    mock.onPost('/orders/789/complete').reply(200, { id: '789', status: 'COMPLETED' });
+
+    const result = await orderService.completeOrder('789');
+    expect(result.data).toEqual({ id: '789', status: 'COMPLETED' });
+  });
 });

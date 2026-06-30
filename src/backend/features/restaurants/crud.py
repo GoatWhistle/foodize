@@ -29,7 +29,7 @@ async def create_restaurant(
     )
     session.add(new_restaurant)
     try:
-        await session.commit()
+        await session.flush()
     except IntegrityError as e:
         await session.rollback()
         raise AlreadyExistsException(
@@ -44,7 +44,7 @@ async def update_restaurant(
     for key, value in update_data.model_dump(exclude_unset=True).items():
         setattr(restaurant, key, value)
     try:
-        await session.commit()
+        await session.flush()
     except IntegrityError as e:
         await session.rollback()
         raise AlreadyExistsException(detail="Restaurant with this address already exists") from e

@@ -1,4 +1,4 @@
-// Recharts components for dashboard analytics
+import { memo } from 'react';
 import {
   LineChart,
   Line,
@@ -18,13 +18,19 @@ import {
 } from 'recharts';
 
 const COLORS = [
-  '#6366f1',
-  '#10b981',
-  '#f59e0b',
-  '#ef4444',
-  '#8b5cf6',
-  '#ec4899',
+  'var(--color-indigo, #6366f1)',
+  'var(--color-green, #10b981)',
+  'var(--color-amber, #f59e0b)',
+  'var(--color-error, #ef4444)',
+  'var(--color-purple, #8b5cf6)',
+  'var(--color-pink, #ec4899)',
 ];
+
+const TOOLTIP_STYLE = {
+  background: 'var(--bg-card)',
+  border: '1px solid var(--border)',
+  borderRadius: '8px',
+};
 
 const ChartCard = ({ title, children }) => (
   <div
@@ -53,7 +59,7 @@ const ChartCard = ({ title, children }) => (
   </div>
 );
 
-export const RevenueChart = ({ data }) => (
+export const RevenueChart = memo(({ data }) => (
   <ChartCard title="Динамика выручки">
     <AreaChart data={data}>
       <defs>
@@ -84,11 +90,7 @@ export const RevenueChart = ({ data }) => (
         tickFormatter={(val) => `${val}₽`}
       />
       <Tooltip
-        contentStyle={{
-          background: 'var(--bg-card)',
-          border: '1px solid var(--border)',
-          borderRadius: '8px',
-        }}
+        contentStyle={TOOLTIP_STYLE}
         labelStyle={{ color: 'var(--text-1)', fontWeight: 700 }}
       />
       <Area
@@ -102,9 +104,9 @@ export const RevenueChart = ({ data }) => (
       />
     </AreaChart>
   </ChartCard>
-);
+));
 
-export const HourlyLoadChart = ({ data }) => (
+export const HourlyLoadChart = memo(({ data }) => (
   <ChartCard title="Нагрузка по часам">
     <BarChart data={data}>
       <CartesianGrid
@@ -115,11 +117,7 @@ export const HourlyLoadChart = ({ data }) => (
       <XAxis dataKey="label" stroke="var(--text-3)" fontSize={11} />
       <YAxis stroke="var(--text-3)" fontSize={11} />
       <Tooltip
-        contentStyle={{
-          background: 'var(--bg-card)',
-          border: '1px solid var(--border)',
-          borderRadius: '8px',
-        }}
+        contentStyle={TOOLTIP_STYLE}
       />
       <Bar
         dataKey="value"
@@ -129,9 +127,9 @@ export const HourlyLoadChart = ({ data }) => (
       />
     </BarChart>
   </ChartCard>
-);
+));
 
-export const CategoryRevenueChart = ({ data }) => (
+export const CategoryRevenueChart = memo(({ data }) => (
   <ChartCard title="Выручка по категориям">
     <PieChart>
       <Pie
@@ -149,18 +147,14 @@ export const CategoryRevenueChart = ({ data }) => (
         ))}
       </Pie>
       <Tooltip
-        contentStyle={{
-          background: 'var(--bg-card)',
-          border: '1px solid var(--border)',
-          borderRadius: '8px',
-        }}
+        contentStyle={TOOLTIP_STYLE}
       />
       <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
     </PieChart>
   </ChartCard>
-);
+));
 
-export const AOVDynamicsChart = ({ data }) => (
+export const AOVDynamicsChart = memo(({ data }) => (
   <ChartCard title="Динамика среднего чека">
     <LineChart data={data}>
       <CartesianGrid
@@ -185,11 +179,7 @@ export const AOVDynamicsChart = ({ data }) => (
         tickFormatter={(val) => `${val}₽`}
       />
       <Tooltip
-        contentStyle={{
-          background: 'var(--bg-card)',
-          border: '1px solid var(--border)',
-          borderRadius: '8px',
-        }}
+        contentStyle={TOOLTIP_STYLE}
       />
       <Line
         type="monotone"
@@ -201,7 +191,7 @@ export const AOVDynamicsChart = ({ data }) => (
       />
     </LineChart>
   </ChartCard>
-);
+));
 
 const ROLE_COLORS = {
   CUSTOMER: '#6366f1',
@@ -209,7 +199,7 @@ const ROLE_COLORS = {
   VENDOR: '#f59e0b',
 };
 
-export const UsersByRoleChart = ({ data = {} }) => {
+export const UsersByRoleChart = memo(({ data = {} }) => {
   const roles = [
     { key: 'CUSTOMER', name: 'Клиенты' },
     { key: 'STAFF', name: 'Персонал' },
@@ -290,9 +280,9 @@ export const UsersByRoleChart = ({ data = {} }) => {
       })}
     </div>
   );
-};
+});
 
-export const KPICards = ({ finance }) => {
+export const KPICards = memo(({ finance }) => {
   const cancellationRate =
     finance.total_orders > 0
       ? ((finance.cancelled_orders / finance.total_orders) * 100).toFixed(1)
@@ -381,9 +371,10 @@ export const KPICards = ({ finance }) => {
       ))}
     </div>
   );
-};
+});
 
-export const OrderStatusPieChart = ({ data }) => {
+export const OrderStatusPieChart = memo(({ data = {} }) => {
+  if (!data) return null;
   const chartData = Object.entries(data).map(([label, value]) => ({
     label,
     value,
@@ -406,20 +397,16 @@ export const OrderStatusPieChart = ({ data }) => {
           ))}
         </Pie>
         <Tooltip
-          contentStyle={{
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border)',
-            borderRadius: '8px',
-          }}
+          contentStyle={TOOLTIP_STYLE}
         />
         <Legend iconType="circle" wrapperStyle={{ fontSize: '11px' }} />
       </PieChart>
     </ChartCard>
   );
-};
+});
 
-export const TopItemsChart = ({ data }) => {
-  // `data` is finance.top_items array
+export const TopItemsChart = memo(({ data = [] }) => {
+  if (!Array.isArray(data)) return null;
   return (
     <ChartCard title="Топ 5 блюд">
       <BarChart
@@ -442,11 +429,7 @@ export const TopItemsChart = ({ data }) => {
           tick={{ fill: 'var(--text-1)', fontSize: 10 }}
         />
         <Tooltip
-          contentStyle={{
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border)',
-            borderRadius: '8px',
-          }}
+          contentStyle={TOOLTIP_STYLE}
           formatter={(value) => [value, 'Продано шт.']}
         />
         <Bar
@@ -458,9 +441,10 @@ export const TopItemsChart = ({ data }) => {
       </BarChart>
     </ChartCard>
   );
-};
+});
 
-export const TopRestaurantsChart = ({ data }) => {
+export const TopRestaurantsChart = memo(({ data = [] }) => {
+  if (!Array.isArray(data)) return null;
   return (
     <ChartCard title="Топ 5 ресторанов">
       <BarChart
@@ -483,11 +467,7 @@ export const TopRestaurantsChart = ({ data }) => {
           tick={{ fill: 'var(--text-1)', fontSize: 10 }}
         />
         <Tooltip
-          contentStyle={{
-            background: 'var(--bg-card)',
-            border: '1px solid var(--border)',
-            borderRadius: '8px',
-          }}
+          contentStyle={TOOLTIP_STYLE}
           formatter={(value) => [`${value} ₽`, 'Выручка']}
         />
         <Bar
@@ -499,4 +479,4 @@ export const TopRestaurantsChart = ({ data }) => {
       </BarChart>
     </ChartCard>
   );
-};
+});

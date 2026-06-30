@@ -13,8 +13,8 @@ if TYPE_CHECKING:
 
 
 class StaffRequest(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
-    restaurant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("restaurants.id"))
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    restaurant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("restaurants.id", ondelete="CASCADE"))
 
     message: Mapped[str | None] = mapped_column(String(500))
     status: Mapped[str] = mapped_column(

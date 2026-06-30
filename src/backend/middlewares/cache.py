@@ -24,6 +24,15 @@ _DEFAULT_EXCLUDE_PATHS = [
     "ws",
 ]
 
+_ADMIN_RESOURCE_MAP = {
+    "restaurants": "restaurants",
+    "vendors": "vendors",
+    "users": "users",
+    "reviews": "reviews",
+    "menu": "menu",
+    "orders": "orders",
+}
+
 
 class AutoCacheMiddleware(BaseHTTPMiddleware):
     def __init__(
@@ -44,7 +53,12 @@ class AutoCacheMiddleware(BaseHTTPMiddleware):
     def _make_tag_key(self, path: str) -> str:
         stripped = path.removeprefix("/api/v1/").removeprefix("/api/")
         segments = [s for s in stripped.split("/") if s]
-        return f"tag:{segments[0]}" if segments else "tag:root"
+        if not segments:
+            return "tag:root"
+        if segments[0] == "admin" and len(segments) > 1:
+            resource = _ADMIN_RESOURCE_MAP.get(segments[1], segments[1])
+            return f"tag:{resource}"
+        return f"tag:{segments[0]}"
 
     def _is_excluded(self, path: str) -> bool:
         normalized_path = path.strip("/")
@@ -96,6 +110,7 @@ class AutoCacheMiddleware(BaseHTTPMiddleware):
                     await cache.set(cache_key, body.decode(), ttl=self.ttl)
                     tag_key = self._make_tag_key(path)
                     await cache.sadd(tag_key, cache_key)
+                    await cache.expire(tag_key, self.ttl)
                 except RedisError:
                     pass
                 return Response(

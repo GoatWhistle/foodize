@@ -19,5 +19,6 @@ export const authService = {
   telegramAuth: (initData) =>
     api.post("/telegram/auth", { init_data: initData }),
   telegramLogout: () => api.post("/telegram/logout"),
+  setTelegramSitePassword: (data) => api.post("/telegram/site-login/password", data),
   getMe: () => api.get("/users/me"),
 };

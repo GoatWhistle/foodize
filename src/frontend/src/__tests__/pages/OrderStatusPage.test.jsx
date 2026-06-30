@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import OrderStatusPage from '../../pages/orders/OrderStatusPage';
 import { useOrderStore } from '../../store/useOrderStore';
+import { orderService } from '../../services/orderService';
 
 vi.mock('../../store/useOrderStore', () => ({
   useOrderStore: vi.fn(),
@@ -12,7 +13,13 @@ vi.mock('../../services/orderService', () => ({
   orderService: {
     getOrderEvents: vi.fn().mockResolvedValue({ data: [] }),
     completeOrder: vi.fn().mockResolvedValue({}),
+    cancelOrder: vi.fn().mockResolvedValue({}),
   },
+}));
+
+vi.mock('../../services/api', () => ({
+  createOrderWebSocket: vi.fn(() => ({ close: vi.fn() })),
+  default: {},
 }));
 
 describe('OrderStatusPage', () => {
@@ -72,6 +79,70 @@ describe('OrderStatusPage', () => {
     renderWithRouter();
 
     expect(fetchOrderMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders skeleton when currentOrder is null', () => {
+    vi.mocked(useOrderStore).mockImplementation((sel) => {
+      const state = { fetchOrder: fetchOrderMock, currentOrder: null };
+      return sel ? sel(state) : state;
+    });
+    useOrderStore.getState = vi.fn(() => ({ currentOrder: null }));
+
+    renderWithRouter();
+
+    const skeletons = document.querySelectorAll('.skeleton');
+    expect(skeletons.length).toBeGreaterThan(0);
+    expect(screen.queryByText('Состав заказа')).toBeNull();
+  });
+
+  it('shows CANCELLED status pill and cancel reason', () => {
+    const cancelledState = {
+      fetchOrder: fetchOrderMock,
+      currentOrder: {
+        id: 'ord-2',
+        status: 'CANCELLED',
+        display_id: '42',
+        total_price: 500,
+        cancellation_reason: 'Ресторан закрыт',
+        items: [],
+      },
+    };
+    vi.mocked(useOrderStore).mockImplementation((sel) => {
+      return sel ? sel(cancelledState) : cancelledState;
+    });
+    useOrderStore.getState = vi.fn(() => cancelledState);
+
+    renderWithRouter();
+
+    expect(screen.getByText('Отменён')).toBeDefined();
+    expect(screen.getByText('Ресторан закрыт')).toBeDefined();
+    expect(screen.queryByText('Отменить')).toBeNull();
+  });
+
+  it('shows repeat order button when order is COMPLETED', () => {
+    const completedState = {
+      fetchOrder: fetchOrderMock,
+      currentOrder: {
+        id: 'ord-3',
+        status: 'COMPLETED',
+        display_id: '43',
+        total_price: 300,
+        items: [{ id: 'i1', quantity: 1, menu_item_name: 'Пицца', price_at_purchase: 300 }],
+      },
+    };
+    vi.mocked(useOrderStore).mockImplementation((sel) => {
+      return sel ? sel(completedState) : completedState;
+    });
+    useOrderStore.getState = vi.fn(() => ({
+      ...completedState,
+      repeatOrder: vi.fn().mockResolvedValue(undefined),
+    }));
+
+    renderWithRouter();
+
+    expect(screen.getByText('Выдан')).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Повторить заказ' })).toBeDefined();
+    expect(screen.queryByText('Отменить')).toBeNull();
   });
 
   it('stops polling when status is ready', async () => {

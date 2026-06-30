@@ -2,7 +2,9 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String
+from decimal import Decimal
+
+from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base, CreatedAtMixin, DeletedAtMixin, IdUuidPkMixin, UpdatedAtMixin
@@ -26,7 +28,7 @@ class Restaurant(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMix
     )
     address: Mapped[str] = mapped_column(unique=True)
     description: Mapped[str | None] = mapped_column(String(1000), nullable=True)
-    vendor_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("vendor_profiles.id"))
+    vendor_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("vendor_profiles.id", ondelete="CASCADE"))
     is_hiring: Mapped[bool] = mapped_column(default=True, server_default="true")
     is_open: Mapped[bool] = mapped_column(default=True, server_default="true")
     is_ordering_paused: Mapped[bool] = mapped_column(default=False, server_default="false")
@@ -46,7 +48,9 @@ class Restaurant(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMix
         nullable=False,
     )
     rejection_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    average_rating: Mapped[float] = mapped_column(default=0.0, server_default="0.0")
+    average_rating: Mapped[Decimal] = mapped_column(
+        Numeric(precision=3, scale=2), default=Decimal("0.00"), server_default="0.00"
+    )
     review_count: Mapped[int] = mapped_column(default=0, server_default="0")
     vendor: Mapped["VendorProfile"] = relationship(back_populates="restaurants")
     menu_items: Mapped[list["MenuItem"]] = relationship(back_populates="restaurant")

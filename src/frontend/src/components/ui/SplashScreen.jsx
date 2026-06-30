@@ -19,6 +19,7 @@ const SplashScreen = ({ onDone }) => {
 
   return (
     <div
+      aria-hidden="true"
       className={`splash-screen${hidden ? ' hidden' : ''}`}
       style={{
         flexDirection: 'column',
@@ -58,16 +59,6 @@ const SplashScreen = ({ onDone }) => {
         />
       </div>
 
-      <style>{`
-        @keyframes splash-logo-in {
-          from { opacity: 0; transform: translateY(10px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes splash-bar {
-          from { width: 0%; }
-          to   { width: 100%; }
-        }
-      `}</style>
     </div>
   );
 };

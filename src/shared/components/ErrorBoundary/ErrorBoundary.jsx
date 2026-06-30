@@ -10,8 +10,15 @@ class ErrorBoundary extends Component {
     return { hasError: true, error };
   }
 
+  componentDidCatch(error, info) {
+    console.error("[ErrorBoundary]", error, info?.componentStack);
+  }
+
   render() {
     if (this.state.hasError) {
+      if (this.props.fallback) {
+        return this.props.fallback(this.state.error, () => this.setState({ hasError: false, error: null }));
+      }
       return (
         <div
           style={{

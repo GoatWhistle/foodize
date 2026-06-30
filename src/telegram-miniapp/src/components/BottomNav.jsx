@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { Storefront, Package, User } from "@phosphor-icons/react";
 import { useNotificationStore } from "../store/useNotificationStore";
+import { getHapticFeedback } from "../telegram/sdk";
 import s from "./BottomNav.module.css";
 
 const TABS = [
@@ -11,7 +12,7 @@ const TABS = [
 
 const haptic = () => {
   try {
-    window.Telegram?.WebApp?.HapticFeedback?.selectionChanged?.();
+    getHapticFeedback()?.selectionChanged?.();
   } catch {}
 };
 
@@ -20,8 +21,9 @@ const BottomNav = () => {
   const { pathname } = useLocation();
   const unreadCount = useNotificationStore((s) => s.unreadCount);
   const connectionStatus = useNotificationStore((s) => s.connectionStatus);
+  const wasEverConnected = useNotificationStore((s) => s.wasEverConnected);
   const hasConnectionIssue =
-    connectionStatus === "reconnecting" || connectionStatus === "closed";
+    wasEverConnected && (connectionStatus === "reconnecting" || connectionStatus === "closed");
 
   const isActive = (path) =>
     path === "/" ? pathname === "/" : pathname.startsWith(path);

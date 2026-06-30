@@ -2,6 +2,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from shared.restaurant_resolver import resolve_restaurant_uuid
 
 from database import db_helper
 from features.menu import service
@@ -260,7 +261,6 @@ async def read_restaurant_menu(
     size: int = Query(50, ge=1, le=200),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessListResponse[MenuItemResponse]:
-    from shared.restaurant_resolver import resolve_restaurant_uuid
     rid = await resolve_restaurant_uuid(session, restaurant_id)
     data, total = await service.get_menu(session, rid, page=page, size=size)
     return build_list_response(data=data, total=total, page=page, size=size, request=request)

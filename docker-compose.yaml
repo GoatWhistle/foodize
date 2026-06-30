@@ -16,13 +16,18 @@ services:
       - pgdata:/var/lib/postgresql/data
     networks:
       - foodize-network
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
 
   rabbitmq:
     image: rabbitmq:4-management-alpine
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-foodize}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-foodize}
-      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-foodize}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST}
     ports:
       - "127.0.0.1:5672:5672"
       - "127.0.0.1:15672:15672"
@@ -33,18 +38,29 @@ services:
       retries: 10
     networks:
       - foodize-network
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
 
   redis:
     image: redis:7.4-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
     ports:
       - "127.0.0.1:6379:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
     networks:
       - foodize-network
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
 
   migrations:
     build:
@@ -52,7 +68,7 @@ services:
       dockerfile: Dockerfile
       target: migrations
     volumes:
-      - ./src/backend:/backend
+      - ./src/backend/alembic:/backend/alembic
     env_file:
       - .env
     depends_on:
@@ -84,13 +100,27 @@ services:
       RABBITMQ__URL: ${RABBITMQ__URL:-amqp://foodize:foodize@rabbitmq:5672/foodize}
       TELEGRAM__BOT_API_SECRET: ${TELEGRAM__BOT_API_SECRET:-}
       WATCHFILES_FORCE_POLLING: "true"
+      CORS__ALLOWED_ORIGINS: ${CORS__ALLOWED_ORIGINS:-}
+      REDIS__PASSWORD: ${REDIS_PASSWORD:-}
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     volumes:
       - ./src/backend:/backend
       - ./tools:/tools
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       - foodize-network
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1G
 
   worker:
     build:
@@ -107,8 +137,20 @@ services:
       WATCHFILES_FORCE_POLLING: "true"
     volumes:
       - ./src/backend:/backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "grep -rl 'worker.main' /proc/*/cmdline 2>/dev/null | head -1 | grep -q . || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     networks:
       - foodize-network
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
 
   frontend:
     build:
@@ -119,7 +161,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "5173:5173"
+      - "127.0.0.1:5173:5173"
     volumes:
       - ./src/frontend:/frontend
       - ./src/shared:/shared
@@ -127,8 +169,14 @@ services:
     environment:
       - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true
+      - VITE_API_URL=/api/v1
     networks:
       - foodize-network
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
 
   telegram-bot:
     build:
@@ -153,8 +201,20 @@ services:
       BOT_MODE: ${BOT_MODE:-polling}
       BOT_WEBHOOK_URL: ${BOT_WEBHOOK_URL:-}
       BOT_WEBHOOK_SECRET: ${BOT_WEBHOOK_SECRET:-}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "grep -rl 'main.py' /proc/*/cmdline 2>/dev/null | head -1 | grep -q . || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     networks:
       - foodize-network
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
 
   telegram-miniapp:
     build:
@@ -165,7 +225,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "5174:5174"
+      - "127.0.0.1:5174:5174"
     volumes:
       - ./src/telegram-miniapp:/miniapp
       - ./src/shared:/shared
@@ -175,6 +235,11 @@ services:
       - VITE_API_URL=/api/v1
     networks:
       - foodize-network
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
 
 volumes:
   pgdata:

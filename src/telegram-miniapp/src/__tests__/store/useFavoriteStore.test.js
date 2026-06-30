@@ -13,7 +13,7 @@ vi.mock("../../services/favoriteService", () => ({
 describe("useFavoriteStore", () => {
   beforeEach(() => {
     useFavoriteStore.setState({
-      favoriteIds: new Set(),
+      favoriteIds: [],
       loaded: false,
     });
     vi.clearAllMocks();
@@ -33,9 +33,9 @@ describe("useFavoriteStore", () => {
 
     const state = useFavoriteStore.getState();
     expect(state.loaded).toBe(true);
-    expect(state.favoriteIds.has("rest-1")).toBe(true);
-    expect(state.favoriteIds.has("rest-2")).toBe(true);
-    expect(state.favoriteIds.size).toBe(2);
+    expect(state.favoriteIds.includes("rest-1")).toBe(true);
+    expect(state.favoriteIds.includes("rest-2")).toBe(true);
+    expect(state.favoriteIds.length).toBe(2);
   });
 
   it("should handle load favorites error", async () => {
@@ -45,12 +45,12 @@ describe("useFavoriteStore", () => {
 
     const state = useFavoriteStore.getState();
     expect(state.loaded).toBe(true);
-    expect(state.favoriteIds.size).toBe(0);
+    expect(state.favoriteIds.length).toBe(0);
   });
 
   it("should toggle favorite from true to false", async () => {
     useFavoriteStore.setState({
-      favoriteIds: new Set(["rest-1"]),
+      favoriteIds: ["rest-1"],
       loaded: true,
     });
     favoriteService.remove.mockResolvedValueOnce({});
@@ -58,13 +58,13 @@ describe("useFavoriteStore", () => {
     await useFavoriteStore.getState().toggle("rest-1");
 
     const state = useFavoriteStore.getState();
-    expect(state.favoriteIds.has("rest-1")).toBe(false);
+    expect(state.favoriteIds.includes("rest-1")).toBe(false);
     expect(favoriteService.remove).toHaveBeenCalledWith("rest-1");
   });
 
   it("should revert toggle from true to false on error", async () => {
     useFavoriteStore.setState({
-      favoriteIds: new Set(["rest-1"]),
+      favoriteIds: ["rest-1"],
       loaded: true,
     });
     favoriteService.remove.mockRejectedValueOnce(new Error("Failed"));
@@ -72,12 +72,12 @@ describe("useFavoriteStore", () => {
     await useFavoriteStore.getState().toggle("rest-1");
 
     const state = useFavoriteStore.getState();
-    expect(state.favoriteIds.has("rest-1")).toBe(true);
+    expect(state.favoriteIds.includes("rest-1")).toBe(true);
   });
 
   it("should toggle favorite from false to true", async () => {
     useFavoriteStore.setState({
-      favoriteIds: new Set(),
+      favoriteIds: [],
       loaded: true,
     });
     favoriteService.add.mockResolvedValueOnce({});
@@ -85,13 +85,13 @@ describe("useFavoriteStore", () => {
     await useFavoriteStore.getState().toggle("rest-1");
 
     const state = useFavoriteStore.getState();
-    expect(state.favoriteIds.has("rest-1")).toBe(true);
+    expect(state.favoriteIds.includes("rest-1")).toBe(true);
     expect(favoriteService.add).toHaveBeenCalledWith("rest-1");
   });
 
   it("should revert toggle from false to true on error", async () => {
     useFavoriteStore.setState({
-      favoriteIds: new Set(),
+      favoriteIds: [],
       loaded: true,
     });
     favoriteService.add.mockRejectedValueOnce(new Error("Failed"));
@@ -99,6 +99,6 @@ describe("useFavoriteStore", () => {
     await useFavoriteStore.getState().toggle("rest-1");
 
     const state = useFavoriteStore.getState();
-    expect(state.favoriteIds.has("rest-1")).toBe(false);
+    expect(state.favoriteIds.includes("rest-1")).toBe(false);
   });
 });

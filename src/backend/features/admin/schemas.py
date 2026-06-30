@@ -83,7 +83,7 @@ class AdvancedAnalytics(BaseModel):
     hourly_load: list[AnalyticsPoint]
     category_revenue: list[AnalyticsPoint]
     aov_dynamics: list[FinanceSeriesPoint]
-    retention: list[CohortPoint]
+    retention: list[CohortPoint] = []
 
 
 class ModerationDecision(BaseModel):

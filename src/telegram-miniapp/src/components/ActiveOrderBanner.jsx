@@ -6,6 +6,7 @@ import { createOrderWebSocket } from "../services/api";
 const STATUS_LABEL = {
   PENDING: "Ожидает подтверждения",
   ACCEPTED: "Готовится",
+  COOKING: "Готовится",
   READY: "Готов к выдаче",
 };
 
@@ -22,8 +23,10 @@ export default function ActiveOrderBanner() {
   const clearActiveOrder = useOrderStore((s) => s.clearActiveOrder);
   const wsRef = useRef(null);
 
+  const activeOrderId = activeOrder?.id;
+
   useEffect(() => {
-    if (!activeOrder) {
+    if (!activeOrderId) {
       if (wsRef.current) {
         wsRef.current.close();
         wsRef.current = null;
@@ -31,14 +34,13 @@ export default function ActiveOrderBanner() {
       return;
     }
 
-    if (wsRef.current) return;
-
-    wsRef.current = createOrderWebSocket(activeOrder.id, (data) => {
+    wsRef.current = createOrderWebSocket(activeOrderId, (data) => {
       if (data.status) {
         if (["COMPLETED", "CANCELLED"].includes(data.status)) {
           clearActiveOrder();
         } else {
-          setActiveOrder({ ...activeOrder, status: data.status });
+          const current = useOrderStore.getState().activeOrder;
+          if (current) setActiveOrder({ ...current, status: data.status });
         }
       }
     });
@@ -47,16 +49,16 @@ export default function ActiveOrderBanner() {
       wsRef.current?.close();
       wsRef.current = null;
     };
-  }, [activeOrder, setActiveOrder, clearActiveOrder]);
+  }, [activeOrderId, setActiveOrder, clearActiveOrder]);
 
   if (!activeOrder || !STATUS_LABEL[activeOrder.status]) return null;
 
   return (
     <div
-      onClick={() => navigate(`/orders/${activeOrder.id}`)}
+      onClick={() => navigate(`/orders/${activeOrder.display_id}`)}
       style={{
         position: "fixed",
-        top: 0,
+        top: "env(safe-area-inset-top, 0px)",
         left: 0,
         right: 0,
         zIndex: 100,
@@ -78,7 +80,7 @@ export default function ActiveOrderBanner() {
             marginBottom: 1,
           }}
         >
-          Заказ #{activeOrder.display_id ?? activeOrder.id?.slice(0, 8)}
+          Заказ #{activeOrder.display_id}
         </div>
         <div
           style={{

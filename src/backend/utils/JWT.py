@@ -29,37 +29,45 @@ def decode_jwt(
 
 def _create_jwt_token(
     user_id: uuid.UUID,
-    phone_number: str,
     lifetime_seconds: int,
     token_type: str,
+    extra: dict | None = None,
 ) -> str:
     current_time_utc = datetime.now(utc)
     expire = current_time_utc + timedelta(seconds=lifetime_seconds)
     payload = {
         "sub": str(user_id),
-        "phone": phone_number,
         "exp": expire,
         "iat": current_time_utc,
         "typ": token_type,
     }
+    if extra:
+        payload.update(extra)
     return encode_jwt(payload=payload)
 
 
-def create_access_token(user_id: uuid.UUID, phone_number: str) -> str:
+def create_access_token(user_id: uuid.UUID) -> str:
     return _create_jwt_token(
         user_id=user_id,
-        phone_number=phone_number,
         lifetime_seconds=settings.auth.access_token_lifetime_seconds,
         token_type="access",
     )
 
 
-def create_refresh_token(user_id: uuid.UUID, phone_number: str) -> str:
+def create_refresh_token(
+    user_id: uuid.UUID,
+    session_exp: int | None = None,
+) -> str:
+    current_time_utc = datetime.now(utc)
+    if session_exp is None:
+        session_exp = int(
+            (current_time_utc + timedelta(seconds=settings.auth.max_session_lifetime_seconds)).timestamp()
+        )
     return _create_jwt_token(
         user_id=user_id,
-        phone_number=phone_number,
         lifetime_seconds=settings.auth.refresh_token_lifetime_seconds,
         token_type="refresh",
+        extra={"session_exp": session_exp},
     )
 
 

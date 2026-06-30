@@ -13,7 +13,7 @@ vi.mock('../../services/favoriteService', () => ({
 describe('useFavoriteStore', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    useFavoriteStore.setState({ favoriteIds: new Set(), loaded: false });
+    useFavoriteStore.setState({ favoriteIds: [], loaded: false });
   });
 
   it('loads favorite restaurant ids', async () => {
@@ -26,9 +26,7 @@ describe('useFavoriteStore', () => {
     await useFavoriteStore.getState().loadFavorites();
 
     expect(favoriteService.getAll).toHaveBeenCalledWith({ size: 100 });
-    expect(useFavoriteStore.getState().favoriteIds).toEqual(
-      new Set(['r1', 'r2'])
-    );
+    expect(useFavoriteStore.getState().favoriteIds).toEqual(['r1', 'r2']);
     expect(useFavoriteStore.getState().loaded).toBe(true);
   });
 
@@ -38,7 +36,7 @@ describe('useFavoriteStore', () => {
     await useFavoriteStore.getState().loadFavorites();
 
     expect(useFavoriteStore.getState().loaded).toBe(true);
-    expect(useFavoriteStore.getState().favoriteIds).toEqual(new Set());
+    expect(useFavoriteStore.getState().favoriteIds).toEqual([]);
   });
 
   it('adds and removes favorites optimistically', async () => {
@@ -46,11 +44,11 @@ describe('useFavoriteStore', () => {
     favoriteService.remove.mockResolvedValueOnce({});
 
     await useFavoriteStore.getState().toggle('r1');
-    expect(useFavoriteStore.getState().favoriteIds.has('r1')).toBe(true);
+    expect(useFavoriteStore.getState().favoriteIds.includes('r1')).toBe(true);
     expect(favoriteService.add).toHaveBeenCalledWith('r1');
 
     await useFavoriteStore.getState().toggle('r1');
-    expect(useFavoriteStore.getState().favoriteIds.has('r1')).toBe(false);
+    expect(useFavoriteStore.getState().favoriteIds.includes('r1')).toBe(false);
     expect(favoriteService.remove).toHaveBeenCalledWith('r1');
   });
 
@@ -59,6 +57,6 @@ describe('useFavoriteStore', () => {
 
     await useFavoriteStore.getState().toggle('r1');
 
-    expect(useFavoriteStore.getState().favoriteIds.has('r1')).toBe(false);
+    expect(useFavoriteStore.getState().favoriteIds.includes('r1')).toBe(false);
   });
 });

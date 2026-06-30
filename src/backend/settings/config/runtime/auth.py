@@ -11,6 +11,7 @@ class AuthConfig(BaseConfig):
     algorithm: str = "RS256"
     access_token_lifetime_seconds: int = 1800
     refresh_token_lifetime_seconds: int = 2_592_000
+    max_session_lifetime_seconds: int = 7_776_000
     email_token_lifetime_seconds: int = 7200
     password_token_lifetime_seconds: int = 600
     rate_limit_login: str = "10/minute"

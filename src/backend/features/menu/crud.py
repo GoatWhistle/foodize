@@ -38,7 +38,9 @@ async def create_menu_item(
 
 async def get_menu_item_by_id(session: AsyncSession, item_id: uuid.UUID) -> MenuItem | None:
     result = await session.execute(
-        select(MenuItem).where(MenuItem.id == item_id).options(_option_groups_options())
+        select(MenuItem)
+        .where(MenuItem.id == item_id, MenuItem.is_deleted == False)  # noqa: E712
+        .options(_option_groups_options())
     )
     return result.scalar_one_or_none()
 

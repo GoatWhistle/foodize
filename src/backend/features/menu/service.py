@@ -1,4 +1,3 @@
-import asyncio
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -237,7 +236,6 @@ async def toggle_item_availability_for_vendor(
 ) -> MenuItemResponse:
     item = await _get_owned_menu_item(session, restaurant_id, item_id, vendor_id)
     item.is_available = is_available
-    await session.commit()
 
     await audit_service.log_action(
         session,

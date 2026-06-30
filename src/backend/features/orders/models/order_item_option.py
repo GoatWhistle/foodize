@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 class OrderItemOption(Base, IdUuidPkMixin, CreatedAtMixin):
-    order_item_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("order_items.id"))
+    order_item_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("order_items.id", ondelete="CASCADE"))
     option_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("menu_item_options.id"),
         nullable=True,

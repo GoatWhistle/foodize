@@ -16,12 +16,14 @@ const Pagination = ({ page, totalPages, onPageChange }) => {
         className="btn btn-secondary btn-sm"
         disabled={page <= 1}
         onClick={() => onPageChange(page - 1)}
+        aria-label={`Перейти на страницу ${page - 1}`}
         style={{ borderRadius: "100px", padding: "8px 20px" }}
       >
-        ← Назад
+        <span aria-hidden="true">←</span> Назад
       </button>
 
       <span
+        aria-live="polite"
         style={{
           fontSize: "0.85rem",
           fontWeight: 800,
@@ -39,9 +41,10 @@ const Pagination = ({ page, totalPages, onPageChange }) => {
         className="btn btn-secondary btn-sm"
         disabled={page >= totalPages}
         onClick={() => onPageChange(page + 1)}
+        aria-label={`Перейти на страницу ${page + 1}`}
         style={{ borderRadius: "100px", padding: "8px 20px" }}
       >
-        Вперед →
+        Вперед <span aria-hidden="true">→</span>
       </button>
     </div>
   );

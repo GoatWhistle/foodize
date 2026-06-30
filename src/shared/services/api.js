@@ -111,20 +111,31 @@ export class ReliableWebSocket {
   }
 }
 
-export function createApi({ getToken, onUnauthorized, refreshToken }) {
+export function createApi({ getToken, onUnauthorized, refreshToken, withCredentials = false, skipRetryUrls = [] }) {
   const BASE_URL =
     import.meta.env.VITE_API_URL ?? "http://localhost:8000/api/v1";
 
   const api = axios.create({
     baseURL: BASE_URL,
+    withCredentials,
     headers: { "Content-Type": "application/json" },
   });
 
-  api.interceptors.request.use((config) => {
-    const token = getToken();
-    if (token) config.headers.Authorization = `Bearer ${token}`;
-    return config;
-  });
+  let isRefreshing = false;
+  let failedQueue = [];
+
+  const processQueue = (error) => {
+    failedQueue.forEach((p) => (error ? p.reject(error) : p.resolve()));
+    failedQueue = [];
+  };
+
+  if (getToken) {
+    api.interceptors.request.use((config) => {
+      const token = getToken();
+      if (token) config.headers.Authorization = `Bearer ${token}`;
+      return config;
+    });
+  }
 
   api.interceptors.response.use(
     (response) => response,
@@ -136,23 +147,37 @@ export function createApi({ getToken, onUnauthorized, refreshToken }) {
         error.response.data.detail = detail.error;
       }
 
+      const isSkipUrl = skipRetryUrls.some((u) => originalRequest.url?.includes(u));
+
       if (
         error.response?.status === 401 &&
         !originalRequest._retry &&
+        !isSkipUrl &&
         refreshToken
       ) {
+        if (isRefreshing) {
+          return new Promise((resolve, reject) => {
+            failedQueue.push({ resolve, reject });
+          }).then(() => api(originalRequest)).catch((err) => Promise.reject(err));
+        }
+
         originalRequest._retry = true;
+        isRefreshing = true;
+
         try {
-          const newToken = await refreshToken();
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          await refreshToken();
+          processQueue(null);
           return api(originalRequest);
-        } catch {
+        } catch (refreshError) {
+          processQueue(refreshError);
           onUnauthorized?.();
-          return Promise.reject(error);
+          return Promise.reject(refreshError);
+        } finally {
+          isRefreshing = false;
         }
       }
 
-      if (error.response?.status === 401) {
+      if (error.response?.status === 401 && !originalRequest._retry) {
         onUnauthorized?.();
       }
 
@@ -164,13 +189,17 @@ export function createApi({ getToken, onUnauthorized, refreshToken }) {
 }
 
 export function createWebSocketFactories(getToken) {
+  const buildUrl = (path) => () => {
+    const base = `${WS_BASE_URL}/api/v1${path}`;
+    if (!getToken) return base;
+    const token = getToken();
+    return token ? `${base}?token=${encodeURIComponent(token)}` : base;
+  };
+
   return {
     createOrderWebSocket(orderId, onMessage, onClose, onStatusChange) {
       return new ReliableWebSocket(
-        () => {
-          const token = getToken() || "";
-          return `${WS_BASE_URL}/api/v1/ws/orders/${orderId}?token=${encodeURIComponent(token)}`;
-        },
+        buildUrl(`/ws/orders/${orderId}`),
         onMessage,
         onClose,
         onStatusChange,
@@ -179,10 +208,7 @@ export function createWebSocketFactories(getToken) {
 
     createNotificationWebSocket(userId, onMessage, onClose, onStatusChange) {
       return new ReliableWebSocket(
-        () => {
-          const token = getToken() || "";
-          return `${WS_BASE_URL}/api/v1/ws/notifications/${userId}${token ? `?token=${encodeURIComponent(token)}` : ""}`;
-        },
+        buildUrl(`/ws/notifications/${userId}`),
         onMessage,
         onClose,
         onStatusChange,
@@ -191,10 +217,7 @@ export function createWebSocketFactories(getToken) {
 
     createRestaurantOrdersWebSocket(restaurantId, onMessage, onClose, onStatusChange) {
       return new ReliableWebSocket(
-        () => {
-          const token = getToken() || "";
-          return `${WS_BASE_URL}/api/v1/ws/restaurants/${restaurantId}/orders?token=${encodeURIComponent(token)}`;
-        },
+        buildUrl(`/ws/restaurants/${restaurantId}/orders`),
         onMessage,
         onClose,
         onStatusChange,
@@ -202,9 +225,8 @@ export function createWebSocketFactories(getToken) {
     },
 
     createDisplayBoardWebSocket(restaurantId, onMessage, onClose, onStatusChange) {
-      const token = getToken() ?? "";
       return new ReliableWebSocket(
-        `${WS_BASE_URL}/api/v1/ws/restaurants/${restaurantId}/display-board?token=${encodeURIComponent(token)}`,
+        buildUrl(`/ws/restaurants/${restaurantId}/display-board`),
         onMessage,
         onClose,
         onStatusChange,

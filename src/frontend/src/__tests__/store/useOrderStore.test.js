@@ -153,5 +153,6 @@ describe('useOrderStore', () => {
     expect(state.cart[0].quantity).toBe(1);
     expect(state.cart[1].quantity).toBe(2);
     expect(state.cartTotal()).toBe(1060);
+    expect(cartService.updateCart).toHaveBeenCalled();
   });
 });

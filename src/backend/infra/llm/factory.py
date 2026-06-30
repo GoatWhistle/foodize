@@ -38,6 +38,8 @@ def _resolve_model(role: AgentRole, provider: LLMProvider, cfg: LLMConfig) -> st
 
 def _build(provider: LLMProvider, model: str, cfg: LLMConfig) -> LLMClient:
     if provider == LLMProvider.ANTHROPIC:
+        if not cfg.anthropic_api_key:
+            raise ValueError("LLM__ANTHROPIC_API_KEY is not set")
         from infra.llm.anthropic_client import AnthropicClient
 
         return AnthropicClient(

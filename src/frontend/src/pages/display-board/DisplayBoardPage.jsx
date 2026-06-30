@@ -3,7 +3,6 @@ import { useParams } from 'react-router-dom';
 import { createDisplayBoardWebSocket } from '../../services/api';
 import { restaurantService } from '../../services/restaurantService';
 
-const RETRY_DELAY_MS = 3000;
 const NEW_HIGHLIGHT_MS = 1500;
 
 export default function DisplayBoardPage() {
@@ -16,7 +15,6 @@ export default function DisplayBoardPage() {
   const [error, setError] = useState(null);
   const [time, setTime] = useState(new Date());
   const wsRef = useRef(null);
-  const retryRef = useRef(null);
   const prevCookingRef = useRef(new Set());
   const prevReadyRef = useRef(new Set());
 
@@ -33,69 +31,51 @@ export default function DisplayBoardPage() {
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
+    wsRef.current = createDisplayBoardWebSocket(
+      restaurantId,
+      (data) => {
+        const nextCooking = data.cooking ?? [];
+        const nextReady = data.ready ?? [];
 
-    const connect = () => {
-      if (cancelled) return;
-      wsRef.current = createDisplayBoardWebSocket(
-        restaurantId,
-        (data) => {
-          if (data.error) {
-            setError(data.error);
-            return;
-          }
+        const addedCooking = nextCooking.filter(
+          (id) => !prevCookingRef.current.has(id)
+        );
+        const addedReady = nextReady.filter(
+          (id) => !prevReadyRef.current.has(id)
+        );
 
-          const nextCooking = data.cooking ?? [];
-          const nextReady = data.ready ?? [];
+        prevCookingRef.current = new Set(nextCooking);
+        prevReadyRef.current = new Set(nextReady);
 
-          const addedCooking = nextCooking.filter(
-            (id) => !prevCookingRef.current.has(id)
-          );
-          const addedReady = nextReady.filter(
-            (id) => !prevReadyRef.current.has(id)
-          );
+        setCooking(nextCooking);
+        setReady(nextReady);
 
-          prevCookingRef.current = new Set(nextCooking);
-          prevReadyRef.current = new Set(nextReady);
-
-          setCooking(nextCooking);
-          setReady(nextReady);
-
-          if (addedCooking.length > 0) {
-            setNewCooking((prev) => new Set([...prev, ...addedCooking]));
-            setTimeout(() => {
-              setNewCooking((prev) => {
-                const next = new Set(prev);
-                addedCooking.forEach((id) => next.delete(id));
-                return next;
-              });
-            }, NEW_HIGHLIGHT_MS);
-          }
-
-          if (addedReady.length > 0) {
-            setNewReady((prev) => new Set([...prev, ...addedReady]));
-            setTimeout(() => {
-              setNewReady((prev) => {
-                const next = new Set(prev);
-                addedReady.forEach((id) => next.delete(id));
-                return next;
-              });
-            }, NEW_HIGHLIGHT_MS);
-          }
-        },
-        () => {
-          if (!cancelled) {
-            retryRef.current = setTimeout(connect, RETRY_DELAY_MS);
-          }
+        if (addedCooking.length > 0) {
+          setNewCooking((prev) => new Set([...prev, ...addedCooking]));
+          setTimeout(() => {
+            setNewCooking((prev) => {
+              const next = new Set(prev);
+              addedCooking.forEach((id) => next.delete(id));
+              return next;
+            });
+          }, NEW_HIGHLIGHT_MS);
         }
-      );
-    };
 
-    connect();
+        if (addedReady.length > 0) {
+          setNewReady((prev) => new Set([...prev, ...addedReady]));
+          setTimeout(() => {
+            setNewReady((prev) => {
+              const next = new Set(prev);
+              addedReady.forEach((id) => next.delete(id));
+              return next;
+            });
+          }, NEW_HIGHLIGHT_MS);
+        }
+      },
+      null,
+    );
 
     return () => {
-      cancelled = true;
-      clearTimeout(retryRef.current);
       wsRef.current?.close();
     };
   }, [restaurantId]);

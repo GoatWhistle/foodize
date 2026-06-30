@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 class VendorProfile(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), unique=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), unique=True)
     approval_status: Mapped[str] = mapped_column(
         String,
         default=ModerationStatus.PENDING.value,

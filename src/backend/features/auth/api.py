@@ -5,6 +5,7 @@ from database import db_helper
 from features.auth import service
 from features.auth.schemas import TokenResponse, UserLogin
 from features.users.schemas import UserCreate, UserRead
+from infra.cache.redis import RedisCache, redis_cache_dependency
 from middlewares.limiter import limiter
 from settings.config.app_config import settings
 from shared.response import build_response
@@ -37,15 +38,24 @@ async def create_login(
 
 
 @router.post("/refresh", response_model=SuccessResponse[TokenResponse])
+@limiter.limit("30/minute")
 async def create_refresh(
     request: Request,
     response: Response,
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
+    cache: RedisCache = Depends(redis_cache_dependency),
 ) -> SuccessResponse[TokenResponse]:
-    result = await service.refresh_user_token(request=request, response=response, session=session)
+    result = await service.refresh_user_token(
+        request=request, response=response, session=session, cache=cache
+    )
     return build_response(result)
 
 
 @router.post("/logout", status_code=204)
-async def create_logout(request: Request, response: Response) -> None:
-    await service.logout_user(request=request, response=response)
+@limiter.limit("20/minute")
+async def create_logout(
+    request: Request,
+    response: Response,
+    cache: RedisCache = Depends(redis_cache_dependency),
+) -> None:
+    await service.logout_user(request=request, response=response, cache=cache)

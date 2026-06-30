@@ -127,8 +127,22 @@ const OrderDetailsModal = ({
   }, [order?.id]);
 
   useEffect(() => {
-    loadEvents();
-  }, [loadEvents]);
+    let cancelled = false;
+    setEventsLoading(true);
+    setEventsError('');
+    setEventsUnavailable(false);
+    if (!order?.id) { setEventsLoading(false); return; }
+    orderService.getOrderEvents(order.id).then((res) => {
+      if (!cancelled) { setEvents(extractEvents(res)); setEventsUnavailable(false); }
+    }).catch((error) => {
+      if (!cancelled) {
+        console.error('Order events fetch failed', { status: error?.response?.status, detail: error?.response?.data?.detail });
+        setEvents([]);
+        setEventsUnavailable(true);
+      }
+    }).finally(() => { if (!cancelled) setEventsLoading(false); });
+    return () => { cancelled = true; };
+  }, [order?.id]);
 
   if (!order) return null;
 
@@ -710,7 +724,7 @@ const OrderDetailsModal = ({
                     disabled={cancelling}
                     style={{
                       flex: 1,
-                      background: '#ef4444',
+                      background: 'var(--color-error, #ef4444)',
                       color: '#fff',
                       border: 'none',
                     }}

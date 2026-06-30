@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { memo, useRef, useEffect } from "react";
 import {
   Fire,
   Hamburger,
@@ -8,18 +8,19 @@ import {
   MapPin,
   Star,
   Circle,
+  Heart,
 } from "@phosphor-icons/react";
 import s from "./RestaurantCard.module.css";
 
 const CATEGORY_ICONS = {
-  SHAURMA: <Fire size={52} weight="fill" />,
-  BURGER: <Hamburger size={52} weight="fill" />,
-  PIZZA: <Pizza size={52} weight="fill" />,
-  SUSHI: <BowlFood size={52} weight="fill" />,
-  DEFAULT: <Storefront size={52} weight="fill" />,
+  SHAURMA: <Fire size={40} weight="fill" />,
+  BURGER: <Hamburger size={40} weight="fill" />,
+  PIZZA: <Pizza size={40} weight="fill" />,
+  SUSHI: <BowlFood size={40} weight="fill" />,
+  DEFAULT: <Storefront size={40} weight="fill" />,
 };
 
-const RestaurantCard = ({ restaurant, onClick }) => {
+const RestaurantCard = ({ restaurant, onClick, isFavorite, onFavoriteToggle, viewTransition = true }) => {
   const cardRef = useRef(null);
 
   useEffect(() => {
@@ -60,7 +61,7 @@ const RestaurantCard = ({ restaurant, onClick }) => {
             src={restaurant.photo_url}
             alt={restaurant.name}
             loading="lazy"
-            style={{ viewTransitionName: `restaurant-image-${restaurant.id}` }}
+            style={viewTransition ? { viewTransitionName: `restaurant-image-${restaurant.id}` } : undefined}
           />
         ) : (
           <div className={s.photoPlaceholder}>{icon}</div>
@@ -73,9 +74,21 @@ const RestaurantCard = ({ restaurant, onClick }) => {
               {restaurant.is_open ? "Открыто" : "Закрыто"}
             </div>
           )}
-          <div className={s.ratingBadge}>
-            <Star size={12} weight="fill" color="#facc15" />
-            <span>{rating ? rating.toFixed(1) : "0.0"}</span>
+          <div className={s.rightBadges}>
+            <div className={s.ratingBadge}>
+              <Star size={12} weight="fill" color="#facc15" />
+              <span>{rating ? rating.toFixed(1) : "0.0"}</span>
+            </div>
+            {onFavoriteToggle && (
+              <button
+                className={`${s.favBtn}${isFavorite ? ` ${s.active}` : ""}`}
+                onClick={(e) => { e.stopPropagation(); onFavoriteToggle(restaurant.id); }}
+                aria-label={isFavorite ? "Убрать из избранного" : "В избранное"}
+                aria-pressed={isFavorite}
+              >
+                <Heart size={14} weight={isFavorite ? "fill" : "regular"} color={isFavorite ? "#ef4444" : "rgba(255,255,255,0.9)"} />
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -98,4 +111,4 @@ const RestaurantCard = ({ restaurant, onClick }) => {
   );
 };
 
-export default RestaurantCard;
+export default memo(RestaurantCard);

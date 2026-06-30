@@ -12,7 +12,7 @@ const OrderStatusBadge = ({ status, cancellationReason }) => {
             style={{ width: 80, height: 80, top: "50%", left: "50%", marginTop: -40, marginLeft: -40 }}
           />
         ))}
-        <div style={{ position: "relative", zIndex: 1, color: "var(--accent)" }}>
+        <div aria-hidden="true" style={{ position: "relative", zIndex: 1, color: "var(--accent)" }}>
           <MapPin size={64} weight="fill" />
         </div>
         <p style={{ marginTop: 20, fontWeight: 800, fontSize: "1.4rem", letterSpacing: "-0.03em" }}>
@@ -28,7 +28,7 @@ const OrderStatusBadge = ({ status, cancellationReason }) => {
   if (status === "READY" || status === "COMPLETED") {
     return (
       <div className={`${s.iconWrap} ${s.readyFlash}`}>
-        <div style={{ marginBottom: 12, color: "var(--color-success)" }}>
+        <div aria-hidden="true" style={{ marginBottom: 12, color: "var(--color-success)" }}>
           {status === "COMPLETED" ? (
             <Smiley size={80} weight="fill" />
           ) : (
@@ -51,7 +51,7 @@ const OrderStatusBadge = ({ status, cancellationReason }) => {
   if (status === "CANCELLED") {
     return (
       <div className={s.iconWrap}>
-        <div style={{ marginBottom: 12, color: "var(--color-error)" }}>
+        <div aria-hidden="true" style={{ marginBottom: 12, color: "var(--color-error)" }}>
           <XCircle size={80} weight="fill" />
         </div>
         <p style={{ fontWeight: 800, fontSize: "1.6rem", letterSpacing: "-0.03em", color: "var(--color-error)" }}>

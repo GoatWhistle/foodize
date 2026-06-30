@@ -1,6 +1,7 @@
 import uuid
 from datetime import UTC, datetime
 
+import sqlalchemy as sa
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -23,7 +24,7 @@ async def create_review(
         **review_data.model_dump(),
     )
     session.add(review)
-    await session.commit()
+    await session.flush()
     await session.refresh(review)
     return review
 
@@ -131,15 +132,18 @@ async def get_restaurant_avg_rating(
     session: AsyncSession, restaurant_id: uuid.UUID
 ) -> tuple[float | None, int]:
     result = await session.execute(
-        select(func.avg(Review.rating), func.count(Review.id)).where(
+        select(
+            func.round(func.cast(func.avg(Review.rating), sa.Numeric(10, 2)), 2),
+            func.count(Review.id),
+        ).where(
             Review.restaurant_id == restaurant_id,
             Review.deleted_at.is_(None),
         )
     )
     avg, count = result.one()
-    return (round(float(avg), 2) if avg is not None else None, count)
+    return (float(avg) if avg is not None else None, count)
 
 
 async def delete_review(session: AsyncSession, review: Review) -> None:
     review.deleted_at = datetime.now(UTC)
-    await session.commit()
+    await session.flush()

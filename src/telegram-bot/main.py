@@ -1,6 +1,8 @@
 import asyncio
 import logging
 
+logger = logging.getLogger(__name__)
+
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
@@ -45,10 +47,16 @@ async def main() -> None:
         site = web.TCPSite(runner, "0.0.0.0", 8080)
         await site.start()
 
-        asyncio.create_task(start_notification_consumer(bot))
+        consumer_task = asyncio.create_task(start_notification_consumer(bot))
+        consumer_task.add_done_callback(
+            lambda t: logger.error("Notification consumer stopped: %s", t.exception()) if not t.cancelled() and t.exception() else None
+        )
         await asyncio.Future()
     else:
-        asyncio.create_task(start_notification_consumer(bot))
+        consumer_task = asyncio.create_task(start_notification_consumer(bot))
+        consumer_task.add_done_callback(
+            lambda t: logger.error("Notification consumer stopped: %s", t.exception()) if not t.cancelled() and t.exception() else None
+        )
         await dp.start_polling(bot)
 
 

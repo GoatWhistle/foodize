@@ -41,6 +41,11 @@ async def export_orders_csv(
     else:
         query_restaurant_id = None
 
+    if date_from is None and date_to is None:
+        from datetime import date as _date, timedelta
+        date_to = _date.today()
+        date_from = date_to - timedelta(days=90)
+
     orders = await admin_crud.get_all_orders(
         session,
         status=status,
@@ -48,7 +53,7 @@ async def export_orders_csv(
         date_to=date_to,
         restaurant_id=query_restaurant_id,
         offset=0,
-        limit=1_000_000,
+        limit=10_000,
     )
     if query_restaurant_id is None:
         orders = [o for o in orders if o.restaurant_id in vendor_restaurant_ids]
@@ -122,7 +127,7 @@ async def export_promos_csv(
     else:
         target_ids = vendor_restaurant_ids
 
-    promos = await get_promos_by_restaurant_ids(session, target_ids, offset=0, limit=1_000_000)
+    promos = await get_promos_by_restaurant_ids(session, target_ids, offset=0, limit=10_000)
 
     headers = [
         "Код",

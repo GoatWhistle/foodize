@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Identity, Integer, String
+from sqlalchemy import DateTime, ForeignKey, Identity, Index, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base, CreatedAtMixin, IdUuidPkMixin, UpdatedAtMixin
@@ -16,11 +16,20 @@ if TYPE_CHECKING:
 
 
 class Order(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
+    __table_args__ = (
+        Index("ix_orders_user_id_status", "user_id", "status"),
+        Index(
+            "ix_orders_restaurant_active",
+            "restaurant_id",
+            "status",
+            postgresql_where=text("status NOT IN ('COMPLETED', 'CANCELLED', 'REJECTED')"),
+        ),
+    )
     display_id: Mapped[int] = mapped_column(
         Integer, Identity(always=False), unique=True, index=True
     )
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
-    restaurant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("restaurants.id"))
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    restaurant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("restaurants.id", ondelete="CASCADE"))
     status: Mapped[str] = mapped_column(
         String,
         default=OrderStatus.PENDING.value,

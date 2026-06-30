@@ -1,3 +1,4 @@
+import { memo } from "react";
 import {
   Fire,
   Hamburger,
@@ -86,4 +87,4 @@ const MenuItemCard = ({ item, onSelect, isRestaurantOpen = true, onHaptic }) => 
   );
 };
 
-export default MenuItemCard;
+export default memo(MenuItemCard);

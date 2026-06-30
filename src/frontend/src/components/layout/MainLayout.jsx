@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Outlet } from 'react-router-dom';
 import { translateApiError } from '../../utils/translateApiError';
@@ -27,6 +27,7 @@ const MainLayout = () => {
       cartTotal: s.cartTotal,
     }))
   );
+  const total = useMemo(() => cartTotal(), [cart]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -73,7 +74,7 @@ const MainLayout = () => {
     try {
       const order = await placeOrder(promoCode, comment, requestedPickupAt);
       setIsCartOpen(false);
-      navigate(ROUTES.ORDER_STATUS.replace(':id', order.id));
+      navigate(ROUTES.ORDER_STATUS.replace(':id', order.display_id));
     } catch (err) {
       setError(translateApiError(err, 'Не удалось разместить заказ'));
     } finally {
@@ -132,7 +133,7 @@ const MainLayout = () => {
               {cartItemsCount}
             </span>
           </div>
-          <span style={{ fontWeight: 800 }}>{cartTotal()} ₽</span>
+          <span style={{ fontWeight: 800 }}>{total} ₽</span>
         </button>
       )}
 

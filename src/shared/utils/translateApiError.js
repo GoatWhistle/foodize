@@ -56,13 +56,40 @@ const ERROR_MAP = {
   "Restaurant with this address already exists": "Ресторан с таким адресом уже существует",
 };
 
+const HTTP_STATUS_FALLBACKS = {
+  400: "Некорректный запрос",
+  401: "Необходима авторизация",
+  403: "Доступ запрещён",
+  404: "Ресурс не найден",
+  409: "Конфликт данных",
+  422: "Ошибка валидации данных",
+  429: "Слишком много запросов, попробуйте позже",
+  500: "Внутренняя ошибка сервера",
+  502: "Сервер временно недоступен",
+  503: "Сервис временно недоступен",
+};
+
 export function translateApiError(err, fallback) {
   const detail = err?.response?.data?.detail;
+  const status = err?.response?.status;
+
   if (detail && typeof detail === "string") {
     const exact = ERROR_MAP[detail];
     if (exact) return exact;
     const prefix = Object.keys(ERROR_MAP).find((key) => detail.startsWith(key));
-    return prefix ? ERROR_MAP[prefix] : (fallback ?? detail);
+    if (prefix) return ERROR_MAP[prefix];
+    if (fallback) return fallback;
+    return HTTP_STATUS_FALLBACKS[status] ?? detail;
   }
-  return fallback;
+
+  if (Array.isArray(detail) && detail.length > 0) {
+    const msg = detail[0]?.msg;
+    if (msg) return fallback ?? msg;
+  }
+
+  if (status && HTTP_STATUS_FALLBACKS[status]) {
+    return fallback ?? HTTP_STATUS_FALLBACKS[status];
+  }
+
+  return fallback ?? "Неизвестная ошибка";
 }

@@ -14,7 +14,7 @@ from sqlalchemy.orm import selectinload
 from features.auth.schemas import TokenResponse
 from features.auth.service import issue_user_tokens
 from features.orders.models import Order
-from features.telegram.crud import get_user_by_phone, get_user_by_telegram_id
+from features.telegram.crud import get_user_by_phone, get_user_by_telegram_id, get_user_by_telegram_username
 from features.telegram.exceptions import (
     InvalidTelegramInitDataException,
     MalformedTelegramInitDataException,
@@ -29,10 +29,19 @@ from shared.exceptions.existence import AuthException, NotFoundException
 from shared.permissions import CUSTOMER_PERMISSIONS, serialize_permissions
 from utils.JWT import create_access_token, create_refresh_token, hash_password
 
-_INIT_DATA_MAX_AGE = 86400
+_INIT_DATA_MAX_AGE = 3600
 _SITE_LOGIN_CODE_TTL = 300
 _SITE_LOGIN_CODE_PREFIX = "telegram_site_login:"
 _SITE_LOGIN_RATE_PREFIX = "telegram_site_login_rate:"
+_SITE_LOGIN_FAIL_PREFIX = "telegram_login_fail:"
+_SITE_LOGIN_MAX_ATTEMPTS = 5
+
+
+def _normalize_phone(phone: str) -> str:
+    digits = "".join(c for c in phone if c.isdigit())
+    if digits.startswith("8") and len(digits) == 11:
+        digits = "7" + digits[1:]
+    return f"+{digits}"
 
 
 def _validate_init_data(init_data: str) -> dict:
@@ -94,8 +103,8 @@ async def _delete_cached_telegram_id(user_id: str) -> None:
 
 
 def _make_tokens(user: User) -> TokenResponse:
-    access_token = create_access_token(user.id, str(user.phone_number))
-    refresh_token = create_refresh_token(user.id, str(user.phone_number))
+    access_token = create_access_token(user.id)
+    refresh_token = create_refresh_token(user.id)
     return TokenResponse(
         access_token=access_token, refresh_token=refresh_token, token_type="Bearer"
     )
@@ -246,6 +255,7 @@ async def telegram_auth_existing(session: AsyncSession, init_data: str) -> Token
 
 
 async def request_site_login_code(session: AsyncSession, phone_number: str) -> None:
+    phone_number = _normalize_phone(phone_number)
     user = await get_user_by_phone(session, phone_number)
     if not user:
         raise NotFoundException(detail="User with this phone was not found")
@@ -288,10 +298,19 @@ async def verify_site_login_code(
     code: str,
     response: Response,
 ) -> TelegramSiteLoginResponse:
+    phone_number = _normalize_phone(phone_number)
     cache = get_redis_cache()
+    fail_key = f"{_SITE_LOGIN_FAIL_PREFIX}{phone_number}"
+    fail_count = await cache.get(fail_key)
+    if fail_count and int(fail_count) >= _SITE_LOGIN_MAX_ATTEMPTS:
+        raise AuthException(detail="Too many failed attempts. Try again later.")
+
     key = f"{_SITE_LOGIN_CODE_PREFIX}{phone_number}"
     stored_code = await cache.get(key)
     if not stored_code or not secrets.compare_digest(stored_code, code):
+        raw_client = cache.get_raw_client()
+        await raw_client.incr(fail_key)
+        await raw_client.expire(fail_key, _SITE_LOGIN_CODE_TTL)
         raise AuthException(detail="Invalid Telegram code")
 
     user = await get_user_by_phone(session, phone_number)
@@ -299,6 +318,7 @@ async def verify_site_login_code(
         raise AuthException(detail="Telegram is not linked to this account")
 
     await cache.delete(key)
+    await cache.delete(fail_key)
     tokens = issue_user_tokens(user=user, response=response)
     return TelegramSiteLoginResponse(
         access_token=tokens.access_token,
@@ -316,3 +336,129 @@ async def set_site_password(session: AsyncSession, user: User, password: str) ->
     await session.commit()
     await session.refresh(user)
     return user
+
+
+def _normalize_username(username: str) -> str:
+    return username.lstrip("@").lower().strip()
+
+
+async def request_site_login_code_by_username(session: AsyncSession, telegram_username: str) -> None:
+    username = _normalize_username(telegram_username)
+    user = await get_user_by_telegram_username(session, username)
+    if not user:
+        raise NotFoundException(
+            detail="Пользователь с таким Telegram не найден. Напишите боту /start для регистрации."
+        )
+    if not user.telegram_id:
+        raise AuthException(
+            detail="Telegram-аккаунт не привязан. Напишите боту /start для привязки."
+        )
+    if not settings.telegram.bot_token:
+        raise AuthException(detail="Telegram bot is not configured")
+
+    cache = get_redis_cache()
+    rate_key = f"{_SITE_LOGIN_RATE_PREFIX}u:{username}"
+    raw_client = cache.get_raw_client()
+    requests_count = await raw_client.incr(rate_key)
+    if requests_count == 1:
+        await raw_client.expire(rate_key, 300)
+    if requests_count > 5:
+        raise AuthException(detail="Too many code requests")
+
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    await cache.set(f"{_SITE_LOGIN_CODE_PREFIX}u:{username}", code, ttl=_SITE_LOGIN_CODE_TTL)
+
+    message = (
+        f"Код входа на сайт Foodize: <b>{code}</b>\n\n"
+        "Если это были не вы, просто проигнорируйте сообщение."
+    )
+
+    async with httpx.AsyncClient(timeout=10) as client:
+        response = await client.post(
+            f"https://api.telegram.org/bot{settings.telegram.bot_token}/sendMessage",
+            json={
+                "chat_id": user.telegram_id,
+                "text": message,
+                "parse_mode": "HTML",
+            },
+        )
+        response.raise_for_status()
+
+
+async def verify_site_login_code_by_username(
+    session: AsyncSession,
+    telegram_username: str,
+    code: str,
+    response: Response,
+) -> TelegramSiteLoginResponse:
+    username = _normalize_username(telegram_username)
+    cache = get_redis_cache()
+    fail_key = f"{_SITE_LOGIN_FAIL_PREFIX}u:{username}"
+    fail_count = await cache.get(fail_key)
+    if fail_count and int(fail_count) >= _SITE_LOGIN_MAX_ATTEMPTS:
+        raise AuthException(detail="Too many failed attempts. Try again later.")
+
+    key = f"{_SITE_LOGIN_CODE_PREFIX}u:{username}"
+    stored_code = await cache.get(key)
+    if not stored_code or not secrets.compare_digest(stored_code, code):
+        raw_client = cache.get_raw_client()
+        await raw_client.incr(fail_key)
+        await raw_client.expire(fail_key, _SITE_LOGIN_CODE_TTL)
+        raise AuthException(detail="Invalid Telegram code")
+
+    user = await get_user_by_telegram_username(session, username)
+    if not user or not user.telegram_id:
+        raise AuthException(detail="Telegram is not linked to this account")
+
+    await cache.delete(key)
+    await cache.delete(fail_key)
+    tokens = issue_user_tokens(user=user, response=response)
+    return TelegramSiteLoginResponse(
+        access_token=tokens.access_token,
+        refresh_token=tokens.refresh_token,
+        token_type=tokens.token_type,
+        requires_password=not bool(user.hashed_password),
+    )
+
+
+async def register_from_bot(
+    session: AsyncSession,
+    telegram_id: int,
+    telegram_username: str | None,
+    name: str,
+) -> User:
+    existing_by_tg = await get_user_by_telegram_id(session, telegram_id)
+    if existing_by_tg:
+        if telegram_username:
+            normalized = _normalize_username(telegram_username)
+            if existing_by_tg.telegram_username != normalized:
+                existing_by_tg.telegram_username = normalized
+                await session.commit()
+                await session.refresh(existing_by_tg)
+        await _cache_telegram_id(str(existing_by_tg.id), telegram_id)
+        return existing_by_tg
+
+    normalized_username = _normalize_username(telegram_username) if telegram_username else None
+    if normalized_username:
+        existing_by_username = await get_user_by_telegram_username(session, normalized_username)
+        if existing_by_username:
+            existing_by_username.telegram_id = telegram_id
+            existing_by_username.telegram_username = normalized_username
+            await session.commit()
+            await session.refresh(existing_by_username)
+            await _cache_telegram_id(str(existing_by_username.id), telegram_id)
+            return existing_by_username
+
+    new_user = User(
+        name=name,
+        phone_number=f"tg_{telegram_id}",
+        hashed_password=None,
+        telegram_id=telegram_id,
+        telegram_username=normalized_username,
+        permissions=serialize_permissions(CUSTOMER_PERMISSIONS),
+    )
+    session.add(new_user)
+    await session.commit()
+    await session.refresh(new_user)
+    await _cache_telegram_id(str(new_user.id), telegram_id)
+    return new_user

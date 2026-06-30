@@ -52,7 +52,10 @@ describe('OrdersPage', () => {
       </BrowserRouter>
     );
 
-    fireEvent.click(screen.getByText('500 ₽'));
+    const orderItems = screen.getAllByRole('listitem').filter(
+      (el) => el.textContent.includes('₽')
+    );
+    fireEvent.click(orderItems[0]);
     expect(mockNavigate).toHaveBeenCalledWith(
       expect.stringContaining('/orders/order-1')
     );

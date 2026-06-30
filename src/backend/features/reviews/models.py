@@ -1,10 +1,10 @@
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import CheckConstraint, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from database import Base, CreatedAtMixin, IdUuidPkMixin
+from database import Base, CreatedAtMixin, IdUuidPkMixin, UpdatedAtMixin
 
 if TYPE_CHECKING:
     from features.restaurants.models import Restaurant
@@ -13,9 +13,10 @@ if TYPE_CHECKING:
 from database import DeletedAtMixin
 
 
-class Review(Base, IdUuidPkMixin, CreatedAtMixin, DeletedAtMixin):
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
-    restaurant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("restaurants.id"))
+class Review(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin, DeletedAtMixin):
+    __table_args__ = (CheckConstraint("rating >= 1 AND rating <= 5", name="ck_review_rating"),)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    restaurant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("restaurants.id", ondelete="CASCADE"))
     rating: Mapped[int]
     text: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     is_verified_purchase: Mapped[bool] = mapped_column(default=False, server_default="false")

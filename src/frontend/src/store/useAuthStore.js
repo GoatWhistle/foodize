@@ -1,64 +1,58 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createAuthStore } from '@shared/store/createAuthStore.js';
 import { authService } from '../services/authService';
+import { useOrderStore } from './useOrderStore';
+import { useFavoriteStore } from './useFavoriteStore';
+import { useNotificationStore } from './useNotificationStore';
 
-export const useAuthStore = create(
-  persist(
-    (set) => ({
-      user: null,
-      isAuthenticated: false,
+export const useAuthStore = createAuthStore({
+  authService,
+  persistKey: 'auth-storage',
+  extraActions: (set) => ({
+    logout: async () => {
+      try {
+        await authService.logout();
+      } catch {}
+      set({ user: null, isAuthenticated: false });
+      useNotificationStore.getState().disconnectWs();
+      useNotificationStore.setState({ notifications: [], unreadCount: 0, total: 0, page: 1, connectionStatus: 'closed', wasEverConnected: false });
+      useOrderStore.setState({ cart: [], cartRestaurantId: null, activeOrder: null, currentOrder: null, orders: [] });
+      useFavoriteStore.setState({ favoriteIds: [], loaded: false });
+    },
 
-      login: async (credentials) => {
-        const response = await authService.login(credentials);
-        const { access_token } = response.data.data;
-        localStorage.setItem('access_token', access_token);
+    loginWithTelegramCode: async (data) => {
+      try {
+        await authService.verifyTelegramLoginCode(data);
         const me = await authService.getMe();
         set({ user: me.data.data, isAuthenticated: true });
-      },
+        return { requiresPassword: false };
+      } catch (err) {
+        set({ user: null, isAuthenticated: false });
+        throw err;
+      }
+    },
 
-      loginWithTelegramCode: async (data) => {
-        const response = await authService.verifyTelegramLoginCode(data);
-        const { access_token, requires_password } = response.data.data;
-        localStorage.setItem('access_token', access_token);
+    loginWithTelegramCodeByUsername: async (data) => {
+      try {
+        const res = await authService.verifyTelegramLoginCodeByUsername(data);
+        const requiresPassword = res?.data?.data?.requires_password ?? false;
         const me = await authService.getMe();
         set({ user: me.data.data, isAuthenticated: true });
-        return { requiresPassword: requires_password };
-      },
+        return { requiresPassword };
+      } catch (err) {
+        set({ user: null, isAuthenticated: false });
+        throw err;
+      }
+    },
 
-      setTelegramSitePassword: async (password) => {
+    setTelegramSitePassword: async (password) => {
+      try {
         await authService.setTelegramSitePassword({ password });
         const me = await authService.getMe();
         set({ user: me.data.data, isAuthenticated: true });
-      },
-
-      register: async (userData) => {
-        await authService.register(userData);
-      },
-
-      logout: async () => {
-        try {
-          await authService.logout();
-        } finally {
-          localStorage.removeItem('access_token');
-          set({ user: null, isAuthenticated: false });
-        }
-      },
-
-      fetchMe: async () => {
-        try {
-          const me = await authService.getMe();
-          set({ user: me.data.data, isAuthenticated: true });
-        } catch {
-          set({ user: null, isAuthenticated: false });
-        }
-      },
-    }),
-    {
-      name: 'auth-storage',
-      partialize: (state) => ({
-        user: state.user,
-        isAuthenticated: state.isAuthenticated,
-      }),
-    }
-  )
-);
+      } catch (err) {
+        set({ user: null, isAuthenticated: false });
+        throw err;
+      }
+    },
+  }),
+});

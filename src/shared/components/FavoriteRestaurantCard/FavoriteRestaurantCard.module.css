@@ -1,0 +1,43 @@
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: border-color var(--dur-sm), transform var(--dur-sm), background var(--dur-sm);
+  -webkit-tap-highlight-color: transparent;
+  width: 100%;
+  text-align: left;
+}
+
+.card:hover {
+  border-color: var(--border-mid);
+  transform: translateX(3px);
+  background: var(--bg-surface);
+}
+
+.card:active {
+  transform: scale(0.99) translateX(0);
+  transition-duration: 60ms;
+}
+
+.unfavBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--dur-sm);
+}
+
+.unfavBtn:hover {
+  background: rgba(239, 68, 68, 0.22);
+}

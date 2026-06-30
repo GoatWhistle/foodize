@@ -1,17 +1,21 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
 import { ROUTES } from '../../constants/routes';
 import FoodizeLogo from '../../components/ui/FoodizeLogo';
 import { translateApiError } from '../../utils/translateApiError';
 import { useShallow } from 'zustand/react/shallow';
-import { formatPhoneNumber, extractPhoneNumber } from '../../utils/phone';
+import { formatPhoneNumber, extractPhoneNumber } from '@shared/utils/phone.js';
 
 const AuthVisual = () => (
   <div className="auth-visual">
     <div className="auth-visual-pattern" />
+    <div className="auth-visual-orbs">
+      <div className="auth-visual-orb auth-visual-orb--1" />
+      <div className="auth-visual-orb auth-visual-orb--2" />
+    </div>
     <div className="auth-visual-content">
-      <div className="auth-visual-title">
+<div className="auth-visual-title">
         Начни
         <br />
         своё <em>вкусное</em>
@@ -31,22 +35,30 @@ const RegisterPage = () => {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { register, login } = useAuthStore(
+  const { register, login, isAuthenticated } = useAuthStore(
     useShallow((s) => ({
       register: s.register,
       login: s.login,
+      isAuthenticated: s.isAuthenticated,
     }))
   );
   const navigate = useNavigate();
+  if (isAuthenticated) return <Navigate to={ROUTES.HOME} replace />;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (!name.trim()) { setError('Введите имя'); return; }
+    const cleanPhone = extractPhoneNumber(phone);
+    if (cleanPhone.length < 7) { setError('Введите корректный номер телефона'); return; }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError('Введите корректный email'); return; }
+    if (password.length < 8) { setError('Пароль должен быть не менее 8 символов'); return; }
+    if (!agreed) { setError('Примите условия использования и политику конфиденциальности'); return; }
     setIsLoading(true);
     try {
-      const cleanPhone = extractPhoneNumber(phone);
       await register({
         name,
         phone_number: cleanPhone,
@@ -57,6 +69,7 @@ const RegisterPage = () => {
       navigate(ROUTES.HOME);
     } catch (err) {
       setError(translateApiError(err, 'Ошибка при регистрации'));
+      setPassword('');
     } finally {
       setIsLoading(false);
     }
@@ -123,7 +136,7 @@ const RegisterPage = () => {
                 id="reg-email"
                 className="form-input"
                 type="email"
-                placeholder="mail@example.com"
+                placeholder="mail@foodize.ru"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
@@ -147,11 +160,30 @@ const RegisterPage = () => {
               />
             </div>
 
+            <label className="auth-tos-label">
+              <input
+                type="checkbox"
+                className="auth-tos-checkbox"
+                checked={agreed}
+                onChange={(e) => setAgreed(e.target.checked)}
+              />
+              <span>
+                Я принимаю{' '}
+                <Link to="/legal/terms" target="_blank" rel="noopener noreferrer">
+                  Условия использования
+                </Link>{' '}
+                и{' '}
+                <Link to="/legal/privacy" target="_blank" rel="noopener noreferrer">
+                  Политику конфиденциальности
+                </Link>
+              </span>
+            </label>
+
             <button
               id="register-submit-btn"
               type="submit"
               className="btn btn-primary btn-full"
-              disabled={isLoading}
+              disabled={isLoading || !agreed}
               style={{
                 marginTop: 4,
                 height: '52px',

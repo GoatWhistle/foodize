@@ -90,6 +90,7 @@ describe('ProfilePage', () => {
       </BrowserRouter>
     );
 
+    await waitFor(() => expect(screen.getByText(/Выйти/)).toBeDefined());
     fireEvent.click(screen.getByText(/Выйти/));
     expect(logoutMock).toHaveBeenCalled();
     await waitFor(() => {

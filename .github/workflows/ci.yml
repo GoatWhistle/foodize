@@ -12,6 +12,25 @@ jobs:
     defaults:
       run:
         working-directory: src/backend
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: foodize_test
+          POSTGRES_USER: foodize_user
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -d foodize_test -U foodize_user"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      POSTGRES_DB: foodize_test
+      POSTGRES_USER: foodize_user
+      POSTGRES_PASSWORD: test_password
+      DB__URL: postgresql+asyncpg://foodize_user:test_password@localhost:5432/foodize_test
     steps:
       - uses: actions/checkout@v4
 
@@ -22,7 +41,7 @@ jobs:
           version: "latest"
 
       - name: Set up Python
-        run: uv python install --preview
+        run: uv python install 3.13
 
       - name: Install dependencies
         run: uv sync --frozen
@@ -102,7 +121,7 @@ jobs:
 
       - name: Set up Python
         working-directory: src/backend
-        run: uv python install --preview
+        run: uv python install 3.13
 
       - name: Install backend dependencies
         working-directory: src/backend

@@ -3,6 +3,7 @@ import logging
 
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+from features.menu.crud import get_menu_items_by_ids_simple
 
 from infra.cache.base import CacheRepository
 from infra.cache.redis import get_redis_cache
@@ -59,8 +60,6 @@ class CartService:
         session: AsyncSession | None = None,
     ) -> None:
         if session is not None:
-            from features.menu.crud import get_menu_items_by_ids_simple
-
             item_ids = [item.menu_item_id for item in cart_data.items]
             db_items = await get_menu_items_by_ids_simple(session, item_ids)
             sanitized: list[CartItemIn] = []

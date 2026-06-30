@@ -1,7 +1,6 @@
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import CartDrawer from '../../components/ui/CartDrawer';
-import { useOrderStore } from '../../store/useOrderStore';
 
 vi.mock('../../services/orderService', () => ({
   orderService: {
@@ -32,21 +31,22 @@ vi.mock('../../store/useRestaurantStore', () => ({
   },
 }));
 
-// Mock useOrderStore
-vi.mock('../../store/useOrderStore', () => {
-  const store = {
-    cart: [],
-    cartRestaurantId: null,
-    removeFromCart: vi.fn(),
-    addToCart: vi.fn(),
-    clearCart: vi.fn(),
-    cartTotal: vi.fn(() => 0),
-    cartCount: vi.fn(() => 0),
-  };
-  const useStore = (sel) => (sel ? sel(store) : store);
-  useStore.getState = () => store;
-  return { useOrderStore: useStore };
+const makeStore = (overrides = {}) => ({
+  cart: [],
+  cartRestaurantId: null,
+  removeFromCart: vi.fn(),
+  addToCart: vi.fn(),
+  clearCart: vi.fn(),
+  cartTotal: vi.fn(() => 0),
+  cartCount: vi.fn(() => 0),
+  ...overrides,
 });
+
+let mockStore = makeStore();
+
+vi.mock('../../store/useOrderStore', () => ({
+  useOrderStore: (sel) => (sel ? sel(mockStore) : mockStore),
+}));
 
 describe('CartDrawer', () => {
   const onCheckout = vi.fn();
@@ -54,10 +54,7 @@ describe('CartDrawer', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    useOrderStore.getState().cart = [];
-    useOrderStore.getState().cartRestaurantId = null;
-    useOrderStore.getState().cartTotal = vi.fn(() => 0);
-    useOrderStore.getState().cartCount = vi.fn(() => 0);
+    mockStore = makeStore();
   });
 
   afterEach(() => {
@@ -73,8 +70,10 @@ describe('CartDrawer', () => {
 
   it('renders cart items and total', () => {
     const item = { id: '1', name: 'Pizza', price: 100 };
-    useOrderStore.getState().cart = [{ menuItem: item, quantity: 2 }];
-    useOrderStore.getState().cartTotal = () => 200;
+    mockStore = makeStore({
+      cart: [{ menuItem: item, quantity: 2 }],
+      cartTotal: () => 200,
+    });
 
     render(<CartDrawer onClose={onClose} onCheckout={onCheckout} />);
 
@@ -84,9 +83,9 @@ describe('CartDrawer', () => {
   });
 
   it('calls onCheckout when button clicked', () => {
-    useOrderStore.getState().cart = [
-      { menuItem: { id: '1', name: 'P' }, quantity: 1 },
-    ];
+    mockStore = makeStore({
+      cart: [{ menuItem: { id: '1', name: 'P' }, quantity: 1 }],
+    });
     render(<CartDrawer onClose={onClose} onCheckout={onCheckout} />);
 
     fireEvent.click(screen.getByText('Оформить заказ'));
@@ -94,11 +93,12 @@ describe('CartDrawer', () => {
   });
 
   it('passes scheduled pickup time to checkout', async () => {
+    vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-05-21T09:00:00.000Z'));
-    useOrderStore.getState().cart = [
-      { menuItem: { id: '1', name: 'P' }, quantity: 1 },
-    ];
-    useOrderStore.getState().cartRestaurantId = 'rest-1';
+    mockStore = makeStore({
+      cart: [{ menuItem: { id: '1', name: 'P' }, quantity: 1 }],
+      cartRestaurantId: 'rest-1',
+    });
     render(<CartDrawer onClose={onClose} onCheckout={onCheckout} />);
 
     await act(async () => {
@@ -118,14 +118,29 @@ describe('CartDrawer', () => {
       '',
       '2026-05-21T10:30:00.000Z'
     );
-    vi.useRealTimers();
   });
 
   it('calls clearCart when cleared', () => {
-    useOrderStore.getState().cart = [{ menuItem: { id: '1' }, quantity: 1 }];
+    mockStore = makeStore({
+      cart: [{ menuItem: { id: '1' }, quantity: 1 }],
+    });
     render(<CartDrawer onClose={onClose} onCheckout={onCheckout} />);
 
     fireEvent.click(screen.getByText('Очистить корзину'));
-    expect(useOrderStore.getState().clearCart).toHaveBeenCalled();
+    expect(mockStore.clearCart).toHaveBeenCalled();
+  });
+
+  it('shows error when onCheckout rejects', async () => {
+    const failingCheckout = vi.fn().mockRejectedValueOnce(new Error('payment failed'));
+    mockStore = makeStore({
+      cart: [{ menuItem: { id: '1', name: 'P' }, quantity: 1 }],
+    });
+    render(<CartDrawer onClose={onClose} onCheckout={failingCheckout} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Оформить заказ'));
+    });
+
+    expect(failingCheckout).toHaveBeenCalled();
   });
 });

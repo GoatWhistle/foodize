@@ -45,8 +45,8 @@ async def create_restaurant_for_vendor(
     if vendor and has_permission(vendor.user.permissions, Permission.RESTAURANTS_MODERATE):
         restaurant.moderation_status = ModerationStatus.APPROVED.value
         restaurant.rejection_reason = None
-        await session.commit()
-        await session.refresh(restaurant)
+    await session.commit()
+    await session.refresh(restaurant)
     return RestaurantResponse.model_validate(restaurant)
 
 
@@ -60,6 +60,7 @@ async def update_restaurant_for_vendor(
         session=session, restaurant_id=restaurant_id, vendor_id=vendor_id
     )
     updated = await crud.update_restaurant(session, restaurant, update_data)
+    await session.commit()
     return RestaurantResponse.model_validate(updated)
 
 

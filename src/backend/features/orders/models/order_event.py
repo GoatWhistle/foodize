@@ -11,8 +11,8 @@ if TYPE_CHECKING:
 
 
 class OrderEvent(Base, IdUuidPkMixin, CreatedAtMixin):
-    order_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("orders.id"))
-    actor_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    order_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("orders.id", ondelete="CASCADE"))
+    actor_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     actor_permissions: Mapped[list[str]] = mapped_column(JSON, default=list)
     old_status: Mapped[str] = mapped_column(String)
     new_status: Mapped[str] = mapped_column(String)

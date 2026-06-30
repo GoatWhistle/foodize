@@ -1,4 +1,3 @@
-import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   MagnifyingGlass,
@@ -8,11 +7,12 @@ import {
   ChartBar,
   ForkKnife,
 } from "@phosphor-icons/react";
-import { useRestaurantStore } from "../../store/useRestaurantStore";
 import { useAuthStore } from "../../store/useAuthStore";
+import { useFavoriteStore } from "../../store/useFavoriteStore";
 import { useShallow } from "zustand/react/shallow";
 import RestaurantCard from "@shared/components/RestaurantCard/RestaurantCard";
 import EmptyState from "@shared/components/EmptyState/EmptyState";
+import { useHomePageLogic } from "@shared/hooks/useHomePageLogic.js";
 import s from "./HomePage.module.css";
 
 const getGreeting = () => {
@@ -23,97 +23,25 @@ const getGreeting = () => {
   return "Добрый вечер";
 };
 
-const SIZE = 20;
-
 const HomePage = () => {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
+  const { favoriteIds, toggle: toggleFavorite } = useFavoriteStore(
+    useShallow((s) => ({ favoriteIds: s.favoriteIds, toggle: s.toggle }))
+  );
 
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [searching, setSearching] = useState(false);
-  const [onlyOpen, setOnlyOpen] = useState(false);
-  const [sort, setSort] = useState("default");
-  const [direction, setDirection] = useState("desc");
-  const [page, setPage] = useState(1);
-  const [allRestaurants, setAllRestaurants] = useState([]);
-  const [hasMore, setHasMore] = useState(true);
-  const sentinelRef = useRef(null);
-
-  const { publicRestaurants, loading, publicRestaurantsTotal, fetchPublicRestaurants } =
-    useRestaurantStore(
-      useShallow((s) => ({
-        publicRestaurants: s.publicRestaurants,
-        loading: s.loading,
-        publicRestaurantsTotal: s.publicRestaurantsTotal,
-        fetchPublicRestaurants: s.fetchPublicRestaurants,
-      })),
-    );
-
-  useEffect(() => {
-    setSearching(true);
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-      setSearching(false);
-    }, 380);
-    return () => {
-      clearTimeout(timer);
-      setSearching(false);
-    };
-  }, [search]);
-
-  const resetAndLoad = useCallback(() => {
-    setAllRestaurants([]);
-    setPage(1);
-    setHasMore(true);
-  }, []);
-
-  useEffect(() => {
-    resetAndLoad();
-  }, [debouncedSearch, onlyOpen, sort, direction, resetAndLoad]);
-
-  const load = useCallback(() => {
-    fetchPublicRestaurants({
-      name: debouncedSearch || undefined,
-      is_open: onlyOpen ? true : undefined,
-      sort,
-      direction,
-      page,
-      size: SIZE,
-    });
-  }, [debouncedSearch, onlyOpen, sort, direction, page, fetchPublicRestaurants]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  useEffect(() => {
-    if (page === 1) {
-      setAllRestaurants(publicRestaurants);
-    } else {
-      setAllRestaurants((prev) => {
-        const ids = new Set(prev.map((r) => r.id));
-        return [...prev, ...publicRestaurants.filter((r) => !ids.has(r.id))];
-      });
-    }
-    const total = publicRestaurantsTotal || 0;
-    setHasMore(page * SIZE < total);
-  }, [publicRestaurants, publicRestaurantsTotal, page]);
-
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && hasMore && !loading) {
-          setPage((p) => p + 1);
-        }
-      },
-      { threshold: 0.1 },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [hasMore, loading]);
+  const {
+    search, setSearch,
+    searching,
+    onlyOpen, setOnlyOpen,
+    sort, setSort,
+    direction, setDirection,
+    allRestaurants,
+    hasMore,
+    loading,
+    publicRestaurantsTotal,
+    sentinelRef,
+  } = useHomePageLogic({ pageSize: 20, infiniteScroll: true });
 
   const firstName = user?.first_name || user?.name?.split(" ")[0] || "";
 
@@ -217,10 +145,13 @@ const HomePage = () => {
                   key={r.id}
                   restaurant={r}
                   onClick={() =>
-                    navigate(`/restaurant/${r.display_id || r.id}`, {
+                    navigate(`/restaurant/${r.display_id}`, {
                       state: { restaurant: r },
                     })
                   }
+                  isFavorite={favoriteIds.includes(r.id)}
+                  onFavoriteToggle={toggleFavorite}
+                  viewTransition={false}
                 />
               ))}
             </div>

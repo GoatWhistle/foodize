@@ -42,5 +42,5 @@ export const STAFF_ROLE_RU = {
 
 export const translate = (dict, key, fallback = "") => {
   if (!key) return fallback;
-  return dict[key] || key;
+  return dict[key] ?? fallback ?? key;
 };

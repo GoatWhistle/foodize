@@ -26,6 +26,29 @@ const getLinePrice = (item) =>
 const getLineKey = (menuItemId, selectedOptionIds = []) =>
   `${menuItemId}:${[...selectedOptionIds].sort().join(",")}`;
 
+const normalizeOrderItemForCart = (i) => {
+  const optionIds = i.selected_options?.map((o) => o.option_id ?? o.id) || [];
+  const optionsTotal = (i.selected_options || []).reduce(
+    (sum, o) => sum + (Number(o.price_delta) || 0),
+    0,
+  );
+  const basePrice = Math.max(0, (Number(i.price_at_purchase) || 0) - optionsTotal);
+  return {
+    menu_item_id: i.menu_item_id,
+    name: i.menu_item_name,
+    price: basePrice,
+    image_url: null,
+    quantity: i.quantity,
+    selected_option_ids: optionIds,
+    selected_options: (i.selected_options || []).map((o) => ({
+      id: o.option_id ?? o.id,
+      option_id: o.option_id ?? o.id,
+      name: o.name,
+      price_delta: o.price_delta,
+    })),
+  };
+};
+
 const uniqueOptions = (options = []) => {
   const seen = new Set();
   return options.filter((o) => {
@@ -41,14 +64,20 @@ const makeIdempotencyKey = () =>
   `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
 export function createOrderStore({ onRestaurantChange = null } = {}) {
+  let syncChain = Promise.resolve();
+
   return create((set, get) => ({
     cart: [],
     cartRestaurantId: null,
     orders: [],
     currentOrder: null,
     ordersLoading: false,
+    ordersError: null,
     ordersTotal: 0,
     activeOrder: null,
+    cartError: null,
+    activeOrderError: null,
+    orderPlacing: false,
 
     fetchCart: async () => {
       try {
@@ -56,25 +85,31 @@ export function createOrderStore({ onRestaurantChange = null } = {}) {
         set({
           cart: res.data.data.items ?? [],
           cartRestaurantId: res.data.data.restaurant_id ?? null,
+          cartError: null,
         });
-      } catch {}
+      } catch (err) {
+        set({ cartError: err?.response?.data?.detail ?? "Не удалось загрузить корзину" });
+      }
     },
 
-    _syncCart: async () => {
-      const { cart, cartRestaurantId } = get();
-      if (!cartRestaurantId) return;
-      await cartService.updateCart({
-        restaurant_id: cartRestaurantId,
-        items: cart.map((i) => ({
-          menu_item_id: i.menuItem.id,
-          name: i.menuItem.name,
-          price: i.menuItem.price,
-          image_url: i.menuItem.image_url ?? null,
-          quantity: i.quantity,
-          selected_option_ids: getOptionIds(i),
-          selected_options: uniqueOptions(getSelectedOptions(i)),
-        })),
+    _syncCart: () => {
+      syncChain = syncChain.then(async () => {
+        const { cart, cartRestaurantId } = get();
+        if (!cartRestaurantId) return;
+        await cartService.updateCart({
+          restaurant_id: cartRestaurantId,
+          items: cart.map((i) => ({
+            menu_item_id: i.menuItem.id,
+            name: i.menuItem.name,
+            price: i.menuItem.price,
+            image_url: i.menuItem.image_url ?? null,
+            quantity: i.quantity,
+            selected_option_ids: getOptionIds(i),
+            selected_options: uniqueOptions(getSelectedOptions(i)),
+          })),
+        });
       });
+      return syncChain;
     },
 
     addToCart: async (menuItem, restaurantId, selectedOptions = [], quantity = 1) => {
@@ -97,9 +132,7 @@ export function createOrderStore({ onRestaurantChange = null } = {}) {
       };
 
       if (cartRestaurantId && cartRestaurantId !== restaurantId && cart.length > 0) {
-        const confirmed = onRestaurantChange
-          ? await onRestaurantChange()
-          : window.confirm("Заменить корзину? Текущие товары будут удалены.");
+        const confirmed = onRestaurantChange ? await onRestaurantChange() : false;
         if (!confirmed) return false;
         set({ cart: [nextItem], cartRestaurantId: restaurantId });
       } else {
@@ -152,28 +185,7 @@ export function createOrderStore({ onRestaurantChange = null } = {}) {
     repeatOrder: async (order) => {
       const payload = {
         restaurant_id: order.restaurant_id,
-        items: order.items.map((i) => {
-          const optionIds = i.selected_options?.map((o) => o.option_id ?? o.id) || [];
-          const optionsTotal = (i.selected_options || []).reduce(
-            (sum, o) => sum + (Number(o.price_delta) || 0),
-            0,
-          );
-          const basePrice = Math.max(0, (Number(i.price_at_purchase) || 0) - optionsTotal);
-          return {
-            menu_item_id: i.menu_item_id,
-            name: i.menu_item_name,
-            price: basePrice,
-            image_url: null,
-            quantity: i.quantity,
-            selected_option_ids: optionIds,
-            selected_options: (i.selected_options || []).map((o) => ({
-              id: o.option_id ?? o.id,
-              option_id: o.option_id ?? o.id,
-              name: o.name,
-              price_delta: o.price_delta,
-            })),
-          };
-        }),
+        items: order.items.map(normalizeOrderItemForCart),
       };
       await cartService.updateCart(payload);
       await get().fetchCart();
@@ -193,40 +205,50 @@ export function createOrderStore({ onRestaurantChange = null } = {}) {
         const active = orders.find((o) =>
           ["PENDING", "ACCEPTED", "READY"].includes(o.status),
         );
-        set({ activeOrder: active ?? null });
-      } catch {}
+        set({ activeOrder: active ?? null, activeOrderError: null });
+      } catch (err) {
+        set({ activeOrderError: err?.response?.data?.detail ?? "Не удалось загрузить активный заказ" });
+      }
     },
 
     placeOrder: async (promoCode = null, comment = "", requestedPickupAt = null) => {
-      const { cart, cartRestaurantId } = get();
-      const trimmedComment = comment.trim();
-      const payload = {
-        restaurant_id: cartRestaurantId,
-        items: cart.map((i) => ({
-          menu_item_id: i.menuItem.id,
-          quantity: i.quantity,
-          selected_option_ids: getOptionIds(i),
-        })),
-        ...(promoCode ? { promo_code: promoCode } : {}),
-        ...(trimmedComment ? { comment: trimmedComment } : {}),
-        ...(requestedPickupAt ? { requested_pickup_at: requestedPickupAt } : {}),
-      };
-      const res = await orderService.create(payload, {
-        headers: { "Idempotency-Key": makeIdempotencyKey() },
-      });
-      set((s) => ({
-        orders: [res.data.data, ...s.orders],
-        currentOrder: res.data.data,
-        activeOrder: res.data.data,
-        cart: [],
-        cartRestaurantId: null,
-      }));
-      await cartService.clearCart();
-      return res.data.data;
+      if (get().orderPlacing) return;
+      set({ orderPlacing: true });
+      try {
+        const { cart, cartRestaurantId } = get();
+        const trimmedComment = comment.trim();
+        const payload = {
+          restaurant_id: cartRestaurantId,
+          items: cart.map((i) => ({
+            menu_item_id: i.menuItem.id,
+            quantity: i.quantity,
+            selected_option_ids: getOptionIds(i),
+          })),
+          ...(promoCode ? { promo_code: promoCode } : {}),
+          ...(trimmedComment ? { comment: trimmedComment } : {}),
+          ...(requestedPickupAt ? { requested_pickup_at: requestedPickupAt } : {}),
+        };
+        const res = await orderService.create(payload, {
+          headers: { "Idempotency-Key": makeIdempotencyKey() },
+        });
+        set((s) => ({
+          orders: [res.data.data, ...s.orders],
+          currentOrder: res.data.data,
+          activeOrder: res.data.data,
+          cart: [],
+          cartRestaurantId: null,
+          orderPlacing: false,
+        }));
+        await cartService.clearCart();
+        return res.data.data;
+      } catch (err) {
+        set({ orderPlacing: false });
+        throw err;
+      }
     },
 
     fetchMyOrders: async (params = {}) => {
-      set({ ordersLoading: true });
+      set({ ordersLoading: true, ordersError: null });
       try {
         const res = await orderService.getMyOrders(params);
         const orders = Array.isArray(res.data?.data) ? res.data.data : [];
@@ -235,15 +257,23 @@ export function createOrderStore({ onRestaurantChange = null } = {}) {
           ordersTotal: res.data?.pagination?.total ?? orders.length,
           ordersLoading: false,
         });
-      } catch {
-        set({ ordersLoading: false });
+      } catch (err) {
+        set({
+          ordersLoading: false,
+          ordersError: err?.response?.data?.detail ?? "Не удалось загрузить заказы",
+        });
       }
     },
 
     fetchOrder: async (id) => {
-      const res = await orderService.getById(id);
-      set({ currentOrder: res.data.data });
-      return res.data.data;
+      try {
+        const res = await orderService.getById(id);
+        set({ currentOrder: res.data.data });
+        return res.data.data;
+      } catch (err) {
+        set({ currentOrder: null });
+        throw err;
+      }
     },
   }));
 }

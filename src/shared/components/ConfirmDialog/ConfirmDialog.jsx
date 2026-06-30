@@ -23,6 +23,9 @@ const ConfirmDialog = () => {
       }}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-dialog-title"
         className="modal-content"
         style={{ maxWidth: 440, padding: 22, display: "flex", flexDirection: "column", gap: 18 }}
       >
@@ -43,7 +46,7 @@ const ConfirmDialog = () => {
             <Trash size={20} />
           </div>
           <div>
-            <h3 style={{ color: "var(--text-1)", fontSize: "1.05rem", margin: 0 }}>{dialog.title}</h3>
+            <h3 id="confirm-dialog-title" style={{ color: "var(--text-1)", fontSize: "1.05rem", margin: 0 }}>{dialog.title}</h3>
             <p style={{ color: "var(--text-3)", fontSize: "0.88rem", lineHeight: 1.55, margin: "8px 0 0" }}>
               {dialog.message}
             </p>

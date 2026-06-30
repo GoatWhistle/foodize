@@ -3,12 +3,12 @@ import { X, Copy, TelegramLogo, Check } from '@phosphor-icons/react';
 
 const ShareModal = ({ restaurant, onClose }) => {
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);
 
   const miniAppUrl = import.meta.env.VITE_MINI_APP_URL || '';
   const webUrl = import.meta.env.VITE_WEB_URL || window.location.origin;
 
-  // Use the display_id if available, otherwise fallback to id. This handles the UUID hiding task.
-  const targetId = restaurant.display_id || restaurant.id;
+  const targetId = restaurant.display_id;
 
   const deepLink = miniAppUrl
     ? `${miniAppUrl}?startapp=restaurant_${targetId}`
@@ -20,9 +20,11 @@ const ShareModal = ({ restaurant, onClose }) => {
     try {
       await navigator.clipboard.writeText(deepLink);
       setCopied(true);
+      setCopyError(false);
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy', err);
+    } catch {
+      setCopyError(true);
+      setTimeout(() => setCopyError(false), 3000);
     }
   };
 
@@ -69,6 +71,7 @@ const ShareModal = ({ restaurant, onClose }) => {
           </span>
           <button
             onClick={onClose}
+            aria-label="Закрыть"
             style={{
               background: 'none',
               border: 'none',
@@ -77,7 +80,7 @@ const ShareModal = ({ restaurant, onClose }) => {
               display: 'flex',
             }}
           >
-            <X size={22} weight="bold" />
+            <X size={22} weight="bold" aria-hidden="true" />
           </button>
         </div>
 
@@ -118,6 +121,10 @@ const ShareModal = ({ restaurant, onClose }) => {
                   Ссылка скопирована!
                 </span>
               </>
+            ) : copyError ? (
+              <span style={{ color: 'var(--error)' }}>
+                Не удалось скопировать
+              </span>
             ) : (
               <>
                 <Copy size={20} />

@@ -1,0 +1,160 @@
+.order-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background: var(--bg-card);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: all var(--dur-sm);
+}
+
+.order-card:hover {
+  border-color: var(--border-mid);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.order-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: var(--r-xs);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.order-status-badge.pending {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-dim);
+  border: 1px solid var(--color-warning-border);
+}
+
+.order-status-badge.preparing {
+  background: var(--fire-subtle);
+  color: var(--fire-dim);
+  border: 1px solid var(--fire-glow);
+}
+
+.order-status-badge.ready {
+  background: var(--color-success-bg);
+  color: var(--color-success-dim);
+  border: 1px solid var(--color-success-border);
+}
+
+.order-status-badge.cancelled {
+  background: var(--color-neutral-bg);
+  color: var(--color-neutral);
+  border: 1px solid var(--color-neutral-border);
+}
+
+.status-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: calc(100vh - var(--nav-h));
+  padding: 36px 24px 96px;
+  text-align: center;
+}
+
+.status-icon-wrap {
+  position: relative;
+  margin-bottom: 32px;
+}
+
+.status-heading {
+  margin-top: 20px;
+  font-weight: var(--weight-display);
+  font-size: var(--text-2xl);
+  letter-spacing: -0.03em;
+  line-height: var(--lh-tight);
+}
+
+.status-sub {
+  color: var(--text-3);
+  margin-top: 8px;
+  font-size: var(--text-base);
+  line-height: var(--lh-base);
+}
+
+.ripple-ring {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--fire-subtle);
+  animation: ripple 1.8s var(--ease-out) infinite;
+}
+
+.ripple-ring:nth-child(2) {
+  animation-delay: 0.6s;
+}
+
+.ripple-ring:nth-child(3) {
+  animation-delay: 1.2s;
+}
+
+.status-ready-flash {
+  animation: flash-bg 1s var(--ease-out) forwards;
+}
+
+.status-ready-urge {
+  animation: ready-urge 1.8s var(--ease-in-out) infinite;
+  transform-origin: center;
+}
+
+.order-stage-dot {
+  transition:
+    background var(--dur-sm) var(--ease-out),
+    box-shadow var(--dur-sm) var(--ease-out),
+    transform var(--dur-sm) var(--ease-out);
+}
+
+.order-stage-dot--current {
+  animation: stage-dot-pulse 1.6s var(--ease-out) infinite;
+}
+
+.order-stage-dot--done {
+  box-shadow: 0 0 0 3px var(--color-success-bg);
+}
+
+.status-ready-text {
+  animation: pop-in 0.5s var(--ease-out) forwards;
+}
+
+.progress-arc {
+  transform: rotate(-90deg);
+}
+
+.order-step-line--active {
+  background: linear-gradient(
+    90deg,
+    var(--border) 0%,
+    var(--border) 35%,
+    var(--fire) 50%,
+    var(--border) 65%,
+    var(--border) 100%
+  );
+  background-size: 300% 100%;
+  animation: step-line-travel 1.6s ease-in-out infinite;
+}
+
+.promo-success-badge {
+  animation: promo-success-in 460ms var(--ease-out);
+}
+
+@media (max-width: 599px) {
+  .order-card {
+    padding: 14px 14px;
+    gap: 10px;
+  }
+
+  .status-screen {
+    padding: 24px 14px 92px;
+  }
+}

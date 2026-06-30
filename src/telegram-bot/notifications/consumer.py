@@ -1,4 +1,5 @@
 import asyncio
+import functools
 import json
 import logging
 
@@ -84,9 +85,7 @@ async def start_notification_consumer(bot: Bot) -> None:
             },
         )
         await queue.bind(exchange, routing_key=routing_key)
-        await queue.consume(
-            lambda msg, h=handler, rk=routing_key: _process(msg, h, bot, exchange, rk)
-        )
+        await queue.consume(functools.partial(_process, handler=handler, bot=bot, exchange=exchange, routing_key=routing_key))
         logger.info("Bot subscribed: queue=%s routing_key=%s", queue_name, routing_key)
 
     logger.info("Notification consumer started")

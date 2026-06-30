@@ -4,9 +4,7 @@ from settings.config.base import BaseConfig
 
 
 class CorsConfig(BaseConfig):
-    allowed_origins: list[str] = [
-        "https://web.telegram.org",
-    ]
+    allowed_origins: list[str] = []
 
     @field_validator("allowed_origins", mode="before")
     @classmethod

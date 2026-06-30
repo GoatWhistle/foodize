@@ -10,3 +10,5 @@ export { default as CartDrawer } from "./CartDrawer/CartDrawer";
 export { default as OrderStatusBadge } from "./OrderStatusBadge/OrderStatusBadge";
 export { default as ConfirmDialog } from "./ConfirmDialog/ConfirmDialog";
 export { default as ThemeSwitcher } from "./ThemeSwitcher/ThemeSwitcher";
+export { default as FavoriteRestaurantCard } from "./FavoriteRestaurantCard/FavoriteRestaurantCard";
+export { default as OrderCard } from "./OrderCard/OrderCard";

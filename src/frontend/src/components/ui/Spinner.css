@@ -1,0 +1,33 @@
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 2.5px solid var(--border-mid);
+  border-top-color: var(--fire);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.loading-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+.loading-dim {
+  opacity: 0.82;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    var(--border) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: var(--r-xs);
+}

@@ -1,7 +1,10 @@
 import api from "@shared/services/api.instance.js";
 
 export const orderService = {
-  create: (data, config = {}) => api.post("/orders/", data, config),
+  create: (data, config = {}) => api.post("/orders/", data, {
+    ...config,
+    headers: { 'Idempotency-Key': crypto.randomUUID(), ...config.headers },
+  }),
   getEstimate: (restaurantId) => api.get(`/orders/estimate/${restaurantId}`),
   getMyOrders: (params) => api.get("/orders/me", { params }),
   getById: (id) => api.get(`/orders/${id}`),

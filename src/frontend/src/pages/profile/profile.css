@@ -1,0 +1,112 @@
+.profile-page {
+  padding: var(--space-lg) var(--gutter);
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  padding: var(--space-lg) var(--space-lg);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  margin-bottom: var(--space-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--fire);
+}
+
+.profile-avatar {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: var(--fire);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-xl);
+  font-weight: var(--weight-display);
+  color: var(--white);
+  flex-shrink: 0;
+  box-shadow: 0 4px 16px var(--fire-glow);
+}
+
+.profile-name {
+  font-family: var(--font-sans);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-strong);
+  letter-spacing: -0.02em;
+  line-height: var(--lh-snug);
+  margin-bottom: 4px;
+}
+
+.profile-phone {
+  font-size: var(--text-base);
+  color: var(--text-3);
+}
+
+.profile-menu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.profile-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) 20px;
+  background: var(--bg-card);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-weight: var(--weight-ui);
+  font-size: var(--text-base);
+  transition: all var(--dur-sm);
+  color: var(--text-1);
+}
+
+.profile-menu-item:hover {
+  border-color: var(--border-mid);
+  background: var(--bg-surface);
+  transform: translateX(2px);
+}
+
+.profile-menu-item.danger {
+  color: var(--color-error);
+}
+
+.profile-menu-item.danger:hover {
+  border-color: var(--color-error-border);
+  background: var(--color-error-bg);
+}
+
+@media (max-width: 599px) {
+  .profile-header {
+    padding: 20px 16px;
+    gap: 14px;
+  }
+
+  .profile-avatar {
+    width: 56px;
+    height: 56px;
+  }
+
+  .profile-name {
+    font-size: var(--text-md);
+  }
+
+  .profile-page {
+    padding: 16px var(--gutter);
+  }
+}

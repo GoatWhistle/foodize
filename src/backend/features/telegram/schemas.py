@@ -54,6 +54,10 @@ class TelegramSiteLoginStartRequest(BaseModel):
     phone_number: str = Field(min_length=7, max_length=16, pattern=r"^\+?[0-9]{7,15}$")
 
 
+class TelegramSiteLoginByUsernameRequest(BaseModel):
+    telegram_username: str = Field(min_length=1, max_length=64)
+
+
 class TelegramSiteLoginStartResponse(BaseModel):
     message: str = "Code sent"
 
@@ -61,6 +65,17 @@ class TelegramSiteLoginStartResponse(BaseModel):
 class TelegramSiteLoginVerifyRequest(BaseModel):
     phone_number: str = Field(min_length=7, max_length=16, pattern=r"^\+?[0-9]{7,15}$")
     code: str = Field(min_length=4, max_length=8, pattern=r"^[0-9]+$")
+
+
+class TelegramSiteLoginVerifyByUsernameRequest(BaseModel):
+    telegram_username: str = Field(min_length=1, max_length=64)
+    code: str = Field(min_length=4, max_length=8, pattern=r"^[0-9]+$")
+
+
+class TelegramBotRegisterRequest(BaseModel):
+    telegram_id: int
+    telegram_username: str | None = Field(default=None, max_length=64)
+    name: str = Field(min_length=1, max_length=128)
 
 
 class TelegramSiteLoginResponse(TokenResponse):

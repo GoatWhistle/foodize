@@ -1,0 +1,67 @@
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(31, 35, 40, 0.42);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fade-in var(--dur-md) var(--ease-out);
+  padding: 24px;
+}
+
+.modal-content {
+  background: var(--bg-card);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-xl);
+  animation: modal-appear var(--dur-lg) var(--ease-out);
+  max-width: 100%;
+  width: 100%;
+}
+
+.modal-content div::-webkit-scrollbar {
+  width: 3px;
+}
+
+.modal-content div::-webkit-scrollbar-thumb {
+  background: var(--border-mid);
+  border-radius: 4px;
+}
+
+.order-details-overlay {
+  align-items: center;
+  padding: 24px;
+}
+
+.order-details-overlay .modal-content {
+  border-radius: var(--r-lg);
+  max-height: min(90vh, 760px);
+  width: min(560px, calc(100vw - 32px));
+}
+
+@media (max-width: 599px) {
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal-content {
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    max-height: 92vh;
+    width: 100%;
+  }
+
+  .order-details-overlay {
+    align-items: center;
+    padding: 16px;
+  }
+
+  .order-details-overlay .modal-content {
+    border-radius: var(--r-lg);
+    max-height: min(90vh, 760px);
+    width: min(560px, calc(100vw - 32px));
+  }
+}

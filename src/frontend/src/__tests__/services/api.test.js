@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 
@@ -9,104 +9,86 @@ const importApiModule = async () => {
 
 describe('api infrastructure', () => {
   beforeEach(() => {
-    localStorage.clear();
     vi.unstubAllGlobals();
   });
 
-  it('builds order websocket URL with the latest access token', async () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('builds order websocket URL without token in query string', async () => {
     const sockets = [];
     class MockWebSocket {
       static OPEN = 1;
-
-      constructor(url) {
-        this.url = url;
+      constructor(urlOrFactory) {
+        this.url = typeof urlOrFactory === 'function' ? urlOrFactory() : urlOrFactory;
         this.readyState = MockWebSocket.OPEN;
         sockets.push(this);
       }
-
       send = vi.fn();
       close = vi.fn();
     }
     vi.stubGlobal('WebSocket', MockWebSocket);
 
     const { createOrderWebSocket } = await importApiModule();
-    localStorage.setItem('access_token', 'token with spaces');
-
     createOrderWebSocket('order-1', vi.fn(), vi.fn());
 
-    expect(sockets[0].url).toBe(
-      'ws://localhost:8000/api/v1/ws/orders/order-1?token=token%20with%20spaces'
-    );
+    expect(sockets[0].url).toBe('ws://localhost:8000/api/v1/ws/orders/order-1');
   });
 
-  it('restaurant orders websocket reads a refreshed token on reconnect', async () => {
-    vi.useFakeTimers();
+  it('restaurant orders websocket connects without token in URL', async () => {
     const sockets = [];
     class MockWebSocket {
       static OPEN = 1;
-
-      constructor(url) {
-        this.url = url;
+      constructor(urlOrFactory) {
+        this.url = typeof urlOrFactory === 'function' ? urlOrFactory() : urlOrFactory;
         this.readyState = MockWebSocket.OPEN;
         sockets.push(this);
       }
-
       send = vi.fn();
       close = vi.fn();
     }
     vi.stubGlobal('WebSocket', MockWebSocket);
 
     const { createRestaurantOrdersWebSocket } = await importApiModule();
-    localStorage.setItem('access_token', 'old-token');
     const ws = createRestaurantOrdersWebSocket('rest-1', vi.fn(), vi.fn());
 
-    localStorage.setItem('access_token', 'new-token');
-    sockets[0].onclose();
-    await vi.advanceTimersByTimeAsync(1000);
-
-    expect(sockets[0].url).toContain('token=old-token');
-    expect(sockets[1].url).toContain('token=new-token');
+    expect(sockets[0].url).toBe('ws://localhost:8000/api/v1/ws/restaurants/rest-1/orders');
     ws.close();
-    vi.useRealTimers();
   });
 
-  it('display board websocket encodes the current token', async () => {
+  it('display board websocket connects without token in URL', async () => {
     const sockets = [];
     class MockWebSocket {
-      constructor(url) {
-        this.url = url;
+      constructor(urlOrFactory) {
+        this.url = typeof urlOrFactory === 'function' ? urlOrFactory() : urlOrFactory;
         sockets.push(this);
       }
-
       send = vi.fn();
       close = vi.fn();
     }
     vi.stubGlobal('WebSocket', MockWebSocket);
 
     const { createDisplayBoardWebSocket } = await importApiModule();
-    localStorage.setItem('access_token', 'display/token');
-
     createDisplayBoardWebSocket('rest-2', vi.fn(), vi.fn());
 
     expect(sockets[0].url).toBe(
-      'ws://localhost:8000/api/v1/ws/restaurants/rest-2/display-board?token=display%2Ftoken'
+      'ws://localhost:8000/api/v1/ws/restaurants/rest-2/display-board'
     );
   });
 
-  it('refreshes access token and retries a 401 request once', async () => {
+  it('refreshes token via cookie and retries a 401 request once', async () => {
     const { default: api } = await importApiModule();
     const mock = new MockAdapter(api);
     const refresh = vi
       .spyOn(axios, 'post')
-      .mockResolvedValueOnce({ data: { data: { access_token: 'new-token' } } });
+      .mockResolvedValueOnce({ data: {} });
 
     mock
       .onGet('/protected')
       .replyOnce(401, { detail: 'expired' })
       .onGet('/protected')
-      .replyOnce((config) => [200, { auth: config.headers.Authorization }]);
-
-    localStorage.setItem('access_token', 'old-token');
+      .replyOnce(200, { ok: true });
 
     const result = await api.get('/protected');
 
@@ -115,8 +97,7 @@ describe('api infrastructure', () => {
       {},
       { withCredentials: true }
     );
-    expect(localStorage.getItem('access_token')).toBe('new-token');
-    expect(result.data).toEqual({ auth: 'Bearer new-token' });
+    expect(result.data).toEqual({ ok: true });
     mock.restore();
     refresh.mockRestore();
   });

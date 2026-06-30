@@ -2,7 +2,7 @@ import logging
 import secrets
 from http import HTTPStatus
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Response
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
@@ -13,20 +13,24 @@ from features.telegram.schemas import (
     TelegramBotLinkRequest,
     TelegramBotOrdersRequest,
     TelegramBotOrderSummary,
+    TelegramBotRegisterRequest,
     TelegramBotVendorStatusRequest,
     TelegramBotVendorStatusResponse,
     TelegramCheckRequest,
     TelegramCheckResponse,
     TelegramRegisterRequest,
+    TelegramSiteLoginByUsernameRequest,
     TelegramSiteLoginResponse,
     TelegramSiteLoginStartRequest,
     TelegramSiteLoginStartResponse,
+    TelegramSiteLoginVerifyByUsernameRequest,
     TelegramSiteLoginVerifyRequest,
     TelegramSitePasswordRequest,
 )
 from features.users.models import User
 from features.users.schemas import UserRead
 from infra.cache.redis import get_redis_cache
+from middlewares.limiter import limiter
 from settings.config.app_config import settings
 from shared.exceptions import AccessDeniedException
 from shared.response import build_response
@@ -72,11 +76,13 @@ async def telegram_auth(
     return build_response(result)
 
 
+@limiter.limit("5/minute")
 @router.post(
     "/site-login/request-code",
     response_model=SuccessResponse[TelegramSiteLoginStartResponse],
 )
 async def telegram_site_login_request_code(
+    request: Request,
     data: TelegramSiteLoginStartRequest,
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[TelegramSiteLoginStartResponse]:
@@ -84,11 +90,29 @@ async def telegram_site_login_request_code(
     return build_response(TelegramSiteLoginStartResponse())
 
 
+@limiter.limit("5/minute")
+@router.post(
+    "/site-login/request-code-by-username",
+    response_model=SuccessResponse[TelegramSiteLoginStartResponse],
+)
+async def telegram_site_login_request_code_by_username(
+    request: Request,
+    data: TelegramSiteLoginByUsernameRequest,
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> SuccessResponse[TelegramSiteLoginStartResponse]:
+    await service.request_site_login_code_by_username(
+        session=session, telegram_username=data.telegram_username
+    )
+    return build_response(TelegramSiteLoginStartResponse())
+
+
+@limiter.limit("5/minute")
 @router.post(
     "/site-login/verify",
     response_model=SuccessResponse[TelegramSiteLoginResponse],
 )
 async def telegram_site_login_verify(
+    request: Request,
     data: TelegramSiteLoginVerifyRequest,
     response: Response,
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
@@ -96,6 +120,26 @@ async def telegram_site_login_verify(
     result = await service.verify_site_login_code(
         session=session,
         phone_number=data.phone_number,
+        code=data.code,
+        response=response,
+    )
+    return build_response(result)
+
+
+@limiter.limit("5/minute")
+@router.post(
+    "/site-login/verify-by-username",
+    response_model=SuccessResponse[TelegramSiteLoginResponse],
+)
+async def telegram_site_login_verify_by_username(
+    request: Request,
+    data: TelegramSiteLoginVerifyByUsernameRequest,
+    response: Response,
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> SuccessResponse[TelegramSiteLoginResponse]:
+    result = await service.verify_site_login_code_by_username(
+        session=session,
+        telegram_username=data.telegram_username,
         code=data.code,
         response=response,
     )
@@ -122,6 +166,35 @@ async def telegram_logout(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[UserRead]:
     result = await service.unlink_telegram_for_user(session=session, user=current_user)
+    return build_response(UserRead.model_validate(result))
+
+
+@router.post("/bot/register", response_model=SuccessResponse[UserRead])
+async def telegram_bot_register(
+    data: TelegramBotRegisterRequest,
+    x_telegram_bot_secret: str = Header("", alias="X-Telegram-Bot-Secret"),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> SuccessResponse[UserRead]:
+    if not settings.telegram.bot_api_secret or not secrets.compare_digest(
+        settings.telegram.bot_api_secret, x_telegram_bot_secret
+    ):
+        raise AccessDeniedException(detail="Invalid bot secret")
+
+    redis = get_redis_cache().get_raw_client()
+    key = f"rl:bot_register:{data.telegram_id}"
+    reqs = await redis.incr(key)
+    if reqs == 1:
+        await redis.expire(key, 3600)
+    if reqs > 10:
+        logger.warning("telegram bot-register rate limit exceeded: telegram_id=%s", data.telegram_id)
+        raise HTTPException(status_code=HTTPStatus.TOO_MANY_REQUESTS, detail="Rate limit exceeded")
+
+    result = await service.register_from_bot(
+        session=session,
+        telegram_id=data.telegram_id,
+        telegram_username=data.telegram_username,
+        name=data.name,
+    )
     return build_response(UserRead.model_validate(result))
 
 

@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
@@ -21,6 +21,7 @@ from api.exception_handlers import (
     unhandled_exception_handler,
 )
 from database import db_helper
+from features.admin.dependencies import require_admin
 from features.notifications.broker import broker
 from infra.cache.redis import close_redis_pool, get_redis_cache
 from middlewares.cache import AutoCacheMiddleware
@@ -70,7 +71,15 @@ app.add_exception_handler(IntegrityError, integrity_error_handler)  # type: igno
 app.add_exception_handler(Exception, unhandled_exception_handler)
 app.include_router(api_router)
 
-Instrumentator().instrument(app).expose(app, include_in_schema=False, should_gzip=True)
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from fastapi import Response as FastAPIResponse
+
+instrumentator = Instrumentator().instrument(app)
+
+
+@app.get("/metrics", include_in_schema=False, dependencies=[Depends(require_admin)])
+async def metrics():
+    return FastAPIResponse(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 @app.get("/api/ping")

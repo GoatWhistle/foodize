@@ -13,8 +13,8 @@ if TYPE_CHECKING:
 
 
 class StaffProfile(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), unique=True)
-    restaurant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("restaurants.id"))
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), unique=True)
+    restaurant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("restaurants.id", ondelete="CASCADE"))
 
     role: Mapped[str] = mapped_column(
         String, default=StaffRole.COOK.value, server_default=StaffRole.COOK.value, nullable=False

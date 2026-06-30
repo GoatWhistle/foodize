@@ -42,7 +42,7 @@ const getLinePrice = (item) =>
 
 const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }) => {
   const navigate = useNavigate();
-  const { cart, cartRestaurantId, removeFromCart, addToCart, clearCart, placeOrder } =
+  const { cart, cartRestaurantId, removeFromCart, addToCart, clearCart, placeOrder, orders } =
     useOrderStore(
       useShallow((s) => ({
         cart: s.cart,
@@ -51,9 +51,11 @@ const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }) => {
         addToCart: s.addToCart,
         clearCart: s.clearCart,
         placeOrder: s.placeOrder,
+        orders: s.orders,
       })),
     );
   const total = useOrderStore((s) => s.cartTotal());
+  const isFirstOrder = orders.length === 0;
   const drawerRef = useRef(null);
 
   const [promoCode, setPromoCode] = useState("");
@@ -101,7 +103,7 @@ const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }) => {
     setPromoLoading(true);
     setPromoError("");
     try {
-      const res = await promoService.validate(promoCode.trim(), cartRestaurantId);
+      const res = await promoService.validate(promoCode.trim(), cartRestaurantId, total, isFirstOrder);
       setAppliedPromo({ ...res.data.data, originalTotal: total });
     } catch (err) {
       setPromoError(translateApiError(err, "Неверный промокод"));
@@ -121,7 +123,7 @@ const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }) => {
     try {
       const order = await placeOrder(appliedPromo?.code ?? null, comment, selectedPickupIso);
       onClose();
-      navigate(`/orders/${order.id}`);
+      navigate(`/orders/${order.display_id}`);
     } catch (err) {
       setError(translateApiError(err, "Ошибка при оформлении заказа"));
     } finally {

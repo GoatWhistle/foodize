@@ -222,11 +222,12 @@ export default function OrderAssistant() {
         />
         <button
           type="submit"
+          aria-label="Отправить сообщение"
           className="btn btn-primary"
           disabled={streaming || !input.trim()}
           style={{ display: 'flex', alignItems: 'center' }}
         >
-          <CaretRight size={16} />
+          <CaretRight size={16} aria-hidden="true" />
         </button>
       </form>
     </div>

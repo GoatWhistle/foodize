@@ -12,7 +12,7 @@ const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }) => {
     ''
   );
 
-  const publicId = restaurant.display_id || restaurant.id;
+  const publicId = restaurant.display_id;
   const siteLink = `${webUrl.replace(/\/$/, '')}/restaurants/${publicId}`;
   const telegramLink = botUsername
     ? `https://t.me/${botUsername}?start=restaurant_${publicId}`

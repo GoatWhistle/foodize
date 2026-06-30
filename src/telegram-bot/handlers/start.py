@@ -1,8 +1,11 @@
+import logging
 import re
 
 import httpx
 from aiogram import Router
 from aiogram.filters import Command, CommandStart
+from services import backend_client
+from utils import messages as msg
 from aiogram.types import (
     KeyboardButton,
     InlineKeyboardButton,
@@ -16,8 +19,10 @@ from config import bot_config
 from utils.formatting import format_price, format_status
 
 router = Router()
+logger = logging.getLogger(__name__)
 
 PHONE_RE = re.compile(r"^\+?[0-9][0-9\s().-]{6,20}$")
+DISPLAY_ID_RE = re.compile(r"^[a-zA-Z0-9-]{1,64}$")
 RESTART_TEXT = "🔄 Перезапустить бота"
 
 
@@ -122,51 +127,32 @@ async def _link_phone(message: Message, phone_number: str) -> bool:
         return False
 
     if not bot_config.bot_api_secret:
-        await message.answer(
-            "Бот пока не настроен для регистрации: не задан TELEGRAM__BOT_API_SECRET."
-        )
+        await message.answer(msg.BOT_NOT_CONFIGURED)
         return False
-
-    payload = {
-        "telegram_id": message.from_user.id,
-        "telegram_username": message.from_user.username,
-        "phone_number": phone_number,
-        "name": _display_name(message),
-    }
-    headers = {"X-Telegram-Bot-Secret": bot_config.bot_api_secret}
 
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            response = await client.post(
-                f"{bot_config.backend_url.rstrip('/')}/api/v1/telegram/bot/link-phone",
-                json=payload,
-                headers=headers,
-            )
-            response.raise_for_status()
+        await backend_client.link_phone(
+            telegram_id=message.from_user.id,
+            telegram_username=message.from_user.username,
+            phone_number=phone_number,
+            name=_display_name(message),
+        )
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code == 403:
-            await message.answer("Бот не прошел проверку доступа к Foodize API.")
+            await message.answer(msg.BOT_ACCESS_DENIED)
         else:
-            await message.answer(
-                "Не получилось привязать телефон. Проверьте номер и попробуйте еще раз."
-            )
+            await message.answer(msg.PHONE_LINK_FAILED)
         return False
     except httpx.HTTPError:
-        await message.answer("Foodize API сейчас недоступен. Попробуйте чуть позже.")
+        await message.answer(msg.API_UNAVAILABLE)
         return False
 
-    await message.answer(
-        "Готово, телефон привязан к Telegram.\n\n"
-        "Теперь можно открыть Foodize и пользоваться сервисом.",
-        reply_markup=_phone_keyboard(),
-    )
+    await message.answer(msg.PHONE_LINKED, reply_markup=_phone_keyboard())
     mini_app_keyboard = _mini_app_keyboard()
     if mini_app_keyboard:
-        await message.answer("Открыть приложение:", reply_markup=mini_app_keyboard)
+        await message.answer(msg.OPEN_APP, reply_markup=mini_app_keyboard)
     else:
-        await message.answer(
-            "Mini App URL пока не настроен. Задайте MINI_APP_URL в .env и в BotFather."
-        )
+        await message.answer(msg.MINI_APP_NOT_CONFIGURED)
     return True
 
 
@@ -193,29 +179,19 @@ async def cmd_vendor_status(message: Message) -> None:
         return
 
     if not bot_config.bot_api_secret:
-        await message.answer("Проверка статуса вендора пока не настроена.")
+        await message.answer(msg.VENDOR_STATUS_NOT_CONFIGURED)
         return
-
-    headers = {"X-Telegram-Bot-Secret": bot_config.bot_api_secret}
-    payload = {"telegram_id": message.from_user.id}
 
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            response = await client.post(
-                f"{bot_config.backend_url.rstrip('/')}/api/v1/telegram/bot/vendor-status",
-                json=payload,
-                headers=headers,
-            )
-            response.raise_for_status()
-            data = response.json().get("data", {})
+        data = await backend_client.get_vendor_status(message.from_user.id)
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code == 403:
-            await message.answer("Бот не прошел проверку доступа к Foodize API.")
+            await message.answer(msg.BOT_ACCESS_DENIED)
         else:
-            await message.answer("Не удалось получить статус. Попробуйте позже.")
+            await message.answer(msg.VENDOR_STATUS_ERROR)
         return
     except httpx.HTTPError:
-        await message.answer("Foodize API сейчас недоступен. Попробуйте чуть позже.")
+        await message.answer(msg.API_UNAVAILABLE)
         return
 
     await message.answer(_vendor_status_text(data))
@@ -227,36 +203,26 @@ async def cmd_orders(message: Message) -> None:
         return
 
     if not bot_config.bot_api_secret:
-        await message.answer("Просмотр заказов пока не настроен.")
+        await message.answer(msg.ORDERS_NOT_CONFIGURED)
         return
-
-    headers = {"X-Telegram-Bot-Secret": bot_config.bot_api_secret}
-    payload = {"telegram_id": message.from_user.id}
 
     try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            response = await client.post(
-                f"{bot_config.backend_url.rstrip('/')}/api/v1/telegram/bot/orders",
-                json=payload,
-                headers=headers,
-            )
-            response.raise_for_status()
-            orders = response.json().get("data", [])
+        orders = await backend_client.get_active_orders(message.from_user.id)
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code == 403:
-            await message.answer("Бот не прошел проверку доступа к Foodize API.")
+            await message.answer(msg.BOT_ACCESS_DENIED)
         else:
-            await message.answer("Не удалось получить заказы. Попробуйте позже.")
+            await message.answer(msg.ORDERS_ERROR)
         return
     except httpx.HTTPError:
-        await message.answer("Foodize API сейчас недоступен. Попробуйте чуть позже.")
+        await message.answer(msg.API_UNAVAILABLE)
         return
 
     if not orders:
-        await message.answer("Активных заказов сейчас нет.")
+        await message.answer(msg.NO_ACTIVE_ORDERS)
         return
 
-    lines = ["Ваши активные заказы:"]
+    lines = [msg.ACTIVE_ORDERS_HEADER]
     for order in orders:
         restaurant = order.get("restaurant_name") or "ресторан"
         lines.append(
@@ -267,36 +233,58 @@ async def cmd_orders(message: Message) -> None:
     await message.answer("\n".join(lines), reply_markup=_orders_keyboard(orders))
 
 
+async def _auto_register(message: Message) -> None:
+    if not message.from_user:
+        return
+    if not bot_config.bot_api_secret:
+        logger.warning("bot_api_secret not set, skipping auto-register")
+        return
+    try:
+        await backend_client.register_by_telegram(
+            telegram_id=message.from_user.id,
+            telegram_username=message.from_user.username,
+            name=_display_name(message),
+        )
+        logger.info("auto-register ok: tg_id=%s username=%s", message.from_user.id, message.from_user.username)
+    except httpx.HTTPStatusError as exc:
+        logger.error("auto-register HTTP error %s: %s", exc.response.status_code, exc.response.text)
+    except httpx.HTTPError as exc:
+        logger.error("auto-register network error: %s", exc)
+
+
 @router.message(CommandStart())
 async def cmd_start(message: Message) -> None:
     args = message.text.split(maxsplit=1)[1] if message.text and " " in message.text else ""
 
+    await _auto_register(message)
+
     if args.startswith("restaurant_"):
         display_id = args[len("restaurant_") :].strip()
+        if not DISPLAY_ID_RE.match(display_id):
+            await message.answer("Добро пожаловать в <b>Foodize</b>!")
+            return
         restaurant_name = ""
         if bot_config.backend_url and display_id:
             try:
-                async with httpx.AsyncClient(timeout=5) as client:
-                    resp = await client.get(
-                        f"{bot_config.backend_url.rstrip('/')}/api/v1/restaurants/public/{display_id}"
-                    )
-                    if resp.status_code == 200:
-                        restaurant_name = resp.json().get("data", {}).get("name", "")
+                data = await backend_client.get_public_restaurant(display_id)
+                restaurant_name = data.get("name", "")
             except Exception:
                 pass
         keyboard = _restaurant_keyboard(display_id, restaurant_name)
         if keyboard:
             await message.answer(
-                f"Добро пожаловать в <b>Foodize</b>! 🍽\n\n"
-                f"Открыть заведение <b>{restaurant_name or display_id}</b>:",
+                msg.WELCOME_RESTAURANT.format(name=restaurant_name or display_id),
                 reply_markup=keyboard,
             )
         else:
-            await message.answer("Добро пожаловать в <b>Foodize</b>!")
+            await message.answer(msg.WELCOME)
         return
 
     if args.startswith("order_"):
         order_display_id = args[len("order_") :].strip()
+        if not order_display_id.isdigit() or len(order_display_id) > 10:
+            await message.answer(msg.WELCOME)
+            return
         keyboard = _order_deep_link_keyboard(order_display_id)
         if keyboard:
             await message.answer(
@@ -304,17 +292,21 @@ async def cmd_start(message: Message) -> None:
                 reply_markup=keyboard,
             )
         else:
-            await message.answer("Добро пожаловать в <b>Foodize</b>!")
+            await message.answer(msg.WELCOME)
         return
 
+    username = message.from_user.username if message.from_user else None
+    username_hint = f"@{username}" if username else "без username"
     await message.answer(
-        "Добро пожаловать в <b>Foodize</b>!\n\n"
-        "Можно сразу открыть сервис или сначала привязать номер телефона.\n"
-        "Номер можно отправить кнопкой ниже или написать вручную в формате +79990000000.",
+        msg.WELCOME + "\n\n"
+        f"Ваш аккаунт зарегистрирован как <b>{username_hint}</b>.\n"
+        "Теперь вы можете войти на сайте через Telegram — просто введите свой @username.\n\n"
+        "Также можно привязать номер телефона для обычного входа:",
         reply_markup=_phone_keyboard(),
+        parse_mode="HTML",
     )
     await message.answer(
-        "Если вы уже привязали телефон, открывайте Foodize:",
+        "Открыть Foodize:",
         reply_markup=_mini_app_keyboard(),
     )
 

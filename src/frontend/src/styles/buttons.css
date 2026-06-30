@@ -1,0 +1,129 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: var(--weight-strong);
+  font-size: var(--text-base);
+  letter-spacing: 0.01em;
+  border-radius: var(--r-sm);
+  padding: 12px 20px;
+  min-height: 44px;
+  transition: all var(--dur-sm) var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary {
+  background: var(--fire);
+  color: var(--fire-text);
+  box-shadow: 0 6px 16px var(--fire-glow);
+}
+
+.btn-primary:hover {
+  background: var(--fire-dim);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-fire);
+}
+
+.btn-primary:active {
+  transform: scale(0.96) translateY(0);
+  box-shadow: none;
+}
+
+.btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-secondary {
+  background: var(--bg-card);
+  color: var(--text-1);
+  border: 1px solid var(--border-mid);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-raised);
+  border-color: var(--border-hi);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-3);
+  padding: 10px 16px;
+}
+
+.btn-ghost:hover {
+  color: var(--text-1);
+  background: var(--bg-surface);
+}
+
+.btn-sm {
+  font-size: var(--text-sm);
+  padding: 8px 12px;
+  min-height: 36px;
+  letter-spacing: 0.04em;
+}
+
+.btn-full {
+  width: 100%;
+}
+
+.btn-icon {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: var(--r-sm);
+}
+
+.btn-icon {
+  width: 46px;
+  min-width: 46px;
+  padding: 0;
+}
+
+.btn-icon-sm {
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: var(--r-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon-sm.danger {
+  background: var(--bg-surface);
+  color: var(--fire);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.btn-icon-sm.danger:hover {
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.btn-icon-active {
+  box-shadow:
+    0 0 0 1px var(--fire),
+    0 0 0 3px rgba(245, 124, 0, 0.12);
+}
+
+.order-btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+@media (max-width: 599px) {
+  .btn {
+    padding: 12px 20px;
+    min-height: 44px;
+  }
+
+  .btn-sm {
+    padding: 7px 12px;
+  }
+}

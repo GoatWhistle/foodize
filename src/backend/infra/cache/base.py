@@ -33,3 +33,6 @@ class CacheRepository(ABC):
 
     @abstractmethod
     async def mset(self, mapping: dict[str, str], ttl: int | None = None) -> None: ...
+
+    @abstractmethod
+    async def expire(self, key: str, ttl: int) -> None: ...

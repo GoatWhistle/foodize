@@ -51,6 +51,9 @@ vi.mock('../../services/vendorService', () => ({
 
 describe('VendorDashboardPage', () => {
   const createRestaurantMock = vi.fn();
+  const fetchMyRestaurantsMock = vi.fn();
+  const fetchMenuMock = vi.fn();
+  const addMenuItemMock = vi.fn();
   const logoutMock = vi.fn();
 
   const waitForVendorEffects = async () => {
@@ -73,10 +76,10 @@ describe('VendorDashboardPage', () => {
     vi.mocked(useRestaurantStore).mockImplementation((sel) => {
       const state = {
         restaurants: [{ id: 'r1', name: 'My Resto', address: 'Addr 1' }],
-        fetchMyRestaurants: vi.fn(),
-        fetchMenu: vi.fn(),
+        fetchMyRestaurants: fetchMyRestaurantsMock,
+        fetchMenu: fetchMenuMock,
         createRestaurant: createRestaurantMock,
-        addMenuItem: vi.fn(),
+        addMenuItem: addMenuItemMock,
         loading: false,
         menus: { r1: [] },
       };
@@ -143,5 +146,69 @@ describe('VendorDashboardPage', () => {
     });
 
     expect(screen.getByText(/Позиции меню/)).toBeDefined();
+  });
+
+  it('shows pending moderation banner when approval_status is PENDING', async () => {
+    vi.mocked(vendorService.getMyProfile).mockResolvedValueOnce({
+      data: { data: { approval_status: 'PENDING' } },
+    });
+
+    render(
+      <BrowserRouter>
+        <VendorDashboardPage />
+      </BrowserRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Профиль на модерации')).toBeDefined();
+    });
+  });
+
+  it('shows rejected banner with reason when approval_status is REJECTED', async () => {
+    vi.mocked(vendorService.getMyProfile).mockResolvedValueOnce({
+      data: { data: { approval_status: 'REJECTED', rejection_reason: 'Неверные документы' } },
+    });
+
+    render(
+      <BrowserRouter>
+        <VendorDashboardPage />
+      </BrowserRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Профиль отклонён')).toBeDefined();
+      expect(screen.getByText(/Неверные документы/)).toBeDefined();
+    });
+  });
+
+  it('shows loading state while fetching', async () => {
+    let resolveProfile;
+    vi.mocked(vendorService.getMyProfile).mockReturnValueOnce(
+      new Promise((res) => { resolveProfile = res; })
+    );
+    vi.mocked(useRestaurantStore).mockImplementation((sel) => {
+      const state = {
+        restaurants: [],
+        fetchMyRestaurants: fetchMyRestaurantsMock,
+        fetchMenu: fetchMenuMock,
+        createRestaurant: createRestaurantMock,
+        addMenuItem: addMenuItemMock,
+        loading: true,
+        menus: {},
+      };
+      return sel ? sel(state) : state;
+    });
+
+    render(
+      <BrowserRouter>
+        <VendorDashboardPage />
+      </BrowserRouter>
+    );
+
+    expect(screen.getByText('Дашборд вендора')).toBeDefined();
+
+    await act(async () => {
+      resolveProfile({ data: { data: { approval_status: 'APPROVED' } } });
+    });
   });
 });

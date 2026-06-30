@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { TelegramLogo } from "@phosphor-icons/react";
 import { authExistingUser, initTelegramApp } from "../../telegram/init";
 import {
@@ -16,6 +16,7 @@ export default function LoginPage({ initData, onSuccess }) {
   const [loading, setLoading] = useState(false);
 
   const fetchMe = useAuthStore((s) => s.fetchMe);
+  const cancelledRef = useRef(false);
 
   const getCurrentInitData = () => getTelegramInitData() || initData || "";
 
@@ -27,9 +28,12 @@ export default function LoginPage({ initData, onSuccess }) {
   };
 
   const waitForContactLink = async () => {
+    cancelledRef.current = false;
     for (let attempt = 0; attempt < 15; attempt += 1) {
       await sleep(1000);
+      if (cancelledRef.current) return false;
       const result = await initTelegramApp();
+      if (cancelledRef.current) return false;
 
       if (result.status === "registered") {
         await finishTelegramAuth(result.initData ?? getCurrentInitData());
@@ -79,6 +83,7 @@ export default function LoginPage({ initData, onSuccess }) {
       );
     } finally {
       setLoading(false);
+      cancelledRef.current = true;
     }
   };
 

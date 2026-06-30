@@ -142,8 +142,28 @@ def _make_csv(headers: list[str], rows: list[list]) -> bytes:
     return buf.getvalue().encode("utf-8-sig")
 
 
-async def export_users_csv(session: AsyncSession) -> bytes:
-    users = await crud.get_all_users(session, offset=0, limit=1_000_000)
+MAX_EXPORT_DAYS = 31
+
+
+async def export_users_csv(
+    session: AsyncSession,
+    date_from: date | None = None,
+    date_to: date | None = None,
+) -> bytes:
+    if date_from is None:
+        date_to = date_to or datetime.now(UTC).date()
+        date_from = date_to - timedelta(days=MAX_EXPORT_DAYS - 1)
+    if date_to is None:
+        date_to = date_from + timedelta(days=MAX_EXPORT_DAYS - 1)
+    if (date_to - date_from).days > MAX_EXPORT_DAYS:
+        date_from = date_to - timedelta(days=MAX_EXPORT_DAYS - 1)
+    users = await crud.get_all_users(
+        session,
+        date_from=date_from,
+        date_to=date_to,
+        offset=0,
+        limit=10_000,
+    )
     headers = ["ID", "Имя", "Телефон", "Email", "Telegram", "Права", "Активен", "Дата регистрации"]
     rows = [
         [
@@ -168,7 +188,7 @@ async def export_orders_csv(
     status: OrderStatus | None = None,
 ) -> bytes:
     orders = await crud.get_all_orders(
-        session, status=status, date_from=date_from, date_to=date_to, offset=0, limit=1_000_000
+        session, status=status, date_from=date_from, date_to=date_to, offset=0, limit=50_000
     )
     headers = [
         "ID",
@@ -199,7 +219,7 @@ async def export_orders_csv(
 
 
 async def export_restaurants_csv(session: AsyncSession) -> bytes:
-    restaurants = await crud.get_all_restaurants(session, offset=0, limit=1_000_000)
+    restaurants = await crud.get_all_restaurants(session, offset=0, limit=50_000)
     headers = [
         "ID",
         "Название",
@@ -231,7 +251,7 @@ async def export_restaurants_csv(session: AsyncSession) -> bytes:
 
 
 async def export_vendors_csv(session: AsyncSession) -> bytes:
-    vendors = await crud.get_all_vendors(session, offset=0, limit=1_000_000)
+    vendors = await crud.get_all_vendors(session, offset=0, limit=50_000)
     headers = ["ID", "Имя", "Телефон", "Статус", "Ресторанов", "Дата заявки"]
     rows = [
         [
@@ -252,7 +272,7 @@ async def export_reviews_csv(
     min_rating: int | None = None,
     max_rating: int | None = None,
 ) -> bytes:
-    reviews = await crud.get_all_reviews(session, offset=0, limit=1_000_000)
+    reviews = await crud.get_all_reviews(session, offset=0, limit=50_000)
     if min_rating is not None:
         reviews = [r for r in reviews if r.rating >= min_rating]
     if max_rating is not None:

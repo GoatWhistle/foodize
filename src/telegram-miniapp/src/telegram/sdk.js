@@ -64,3 +64,7 @@ export function requestTelegramContact() {
 export const BackButton = tg?.BackButton ?? null;
 export const MainButton = tg?.MainButton ?? null;
 export const HapticFeedback = tg?.HapticFeedback ?? null;
+
+export const getBackButton = () => window.Telegram?.WebApp?.BackButton ?? null;
+export const getMainButton = () => window.Telegram?.WebApp?.MainButton ?? null;
+export const getHapticFeedback = () => window.Telegram?.WebApp?.HapticFeedback ?? null;

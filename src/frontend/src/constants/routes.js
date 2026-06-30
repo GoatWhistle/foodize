@@ -9,6 +9,7 @@ export const ROUTES = {
   ORDER_CONFIRM: '/orders/confirm',
   PROFILE: '/profile',
   FAVORITES: '/favorites',
+  NOTIFICATIONS: '/notifications',
   VENDOR_DASHBOARD: '/vendor',
   ADMIN: '/admin',
   STAFF_DASHBOARD: '/staff',

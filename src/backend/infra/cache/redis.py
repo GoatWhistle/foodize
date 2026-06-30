@@ -45,6 +45,9 @@ class RedisCache(CacheRepository):
     async def sadd(self, key: str, *values: str) -> None:
         await self._client.sadd(key, *values)  # type: ignore[misc]
 
+    async def expire(self, key: str, ttl: int) -> None:
+        await self._client.expire(key, ttl)  # type: ignore[misc]
+
     async def smembers(self, key: str):
         result = await self._client.smembers(key)  # type: ignore[misc]
         return set(result)
@@ -78,6 +81,10 @@ def get_redis_cache() -> RedisCache:
     if _redis_cache is None:
         _redis_cache = RedisCache(_get_client())
     return _redis_cache
+
+
+def redis_cache_dependency() -> RedisCache:
+    return get_redis_cache()
 
 
 async def close_redis_pool() -> None:

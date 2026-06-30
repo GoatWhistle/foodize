@@ -40,15 +40,25 @@ async def user_notifications_ws(
     await websocket.accept()
 
     if not token:
+        token = websocket.cookies.get("access_token")
+    if not token:
         await _safe_send_text(websocket, json.dumps({"error": "not_authenticated"}))
         await websocket.close()
         return
 
     try:
         payload = decode_jwt(token)
+        if payload.get("typ") != "access":
+            raise ValueError("wrong token type")
         token_user_id = uuid.UUID(payload.get("sub", ""))
     except (jwt.InvalidTokenError, ValueError, AttributeError):
         await _safe_send_text(websocket, json.dumps({"error": "invalid_token"}))
+        await websocket.close()
+        return
+
+    cache = get_redis_cache()
+    if await cache.exists(f"access_blacklist:{token}"):
+        await _safe_send_text(websocket, json.dumps({"error": "token_revoked"}))
         await websocket.close()
         return
 

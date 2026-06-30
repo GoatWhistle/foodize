@@ -42,6 +42,10 @@ async def stream_chat(
     user: User,
     history: Iterable[OrderChatMessageIn],
 ) -> AsyncIterator[str]:
+    if not settings.llm.anthropic_api_key:
+        yield "Помощник временно недоступен: не настроен API-ключ."
+        return
+
     client = await get_llm_client(AgentRole.ORDER)
     cache = get_redis_cache()
     cart_service = CartService(cache)

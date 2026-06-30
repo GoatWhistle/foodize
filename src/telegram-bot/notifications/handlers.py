@@ -1,8 +1,9 @@
+import asyncio
 import logging
 
 import redis.asyncio as aioredis
 from aiogram import Bot
-from aiogram.exceptions import TelegramForbiddenError
+from aiogram.exceptions import TelegramForbiddenError, TelegramRetryAfter, TelegramNetworkError
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
 from config import bot_config
@@ -10,24 +11,24 @@ from utils.formatting import format_price, format_status
 
 logger = logging.getLogger(__name__)
 
+_redis_client: aioredis.Redis | None = None
+
+
+def _get_redis() -> aioredis.Redis:
+    global _redis_client
+    if _redis_client is None:
+        _redis_client = aioredis.from_url(bot_config.redis_url, decode_responses=True)
+    return _redis_client
+
 
 async def _get_telegram_id(user_id: str) -> int | None:
-    client = aioredis.from_url(bot_config.redis_url, decode_responses=True)
-    try:
-        val = await client.get(f"user_tg:{user_id}")
-        return int(val) if val else None
-    finally:
-        await client.aclose()
+    val = await _get_redis().get(f"user_tg:{user_id}")
+    return int(val) if val else None
 
 
 async def _deactivate_telegram_id(user_id: str) -> None:
-    """Remove the Telegram binding when user has blocked the bot."""
-    client = aioredis.from_url(bot_config.redis_url, decode_responses=True)
-    try:
-        await client.delete(f"user_tg:{user_id}")
-        logger.info("Deactivated Telegram binding for user_id=%s (bot blocked)", user_id)
-    finally:
-        await client.aclose()
+    await _get_redis().delete(f"user_tg:{user_id}")
+    logger.info("Deactivated Telegram binding for user_id=%s (bot blocked)", user_id)
 
 
 def _order_keyboard(order_display_id: str | None) -> InlineKeyboardMarkup | None:
@@ -80,6 +81,11 @@ async def handle_order_placed(event: dict, bot: Bot) -> None:
     except TelegramForbiddenError:
         logger.info("User %s blocked the bot, deactivating binding", user_id)
         await _deactivate_telegram_id(user_id)
+    except TelegramRetryAfter as e:
+        logger.warning("Rate limited by Telegram, retrying after %s seconds", e.retry_after)
+        await asyncio.sleep(e.retry_after)
+    except TelegramNetworkError as e:
+        logger.warning("Telegram network error: %s", e)
     except Exception as e:
         logger.warning("Failed to send order_placed notification: %s", e)
 
@@ -110,5 +116,10 @@ async def handle_order_status_changed(event: dict, bot: Bot) -> None:
     except TelegramForbiddenError:
         logger.info("User %s blocked the bot, deactivating binding", user_id)
         await _deactivate_telegram_id(user_id)
+    except TelegramRetryAfter as e:
+        logger.warning("Rate limited by Telegram, retrying after %s seconds", e.retry_after)
+        await asyncio.sleep(e.retry_after)
+    except TelegramNetworkError as e:
+        logger.warning("Telegram network error: %s", e)
     except Exception as e:
         logger.warning("Failed to send status_changed notification: %s", e)

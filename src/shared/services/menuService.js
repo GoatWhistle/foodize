@@ -1,7 +1,7 @@
 import api from "@shared/services/api.instance.js";
 
 export const menuService = {
-  getMenu: (restaurantId) => api.get(`/menu/${restaurantId}`),
+  getMenu: (restaurantId, params = {}) => api.get(`/menu/${restaurantId}`, { params }),
   addItem: (restaurantId, data) =>
     api.post(`/menu/${restaurantId}/items`, data),
   updateItem: (restaurantId, itemId, data) =>

@@ -15,23 +15,21 @@ import {
   DotsThree,
   List,
   Fire,
-  Trash,
   MapPin,
 } from "@phosphor-icons/react";
-import { useRestaurantStore } from "../../store/useRestaurantStore";
 import { useOrderStore } from "../../store/useOrderStore";
 import { useFavoriteStore } from "../../store/useFavoriteStore";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useShallow } from "zustand/react/shallow";
-import { reviewService } from "../../services/reviewService";
-import { restaurantService } from "../../services/restaurantService";
-import { translateApiError } from "../../utils/translateApiError";
-import { BackButton } from "../../telegram/sdk";
+import { getBackButton } from "../../telegram/sdk";
 import MenuItemCard from "@shared/components/MenuItemCard/MenuItemCard";
-import ProductSheet from "../../components/ui/ProductSheet";
-import CartDrawer from "../../components/ui/CartDrawer";
+import ProductSheet from "@shared/components/ProductSheet/ProductSheet.jsx";
+import CartDrawer from "@shared/components/CartDrawer/CartDrawer.jsx";
+import { useRestaurantPage } from "@shared/hooks/useRestaurantPage.js";
+import ReviewsModal from "./ReviewsModal.jsx";
+import InfoModal from "./InfoModal.jsx";
+import DeleteConfirmModal from "./DeleteConfirmModal.jsx";
 import s from "./RestaurantPage.module.css";
-import m from "../../components/ui/Modal.module.css";
 
 const Portal = ({ children }) =>
   typeof document === "undefined"
@@ -49,50 +47,38 @@ const CATEGORY_ICONS = {
   OTHER: <DotsThree size={14} />,
 };
 
-const formatReviewTime = (value) => {
-  if (!value) return "";
-  try {
-    return new Intl.DateTimeFormat("ru-RU", {
-      day: "2-digit",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(value));
-  } catch {
-    return "";
-  }
-};
-
 const RestaurantPage = () => {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const [restaurantData, setRestaurantData] = useState(
-    location.state?.restaurant ?? null,
-  );
-  const [rating, setRating] = useState(null);
-  const [activeCategory, setActiveCategory] = useState("ALL");
-  const [showReviews, setShowReviews] = useState(false);
-  const [reviewsList, setReviewsList] = useState([]);
-  const [reviewForm, setReviewForm] = useState({ rating: 5, text: "" });
-  const [reviewsLoading, setReviewsLoading] = useState(false);
-  const [reviewSubmitting, setReviewSubmitting] = useState(false);
-  const [reviewError, setReviewError] = useState("");
-  const [reviewSuccess, setReviewSuccess] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(null);
   const [showCart, setShowCart] = useState(false);
-  const currentUser = useAuthStore((s) => s.user);
   const [reviewDeleteId, setReviewDeleteId] = useState(null);
-  const [workingHours, setWorkingHours] = useState([]);
   const [showInfo, setShowInfo] = useState(false);
+  const [showReviews, setShowReviews] = useState(false);
 
-  const { fetchMenu, menus, loading } = useRestaurantStore(
-    useShallow((s) => ({
-      fetchMenu: s.fetchMenu,
-      menus: s.menus,
-      loading: s.loading,
-    })),
-  );
+  const {
+    restaurant,
+    restaurantUUID,
+    rating,
+    workingHours,
+    loading,
+    isRestaurantOpen,
+    categories,
+    activeCategory,
+    setActiveCategory,
+    filteredMenuItems,
+    reviewsList,
+    reviewForm,
+    setReviewForm,
+    reviewsLoading,
+    reviewError,
+    reviewSuccess,
+    selectedProduct,
+    setSelectedProduct,
+    handleReviewSubmit,
+    handleReviewDelete: deleteReview,
+  } = useRestaurantPage({ id, initialRestaurant: location.state?.restaurant ?? null });
+
   const { addToCart, cartCount, cartTotal } = useOrderStore(
     useShallow((s) => ({
       addToCart: s.addToCart,
@@ -106,14 +92,11 @@ const RestaurantPage = () => {
       toggle: s.toggle,
     })),
   );
+  const currentUser = useAuthStore((s) => s.user);
 
-  const restaurantUuid = restaurantData?.id ?? null;
-  const restaurant = restaurantData ?? { id, name: "Ресторан", address: "" };
-  const menuItems = menus[restaurantUuid || id] || [];
-  const isFav = favoriteIds.has(restaurantUuid || id);
+  const isFav = favoriteIds.includes(restaurantUUID || id);
   const count = cartCount ? cartCount() : 0;
   const total = cartTotal ? cartTotal() : 0;
-  const isRestaurantOpen = restaurant.is_open !== false;
 
   const haptic = (type = "light") => {
     try {
@@ -122,159 +105,34 @@ const RestaurantPage = () => {
   };
 
   useEffect(() => {
-    if (BackButton) {
-      BackButton.show();
+    const btn = getBackButton();
+    if (btn) {
+      btn.show();
       const handler = () => navigate("/");
-      BackButton.onClick(handler);
+      btn.onClick(handler);
       return () => {
-        BackButton.offClick(handler);
-        BackButton.hide();
+        btn.offClick(handler);
+        btn.hide();
       };
     }
   }, [navigate]);
 
-  useEffect(() => {
-    if (!location.state?.restaurant) {
-      restaurantService
-        .getById(id)
-        .then((res) => setRestaurantData(res.data.data))
-        .catch(() => {});
-    }
-    restaurantService
-      .getWorkingHours(id)
-      .then((res) => {
-        setWorkingHours(res.data?.data || []);
-      })
-      .catch(() => {});
-  }, [id, location.state]);
-
-  useEffect(() => {
-    if (!restaurantUuid) return;
-    fetchMenu(restaurantUuid);
-    reviewService
-      .getRating(restaurantUuid)
-      .then((res) => {
-        const val =
-          res.data?.data?.average_rating ?? res.data?.data?.rating ?? null;
-        setRating(val);
-      })
-      .catch(() => {});
-  }, [restaurantUuid, fetchMenu]);
-
-  const loadReviews = () => {
-    if (!restaurantUuid) return;
-    setReviewsLoading(true);
-    reviewService
-      .getReviews(restaurantUuid)
-      .then((res) =>
-        setReviewsList(Array.isArray(res.data?.data) ? res.data.data : []),
-      )
-      .finally(() => setReviewsLoading(false));
+  const handleProductAdd = ({ item, selectedOptions, quantity }) => {
+    if (!isRestaurantOpen) return;
+    addToCart(item, restaurantUUID || id, selectedOptions, quantity);
+    setSelectedProduct(null);
   };
 
-  const handleReviewSubmit = async (e) => {
+  const handleReviewSubmitForm = (e) => {
     e.preventDefault();
-    setReviewError("");
-    const text = reviewForm.text.trim();
-    if (!text) {
-      setReviewError("Напишите текст");
-      return;
-    }
-    if (!restaurantUuid) return;
-    setReviewSubmitting(true);
-    const payload = {
-      text,
-      rating: reviewForm.rating,
-    };
-    try {
-      let res;
-      try {
-        res = await reviewService.createReview(restaurantUuid, payload);
-      } catch (err) {
-        const detail = err?.response?.data?.detail;
-        if (
-          err?.response?.status === 409 ||
-          detail === "You have already reviewed this restaurant"
-        ) {
-          res = await reviewService.updateMyReview(restaurantUuid, payload);
-        } else {
-          throw err;
-        }
-      }
-      const savedReview = res?.data?.data;
-      setReviewSuccess(true);
-      setReviewForm({ rating: 5, text: "" });
-      window.setTimeout(() => setReviewSuccess(false), 2200);
-      if (savedReview?.id) {
-        setReviewsList((prev) => [
-          savedReview,
-          ...prev.filter((review) => review.id !== savedReview.id),
-        ]);
-      } else {
-        loadReviews();
-      }
-      reviewService
-        .getRating(restaurantUuid)
-        .then((ratingRes) => {
-          const val =
-            ratingRes.data?.data?.average_rating ??
-            ratingRes.data?.data?.rating ??
-            null;
-          setRating(val);
-        })
-        .catch(() => {});
-    } catch (err) {
-      setReviewError(translateApiError(err, "Не удалось отправить отзыв"));
-    } finally {
-      setReviewSubmitting(false);
-    }
-  };
-
-  const handleReviewDelete = async (reviewId) => {
-    setReviewDeleteId(reviewId);
+    const myReview = reviewsList.find((r) => r.user_id === currentUser?.id) ?? null;
+    handleReviewSubmit({ myReview });
   };
 
   const confirmReviewDelete = async () => {
-    if (!reviewDeleteId || !restaurantUuid) return;
-    setReviewError("");
-    try {
-      await reviewService.deleteReview(restaurantUuid, reviewDeleteId);
-      setReviewsList((prev) =>
-        prev.filter((review) => review.id !== reviewDeleteId),
-      );
-      setReviewDeleteId(null);
-      reviewService
-        .getRating(restaurantUuid)
-        .then((res) => {
-          const val =
-            res.data?.data?.average_rating ?? res.data?.data?.rating ?? null;
-          setRating(val);
-        })
-        .catch(() => {});
-    } catch {
-      setReviewError("Не удалось удалить отзыв");
-    }
-  };
-
-  const allItems = menuItems.filter((i) => i.is_available !== false);
-  const categories = [
-    "ALL",
-    ...new Set(allItems.map((i) => i.category).filter(Boolean)),
-  ];
-  const filtered =
-    activeCategory === "ALL"
-      ? allItems
-      : allItems.filter((i) => i.category === activeCategory);
-
-  const openProduct = (item) => {
-    if (!isRestaurantOpen) return;
-    setSelectedProduct(item);
-  };
-
-  const handleProductAdd = ({ item, selectedOptions, quantity }) => {
-    if (!isRestaurantOpen) return;
-    addToCart(item, restaurantUuid || id, selectedOptions, quantity);
-    setSelectedProduct(null);
+    if (!reviewDeleteId) return;
+    await deleteReview(reviewDeleteId);
+    setReviewDeleteId(null);
   };
 
   return (
@@ -319,7 +177,6 @@ const RestaurantPage = () => {
               onClick={() => {
                 haptic("light");
                 setShowReviews(true);
-                loadReviews();
               }}
             >
               <ChatCircle size={13} weight="bold" />
@@ -341,9 +198,9 @@ const RestaurantPage = () => {
             position: "absolute",
             top: 12,
             right: 12,
-            background: isFav ? "rgba(239,68,68,0.18)" : "rgba(0,0,0,0.4)",
+            background: isFav ? "rgba(var(--danger-rgb, 239,68,68),0.18)" : "rgba(0,0,0,0.4)",
             border: isFav
-              ? "1px solid rgba(239,68,68,0.4)"
+              ? "1px solid rgba(var(--danger-rgb, 239,68,68),0.4)"
               : "1px solid rgba(255,255,255,0.15)",
             borderRadius: "var(--r-xs)",
             width: 36,
@@ -353,13 +210,13 @@ const RestaurantPage = () => {
             justifyContent: "center",
             cursor: "pointer",
           }}
-          onClick={() => toggle(restaurantUuid || id)}
+          onClick={() => toggle(restaurantUUID)}
           aria-label={isFav ? "Убрать из избранного" : "В избранное"}
         >
           <Heart
             size={16}
             weight={isFav ? "fill" : "regular"}
-            color={isFav ? "#ef4444" : "rgba(255,255,255,0.8)"}
+            color={isFav ? "var(--danger, #ef4444)" : "rgba(255,255,255,0.8)"}
           />
         </button>
       </div>
@@ -369,10 +226,10 @@ const RestaurantPage = () => {
           <div
             style={{
               padding: "12px 14px",
-              background: "rgba(239,68,68,0.1)",
-              border: "1px solid rgba(239,68,68,0.35)",
+              background: "rgba(var(--danger-rgb, 239,68,68),0.1)",
+              border: "1px solid rgba(var(--danger-rgb, 239,68,68),0.35)",
               borderRadius: "var(--r-md)",
-              color: "#ef4444",
+              color: "var(--danger, #ef4444)",
               fontSize: "0.84rem",
               fontWeight: 800,
               marginBottom: 14,
@@ -403,42 +260,22 @@ const RestaurantPage = () => {
                 className="skeleton-wrap"
                 style={{ pointerEvents: "none", display: "flex", background: "var(--bg-card)", borderRadius: "var(--r-md)", border: "1px solid var(--border)", overflow: "hidden" }}
               >
-                <div
-                  className="skeleton"
-                  style={{ width: 100, minHeight: 90, flexShrink: 0 }}
-                />
-                <div
-                  style={{
-                    flex: 1,
-                    padding: "10px 12px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 8,
-                  }}
-                >
-                  <div
-                    className="skeleton"
-                    style={{ width: "65%", height: 14 }}
-                  />
-                  <div
-                    className="skeleton"
-                    style={{ width: "85%", height: 11 }}
-                  />
-                  <div
-                    className="skeleton"
-                    style={{ width: "35%", height: 14, marginTop: 4 }}
-                  />
+                <div className="skeleton" style={{ width: 100, minHeight: 90, flexShrink: 0 }} />
+                <div style={{ flex: 1, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div className="skeleton" style={{ width: "65%", height: 14 }} />
+                  <div className="skeleton" style={{ width: "85%", height: 11 }} />
+                  <div className="skeleton" style={{ width: "35%", height: 14, marginTop: 4 }} />
                 </div>
               </div>
             ))}
           </div>
         ) : (
           <div className={s.menuList}>
-            {filtered.map((item) => (
+            {filteredMenuItems.map((item) => (
               <MenuItemCard
                 key={item.id}
                 item={item}
-                onSelect={openProduct}
+                onSelect={setSelectedProduct}
                 isRestaurantOpen={isRestaurantOpen}
                 showOptionHint
                 onHaptic={() => {
@@ -488,384 +325,34 @@ const RestaurantPage = () => {
 
       {reviewDeleteId && (
         <Portal>
-          <div
-            className={`${m.overlay} ${m.restaurantOverlay}`}
-            style={{ zIndex: 5000 }}
-          >
-            <div
-              className={m.content}
-              style={{
-                padding: 20,
-                borderRadius: 14,
-                maxWidth: 360,
-              }}
-            >
-              <h3 style={{ margin: 0, fontSize: "1rem" }}>Удалить отзыв?</h3>
-              <p
-                style={{
-                  color: "var(--text-3)",
-                  fontSize: "0.88rem",
-                  lineHeight: 1.45,
-                  margin: "10px 0 18px",
-                }}
-              >
-                Точно ли вы хотите удалить этот отзыв?
-              </p>
-              <div
-                style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}
-              >
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => setReviewDeleteId(null)}
-                >
-                  Отмена
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={confirmReviewDelete}
-                  style={{ background: "#ef4444" }}
-                >
-                  Удалить
-                </button>
-              </div>
-            </div>
-          </div>
+          <DeleteConfirmModal
+            onConfirm={confirmReviewDelete}
+            onCancel={() => setReviewDeleteId(null)}
+          />
         </Portal>
       )}
 
       {showReviews && (
-        <Portal>
-          <div
-            className={`${m.overlay} ${m.restaurantOverlay}`}
-            style={{ zIndex: 3000 }}
-          >
-            <div
-              className={`${m.content} ${m.reviews}`}
-              style={{
-                maxWidth: 500,
-                maxHeight: "calc(var(--tg-viewport-h, 100dvh) - 24px)",
-                display: "flex",
-                flexDirection: "column",
-                minHeight: 0,
-                padding: 24,
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: 16,
-                }}
-              >
-                <span style={{ fontWeight: 800, fontSize: "1.1rem" }}>
-                  Отзывы
-                </span>
-                <button
-                  style={{
-                    background: "none",
-                    border: "none",
-                    fontSize: 20,
-                    cursor: "pointer",
-                  }}
-                  onClick={() => setShowReviews(false)}
-                >
-                  ✕
-                </button>
-              </div>
-              <div
-                className={m.reviewsScroll}
-                style={{ overflowY: "auto", flex: 1, minHeight: 0 }}
-              >
-                {reviewSuccess && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: 14,
-                      left: "50%",
-                      transform: "translateX(-50%)",
-                      zIndex: 2,
-                      padding: "9px 12px",
-                      borderRadius: 8,
-                      background: "#16a34a",
-                      color: "#fff",
-                      fontSize: "0.82rem",
-                      fontWeight: 800,
-                      boxShadow: "0 12px 30px rgba(0,0,0,0.24)",
-                    }}
-                  >
-                    Отзыв успешно опубликован
-                  </div>
-                )}
-                <form
-                  onSubmit={handleReviewSubmit}
-                  style={{
-                    background: "var(--bg-surface)",
-                    padding: 16,
-                    borderRadius: 10,
-                    marginBottom: 16,
-                    border: "1px solid var(--border)",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 6,
-                      justifyContent: "center",
-                      marginBottom: 10,
-                    }}
-                  >
-                    {[1, 2, 3, 4, 5].map((s) => (
-                      <span
-                        key={s}
-                        style={{ cursor: "pointer" }}
-                        onClick={() =>
-                          setReviewForm({ ...reviewForm, rating: s })
-                        }
-                      >
-                        <Star
-                          size={24}
-                          weight={s <= reviewForm.rating ? "fill" : "regular"}
-                          color={
-                            s <= reviewForm.rating
-                              ? "var(--amber)"
-                              : "var(--border-mid)"
-                          }
-                        />
-                      </span>
-                    ))}
-                  </div>
-                  <textarea
-                    className="form-input"
-                    placeholder="Ваш отзыв..."
-                    value={reviewForm.text}
-                    onChange={(e) =>
-                      setReviewForm({ ...reviewForm, text: e.target.value })
-                    }
-                    style={{ minHeight: 70, marginBottom: 8 }}
-                  />
-                  {reviewError && (
-                    <div className="form-error" style={{ marginBottom: 8 }}>
-                      {reviewError}
-                    </div>
-                  )}
-                  <button
-                    type="submit"
-                    className="btn btn-primary btn-full"
-                    disabled={reviewSubmitting}
-                    style={{ borderRadius: 8 }}
-                  >
-                    {reviewSubmitting ? "Публикуем..." : "Опубликовать"}
-                  </button>
-                </form>
-                {reviewsLoading ? (
-                  <div className="loading-center">
-                    <div className="spinner" />
-                  </div>
-                ) : reviewsList.length === 0 ? (
-                  <p
-                    style={{
-                      textAlign: "center",
-                      color: "var(--text-3)",
-                      fontSize: "0.875rem",
-                    }}
-                  >
-                    Отзывов пока нет
-                  </p>
-                ) : (
-                  reviewsList.map((r) => (
-                    <div
-                      key={r.id}
-                      className="review-card"
-                      style={{
-                        padding: 14,
-                        background: "var(--bg-card)",
-                        border: "1px solid var(--border)",
-                        borderRadius: 8,
-                        marginBottom: 8,
-                        transition: "all var(--dur-sm)",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          marginBottom: 6,
-                        }}
-                      >
-                        <span style={{ fontWeight: 700, fontSize: "0.85rem" }}>
-                          {r.user_name || "Клиент"}
-                          {formatReviewTime(r.created_at) && (
-                            <span
-                              style={{
-                                display: "block",
-                                color: "var(--text-3)",
-                                fontSize: "0.74rem",
-                                fontWeight: 600,
-                                marginTop: 2,
-                              }}
-                            >
-                              {formatReviewTime(r.created_at)}
-                            </span>
-                          )}
-                        </span>
-                        <span
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 2,
-                          }}
-                        >
-                          {[1, 2, 3, 4, 5].map((s) => (
-                            <Star
-                              key={s}
-                              size={12}
-                              weight={s <= r.rating ? "fill" : "regular"}
-                              color={
-                                s <= r.rating
-                                  ? "var(--amber)"
-                                  : "var(--border-mid)"
-                              }
-                            />
-                          ))}
-                          {currentUser?.id === r.user_id && (
-                            <button
-                              type="button"
-                              aria-label="Удалить отзыв"
-                              onClick={() => handleReviewDelete(r.id)}
-                              style={{
-                                width: 26,
-                                height: 26,
-                                marginLeft: 6,
-                                borderRadius: 8,
-                                border: "1px solid var(--border)",
-                                background: "var(--bg-surface)",
-                                color: "var(--danger, #ef4444)",
-                                display: "inline-flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                cursor: "pointer",
-                              }}
-                            >
-                              <Trash size={13} weight="bold" />
-                            </button>
-                          )}
-                        </span>
-                      </div>
-                      <p
-                        style={{
-                          color: "var(--text-2)",
-                          margin: 0,
-                          fontSize: "0.875rem",
-                          lineHeight: 1.5,
-                        }}
-                      >
-                        {r.text}
-                      </p>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-        </Portal>
+        <ReviewsModal
+          reviewsList={reviewsList}
+          reviewsLoading={reviewsLoading}
+          reviewForm={reviewForm}
+          setReviewForm={setReviewForm}
+          reviewError={reviewError}
+          reviewSuccess={reviewSuccess}
+          currentUser={currentUser}
+          onClose={() => setShowReviews(false)}
+          onSubmit={handleReviewSubmitForm}
+          onDelete={setReviewDeleteId}
+        />
       )}
 
       {showInfo && (
-        <Portal>
-          <div
-            className={`${m.overlay} ${m.restaurantOverlay}`}
-            style={{ zIndex: 3000 }}
-            onClick={(e) => {
-              if (e.target.classList.contains("modal-overlay"))
-                setShowInfo(false);
-            }}
-          >
-            <div
-              className={m.content}
-              style={{ padding: "20px" }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginBottom: 16,
-                }}
-              >
-                <h2 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 800 }}>
-                  Информация
-                </h2>
-                <button
-                  onClick={() => setShowInfo(false)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    color: "var(--text-2)",
-                  }}
-                >
-                  <X size={20} weight="bold" />
-                </button>
-              </div>
-
-              {restaurant.description && (
-                <div
-                  style={{
-                    marginBottom: 20,
-                    fontSize: "0.9rem",
-                    color: "var(--text-1)",
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {restaurant.description}
-                </div>
-              )}
-
-              <h3
-                style={{ fontSize: "1rem", fontWeight: 700, marginBottom: 12 }}
-              >
-                Рабочие часы
-              </h3>
-              {workingHours.length > 0 ? (
-                <div
-                  style={{ display: "flex", flexDirection: "column", gap: 8 }}
-                >
-                  {workingHours.map((wh) => {
-                    const days = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
-                    const dayName =
-                      days[wh.day_of_week] ?? days[wh.day_of_week - 1] ?? "";
-                    return (
-                      <div
-                        key={wh.day_of_week}
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          fontSize: "0.9rem",
-                        }}
-                      >
-                        <span style={{ color: "var(--text-2)" }}>
-                          {dayName}
-                        </span>
-                        <span style={{ fontWeight: 600 }}>
-                          {wh.is_open
-                            ? `${wh.opening_time.slice(0, 5)} - ${wh.closing_time.slice(0, 5)}`
-                            : "Выходной"}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div style={{ fontSize: "0.9rem", color: "var(--text-3)" }}>
-                  Не указаны
-                </div>
-              )}
-            </div>
-          </div>
-        </Portal>
+        <InfoModal
+          restaurant={restaurant}
+          workingHours={workingHours}
+          onClose={() => setShowInfo(false)}
+        />
       )}
     </div>
   );

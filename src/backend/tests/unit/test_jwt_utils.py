@@ -50,7 +50,7 @@ class TestEncodeDecodeJwt:
         mock_enc.assert_called_once()
 
     def test_decode_calls_jwt_decode(self):
-        expected = {"sub": str(uuid.uuid4()), "phone": "79001234567"}
+        expected = {"sub": str(uuid.uuid4())}
         with patch("utils.JWT.jwt.decode", return_value=expected) as mock_dec:
             with patch("utils.JWT.settings.auth.public_key_path") as mock_path:
                 mock_path.read_text.return_value = "public-key"
@@ -68,7 +68,6 @@ class TestEncodeDecodeJwt:
 class TestCreateJwtToken:
     def test_payload_contains_required_fields(self):
         user_id = uuid.uuid4()
-        phone = "79009998877"
         captured: dict = {}
 
         def fake_encode(payload, private_key=None, algorithm=None):
@@ -76,11 +75,11 @@ class TestCreateJwtToken:
             return "mocked-token"
 
         with patch("utils.JWT.encode_jwt", side_effect=fake_encode):
-            token = create_access_token(user_id=user_id, phone_number=phone)
+            token = create_access_token(user_id=user_id)
 
         assert token == "mocked-token"
         assert captured["sub"] == str(user_id)
-        assert captured["phone"] == phone
+        assert "phone" not in captured
         assert "exp" in captured
         assert "iat" in captured
         assert captured["typ"] == "access"
@@ -94,7 +93,7 @@ class TestCreateJwtToken:
             return "tok"
 
         with patch("utils.JWT.encode_jwt", side_effect=fake_encode):
-            create_access_token(user_id=user_id, phone_number="79001112233")
+            create_access_token(user_id=user_id)
 
         now = datetime.now(timezone.utc)
         assert captured["exp"] > now
@@ -104,17 +103,16 @@ class TestAccessRefreshTokens:
     def test_access_token_delegates_to_create_jwt_token(self):
         user_id = uuid.uuid4()
         with patch("utils.JWT._create_jwt_token", return_value="access") as mock_create:
-            result = create_access_token(user_id=user_id, phone_number="79001234567")
+            result = create_access_token(user_id=user_id)
         assert result == "access"
         args = mock_create.call_args
         assert args.kwargs["user_id"] == user_id
-        assert args.kwargs["phone_number"] == "79001234567"
         assert "lifetime_seconds" in args.kwargs
 
     def test_refresh_token_delegates_to_create_jwt_token(self):
         user_id = uuid.uuid4()
         with patch("utils.JWT._create_jwt_token", return_value="refresh") as mock_create:
-            result = create_refresh_token(user_id=user_id, phone_number="79001234567")
+            result = create_refresh_token(user_id=user_id)
         assert result == "refresh"
         mock_create.assert_called_once()
 
@@ -132,9 +130,9 @@ class TestAccessRefreshTokens:
             return "refresh"
 
         with patch("utils.JWT._create_jwt_token", side_effect=capture_access):
-            create_access_token(user_id=user_id, phone_number="7900")
+            create_access_token(user_id=user_id)
 
         with patch("utils.JWT._create_jwt_token", side_effect=capture_refresh):
-            create_refresh_token(user_id=user_id, phone_number="7900")
+            create_refresh_token(user_id=user_id)
 
         assert access_lifetime[0] < refresh_lifetime[0]

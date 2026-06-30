@@ -15,6 +15,10 @@ export default defineConfig({
         replacement: path.resolve(__dirname, "src/store/useOrderStore.js"),
       },
       {
+        find: "@shared/store/useAuthStore.instance.js",
+        replacement: path.resolve(__dirname, "src/store/useAuthStore.js"),
+      },
+      {
         find: "@shared",
         replacement: path.resolve(__dirname, "../shared"),
       },

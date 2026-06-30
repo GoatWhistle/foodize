@@ -4,17 +4,23 @@ import {
   createBrowserRouter,
   Navigate,
   Outlet,
+  useLocation,
 } from 'react-router-dom';
 
 const LazyLegal = lazy(() =>
   import('@shared/components/LegalPage/LegalPage')
 );
+const VendorDashboardPage = lazy(() => import('./pages/vendor/VendorDashboardPage'));
+const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
+const StaffDashboardPage = lazy(() => import('./pages/staff/StaffDashboardPage'));
+const DisplayBoardPage = lazy(() => import('./pages/display-board/DisplayBoardPage'));
 
 import { IconContext, MapPin, ArrowLeft } from '@phosphor-icons/react';
 
 import MainLayout from './components/layout/MainLayout';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import ConfirmDialog from './components/ui/ConfirmDialog';
+import RouteErrorPage from './components/ui/RouteErrorPage';
 
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
@@ -22,12 +28,9 @@ import HomePage from './pages/home/HomePage';
 import RestaurantPage from './pages/restaurant/RestaurantPage';
 import OrdersPage from './pages/orders/OrdersPage';
 import OrderStatusPage from './pages/orders/OrderStatusPage';
-import VendorDashboardPage from './pages/vendor/VendorDashboardPage';
 import ProfilePage from './pages/profile/ProfilePage';
 import FavoritesPage from './pages/profile/FavoritesPage';
-import AdminDashboardPage from './pages/admin/AdminDashboardPage';
-import StaffDashboardPage from './pages/staff/StaffDashboardPage';
-import DisplayBoardPage from './pages/display-board/DisplayBoardPage';
+import NotificationsPage from './pages/notifications/NotificationsPage';
 
 import { ROUTES } from './constants/routes';
 import { useAuthStore } from './store/useAuthStore';
@@ -37,13 +40,24 @@ import { useFavoriteStore } from './store/useFavoriteStore';
 
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  return isAuthenticated ? children : <Navigate to={ROUTES.LOGIN} replace />;
+  const location = useLocation();
+  return isAuthenticated ? children : <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
+};
+
+const RoleProtectedRoute = ({ children, permission }) => {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const permissions = useAuthStore((s) => s.user?.permissions);
+  const location = useLocation();
+  if (!isAuthenticated) return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
+  if (permission && !permissions?.includes(permission)) return <Navigate to={ROUTES.HOME} replace />;
+  return children;
 };
 
 const router = createBrowserRouter([
   {
     path: ROUTES.HOME,
     element: <MainLayout />,
+    errorElement: <RouteErrorPage />,
     children: [
       { index: true, element: <HomePage /> },
       { path: ROUTES.LOGIN, element: <LoginPage /> },
@@ -75,9 +89,11 @@ const router = createBrowserRouter([
       {
         path: ROUTES.VENDOR_DASHBOARD,
         element: (
-          <ProtectedRoute>
-            <VendorDashboardPage />
-          </ProtectedRoute>
+          <RoleProtectedRoute permission="restaurants.create">
+            <Suspense fallback={null}>
+              <VendorDashboardPage />
+            </Suspense>
+          </RoleProtectedRoute>
         ),
       },
       {
@@ -99,16 +115,28 @@ const router = createBrowserRouter([
       {
         path: ROUTES.ADMIN,
         element: (
-          <ProtectedRoute>
-            <AdminDashboardPage />
-          </ProtectedRoute>
+          <RoleProtectedRoute permission="admin.access">
+            <Suspense fallback={null}>
+              <AdminDashboardPage />
+            </Suspense>
+          </RoleProtectedRoute>
         ),
       },
       {
         path: ROUTES.STAFF_DASHBOARD,
         element: (
+          <RoleProtectedRoute permission="orders.manage_status">
+            <Suspense fallback={null}>
+              <StaffDashboardPage />
+            </Suspense>
+          </RoleProtectedRoute>
+        ),
+      },
+      {
+        path: ROUTES.NOTIFICATIONS,
+        element: (
           <ProtectedRoute>
-            <StaffDashboardPage />
+            <NotificationsPage />
           </ProtectedRoute>
         ),
       },
@@ -116,7 +144,11 @@ const router = createBrowserRouter([
   },
   {
     path: ROUTES.DISPLAY_BOARD,
-    element: <DisplayBoardPage />,
+    element: (
+      <Suspense fallback={null}>
+        <DisplayBoardPage />
+      </Suspense>
+    ),
   },
   {
     element: (
@@ -176,10 +208,8 @@ const router = createBrowserRouter([
 ]);
 
 function App() {
-  const { initTheme, fetchMe } = {
-    initTheme: useThemeStore((s) => s.initTheme),
-    fetchMe: useAuthStore((s) => s.fetchMe),
-  };
+  const initTheme = useThemeStore((s) => s.initTheme);
+  const fetchMe = useAuthStore((s) => s.fetchMe);
 
   const fetchCart = useOrderStore((s) => s.fetchCart);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);

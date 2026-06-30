@@ -3,6 +3,7 @@ from datetime import date
 
 from fastapi import APIRouter, Depends, Header, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from shared.restaurant_resolver import resolve_restaurant_uuid
 
 from database import db_helper
 from features.auth.service import get_current_user
@@ -83,7 +84,6 @@ async def read_order_load_estimate(
     current_user: User = Depends(require_permission(Permission.ORDERS_READ_OWN)),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[OrderLoadEstimate]:
-    from shared.restaurant_resolver import resolve_restaurant_uuid
     rid = await resolve_restaurant_uuid(session, restaurant_id)
     result = await service.estimate_restaurant_load(
         session=session,

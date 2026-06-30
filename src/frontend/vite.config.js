@@ -15,6 +15,10 @@ export default defineConfig({
         replacement: path.resolve(__dirname, 'src/store/useOrderStore.js'),
       },
       {
+        find: '@shared/store/useAuthStore.instance.js',
+        replacement: path.resolve(__dirname, 'src/store/useAuthStore.js'),
+      },
+      {
         find: '@shared',
         replacement: path.resolve(__dirname, '../shared'),
       },
@@ -30,6 +34,13 @@ export default defineConfig({
     },
     hmr: {
       clientPort: 5173,
+    },
+    proxy: {
+      '/api': {
+        target: 'http://backend:8000',
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
   test: {

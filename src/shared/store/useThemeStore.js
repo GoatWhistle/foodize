@@ -16,30 +16,39 @@ const applyResolved = (theme) => {
 
 export const useThemeStore = create(
   persist(
-    (set, get) => ({
-      theme: "system",
+    (set, get) => {
+      let _systemThemeHandler = null;
 
-      toggleTheme: () => {
-        const next = get().theme === "light" ? "dark" : "light";
-        set({ theme: next });
-        applyResolved(next);
-      },
+      return {
+        theme: "system",
 
-      setTheme: (theme) => {
-        set({ theme });
-        applyResolved(theme);
-      },
+        toggleTheme: () => {
+          const next = get().theme === "light" ? "dark" : "light";
+          set({ theme: next });
+          applyResolved(next);
+        },
 
-      initTheme: () => {
-        const saved = get().theme;
-        applyResolved(saved);
-        if (saved === "system") {
+        setTheme: (theme) => {
+          set({ theme });
+          applyResolved(theme);
+        },
+
+        initTheme: () => {
+          const saved = get().theme;
+          applyResolved(saved);
+          if (typeof window === "undefined") return;
           const mq = window.matchMedia("(prefers-color-scheme: dark)");
-          const handler = () => applyResolved("system");
-          mq.addEventListener("change", handler);
-        }
-      },
-    }),
+          if (_systemThemeHandler) {
+            mq.removeEventListener("change", _systemThemeHandler);
+            _systemThemeHandler = null;
+          }
+          if (saved === "system") {
+            _systemThemeHandler = () => applyResolved("system");
+            mq.addEventListener("change", _systemThemeHandler);
+          }
+        },
+      };
+    },
     { name: STORAGE_KEY },
   ),
 );

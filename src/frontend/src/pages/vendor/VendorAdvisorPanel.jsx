@@ -193,7 +193,7 @@ export default function VendorAdvisorPanel({ restaurantId }) {
 
           {messages.map((m, i) => (
             <div
-              key={i}
+              key={`${m.role}-${i}`}
               style={{
                 alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
                 maxWidth: '85%',
