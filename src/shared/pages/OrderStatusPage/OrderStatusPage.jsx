@@ -4,6 +4,7 @@ import { useShallow } from "zustand/react/shallow";
 import { useOrderStore } from "@shared/store/useOrderStore.instance.js";
 import { orderService } from "@shared/services/orderService.js";
 import { useEtaText } from "@shared/hooks/useEtaText.js";
+import { translateApiError } from "@shared/utils/translateApiError.js";
 import HorizontalSteps from "@shared/components/HorizontalSteps/HorizontalSteps.jsx";
 
 const TERMINAL_STATUSES = new Set(["COMPLETED", "CANCELLED"]);
@@ -39,7 +40,7 @@ const OrderStatusPage = ({ createOrderWebSocket, onBack, screenClassName = "stat
 
   const loadOrder = useCallback(() => {
     fetchOrder(id).catch((err) => {
-      setLoadError(err?.response?.data?.detail ?? "Не удалось загрузить заказ");
+      setLoadError(translateApiError(err, "Не удалось загрузить заказ"));
     });
   }, [id, fetchOrder]);
 
@@ -121,7 +122,7 @@ const OrderStatusPage = ({ createOrderWebSocket, onBack, screenClassName = "stat
       await orderService.cancelOrder(id, null);
       await fetchOrder(id);
     } catch (err) {
-      setCancelError(err?.response?.data?.detail ?? "Не удалось отменить заказ");
+      setCancelError(translateApiError(err, "Не удалось отменить заказ"));
     } finally {
       setCancelling(false);
     }

@@ -102,6 +102,46 @@ describe('api infrastructure', () => {
     refresh.mockRestore();
   });
 
+  it('redirects to /login on second 401 (double 401 = onUnauthorized)', async () => {
+    const originalLocation = window.location;
+    delete window.location;
+    window.location = { pathname: '/profile', href: '' };
+
+    const { default: api } = await importApiModule();
+    const mock = new MockAdapter(api);
+    vi.spyOn(axios, 'post').mockRejectedValueOnce(new Error('refresh failed'));
+
+    mock.onGet('/double-401').reply(401, {});
+
+    try {
+      await api.get('/double-401');
+    } catch {}
+
+    expect(window.location.href).toBe('/login');
+    mock.restore();
+    window.location = originalLocation;
+  });
+
+  it('does not redirect to /login when already on /login', async () => {
+    const originalLocation = window.location;
+    delete window.location;
+    window.location = { pathname: '/login', href: '' };
+
+    const { default: api } = await importApiModule();
+    const mock = new MockAdapter(api);
+    vi.spyOn(axios, 'post').mockRejectedValueOnce(new Error('refresh failed'));
+
+    mock.onGet('/double-401-login').reply(401, {});
+
+    try {
+      await api.get('/double-401-login');
+    } catch {}
+
+    expect(window.location.href).toBe('');
+    mock.restore();
+    window.location = originalLocation;
+  });
+
   it('normalizes nested API error detail before rejecting', async () => {
     const { default: api } = await importApiModule();
     const mock = new MockAdapter(api);

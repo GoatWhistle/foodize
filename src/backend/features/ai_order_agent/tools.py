@@ -3,8 +3,7 @@ import json
 import re
 import uuid
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
+from database import db_helper
 from features.admin.crud import CATEGORY_RU
 from features.ai_order_agent import search as search_mod
 from features.cart.schemas import CartItemIn, CartResponse, CartSelectedOption, CartUpdate
@@ -76,7 +75,9 @@ ORDER_TOOLS: list[ToolSpec] = [
     ToolSpec(
         name="place_order",
         description=(
-            "Оформить заказ из текущей корзины. Перед этим подтвердите состав у пользователя."
+            "Оформить заказ из текущей корзины. Перед этим подтвердите состав у пользователя. "
+            "Требует, чтобы view_cart был вызван после последнего изменения корзины — иначе "
+            "вернётся ошибка cart_not_confirmed."
         ),
         input_schema={
             "type": "object",
@@ -128,12 +129,12 @@ _PROMO_RE = re.compile(r"^[A-Za-z0-9_\-]{1,64}$")
 
 
 def build_order_executor(
-    session: AsyncSession,
     user: User,
     cart_service: CartService,
     cache: CacheRepository,
 ) -> ToolExecutor:
     identifier = str(user.id)
+    state = {"viewed_cart": False}
 
     async def _cart_summary() -> dict:
         cart = await cart_service.get_cart(identifier)
@@ -161,13 +162,14 @@ def build_order_executor(
         }
 
     async def _search(args: dict) -> str:
-        results = await search_mod.semantic_search(
-            session,
-            cache,
-            query=args.get("query"),
-            max_price=args.get("max_price"),
-            restaurant_id=_parse_uuid(args.get("restaurant_id")),
-        )
+        async with db_helper.session_factory() as session:
+            results = await search_mod.semantic_search(
+                session,
+                cache,
+                query=args.get("query"),
+                max_price=args.get("max_price"),
+                restaurant_id=_parse_uuid(args.get("restaurant_id")),
+            )
         for r in results:
             r["category"] = CATEGORY_RU.get(r["category"], r["category"])
         if not results:
@@ -183,13 +185,15 @@ def build_order_executor(
         return _dumps({"results": results})
 
     async def _view_cart(_args: dict) -> str:
+        state["viewed_cart"] = True
         return _dumps(await _cart_summary())
 
     async def _add(args: dict) -> str:
         item_id = _parse_uuid(args.get("menu_item_id"))
         if item_id is None:
             return _dumps({"error": "invalid_menu_item_id"})
-        item = await get_menu_item_by_id(session, item_id)
+        async with db_helper.session_factory() as session:
+            item = await get_menu_item_by_id(session, item_id)
         if item is None or item.is_deleted or not item.is_available:
             return _dumps({"error": "item_unavailable", "message": "Позиция недоступна."})
 
@@ -253,6 +257,7 @@ def build_order_executor(
         await cart_service.update_cart(
             identifier, CartUpdate(restaurant_id=item.restaurant_id, items=items)
         )
+        state["viewed_cart"] = False
         return _dumps({"ok": True, "cart": await _cart_summary()})
 
     async def _remove(args: dict) -> str:
@@ -267,13 +272,26 @@ def build_order_executor(
             await cart_service.update_cart(
                 identifier, CartUpdate(restaurant_id=cart.restaurant_id, items=items)
             )
+        state["viewed_cart"] = False
         return _dumps({"ok": True, "cart": await _cart_summary()})
 
     async def _clear(_args: dict) -> str:
         await cart_service.clear_cart(identifier)
+        state["viewed_cart"] = False
         return _dumps({"ok": True, "cart": {"items": [], "total": 0}})
 
     async def _place(args: dict) -> str:
+        if not state["viewed_cart"]:
+            return _dumps(
+                {
+                    "error": "cart_not_confirmed",
+                    "message": (
+                        "Перед оформлением нужно показать пользователю состав корзины "
+                        "через view_cart и дождаться его явного подтверждения."
+                    ),
+                }
+            )
+
         cart = await cart_service.get_cart(identifier)
         if not cart.items or not cart.restaurant_id:
             return _dumps({"error": "cart_empty", "message": "Корзина пуста."})
@@ -294,10 +312,12 @@ def build_order_executor(
             return _dumps({"error": "item_unavailable", "message": "Позиции недоступны."})
 
         cart_fingerprint = hashlib.sha256(
-            f"{user.id}:{cart.restaurant_id}:"
-            + ":".join(
-                f"{it.menuItem.id}x{it.quantity}" for it in cart.items if it.menuItem is not None
-            )
+            (
+                f"{user.id}:{cart.restaurant_id}:"
+                + ":".join(
+                    f"{it.menuItem.id}x{it.quantity}" for it in cart.items if it.menuItem is not None
+                )
+            ).encode()
         ).hexdigest()[:32]
 
         order_in = OrderCreate(
@@ -306,12 +326,13 @@ def build_order_executor(
             promo_code=promo_code,
             comment=str(args.get("comment") or "")[:500].strip() or None,
         )
-        result = await place_order(
-            session=session,
-            order_data=order_in,
-            user_id=user.id,
-            idempotency_key=cart_fingerprint,
-        )
+        async with db_helper.session_factory() as session:
+            result = await place_order(
+                session=session,
+                order_data=order_in,
+                user_id=user.id,
+                idempotency_key=cart_fingerprint,
+            )
         await cart_service.clear_cart(identifier)
         data = result.model_dump()
         return _dumps(

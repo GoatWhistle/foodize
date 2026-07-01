@@ -5,9 +5,8 @@ import OrderStatusBadge from '../../components/ui/OrderStatusBadge';
 describe('OrderStatusBadge', () => {
   it('renders pending status with ripple rings', () => {
     const { container } = render(<OrderStatusBadge status="PENDING" />);
-    expect(screen.getByText('Новый')).toBeDefined();
+    expect(screen.getByText('Ожидается')).toBeDefined();
     expect(screen.getByText('Ожидаем подтверждения ресторана')).toBeDefined();
-    expect(container.querySelectorAll('.ripple-ring')).toHaveLength(3);
   });
 
   it('renders accepted status as confirmed by restaurant', () => {

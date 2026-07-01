@@ -98,7 +98,7 @@ class TestOrdersAPI:
 
         with (
             patch(
-                "features.orders.api.order.service.order_crud.get_order_by_identifier",
+                "features.orders.api.order.service.get_order_by_identifier",
                 new_callable=AsyncMock,
                 return_value=mock_order,
             ) as mock_get,

@@ -25,9 +25,14 @@ CMD ["alembic", "upgrade", "head"]
 FROM base AS backend
 RUN useradd -m appuser
 USER appuser
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
 FROM base AS worker
+RUN useradd -m appuser
+USER appuser
+CMD ["python", "-m", "worker.main"]
+
+FROM base AS worker-dev
 RUN useradd -m appuser
 USER appuser
 CMD ["watchfiles", "python -m worker.main", "/backend"]

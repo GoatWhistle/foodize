@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, String
+from sqlalchemy import JSON, BigInteger, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -29,7 +29,7 @@ class User(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin):
     email: Mapped[str | None] = mapped_column(String, nullable=True)
     is_active: Mapped[bool] = mapped_column(default=True, server_default="true", nullable=False)
     permissions: Mapped[list[str]] = mapped_column(
-        JSONB,
+        JSONB().with_variant(JSON(), "sqlite"),
         default=lambda: serialize_permissions(CUSTOMER_PERMISSIONS),
         server_default="[]",
         nullable=False,

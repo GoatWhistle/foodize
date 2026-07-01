@@ -4,6 +4,7 @@ import { useRestaurantStore } from "@shared/store/useRestaurantStore.js";
 import { reviewService } from "@shared/services/reviewService.js";
 import { restaurantService } from "@shared/services/restaurantService.js";
 import { translateApiError } from "@shared/utils/translateApiError.js";
+import { isRestaurantOpen } from "../utils/restaurant.js";
 
 export const useRestaurantPage = ({ id, initialRestaurant = null, reviewsPageSize = 10 } = {}) => {
   const [restaurantData, setRestaurantData] = useState(initialRestaurant);
@@ -33,7 +34,7 @@ export const useRestaurantPage = ({ id, initialRestaurant = null, reviewsPageSiz
   const restaurantUUID = restaurantData?.id?.toString() ?? null;
   const restaurant = restaurantData ?? { id, name: "Ресторан", address: "" };
   const menuItems = menus[restaurantUUID ?? id] || [];
-  const isRestaurantOpen = restaurant.is_open !== false;
+  const restaurantOpen = isRestaurantOpen(restaurant);
 
   const availableMenuItems = menuItems.filter((i) => i.is_available !== false);
   const categories = ["ALL", ...new Set(availableMenuItems.map((i) => i.category).filter(Boolean))];
@@ -150,7 +151,7 @@ export const useRestaurantPage = ({ id, initialRestaurant = null, reviewsPageSiz
     reviewCount,
     workingHours,
     loading,
-    isRestaurantOpen,
+    isRestaurantOpen: restaurantOpen,
     categories,
     activeCategory,
     setActiveCategory,

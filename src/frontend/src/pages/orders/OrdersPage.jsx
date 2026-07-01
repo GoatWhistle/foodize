@@ -2,6 +2,7 @@ import SharedOrdersPage from "@shared/pages/OrdersPage/OrdersPage.jsx";
 import { ROUTES } from "../../constants/routes";
 
 const STATUS_FILTERS = [
+  { key: "",       label: "Все" },
   { key: "ACTIVE", label: "Активные" },
   { key: "DONE",   label: "Завершённые" },
 ];

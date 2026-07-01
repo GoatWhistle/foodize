@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, DateTime, String, Text
+from sqlalchemy import JSON, DateTime, Index, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database import Base, CreatedAtMixin, IdUuidPkMixin
@@ -9,6 +9,13 @@ from shared.enums.outbox_status import OutboxStatus
 
 
 class OutboxEvent(Base, IdUuidPkMixin, CreatedAtMixin):
+    __table_args__ = (
+        Index(
+            "ix_outbox_events_pending_next_attempt",
+            "next_attempt_at",
+            postgresql_where=text("status = 'PENDING'"),
+        ),
+    )
     event_id: Mapped[uuid.UUID] = mapped_column(unique=True, index=True)
     event_type: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     routing_key: Mapped[str] = mapped_column(String(100), nullable=False)

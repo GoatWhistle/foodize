@@ -138,7 +138,7 @@ class TestGetOrderForStaffOrVendor:
     @pytest.mark.asyncio
     async def test_order_not_found(self):
         with patch(
-            "features.orders.dependencies.get_order_by_id",
+            "features.orders.dependencies.get_order_by_id_for_update",
             new_callable=AsyncMock,
             return_value=None,
         ):

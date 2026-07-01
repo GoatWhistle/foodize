@@ -1,7 +1,6 @@
 import logging
 from collections.abc import AsyncIterator, Iterable
 
-from database import db_helper
 from features.ai_order_agent.schemas import OrderChatMessageIn
 from features.ai_order_agent.tools import ORDER_TOOLS, build_order_executor
 from features.cart.service import CartService
@@ -50,17 +49,16 @@ async def stream_chat(
     cache = get_redis_cache()
     cart_service = CartService(cache)
     try:
-        async with db_helper.session_factory() as session:
-            execute = build_order_executor(session, user, cart_service, cache)
-            async for chunk in stream_agent(
-                client,
-                system=SYSTEM_PROMPT,
-                messages=_to_messages(history),
-                tools=ORDER_TOOLS,
-                execute=execute,
-                max_steps=settings.llm.max_agent_steps,
-            ):
-                yield chunk
+        execute = build_order_executor(user, cart_service, cache)
+        async for chunk in stream_agent(
+            client,
+            system=SYSTEM_PROMPT,
+            messages=_to_messages(history),
+            tools=ORDER_TOOLS,
+            execute=execute,
+            max_steps=settings.llm.max_agent_steps,
+        ):
+            yield chunk
     except Exception:
         logger.exception("order chat stream failed")
         yield "\n\nИзвините, произошла ошибка. Попробуйте ещё раз."

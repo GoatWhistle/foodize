@@ -34,6 +34,45 @@ services:
     networks:
       - foodize_net
 
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: foodize_node_exporter
+    command:
+      - '--path.rootfs=/host'
+    volumes:
+      - /:/host:ro,rslave
+    ports:
+      - "127.0.0.1:9100:9100"
+    restart: unless-stopped
+    pid: host
+    networks:
+      - foodize_net
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: foodize_postgres_exporter
+    environment:
+      - DATA_SOURCE_NAME=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@pg:5432/${POSTGRES_DB}?sslmode=disable
+    ports:
+      - "127.0.0.1:9187:9187"
+    restart: unless-stopped
+    networks:
+      - foodize_net
+      - foodize_foodize-network
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.62.0-alpine
+    container_name: foodize_redis_exporter
+    environment:
+      - REDIS_ADDR=redis://redis:6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    ports:
+      - "127.0.0.1:9121:9121"
+    restart: unless-stopped
+    networks:
+      - foodize_net
+      - foodize_foodize-network
+
 volumes:
   prometheus_data:
   grafana_data:

@@ -8,13 +8,16 @@ from features.menu.models import MenuItem, MenuItemOption, MenuItemOptionGroup
 
 
 async def get_menu_items_by_ids(
-    session: AsyncSession, ids: list[uuid.UUID]
+    session: AsyncSession, ids: list[uuid.UUID], for_update: bool = False
 ) -> dict[uuid.UUID, MenuItem]:
-    result = await session.execute(
+    query = (
         select(MenuItem)
         .where(MenuItem.id.in_(ids))
         .options(selectinload(MenuItem.option_groups).selectinload(MenuItemOptionGroup.options))
     )
+    if for_update:
+        query = query.with_for_update(of=MenuItem)
+    result = await session.execute(query)
     return {mi.id: mi for mi in result.scalars().all()}
 
 

@@ -12,6 +12,10 @@ export function getTelegramInitData() {
   return sessionStorage.getItem(TELEGRAM_INIT_DATA_STORAGE_KEY) ?? "";
 }
 
+export function clearTelegramInitData() {
+  sessionStorage.removeItem(TELEGRAM_INIT_DATA_STORAGE_KEY);
+}
+
 export function getTelegramUser() {
   return tg?.initDataUnsafe?.user ?? null;
 }

@@ -1,5 +1,3 @@
-import json
-
 from fastapi import Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -17,23 +15,23 @@ async def request_validation_error_handler(request: Request, exc: RequestValidat
     errors = [
         {"loc": e.get("loc"), "msg": e.get("msg"), "type": e.get("type")} for e in exc.errors()
     ]
+    message = "; ".join(
+        f"{'.'.join(str(part) for part in (e['loc'] or []) if part != 'body')}: {e['msg']}"
+        for e in errors
+    )
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
-        content=ErrorSchema(detail=ErrorDescriptionSchema(error=str(errors))).model_dump(),
+        content=ErrorSchema(detail=ErrorDescriptionSchema(error=message)).model_dump(),
     )
 
 
 async def app_exception_handler(request: Request, exc: AppException):
     request_id = getattr(request.state, "request_id", None)
     logger.warning(
-        json.dumps(
-            {
-                "event": "AppException",
-                "error": exc.detail,
-                "request_id": request_id,
-                "path": str(request.url.path),
-            }
-        )
+        "AppException",
+        error=exc.detail,
+        request_id=request_id,
+        path=str(request.url.path),
     )
     return JSONResponse(
         status_code=int(exc.status_code),
@@ -45,14 +43,10 @@ async def app_exception_handler(request: Request, exc: AppException):
 async def unhandled_exception_handler(request: Request, exc: Exception):
     request_id = getattr(request.state, "request_id", None)
     logger.exception(
-        json.dumps(
-            {
-                "event": "Exception",
-                "error": str(exc),
-                "request_id": request_id,
-                "path": str(request.url.path),
-            }
-        )
+        "Unhandled exception",
+        error=str(exc),
+        request_id=request_id,
+        path=str(request.url.path),
     )
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -74,14 +68,10 @@ async def integrity_error_handler(request: Request, exc: IntegrityError):
     error_msg = str(exc.orig) if hasattr(exc, "orig") else str(exc)
     request_id = getattr(request.state, "request_id", None)
     logger.warning(
-        json.dumps(
-            {
-                "event": "IntegrityError",
-                "error": error_msg,
-                "request_id": request_id,
-                "path": str(request.url.path),
-            }
-        )
+        "IntegrityError",
+        error=error_msg,
+        request_id=request_id,
+        path=str(request.url.path),
     )
 
     friendly_msg = "Duplicate entry: this information already exists."

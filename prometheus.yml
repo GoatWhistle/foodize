@@ -10,4 +10,25 @@ scrape_configs:
     scrape_interval: 15s
     static_configs:
       - targets: ['backend:8000']
-    metrics_path: '/api/v1/metrics'
+    metrics_path: '/metrics'
+
+  - job_name: 'node-exporter'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  - job_name: 'postgres-exporter'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+
+  - job_name: 'redis-exporter'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['redis-exporter:9121']
+
+  - job_name: 'rabbitmq'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['rabbitmq:15692']
+    metrics_path: '/metrics'

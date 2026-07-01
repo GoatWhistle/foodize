@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { CookingPot, CheckCircle, Clock, Bell } from '@phosphor-icons/react';
 import { staffService } from '../../services/staffService';
 import { STAFF_ROLE_RU, translate } from '../../utils/locales';
+import { translateApiError } from '../../utils/translateApiError';
 import EmptyState from '../../components/ui/EmptyState';
 import { createRestaurantOrdersWebSocket } from '../../services/api';
 import ApplicationStatus from './components/ApplicationStatus';
@@ -38,10 +39,10 @@ const StaffDashboardPage = () => {
   const prevOrderIds = useRef(new Set());
   const wsRef = useRef(null);
 
-  const fetchOrders = useCallback(async (silent = false) => {
+  const fetchOrders = useCallback(async (restaurantId, silent = false) => {
     if (!silent) setOrdersLoading(true);
     try {
-      const res = await staffService.getActiveOrders();
+      const res = await staffService.getRestaurantOrders(restaurantId);
       const newOrders = res.data.data ?? [];
       const newIds = new Set(newOrders.map((o) => o.id));
       const hasNew = [...newIds].some((id) => !prevOrderIds.current.has(id));
@@ -57,7 +58,7 @@ const StaffDashboardPage = () => {
     setMenuLoading(true);
     setMenuError('');
     try {
-      const res = await staffService.getMenuItems(restaurantId);
+      const res = await staffService.getMenu(restaurantId);
       setMenuItems(res.data.data ?? []);
     } catch {
       setMenuError('Не удалось загрузить меню');
@@ -78,15 +79,15 @@ const StaffDashboardPage = () => {
 
   useEffect(() => {
     if (!profile) return;
-    fetchOrders();
+    fetchOrders(profile.restaurant_id);
     fetchMenu(profile.restaurant_id);
   }, [profile, fetchOrders, fetchMenu]);
 
   useEffect(() => {
     if (!profile?.restaurant_id) return;
-    const ws = createRestaurantOrdersWebSocket(profile.restaurant_id, {
-      onMessage: () => fetchOrders(true),
-    });
+    const ws = createRestaurantOrdersWebSocket(profile.restaurant_id, () =>
+      fetchOrders(profile.restaurant_id, true)
+    );
     wsRef.current = ws;
     return () => ws?.close();
   }, [profile?.restaurant_id, fetchOrders]);
@@ -95,9 +96,9 @@ const StaffDashboardPage = () => {
     setUpdating(orderId);
     try {
       await staffService.updateOrderStatus(orderId, status);
-      await fetchOrders(true);
+      await fetchOrders(profile.restaurant_id, true);
     } catch (err) {
-      setOrderActionError(err?.response?.data?.detail ?? 'Не удалось обновить статус');
+      setOrderActionError(translateApiError(err, 'Не удалось обновить статус'));
     } finally {
       setUpdating(null);
     }
@@ -106,10 +107,10 @@ const StaffDashboardPage = () => {
   const acceptOrder = async (orderId, etaPayload) => {
     setUpdating(orderId);
     try {
-      await staffService.acceptOrder(orderId, etaPayload);
-      await fetchOrders(true);
+      await staffService.updateOrderStatus(orderId, 'ACCEPTED', etaPayload);
+      await fetchOrders(profile.restaurant_id, true);
     } catch (err) {
-      setOrderActionError(err?.response?.data?.detail ?? 'Не удалось принять заказ');
+      setOrderActionError(translateApiError(err, 'Не удалось принять заказ'));
     } finally {
       setUpdating(null);
     }
@@ -137,9 +138,9 @@ const StaffDashboardPage = () => {
     setUpdating(orderId);
     try {
       await staffService.cancelOrder(orderId, reason);
-      await fetchOrders(true);
+      await fetchOrders(profile.restaurant_id, true);
     } catch (err) {
-      setOrderActionError(err?.response?.data?.detail ?? 'Не удалось отменить заказ');
+      setOrderActionError(translateApiError(err, 'Не удалось отменить заказ'));
     } finally {
       setUpdating(null);
     }

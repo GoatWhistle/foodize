@@ -1,24 +1,14 @@
 import api from "./api";
+import { createAuthService } from "@shared/services/authService.js";
 
-export const authService = {
-  login: (data) => api.post("/login", data),
-  logout: () =>
-    api.post("/logout", null, {
+export const authService = createAuthService({
+  logout: () => {
+    const refreshToken = sessionStorage.getItem("refresh_token");
+    if (!refreshToken) return Promise.resolve();
+    return api.post("/logout", null, {
       headers: {
-        "X-Refresh-Token": sessionStorage.getItem("refresh_token") || "",
+        "X-Refresh-Token": refreshToken,
       },
-    }),
-  telegramCheck: (initData) =>
-    api.post("/telegram/check", { init_data: initData }),
-  telegramRegister: (initData, phoneNumber, name) =>
-    api.post("/telegram/register", {
-      init_data: initData,
-      phone_number: phoneNumber,
-      name,
-    }),
-  telegramAuth: (initData) =>
-    api.post("/telegram/auth", { init_data: initData }),
-  telegramLogout: () => api.post("/telegram/logout"),
-  setTelegramSitePassword: (data) => api.post("/telegram/site-login/password", data),
-  getMe: () => api.get("/users/me"),
-};
+    });
+  },
+});

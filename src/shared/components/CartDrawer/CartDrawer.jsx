@@ -87,6 +87,10 @@ const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }) => {
   }, [cartRestaurantId]);
 
   useEffect(() => {
+    if (appliedPromo) setAppliedPromo(null);
+  }, [cart]);
+
+  useEffect(() => {
     if (!cartRestaurantId) { setLoadEstimate(null); return; }
     let cancelled = false;
     setEstimateLoading(true);

@@ -1,9 +1,9 @@
 from datetime import UTC, date, datetime, timedelta
 
-from sqlalchemy import cast, func, select
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from database import json_array_contains_string
 from features.admin.schemas import PlatformStats, StatsGrowthPoint
 from features.orders.models import Order
 from features.restaurants.models import Restaurant
@@ -88,7 +88,7 @@ async def get_platform_stats(session: AsyncSession) -> PlatformStats:
     users_growth_result = await session.execute(
         select(func.date(User.created_at), func.count())
         .where(User.created_at >= datetime.combine(start_date, datetime.min.time(), tzinfo=UTC))
-        .where(~cast(User.permissions, JSONB).contains([Permission.ADMIN_ACCESS.value]))
+        .where(~json_array_contains_string(User.permissions, Permission.ADMIN_ACCESS.value))
         .group_by(func.date(User.created_at))
         .order_by(func.date(User.created_at))
     )

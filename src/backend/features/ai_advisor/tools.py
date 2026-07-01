@@ -2,8 +2,7 @@ import json
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
+from database import db_helper
 from features.admin.crud import CATEGORY_RU, get_advanced_analytics, get_finance_analytics
 from features.ai_advisor import crud
 from features.vendors.models import VendorProfile
@@ -103,7 +102,6 @@ def _restaurant_id(args: dict) -> uuid.UUID | None:
 
 
 def build_advisor_executor(
-    session: AsyncSession,
     vendor: VendorProfile,
     default_restaurant_id: uuid.UUID | None = None,
 ) -> ToolExecutor:
@@ -117,25 +115,27 @@ def build_advisor_executor(
     async def _get_advanced(start, end, restaurant_id):
         key = (start, end, restaurant_id)
         if key not in _advanced_cache:
-            _advanced_cache[key] = await get_advanced_analytics(
-                session,
-                date_from=start,
-                date_to=end,
-                vendor_id=vendor_id,
-                restaurant_id=restaurant_id,
-            )
+            async with db_helper.session_factory() as session:
+                _advanced_cache[key] = await get_advanced_analytics(
+                    session,
+                    date_from=start,
+                    date_to=end,
+                    vendor_id=vendor_id,
+                    restaurant_id=restaurant_id,
+                )
         return _advanced_cache[key]
 
     async def _get_finance(start, end, restaurant_id):
         key = (start, end, restaurant_id)
         if key not in _finance_cache:
-            _finance_cache[key] = await get_finance_analytics(
-                session,
-                date_from=start,
-                date_to=end,
-                vendor_id=vendor_id,
-                restaurant_id=restaurant_id,
-            )
+            async with db_helper.session_factory() as session:
+                _finance_cache[key] = await get_finance_analytics(
+                    session,
+                    date_from=start,
+                    date_to=end,
+                    vendor_id=vendor_id,
+                    restaurant_id=restaurant_id,
+                )
         return _finance_cache[key]
 
     async def _sales_summary(args: dict) -> str:
@@ -188,13 +188,14 @@ def build_advisor_executor(
         start, end = _period_range(args)
         restaurant_id = resolve_restaurant(args)
         finance = await _get_finance(start, end, restaurant_id)
-        bottom = await crud.get_bottom_items(
-            session,
-            vendor_id=vendor_id,
-            start_date=start,
-            end_date=end,
-            restaurant_id=restaurant_id,
-        )
+        async with db_helper.session_factory() as session:
+            bottom = await crud.get_bottom_items(
+                session,
+                vendor_id=vendor_id,
+                start_date=start,
+                end_date=end,
+                restaurant_id=restaurant_id,
+            )
         for item in bottom:
             item["category"] = CATEGORY_RU.get(item["category"], item["category"])
         return _dumps(
@@ -209,19 +210,20 @@ def build_advisor_executor(
         )
 
     async def _menu(args: dict) -> str:
-        items = await crud.get_menu_overview(
-            session, vendor_id=vendor_id, restaurant_id=resolve_restaurant(args)
-        )
+        async with db_helper.session_factory() as session:
+            items = await crud.get_menu_overview(
+                session, vendor_id=vendor_id, restaurant_id=resolve_restaurant(args)
+            )
         for item in items:
             item["category"] = CATEGORY_RU.get(item["category"], item["category"])
         return _dumps({"items": items})
 
     async def _reviews(args: dict) -> str:
-        return _dumps(
-            await crud.get_reviews_summary(
+        async with db_helper.session_factory() as session:
+            data = await crud.get_reviews_summary(
                 session, vendor_id=vendor_id, restaurant_id=resolve_restaurant(args)
             )
-        )
+        return _dumps(data)
 
     handlers = {
         "get_sales_summary": _sales_summary,

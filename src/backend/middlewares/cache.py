@@ -1,4 +1,5 @@
 import hashlib
+import logging
 
 from fastapi import Request, Response
 from redis.exceptions import RedisError
@@ -6,6 +7,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
 from infra.cache.redis import get_redis_cache
+
+logger = logging.getLogger(__name__)
 
 _MUTATING_METHODS = {"POST", "PUT", "DELETE", "PATCH"}
 
@@ -80,6 +83,10 @@ class AutoCacheMiddleware(BaseHTTPMiddleware):
         path = request.url.path
         method = request.method.upper()
 
+        # KNOWN LIMITATION: only the "authorization" header and "access_token" cookie
+        # are treated as auth signals here. Other auth schemes (e.g. custom API keys,
+        # alternate session cookies) are not detected, so a personalized response
+        # served under such a scheme could be cached and returned to anonymous users.
         if (
             self._is_excluded(path)
             or "authorization" in request.headers
@@ -109,10 +116,9 @@ class AutoCacheMiddleware(BaseHTTPMiddleware):
                 try:
                     await cache.set(cache_key, body.decode(), ttl=self.ttl)
                     tag_key = self._make_tag_key(path)
-                    await cache.sadd(tag_key, cache_key)
-                    await cache.expire(tag_key, self.ttl)
+                    await cache.sadd_with_expire(tag_key, cache_key, self.ttl)
                 except RedisError:
-                    pass
+                    logger.warning("Failed to write cache entry for path=%s", path, exc_info=True)
                 return Response(
                     content=body,
                     status_code=response.status_code,
@@ -128,6 +134,6 @@ class AutoCacheMiddleware(BaseHTTPMiddleware):
                 keys = await cache.smembers(tag_key)
                 await cache.delete_many(*keys, tag_key)
             except RedisError:
-                pass
+                logger.warning("Failed to invalidate cache tag=%s", tag_key, exc_info=True)
 
         return await call_next(request)

@@ -47,6 +47,13 @@ async def get_order_by_id(session: AsyncSession, order_id: uuid.UUID) -> Order |
     return result.scalar_one_or_none()
 
 
+async def get_order_by_id_for_update(session: AsyncSession, order_id: uuid.UUID) -> Order | None:
+    result = await session.execute(
+        select(Order).where(Order.id == order_id).options(*_full_options()).with_for_update()
+    )
+    return result.scalar_one_or_none()
+
+
 async def get_order_by_identifier(session: AsyncSession, identifier: str) -> Order | None:
     try:
         parsed_uuid = uuid.UUID(identifier)

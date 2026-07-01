@@ -36,7 +36,7 @@ class TestUserCreateSchema:
         data = UserCreate(
             name="Ivan",
             phone_number="79001234567",
-            password="strongpass",
+            password="strongpass1",
         )
         assert data.name == "Ivan"
         assert data.phone_number == "79001234567"

@@ -60,7 +60,9 @@ export default function LoginPage({ initData, onSuccess }) {
       try {
         await finishTelegramAuth(currentInitData);
         return;
-      } catch {}
+      } catch (err) {
+        console.warn("[handleTelegramLogin] finishTelegramAuth failed:", err?.response?.status, err?.message);
+      }
 
       const granted = await requestTelegramContact();
       if (!granted) {

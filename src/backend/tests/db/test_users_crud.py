@@ -14,7 +14,7 @@ async def test_create_and_get_user(db_session):
     user_data = UserCreate(
         name="Ivan",
         phone_number="79001234567",
-        password="secretpassword",
+        password="secretpassword1",
     )
 
     user = await create_user(db_session, user_data)
@@ -39,14 +39,14 @@ async def test_create_user_duplicate_phone(db_session):
     user_data = UserCreate(
         name="Ivan",
         phone_number="79009999999",
-        password="secretpassword",
+        password="secretpassword1",
     )
     await create_user(db_session, user_data)
 
     user_data_2 = UserCreate(
         name="Petr",
         phone_number="79009999999",
-        password="anotherpassword",
+        password="anotherpassword1",
     )
 
     with pytest.raises(IntegrityError):

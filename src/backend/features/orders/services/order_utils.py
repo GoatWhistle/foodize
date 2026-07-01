@@ -1,19 +1,23 @@
 import hashlib
 import json
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, time as dt_time, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import logging
+
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+
 from features.menu.models import MenuItem, MenuItemOption
+from features.orders.exceptions import InvalidStatusTransitionException
 from features.orders.models import IdempotencyKey
 from features.orders.schemas.order import OrderCreate
 from infra.cache.redis import get_redis_cache
 from shared.enums.order_status import OrderStatus
 from shared.enums.selection_type import SelectionType
 from shared.exceptions import BadRequestException
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +52,6 @@ def _is_ordering_paused(restaurant) -> bool:
 
 
 def _validate_transition(old: OrderStatus, new: OrderStatus) -> None:
-    from features.orders.exceptions import InvalidStatusTransitionException
     if new not in _ALLOWED_TRANSITIONS.get(old, set()):
         raise InvalidStatusTransitionException()
 
@@ -128,12 +131,25 @@ def _is_open_at(hours, value: datetime) -> bool | None:
         return None
     pickup_at = _as_aware_utc(value)
     day_of_week = pickup_at.weekday()
-    current_time = pickup_at.strftime("%H:%M")
+    current_time = pickup_at.time().replace(tzinfo=None)
+
+    def _parse_time(t: str) -> dt_time:
+        h, m = t.split(":")
+        return dt_time(int(h), int(m))
+
+    _MIDNIGHT = dt_time(0, 0)
+
     for entry in hours:
         if entry.day_of_week == day_of_week:
             if entry.is_closed:
                 return False
-            return entry.open_time <= current_time < entry.close_time
+            open_t = _parse_time(entry.open_time)
+            close_t = _parse_time(entry.close_time)
+            if close_t == _MIDNIGHT:
+                return current_time >= open_t
+            if open_t < close_t:
+                return open_t <= current_time < close_t
+            return current_time >= open_t or current_time < close_t
     return None
 
 
@@ -157,7 +173,6 @@ async def _start_idempotency_record(
     key: str | None,
     request_hash: str,
 ) -> IdempotencyKey | None:
-    from sqlalchemy.dialects.postgresql import insert as pg_insert
     if not key:
         return None
 

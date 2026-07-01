@@ -107,6 +107,8 @@ describe('LoginPage', () => {
       </BrowserRouter>
     );
 
+    fireEvent.change(screen.getByLabelText('Телефон'), { target: { value: '+79001234567' } });
+    fireEvent.change(screen.getByLabelText('Пароль'), { target: { value: 'wrongpassword' } });
     fireEvent.click(screen.getByRole('button', { name: 'Войти' }));
 
     await waitFor(() => {

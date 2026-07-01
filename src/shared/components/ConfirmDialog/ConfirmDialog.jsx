@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Trash } from "@phosphor-icons/react";
 import { useShallow } from "zustand/react/shallow";
 import { useModalStore } from "@shared/store/useModalStore.js";
@@ -11,6 +12,18 @@ const ConfirmDialog = () => {
       runConfirmAction: s.runConfirmAction,
     })),
   );
+
+  const cancelBtnRef = useRef(null);
+
+  useEffect(() => {
+    if (!dialog) return;
+    cancelBtnRef.current?.focus();
+    const handler = (e) => {
+      if (e.key === "Escape" && !loading) cancelConfirm();
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [dialog, loading, cancelConfirm]);
 
   if (!dialog) return null;
 
@@ -53,7 +66,7 @@ const ConfirmDialog = () => {
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
-          <button className="btn btn-secondary" disabled={loading} onClick={cancelConfirm}>
+          <button ref={cancelBtnRef} className="btn btn-secondary" disabled={loading} onClick={cancelConfirm}>
             Отмена
           </button>
           <button

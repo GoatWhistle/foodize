@@ -30,7 +30,7 @@ async def seeded_db(db_session):
         UserCreate(
             name="VendorA",
             phone_number="79009001001",
-            password="strongpassword",
+            password="strongpassword1",
         ),
     )
     vendor_user.permissions = serialize_permissions(VENDOR_PERMISSIONS)
@@ -41,7 +41,7 @@ async def seeded_db(db_session):
         UserCreate(
             name="CustomerA",
             phone_number="79009001002",
-            password="strongpassword",
+            password="strongpassword1",
         ),
     )
 

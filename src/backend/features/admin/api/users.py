@@ -8,7 +8,7 @@ from features.admin import crud, service
 from features.admin.audit_log import service as audit_service
 from features.admin.dependencies import require_admin
 from features.admin.schemas import AdminUserResponse
-from features.admin.api.schemas import BatchIdsRequest, BatchResult, SetPermissionsRequest
+from features.admin.api.schemas import BatchIdsRequest, SetPermissionsRequest
 from features.users.models import User
 from shared.permissions import ADMIN_PERMISSIONS, CUSTOMER_PERMISSIONS, serialize_permissions
 from shared.response import build_list_response, build_response
@@ -32,26 +32,26 @@ async def read_users(
     return build_list_response(data=data, total=total, page=page, size=size, request=request)
 
 
-@router.post("/users/batch-deactivate", response_model=BatchResult)
+@router.post("/users/batch-deactivate")
 async def batch_deactivate_users(
     body: BatchIdsRequest,
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-) -> BatchResult:
+) -> SuccessResponse[dict]:
     count = await crud.batch_deactivate_users(session, body.ids)
     await session.commit()
-    return BatchResult(affected=count)
+    return build_response({"affected": count})
 
 
-@router.post("/users/batch-activate", response_model=BatchResult)
+@router.post("/users/batch-activate")
 async def batch_activate_users(
     body: BatchIdsRequest,
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-) -> BatchResult:
+) -> SuccessResponse[dict]:
     count = await crud.batch_activate_users(session, body.ids)
     await session.commit()
-    return BatchResult(affected=count)
+    return build_response({"affected": count})
 
 
 @router.get("/users/{user_id}", response_model=SuccessResponse[AdminUserResponse])

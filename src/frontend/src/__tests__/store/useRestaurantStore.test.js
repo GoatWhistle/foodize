@@ -1,16 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useRestaurantStore } from '../../store/useRestaurantStore';
-import { restaurantService } from '../../services/restaurantService';
-import { menuService } from '../../services/menuService';
+import { restaurantService } from '@shared/services/restaurantService.js';
+import { menuService } from '@shared/services/menuService.js';
 
-vi.mock('../../services/restaurantService', () => ({
+vi.mock('@shared/services/restaurantService.js', () => ({
   restaurantService: {
     getMy: vi.fn(),
     create: vi.fn(),
   },
 }));
 
-vi.mock('../../services/menuService', () => ({
+vi.mock('@shared/services/menuService.js', () => ({
   menuService: {
     getMenu: vi.fn(),
     addItem: vi.fn(),
@@ -49,7 +49,6 @@ describe('useRestaurantStore', () => {
 
     await useRestaurantStore.getState().fetchMenu(restId);
 
-    // Second call should not trigger service
     await useRestaurantStore.getState().fetchMenu(restId);
 
     expect(menuService.getMenu).toHaveBeenCalledTimes(1);

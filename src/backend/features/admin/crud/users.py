@@ -1,10 +1,10 @@
 import uuid
 from datetime import UTC, date, datetime, timedelta
 
-from sqlalchemy import cast, func, select, update
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from database import json_array_contains_string
 from features.users.models import User
 from shared.enums.permissions import Permission
 from shared.enums.roles import UserRole
@@ -30,7 +30,7 @@ _ROLE_PERMISSION_MARKER: dict[str, str] = {
 
 def _apply_role_filter(stmt, role: str):
     def _has_permission(perm: str):
-        return cast(User.permissions, JSONB).contains([perm])
+        return json_array_contains_string(User.permissions, perm)
 
     if role == UserRole.CUSTOMER.value:
         return stmt.where(

@@ -114,3 +114,7 @@ async def get_order_events(
 ) -> list[OrderEventResponse]:
     events = await order_crud.get_events_by_order_id(session, order_id)
     return [OrderEventResponse.model_validate(e) for e in events]
+
+
+async def get_order_by_identifier(session: AsyncSession, identifier: str):
+    return await order_crud.get_order_by_identifier(session, identifier)

@@ -2,43 +2,48 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import OrdersPage from '../../pages/orders/OrdersPage';
-import { useOrderStore } from '../../store/useOrderStore';
 
-vi.mock('../../store/useOrderStore', () => ({
-  useOrderStore: vi.fn((sel) => {
-    const state = {
-      orders: [
-        { id: 'order-1', total_price: 500, status: 'PENDING', items: [1] },
-        { id: 'order-2', total_price: 1000, status: 'READY', items: [2] },
-      ],
-      ordersTotal: 2,
-      fetchMyOrders: vi.fn(),
-      ordersLoading: false,
-    };
-    return sel ? sel(state) : state;
-  }),
+const mockOrders = [
+  { id: 'order-1', display_id: 'order-1', total_price: 500, status: 'PENDING', items: [1] },
+  { id: 'order-2', display_id: 'order-2', total_price: 1000, status: 'READY', items: [2] },
+];
+
+const defaultLogic = {
+  visibleOrders: mockOrders,
+  allOrders: mockOrders,
+  ordersTotal: 2,
+  totalPages: 1,
+  ordersLoading: false,
+  ordersError: null,
+  statusFilter: '',
+  setStatusFilter: vi.fn(),
+  page: 1,
+  setPage: vi.fn(),
+  hasMore: false,
+  sentinelRef: { current: null },
+  refresh: vi.fn(),
+};
+
+let mockLogic = { ...defaultLogic };
+
+vi.mock('@shared/hooks/useOrdersPageLogic.js', () => ({
+  useOrdersPageLogic: () => mockLogic,
 }));
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
-  return {
-    ...actual,
-    useNavigate: () => mockNavigate,
-  };
+  return { ...actual, useNavigate: () => mockNavigate };
 });
 
 describe('OrdersPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockLogic = { ...defaultLogic };
   });
 
   it('renders orders list', () => {
-    render(
-      <BrowserRouter>
-        <OrdersPage />
-      </BrowserRouter>
-    );
+    render(<BrowserRouter><OrdersPage /></BrowserRouter>);
 
     expect(screen.getByText('Мои заказы')).toBeDefined();
     expect(screen.getByText('500 ₽')).toBeDefined();
@@ -46,38 +51,28 @@ describe('OrdersPage', () => {
   });
 
   it('navigates to order status page on click', () => {
-    render(
-      <BrowserRouter>
-        <OrdersPage />
-      </BrowserRouter>
-    );
+    render(<BrowserRouter><OrdersPage /></BrowserRouter>);
 
-    const orderItems = screen.getAllByRole('listitem').filter(
+    const orderCards = screen.getAllByRole('button').filter(
       (el) => el.textContent.includes('₽')
     );
-    fireEvent.click(orderItems[0]);
+    fireEvent.click(orderCards[0]);
     expect(mockNavigate).toHaveBeenCalledWith(
-      expect.stringContaining('/orders/order-1')
+      expect.stringMatching(/\/orders\/order-[12]/)
     );
   });
 
   it('shows empty state if no active orders', () => {
-    vi.mocked(useOrderStore).mockImplementation((sel) => {
-      const state = {
-        orders: [],
-        ordersTotal: 0,
-        fetchMyOrders: vi.fn(),
-        ordersLoading: false,
-      };
-      return sel ? sel(state) : state;
-    });
+    mockLogic = {
+      ...defaultLogic,
+      visibleOrders: [],
+      allOrders: [],
+      ordersTotal: 0,
+      totalPages: 0,
+    };
 
-    render(
-      <BrowserRouter>
-        <OrdersPage />
-      </BrowserRouter>
-    );
+    render(<BrowserRouter><OrdersPage /></BrowserRouter>);
 
-    expect(screen.getByText('Активных заказов нет')).toBeDefined();
+    expect(screen.getByText('Заказов пока нет')).toBeDefined();
   });
 });

@@ -9,8 +9,34 @@ from features.promos.crud import (
     deactivate_promo,
     get_promo_by_code,
     get_promos_by_restaurant_ids,
+    get_restaurant_ids_by_vendor,
     increment_used_count,
 )
+
+
+class TestGetRestaurantIdsByVendor:
+    @pytest.mark.asyncio
+    async def test_returns_ids(self):
+        rid = uuid.uuid4()
+        mock_result = MagicMock()
+        mock_result.fetchall = MagicMock(return_value=[(rid,)])
+
+        session = AsyncMock()
+        session.execute = AsyncMock(return_value=mock_result)
+
+        result = await get_restaurant_ids_by_vendor(session, uuid.uuid4())
+        assert result == [rid]
+
+    @pytest.mark.asyncio
+    async def test_returns_empty(self):
+        mock_result = MagicMock()
+        mock_result.fetchall = MagicMock(return_value=[])
+
+        session = AsyncMock()
+        session.execute = AsyncMock(return_value=mock_result)
+
+        result = await get_restaurant_ids_by_vendor(session, uuid.uuid4())
+        assert result == []
 
 
 class TestGetPromoByCode:

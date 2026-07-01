@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { restaurantService } from "@shared/services/restaurantService.js";
 import { menuService } from "@shared/services/menuService.js";
+import { translateApiError } from "@shared/utils/translateApiError.js";
 
 const PUBLIC_RESTAURANTS_TTL_MS = 60_000;
 const publicRestaurantsCache = new Map();
@@ -29,7 +30,7 @@ export const useRestaurantStore = create((set, get) => ({
       publicRestaurantsCache.set(cacheKey, { list, total, ts: Date.now() });
       set({ publicRestaurants: list, publicRestaurantsTotal: total, loading: false });
     } catch (e) {
-      set({ error: e.message, loading: false });
+      set({ error: translateApiError(e), loading: false });
     }
   },
 
@@ -40,7 +41,7 @@ export const useRestaurantStore = create((set, get) => ({
       const list = Array.isArray(res.data?.data) ? res.data.data : [];
       set({ restaurants: list, loading: false });
     } catch (e) {
-      set({ error: e.message, loading: false });
+      set({ error: translateApiError(e), loading: false });
     }
   },
 
@@ -52,7 +53,7 @@ export const useRestaurantStore = create((set, get) => ({
       const list = Array.isArray(res.data?.data) ? res.data.data : [];
       set((s) => ({ menus: { ...s.menus, [restaurantId]: list }, loading: false }));
     } catch (e) {
-      set({ error: e.message, loading: false });
+      set({ error: translateApiError(e), loading: false });
     }
   },
 
@@ -65,7 +66,7 @@ export const useRestaurantStore = create((set, get) => ({
       set((s) => ({ restaurants: [...s.restaurants, res.data.data] }));
       return res.data.data;
     } catch (e) {
-      set({ error: e.message });
+      set({ error: translateApiError(e) });
       throw e;
     }
   },
@@ -80,7 +81,7 @@ export const useRestaurantStore = create((set, get) => ({
       });
       return res.data.data;
     } catch (e) {
-      set({ error: e.message });
+      set({ error: translateApiError(e) });
       throw e;
     }
   },

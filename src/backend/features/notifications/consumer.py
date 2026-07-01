@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import signal
 from collections.abc import Awaitable, Callable
 from functools import partial
 from typing import Any
@@ -55,9 +56,26 @@ async def _process_message(
 _background_tasks: set[asyncio.Task] = set()
 
 
+def _install_signal_handlers(stop_event: asyncio.Event) -> None:
+    loop = asyncio.get_running_loop()
+
+    def _handle_stop() -> None:
+        logger.info("Shutdown signal received, stopping consumer...")
+        stop_event.set()
+
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        try:
+            loop.add_signal_handler(sig, _handle_stop)
+        except NotImplementedError:
+            signal.signal(sig, lambda signum, frame: _handle_stop())
+
+
 async def start_consuming() -> None:
+    stop_event = asyncio.Event()
+    _install_signal_handlers(stop_event)
+
     await broker.connect()
-    task = asyncio.create_task(run_outbox_publisher())
+    task = asyncio.create_task(run_outbox_publisher(stop_event=stop_event))
     _background_tasks.add(task)
     task.add_done_callback(_background_tasks.discard)
 
@@ -75,7 +93,10 @@ async def start_consuming() -> None:
         logger.info("Consuming queue=%s routing_key=%s", queue_name, routing_key)
 
     logger.info("Worker started. Waiting for messages...")
-    await asyncio.Future()
+    await stop_event.wait()
+    logger.info("Stop event received, waiting for in-flight tasks to finish...")
+    if task in _background_tasks:
+        await asyncio.wait([task], timeout=10)
 
 
 async def main() -> None:

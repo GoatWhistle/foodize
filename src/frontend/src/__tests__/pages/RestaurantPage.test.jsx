@@ -4,40 +4,46 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import RestaurantPage from '../../pages/restaurant/RestaurantPage';
 import { useOrderStore } from '../../store/useOrderStore';
 
+const menuItems = [
+  {
+    id: 'm1',
+    name: 'Classic Shaurma',
+    price: 300,
+    category: 'SHAURMA',
+    option_groups: [
+      {
+        id: 'g1',
+        name: 'Добавки',
+        selection_type: 'multiple',
+        is_required: false,
+        min_selected: 0,
+        max_selected: 2,
+        is_active: true,
+        options: [
+          { id: 'o1', name: 'Добавить мясо', price_delta: 80, is_available: true },
+        ],
+      },
+    ],
+  },
+  { id: 'm2', name: 'Veggie Burger', price: 400, category: 'BURGER' },
+];
+
+vi.mock('@shared/store/useRestaurantStore.js', () => ({
+  useRestaurantStore: (sel) => {
+    const state = {
+      fetchMenu: vi.fn(),
+      menus: { 'mock-1': menuItems },
+      loading: false,
+    };
+    return sel ? sel(state) : state;
+  },
+}));
+
 vi.mock('../../store/useRestaurantStore', () => ({
   useRestaurantStore: (sel) => {
     const state = {
       fetchMenu: vi.fn(),
-      menus: {
-        'mock-1': [
-          {
-            id: 'm1',
-            name: 'Classic Shaurma',
-            price: 300,
-            category: 'SHAURMA',
-            option_groups: [
-              {
-                id: 'g1',
-                name: 'Добавки',
-                selection_type: 'multiple',
-                is_required: false,
-                min_selected: 0,
-                max_selected: 2,
-                is_active: true,
-                options: [
-                  {
-                    id: 'o1',
-                    name: 'Добавить мясо',
-                    price_delta: 80,
-                    is_available: true,
-                  },
-                ],
-              },
-            ],
-          },
-          { id: 'm2', name: 'Veggie Burger', price: 400, category: 'BURGER' },
-        ],
-      },
+      menus: { 'mock-1': menuItems },
       loading: false,
     };
     return sel ? sel(state) : state;
@@ -56,7 +62,28 @@ vi.mock('../../store/useOrderStore', () => ({
   }),
 }));
 
-vi.mock('../../services/restaurantService', () => ({
+vi.mock('../../store/useAuthStore', () => ({
+  useAuthStore: (sel) => {
+    const state = { user: null, isAuthenticated: false };
+    return sel ? sel(state) : state;
+  },
+}));
+
+vi.mock('../../store/useModalStore', () => ({
+  useModalStore: (sel) => {
+    const state = { requestConfirm: vi.fn() };
+    return sel ? sel(state) : state;
+  },
+}));
+
+vi.mock('../../store/useFavoriteStore', () => ({
+  useFavoriteStore: (sel) => {
+    const state = { favoriteIds: [], toggle: vi.fn() };
+    return sel ? sel(state) : state;
+  },
+}));
+
+vi.mock('@shared/services/restaurantService.js', () => ({
   restaurantService: {
     getById: vi.fn().mockResolvedValue({
       data: { data: { id: 'mock-1', name: 'Test Restaurant' } },
@@ -65,15 +92,13 @@ vi.mock('../../services/restaurantService', () => ({
   },
 }));
 
-vi.mock('../../services/reviewService', () => ({
+vi.mock('@shared/services/reviewService.js', () => ({
   reviewService: {
-    getRating: vi
-      .fn()
-      .mockResolvedValue({ data: { data: { average_rating: 4.5 } } }),
-    getReviews: vi
-      .fn()
-      .mockResolvedValue({ data: { data: [], pagination: { total: 0 } } }),
+    getRating: vi.fn().mockResolvedValue({ data: { data: { average_rating: 4.5 } } }),
+    getReviews: vi.fn().mockResolvedValue({ data: { data: [], pagination: { total: 0 } } }),
     createReview: vi.fn().mockResolvedValue({}),
+    updateMyReview: vi.fn().mockResolvedValue({}),
+    deleteReview: vi.fn().mockResolvedValue({}),
   },
 }));
 
@@ -112,14 +137,14 @@ describe('RestaurantPage', () => {
     renderWithRouter();
 
     expect(await screen.findByText('Test Restaurant')).toBeDefined();
-    expect(screen.getByText('Classic Shaurma')).toBeDefined();
+    expect(await screen.findByText('Classic Shaurma')).toBeDefined();
     expect(screen.getByText('300 ₽')).toBeDefined();
   });
 
   it('opens product sheet and adds configured item to cart', async () => {
     renderWithRouter();
 
-    expect(await screen.findByText('Test Restaurant')).toBeDefined();
+    expect(await screen.findByText('Classic Shaurma')).toBeDefined();
     await act(async () => {
       fireEvent.click(
         screen.getByRole('button', { name: /Открыть Classic Shaurma/ })
@@ -143,8 +168,7 @@ describe('RestaurantPage', () => {
   it('filters menu items by category', async () => {
     renderWithRouter();
 
-    expect(await screen.findByText('Test Restaurant')).toBeDefined();
-    expect(screen.getByText('Classic Shaurma')).toBeDefined();
+    expect(await screen.findByText('Classic Shaurma')).toBeDefined();
     expect(screen.getByText('Veggie Burger')).toBeDefined();
 
     await act(async () => {

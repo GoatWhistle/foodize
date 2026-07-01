@@ -16,10 +16,9 @@ from features.vendors.schemas import (
     VendorCreate,
     VendorResponse,
 )
-from shared.dependencies import require_permission
+from shared.dependencies import ensure_restaurant_belongs_to_vendor, require_permission
 from shared.enums.order_status import OrderStatus
 from shared.enums.permissions import Permission
-from shared.exceptions import AccessDeniedException
 from shared.response import build_response
 from shared.schemas.response import SuccessResponse
 
@@ -56,10 +55,7 @@ async def read_vendor_finance(
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[FinanceAnalytics]:
-    if restaurant_id is not None:
-        vendor_restaurant_ids = {r.id for r in current_vendor.restaurants}
-        if restaurant_id not in vendor_restaurant_ids:
-            raise AccessDeniedException()
+    ensure_restaurant_belongs_to_vendor(current_vendor, restaurant_id)
     result = await service.get_vendor_finance(
         session=session,
         vendor=current_vendor,
@@ -79,10 +75,7 @@ async def read_vendor_analytics(
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdvancedAnalytics]:
-    if restaurant_id is not None:
-        vendor_restaurant_ids = {r.id for r in current_vendor.restaurants}
-        if restaurant_id not in vendor_restaurant_ids:
-            raise AccessDeniedException()
+    ensure_restaurant_belongs_to_vendor(current_vendor, restaurant_id)
     result = await service.get_vendor_analytics(
         session=session,
         vendor=current_vendor,

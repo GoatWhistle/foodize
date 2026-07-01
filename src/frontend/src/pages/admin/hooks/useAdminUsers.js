@@ -10,7 +10,7 @@ import {
 } from '../../../utils/permissions';
 import { createDetailLoader } from '../../../utils/createDetailLoader';
 
-const PAGE_SIZE = 20;
+export const PAGE_SIZE = 20;
 
 export const useAdminUsers = ({ activeTab, setActionError, setActionSuccess, permissionActionLoading, setPermissionActionLoading }) => {
   const requestConfirm = useModalStore((s) => s.requestConfirm);

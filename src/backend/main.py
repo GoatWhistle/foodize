@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 
 import uvicorn
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
@@ -21,7 +21,6 @@ from api.exception_handlers import (
     unhandled_exception_handler,
 )
 from database import db_helper
-from features.admin.dependencies import require_admin
 from features.notifications.broker import broker
 from infra.cache.redis import close_redis_pool, get_redis_cache
 from middlewares.cache import AutoCacheMiddleware
@@ -41,6 +40,23 @@ async def lifespan(app: FastAPI):
         raise RuntimeError(
             "RABBITMQ__URL must be set to a non-default value in production. "
             "Current value uses insecure default credentials."
+        )
+    if not settings.redis.password and not settings.debug:
+        raise RuntimeError(
+            "REDIS__PASSWORD must be set to a non-empty value in production. "
+            "Current value is empty, which allows unauthenticated Redis access."
+        )
+    if settings.telegram.bot_token and settings.telegram.is_weak_bot_api_secret and not settings.debug:
+        raise RuntimeError(
+            "TELEGRAM__BOT_API_SECRET must be set to a strong random value in production. "
+            "Current value is empty or a known weak placeholder."
+        )
+    if "*" in settings.cors.allowed_origins:
+        raise RuntimeError(
+            "CORS__ALLOWED_ORIGINS must not contain a wildcard '*' because the app is "
+            "configured with allow_credentials=True. Browsers reject this combination, "
+            "so a wildcard origin silently breaks all cross-origin requests. "
+            "List explicit allowed origins instead."
         )
     await broker.connect()
     yield
@@ -77,7 +93,7 @@ from fastapi import Response as FastAPIResponse
 instrumentator = Instrumentator().instrument(app)
 
 
-@app.get("/metrics", include_in_schema=False, dependencies=[Depends(require_admin)])
+@app.get("/metrics", include_in_schema=False)
 async def metrics():
     return FastAPIResponse(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 

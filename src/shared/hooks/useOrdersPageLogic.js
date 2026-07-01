@@ -39,7 +39,7 @@ export const useOrdersPageLogic = ({ pageSize = 20, infiniteScroll = false } = {
     fetchMyOrders({
       page,
       size: pageSize,
-      status: statusFilter === "COMPLETED" ? "COMPLETED" : undefined,
+      status: statusFilter === "DONE" ? "COMPLETED" : undefined,
     }).then(() => {
       if (fetchIdRef.current !== id) return;
     }).catch(() => {});

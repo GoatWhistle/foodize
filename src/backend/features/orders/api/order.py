@@ -150,7 +150,7 @@ async def read_order_events(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessListResponse[OrderEventResponse]:
-    order = await service.order_crud.get_order_by_identifier(session, order_id)
+    order = await service.get_order_by_identifier(session, order_id)
     if not order:
         raise NotFoundException(detail="Order not found")
 
@@ -196,7 +196,7 @@ async def read_order(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[OrderResponse]:
-    order = await service.order_crud.get_order_by_identifier(session, order_id)
+    order = await service.get_order_by_identifier(session, order_id)
     if not order:
         raise NotFoundException(detail="Order not found")
 

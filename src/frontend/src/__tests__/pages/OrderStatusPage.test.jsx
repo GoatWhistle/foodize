@@ -23,7 +23,7 @@ vi.mock('../../services/api', () => ({
 }));
 
 describe('OrderStatusPage', () => {
-  const fetchOrderMock = vi.fn();
+  const fetchOrderMock = vi.fn().mockResolvedValue(undefined);
 
   beforeEach(() => {
     vi.useFakeTimers();
@@ -140,7 +140,7 @@ describe('OrderStatusPage', () => {
 
     renderWithRouter();
 
-    expect(screen.getByText('Выдан')).toBeDefined();
+    expect(screen.getAllByText('Выдан').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByRole('button', { name: 'Повторить заказ' })).toBeDefined();
     expect(screen.queryByText('Отменить')).toBeNull();
   });

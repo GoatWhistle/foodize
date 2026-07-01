@@ -7,11 +7,12 @@ const WS_BASE_URL = (
   .replace(/\/api\/v1$/, "");
 
 export class ReliableWebSocket {
-  constructor(urlOrFactory, onMessage, onClose, onStatusChange) {
+  constructor(urlOrFactory, onMessage, onClose, onStatusChange, getToken) {
     this.urlOrFactory = urlOrFactory;
     this.onMessage = onMessage;
     this.onClose = onClose;
     this.onStatusChange = onStatusChange;
+    this.getToken = getToken;
     this.ws = null;
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 20;
@@ -40,8 +41,11 @@ export class ReliableWebSocket {
     this.ws = new WebSocket(url);
 
     this.ws.onopen = () => {
+      if (this.isClosed) { this.ws.close(); return; }
       this.reconnectAttempts = 0;
       this.updateStatus("connected");
+      const token = this.getToken?.();
+      if (token) this.ws.send(JSON.stringify({ token }));
       this.startHeartbeat();
     };
 
@@ -103,6 +107,11 @@ export class ReliableWebSocket {
     this.isClosed = true;
     this.cleanup();
     if (this.ws) {
+      if (this.ws.readyState === WebSocket.CONNECTING) {
+        this.updateStatus("closed");
+        this.onClose?.();
+        return;
+      }
       this.ws.onclose = null;
       this.ws.close();
       this.updateStatus("closed");
@@ -189,12 +198,7 @@ export function createApi({ getToken, onUnauthorized, refreshToken, withCredenti
 }
 
 export function createWebSocketFactories(getToken) {
-  const buildUrl = (path) => () => {
-    const base = `${WS_BASE_URL}/api/v1${path}`;
-    if (!getToken) return base;
-    const token = getToken();
-    return token ? `${base}?token=${encodeURIComponent(token)}` : base;
-  };
+  const buildUrl = (path) => () => `${WS_BASE_URL}/api/v1${path}`;
 
   return {
     createOrderWebSocket(orderId, onMessage, onClose, onStatusChange) {
@@ -203,6 +207,7 @@ export function createWebSocketFactories(getToken) {
         onMessage,
         onClose,
         onStatusChange,
+        getToken,
       );
     },
 
@@ -212,6 +217,7 @@ export function createWebSocketFactories(getToken) {
         onMessage,
         onClose,
         onStatusChange,
+        getToken,
       );
     },
 
@@ -221,6 +227,7 @@ export function createWebSocketFactories(getToken) {
         onMessage,
         onClose,
         onStatusChange,
+        getToken,
       );
     },
 
@@ -230,6 +237,7 @@ export function createWebSocketFactories(getToken) {
         onMessage,
         onClose,
         onStatusChange,
+        getToken,
       );
     },
   };

@@ -42,6 +42,13 @@ async def user_notifications_ws(
     if not token:
         token = websocket.cookies.get("access_token")
     if not token:
+        try:
+            raw = await asyncio.wait_for(websocket.receive_text(), timeout=3.0)
+            data = json.loads(raw)
+            token = data.get("token") if isinstance(data, dict) else None
+        except (asyncio.TimeoutError, json.JSONDecodeError, WebSocketDisconnect, ClientDisconnected):
+            token = None
+    if not token:
         await _safe_send_text(websocket, json.dumps({"error": "not_authenticated"}))
         await websocket.close()
         return

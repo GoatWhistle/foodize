@@ -17,9 +17,9 @@ router = APIRouter(prefix="/cart", tags=["Cart"])
 @router.get("", response_model=SuccessResponse[CartResponse])
 async def get_cart(
     current_user: User = Depends(require_permission(Permission.CART_MANAGE)),
-    service: CartService = Depends(get_cart_service),
+    cart_service: CartService = Depends(get_cart_service),
 ) -> SuccessResponse[CartResponse]:
-    result = await service.get_cart(str(current_user.id))
+    result = await cart_service.get_cart(str(current_user.id))
     return build_response(result)
 
 
@@ -27,17 +27,17 @@ async def get_cart(
 async def update_cart(
     cart_in: CartUpdate,
     current_user: User = Depends(require_permission(Permission.CART_MANAGE)),
-    service: CartService = Depends(get_cart_service),
+    cart_service: CartService = Depends(get_cart_service),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[CartResponse]:
-    await service.update_cart(str(current_user.id), cart_in, session=session)
-    result = await service.get_cart(str(current_user.id))
+    await cart_service.update_cart(str(current_user.id), cart_in, session=session)
+    result = await cart_service.get_cart(str(current_user.id))
     return build_response(result)
 
 
 @router.delete("", status_code=status.HTTP_204_NO_CONTENT)
 async def clear_cart(
     current_user: User = Depends(require_permission(Permission.CART_MANAGE)),
-    service: CartService = Depends(get_cart_service),
+    cart_service: CartService = Depends(get_cart_service),
 ) -> None:
-    await service.clear_cart(str(current_user.id))
+    await cart_service.clear_cart(str(current_user.id))

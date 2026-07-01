@@ -9,6 +9,7 @@ vi.mock('../../services/authService', () => ({
     getMe: vi.fn(),
     logout: vi.fn(),
     verifyTelegramLoginCode: vi.fn(),
+    verifyTelegramLoginCodeByUsername: vi.fn(),
     setTelegramSitePassword: vi.fn(),
   },
 }));
@@ -92,6 +93,62 @@ describe('useAuthStore', () => {
     authService.getMe.mockRejectedValueOnce(new Error('expired'));
 
     await useAuthStore.getState().fetchMe();
+
+    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+    expect(useAuthStore.getState().user).toBe(null);
+  });
+
+  it('loginWithTelegramCode clears auth and rethrows on failure', async () => {
+    authService.verifyTelegramLoginCode.mockRejectedValueOnce(new Error('invalid code'));
+
+    await expect(
+      useAuthStore.getState().loginWithTelegramCode({ code: 'bad' })
+    ).rejects.toThrow('invalid code');
+
+    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+    expect(useAuthStore.getState().user).toBe(null);
+  });
+
+  it('loginWithTelegramCodeByUsername returns requiresPassword from response', async () => {
+    const mockUser = { id: 'u2', name: 'User2' };
+    authService.verifyTelegramLoginCodeByUsername.mockResolvedValueOnce({
+      data: { data: { requires_password: true } },
+    });
+    authService.getMe.mockResolvedValueOnce({ data: { data: mockUser } });
+
+    const result = await useAuthStore.getState().loginWithTelegramCodeByUsername({ username: 'foo', code: '123' });
+
+    expect(result).toEqual({ requiresPassword: true });
+    expect(useAuthStore.getState().user).toEqual(mockUser);
+    expect(useAuthStore.getState().isAuthenticated).toBe(true);
+  });
+
+  it('loginWithTelegramCodeByUsername clears auth and rethrows on failure', async () => {
+    authService.verifyTelegramLoginCodeByUsername.mockRejectedValueOnce(new Error('bad username'));
+
+    await expect(
+      useAuthStore.getState().loginWithTelegramCodeByUsername({ username: 'x' })
+    ).rejects.toThrow('bad username');
+
+    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+  });
+
+  it('setTelegramSitePassword clears auth and rethrows on failure', async () => {
+    authService.setTelegramSitePassword.mockRejectedValueOnce(new Error('weak password'));
+
+    await expect(
+      useAuthStore.getState().setTelegramSitePassword('123')
+    ).rejects.toThrow('weak password');
+
+    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+    expect(useAuthStore.getState().user).toBe(null);
+  });
+
+  it('logout clears state even when authService.logout fails', async () => {
+    useAuthStore.setState({ isAuthenticated: true, user: { id: '1' } });
+    authService.logout.mockRejectedValueOnce(new Error('network'));
+
+    await useAuthStore.getState().logout();
 
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
     expect(useAuthStore.getState().user).toBe(null);

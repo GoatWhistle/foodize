@@ -24,7 +24,7 @@ async def seeded(db_session):
         UserCreate(
             name="Vendor",
             phone_number="79008001001",
-            password="strongpassword",
+            password="strongpassword1",
             user_role=UserRole.VENDOR,
         ),
     )
@@ -40,7 +40,7 @@ async def seeded(db_session):
         UserCreate(
             name="User1",
             phone_number="79008001002",
-            password="strongpassword",
+            password="strongpassword1",
             user_role=UserRole.CUSTOMER,
         ),
     )
@@ -49,7 +49,7 @@ async def seeded(db_session):
         UserCreate(
             name="User2",
             phone_number="79008001003",
-            password="strongpassword",
+            password="strongpassword1",
             user_role=UserRole.CUSTOMER,
         ),
     )

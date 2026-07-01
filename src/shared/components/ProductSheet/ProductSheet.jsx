@@ -89,6 +89,15 @@ const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }) => {
     return () => document.removeEventListener("keydown", handler);
   }, [onClose]);
 
+  useEffect(() => {
+    if (!item) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [item]);
+
   if (!item) return null;
 
   const selectedOptions = getSelectedOptions(groups, selectedOptionIds);

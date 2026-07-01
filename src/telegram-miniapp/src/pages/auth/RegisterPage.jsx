@@ -6,6 +6,11 @@ import { translateApiError } from "../../utils/translateApiError";
 const PHONE_RE = /^\+?[0-9]{7,15}$/;
 
 export default function RegisterPage({ initData, prefillPhone, onSuccess }) {
+  // localStorage is intentional here (not sessionStorage): the flag must
+  // survive Mini App reopen/relaunch, and useAuthStore.logout() clears
+  // sessionStorage entirely on logout, which would erase the flag instantly.
+  // Backend re-validates identity on every telegram/auth call regardless of
+  // this UI-only mode switch, so DevTools tampering has no security impact.
   const isLogin = localStorage.getItem("foodize_tg_logged_out") === "1";
   const [phone, setPhone] = useState(prefillPhone ?? "");
   const [name, setName] = useState("");

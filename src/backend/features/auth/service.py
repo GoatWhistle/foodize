@@ -16,7 +16,7 @@ from features.users.dependencies import (
 )
 from features.users.models import User
 from features.users.schemas import UserCreate, UserRead
-from infra.cache.redis import RedisCache, get_redis_cache
+from infra.cache.redis import RedisCache, get_redis_cache, redis_cache_dependency
 from settings.config.app_config import settings
 from shared.exceptions.existence import AuthException
 from utils.JWT import create_access_token, create_refresh_token, decode_jwt
@@ -48,15 +48,9 @@ def _set_auth_cookies(response: Response, access_token: str, refresh_token: str)
     )
 
 
-def _get_bearer_token(request: Request) -> str | None:
-    headers = getattr(request, "headers", {}) or {}
-    raw_header = headers.get("authorization") or headers.get("Authorization")
-    if not isinstance(raw_header, str):
-        return None
-    scheme, _, token = raw_header.partition(" ")
-    if scheme.lower() != "bearer" or not token:
-        return None
-    return token
+async def _get_bearer_token(request: Request) -> str | None:
+    token = await OAuth2PasswordBearer.__call__(OAuth2_scheme, request)
+    return token or None
 
 
 class OAuth2PasswordBearerWithCookie(OAuth2PasswordBearer):
@@ -79,7 +73,7 @@ OAuth2_scheme = OAuth2PasswordBearerWithCookie(
 async def get_current_user(
     token: str = Depends(OAuth2_scheme),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-    cache: RedisCache = Depends(lambda: get_redis_cache()),
+    cache: RedisCache = Depends(redis_cache_dependency),
 ) -> User:
     if not token:
         raise AuthException(detail="Not authenticated")
@@ -142,7 +136,7 @@ async def logout_user(
         cache = get_redis_cache()
     now = int(time.time())
 
-    access_token = request.cookies.get("access_token") or _get_bearer_token(request)
+    access_token = request.cookies.get("access_token") or await _get_bearer_token(request)
     if access_token:
         try:
             payload = decode_jwt(access_token)
@@ -166,8 +160,9 @@ async def logout_user(
         except Exception:
             logger.warning("logout: failed to blacklist refresh token")
 
-    response.delete_cookie("access_token", httponly=True, secure=True, samesite="lax")
-    response.delete_cookie("refresh_token", httponly=True, secure=True, samesite="lax")
+    secure = settings.logs.environment != "development"
+    response.delete_cookie("access_token", httponly=True, secure=secure, samesite="lax")
+    response.delete_cookie("refresh_token", httponly=True, secure=secure, samesite="lax")
 
 
 async def refresh_user_token(
@@ -179,7 +174,7 @@ async def refresh_user_token(
     token = (
         request.cookies.get("refresh_token")
         or request.headers.get("x-refresh-token")
-        or _get_bearer_token(request)
+        or await _get_bearer_token(request)
     )
     if not token:
         raise AuthException(detail="Refresh token missing")

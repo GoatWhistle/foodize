@@ -11,24 +11,22 @@ from utils.formatting import format_price, format_status
 
 logger = logging.getLogger(__name__)
 
-_redis_client: aioredis.Redis | None = None
-
-
-def _get_redis() -> aioredis.Redis:
-    global _redis_client
-    if _redis_client is None:
-        _redis_client = aioredis.from_url(bot_config.redis_url, decode_responses=True)
-    return _redis_client
-
-
 async def _get_telegram_id(user_id: str) -> int | None:
-    val = await _get_redis().get(f"user_tg:{user_id}")
-    return int(val) if val else None
+    client = aioredis.from_url(bot_config.redis_url, decode_responses=True)
+    try:
+        val = await client.get(f"user_tg:{user_id}")
+        return int(val) if val else None
+    finally:
+        await client.aclose()
 
 
 async def _deactivate_telegram_id(user_id: str) -> None:
-    await _get_redis().delete(f"user_tg:{user_id}")
-    logger.info("Deactivated Telegram binding for user_id=%s (bot blocked)", user_id)
+    client = aioredis.from_url(bot_config.redis_url, decode_responses=True)
+    try:
+        await client.delete(f"user_tg:{user_id}")
+        logger.info("Deactivated Telegram binding for user_id=%s (bot blocked)", user_id)
+    finally:
+        await client.aclose()
 
 
 def _order_keyboard(order_display_id: str | None) -> InlineKeyboardMarkup | None:
@@ -54,6 +52,41 @@ def _order_keyboard(order_display_id: str | None) -> InlineKeyboardMarkup | None
     return InlineKeyboardMarkup(inline_keyboard=[buttons])
 
 
+async def _send_notification(
+    bot: Bot,
+    *,
+    user_id: str,
+    telegram_id: int,
+    text: str,
+    display_id: str | None,
+    fail_log_message: str,
+) -> None:
+    try:
+        await bot.send_message(
+            chat_id=telegram_id,
+            text=text,
+            reply_markup=_order_keyboard(display_id),
+        )
+    except TelegramForbiddenError:
+        logger.info("User %s blocked the bot, deactivating binding", user_id)
+        await _deactivate_telegram_id(user_id)
+    except TelegramRetryAfter as e:
+        logger.warning("Rate limited by Telegram, retrying after %s seconds", e.retry_after)
+        await asyncio.sleep(e.retry_after)
+        try:
+            await bot.send_message(
+                chat_id=telegram_id,
+                text=text,
+                reply_markup=_order_keyboard(display_id),
+            )
+        except Exception as retry_exc:
+            logger.warning("Retry after rate limit failed: %s", retry_exc)
+    except TelegramNetworkError as e:
+        logger.warning("Telegram network error: %s", e)
+    except Exception as e:
+        logger.warning(fail_log_message, e)
+
+
 async def handle_order_placed(event: dict, bot: Bot) -> None:
     user_id = str(event.get("user_id", ""))
     telegram_id = await _get_telegram_id(user_id)
@@ -72,22 +105,14 @@ async def handle_order_placed(event: dict, bot: Bot) -> None:
         f"Сумма: {format_price(total)}\n\n"
         f"Мы уведомим вас, когда статус изменится."
     )
-    try:
-        await bot.send_message(
-            chat_id=telegram_id,
-            text=text,
-            reply_markup=_order_keyboard(display_id),
-        )
-    except TelegramForbiddenError:
-        logger.info("User %s blocked the bot, deactivating binding", user_id)
-        await _deactivate_telegram_id(user_id)
-    except TelegramRetryAfter as e:
-        logger.warning("Rate limited by Telegram, retrying after %s seconds", e.retry_after)
-        await asyncio.sleep(e.retry_after)
-    except TelegramNetworkError as e:
-        logger.warning("Telegram network error: %s", e)
-    except Exception as e:
-        logger.warning("Failed to send order_placed notification: %s", e)
+    await _send_notification(
+        bot,
+        user_id=user_id,
+        telegram_id=telegram_id,
+        text=text,
+        display_id=display_id,
+        fail_log_message="Failed to send order_placed notification: %s",
+    )
 
 
 async def handle_order_status_changed(event: dict, bot: Bot) -> None:
@@ -107,19 +132,11 @@ async def handle_order_status_changed(event: dict, bot: Bot) -> None:
         f"Статус: <b>{format_status(new_status)}</b>\n"
         f"Сумма: {format_price(total)}"
     )
-    try:
-        await bot.send_message(
-            chat_id=telegram_id,
-            text=text,
-            reply_markup=_order_keyboard(display_id),
-        )
-    except TelegramForbiddenError:
-        logger.info("User %s blocked the bot, deactivating binding", user_id)
-        await _deactivate_telegram_id(user_id)
-    except TelegramRetryAfter as e:
-        logger.warning("Rate limited by Telegram, retrying after %s seconds", e.retry_after)
-        await asyncio.sleep(e.retry_after)
-    except TelegramNetworkError as e:
-        logger.warning("Telegram network error: %s", e)
-    except Exception as e:
-        logger.warning("Failed to send status_changed notification: %s", e)
+    await _send_notification(
+        bot,
+        user_id=user_id,
+        telegram_id=telegram_id,
+        text=text,
+        display_id=display_id,
+        fail_log_message="Failed to send status_changed notification: %s",
+    )

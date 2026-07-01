@@ -6,8 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
 from features.auth.service import get_current_user
-from features.orders.crud.order import get_order_by_id
+from features.orders.crud.order import get_order_by_id_for_update
 from features.orders.models import Order
+from features.restaurants.crud import get_restaurant_by_id
 from features.restaurants.models import Restaurant
 from features.staff.models import StaffProfile
 from features.users.models import User
@@ -22,7 +23,7 @@ async def verify_restaurant_access(
     restaurant_id: uuid.UUID,
     current_user: User,
 ) -> Restaurant:
-    restaurant = await session.get(Restaurant, restaurant_id)
+    restaurant = await get_restaurant_by_id(session, restaurant_id)
     if not restaurant:
         raise NotFoundException(detail="Restaurant not found")
 
@@ -64,7 +65,7 @@ async def get_order_for_staff_or_vendor(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
     current_user: User = Depends(get_current_user),
 ) -> Order:
-    order = await get_order_by_id(session, order_id)
+    order = await get_order_by_id_for_update(session, order_id)
     if not order:
         raise NotFoundException(detail="Order not found")
     await verify_restaurant_access(session, order.restaurant_id, current_user)

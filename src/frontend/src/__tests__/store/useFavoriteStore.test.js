@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useFavoriteStore } from '../../store/useFavoriteStore';
-import { favoriteService } from '../../services/favoriteService';
+import { favoriteService } from '@shared/services/favoriteService.js';
 
-vi.mock('../../services/favoriteService', () => ({
+vi.mock('@shared/services/favoriteService.js', () => ({
   favoriteService: {
     getAll: vi.fn(),
     add: vi.fn(),

@@ -38,7 +38,7 @@ async def restaurant(db_session):
     vendor_data = UserCreate(
         name="Vendor3",
         phone_number="79006666666",
-        password="strongpassword",
+        password="strongpassword1",
         user_role=UserRole.VENDOR,
     )
     vendor_user = await create_user(db_session, vendor_data)

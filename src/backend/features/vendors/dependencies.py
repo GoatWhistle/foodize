@@ -24,7 +24,11 @@ async def _ensure_admin_vendor_profile(
     session: AsyncSession,
     user: User,
 ) -> VendorProfile:
-    stmt = select(User).where(User.id == user.id).options(selectinload(User.vendor_profile))
+    stmt = (
+        select(User)
+        .where(User.id == user.id)
+        .options(selectinload(User.vendor_profile).selectinload(VendorProfile.restaurants))
+    )
     result = await session.execute(stmt)
     loaded_user = result.scalar_one_or_none()
     if not loaded_user:
@@ -44,7 +48,7 @@ async def _ensure_admin_vendor_profile(
         vendor.rejection_reason = None
 
     await session.commit()
-    await session.refresh(vendor)
+    await session.refresh(vendor, attribute_names=["restaurants"])
     vendor.user = loaded_user
     return vendor
 
@@ -56,7 +60,11 @@ async def get_current_vendor(
     if not has_permission(user.permissions, Permission.VENDORS_READ_OWN):
         raise AccessDeniedException(detail="Insufficient permissions to access vendor profile")
 
-    stmt = select(User).where(User.id == user.id).options(selectinload(User.vendor_profile))
+    stmt = (
+        select(User)
+        .where(User.id == user.id)
+        .options(selectinload(User.vendor_profile).selectinload(VendorProfile.restaurants))
+    )
     result = await session.execute(stmt)
     loaded_user = result.scalar_one_or_none()
     if not loaded_user or not loaded_user.vendor_profile:
@@ -68,6 +76,8 @@ async def get_current_vendor(
         vendor.approval_status != ModerationStatus.APPROVED.value or vendor.rejection_reason
     ):
         return await _ensure_admin_vendor_profile(session, user)
+    if vendor.approval_status != ModerationStatus.APPROVED.value or vendor.rejection_reason:
+        raise AccessDeniedException(detail="Vendor profile is not approved")
     return vendor
 
 

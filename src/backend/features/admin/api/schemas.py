@@ -9,10 +9,6 @@ class SetPermissionsRequest(BaseModel):
     permissions: list[Permission]
 
 
-class BatchResult(BaseModel):
-    affected: int
-
-
 class BatchIdsRequest(BaseModel):
     ids: list[uuid.UUID]
 

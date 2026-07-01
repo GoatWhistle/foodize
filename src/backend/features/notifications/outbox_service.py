@@ -83,12 +83,22 @@ async def publish_pending_events(
     return published
 
 
-async def run_outbox_publisher(poll_interval: float = 5.0) -> None:
+async def run_outbox_publisher(
+    poll_interval: float = 5.0,
+    stop_event: asyncio.Event | None = None,
+) -> None:
     logger.info("Outbox publisher started")
-    while True:
+    while stop_event is None or not stop_event.is_set():
         try:
             async with db_helper.session_factory() as session:
                 await publish_pending_events(session)
         except Exception:
             logger.exception("Outbox publisher tick failed")
-        await asyncio.sleep(poll_interval)
+        if stop_event is None:
+            await asyncio.sleep(poll_interval)
+            continue
+        try:
+            await asyncio.wait_for(stop_event.wait(), timeout=poll_interval)
+        except asyncio.TimeoutError:
+            pass
+    logger.info("Outbox publisher stopped")

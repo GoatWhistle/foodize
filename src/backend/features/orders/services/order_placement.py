@@ -57,7 +57,9 @@ async def place_order(
         )
 
     menu_item_ids = [item.menu_item_id for item in order_data.items]
-    menu_items = await order_item_crud.get_menu_items_by_ids(session, menu_item_ids)
+    menu_items = await order_item_crud.get_menu_items_by_ids(
+        session, menu_item_ids, for_update=True
+    )
 
     if len(menu_items) != len(menu_item_ids):
         raise MenuItemsNotFoundException()
@@ -96,6 +98,11 @@ async def place_order(
     )
 
     if order_data.promo_code:
+        # NOTE: mutating order.total_price here (instead of computing it upfront) is safe
+        # because this happens before session.commit() below and every downstream read
+        # (enqueue_event, OrderResponse, idempotency snapshot) happens after this point,
+        # so they all observe the post-promo total. Kept as post-hoc mutation rather than
+        # refactored, since apply_promo needs the pre-promo total as input.
         new_total = await promo_service.apply_promo(
             session, order_data.promo_code, order_data.restaurant_id,
             order.total_price, is_first_order=is_first_order,

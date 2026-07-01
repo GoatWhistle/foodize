@@ -30,17 +30,27 @@ export async function initTelegramApp() {
 }
 
 export async function completeTelegramAuth(initData, phoneNumber, name) {
-  const resp = await authService.telegramRegister(initData, phoneNumber, name);
-  const { access_token, refresh_token } = resp.data.data;
-  sessionStorage.setItem("access_token", access_token);
-  sessionStorage.setItem("refresh_token", refresh_token);
-  return resp.data.data;
+  try {
+    const resp = await authService.telegramRegister(initData, phoneNumber, name);
+    const { access_token, refresh_token } = resp.data.data;
+    sessionStorage.setItem("access_token", access_token);
+    sessionStorage.setItem("refresh_token", refresh_token);
+    return resp.data.data;
+  } catch (err) {
+    console.warn("[completeTelegramAuth] failed:", err?.response?.status, err?.message);
+    throw err;
+  }
 }
 
 export async function authExistingUser(initData) {
-  const resp = await authService.telegramAuth(initData);
-  const { access_token, refresh_token } = resp.data.data;
-  sessionStorage.setItem("access_token", access_token);
-  sessionStorage.setItem("refresh_token", refresh_token);
-  return resp.data.data;
+  try {
+    const resp = await authService.telegramAuth(initData);
+    const { access_token, refresh_token } = resp.data.data;
+    sessionStorage.setItem("access_token", access_token);
+    sessionStorage.setItem("refresh_token", refresh_token);
+    return resp.data.data;
+  } catch (err) {
+    console.warn("[authExistingUser] failed:", err?.response?.status, err?.message);
+    throw err;
+  }
 }

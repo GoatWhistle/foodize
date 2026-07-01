@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import db_helper
 from features.auth.schemas import TokenResponse
 from features.auth.service import get_current_user
-from features.telegram import service
+from features.telegram import bot_api, site_login, webapp_auth
 from features.telegram.schemas import (
     TelegramBotLinkRequest,
     TelegramBotOrdersRequest,
@@ -49,7 +49,7 @@ async def telegram_check(
     data: TelegramCheckRequest,
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[TelegramCheckResponse]:
-    result = await service.telegram_check(session=session, init_data=data.init_data)
+    result = await webapp_auth.telegram_check(session=session, init_data=data.init_data)
     return build_response(result)
 
 
@@ -58,7 +58,7 @@ async def telegram_register(
     data: TelegramRegisterRequest,
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[TokenResponse]:
-    result = await service.telegram_register(
+    result = await webapp_auth.telegram_register(
         session=session,
         init_data=data.init_data,
         phone_number=data.phone_number,
@@ -72,52 +72,52 @@ async def telegram_auth(
     data: TelegramCheckRequest,
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[TokenResponse]:
-    result = await service.telegram_auth_existing(session=session, init_data=data.init_data)
+    result = await webapp_auth.telegram_auth_existing(session=session, init_data=data.init_data)
     return build_response(result)
 
 
-@limiter.limit("5/minute")
 @router.post(
     "/site-login/request-code",
     response_model=SuccessResponse[TelegramSiteLoginStartResponse],
 )
+@limiter.limit("5/minute")
 async def telegram_site_login_request_code(
     request: Request,
     data: TelegramSiteLoginStartRequest,
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[TelegramSiteLoginStartResponse]:
-    await service.request_site_login_code(session=session, phone_number=data.phone_number)
+    await site_login.request_site_login_code(session=session, phone_number=data.phone_number)
     return build_response(TelegramSiteLoginStartResponse())
 
 
-@limiter.limit("5/minute")
 @router.post(
     "/site-login/request-code-by-username",
     response_model=SuccessResponse[TelegramSiteLoginStartResponse],
 )
+@limiter.limit("5/minute")
 async def telegram_site_login_request_code_by_username(
     request: Request,
     data: TelegramSiteLoginByUsernameRequest,
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[TelegramSiteLoginStartResponse]:
-    await service.request_site_login_code_by_username(
+    await site_login.request_site_login_code_by_username(
         session=session, telegram_username=data.telegram_username
     )
     return build_response(TelegramSiteLoginStartResponse())
 
 
-@limiter.limit("5/minute")
 @router.post(
     "/site-login/verify",
     response_model=SuccessResponse[TelegramSiteLoginResponse],
 )
+@limiter.limit("5/minute")
 async def telegram_site_login_verify(
     request: Request,
     data: TelegramSiteLoginVerifyRequest,
     response: Response,
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[TelegramSiteLoginResponse]:
-    result = await service.verify_site_login_code(
+    result = await site_login.verify_site_login_code(
         session=session,
         phone_number=data.phone_number,
         code=data.code,
@@ -126,18 +126,18 @@ async def telegram_site_login_verify(
     return build_response(result)
 
 
-@limiter.limit("5/minute")
 @router.post(
     "/site-login/verify-by-username",
     response_model=SuccessResponse[TelegramSiteLoginResponse],
 )
+@limiter.limit("5/minute")
 async def telegram_site_login_verify_by_username(
     request: Request,
     data: TelegramSiteLoginVerifyByUsernameRequest,
     response: Response,
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[TelegramSiteLoginResponse]:
-    result = await service.verify_site_login_code_by_username(
+    result = await site_login.verify_site_login_code_by_username(
         session=session,
         telegram_username=data.telegram_username,
         code=data.code,
@@ -152,7 +152,7 @@ async def telegram_site_login_set_password(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[UserRead]:
-    result = await service.set_site_password(
+    result = await site_login.set_site_password(
         session=session,
         user=current_user,
         password=data.password,
@@ -165,7 +165,7 @@ async def telegram_logout(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[UserRead]:
-    result = await service.unlink_telegram_for_user(session=session, user=current_user)
+    result = await webapp_auth.unlink_telegram_for_user(session=session, user=current_user)
     return build_response(UserRead.model_validate(result))
 
 
@@ -180,16 +180,13 @@ async def telegram_bot_register(
     ):
         raise AccessDeniedException(detail="Invalid bot secret")
 
-    redis = get_redis_cache().get_raw_client()
     key = f"rl:bot_register:{data.telegram_id}"
-    reqs = await redis.incr(key)
-    if reqs == 1:
-        await redis.expire(key, 3600)
+    reqs = await get_redis_cache().incr_with_expire(key, 3600)
     if reqs > 10:
         logger.warning("telegram bot-register rate limit exceeded: telegram_id=%s", data.telegram_id)
         raise HTTPException(status_code=HTTPStatus.TOO_MANY_REQUESTS, detail="Rate limit exceeded")
 
-    result = await service.register_from_bot(
+    result = await bot_api.register_from_bot(
         session=session,
         telegram_id=data.telegram_id,
         telegram_username=data.telegram_username,
@@ -209,16 +206,13 @@ async def telegram_bot_link_phone(
     ):
         raise AccessDeniedException(detail="Invalid bot secret")
 
-    redis = get_redis_cache().get_raw_client()
     key = f"rl:link_phone:{data.telegram_id}"
-    reqs = await redis.incr(key)
-    if reqs == 1:
-        await redis.expire(key, 3600)
+    reqs = await get_redis_cache().incr_with_expire(key, 3600)
     if reqs > 5:
         logger.warning("telegram link-phone rate limit exceeded: telegram_id=%s", data.telegram_id)
         raise HTTPException(status_code=HTTPStatus.TOO_MANY_REQUESTS, detail="Rate limit exceeded")
 
-    result = await service.link_phone_from_bot(
+    result = await bot_api.link_phone_from_bot(
         session=session,
         telegram_id=data.telegram_id,
         telegram_username=data.telegram_username,
@@ -242,7 +236,13 @@ async def telegram_bot_vendor_status(
     ):
         raise AccessDeniedException(detail="Invalid bot secret")
 
-    vendor = await service.get_vendor_status_for_telegram_id(
+    key = f"rl:bot_vendor_status:{data.telegram_id}"
+    reqs = await get_redis_cache().incr_with_expire(key, 60)
+    if reqs > 20:
+        logger.warning("telegram bot-vendor-status rate limit exceeded: telegram_id=%s", data.telegram_id)
+        raise HTTPException(status_code=HTTPStatus.TOO_MANY_REQUESTS, detail="Rate limit exceeded")
+
+    vendor = await bot_api.get_vendor_status_for_telegram_id(
         session=session,
         telegram_id=data.telegram_id,
     )
@@ -272,7 +272,13 @@ async def telegram_bot_orders(
     ):
         raise AccessDeniedException(detail="Invalid bot secret")
 
-    orders = await service.get_active_orders_for_telegram_id(
+    key = f"rl:bot_orders:{data.telegram_id}"
+    reqs = await get_redis_cache().incr_with_expire(key, 60)
+    if reqs > 20:
+        logger.warning("telegram bot-orders rate limit exceeded: telegram_id=%s", data.telegram_id)
+        raise HTTPException(status_code=HTTPStatus.TOO_MANY_REQUESTS, detail="Rate limit exceeded")
+
+    orders = await bot_api.get_active_orders_for_telegram_id(
         session=session,
         telegram_id=data.telegram_id,
         limit=3,

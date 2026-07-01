@@ -116,6 +116,33 @@ class TestAccessRefreshTokens:
         assert result == "refresh"
         mock_create.assert_called_once()
 
+    def test_refresh_token_includes_session_exp_in_payload(self):
+        user_id = uuid.uuid4()
+        captured: dict = {}
+
+        def fake_encode(payload, private_key=None, algorithm=None):
+            captured.update(payload)
+            return "mocked-refresh"
+
+        with patch("utils.JWT.encode_jwt", side_effect=fake_encode):
+            create_refresh_token(user_id=user_id)
+
+        assert "session_exp" in captured
+        assert isinstance(captured["session_exp"], int)
+
+    def test_refresh_token_uses_explicit_session_exp(self):
+        user_id = uuid.uuid4()
+        captured: dict = {}
+
+        def fake_encode(payload, private_key=None, algorithm=None):
+            captured.update(payload)
+            return "mocked-refresh"
+
+        with patch("utils.JWT.encode_jwt", side_effect=fake_encode):
+            create_refresh_token(user_id=user_id, session_exp=9999999999)
+
+        assert captured["session_exp"] == 9999999999
+
     def test_access_and_refresh_use_different_lifetimes(self):
         user_id = uuid.uuid4()
         access_lifetime: list[int] = []

@@ -14,7 +14,7 @@ def _get_pool() -> aioredis.ConnectionPool:
         _pool = aioredis.ConnectionPool.from_url(
             settings.redis.url,
             decode_responses=True,
-            max_connections=50,
+            max_connections=settings.redis.max_connections,
         )
     return _pool
 
@@ -47,6 +47,18 @@ class RedisCache(CacheRepository):
 
     async def expire(self, key: str, ttl: int) -> None:
         await self._client.expire(key, ttl)  # type: ignore[misc]
+
+    async def sadd_with_expire(self, key: str, value: str, ttl: int) -> None:
+        async with self._client.pipeline(transaction=True) as pipe:
+            pipe.sadd(key, value)
+            pipe.expire(key, ttl)
+            await pipe.execute()
+
+    async def incr_with_expire(self, key: str, ttl: int) -> int:
+        count = await self._client.incr(key)  # type: ignore[misc]
+        if count == 1:
+            await self._client.expire(key, ttl)  # type: ignore[misc]
+        return count
 
     async def smembers(self, key: str):
         result = await self._client.smembers(key)  # type: ignore[misc]

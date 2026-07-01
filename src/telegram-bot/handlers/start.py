@@ -1,5 +1,7 @@
+import html
 import logging
 import re
+from typing import Any, Awaitable, Callable
 
 import httpx
 from aiogram import Router
@@ -21,7 +23,32 @@ from utils.formatting import format_price, format_status
 router = Router()
 logger = logging.getLogger(__name__)
 
-PHONE_RE = re.compile(r"^\+?[0-9][0-9\s().-]{6,20}$")
+_UNSET = object()
+
+
+async def _call_backend_api(
+    message: Message,
+    call: Callable[[], Awaitable[Any]],
+    *,
+    error_message: str,
+    log_context: str,
+) -> Any:
+    try:
+        return await call()
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 403:
+            await message.answer(msg.BOT_ACCESS_DENIED)
+        else:
+            logger.warning(
+                "%s HTTP error status=%s", log_context, exc.response.status_code
+            )
+            await message.answer(error_message)
+    except httpx.HTTPError as exc:
+        logger.warning("%s network error: %s", log_context, exc)
+        await message.answer(msg.API_UNAVAILABLE)
+    return _UNSET
+
+
 DISPLAY_ID_RE = re.compile(r"^[a-zA-Z0-9-]{1,64}$")
 RESTART_TEXT = "🔄 Перезапустить бота"
 
@@ -102,7 +129,6 @@ def _phone_keyboard() -> ReplyKeyboardMarkup:
         ],
         resize_keyboard=True,
         one_time_keyboard=False,
-        input_field_placeholder="+79990000000",
     )
 
 
@@ -130,21 +156,18 @@ async def _link_phone(message: Message, phone_number: str) -> bool:
         await message.answer(msg.BOT_NOT_CONFIGURED)
         return False
 
-    try:
-        await backend_client.link_phone(
+    result = await _call_backend_api(
+        message,
+        lambda: backend_client.link_phone(
             telegram_id=message.from_user.id,
             telegram_username=message.from_user.username,
             phone_number=phone_number,
             name=_display_name(message),
-        )
-    except httpx.HTTPStatusError as exc:
-        if exc.response.status_code == 403:
-            await message.answer(msg.BOT_ACCESS_DENIED)
-        else:
-            await message.answer(msg.PHONE_LINK_FAILED)
-        return False
-    except httpx.HTTPError:
-        await message.answer(msg.API_UNAVAILABLE)
+        ),
+        error_message=msg.PHONE_LINK_FAILED,
+        log_context="link_phone",
+    )
+    if result is _UNSET:
         return False
 
     await message.answer(msg.PHONE_LINKED, reply_markup=_phone_keyboard())
@@ -168,7 +191,7 @@ def _vendor_status_text(data: dict) -> str:
         return "Ваша заявка вендора одобрена. Кабинет доступен на сайте Foodize."
     if status == "REJECTED":
         reason = data.get("rejection_reason")
-        suffix = f"\n\nПричина: {reason}" if reason else ""
+        suffix = f"\n\nПричина: {html.escape(reason)}" if reason else ""
         return f"Заявка вендора отклонена.{suffix}"
     return "Заявка вендора на рассмотрении. Мы сообщим, когда администратор примет решение."
 
@@ -182,16 +205,13 @@ async def cmd_vendor_status(message: Message) -> None:
         await message.answer(msg.VENDOR_STATUS_NOT_CONFIGURED)
         return
 
-    try:
-        data = await backend_client.get_vendor_status(message.from_user.id)
-    except httpx.HTTPStatusError as exc:
-        if exc.response.status_code == 403:
-            await message.answer(msg.BOT_ACCESS_DENIED)
-        else:
-            await message.answer(msg.VENDOR_STATUS_ERROR)
-        return
-    except httpx.HTTPError:
-        await message.answer(msg.API_UNAVAILABLE)
+    data = await _call_backend_api(
+        message,
+        lambda: backend_client.get_vendor_status(message.from_user.id),
+        error_message=msg.VENDOR_STATUS_ERROR,
+        log_context="get_vendor_status",
+    )
+    if data is _UNSET:
         return
 
     await message.answer(_vendor_status_text(data))
@@ -206,16 +226,13 @@ async def cmd_orders(message: Message) -> None:
         await message.answer(msg.ORDERS_NOT_CONFIGURED)
         return
 
-    try:
-        orders = await backend_client.get_active_orders(message.from_user.id)
-    except httpx.HTTPStatusError as exc:
-        if exc.response.status_code == 403:
-            await message.answer(msg.BOT_ACCESS_DENIED)
-        else:
-            await message.answer(msg.ORDERS_ERROR)
-        return
-    except httpx.HTTPError:
-        await message.answer(msg.API_UNAVAILABLE)
+    orders = await _call_backend_api(
+        message,
+        lambda: backend_client.get_active_orders(message.from_user.id),
+        error_message=msg.ORDERS_ERROR,
+        log_context="get_active_orders",
+    )
+    if orders is _UNSET:
         return
 
     if not orders:
@@ -224,10 +241,11 @@ async def cmd_orders(message: Message) -> None:
 
     lines = [msg.ACTIVE_ORDERS_HEADER]
     for order in orders:
-        restaurant = order.get("restaurant_name") or "ресторан"
+        restaurant = html.escape(order.get("restaurant_name") or "ресторан")
+        display_id = html.escape(str(order.get("display_id", "")))
         lines.append(
-            f"• #{order.get('display_id')} — {restaurant}, "
-            f"{format_status(order.get('status', ''))}, "
+            f"• #{display_id} — {restaurant}, "
+            f"{html.escape(format_status(order.get('status', '')))}, "
             f"{format_price(order.get('total_price', 0))}"
         )
     await message.answer("\n".join(lines), reply_markup=_orders_keyboard(orders))
@@ -247,7 +265,7 @@ async def _auto_register(message: Message) -> None:
         )
         logger.info("auto-register ok: tg_id=%s username=%s", message.from_user.id, message.from_user.username)
     except httpx.HTTPStatusError as exc:
-        logger.error("auto-register HTTP error %s: %s", exc.response.status_code, exc.response.text)
+        logger.error("auto-register HTTP error status=%s", exc.response.status_code)
     except httpx.HTTPError as exc:
         logger.error("auto-register network error: %s", exc)
 
@@ -273,7 +291,9 @@ async def cmd_start(message: Message) -> None:
         keyboard = _restaurant_keyboard(display_id, restaurant_name)
         if keyboard:
             await message.answer(
-                msg.WELCOME_RESTAURANT.format(name=restaurant_name or display_id),
+                msg.WELCOME_RESTAURANT.format(
+                    name=html.escape(restaurant_name or display_id)
+                ),
                 reply_markup=keyboard,
             )
         else:
@@ -296,7 +316,7 @@ async def cmd_start(message: Message) -> None:
         return
 
     username = message.from_user.username if message.from_user else None
-    username_hint = f"@{username}" if username else "без username"
+    username_hint = f"@{html.escape(username)}" if username else "без username"
     await message.answer(
         msg.WELCOME + "\n\n"
         f"Ваш аккаунт зарегистрирован как <b>{username_hint}</b>.\n"
@@ -325,10 +345,3 @@ async def handle_contact(message: Message) -> None:
         await message.answer("Пожалуйста, отправьте свой номер телефона.")
         return
     await _link_phone(message, _normalize_phone(contact.phone_number))
-
-
-@router.message(lambda message: bool(message.text and PHONE_RE.match(message.text.strip())))
-async def handle_phone_text(message: Message) -> None:
-    if not message.text:
-        return
-    await _link_phone(message, _normalize_phone(message.text))

@@ -13,15 +13,9 @@ import { useShallow } from "zustand/react/shallow";
 import RestaurantCard from "@shared/components/RestaurantCard/RestaurantCard";
 import EmptyState from "@shared/components/EmptyState/EmptyState";
 import { useHomePageLogic } from "@shared/hooks/useHomePageLogic.js";
+import { getGreeting } from "@shared/utils/restaurant.js";
+import { aiOrderService } from "../../services/aiOrderService";
 import s from "./HomePage.module.css";
-
-const getGreeting = () => {
-  const h = new Date().getHours();
-  if (h < 5) return "Доброй ночи";
-  if (h < 12) return "Доброе утро";
-  if (h < 17) return "Добрый день";
-  return "Добрый вечер";
-};
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -44,6 +38,19 @@ const HomePage = () => {
   } = useHomePageLogic({ pageSize: 20, infiniteScroll: true });
 
   const firstName = user?.first_name || user?.name?.split(" ")[0] || "";
+
+  const askAiAssistant = async () => {
+    let reply = "";
+    try {
+      await aiOrderService.streamChat(
+        [{ role: "user", content: "Что можно заказать быстро и недорого?" }],
+        { onChunk: (chunk) => { reply += chunk; } }
+      );
+      window.alert(reply || "Ответ пуст");
+    } catch (err) {
+      window.alert("Не удалось получить ответ ассистента");
+    }
+  };
 
   return (
     <div className={s.page}>
@@ -114,6 +121,13 @@ const HomePage = () => {
             onClick={() => { setOnlyOpen((v) => !v); }}
           >
             Открытые
+          </button>
+          <button
+            type="button"
+            className={s.sortChip}
+            onClick={askAiAssistant}
+          >
+            AI-помощник
           </button>
         </div>
       </div>

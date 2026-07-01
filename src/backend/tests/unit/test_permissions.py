@@ -11,6 +11,10 @@ from shared.permissions import (
     STAFF_PERMISSIONS,
     VENDOR_PERMISSIONS,
     has_permission,
+    normalize_permissions,
+    permissions_with,
+    permissions_without,
+    serialize_permissions,
 )
 
 
@@ -57,3 +61,43 @@ class TestPermissionChecker:
             checker(user=user)
 
         assert exc_info.value.status_code == 403
+
+
+class TestPermissionHelpers:
+    def test_normalize_permissions_none(self):
+        assert normalize_permissions(None) == frozenset()
+
+    def test_normalize_permissions_invalid_string(self):
+        result = normalize_permissions(["NOT_A_REAL_PERMISSION"])
+        assert result == frozenset()
+
+    def test_normalize_permissions_mixed(self):
+        result = normalize_permissions([Permission.MENU_READ, "NOT_REAL"])
+        assert Permission.MENU_READ in result
+
+    def test_serialize_permissions(self):
+        result = serialize_permissions([Permission.MENU_READ, Permission.CART_MANAGE])
+        assert isinstance(result, list)
+        assert result == sorted(result)
+
+    def test_serialize_permissions_none(self):
+        result = serialize_permissions(None)
+        assert result == []
+
+    def test_permissions_with_adds(self):
+        base = [Permission.MENU_READ]
+        result = permissions_with(base, [Permission.CART_MANAGE])
+        assert Permission.CART_MANAGE.value in result
+        assert Permission.MENU_READ.value in result
+
+    def test_permissions_without_removes(self):
+        base = [Permission.MENU_READ, Permission.CART_MANAGE]
+        result = permissions_without(base, [Permission.CART_MANAGE])
+        assert Permission.CART_MANAGE.value not in result
+        assert Permission.MENU_READ.value in result
+
+    def test_has_permission_false(self):
+        assert not has_permission([Permission.MENU_READ], Permission.ADMIN_ACCESS)
+
+    def test_has_permission_none(self):
+        assert not has_permission(None, Permission.MENU_READ)

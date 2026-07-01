@@ -36,3 +36,9 @@ class CacheRepository(ABC):
 
     @abstractmethod
     async def expire(self, key: str, ttl: int) -> None: ...
+
+    @abstractmethod
+    async def sadd_with_expire(self, key: str, value: str, ttl: int) -> None: ...
+
+    @abstractmethod
+    async def incr_with_expire(self, key: str, ttl: int) -> int: ...

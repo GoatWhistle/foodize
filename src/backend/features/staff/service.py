@@ -3,7 +3,6 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from features.restaurants.models import Restaurant
 from features.staff import crud
 from features.staff.dependencies import is_need_staff_for_restaurant
 from features.staff.exceptions import (
@@ -18,8 +17,9 @@ from features.staff.schemas import (
     StaffRequestCreate,
     StaffRequestResponse,
 )
+from shared.dependencies import get_owned_restaurant_or_403
 from shared.enums.staff_request_status import StaffRequestStatus
-from shared.exceptions import AccessDeniedException, NotFoundException
+from shared.exceptions import NotFoundException
 
 
 async def create_staff_request(
@@ -110,7 +110,5 @@ async def remove_staff_member(
     profile = await crud.get_staff_profile_by_id(session, profile_id)
     if not profile:
         raise NotFoundException(detail="Staff profile not found")
-    restaurant = await session.get(Restaurant, profile.restaurant_id)
-    if not restaurant or restaurant.vendor_id != vendor_id:
-        raise AccessDeniedException()
+    await get_owned_restaurant_or_403(session, profile.restaurant_id, vendor_id)
     await crud.delete_staff_profile(session, profile)

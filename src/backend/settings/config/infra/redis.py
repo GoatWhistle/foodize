@@ -6,6 +6,7 @@ class RedisConfig(BaseConfig):
     port: int = 6379
     db: int = 0
     password: str | None = None
+    max_connections: int = 50
 
     @property
     def url(self) -> str:

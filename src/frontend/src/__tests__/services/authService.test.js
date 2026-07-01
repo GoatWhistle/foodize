@@ -48,4 +48,40 @@ describe('authService', () => {
 
     expect(result.status).toBe(204);
   });
+
+  it('requestTelegramLoginCode sends POST to telegram site-login', async () => {
+    mock.onPost('/telegram/site-login/request-code').reply(200, { ok: true });
+    const result = await authService.requestTelegramLoginCode({ phone: '79001234567' });
+    expect(result.data).toEqual({ ok: true });
+  });
+
+  it('requestTelegramLoginCodeByUsername sends POST', async () => {
+    mock.onPost('/telegram/site-login/request-code-by-username').reply(200, { ok: true });
+    const result = await authService.requestTelegramLoginCodeByUsername({ username: 'user' });
+    expect(result.data).toEqual({ ok: true });
+  });
+
+  it('verifyTelegramLoginCode sends POST', async () => {
+    mock.onPost('/telegram/site-login/verify').reply(200, { token: 'abc' });
+    const result = await authService.verifyTelegramLoginCode({ code: '123456' });
+    expect(result.data).toEqual({ token: 'abc' });
+  });
+
+  it('verifyTelegramLoginCodeByUsername sends POST', async () => {
+    mock.onPost('/telegram/site-login/verify-by-username').reply(200, { token: 'abc' });
+    const result = await authService.verifyTelegramLoginCodeByUsername({ username: 'u', code: '1' });
+    expect(result.data).toEqual({ token: 'abc' });
+  });
+
+  it('setTelegramSitePassword sends POST', async () => {
+    mock.onPost('/telegram/site-login/password').reply(200, { ok: true });
+    const result = await authService.setTelegramSitePassword({ password: 'strongpw' });
+    expect(result.data).toEqual({ ok: true });
+  });
+
+  it('telegramLogout sends POST to /telegram/logout', async () => {
+    mock.onPost('/telegram/logout').reply(204);
+    const result = await authService.telegramLogout();
+    expect(result.status).toBe(204);
+  });
 });

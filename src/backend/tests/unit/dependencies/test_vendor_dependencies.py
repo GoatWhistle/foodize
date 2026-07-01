@@ -23,15 +23,18 @@ class TestVendorDependencies:
             user_role=UserRole.VENDOR.value,
             permissions=[Permission.VENDORS_READ_OWN.value],
         )
+        mock_vendor = MagicMock()
+        mock_vendor.approval_status = ModerationStatus.APPROVED.value
+        mock_vendor.rejection_reason = None
         mock_user = MagicMock()
-        mock_user.vendor_profile = "PROFILE"
+        mock_user.vendor_profile = mock_vendor
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_user
         mock_session = AsyncMock()
         mock_session.execute.return_value = mock_result
 
         res = await get_current_vendor(mock_session, current_user)
-        assert res == "PROFILE"
+        assert res is mock_vendor
 
     @pytest.mark.asyncio
     async def test_get_current_vendor_creates_admin_profile(self):

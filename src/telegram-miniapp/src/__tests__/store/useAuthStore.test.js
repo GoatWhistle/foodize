@@ -91,9 +91,7 @@ describe("useAuthStore", () => {
     expect(state.user).toBeNull();
     expect(state.isAuthenticated).toBe(false);
     expect(localStorage.getItem("foodize_tg_logged_out")).toBe("1");
-    expect(sessionStorage.getItem(TELEGRAM_INIT_DATA_STORAGE_KEY)).toBe(
-      "init_data",
-    );
+    expect(sessionStorage.getItem(TELEGRAM_INIT_DATA_STORAGE_KEY)).toBeNull();
     expect(sessionStorage.getItem("access_token")).toBeNull();
   });
 });

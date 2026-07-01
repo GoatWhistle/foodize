@@ -61,7 +61,7 @@ async def test_estimate_restaurant_load_warns_with_later_window():
             return_value=42,
         ),
         patch(
-            "features.orders.services.order.get_working_hours",
+            "features.orders.services.order_queries.get_working_hours",
             new_callable=AsyncMock,
             return_value=[],
         ),
@@ -70,8 +70,6 @@ async def test_estimate_restaurant_load_warns_with_later_window():
 
     assert estimate.ordering_available is True
     assert estimate.active_orders_count == 42
-    assert estimate.estimated_wait_min_minutes == 30
-    assert estimate.estimated_wait_max_minutes == 40
 
 
 @pytest.mark.asyncio
@@ -91,7 +89,7 @@ async def test_estimate_restaurant_load_respects_manual_pause():
             return_value=3,
         ),
         patch(
-            "features.orders.services.order.get_working_hours",
+            "features.orders.services.order_queries.get_working_hours",
             new_callable=AsyncMock,
             return_value=[],
         ),

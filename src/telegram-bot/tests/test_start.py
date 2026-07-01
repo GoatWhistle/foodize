@@ -13,12 +13,12 @@ from handlers.start import (
     _display_name,
     _link_phone,
     _vendor_status_text,
+    _auto_register,
     cmd_vendor_status,
     cmd_orders,
     cmd_start,
     handle_restart_button,
     handle_contact,
-    handle_phone_text,
 )
 
 
@@ -246,6 +246,7 @@ async def test_cmd_orders(mocker):
 
 @pytest.mark.asyncio
 async def test_cmd_start_deep_link_restaurant(mocker):
+    mocker.patch("handlers.start._auto_register", new_callable=AsyncMock)
     m = AsyncMock()
     m.text = "/start restaurant_123"
 
@@ -270,6 +271,7 @@ async def test_cmd_start_deep_link_restaurant(mocker):
 
 @pytest.mark.asyncio
 async def test_cmd_start_deep_link_order(mocker):
+    mocker.patch("handlers.start._auto_register", new_callable=AsyncMock)
     m = AsyncMock()
     m.text = "/start order_456"
     bot_config.mini_app_url = "https://t.me/app"
@@ -279,9 +281,11 @@ async def test_cmd_start_deep_link_order(mocker):
 
 
 @pytest.mark.asyncio
-async def test_cmd_start_default():
+async def test_cmd_start_default(mocker):
+    mocker.patch("handlers.start._auto_register", new_callable=AsyncMock)
     m = AsyncMock()
     m.text = "/start"
+    m.from_user = MagicMock(username="testuser")
     bot_config.mini_app_url = "https://t.me/app"
     await cmd_start(m)
     assert m.answer.call_count == 2
@@ -293,6 +297,85 @@ async def test_handle_restart_button(mocker):
     m = AsyncMock()
     await handle_restart_button(m)
     mock_cmd_start.assert_called_once_with(m)
+
+
+@pytest.mark.asyncio
+async def test_auto_register_no_user_does_nothing(mocker):
+    mock_register = mocker.patch("handlers.start.backend_client.register_by_telegram")
+    m = AsyncMock()
+    m.from_user = None
+    await _auto_register(m)
+    mock_register.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_auto_register_skips_without_bot_api_secret(mocker):
+    mock_register = mocker.patch("handlers.start.backend_client.register_by_telegram")
+    m = AsyncMock()
+    m.from_user = MagicMock(id=111, username="ivan")
+    bot_config.bot_api_secret = ""
+    await _auto_register(m)
+    mock_register.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_auto_register_calls_backend_with_expected_args(mocker):
+    bot_config.bot_api_secret = "secret"
+    mock_register = mocker.patch(
+        "handlers.start.backend_client.register_by_telegram",
+        new_callable=AsyncMock,
+    )
+    m = AsyncMock()
+    m.from_user = MagicMock(id=111, username="ivan", full_name="Ivan Ivanov")
+    await _auto_register(m)
+    mock_register.assert_awaited_once_with(
+        telegram_id=111,
+        telegram_username="ivan",
+        name="Ivan Ivanov",
+    )
+
+
+@pytest.mark.asyncio
+async def test_auto_register_swallows_http_status_error(mocker):
+    bot_config.bot_api_secret = "secret"
+    req = httpx.Request("POST", "http://backend/api/v1/telegram/bot/register")
+    resp = httpx.Response(403, request=req)
+    mocker.patch(
+        "handlers.start.backend_client.register_by_telegram",
+        new_callable=AsyncMock,
+        side_effect=httpx.HTTPStatusError("Forbidden", request=req, response=resp),
+    )
+    m = AsyncMock()
+    m.from_user = MagicMock(id=111, username="ivan", full_name="Ivan Ivanov")
+    await _auto_register(m)
+    m.answer.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_auto_register_swallows_http_network_error(mocker):
+    bot_config.bot_api_secret = "secret"
+    mocker.patch(
+        "handlers.start.backend_client.register_by_telegram",
+        new_callable=AsyncMock,
+        side_effect=httpx.HTTPError("Conn Error"),
+    )
+    m = AsyncMock()
+    m.from_user = MagicMock(id=111, username="ivan", full_name="Ivan Ivanov")
+    await _auto_register(m)
+    m.answer.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_cmd_start_calls_auto_register(mocker):
+    mock_auto_register = mocker.patch(
+        "handlers.start._auto_register", new_callable=AsyncMock
+    )
+    m = AsyncMock()
+    m.text = "/start"
+    m.from_user = MagicMock(username="testuser")
+    bot_config.mini_app_url = "https://t.me/app"
+    await cmd_start(m)
+    mock_auto_register.assert_awaited_once_with(m)
 
 
 @pytest.mark.asyncio
@@ -312,16 +395,4 @@ async def test_handle_contact(mocker):
     m.contact.phone_number = "+79990000000"
     mock_link = mocker.patch("handlers.start._link_phone")
     await handle_contact(m)
-    mock_link.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_handle_phone_text(mocker):
-    m = AsyncMock()
-    m.text = ""
-    await handle_phone_text(m)
-
-    m.text = "+79990000000"
-    mock_link = mocker.patch("handlers.start._link_phone")
-    await handle_phone_text(m)
     mock_link.assert_called_once()

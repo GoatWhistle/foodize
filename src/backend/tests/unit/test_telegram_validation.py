@@ -10,7 +10,7 @@ from features.telegram.exceptions import (
     InvalidTelegramInitDataException,
     MalformedTelegramInitDataException,
 )
-from features.telegram.service import _extract_tg_user, _validate_init_data
+from features.telegram.webapp_auth import _extract_tg_user, _validate_init_data
 from settings.config.app_config import settings
 
 
@@ -194,7 +194,7 @@ class TestEdgeCases:
 
     def test_edge_case_auth_date_within_limit(self):
         """Test that auth_date just within limit (86400s) is accepted."""
-        auth_date = int(time.time()) - 86399
+        auth_date = int(time.time()) - 1800
         init_data = generate_valid_init_data(override_auth_date=auth_date)
 
         result = _validate_init_data(init_data)

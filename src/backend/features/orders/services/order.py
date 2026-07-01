@@ -15,6 +15,7 @@ from features.orders.services.order_utils import (
 from features.orders.services.order_queries import (
     estimate_restaurant_load,
     get_order,
+    get_order_by_identifier,
     get_order_events,
     get_restaurant_orders,
     get_user_orders,
@@ -43,6 +44,7 @@ __all__ = [
     "_validate_transition",
     "estimate_restaurant_load",
     "get_order",
+    "get_order_by_identifier",
     "get_order_events",
     "get_restaurant_orders",
     "get_user_orders",

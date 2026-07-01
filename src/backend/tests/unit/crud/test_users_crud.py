@@ -2,8 +2,34 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from features.users.crud import update_user, update_user_password
-from features.users.schemas import UserUpdate
+from features.users.crud import create_user, update_user, update_user_password
+from features.users.schemas import UserCreate, UserUpdate
+
+
+class TestCreateUser:
+    @pytest.mark.asyncio
+    async def test_create_user(self):
+        data = UserCreate(
+            name="Test User",
+            phone_number="+79001234567",
+            password="Password1",
+        )
+        mock_db_user = MagicMock()
+
+        session = AsyncMock()
+        session.add = MagicMock()
+        session.flush = AsyncMock()
+        session.refresh = AsyncMock()
+
+        with (
+            patch("features.users.crud.hash_password", return_value="hashed"),
+            patch("features.users.crud.User", return_value=mock_db_user),
+        ):
+            result = await create_user(session, data)
+
+        session.add.assert_called_once_with(mock_db_user)
+        session.flush.assert_awaited_once()
+        assert result == mock_db_user
 
 
 class TestUsersCrud:

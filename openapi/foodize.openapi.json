@@ -122,9 +122,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Batch Deactivate Users Api V1 Admin Users Batch Deactivate Post"
+                  "$ref": "#/components/schemas/SuccessResponse_dict_"
                 }
               }
             }
@@ -170,9 +168,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Batch Activate Users Api V1 Admin Users Batch Activate Post"
+                  "$ref": "#/components/schemas/SuccessResponse_dict_"
                 }
               }
             }
@@ -467,168 +463,6 @@
             "OAuth2PasswordBearerWithCookie": []
           }
         ]
-      }
-    },
-    "/api/v1/admin/orders": {
-      "get": {
-        "tags": [
-          "Admin"
-        ],
-        "summary": "Read Orders",
-        "operationId": "read_orders_api_v1_admin_orders_get",
-        "security": [
-          {
-            "OAuth2PasswordBearerWithCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "status",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/OrderStatus"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Status"
-            }
-          },
-          {
-            "name": "restaurant_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "uuid"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Restaurant Id"
-            }
-          },
-          {
-            "name": "user_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "uuid"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "User Id"
-            }
-          },
-          {
-            "name": "search",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "maxLength": 128
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Search"
-            }
-          },
-          {
-            "name": "date_from",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "date"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Date From"
-            }
-          },
-          {
-            "name": "date_to",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "date"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Date To"
-            }
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 1,
-              "title": "Page"
-            }
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 100,
-              "minimum": 1,
-              "default": 20,
-              "title": "Size"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SuccessListResponse_OrderResponse_"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
       }
     },
     "/api/v1/admin/restaurants": {
@@ -1556,9 +1390,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Batch Delete Reviews Api V1 Admin Reviews Batch Delete"
+                  "$ref": "#/components/schemas/SuccessResponse_dict_"
                 }
               }
             }
@@ -1612,6 +1444,168 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SuccessResponse_AdminReviewResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/orders": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Read Orders",
+        "operationId": "read_orders_api_v1_admin_orders_get",
+        "security": [
+          {
+            "OAuth2PasswordBearerWithCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/OrderStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "restaurant_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Restaurant Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessListResponse_OrderResponse_"
                 }
               }
             }
@@ -1982,6 +1976,47 @@
         ],
         "summary": "Export Users Csv",
         "operationId": "export_users_csv_api_v1_admin_export_users_csv_get",
+        "security": [
+          {
+            "OAuth2PasswordBearerWithCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -1990,13 +2025,18 @@
                 "schema": {}
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearerWithCookie": []
-          }
-        ]
+        }
       }
     },
     "/api/v1/admin/export/orders.csv": {
@@ -2409,6 +2449,142 @@
             }
           }
         }
+      }
+    },
+    "/api/v1/ai/advisor/chat": {
+      "post": {
+        "tags": [
+          "AI Advisor"
+        ],
+        "summary": "Advisor Chat",
+        "operationId": "advisor_chat_api_v1_ai_advisor_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdvisorChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearerWithCookie": []
+          }
+        ]
+      }
+    },
+    "/api/v1/ai/advisor/insights": {
+      "get": {
+        "tags": [
+          "AI Advisor"
+        ],
+        "summary": "Advisor Insights",
+        "operationId": "advisor_insights_api_v1_ai_advisor_insights_get",
+        "security": [
+          {
+            "OAuth2PasswordBearerWithCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "refresh",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Refresh"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_AdvisorInsightsResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ai/order/chat": {
+      "post": {
+        "tags": [
+          "AI Order"
+        ],
+        "summary": "Order Chat",
+        "operationId": "order_chat_api_v1_ai_order_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearerWithCookie": []
+          }
+        ]
       }
     },
     "/api/v1/cart": {
@@ -2886,7 +3062,6 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid",
               "title": "Restaurant Id"
             }
           }
@@ -2932,7 +3107,6 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid",
               "title": "Restaurant Id"
             }
           }
@@ -5116,7 +5290,6 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid",
               "title": "Restaurant Id"
             }
           },
@@ -5239,6 +5412,11 @@
         ],
         "summary": "Read Order Load Estimate",
         "operationId": "read_order_load_estimate_api_v1_orders_estimate__restaurant_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearerWithCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "restaurant_id",
@@ -5246,7 +5424,6 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid",
               "title": "Restaurant Id"
             }
           }
@@ -5748,7 +5925,6 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid",
               "title": "Restaurant Id"
             }
           }
@@ -5799,7 +5975,6 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid",
               "title": "Restaurant Id"
             }
           },
@@ -5870,7 +6045,6 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid",
               "title": "Restaurant Id"
             }
           },
@@ -5928,7 +6102,6 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid",
               "title": "Restaurant Id"
             }
           }
@@ -5981,7 +6154,6 @@
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid",
               "title": "Restaurant Id"
             }
           }
@@ -6174,6 +6346,47 @@
         }
       }
     },
+    "/api/v1/telegram/site-login/request-code-by-username": {
+      "post": {
+        "tags": [
+          "Telegram"
+        ],
+        "summary": "Telegram Site Login Request Code By Username",
+        "operationId": "telegram_site_login_request_code_by_username_api_v1_telegram_site_login_request_code_by_username_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TelegramSiteLoginByUsernameRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_TelegramSiteLoginStartResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/telegram/site-login/verify": {
       "post": {
         "tags": [
@@ -6186,6 +6399,47 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/TelegramSiteLoginVerifyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_TelegramSiteLoginResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/telegram/site-login/verify-by-username": {
+      "post": {
+        "tags": [
+          "Telegram"
+        ],
+        "summary": "Telegram Site Login Verify By Username",
+        "operationId": "telegram_site_login_verify_by_username_api_v1_telegram_site_login_verify_by_username_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TelegramSiteLoginVerifyByUsernameRequest"
               }
             }
           },
@@ -6285,6 +6539,59 @@
             "OAuth2PasswordBearerWithCookie": []
           }
         ]
+      }
+    },
+    "/api/v1/telegram/bot/register": {
+      "post": {
+        "tags": [
+          "Telegram"
+        ],
+        "summary": "Telegram Bot Register",
+        "operationId": "telegram_bot_register_api_v1_telegram_bot_register_post",
+        "parameters": [
+          {
+            "name": "X-Telegram-Bot-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "X-Telegram-Bot-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TelegramBotRegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_UserRead_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/telegram/bot/link-phone": {
@@ -6585,7 +6892,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse_UserRead_"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessResponse_UserRead_"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SuccessResponse_UserPublicRead_"
+                    }
+                  ],
+                  "title": "Response Read User Api V1 Users  User Id  Get"
                 }
               }
             }
@@ -7235,17 +7550,65 @@
               "$ref": "#/components/schemas/CohortPoint"
             },
             "type": "array",
-            "title": "Retention"
+            "title": "Retention",
+            "default": []
           }
         },
         "type": "object",
         "required": [
           "hourly_load",
           "category_revenue",
-          "aov_dynamics",
-          "retention"
+          "aov_dynamics"
         ],
         "title": "AdvancedAnalytics"
+      },
+      "AdvisorChatRequest": {
+        "properties": {
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/ChatMessageIn"
+            },
+            "type": "array",
+            "maxItems": 40,
+            "minItems": 1,
+            "title": "Messages"
+          },
+          "restaurant_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Restaurant Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "messages"
+        ],
+        "title": "AdvisorChatRequest"
+      },
+      "AdvisorInsightsResponse": {
+        "properties": {
+          "insights": {
+            "type": "string",
+            "title": "Insights"
+          },
+          "cached": {
+            "type": "boolean",
+            "title": "Cached"
+          }
+        },
+        "type": "object",
+        "required": [
+          "insights",
+          "cached"
+        ],
+        "title": "AdvisorInsightsResponse"
       },
       "AnalyticsPoint": {
         "properties": {
@@ -7490,6 +7853,7 @@
               "$ref": "#/components/schemas/CartItemIn"
             },
             "type": "array",
+            "minItems": 1,
             "title": "Items"
           }
         },
@@ -7520,6 +7884,8 @@
         "properties": {
           "old_password": {
             "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
             "title": "Old Password"
           },
           "new_password": {
@@ -7535,6 +7901,30 @@
           "new_password"
         ],
         "title": "ChangePasswordRequest"
+      },
+      "ChatMessageIn": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "title": "Role"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "content"
+        ],
+        "title": "ChatMessageIn"
       },
       "CohortPoint": {
         "properties": {
@@ -8483,6 +8873,48 @@
         },
         "type": "object",
         "title": "OrderCancelRequest"
+      },
+      "OrderChatMessageIn": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "title": "Role"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "content"
+        ],
+        "title": "OrderChatMessageIn"
+      },
+      "OrderChatRequest": {
+        "properties": {
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/OrderChatMessageIn"
+            },
+            "type": "array",
+            "maxItems": 40,
+            "minItems": 1,
+            "title": "Messages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "messages"
+        ],
+        "title": "OrderChatRequest"
       },
       "OrderCreate": {
         "properties": {
@@ -10492,6 +10924,21 @@
         ],
         "title": "SuccessResponse[AdvancedAnalytics]"
       },
+      "SuccessResponse_AdvisorInsightsResponse_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/AdvisorInsightsResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessResponse[AdvisorInsightsResponse]"
+      },
       "SuccessResponse_CartResponse_": {
         "properties": {
           "data": {
@@ -10807,6 +11254,21 @@
         ],
         "title": "SuccessResponse[TokenResponse]"
       },
+      "SuccessResponse_UserPublicRead_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/UserPublicRead"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessResponse[UserPublicRead]"
+      },
       "SuccessResponse_UserRead_": {
         "properties": {
           "data": {
@@ -10971,6 +11433,38 @@
         ],
         "title": "TelegramBotOrdersRequest"
       },
+      "TelegramBotRegisterRequest": {
+        "properties": {
+          "telegram_id": {
+            "type": "integer",
+            "title": "Telegram Id"
+          },
+          "telegram_username": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Telegram Username"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "telegram_id",
+          "name"
+        ],
+        "title": "TelegramBotRegisterRequest"
+      },
       "TelegramBotVendorStatusRequest": {
         "properties": {
           "telegram_id": {
@@ -11084,6 +11578,21 @@
         ],
         "title": "TelegramRegisterRequest"
       },
+      "TelegramSiteLoginByUsernameRequest": {
+        "properties": {
+          "telegram_username": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Telegram Username"
+          }
+        },
+        "type": "object",
+        "required": [
+          "telegram_username"
+        ],
+        "title": "TelegramSiteLoginByUsernameRequest"
+      },
       "TelegramSiteLoginResponse": {
         "properties": {
           "access_token": {
@@ -11138,6 +11647,29 @@
         },
         "type": "object",
         "title": "TelegramSiteLoginStartResponse"
+      },
+      "TelegramSiteLoginVerifyByUsernameRequest": {
+        "properties": {
+          "telegram_username": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Telegram Username"
+          },
+          "code": {
+            "type": "string",
+            "maxLength": 8,
+            "minLength": 4,
+            "pattern": "^[0-9]+$",
+            "title": "Code"
+          }
+        },
+        "type": "object",
+        "required": [
+          "telegram_username",
+          "code"
+        ],
+        "title": "TelegramSiteLoginVerifyByUsernameRequest"
       },
       "TelegramSiteLoginVerifyRequest": {
         "properties": {
@@ -11254,6 +11786,25 @@
         ],
         "title": "UserLogin"
       },
+      "UserPublicRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "UserPublicRead"
+      },
       "UserRead": {
         "properties": {
           "name": {
@@ -11264,10 +11815,10 @@
           },
           "phone_number": {
             "type": "string",
-            "maxLength": 16,
-            "minLength": 7,
-            "pattern": "^\\+?[0-9]{7,15}$",
-            "title": "Phone Number"
+            "maxLength": 64,
+            "minLength": 0,
+            "title": "Phone Number",
+            "default": ""
           },
           "id": {
             "type": "string",
@@ -11356,7 +11907,6 @@
         "type": "object",
         "required": [
           "name",
-          "phone_number",
           "id",
           "permissions"
         ],
@@ -11420,7 +11970,8 @@
             "anyOf": [
               {
                 "type": "string",
-                "maxLength": 128
+                "maxLength": 128,
+                "format": "email"
               },
               {
                 "type": "null"

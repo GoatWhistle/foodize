@@ -15,7 +15,7 @@ def encode_jwt(
     payload: dict,
     private_key: str = _private_key,
     algorithm: str = settings.auth.algorithm,
-):
+) -> str:
     return jwt.encode(payload, private_key, algorithm=algorithm)
 
 

@@ -1,6 +1,6 @@
 import { createAuthStore } from "@shared/store/createAuthStore.js";
 import { authService } from "../services/authService";
-import { TELEGRAM_INIT_DATA_STORAGE_KEY } from "../telegram/sdk";
+import { clearTelegramInitData } from "../telegram/sdk";
 
 export const useAuthStore = createAuthStore({
   authService,
@@ -14,12 +14,9 @@ export const useAuthStore = createAuthStore({
         await authService.logout();
       } catch {}
 
-      const telegramInitData = sessionStorage.getItem(TELEGRAM_INIT_DATA_STORAGE_KEY);
       localStorage.setItem("foodize_tg_logged_out", "1");
       sessionStorage.clear();
-      if (telegramInitData) {
-        sessionStorage.setItem(TELEGRAM_INIT_DATA_STORAGE_KEY, telegramInitData);
-      }
+      clearTelegramInitData();
 
       set({ user: null, isAuthenticated: false });
     },

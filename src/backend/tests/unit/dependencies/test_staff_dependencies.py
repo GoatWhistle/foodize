@@ -30,14 +30,18 @@ class TestGetValidStaffRequest:
         mock_rest = MagicMock(vendor_id=uuid.uuid4())
 
         mock_session = AsyncMock()
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = mock_rest
-        mock_session.execute.return_value = mock_result
 
-        with patch(
-            "features.staff.dependencies.crud.get_request_by_id",
-            new_callable=AsyncMock,
-            return_value=req,
+        with (
+            patch(
+                "features.staff.dependencies.crud.get_request_by_id",
+                new_callable=AsyncMock,
+                return_value=req,
+            ),
+            patch(
+                "features.staff.dependencies.get_restaurant_by_id",
+                new_callable=AsyncMock,
+                return_value=mock_rest,
+            ),
         ):
             with pytest.raises(AccessDeniedException):
                 await get_valid_staff_request(uuid.uuid4(), mock_session, mock_vendor)
@@ -49,14 +53,18 @@ class TestGetValidStaffRequest:
         mock_rest = MagicMock(vendor_id=mock_vendor.id)
 
         mock_session = AsyncMock()
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = mock_rest
-        mock_session.execute.return_value = mock_result
 
-        with patch(
-            "features.staff.dependencies.crud.get_request_by_id",
-            new_callable=AsyncMock,
-            return_value=req,
+        with (
+            patch(
+                "features.staff.dependencies.crud.get_request_by_id",
+                new_callable=AsyncMock,
+                return_value=req,
+            ),
+            patch(
+                "features.staff.dependencies.get_restaurant_by_id",
+                new_callable=AsyncMock,
+                return_value=mock_rest,
+            ),
         ):
             res = await get_valid_staff_request(uuid.uuid4(), mock_session, mock_vendor)
             assert res == req

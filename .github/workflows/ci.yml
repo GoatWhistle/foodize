@@ -60,6 +60,10 @@ jobs:
           uv run alembic upgrade head
           uv run alembic check
 
+      - name: Run pip-audit (dependency vulnerability scan)
+        continue-on-error: true
+        run: uvx pip-audit --strict -r <(uv export --frozen --no-hashes --no-emit-project)
+
   frontend-ci:
     runs-on: ubuntu-latest
     defaults:
@@ -87,6 +91,10 @@ jobs:
       - name: Run Tests with Coverage
         run: npm run test:coverage -- --run
 
+      - name: Run npm audit (dependency vulnerability scan)
+        continue-on-error: true
+        run: npm audit --audit-level=high
+
   telegram-miniapp-ci:
     runs-on: ubuntu-latest
     defaults:
@@ -107,6 +115,10 @@ jobs:
 
       - name: Run Linter
         run: npm run lint
+
+      - name: Run npm audit (dependency vulnerability scan)
+        continue-on-error: true
+        run: npm audit --audit-level=high
 
   openapi-contract-ci:
     runs-on: ubuntu-latest
@@ -149,3 +161,11 @@ jobs:
 
       - name: Ensure generated contract is committed
         run: git diff --exit-code -- openapi/foodize.openapi.json src/frontend/src/services/generated src/telegram-miniapp/src/services/generated
+
+  compose-consistency-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check docker-compose.yaml vs docker-compose.prod.yaml consistency
+        run: python3 tools/check_compose_consistency.py

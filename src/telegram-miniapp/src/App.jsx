@@ -34,6 +34,8 @@ const LazyNotifications = lazy(
 );
 const LazyLegal = lazy(() => import("./pages/legal/LegalPage"));
 
+const DEEP_LINK_ID_RE = /^[a-zA-Z0-9-]{1,64}$/;
+
 const Spinner = () => (
   <div
     style={{
@@ -220,9 +222,11 @@ export default function App() {
   function handleDeepLink(param) {
     if (param.startsWith("order_")) {
       const orderId = param.replace("order_", "");
+      if (!DEEP_LINK_ID_RE.test(orderId)) return;
       window.history.replaceState(null, "", `/orders/${orderId}`);
     } else if (param.startsWith("restaurant_")) {
       const restaurantId = param.replace("restaurant_", "");
+      if (!DEEP_LINK_ID_RE.test(restaurantId)) return;
       window.history.replaceState(null, "", `/restaurant/${restaurantId}`);
     }
   }

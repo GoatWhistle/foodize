@@ -17,7 +17,7 @@ async def test_get_menu_items_by_ids(db_session):
     vendor_data = UserCreate(
         name="Vendor2",
         phone_number="79005555555",
-        password="strongpassword",
+        password="strongpassword1",
         user_role=UserRole.VENDOR,
     )
     vendor_user = await create_user(db_session, vendor_data)

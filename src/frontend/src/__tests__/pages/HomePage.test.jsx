@@ -92,7 +92,8 @@ describe('HomePage', () => {
 
     expect(screen.getByText('Шаурма Хаус')).toBeDefined();
     expect(screen.getByText('Burger Point')).toBeDefined();
-    expect(screen.getAllByRole('article').length).toBeGreaterThanOrEqual(4);
+    expect(screen.getByText('Pizza Nova')).toBeDefined();
+    expect(screen.getByText('Sushi House')).toBeDefined();
   });
 
   it('navigates to restaurant page on card click', () => {

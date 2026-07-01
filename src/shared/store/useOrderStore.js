@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { cartService } from "@shared/services/cartService.js";
 import { orderService } from "@shared/services/orderService.js";
+import { translateApiError } from "@shared/utils/translateApiError.js";
 
 const getOptionIds = (item) =>
   [
@@ -88,7 +89,7 @@ export function createOrderStore({ onRestaurantChange = null } = {}) {
           cartError: null,
         });
       } catch (err) {
-        set({ cartError: err?.response?.data?.detail ?? "Не удалось загрузить корзину" });
+        set({ cartError: translateApiError(err, "Не удалось загрузить корзину") });
       }
     },
 
@@ -207,7 +208,7 @@ export function createOrderStore({ onRestaurantChange = null } = {}) {
         );
         set({ activeOrder: active ?? null, activeOrderError: null });
       } catch (err) {
-        set({ activeOrderError: err?.response?.data?.detail ?? "Не удалось загрузить активный заказ" });
+        set({ activeOrderError: translateApiError(err, "Не удалось загрузить активный заказ") });
       }
     },
 
@@ -260,7 +261,7 @@ export function createOrderStore({ onRestaurantChange = null } = {}) {
       } catch (err) {
         set({
           ordersLoading: false,
-          ordersError: err?.response?.data?.detail ?? "Не удалось загрузить заказы",
+          ordersError: translateApiError(err, "Не удалось загрузить заказы"),
         });
       }
     },

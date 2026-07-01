@@ -7,6 +7,8 @@ __all__ = [
     "UpdatedAtMixin",
     "DeletedAtMixin",
     "Base",
+    "JSONB",
+    "json_array_contains_string",
 ]
 from database.base import Base
 from database.db_helper import DbHelper, db_helper
@@ -17,3 +19,4 @@ from database.mixins import (
     IdUuidPkMixin,
     UpdatedAtMixin,
 )
+from database.types import JSONB, json_array_contains_string

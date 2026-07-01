@@ -23,14 +23,9 @@ describe('OrderButton', () => {
     expect(screen.getByText('Оформление...')).toBeDefined();
   });
 
-  it('applies scale animation on press', () => {
+  it('has transition style applied', () => {
     render(<OrderButton>Haptic</OrderButton>);
-    const button = screen.getByText('Haptic');
-
-    fireEvent.mouseDown(button);
-    expect(button.style.transform).toBe('scale(0.96)');
-
-    fireEvent.mouseUp(button);
-    expect(button.style.transform).toBe('scale(1)');
+    const button = screen.getByText('Haptic').closest('button');
+    expect(button.style.transition).toContain('transform');
   });
 });

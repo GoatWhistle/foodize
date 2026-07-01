@@ -51,8 +51,8 @@ const ChartCard = ({ title, children }) => (
     >
       {title}
     </h3>
-    <div style={{ height: 280 }}>
-      <ResponsiveContainer width="100%" height="100%">
+    <div style={{ height: 280, minWidth: 0 }}>
+      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
         {children}
       </ResponsiveContainer>
     </div>

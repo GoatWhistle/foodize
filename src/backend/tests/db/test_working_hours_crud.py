@@ -23,7 +23,7 @@ async def _make_restaurant(db_session):
         UserCreate(
             name="Vendor",
             phone_number="79009990000",
-            password="strongpassword",
+            password="strongpassword1",
             user_role=UserRole.VENDOR,
         ),
     )

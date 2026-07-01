@@ -25,7 +25,7 @@ async def _make_vendor(db_session, phone: str):
         UserCreate(
             name="Vendor",
             phone_number=phone,
-            password="strongpassword",
+            password="strongpassword1",
         ),
     )
     return await create_vendor_profile(db_session, user, VendorCreate())

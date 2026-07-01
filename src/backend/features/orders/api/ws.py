@@ -4,6 +4,7 @@ import uuid
 
 import jwt
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from uvicorn.protocols.utils import ClientDisconnected
 
 from database import db_helper
 from features.orders.crud.order import get_active_orders_for_display, get_order_by_id
@@ -24,10 +25,10 @@ async def _authenticate_ws_user(websocket: WebSocket, token: str | None):
         token = websocket.cookies.get("access_token")
     if not token:
         try:
-            raw = await asyncio.wait_for(websocket.receive_text(), timeout=10.0)
+            raw = await asyncio.wait_for(websocket.receive_text(), timeout=3.0)
             data = json.loads(raw)
             token = data.get("token") if isinstance(data, dict) else None
-        except (asyncio.TimeoutError, json.JSONDecodeError, Exception):
+        except (asyncio.TimeoutError, json.JSONDecodeError, WebSocketDisconnect, ClientDisconnected):
             token = None
 
     if not token:

@@ -46,7 +46,7 @@ describe('ProductSheet', () => {
 
     fireEvent.click(screen.getByText('Spicy'));
     fireEvent.click(screen.getByText('Cheese'));
-    fireEvent.click(screen.getByLabelText('Увеличить количество'));
+    fireEvent.click(screen.getByLabelText('Увеличить'));
 
     expect(screen.getByText('Добавить · 800 ₽')).toBeDefined();
 

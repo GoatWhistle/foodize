@@ -8,7 +8,7 @@ from features.admin import crud, service
 from features.admin.audit_log import service as audit_service
 from features.admin.dependencies import require_admin
 from features.admin.schemas import AdminReviewResponse
-from features.admin.api.schemas import BatchIdsRequest, BatchResult
+from features.admin.api.schemas import BatchIdsRequest
 from features.users.models import User
 from shared.response import build_list_response, build_response
 from shared.schemas.response import SuccessListResponse, SuccessResponse
@@ -30,17 +30,17 @@ async def read_reviews(
     return build_list_response(data=data, total=total, page=page, size=size, request=request)
 
 
-@router.delete("/reviews/batch", response_model=BatchResult)
+@router.delete("/reviews/batch")
 async def batch_delete_reviews(
     body: BatchIdsRequest,
     actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-) -> BatchResult:
+) -> SuccessResponse[dict]:
     count = await crud.batch_delete_reviews(session, body.ids)
     for rid in body.ids:
         await audit_service.log_action(session, actor.id, "DELETE_REVIEW", "review", rid)
     await session.commit()
-    return BatchResult(affected=count)
+    return build_response({"affected": count})
 
 
 @router.delete("/reviews/{review_id}", response_model=SuccessResponse[AdminReviewResponse])

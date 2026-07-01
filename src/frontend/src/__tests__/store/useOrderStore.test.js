@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useOrderStore } from '../../store/useOrderStore';
-import { orderService } from '../../services/orderService';
-import { cartService } from '../../services/cartService';
+import { orderService } from '@shared/services/orderService.js';
+import { cartService } from '@shared/services/cartService.js';
 
-vi.mock('../../services/orderService', () => ({
+vi.mock('@shared/services/orderService.js', () => ({
   orderService: {
     create: vi.fn(),
     getMyOrders: vi.fn(),
@@ -11,7 +11,7 @@ vi.mock('../../services/orderService', () => ({
   },
 }));
 
-vi.mock('../../services/cartService', () => ({
+vi.mock('@shared/services/cartService.js', () => ({
   cartService: {
     getCart: vi.fn(),
     updateCart: vi.fn().mockResolvedValue({ data: {} }),
@@ -29,6 +29,8 @@ describe('useOrderStore', () => {
       ordersLoading: false,
     });
     vi.clearAllMocks();
+    cartService.updateCart.mockResolvedValue({ data: {} });
+    cartService.clearCart.mockResolvedValue({});
   });
 
   it('addToCart adds items to the cart', () => {
@@ -43,14 +45,14 @@ describe('useOrderStore', () => {
     expect(state.cartRestaurantId).toBe(restaurantId);
   });
 
-  it('addToCart clears previous cart if restaurant changes', () => {
+  it('addToCart clears previous cart if restaurant changes', async () => {
     useOrderStore.setState({
       cart: [{ menuItem: { id: '1' }, quantity: 1 }],
       cartRestaurantId: 'old-rest',
     });
 
     const newItem = { id: '2', name: 'Burger', price: 200 };
-    useOrderStore.getState().addToCart(newItem, 'new-rest');
+    await useOrderStore.getState().addToCart(newItem, 'new-rest');
 
     const state = useOrderStore.getState();
     expect(state.cart).toHaveLength(1);
@@ -76,7 +78,7 @@ describe('useOrderStore', () => {
   it('placeOrder calls service and clears cart', async () => {
     const item = { id: '1', name: 'Pizza', price: 100 };
     useOrderStore.setState({
-      cart: [{ menuItem: item, quantity: 2 }],
+      cart: [{ menuItem: item, quantity: 2, selectedOptionIds: [] }],
       cartRestaurantId: 'rest-1',
     });
 
@@ -102,13 +104,7 @@ describe('useOrderStore', () => {
   it('placeOrder includes promo, trimmed comment and requested pickup time', async () => {
     const item = { id: '1', name: 'Pizza', price: 100 };
     useOrderStore.setState({
-      cart: [
-        {
-          menuItem: item,
-          quantity: 2,
-          selectedOptionIds: ['opt-1'],
-        },
-      ],
+      cart: [{ menuItem: item, quantity: 2, selectedOptionIds: ['opt-1'] }],
       cartRestaurantId: 'rest-1',
     });
 
@@ -125,17 +121,9 @@ describe('useOrderStore', () => {
         promo_code: 'SAVE10',
         comment: 'no onion',
         requested_pickup_at: '2026-05-21T15:30:00.000Z',
-        items: [
-          {
-            menu_item_id: '1',
-            quantity: 2,
-            selected_option_ids: ['opt-1'],
-          },
-        ],
+        items: [{ menu_item_id: '1', quantity: 2, selected_option_ids: ['opt-1'] }],
       }),
-      {
-        headers: { 'Idempotency-Key': expect.any(String) },
-      }
+      { headers: { 'Idempotency-Key': expect.any(String) } }
     );
     expect(cartService.clearCart).toHaveBeenCalled();
   });

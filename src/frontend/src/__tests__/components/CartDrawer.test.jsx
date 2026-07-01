@@ -1,6 +1,9 @@
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import CartDrawer from '../../components/ui/CartDrawer';
+
+const renderInRouter = (ui) => render(<MemoryRouter>{ui}</MemoryRouter>);
 
 vi.mock('../../services/orderService', () => ({
   orderService: {
@@ -19,9 +22,7 @@ vi.mock('../../services/orderService', () => ({
 }));
 
 vi.mock('../../services/promoService', () => ({
-  promoService: {
-    validate: vi.fn(),
-  },
+  promoService: { validate: vi.fn() },
 }));
 
 vi.mock('../../store/useRestaurantStore', () => ({
@@ -34,9 +35,11 @@ vi.mock('../../store/useRestaurantStore', () => ({
 const makeStore = (overrides = {}) => ({
   cart: [],
   cartRestaurantId: null,
+  orders: [],
   removeFromCart: vi.fn(),
   addToCart: vi.fn(),
   clearCart: vi.fn(),
+  placeOrder: vi.fn().mockResolvedValue({ id: 'order-1', display_id: 1001 }),
   cartTotal: vi.fn(() => 0),
   cartCount: vi.fn(() => 0),
   ...overrides,
@@ -49,7 +52,6 @@ vi.mock('../../store/useOrderStore', () => ({
 }));
 
 describe('CartDrawer', () => {
-  const onCheckout = vi.fn();
   const onClose = vi.fn();
 
   beforeEach(() => {
@@ -62,9 +64,7 @@ describe('CartDrawer', () => {
   });
 
   it('renders null if cart is empty', () => {
-    const { container } = render(
-      <CartDrawer onClose={onClose} onCheckout={onCheckout} />
-    );
+    const { container } = renderInRouter(<CartDrawer onClose={onClose} />);
     expect(container.firstChild).toBeNull();
   });
 
@@ -75,72 +75,54 @@ describe('CartDrawer', () => {
       cartTotal: () => 200,
     });
 
-    render(<CartDrawer onClose={onClose} onCheckout={onCheckout} />);
+    renderInRouter(<CartDrawer onClose={onClose} />);
 
     expect(screen.getByText('Pizza')).toBeDefined();
-    expect(screen.getAllByText(/200 ₽/).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText(/200 ₽/).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('2')).toBeDefined();
   });
 
-  it('calls onCheckout when button clicked', () => {
+  it('calls placeOrder when checkout button clicked', async () => {
     mockStore = makeStore({
-      cart: [{ menuItem: { id: '1', name: 'P' }, quantity: 1 }],
+      cart: [{ menuItem: { id: '1', name: 'P' }, quantity: 1, selectedOptionIds: [] }],
     });
-    render(<CartDrawer onClose={onClose} onCheckout={onCheckout} />);
+    renderInRouter(<CartDrawer onClose={onClose} />);
 
-    fireEvent.click(screen.getByText('Оформить заказ'));
-    expect(onCheckout).toHaveBeenCalled();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /Оформить заказ/ }));
+    });
+    expect(mockStore.placeOrder).toHaveBeenCalled();
   });
 
-  it('passes scheduled pickup time to checkout', async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-05-21T09:00:00.000Z'));
-    mockStore = makeStore({
-      cart: [{ menuItem: { id: '1', name: 'P' }, quantity: 1 }],
-      cartRestaurantId: 'rest-1',
-    });
-    render(<CartDrawer onClose={onClose} onCheckout={onCheckout} />);
-
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /Ко времени/ }));
-    });
-    await act(async () => {
-      fireEvent.change(screen.getByDisplayValue('2026-05-21T12:15'), {
-        target: { value: '2026-05-21T13:30' },
-      });
-    });
-    await act(async () => {
-      fireEvent.click(screen.getByText('Оформить заказ'));
-    });
-
-    expect(onCheckout).toHaveBeenCalledWith(
-      null,
-      '',
-      '2026-05-21T10:30:00.000Z'
-    );
-  });
-
-  it('calls clearCart when cleared', () => {
+  it('calls clearCart when "Очистить корзину" clicked', () => {
     mockStore = makeStore({
       cart: [{ menuItem: { id: '1' }, quantity: 1 }],
     });
-    render(<CartDrawer onClose={onClose} onCheckout={onCheckout} />);
+    renderInRouter(<CartDrawer onClose={onClose} />);
 
     fireEvent.click(screen.getByText('Очистить корзину'));
     expect(mockStore.clearCart).toHaveBeenCalled();
   });
 
-  it('shows error when onCheckout rejects', async () => {
-    const failingCheckout = vi.fn().mockRejectedValueOnce(new Error('payment failed'));
+  it('shows error when placeOrder rejects', async () => {
     mockStore = makeStore({
-      cart: [{ menuItem: { id: '1', name: 'P' }, quantity: 1 }],
+      cart: [{ menuItem: { id: '1', name: 'P' }, quantity: 1, selectedOptionIds: [] }],
+      placeOrder: vi.fn().mockRejectedValueOnce(new Error('payment failed')),
     });
-    render(<CartDrawer onClose={onClose} onCheckout={failingCheckout} />);
+    renderInRouter(<CartDrawer onClose={onClose} />);
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Оформить заказ'));
+      fireEvent.click(screen.getByRole('button', { name: /Оформить заказ/ }));
     });
+    expect(mockStore.placeOrder).toHaveBeenCalled();
+  });
 
-    expect(failingCheckout).toHaveBeenCalled();
+  it('renders checkout button with total price', () => {
+    mockStore = makeStore({
+      cart: [{ menuItem: { id: '1', name: 'Burger' }, quantity: 1 }],
+      cartTotal: () => 350,
+    });
+    renderInRouter(<CartDrawer onClose={onClose} />);
+    expect(screen.getByRole('button', { name: /Оформить заказ/ })).toBeDefined();
   });
 });

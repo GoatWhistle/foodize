@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
 from features.restaurants import service
+from features.restaurants.dependencies import get_restaurant_and_check_ownership
 from features.restaurants.models import Restaurant
 from features.restaurants.schemas import (
     RestaurantCreate,
@@ -25,7 +26,6 @@ from shared.enums.permissions import Permission
 from shared.enums.restaurant_sort import RestaurantSort
 from shared.enums.sort_direction import SortDirection
 from shared.exceptions.existence import NotFoundException
-from shared.exceptions.rules import AccessDeniedException
 from shared.response import build_list_response, build_response
 from shared.schemas.response import SuccessListResponse, SuccessResponse
 
@@ -144,10 +144,6 @@ async def set_working_hours_endpoint(
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[list[WorkingHoursRead]]:
-    restaurant: Restaurant | None = await session.get(Restaurant, restaurant_id)
-    if not restaurant:
-        raise NotFoundException()
-    if restaurant.vendor_id != current_vendor.id:
-        raise AccessDeniedException()
+    await get_restaurant_and_check_ownership(session, restaurant_id, current_vendor.id)
     rows = await set_working_hours(session, restaurant_id, body.hours)
     return build_response([WorkingHoursRead.model_validate(r) for r in rows])

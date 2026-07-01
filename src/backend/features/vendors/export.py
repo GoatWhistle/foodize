@@ -10,6 +10,7 @@ from features.menu.crud import get_menu_items
 from features.menu.models import MenuItem
 from features.promos.crud import get_promos_by_restaurant_ids
 from features.vendors.models import VendorProfile
+from shared.dependencies import get_vendor_restaurant_ids
 from shared.enums.order_status import OrderStatus
 
 
@@ -21,7 +22,7 @@ async def export_orders_csv(
     status: OrderStatus | None = None,
     restaurant_id: uuid.UUID | None = None,
 ) -> bytes:
-    vendor_restaurant_ids = {r.id for r in (vendor.restaurants or [])}
+    vendor_restaurant_ids = get_vendor_restaurant_ids(vendor)
     if restaurant_id:
         if restaurant_id not in vendor_restaurant_ids:
             return _make_csv(
@@ -89,11 +90,11 @@ async def export_menu_csv(
     vendor: VendorProfile,
     restaurant_id: uuid.UUID | None = None,
 ) -> bytes:
-    vendor_restaurant_ids = [r.id for r in (vendor.restaurants or [])]
+    vendor_restaurant_ids = get_vendor_restaurant_ids(vendor)
     if restaurant_id and restaurant_id in vendor_restaurant_ids:
         restaurant_ids = [restaurant_id]
     else:
-        restaurant_ids = vendor_restaurant_ids
+        restaurant_ids = list(vendor_restaurant_ids)
 
     all_items: list[MenuItem] = []
     for rid in restaurant_ids:
@@ -121,11 +122,11 @@ async def export_promos_csv(
     vendor: VendorProfile,
     restaurant_id: uuid.UUID | None = None,
 ) -> bytes:
-    vendor_restaurant_ids = [r.id for r in (vendor.restaurants or [])]
+    vendor_restaurant_ids = get_vendor_restaurant_ids(vendor)
     if restaurant_id and restaurant_id in vendor_restaurant_ids:
         target_ids = [restaurant_id]
     else:
-        target_ids = vendor_restaurant_ids
+        target_ids = list(vendor_restaurant_ids)
 
     promos = await get_promos_by_restaurant_ids(session, target_ids, offset=0, limit=10_000)
 
