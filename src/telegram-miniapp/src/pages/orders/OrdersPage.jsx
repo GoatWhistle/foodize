@@ -29,6 +29,7 @@ const OrdersPage = () => {
       infiniteScroll
       showPagination={false}
       pullToRefresh
+      expandableCards
       pageClassName={s.page}
     />
   );

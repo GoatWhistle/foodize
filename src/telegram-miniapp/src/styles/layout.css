@@ -10,3 +10,13 @@
   padding-top: 0;
   padding-bottom: var(--bottom-tab-h);
 }
+
+.status-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 100vh;
+  padding: 32px 16px calc(var(--bottom-tab-h) + 24px);
+  text-align: center;
+}

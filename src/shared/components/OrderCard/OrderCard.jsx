@@ -1,4 +1,5 @@
-import { CaretRight } from "@phosphor-icons/react";
+import { useState } from "react";
+import { CaretRight, CaretDown } from "@phosphor-icons/react";
 import s from "./OrderCard.module.css";
 
 const STATUS_CONFIG = {
@@ -25,11 +26,12 @@ const formatOrderDate = (value) => {
     : d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
 };
 
-const OrderCard = ({ order, onClick, style }) => {
+const OrderCard = ({ order, onClick, style, expandable = false }) => {
   const cfg = STATUS_CONFIG[order.status] ?? STATUS_CONFIG.PENDING;
+  const [open, setOpen] = useState(false);
 
-  return (
-    <div className={s.card} onClick={onClick} style={style} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onClick?.()}>
+  const rowContent = (
+    <>
       <div className={s.icon}>
         {getRestaurantEmoji(order.restaurant_id)}
       </div>
@@ -53,8 +55,54 @@ const OrderCard = ({ order, onClick, style }) => {
         <div className={s.price}>{order.total_price} ₽</div>
         <div className={s.date}>{formatOrderDate(order.created_at)}</div>
       </div>
+    </>
+  );
 
-      <CaretRight size={16} className={s.caret} />
+  if (!expandable) {
+    return (
+      <div className={s.card} onClick={onClick} style={style} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onClick?.()}>
+        {rowContent}
+        <CaretRight size={16} className={s.caret} />
+      </div>
+    );
+  }
+
+  return (
+    <div className={s.cardCol} style={style}>
+      <div className={s.row} onClick={onClick} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onClick?.()}>
+        {rowContent}
+        <button
+          type="button"
+          className={s.detailsBtn}
+          aria-expanded={open}
+          onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
+        >
+          детали
+          <CaretDown size={12} weight="bold" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s var(--ease-out)" }} />
+        </button>
+      </div>
+
+      {open && (
+        <div className={s.details}>
+          {Array.isArray(order.items) && order.items.map((item) => (
+            <div key={item.id} className={s.detailItem}>
+              <span className={s.detailQty}>×{item.quantity}</span>
+              <div className={s.detailInfo}>
+                <div className={s.detailName}>{item.menu_item_name}</div>
+                {item.selected_options?.length > 0 && (
+                  <div className={s.detailOpts}>
+                    {item.selected_options.map((o) => `${o.name}${o.price_delta ? ` +${o.price_delta} ₽` : ""}`).join(", ")}
+                  </div>
+                )}
+              </div>
+              <span className={s.detailPrice}>{item.price_at_purchase * item.quantity} ₽</span>
+            </div>
+          ))}
+          {order.restaurant_address && (
+            <div className={s.detailAddress}>{order.restaurant_address}</div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

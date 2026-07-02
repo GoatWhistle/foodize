@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useOrderStore } from "../store/useOrderStore";
 import { createOrderWebSocket } from "../services/api";
 
@@ -18,6 +18,7 @@ const STATUS_COLOR = {
 
 export default function ActiveOrderBanner() {
   const navigate = useNavigate();
+  const location = useLocation();
   const activeOrder = useOrderStore((s) => s.activeOrder);
   const setActiveOrder = useOrderStore((s) => s.setActiveOrder);
   const clearActiveOrder = useOrderStore((s) => s.clearActiveOrder);
@@ -52,6 +53,9 @@ export default function ActiveOrderBanner() {
   }, [activeOrderId, setActiveOrder, clearActiveOrder]);
 
   if (!activeOrder || !STATUS_LABEL[activeOrder.status]) return null;
+
+  // Don't cover the order's own status page with a redundant banner.
+  if (location.pathname === `/orders/${activeOrder.display_id}`) return null;
 
   return (
     <div

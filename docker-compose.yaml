@@ -34,10 +34,13 @@ services:
       - "127.0.0.1:5672:5672"
       - "127.0.0.1:15672:15672"
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
-      interval: 10s
-      timeout: 5s
+      # rabbitmq-diagnostics boots an Erlang CLI node and can take >5s on slow
+      # hosts (e.g. WSL2), so give it a generous timeout and a startup grace period.
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 30s
       retries: 10
+      start_period: 60s
     networks:
       - foodize-network
     deploy:

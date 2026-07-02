@@ -47,6 +47,7 @@ const NotificationsPage = ({
   useNotificationStore,
   pageClassName = "",
   stickyHeader = true,
+  markAllReadOnOpen = false,
   style = {},
 }) => {
   const [loading, setLoading] = useState(true);
@@ -65,8 +66,10 @@ const NotificationsPage = ({
   } = useNotificationStore();
 
   useEffect(() => {
-    fetchNotifications(1).finally(() => setLoading(false));
-  }, [fetchNotifications]);
+    fetchNotifications(1)
+      .then(() => { if (markAllReadOnOpen) markAllAsRead(); })
+      .finally(() => setLoading(false));
+  }, [fetchNotifications, markAllReadOnOpen, markAllAsRead]);
 
   const handleLoadMore = async () => {
     setLoadingMore(true);

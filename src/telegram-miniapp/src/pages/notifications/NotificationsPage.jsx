@@ -19,6 +19,7 @@ export default function NotificationsPage() {
     <SharedNotificationsPage
       useNotificationStore={useNotificationStore}
       stickyHeader
+      markAllReadOnOpen
       pageClassName="notifications-page"
       style={{ paddingBottom: "calc(var(--bottom-tab-h, 68px) + 24px)" }}
     />

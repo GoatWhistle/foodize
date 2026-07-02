@@ -23,7 +23,7 @@ const fmtTime = (iso) => {
   return isNaN(d) ? "" : d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
 };
 
-const OrderStatusPage = ({ createOrderWebSocket, onBack, screenClassName = "status-screen" }) => {
+const OrderStatusPage = ({ createOrderWebSocket, onBack, screenClassName = "status-screen", showDetails = true }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { fetchOrder, currentOrder } = useOrderStore(
@@ -196,6 +196,8 @@ const OrderStatusPage = ({ createOrderWebSocket, onBack, screenClassName = "stat
         </div>
       </div>
 
+      {showDetails && (
+        <>
       <div style={{ marginTop: 20, width: "100%", maxWidth: 380, background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--r-lg)", padding: "16px 18px" }}>
         <div style={{ fontWeight: 700, fontSize: "0.64rem", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-3)", marginBottom: 12 }}>
           Состав заказа
@@ -231,6 +233,8 @@ const OrderStatusPage = ({ createOrderWebSocket, onBack, screenClassName = "stat
             <div style={{ fontSize: "0.78rem", color: "var(--text-3)", marginTop: 2 }}>{currentOrder.restaurant_address}</div>
           )}
         </div>
+      )}
+        </>
       )}
 
       {completeError && (

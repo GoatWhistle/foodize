@@ -12,6 +12,7 @@ const OrdersPage = ({
   infiniteScroll = false,
   showPagination = true,
   pullToRefresh = false,
+  expandableCards = false,
   statusFilters = [
     { key: "ACTIVE", label: "Активные" },
     { key: "DONE",   label: "Завершённые" },
@@ -147,6 +148,7 @@ const OrdersPage = ({
               <OrderCard
                 key={order.id}
                 order={order}
+                expandable={expandableCards}
                 onClick={() => navigate(orderRoute(order.display_id))}
               />
             ))}

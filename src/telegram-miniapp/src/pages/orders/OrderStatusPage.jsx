@@ -6,6 +6,7 @@ const OrderStatusPage = () => (
     createOrderWebSocket={createOrderWebSocket}
     onBack="/orders"
     screenClassName="status-screen"
+    showDetails={false}
   />
 );
 
