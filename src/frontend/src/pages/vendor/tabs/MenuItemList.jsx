@@ -151,6 +151,8 @@ export default function MenuItemList({
                   category: item.category,
                   prep_time_minutes: item.prep_time_minutes,
                   option_groups: normalizeOptionGroups(item.option_groups || []),
+                  photoFile: null,
+                  photoUrl: item.photo_url || '',
                 });
               }}
             >

@@ -20,7 +20,7 @@ const CATEGORY_ICONS = {
   DEFAULT: <Storefront size={40} weight="fill" />,
 };
 
-const RestaurantCard = ({ restaurant, onClick, isFavorite, onFavoriteToggle, viewTransition = true }) => {
+const RestaurantCard = ({ restaurant, onClick, isFavorite, onFavoriteToggle, viewTransition = true, favPosition = "top" }) => {
   const cardRef = useRef(null);
 
   useEffect(() => {
@@ -43,6 +43,17 @@ const RestaurantCard = ({ restaurant, onClick, isFavorite, onFavoriteToggle, vie
     CATEGORY_ICONS[restaurant.category?.toUpperCase()] ||
     CATEGORY_ICONS.DEFAULT;
   const rating = restaurant.average_rating;
+
+  const favButton = onFavoriteToggle ? (
+    <button
+      className={`${s.favBtn}${favPosition === "bottom" ? ` ${s.favBtnBottom}` : ""}${isFavorite ? ` ${s.active}` : ""}`}
+      onClick={(e) => { e.stopPropagation(); onFavoriteToggle(restaurant.id); }}
+      aria-label={isFavorite ? "Убрать из избранного" : "В избранное"}
+      aria-pressed={isFavorite}
+    >
+      <Heart size={14} weight={isFavorite ? "fill" : "regular"} color={isFavorite ? "#ef4444" : "rgba(255,255,255,0.9)"} />
+    </button>
+  ) : null;
 
   return (
     <div
@@ -79,18 +90,10 @@ const RestaurantCard = ({ restaurant, onClick, isFavorite, onFavoriteToggle, vie
               <Star size={12} weight="fill" color="#facc15" />
               <span>{rating ? rating.toFixed(1) : "0.0"}</span>
             </div>
-            {onFavoriteToggle && (
-              <button
-                className={`${s.favBtn}${isFavorite ? ` ${s.active}` : ""}`}
-                onClick={(e) => { e.stopPropagation(); onFavoriteToggle(restaurant.id); }}
-                aria-label={isFavorite ? "Убрать из избранного" : "В избранное"}
-                aria-pressed={isFavorite}
-              >
-                <Heart size={14} weight={isFavorite ? "fill" : "regular"} color={isFavorite ? "#ef4444" : "rgba(255,255,255,0.9)"} />
-              </button>
-            )}
+            {favPosition !== "bottom" && favButton}
           </div>
         </div>
+        {favPosition === "bottom" && favButton}
       </div>
 
       <div className={s.body}>

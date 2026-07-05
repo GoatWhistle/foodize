@@ -1,8 +1,11 @@
 import uuid
 
-from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi import APIRouter, Depends, File, Query, Request, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from shared.restaurant_resolver import resolve_restaurant_uuid
+
+from infra.storage import MAX_IMAGE_BYTES
+from shared.exceptions import BadRequestException
 
 from database import db_helper
 from features.menu import service
@@ -65,6 +68,57 @@ async def update_menu_item(
         restaurant_id=restaurant_id,
         item_id=item_id,
         item_data=item_in,
+        vendor_id=current_vendor.id,
+        actor_id=_user.id,
+    )
+    return build_response(result)
+
+
+@router.post(
+    "/{restaurant_id}/items/{item_id}/photo",
+    response_model=SuccessResponse[MenuItemResponse],
+)
+async def upload_menu_item_photo(
+    restaurant_id: uuid.UUID,
+    item_id: uuid.UUID,
+    file: UploadFile = File(...),
+    _user: User = Depends(require_permission(Permission.MENU_MANAGE)),
+    current_vendor: VendorProfile = Depends(get_current_vendor),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> SuccessResponse[MenuItemResponse]:
+    data = await file.read()
+    if not data:
+        raise BadRequestException(detail="Пустой файл")
+    if len(data) > MAX_IMAGE_BYTES:
+        raise BadRequestException(detail="Файл слишком большой (максимум 5 МБ)")
+
+    result = await service.set_menu_item_photo(
+        session=session,
+        restaurant_id=restaurant_id,
+        item_id=item_id,
+        data=data,
+        content_type=file.content_type or "",
+        vendor_id=current_vendor.id,
+        actor_id=_user.id,
+    )
+    return build_response(result)
+
+
+@router.delete(
+    "/{restaurant_id}/items/{item_id}/photo",
+    response_model=SuccessResponse[MenuItemResponse],
+)
+async def delete_menu_item_photo(
+    restaurant_id: uuid.UUID,
+    item_id: uuid.UUID,
+    _user: User = Depends(require_permission(Permission.MENU_MANAGE)),
+    current_vendor: VendorProfile = Depends(get_current_vendor),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> SuccessResponse[MenuItemResponse]:
+    result = await service.remove_menu_item_photo(
+        session=session,
+        restaurant_id=restaurant_id,
+        item_id=item_id,
         vendor_id=current_vendor.id,
         actor_id=_user.id,
     )

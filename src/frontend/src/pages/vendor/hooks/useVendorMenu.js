@@ -21,6 +21,8 @@ export const useVendorMenu = ({
     category: 'SHAURMA',
     prep_time_minutes: 15,
     option_groups: [],
+    photoFile: null,
+    photoUrl: '',
   });
   const [menuError, setMenuError] = useState('');
   const [menuSuccess, setMenuSuccess] = useState('');
@@ -74,12 +76,13 @@ export const useVendorMenu = ({
     setFormLoading(true);
     setFormError('');
     try {
-      const { option_groups: optionGroups, ...baseForm } = menuItemForm;
+      const { option_groups: optionGroups, photoFile, photoUrl, ...baseForm } = menuItemForm;
       const payload = {
         ...baseForm,
         price: parseInt(baseForm.price, 10),
         prep_time_minutes: parseInt(baseForm.prep_time_minutes, 10) || 15,
       };
+      const previousPhotoUrl = editingItem?.photo_url || '';
       let savedItem = editingItem;
       if (editingItem) {
         const res = await menuService.updateItem(selectedRestaurant.id, editingItem.id, payload);
@@ -90,6 +93,15 @@ export const useVendorMenu = ({
         setShowAddItem(false);
       }
       await syncOptionGroups(savedItem, optionGroups);
+
+      if (savedItem?.id) {
+        if (photoFile) {
+          await menuService.uploadItemPhoto(selectedRestaurant.id, savedItem.id, photoFile);
+        } else if (previousPhotoUrl && !photoUrl) {
+          await menuService.deleteItemPhoto(selectedRestaurant.id, savedItem.id);
+        }
+      }
+
       fetchMenu(selectedRestaurant.id, { force: true });
       setMenuItemForm({
         name: '',
@@ -98,6 +110,8 @@ export const useVendorMenu = ({
         category: 'SHAURMA',
         prep_time_minutes: 15,
         option_groups: [],
+        photoFile: null,
+        photoUrl: '',
       });
       setMenuSuccess(editingItem ? 'Позиция обновлена' : 'Позиция добавлена');
       setTimeout(() => setMenuSuccess(''), 2000);

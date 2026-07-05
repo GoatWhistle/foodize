@@ -18,6 +18,7 @@ from features.menu.schemas import (
     MenuItemUpdate,
 )
 from features.restaurants.dependencies import get_restaurant_and_check_ownership
+from infra.storage import UnsupportedImageType, delete_image, upload_image
 from shared.exceptions import BadRequestException, NotFoundException
 
 
@@ -119,6 +120,79 @@ async def delete_menu_item_for_vendor(
         details={"restaurant_id": str(restaurant_id), "name": item.name},
     )
     await session.commit()
+
+
+async def set_menu_item_photo(
+    session: AsyncSession,
+    restaurant_id: uuid.UUID,
+    item_id: uuid.UUID,
+    data: bytes,
+    content_type: str,
+    vendor_id: uuid.UUID,
+    actor_id: uuid.UUID | None = None,
+) -> MenuItemResponse:
+    item = await _get_owned_menu_item(session, restaurant_id, item_id, vendor_id)
+    old_url = item.photo_url
+    try:
+        url = await upload_image(data, content_type, prefix="menu")
+    except UnsupportedImageType:
+        raise BadRequestException(detail="Поддерживаются только изображения JPEG, PNG или WebP")
+
+    item.photo_url = url
+    await audit_service.log_action(
+        session,
+        actor_id=actor_id,
+        action="UPDATE_MENU_ITEM_PHOTO",
+        entity_type="menu_item",
+        entity_id=item.id,
+        details={"restaurant_id": str(restaurant_id)},
+    )
+    await session.commit()
+
+    if old_url and old_url != url:
+        try:
+            await delete_image(old_url)
+        except Exception:  # noqa: BLE001 - best-effort cleanup, never fail the request
+            pass
+
+    loaded = await crud.get_menu_item_by_id(session, item.id)
+    if loaded is None:
+        raise MenuItemNotFoundException()
+    return MenuItemResponse.model_validate(loaded)
+
+
+async def remove_menu_item_photo(
+    session: AsyncSession,
+    restaurant_id: uuid.UUID,
+    item_id: uuid.UUID,
+    vendor_id: uuid.UUID,
+    actor_id: uuid.UUID | None = None,
+) -> MenuItemResponse:
+    item = await _get_owned_menu_item(session, restaurant_id, item_id, vendor_id)
+    old_url = item.photo_url
+    if old_url is None:
+        return MenuItemResponse.model_validate(item)
+
+    item.photo_url = None
+    await audit_service.log_action(
+        session,
+        actor_id=actor_id,
+        action="DELETE_MENU_ITEM_PHOTO",
+        entity_type="menu_item",
+        entity_id=item.id,
+        details={"restaurant_id": str(restaurant_id)},
+    )
+    await session.commit()
+
+    try:
+        await delete_image(old_url)
+    except Exception:  # noqa: BLE001 - best-effort cleanup
+        pass
+
+    loaded = await crud.get_menu_item_by_id(session, item.id)
+    if loaded is None:
+        raise MenuItemNotFoundException()
+    return MenuItemResponse.model_validate(loaded)
 
 
 async def _get_owned_option_group(

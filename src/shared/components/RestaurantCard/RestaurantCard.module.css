@@ -142,6 +142,13 @@
   background: rgba(255, 255, 255, 0.36);
 }
 
+/* Bottom-right placement (direct child of .photoWrap) */
+.favBtnBottom {
+  top: auto;
+  bottom: 8px;
+  right: 8px;
+}
+
 .body {
   padding: 10px 12px 12px;
   display: flex;

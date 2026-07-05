@@ -37,6 +37,8 @@ export const EMPTY_MENU_ITEM_FORM = {
   category: 'SHAURMA',
   prep_time_minutes: 15,
   option_groups: [],
+  photoFile: null,
+  photoUrl: '',
 };
 
 export default function VendorMenuTab({

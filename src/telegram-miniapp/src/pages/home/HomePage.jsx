@@ -166,6 +166,7 @@ const HomePage = () => {
                   isFavorite={favoriteIds.includes(r.id)}
                   onFavoriteToggle={toggleFavorite}
                   viewTransition={false}
+                  favPosition="bottom"
                 />
               ))}
             </div>

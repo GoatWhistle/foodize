@@ -24,4 +24,13 @@ export const menuService = {
     api.patch(`/menu/${restaurantId}/items/${itemId}/availability`, {
       is_available: isAvailable,
     }),
+  uploadItemPhoto: (restaurantId, itemId, file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return api.post(`/menu/${restaurantId}/items/${itemId}/photo`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+  deleteItemPhoto: (restaurantId, itemId) =>
+    api.delete(`/menu/${restaurantId}/items/${itemId}/photo`),
 };
