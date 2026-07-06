@@ -135,8 +135,8 @@ services:
 
   frontend:
     build:
-      context: ./src/frontend
-      dockerfile: Dockerfile
+      context: ./src
+      dockerfile: frontend/Dockerfile.prod
       target: production
     depends_on:
       - backend
@@ -179,6 +179,10 @@ services:
       BOT_MODE: ${BOT_MODE:-polling}
       BOT_WEBHOOK_URL: ${BOT_WEBHOOK_URL:-}
       BOT_WEBHOOK_SECRET: ${BOT_WEBHOOK_SECRET:-}
+    # Webhook endpoint (:8080) published on loopback so the host nginx can proxy
+    # https://<domain>/webhook -> here. Not needed for BOT_MODE=polling.
+    ports:
+      - "127.0.0.1:8080:8080"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/health', timeout=3).status == 200 else 1)"]

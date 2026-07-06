@@ -30,7 +30,14 @@ def _client():
         region_name=cfg.region,
         aws_access_key_id=cfg.access_key or None,
         aws_secret_access_key=cfg.secret_key or None,
-        config=Config(signature_version="s3v4", retries={"max_attempts": 3}),
+        config=Config(
+            signature_version="s3v4",
+            # Cloud.ru (and most S3-compatible providers) address buckets as
+            # <endpoint>/<bucket> rather than <bucket>.<endpoint>. Forcing
+            # path-style avoids DNS/TLS failures against s3.cloud.ru.
+            s3={"addressing_style": "path"},
+            retries={"max_attempts": 3},
+        ),
     )
 
 
