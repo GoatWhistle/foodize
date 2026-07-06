@@ -1,3 +1,5 @@
+import json
+from enum import Enum
 from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import (
@@ -8,6 +10,18 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from settings.config.app_config import settings
+
+
+def _json_fallback(obj: object) -> str:
+    # JSONB columns receive raw dicts (e.g. audit-log details) that may contain
+    # enums, UUIDs or datetimes; stdlib json can't encode those by itself.
+    if isinstance(obj, Enum):
+        return obj.value
+    return str(obj)
+
+
+def _json_serializer(obj: object) -> str:
+    return json.dumps(obj, default=_json_fallback, ensure_ascii=False)
 
 
 class DbHelper:
@@ -27,6 +41,7 @@ class DbHelper:
             pool_size=pool_size if pool_size is not None else settings.db.pool_size,
             pool_pre_ping=True,
             pool_recycle=3600,
+            json_serializer=_json_serializer,
             connect_args={
                 "timeout": 10,
                 "command_timeout": 30,

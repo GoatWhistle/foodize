@@ -1,10 +1,12 @@
 import uuid
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
+from infra.storage import MAX_IMAGE_BYTES
+from shared.exceptions import BadRequestException
 from features.restaurants import service
 from features.restaurants.dependencies import get_restaurant_and_check_ownership
 from features.restaurants.models import Restaurant
@@ -91,6 +93,45 @@ async def update_restaurant(
         session=session,
         restaurant_id=restaurant_id,
         update_data=update_in,
+        vendor_id=current_vendor.id,
+    )
+    return build_response(result)
+
+
+@router.post("/{restaurant_id}/photo", response_model=SuccessResponse[RestaurantResponse])
+async def upload_restaurant_photo(
+    restaurant_id: uuid.UUID,
+    file: UploadFile = File(...),
+    _user: User = Depends(require_permission(Permission.RESTAURANTS_UPDATE)),
+    current_vendor: VendorProfile = Depends(get_current_vendor),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> SuccessResponse[RestaurantResponse]:
+    data = await file.read()
+    if not data:
+        raise BadRequestException(detail="Пустой файл")
+    if len(data) > MAX_IMAGE_BYTES:
+        raise BadRequestException(detail="Файл слишком большой (максимум 5 МБ)")
+
+    result = await service.set_restaurant_photo(
+        session=session,
+        restaurant_id=restaurant_id,
+        data=data,
+        content_type=file.content_type or "",
+        vendor_id=current_vendor.id,
+    )
+    return build_response(result)
+
+
+@router.delete("/{restaurant_id}/photo", response_model=SuccessResponse[RestaurantResponse])
+async def delete_restaurant_photo(
+    restaurant_id: uuid.UUID,
+    _user: User = Depends(require_permission(Permission.RESTAURANTS_UPDATE)),
+    current_vendor: VendorProfile = Depends(get_current_vendor),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> SuccessResponse[RestaurantResponse]:
+    result = await service.remove_restaurant_photo(
+        session=session,
+        restaurant_id=restaurant_id,
         vendor_id=current_vendor.id,
     )
     return build_response(result)

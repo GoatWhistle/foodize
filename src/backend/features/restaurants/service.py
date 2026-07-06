@@ -18,7 +18,9 @@ from features.restaurants.schemas import (
 from features.restaurants.working_hours import WorkingHours
 from features.restaurants.working_hours_crud import get_working_hours, is_open_now
 from features.vendors.models import VendorProfile
+from infra.storage import UnsupportedImageType, delete_image, upload_image
 from shared.enums.moderation_status import ModerationStatus
+from shared.exceptions import BadRequestException
 from shared.enums.permissions import Permission
 from shared.enums.restaurant_sort import RestaurantSort
 from shared.enums.sort_direction import SortDirection
@@ -62,6 +64,59 @@ async def update_restaurant_for_vendor(
     updated = await crud.update_restaurant(session, restaurant, update_data)
     await session.commit()
     return RestaurantResponse.model_validate(updated)
+
+
+async def set_restaurant_photo(
+    session: AsyncSession,
+    restaurant_id: uuid.UUID,
+    data: bytes,
+    content_type: str,
+    vendor_id: uuid.UUID,
+) -> RestaurantResponse:
+    restaurant = await get_restaurant_and_check_ownership(
+        session=session, restaurant_id=restaurant_id, vendor_id=vendor_id
+    )
+    old_url = restaurant.photo_url
+    try:
+        url = await upload_image(data, content_type, prefix="restaurants")
+    except UnsupportedImageType:
+        raise BadRequestException(detail="Поддерживаются только изображения JPEG, PNG или WebP")
+
+    restaurant.photo_url = url
+    await session.commit()
+
+    if old_url and old_url != url:
+        try:
+            await delete_image(old_url)
+        except Exception:  # noqa: BLE001 - best-effort cleanup, never fail the request
+            pass
+
+    await session.refresh(restaurant)
+    return RestaurantResponse.model_validate(restaurant)
+
+
+async def remove_restaurant_photo(
+    session: AsyncSession,
+    restaurant_id: uuid.UUID,
+    vendor_id: uuid.UUID,
+) -> RestaurantResponse:
+    restaurant = await get_restaurant_and_check_ownership(
+        session=session, restaurant_id=restaurant_id, vendor_id=vendor_id
+    )
+    old_url = restaurant.photo_url
+    if old_url is None:
+        return RestaurantResponse.model_validate(restaurant)
+
+    restaurant.photo_url = None
+    await session.commit()
+
+    try:
+        await delete_image(old_url)
+    except Exception:  # noqa: BLE001 - best-effort cleanup
+        pass
+
+    await session.refresh(restaurant)
+    return RestaurantResponse.model_validate(restaurant)
 
 
 async def get_my_restaurants(

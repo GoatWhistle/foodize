@@ -77,6 +77,28 @@ def _delete_image_sync(url: str) -> None:
     _client().delete_object(Bucket=settings.s3.bucket, Key=key)
 
 
+def _fetch_object_sync(key: str) -> tuple[bytes, str] | None:
+    from botocore.exceptions import ClientError
+
+    try:
+        obj = _client().get_object(Bucket=settings.s3.bucket, Key=key)
+    except ClientError as e:
+        code = e.response.get("Error", {}).get("Code", "")
+        if code in ("NoSuchKey", "404", "NotFound"):
+            return None
+        raise
+    return obj["Body"].read(), obj.get("ContentType") or "application/octet-stream"
+
+
+async def fetch_object(key: str) -> tuple[bytes, str] | None:
+    """Fetch an object's bytes and content type; None if the key doesn't exist.
+
+    Used by the /media proxy because the storage provider (Cloud.ru) does not
+    allow anonymous public reads, so the backend serves stored images itself.
+    """
+    return await asyncio.to_thread(_fetch_object_sync, key)
+
+
 async def upload_image(data: bytes, content_type: str, prefix: str = "menu") -> str:
     """Upload image bytes to object storage and return the public URL.
 

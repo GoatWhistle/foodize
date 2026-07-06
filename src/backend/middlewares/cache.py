@@ -18,6 +18,7 @@ _DEFAULT_EXCLUDE_PATHS = [
     "redoc",
     "api/ping",
     "api/health",
+    "media",
     "orders",
     "cart",
     "favorites",
@@ -114,9 +115,13 @@ class AutoCacheMiddleware(BaseHTTPMiddleware):
                     chunks.append(chunk if isinstance(chunk, bytes) else chunk.encode())
                 body = b"".join(chunks)
                 try:
+                    # Binary bodies (images etc.) are not cacheable as UTF-8 —
+                    # serve them straight through without a Redis entry.
                     await cache.set(cache_key, body.decode(), ttl=self.ttl)
                     tag_key = self._make_tag_key(path)
                     await cache.sadd_with_expire(tag_key, cache_key, self.ttl)
+                except UnicodeDecodeError:
+                    pass
                 except RedisError:
                     logger.warning("Failed to write cache entry for path=%s", path, exc_info=True)
                 return Response(

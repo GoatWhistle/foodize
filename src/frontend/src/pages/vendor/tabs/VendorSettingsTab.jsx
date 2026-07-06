@@ -1,3 +1,8 @@
+import { useEffect, useState } from 'react';
+import { Image as ImageIcon } from '@phosphor-icons/react';
+import { restaurantService } from '../../../services/restaurantService';
+import { translateApiError } from '../../../utils/translateApiError';
+
 const toDateTimeLocalValue = (value) => {
   if (!value) return '';
   const date = new Date(value);
@@ -14,6 +19,41 @@ export default function VendorSettingsTab({
   formLoading,
   handleUpdateRestaurant,
 }) {
+  const [coverUrl, setCoverUrl] = useState(selectedRestaurant?.photo_url || '');
+  const [coverLoading, setCoverLoading] = useState(false);
+  const [coverError, setCoverError] = useState('');
+
+  useEffect(() => {
+    setCoverUrl(selectedRestaurant?.photo_url || '');
+    setCoverError('');
+  }, [selectedRestaurant?.id, selectedRestaurant?.photo_url]);
+
+  const handleCoverUpload = async (file) => {
+    setCoverLoading(true);
+    setCoverError('');
+    try {
+      const res = await restaurantService.uploadPhoto(selectedRestaurant.id, file);
+      setCoverUrl(res.data.data.photo_url || '');
+    } catch (err) {
+      setCoverError(translateApiError(err, 'Не удалось загрузить фото'));
+    } finally {
+      setCoverLoading(false);
+    }
+  };
+
+  const handleCoverDelete = async () => {
+    setCoverLoading(true);
+    setCoverError('');
+    try {
+      await restaurantService.deletePhoto(selectedRestaurant.id);
+      setCoverUrl('');
+    } catch (err) {
+      setCoverError(translateApiError(err, 'Не удалось удалить фото'));
+    } finally {
+      setCoverLoading(false);
+    }
+  };
+
   return (
     <div
       style={{
@@ -24,6 +64,85 @@ export default function VendorSettingsTab({
       }}
     >
       <h3 style={{ fontWeight: 700, marginBottom: 12 }}>Настройки ресторана</h3>
+
+      <div
+        style={{
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-md)',
+          padding: 12,
+          marginBottom: 14,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 8,
+        }}
+      >
+        <div style={{ fontWeight: 800, fontSize: '0.86rem' }}>Обложка ресторана</div>
+        {coverError && <div className="form-error">{coverError}</div>}
+        {/* Пропорция как у реального баннера на странице ресторана (~21:9),
+            чтобы вендор видел кадрирование заранее. */}
+        <div
+          style={{
+            width: '100%',
+            maxWidth: 560,
+            aspectRatio: '21 / 9',
+            borderRadius: 'var(--radius-md)',
+            overflow: 'hidden',
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {coverUrl ? (
+            <img
+              src={coverUrl}
+              alt="Обложка ресторана"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          ) : (
+            <ImageIcon size={32} color="var(--text-3)" />
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <label
+            className="btn btn-secondary btn-sm"
+            style={{ cursor: coverLoading ? 'wait' : 'pointer', margin: 0 }}
+          >
+            {coverLoading ? 'Загрузка…' : coverUrl ? 'Заменить обложку' : 'Загрузить обложку'}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              style={{ display: 'none' }}
+              disabled={coverLoading}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleCoverUpload(file);
+                e.target.value = '';
+              }}
+            />
+          </label>
+          {coverUrl && (
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              style={{ color: 'var(--error)' }}
+              disabled={coverLoading}
+              onClick={handleCoverDelete}
+            >
+              Удалить
+            </button>
+          )}
+          <span style={{ fontSize: '0.7rem', color: 'var(--text-3)' }}>
+            JPEG, PNG или WebP · до 5 МБ
+          </span>
+        </div>
+        <span style={{ fontSize: '0.72rem', color: 'var(--text-3)' }}>
+          Показывается широким баннером в шапке страницы ресторана. Лучше всего
+          подходит горизонтальное фото (например, интерьер или блюдо крупным
+          планом) шириной от 1200 px — вертикальные будут сильно обрезаны.
+        </span>
+      </div>
       <form
         onSubmit={handleUpdateRestaurant}
         style={{ display: 'flex', flexDirection: 'column', gap: 10 }}

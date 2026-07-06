@@ -200,8 +200,8 @@ services:
 
   telegram-miniapp:
     build:
-      context: ./src/telegram-miniapp
-      dockerfile: Dockerfile
+      context: ./src
+      dockerfile: telegram-miniapp/Dockerfile.prod
       target: production
     depends_on:
       - backend

@@ -10,6 +10,10 @@ export function createAuthStore({
     user: null,
     isAuthenticated: false,
 
+    register: async (data) => {
+      await authService.register(data);
+    },
+
     login: async (credentials) => {
       try {
         await authService.login(credentials);

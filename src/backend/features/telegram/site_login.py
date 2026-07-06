@@ -49,7 +49,7 @@ async def request_site_login_code(session: AsyncSession, phone_number: str) -> N
         "Если это были не вы, просто проигнорируйте сообщение."
     )
 
-    async with httpx.AsyncClient(timeout=10) as client:
+    async with httpx.AsyncClient(timeout=10, proxy=settings.telegram.proxy_url or None) as client:
         response = await client.post(
             f"https://api.telegram.org/bot{settings.telegram.bot_token}/sendMessage",
             json={
@@ -127,7 +127,7 @@ async def request_site_login_code_by_username(session: AsyncSession, telegram_us
         "Если это были не вы, просто проигнорируйте сообщение."
     )
 
-    async with httpx.AsyncClient(timeout=10) as client:
+    async with httpx.AsyncClient(timeout=10, proxy=settings.telegram.proxy_url or None) as client:
         response = await client.post(
             f"https://api.telegram.org/bot{settings.telegram.bot_token}/sendMessage",
             json={

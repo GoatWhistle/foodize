@@ -14,6 +14,8 @@ class BotConfig(BaseSettings):
     mode: str = Field(default="polling", alias="BOT_MODE")
     webhook_url: str = Field(default="", alias="BOT_WEBHOOK_URL")
     webhook_secret: str = Field(default="", alias="BOT_WEBHOOK_SECRET")
+    # Egress proxy for Telegram API calls (socks5://... or http://...); empty = direct.
+    proxy_url: str = Field(default="", alias="BOT_PROXY_URL")
 
     model_config = SettingsConfigDict(
         env_file=".env",

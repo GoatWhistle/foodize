@@ -5,6 +5,7 @@ logger = logging.getLogger(__name__)
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
+from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.enums import ParseMode
 from aiogram.types import ErrorEvent
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
@@ -31,8 +32,14 @@ async def _health(request: web.Request) -> web.Response:
 async def main() -> None:
     logging.basicConfig(level=logging.INFO)
 
+    # Optional egress proxy for Telegram API (BOT_PROXY_URL, e.g.
+    # socks5://user:pass@host:port). Needed when the hosting provider's network
+    # cannot reach api.telegram.org directly. Only Telegram traffic goes through
+    # the proxy; backend/RabbitMQ/Redis connections stay direct.
+    session = AiohttpSession(proxy=bot_config.proxy_url) if bot_config.proxy_url else None
     bot = Bot(
         token=bot_config.bot_token,
+        session=session,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
     dp = Dispatcher()
@@ -86,6 +93,9 @@ async def main() -> None:
         consumer_task.add_done_callback(
             lambda t: logger.error("Notification consumer stopped: %s", t.exception()) if not t.cancelled() and t.exception() else None
         )
+        # An active webhook makes getUpdates return 409 Conflict, so drop it
+        # before polling (e.g. after switching BOT_MODE from webhook to polling).
+        await bot.delete_webhook(drop_pending_updates=False)
         await dp.start_polling(bot)
 
 

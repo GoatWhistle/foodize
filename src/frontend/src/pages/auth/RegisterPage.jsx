@@ -56,6 +56,9 @@ const RegisterPage = () => {
     if (cleanPhone.length < 7) { setError('Введите корректный номер телефона'); return; }
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError('Введите корректный email'); return; }
     if (password.length < 8) { setError('Пароль должен быть не менее 8 символов'); return; }
+    // Зеркалим серверную проверку (_validate_password_strength), чтобы ошибка была понятной до отправки
+    if (!/[A-Za-z]/.test(password)) { setError('Пароль должен содержать хотя бы одну латинскую букву'); return; }
+    if (!/[0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) { setError('Пароль должен содержать хотя бы одну цифру или спецсимвол'); return; }
     if (!agreed) { setError('Примите условия использования и политику конфиденциальности'); return; }
     setIsLoading(true);
     try {
@@ -151,7 +154,7 @@ const RegisterPage = () => {
                 id="reg-password"
                 className="form-input"
                 type="password"
-                placeholder="Минимум 8 символов"
+                placeholder="Мин. 8 символов, латинская буква и цифра"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required

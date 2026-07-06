@@ -9,4 +9,12 @@ export const restaurantService = {
   getWorkingHours: (id) => api.get(`/restaurants/${id}/working-hours`),
   setWorkingHours: (id, hours) =>
     api.put(`/restaurants/${id}/working-hours`, { hours }),
+  uploadPhoto: (id, file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return api.post(`/restaurants/${id}/photo`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
+  deletePhoto: (id) => api.delete(`/restaurants/${id}/photo`),
 };

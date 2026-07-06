@@ -6,6 +6,7 @@ from features.ai_order_agent.api import router as ai_order_router
 from features.auth.api import router as auth_router
 from features.cart.api import router as cart_router
 from features.favorites.api import router as favorites_router
+from features.media.api import router as media_router
 from features.menu.api import router as menu_router
 from features.notifications.api import router as notifications_router
 from features.notifications.ws import router as notifications_ws_router
@@ -33,6 +34,7 @@ router.include_router(favorites_router)
 router.include_router(staff_router)
 router.include_router(vendor_router)
 router.include_router(restaurant_router)
+router.include_router(media_router)
 router.include_router(menu_router)
 router.include_router(order_router)
 router.include_router(reviews_router)
