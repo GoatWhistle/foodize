@@ -126,3 +126,4 @@ async def user_notifications_ws(
         pass
     finally:
         await pubsub.unsubscribe(channel)
+        await pubsub.aclose()

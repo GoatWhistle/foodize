@@ -146,6 +146,7 @@ async def order_status_ws(
         pass
     finally:
         await pubsub.unsubscribe(channel)
+        await pubsub.aclose()
 
 
 def _build_display_board(rows: list[tuple[int, str]]) -> dict:
@@ -212,6 +213,7 @@ async def display_board_ws(
         pass
     finally:
         await pubsub.unsubscribe(channel)
+        await pubsub.aclose()
 
 
 @router.websocket("/ws/restaurants/{restaurant_id}/orders")
@@ -261,3 +263,4 @@ async def restaurant_orders_ws(
         pass
     finally:
         await pubsub.unsubscribe(channel)
+        await pubsub.aclose()

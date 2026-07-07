@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 from slowapi import _rate_limit_exceeded_handler
@@ -130,7 +131,8 @@ async def health():
         checks["rabbitmq"] = "error"
 
     overall = "ok" if all(v == "ok" for v in checks.values()) else "degraded"
-    return {"status": overall, "checks": checks}
+    status_code = 200 if overall == "ok" else 503
+    return JSONResponse(status_code=status_code, content={"status": overall, "checks": checks})
 
 
 if __name__ == "__main__":

@@ -98,6 +98,8 @@ services:
     ports:
       - "127.0.0.1:8000:8000"
     restart: unless-stopped
+    labels:
+      - autoheal=true
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/health', timeout=3).status == 200 else 1)"]
       interval: 15s
@@ -220,6 +222,22 @@ services:
         limits:
           cpus: "0.25"
           memory: 64M
+
+  # Restarts containers labeled autoheal=true when their healthcheck goes unhealthy.
+  autoheal:
+    image: willfarrell/autoheal:1.2.0
+    restart: unless-stopped
+    environment:
+      AUTOHEAL_CONTAINER_LABEL: autoheal
+      AUTOHEAL_INTERVAL: 15
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    network_mode: none
+    deploy:
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: 32M
 
 volumes:
   pgdata:
