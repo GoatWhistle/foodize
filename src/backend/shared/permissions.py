@@ -87,3 +87,9 @@ def permissions_without(
 def has_permission(permissions: Iterable[Permission | str] | None, permission: Permission) -> bool:
     normalized = normalize_permissions(permissions)
     return permission in normalized or Permission.ADMIN_ACCESS in normalized
+
+
+def has_explicit_permission(
+    permissions: Iterable[Permission | str] | None, permission: Permission
+) -> bool:
+    return permission in normalize_permissions(permissions)

@@ -33,7 +33,7 @@ class UserRead(UserBase):
     id: uuid.UUID
     permissions: list[Permission]
     has_password: bool = False
-    phone_number: str = Field(default="", min_length=0, max_length=64)
+    phone_number: str = Field(min_length=1, max_length=64)
     first_name: str | None = None
     last_name: str | None = None
     middle_name: str | None = None

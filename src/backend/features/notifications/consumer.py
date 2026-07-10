@@ -16,8 +16,12 @@ from features.notifications.handlers import (
     handle_order_status_changed,
 )
 from features.notifications.outbox_service import run_outbox_publisher
+from infra.cache.redis import get_redis_cache
 
 logger = logging.getLogger(__name__)
+
+_MAX_MESSAGE_BYTES = 64 * 1024
+_DEDUP_TTL_SECONDS = 86_400
 
 _BINDINGS: list[tuple[str, str, Callable[[Any], Awaitable[None]]]] = [
     ("notifications.order.placed", "order.placed", handle_order_placed),
@@ -45,12 +49,30 @@ async def _process_message(
             logger.error("No handler registered for routing_key=%s", routing_key)
             await message.nack(requeue=False)
             return
+        if len(message.body) > _MAX_MESSAGE_BYTES:
+            logger.error(
+                "Message too large (routing_key=%s size=%d)", routing_key, len(message.body)
+            )
+            await message.nack(requeue=False)
+            return
         try:
             event = model_cls.model_validate_json(message.body)
+            if not await _claim_event(event.event_id):
+                logger.info(
+                    "Skipping duplicate event (routing_key=%s event_id=%s)",
+                    routing_key,
+                    event.event_id,
+                )
+                return
             await binding[2](event)
         except Exception:
             logger.exception("Failed to process message (routing_key=%s)", routing_key)
             await message.nack(requeue=False)
+
+
+async def _claim_event(event_id) -> bool:
+    redis = get_redis_cache()
+    return await redis.set_nx(f"evt:{event_id}", "1", ttl=_DEDUP_TTL_SECONDS)
 
 
 _background_tasks: set[asyncio.Task] = set()

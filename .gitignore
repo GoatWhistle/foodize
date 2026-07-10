@@ -21,3 +21,12 @@ coverage/
 
 setting.local.json
 .claude/
+
+.playwright-mcp/
+shots/
+*.png
+!src/**/*.png
+!public/**/*.png
+
+# Impeccable design-hook cache
+.impeccable/

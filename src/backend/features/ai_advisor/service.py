@@ -51,6 +51,7 @@ async def stream_chat(
             tools=ADVISOR_TOOLS,
             execute=execute,
             max_steps=settings.llm.max_agent_steps,
+            max_tokens=settings.llm.max_session_tokens,
         ):
             yield chunk
     except Exception:
@@ -69,6 +70,7 @@ async def generate_insights(vendor: VendorProfile) -> str:
             tools=ADVISOR_TOOLS,
             execute=execute,
             max_steps=settings.llm.max_agent_steps,
+            max_tokens=settings.llm.max_session_tokens,
         )
         return text
     except Exception:

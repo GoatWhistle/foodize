@@ -57,7 +57,8 @@ class TestIntegrityErrorHandler:
         exc.orig = Exception("uq_users_phone_number violation")
         response = await integrity_error_handler(_make_request(), exc)
         assert response.status_code == 400
-        assert b"phone number" in response.body
+        assert b"phone number" not in response.body
+        assert b"Duplicate entry" in response.body
 
     @pytest.mark.asyncio
     async def test_unknown_constraint(self):

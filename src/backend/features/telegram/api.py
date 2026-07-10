@@ -45,7 +45,9 @@ logger = logging.getLogger(__name__)
 
 
 @router.post("/check", response_model=SuccessResponse[TelegramCheckResponse])
+@limiter.limit("20/minute")
 async def telegram_check(
+    request: Request,
     data: TelegramCheckRequest,
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[TelegramCheckResponse]:
@@ -54,7 +56,9 @@ async def telegram_check(
 
 
 @router.post("/register", response_model=SuccessResponse[TokenResponse])
+@limiter.limit("10/minute")
 async def telegram_register(
+    request: Request,
     data: TelegramRegisterRequest,
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[TokenResponse]:
@@ -68,7 +72,9 @@ async def telegram_register(
 
 
 @router.post("/auth", response_model=SuccessResponse[TokenResponse])
+@limiter.limit("10/minute")
 async def telegram_auth(
+    request: Request,
     data: TelegramCheckRequest,
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[TokenResponse]:

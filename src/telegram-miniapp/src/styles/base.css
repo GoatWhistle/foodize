@@ -1,5 +1,5 @@
-@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap");
-@import "../../../../shared/tokens.css";
+@import "@shared/fonts.css";
+@import "@shared/styles/index.css";
 
 ::view-transition-group(*) {
   animation-duration: 400ms;
@@ -37,6 +37,31 @@ body {
   transition:
     background var(--dur-md) var(--ease-in-out),
     color var(--dur-md) var(--ease-in-out);
+}
+
+body {
+  display: flex;
+  justify-content: center;
+}
+
+@media (min-width: 520px) {
+  body {
+    background: var(--bg-surface);
+  }
+}
+
+#root {
+  width: 100%;
+  max-width: 480px;
+  min-height: 100vh;
+  background: var(--bg);
+  position: relative;
+}
+
+@media (min-width: 520px) {
+  #root {
+    box-shadow: var(--shadow-lg);
+  }
 }
 
 a {

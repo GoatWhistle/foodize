@@ -1,9 +1,8 @@
 import uuid
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import bcrypt
 import jwt
-from pytz import utc  # type: ignore[import-untyped]
 
 from settings.config.app_config import settings
 
@@ -33,13 +32,14 @@ def _create_jwt_token(
     token_type: str,
     extra: dict | None = None,
 ) -> str:
-    current_time_utc = datetime.now(utc)
+    current_time_utc = datetime.now(UTC)
     expire = current_time_utc + timedelta(seconds=lifetime_seconds)
     payload = {
         "sub": str(user_id),
         "exp": expire,
         "iat": current_time_utc,
         "typ": token_type,
+        "jti": uuid.uuid4().hex,
     }
     if extra:
         payload.update(extra)
@@ -58,7 +58,7 @@ def create_refresh_token(
     user_id: uuid.UUID,
     session_exp: int | None = None,
 ) -> str:
-    current_time_utc = datetime.now(utc)
+    current_time_utc = datetime.now(UTC)
     if session_exp is None:
         session_exp = int(
             (current_time_utc + timedelta(seconds=settings.auth.max_session_lifetime_seconds)).timestamp()

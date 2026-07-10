@@ -83,7 +83,7 @@ async def verify_site_login_code(
 
     user = await get_user_by_phone(session, phone_number)
     if not user or not user.telegram_id:
-        raise AuthException(detail="Telegram is not linked to this account")
+        raise AuthException(detail="Invalid Telegram code")
 
     await cache.delete(key)
     await cache.delete(fail_key)
@@ -162,7 +162,7 @@ async def verify_site_login_code_by_username(
 
     user = await get_user_by_telegram_username(session, username)
     if not user or not user.telegram_id:
-        raise AuthException(detail="Telegram is not linked to this account")
+        raise AuthException(detail="Invalid Telegram code")
 
     await cache.delete(key)
     await cache.delete(fail_key)

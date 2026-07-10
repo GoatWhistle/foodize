@@ -1,0 +1,30 @@
+:root {
+  --space-xs:  4px;
+  --space-sm:  8px;
+  --space-md:  16px;
+  --space-lg:  24px;
+  --space-xl:  40px;
+  --space-2xl: 64px;
+
+  --r-xs:   4px;
+  --r-sm:   8px;
+  --r-md:   12px;
+  --r-lg:   16px;
+  --r-xl:   20px;
+  --r-2xl:  28px;
+  --r-pill: 100px;
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+
+  --nav-h:        64px;
+  --bottom-tab-h: 64px;
+  --gutter:       16px;
+  --max-w:        1100px;
+
+  --img-ratio-card:  16 / 9;
+  --img-ratio-menu:  4 / 3;
+  --img-ratio-thumb: 1 / 1;
+  --img-ratio-hero:  16 / 9;
+}

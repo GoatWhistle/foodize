@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import signal
 
 logger = logging.getLogger(__name__)
 
@@ -32,10 +33,6 @@ async def _health(request: web.Request) -> web.Response:
 async def main() -> None:
     logging.basicConfig(level=logging.INFO)
 
-    # Optional egress proxy for Telegram API (BOT_PROXY_URL, e.g.
-    # socks5://user:pass@host:port). Needed when the hosting provider's network
-    # cannot reach api.telegram.org directly. Only Telegram traffic goes through
-    # the proxy; backend/RabbitMQ/Redis connections stay direct.
     session = AiohttpSession(proxy=bot_config.proxy_url) if bot_config.proxy_url else None
     bot = Bot(
         token=bot_config.bot_token,
@@ -80,7 +77,26 @@ async def main() -> None:
         consumer_task.add_done_callback(
             lambda t: logger.error("Notification consumer stopped: %s", t.exception()) if not t.cancelled() and t.exception() else None
         )
-        await asyncio.Future()
+
+        stop_event = asyncio.Event()
+        loop = asyncio.get_running_loop()
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            try:
+                loop.add_signal_handler(sig, stop_event.set)
+            except NotImplementedError:
+                pass
+
+        try:
+            await stop_event.wait()
+        finally:
+            logger.info("Shutting down telegram bot (webhook mode)")
+            consumer_task.cancel()
+            try:
+                await consumer_task
+            except asyncio.CancelledError:
+                pass
+            await runner.cleanup()
+            await bot.session.close()
     else:
         health_app = web.Application()
         health_app.router.add_get("/health", _health)
@@ -93,8 +109,6 @@ async def main() -> None:
         consumer_task.add_done_callback(
             lambda t: logger.error("Notification consumer stopped: %s", t.exception()) if not t.cancelled() and t.exception() else None
         )
-        # An active webhook makes getUpdates return 409 Conflict, so drop it
-        # before polling (e.g. after switching BOT_MODE from webhook to polling).
         await bot.delete_webhook(drop_pending_updates=False)
         await dp.start_polling(bot)
 

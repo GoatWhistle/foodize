@@ -1,0 +1,17 @@
+:root {
+  --chart-1: var(--fire);
+  --chart-2: oklch(66% 0.15 80);
+  --chart-3: oklch(55% 0.16 148);
+  --chart-4: oklch(55% 0.12 25);
+  --chart-5: oklch(58% 0.10 300);
+  --chart-6: oklch(60% 0.11 200);
+}
+
+[data-theme="dark"] {
+  --chart-1: var(--fire);
+  --chart-2: oklch(76% 0.16 65);
+  --chart-3: oklch(68% 0.18 145);
+  --chart-4: oklch(64% 0.14 27);
+  --chart-5: oklch(70% 0.12 300);
+  --chart-6: oklch(70% 0.12 200);
+}

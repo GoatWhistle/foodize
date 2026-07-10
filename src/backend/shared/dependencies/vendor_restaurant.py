@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from features.restaurants.crud import get_restaurant_by_id
 from features.restaurants.models import Restaurant
 from features.vendors.models import VendorProfile
-from shared.exceptions import AccessDeniedException, NotFoundException
+from shared.exceptions import NotFoundException
 
 
 def get_vendor_restaurant_ids(vendor: VendorProfile) -> set[uuid.UUID]:
@@ -26,5 +26,5 @@ async def get_owned_restaurant_or_403(
 ) -> Restaurant:
     restaurant = await get_restaurant_by_id(session, restaurant_id)
     if not restaurant or restaurant.vendor_id != vendor_id:
-        raise AccessDeniedException()
+        raise NotFoundException(detail="Restaurant not found")
     return restaurant

@@ -111,7 +111,7 @@ class TestLogoutUser:
         mock_cache = MagicMock()
         mock_cache.set = AsyncMock()
 
-        with patch("features.auth.service.decode_jwt", return_value={"exp": now + 3600, "typ": "access"}):
+        with patch("features.auth.service.decode_jwt", return_value={"exp": now + 3600, "typ": "access", "jti": "jti1"}):
             await logout_user(request, response, cache=mock_cache)
 
         mock_cache.set.assert_awaited()
@@ -169,7 +169,7 @@ class TestGetCurrentUser:
         mock_cache.exists = AsyncMock(return_value=True)
 
         with (
-            patch("features.auth.service.decode_jwt", return_value={"sub": "00000000-0000-0000-0000-000000000001", "typ": "access"}),
+            patch("features.auth.service.decode_jwt", return_value={"sub": "00000000-0000-0000-0000-000000000001", "typ": "access", "jti": "jti1"}),
         ):
             with pytest.raises(AuthException, match="invalidated"):
                 await get_current_user(token="tok", session=AsyncMock(), cache=mock_cache)
@@ -314,7 +314,7 @@ class TestRefreshUserToken:
         with (
             patch("features.auth.service.decode_jwt", return_value={
                 "typ": "refresh", "sub": "00000000-0000-0000-0000-000000000001",
-                "exp": int(time.time()) + 3600,
+                "exp": int(time.time()) + 3600, "jti": "jti1",
             }),
             patch("features.auth.service.get_redis_cache", return_value=mock_cache),
         ):
@@ -336,7 +336,7 @@ class TestRefreshUserToken:
         with (
             patch("features.auth.service.decode_jwt", return_value={
                 "typ": "refresh", "sub": "00000000-0000-0000-0000-000000000001",
-                "exp": int(time.time()) + 3600,
+                "exp": int(time.time()) + 3600, "jti": "jti1",
             }),
             patch("features.auth.service.get_user_by_id_or_404", new_callable=AsyncMock, return_value=user),
             patch("features.auth.service.create_access_token", return_value="new_access"),

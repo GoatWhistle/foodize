@@ -37,7 +37,7 @@ class TestRegisterUser:
                 name="Ivan",
                 phone_number="79001234567",
                 user_role=UserRole.CUSTOMER,
-                password="strongpass",
+                password="strongpass1",
             )
             result = await register_user(mock_db_session, user_data)
 
@@ -56,7 +56,7 @@ class TestRegisterUser:
                 name="Ivan",
                 phone_number="79001234567",
                 user_role=UserRole.CUSTOMER,
-                password="strongpass",
+                password="strongpass1",
             )
             with pytest.raises(RuleException):
                 await register_user(mock_db_session, user_data)
@@ -148,12 +148,12 @@ class TestGetCurrentUser:
                 new_callable=AsyncMock,
                 return_value=user,
             ),
-            patch(
-                "features.auth.service.get_redis_cache",
-                return_value=MagicMock(exists=AsyncMock(return_value=False)),
-            ),
         ):
-            result = await get_current_user(token="valid.jwt.token", session=mock_db_session)
+            result = await get_current_user(
+                token="valid.jwt.token",
+                session=mock_db_session,
+                cache=MagicMock(exists=AsyncMock(return_value=False)),
+            )
 
         assert result is user
 
@@ -173,7 +173,7 @@ class TestRefreshUserToken:
         with (
             patch(
                 "features.auth.service.decode_jwt",
-                return_value={"sub": str(user.id), "exp": 4_102_444_800, "typ": "refresh"},
+                return_value={"sub": str(user.id), "exp": 4_102_444_800, "typ": "refresh", "jti": "jti1"},
             ),
             patch(
                 "features.auth.service.get_user_by_id_or_404",
@@ -196,10 +196,16 @@ class TestRefreshUserToken:
     async def test_refresh_missing_token_raises(self, mock_db_session):
         mock_request = MagicMock()
         mock_request.cookies = {}
+        mock_request.headers = {}
         mock_response = MagicMock()
 
-        with pytest.raises(AuthException) as exc:
-            await refresh_user_token(mock_request, mock_response, mock_db_session)
+        with patch(
+            "features.auth.service._get_bearer_token",
+            new_callable=AsyncMock,
+            return_value=None,
+        ):
+            with pytest.raises(AuthException) as exc:
+                await refresh_user_token(mock_request, mock_response, mock_db_session)
         assert "Refresh token missing" in str(exc.value.detail)
 
     async def test_refresh_invalid_token_raises(self, mock_db_session):

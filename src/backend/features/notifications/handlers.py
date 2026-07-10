@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import uuid
 
 from database import db_helper
@@ -9,10 +8,17 @@ from features.notifications.models import NotificationType
 from features.notifications.schemas import NotificationResponse
 from infra.cache.redis import get_redis_cache
 from shared.enums.order_status import OrderStatus
+from utils.logging_setup import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 _FEEDBACK_DELAY_SECONDS = 1800
+
+
+def _log_feedback_task_error(task: asyncio.Task) -> None:
+    exc = task.exception()
+    if exc is not None:
+        logger.error("feedback task failed", error=repr(exc))
 
 
 async def _notify_user(user_id: uuid.UUID, title: str, message: str) -> None:
@@ -34,7 +40,7 @@ async def _schedule_feedback_request(
     user_id: uuid.UUID, restaurant_name: str, delay_seconds: int = _FEEDBACK_DELAY_SECONDS
 ) -> None:
     await asyncio.sleep(delay_seconds)
-    title = "Оцените ваш заказ ⭐️"
+    title = "Оцените ваш заказ"
     message = (
         f"Как вам заказ из {restaurant_name}? Пожалуйста, оставьте отзыв"
         " в мини-приложении, это поможет ресторану стать лучше!"
@@ -44,12 +50,10 @@ async def _schedule_feedback_request(
 
 async def handle_order_placed(event: OrderPlacedEvent) -> None:
     logger.info(
-        "[order.placed] order=%s user=%s restaurant=%r total=%d items=%d",
-        event.order_id,
-        event.user_id,
-        event.restaurant_name,
-        event.total_price,
-        event.items_count,
+        "order.placed",
+        order_id=str(event.order_id),
+        restaurant_id=str(event.restaurant_id),
+        items_count=event.items_count,
     )
     title = f"Заказ в {event.restaurant_name} принят"
     message = f"Ваш заказ на сумму {event.total_price} ₽ успешно оформлен и ожидает подтверждения."
@@ -58,12 +62,11 @@ async def handle_order_placed(event: OrderPlacedEvent) -> None:
 
 async def handle_order_status_changed(event: OrderStatusChangedEvent) -> None:
     logger.info(
-        "[order.status_changed] order=%s %s -> %s user=%s restaurant=%r",
-        event.order_id,
-        event.old_status.value,
-        event.new_status.value,
-        event.user_id,
-        event.restaurant_name,
+        "order.status_changed",
+        order_id=str(event.order_id),
+        restaurant_id=str(event.restaurant_id),
+        old_status=event.old_status.value,
+        new_status=event.new_status.value,
     )
 
     status_ru = {
@@ -88,9 +91,6 @@ async def handle_order_status_changed(event: OrderStatusChangedEvent) -> None:
                 event.user_id, event.restaurant_name, _FEEDBACK_DELAY_SECONDS
             )
         )
-        task.add_done_callback(
-            lambda t: t.exception()
-            and logger.exception("feedback task failed", exc_info=t.exception())
-        )
+        task.add_done_callback(_log_feedback_task_error)
 
     await _notify_user(event.user_id, title, message)

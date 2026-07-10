@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, date, datetime, timedelta
+from typing import Any
 
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,8 +12,26 @@ from features.reviews.models import Review
 from features.users.models import User
 from features.vendors.models import VendorProfile
 from shared.enums.moderation_status import ModerationStatus
+from shared.enums.order_status import OrderStatus
 from shared.enums.permissions import Permission
-from shared.permissions import VENDOR_PERMISSIONS, has_permission, permissions_with, permissions_without
+from shared.permissions import (
+    VENDOR_PERMISSIONS,
+    has_permission,
+    permissions_with,
+    permissions_without,
+)
+
+
+def _completed_orders_count_subquery() -> Any:
+    return (
+        select(func.count(Order.id))
+        .where(
+            Order.restaurant_id == Restaurant.id,
+            Order.status == OrderStatus.COMPLETED.value,
+        )
+        .correlate(Restaurant)
+        .scalar_subquery()
+    )
 
 
 async def get_all_restaurants(
@@ -34,7 +52,7 @@ async def get_all_restaurants(
             User.phone_number.label("vendor_phone"),
             avg_rating.label("average_rating"),
             func.count(func.distinct(Review.id)).label("review_count"),
-            func.count(func.distinct(Order.id)).label("orders_count"),
+            _completed_orders_count_subquery().label("orders_count"),
         )
         .join(VendorProfile, VendorProfile.id == Restaurant.vendor_id)
         .join(User, User.id == VendorProfile.user_id)
@@ -42,7 +60,6 @@ async def get_all_restaurants(
             Review,
             and_(Review.restaurant_id == Restaurant.id, Review.deleted_at.is_(None)),
         )
-        .outerjoin(Order, Order.restaurant_id == Restaurant.id)
         .where(Restaurant.is_active.is_(True))
         .group_by(Restaurant.id, User.name, User.phone_number)
         .order_by(Restaurant.created_at.desc())
@@ -131,7 +148,7 @@ async def get_restaurant_by_id(
             User.phone_number.label("vendor_phone"),
             func.coalesce(func.avg(Review.rating), 0).label("average_rating"),
             func.count(func.distinct(Review.id)).label("review_count"),
-            func.count(func.distinct(Order.id)).label("orders_count"),
+            _completed_orders_count_subquery().label("orders_count"),
         )
         .join(VendorProfile, VendorProfile.id == Restaurant.vendor_id)
         .join(User, User.id == VendorProfile.user_id)
@@ -139,7 +156,6 @@ async def get_restaurant_by_id(
             Review,
             and_(Review.restaurant_id == Restaurant.id, Review.deleted_at.is_(None)),
         )
-        .outerjoin(Order, Order.restaurant_id == Restaurant.id)
         .where(Restaurant.id == restaurant_id, Restaurant.is_active.is_(True))
         .group_by(Restaurant.id, User.name, User.phone_number)
     )

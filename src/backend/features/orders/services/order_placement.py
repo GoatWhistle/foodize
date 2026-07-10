@@ -8,7 +8,12 @@ from features.notifications.events import OrderPlacedEvent
 from features.notifications.outbox_service import enqueue_event
 from features.orders.crud import order as order_crud
 from features.orders.crud import order_item as order_item_crud
-from features.orders.exceptions import MenuItemRestaurantMismatchException, MenuItemsNotFoundException, MenuItemUnavailableException, OrderNotFoundException
+from features.orders.exceptions import (
+    MenuItemRestaurantMismatchException,
+    MenuItemsNotFoundException,
+    MenuItemUnavailableException,
+    OrderNotFoundException,
+)
 from features.orders.models import Order, OrderItem, OrderItemOption
 from features.orders.schemas.order import OrderCreate, OrderResponse
 from features.orders.services.order_utils import (
@@ -33,7 +38,9 @@ async def place_order(
     user_id: uuid.UUID,
     idempotency_key: str | None = None,
 ) -> OrderResponse:
-    from features.orders.services.order_queries import estimate_restaurant_load  # noqa: avoid circular at module level
+    from features.orders.services.order_queries import (
+        estimate_restaurant_load,  # noqa: avoid circular at module level
+    )
 
     request_hash = _make_request_hash(order_data)
     idempotency_record = await _start_idempotency_record(
@@ -71,7 +78,9 @@ async def place_order(
     selected_option_ids = [
         option_id for item in order_data.items for option_id in item.selected_option_ids
     ]
-    options_by_id = await order_item_crud.get_options_by_ids(session, selected_option_ids)
+    options_by_id = await order_item_crud.get_options_by_ids(
+        session, selected_option_ids, for_update=True
+    )
     selected_options_by_item = {
         index: _validate_item_options(item, menu_items[item.menu_item_id], options_by_id)
         for index, item in enumerate(order_data.items)
@@ -98,14 +107,16 @@ async def place_order(
     )
 
     if order_data.promo_code:
-        # NOTE: mutating order.total_price here (instead of computing it upfront) is safe
-        # because this happens before session.commit() below and every downstream read
-        # (enqueue_event, OrderResponse, idempotency snapshot) happens after this point,
-        # so they all observe the post-promo total. Kept as post-hoc mutation rather than
-        # refactored, since apply_promo needs the pre-promo total as input.
+        promo = await promo_service.get_promo_for_order(
+            session, order_data.promo_code
+        )
+        discount_base = _category_subtotal(
+            order_data, menu_items, selected_options_by_item, promo.menu_category
+        ) if promo and promo.menu_category else order.total_price
         new_total = await promo_service.apply_promo(
             session, order_data.promo_code, order_data.restaurant_id,
             order.total_price, is_first_order=is_first_order,
+            user_id=user_id, discount_base=discount_base,
         )
         if new_total != order.total_price:
             order.total_price = new_total
@@ -136,6 +147,22 @@ async def place_order(
     await session.commit()
     await _safe_publish(f"restaurant_orders:{order.restaurant_id}", "new_order")
     return response
+
+
+def _category_subtotal(
+    order_data: OrderCreate,
+    menu_items: dict,
+    selected_options_by_item: dict[int, list[MenuItemOption]],
+    menu_category: str,
+) -> int:
+    subtotal = 0
+    for index, item in enumerate(order_data.items):
+        menu_item = menu_items[item.menu_item_id]
+        if menu_item.category != menu_category:
+            continue
+        options_delta = sum(option.price_delta for option in selected_options_by_item[index])
+        subtotal += (menu_item.price + options_delta) * item.quantity
+    return subtotal
 
 
 async def _create_order(

@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
-from infra.storage import MAX_IMAGE_BYTES
+from infra.storage import ALLOWED_IMAGE_CONTENT_TYPES, MAX_IMAGE_BYTES
 from shared.exceptions import BadRequestException
 from features.restaurants import service
 from features.restaurants.dependencies import get_restaurant_and_check_ownership
@@ -23,6 +23,7 @@ from features.restaurants.working_hours_schemas import (
 from features.users.models import User
 from features.vendors.dependencies import get_current_vendor
 from features.vendors.models import VendorProfile
+from middlewares.limiter import limiter
 from shared.dependencies import require_permission
 from shared.enums.permissions import Permission
 from shared.enums.restaurant_sort import RestaurantSort
@@ -35,7 +36,9 @@ router = APIRouter(prefix="/restaurants", tags=["Restaurants"])
 
 
 @router.get("/public/{restaurant_id}", response_model=SuccessResponse[RestaurantResponse])
+@limiter.limit("60/minute")
 async def read_public_restaurant(
+    request: Request,
     restaurant_id: str,
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[RestaurantResponse]:
@@ -44,6 +47,7 @@ async def read_public_restaurant(
 
 
 @router.get("/public", response_model=SuccessListResponse[RestaurantResponse])
+@limiter.limit("60/minute")
 async def read_public_restaurants(
     request: Request,
     name: str | None = Query(None, max_length=128),
@@ -101,12 +105,25 @@ async def update_restaurant(
 @router.post("/{restaurant_id}/photo", response_model=SuccessResponse[RestaurantResponse])
 async def upload_restaurant_photo(
     restaurant_id: uuid.UUID,
+    request: Request,
     file: UploadFile = File(...),
     _user: User = Depends(require_permission(Permission.RESTAURANTS_UPDATE)),
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[RestaurantResponse]:
-    data = await file.read()
+    content_type = file.content_type or ""
+    if content_type not in ALLOWED_IMAGE_CONTENT_TYPES:
+        raise BadRequestException(detail="Недопустимый тип файла")
+
+    content_length = request.headers.get("content-length")
+    if (
+        content_length is not None
+        and content_length.isdigit()
+        and int(content_length) > MAX_IMAGE_BYTES
+    ):
+        raise BadRequestException(detail="Файл слишком большой (максимум 5 МБ)")
+
+    data = await file.read(MAX_IMAGE_BYTES + 1)
     if not data:
         raise BadRequestException(detail="Пустой файл")
     if len(data) > MAX_IMAGE_BYTES:
@@ -116,7 +133,7 @@ async def upload_restaurant_photo(
         session=session,
         restaurant_id=restaurant_id,
         data=data,
-        content_type=file.content_type or "",
+        content_type=content_type,
         vendor_id=current_vendor.id,
     )
     return build_response(result)

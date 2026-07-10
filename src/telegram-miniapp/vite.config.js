@@ -7,16 +7,16 @@ export default defineConfig({
   resolve: {
     alias: [
       {
-        find: "@shared/services/api.instance.js",
-        replacement: path.resolve(__dirname, "src/services/api.js"),
+        find: "@shared/services/api.instance",
+        replacement: path.resolve(__dirname, "src/services/api"),
       },
       {
-        find: "@shared/store/useOrderStore.instance.js",
-        replacement: path.resolve(__dirname, "src/store/useOrderStore.js"),
+        find: "@shared/store/useOrderStore.instance",
+        replacement: path.resolve(__dirname, "src/store/useOrderStore"),
       },
       {
-        find: "@shared/store/useAuthStore.instance.js",
-        replacement: path.resolve(__dirname, "src/store/useAuthStore.js"),
+        find: "@shared/store/useAuthStore.instance",
+        replacement: path.resolve(__dirname, "src/store/useAuthStore"),
       },
       {
         find: "@shared",
@@ -30,6 +30,9 @@ export default defineConfig({
     host: true,
     allowedHosts: [".ngrok-free.dev"],
     port: 5174,
+    fs: {
+      allow: [__dirname, path.resolve(__dirname, "../shared")],
+    },
     watch: {
       usePolling: true,
     },
@@ -47,7 +50,7 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     globals: true,
-    setupFiles: "./src/__tests__/setup.js",
+    setupFiles: "./src/__tests__/setup.ts",
     coverage: {
       provider: "v8",
       include: ["src/store/**", "src/telegram/**", "src/utils/**"],

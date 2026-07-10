@@ -1,4 +1,4 @@
-from infra.llm.agent import ToolExecutor, run_agent, stream_agent
+from infra.llm.agent import LLMBudgetExceededError, ToolExecutor, run_agent, stream_agent
 from infra.llm.base import (
     LLMClient,
     LLMResponse,
@@ -14,6 +14,7 @@ from infra.llm.factory import AgentRole, get_llm_client
 __all__ = [
     "AgentRole",
     "EmbeddingClient",
+    "LLMBudgetExceededError",
     "LLMClient",
     "LLMResponse",
     "Message",

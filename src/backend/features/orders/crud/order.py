@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Sequence
-from datetime import date, datetime, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from typing import Any
 
 from sqlalchemy import func, select
@@ -11,6 +11,14 @@ from features.orders.models import Order, OrderEvent, OrderItem
 from shared.enums.order_status import OrderStatus
 from shared.enums.permissions import Permission
 from shared.permissions import serialize_permissions
+
+
+def _day_start(value: date) -> datetime:
+    return datetime.combine(value, time.min, tzinfo=timezone.utc)
+
+
+def _day_end_exclusive(value: date) -> datetime:
+    return datetime.combine(value + timedelta(days=1), time.min, tzinfo=timezone.utc)
 
 
 def _items_options() -> Any:
@@ -74,20 +82,11 @@ async def get_order_by_identifier_for_update(
 ) -> Order | None:
     try:
         parsed_uuid = uuid.UUID(identifier)
-        stmt = (
-            select(Order).where(Order.id == parsed_uuid).options(*_full_options()).with_for_update()
-        )
     except ValueError:
-        try:
-            display_id = int(identifier)
-            stmt = (
-                select(Order)
-                .where(Order.display_id == display_id)
-                .options(*_full_options())
-                .with_for_update()
-            )
-        except ValueError:
-            return None
+        return None
+    stmt = (
+        select(Order).where(Order.id == parsed_uuid).options(*_full_options()).with_for_update()
+    )
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -110,9 +109,9 @@ async def get_orders_by_restaurant_id(
     if status is not None:
         stmt = stmt.where(Order.status == status.value)
     if date_from is not None:
-        stmt = stmt.where(func.date(Order.created_at) >= date_from)
+        stmt = stmt.where(Order.created_at >= _day_start(date_from))
     if date_to is not None:
-        stmt = stmt.where(func.date(Order.created_at) <= date_to)
+        stmt = stmt.where(Order.created_at < _day_end_exclusive(date_to))
     stmt = stmt.offset(offset).limit(limit)
     result = await session.execute(stmt)
     return list(result.scalars().all())
@@ -144,9 +143,9 @@ async def count_orders_by_restaurant_id(
     if status is not None:
         stmt = stmt.where(Order.status == status.value)
     if date_from is not None:
-        stmt = stmt.where(func.date(Order.created_at) >= date_from)
+        stmt = stmt.where(Order.created_at >= _day_start(date_from))
     if date_to is not None:
-        stmt = stmt.where(func.date(Order.created_at) <= date_to)
+        stmt = stmt.where(Order.created_at < _day_end_exclusive(date_to))
     result = await session.execute(stmt)
     return result.scalar_one()
 

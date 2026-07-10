@@ -24,12 +24,16 @@ async def get_menu_items_by_ids(
 async def get_options_by_ids(
     session: AsyncSession,
     ids: list[uuid.UUID],
+    for_update: bool = False,
 ) -> dict[uuid.UUID, MenuItemOption]:
     if not ids:
         return {}
-    result = await session.execute(
+    query = (
         select(MenuItemOption)
         .where(MenuItemOption.id.in_(ids))
         .options(selectinload(MenuItemOption.group))
     )
+    if for_update:
+        query = query.with_for_update(of=MenuItemOption)
+    result = await session.execute(query)
     return {option.id: option for option in result.scalars().all()}

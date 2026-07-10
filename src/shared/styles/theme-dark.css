@@ -1,0 +1,68 @@
+[data-theme="dark"] {
+  --bg:         oklch(14% 0.005 50);
+  --bg-card:    oklch(16.5% 0.005 50);
+  --bg-surface: oklch(19%  0.006 50);
+  --bg-raised:  oklch(22%  0.007 50);
+
+  --ink-1:   oklch(96%  0.004 60);
+  --ink-2:   oklch(82%  0.006 55);
+  --ink-3:   oklch(58%  0.008 50);
+  --ink-inv: var(--n-900);
+
+  --text-1: var(--ink-1);
+  --text-2: var(--ink-2);
+  --text-3: var(--ink-3);
+
+  --border:     oklch(96% 0 0 / 0.08);
+  --border-mid: oklch(96% 0 0 / 0.14);
+  --border-hi:  oklch(96% 0 0 / 0.24);
+
+  --action-bg:    var(--accent);
+  --action-fg:    var(--accent-text);
+  --action-hover: var(--accent-dim);
+
+  --fire:        oklch(64% 0.19 35);
+  --fire-dim:    oklch(56% 0.17 35);
+  --fire-deep:   oklch(48% 0.14 35);
+  --fire-glow:   oklch(64% 0.19 35 / 0.28);
+  --fire-subtle: oklch(64% 0.19 35 / 0.12);
+  --fire-text:   oklch(98% 0.004 60);
+  --shadow-fire: 0 10px 26px oklch(64% 0.19 35 / 0.32);
+
+  --accent:        var(--fire);
+  --accent-dim:    var(--fire-dim);
+  --accent-deep:   var(--fire-deep);
+  --accent-glow:   var(--fire-glow);
+  --accent-subtle: var(--fire-subtle);
+  --accent-text:   var(--fire-text);
+
+  --amber: oklch(76% 0.16 65);
+  --gold:  oklch(68% 0.14 60);
+  --star:  oklch(76% 0.14 80);
+
+  --color-success:        oklch(68% 0.18 145);
+  --color-success-dim:    oklch(56% 0.14 145);
+  --color-success-bg:     oklch(68% 0.18 145 / 0.10);
+  --color-success-border: oklch(68% 0.18 145 / 0.28);
+
+  --color-warning:        oklch(76% 0.16 65);
+  --color-warning-dim:    oklch(63% 0.13 60);
+  --color-warning-bg:     oklch(76% 0.16 65 / 0.10);
+  --color-warning-border: oklch(76% 0.16 65 / 0.25);
+
+  --color-error:          oklch(64% 0.20 27);
+  --color-error-dim:      oklch(52% 0.16 27);
+  --color-error-bg:       oklch(64% 0.20 27 / 0.10);
+  --color-error-border:   oklch(64% 0.20 27 / 0.22);
+
+  --color-neutral:        oklch(60% 0.02 220);
+  --color-neutral-bg:     oklch(60% 0.02 220 / 0.12);
+  --color-neutral-border: oklch(60% 0.02 220 / 0.22);
+
+  --shadow-sm: 0 1px 3px  oklch(0% 0 0 / 0.35);
+  --shadow-md: 0 8px 24px oklch(0% 0 0 / 0.38);
+  --shadow-lg: 0 16px 42px oklch(0% 0 0 / 0.46);
+  --shadow-xl: 0 24px 64px oklch(0% 0 0 / 0.54);
+
+  --bg-blur: oklch(14% 0.005 50 / 0.9);
+}

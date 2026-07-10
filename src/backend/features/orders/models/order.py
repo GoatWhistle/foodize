@@ -2,7 +2,16 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, Identity, Index, Integer, String, text
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Identity,
+    Index,
+    Integer,
+    String,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base, CreatedAtMixin, IdUuidPkMixin, UpdatedAtMixin
@@ -22,8 +31,10 @@ class Order(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
             "ix_orders_restaurant_active",
             "restaurant_id",
             "status",
-            postgresql_where=text("status NOT IN ('COMPLETED', 'CANCELLED', 'REJECTED')"),
+            postgresql_where=text("status NOT IN ('COMPLETED', 'CANCELLED')"),
         ),
+        Index("ix_orders_restaurant_created", "restaurant_id", "created_at"),
+        CheckConstraint("total_price >= 0", name="total_price_non_negative"),
     )
     display_id: Mapped[int] = mapped_column(
         Integer, Identity(always=False), unique=True, index=True

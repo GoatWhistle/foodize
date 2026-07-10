@@ -4,7 +4,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from features.restaurants.exceptions import RestaurantNotFoundException
-from features.reviews.exceptions import ReviewLimitExceededException
+from features.reviews.exceptions import (
+    ReviewLimitExceededException,
+    ReviewNotAllowedException,
+)
 from features.reviews.schemas import ReviewCreate, ReviewResponse
 from features.reviews.service import (
     create_review_for_user,
@@ -87,18 +90,27 @@ class TestCreateReviewForUser:
                 self.restaurant_id,
             )
 
-    async def test_no_completed_order_sets_unverified(self, mock_db_session):
+    async def test_no_completed_order_rejected(self, mock_db_session):
         self.mock_has_order.return_value = False
-        result = await create_review_for_user(
-            mock_db_session,
-            ReviewCreate(rating=3),
-            self.user_id,
-            self.restaurant_id,
-        )
-        assert isinstance(result, ReviewResponse)
-        self.mock_create.assert_awaited_once()
-        _, kwargs = self.mock_create.call_args
-        assert kwargs.get("is_verified_purchase") is False
+        with pytest.raises(ReviewNotAllowedException):
+            await create_review_for_user(
+                mock_db_session,
+                ReviewCreate(rating=3),
+                self.user_id,
+                self.restaurant_id,
+            )
+        self.mock_create.assert_not_awaited()
+
+    async def test_inactive_restaurant_rejected(self, mock_db_session):
+        self.mock_get_restaurant.return_value.is_active = False
+        with pytest.raises(RestaurantNotFoundException):
+            await create_review_for_user(
+                mock_db_session,
+                ReviewCreate(rating=3),
+                self.user_id,
+                self.restaurant_id,
+            )
+        self.mock_create.assert_not_awaited()
 
     async def test_completed_order_sets_verified(self, mock_db_session):
         result = await create_review_for_user(

@@ -1,0 +1,94 @@
+.page {
+  min-height: 100vh;
+  padding: 24px var(--gutter) 40px;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text-1);
+  margin-bottom: 24px;
+}
+
+.section {
+  margin-bottom: 24px;
+}
+
+.sectionTitle {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 10px;
+  padding-left: 4px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
+  padding: 18px;
+}
+
+.label {
+  font-size: 0.78rem;
+  color: var(--text-3);
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+}
+
+.row > * {
+  flex: 1;
+}
+
+.success {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-success);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 18px;
+  background: var(--bg-card);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: background var(--dur-sm);
+  color: var(--text-1);
+  -webkit-tap-highlight-color: transparent;
+  text-align: left;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.menuItem:hover {
+  background: var(--bg-surface);
+}
+
+.menuItemLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}

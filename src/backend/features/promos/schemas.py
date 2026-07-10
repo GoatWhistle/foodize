@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class PromoCreate(BaseModel):
@@ -22,6 +22,12 @@ class PromoCreate(BaseModel):
         if v is not None and v <= datetime.now(timezone.utc):
             raise ValueError("expires_at must be in the future")
         return v
+
+    @model_validator(mode="after")
+    def percent_discount_within_bounds(self) -> "PromoCreate":
+        if self.discount_type == "PERCENT" and self.discount_value > 100:
+            raise ValueError("discount_value for PERCENT must be between 1 and 100")
+        return self
 
 
 class PromoResponse(BaseModel):

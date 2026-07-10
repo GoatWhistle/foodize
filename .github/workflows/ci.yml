@@ -61,7 +61,6 @@ jobs:
           uv run alembic check
 
       - name: Run pip-audit (dependency vulnerability scan)
-        continue-on-error: true
         run: uvx pip-audit --strict -r <(uv export --frozen --no-hashes --no-emit-project)
 
   frontend-ci:
@@ -92,7 +91,6 @@ jobs:
         run: npm run test:coverage -- --run
 
       - name: Run npm audit (dependency vulnerability scan)
-        continue-on-error: true
         run: npm audit --audit-level=high
 
   telegram-miniapp-ci:
@@ -117,7 +115,6 @@ jobs:
         run: npm run lint
 
       - name: Run npm audit (dependency vulnerability scan)
-        continue-on-error: true
         run: npm audit --audit-level=high
 
   openapi-contract-ci:

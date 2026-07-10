@@ -43,24 +43,24 @@ async def test_get_working_hours_empty():
 async def test_set_working_hours():
     from features.restaurants.working_hours_schemas import WorkingHoursEntry
 
-    entries = [WorkingHoursEntry(day_of_week=0, open_time="09:00", close_time="22:00", is_closed=False)]
+    entries = [
+        WorkingHoursEntry(day_of_week=0, open_time="09:00", close_time="22:00", is_closed=False),
+        WorkingHoursEntry(day_of_week=1, open_time="10:00", close_time="20:00", is_closed=False),
+    ]
     restaurant_id = uuid.uuid4()
-
-    mock_wh = MagicMock()
 
     session = AsyncMock()
     session.execute = AsyncMock()
-    session.add_all = MagicMock()
     session.commit = AsyncMock()
-    session.refresh = AsyncMock()
 
-    with (
-        patch("features.restaurants.working_hours_crud.delete", return_value=MagicMock()),
-        patch("features.restaurants.working_hours_crud.WorkingHours", return_value=mock_wh),
+    with patch(
+        "features.restaurants.working_hours_crud.get_working_hours",
+        new_callable=AsyncMock,
+        return_value=[],
     ):
         await set_working_hours(session, restaurant_id, entries)
 
-    session.add_all.assert_called_once()
+    assert session.execute.await_count == len(entries) + 1
     session.commit.assert_awaited_once()
 
 

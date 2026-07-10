@@ -18,6 +18,7 @@ from features.orders.models import Order
 from features.orders.schemas.order import OrderCancelRequest, OrderResponse, OrderStatusUpdate
 from features.orders.services.order_utils import (
     _CANCELLABLE_STATUSES,
+    _TERMINAL_STATUSES,
     _safe_publish,
     _validate_transition,
 )
@@ -129,11 +130,13 @@ async def force_cancel_order(
     actor: User,
     reason: str,
 ) -> OrderResponse:
-    order = await order_crud.get_order_by_id(session, order_id)
+    order = await order_crud.get_order_by_id_for_update(session, order_id)
     if not order:
         raise OrderNotFoundException()
 
     old_status = OrderStatus(order.status)
+    if old_status in _TERMINAL_STATUSES:
+        raise OrderNotCancellableException()
     order.cancellation_reason = reason
     updated = await order_crud.update_order_status(session, order, OrderStatus.CANCELLED)
 

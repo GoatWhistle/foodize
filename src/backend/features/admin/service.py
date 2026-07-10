@@ -17,10 +17,15 @@ from features.admin.schemas import (
 from features.orders.models import Order
 from features.restaurants.models import Restaurant
 from features.users.models import User
+from features.admin.exceptions import PermissionAssignmentDeniedException
 from shared.enums.order_status import OrderStatus
 from shared.enums.permissions import Permission
 from shared.exceptions import NotFoundException
-from shared.permissions import serialize_permissions
+from shared.permissions import (
+    has_explicit_permission,
+    normalize_permissions,
+    serialize_permissions,
+)
 
 
 async def get_users_list(
@@ -52,11 +57,11 @@ async def activate_user_service(session: AsyncSession, user_id: uuid.UUID) -> Us
     return await crud.activate_user(session, user)
 
 
-async def set_user_permissions(
+async def _write_user_permissions(
     session: AsyncSession,
     user_id: uuid.UUID,
     permissions: Sequence[Permission | str],
-    actor_id: uuid.UUID | None = None,
+    actor_id: uuid.UUID | None,
 ) -> User:
     user = await get_user_or_404(session, user_id)
     old_permissions = user.permissions
@@ -72,6 +77,33 @@ async def set_user_permissions(
         details={"old": old_permissions, "new": user.permissions},
     )
     return user
+
+
+async def set_user_permissions(
+    session: AsyncSession,
+    user_id: uuid.UUID,
+    permissions: Sequence[Permission | str],
+    actor: User,
+) -> User:
+    if not has_explicit_permission(actor.permissions, Permission.USERS_ASSIGN_PERMISSIONS):
+        raise PermissionAssignmentDeniedException()
+    if actor.id == user_id:
+        raise PermissionAssignmentDeniedException()
+
+    requested = normalize_permissions(permissions)
+    actor_permissions = normalize_permissions(actor.permissions)
+    if not requested <= actor_permissions:
+        raise PermissionAssignmentDeniedException()
+
+    return await _write_user_permissions(session, user_id, permissions, actor.id)
+
+
+async def reset_own_permissions(
+    session: AsyncSession,
+    user: User,
+    permissions: Sequence[Permission | str],
+) -> User:
+    return await _write_user_permissions(session, user.id, permissions, user.id)
 
 
 async def get_orders_list(

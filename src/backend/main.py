@@ -30,13 +30,20 @@ from middlewares.request_id import RequestIDMiddleware
 from middlewares.security import SecurityHeadersMiddleware
 from settings.config.app_config import settings
 from shared.exceptions.base import AppException
-from utils.logging_setup import configure_logging
+from utils.logging_setup import configure_logging, get_logger
 
 configure_logging()
+
+logger = get_logger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if settings.debug:
+        logger.warning(
+            "Application is running with debug=True: production security guards "
+            "(insecure default credentials, weak secrets, docs exposure) are DISABLED."
+        )
     if settings.rabbitmq.is_default_insecure and not settings.debug:
         raise RuntimeError(
             "RABBITMQ__URL must be set to a non-default value in production. "
@@ -47,10 +54,15 @@ async def lifespan(app: FastAPI):
             "REDIS__PASSWORD must be set to a non-empty value in production. "
             "Current value is empty, which allows unauthenticated Redis access."
         )
-    if settings.telegram.bot_token and settings.telegram.is_weak_bot_api_secret and not settings.debug:
+    if settings.telegram.is_weak_bot_api_secret and not settings.debug:
         raise RuntimeError(
             "TELEGRAM__BOT_API_SECRET must be set to a strong random value in production. "
             "Current value is empty or a known weak placeholder."
+        )
+    if settings.s3.is_default_insecure and not settings.debug:
+        raise RuntimeError(
+            "S3__ACCESS_KEY / S3__SECRET_KEY must be set to non-default values in production. "
+            "Current value uses insecure default 'minioadmin' credentials."
         )
     if "*" in settings.cors.allowed_origins:
         raise RuntimeError(
@@ -66,7 +78,14 @@ async def lifespan(app: FastAPI):
     await db_helper.dispose()
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    title="Foodize API",
+    version="0.1.0",
+    lifespan=lifespan,
+    docs_url="/docs" if settings.debug else None,
+    redoc_url="/redoc" if settings.debug else None,
+    openapi_url="/openapi.json" if settings.debug else None,
+)
 app.state.limiter = limiter
 
 app.add_middleware(RequestIDMiddleware)
@@ -112,14 +131,16 @@ async def health():
         async with db_helper.session_factory() as session:
             await session.execute(text("SELECT 1"))
         checks["db"] = "ok"
-    except Exception:
+    except Exception as exc:
+        logger.warning("health_check_failed", component="db", error=repr(exc))
         checks["db"] = "error"
 
     try:
         cache = get_redis_cache()
         await cache.exists("health")
         checks["redis"] = "ok"
-    except Exception:
+    except Exception as exc:
+        logger.warning("health_check_failed", component="redis", error=repr(exc))
         checks["redis"] = "error"
 
     try:
@@ -127,7 +148,8 @@ async def health():
             checks["rabbitmq"] = "ok"
         else:
             checks["rabbitmq"] = "error"
-    except Exception:
+    except Exception as exc:
+        logger.warning("health_check_failed", component="rabbitmq", error=repr(exc))
         checks["rabbitmq"] = "error"
 
     overall = "ok" if all(v == "ok" for v in checks.values()) else "degraded"

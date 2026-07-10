@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from features.admin.exceptions import PermissionAssignmentDeniedException
 from features.admin.service import (
     activate_user_service,
     deactivate_user_service,
@@ -25,6 +26,7 @@ from features.admin.service import (
     moderate_vendor,
     set_user_permissions,
 )
+from shared.enums.permissions import Permission
 from shared.exceptions import NotFoundException
 
 
@@ -142,7 +144,11 @@ class TestSetUserPermissions:
     @pytest.mark.asyncio
     async def test_logs_audit_action(self):
         user = _make_mock_user()
-        actor_id = uuid.uuid4()
+        actor = _make_mock_user()
+        actor.permissions = [
+            Permission.USERS_ASSIGN_PERMISSIONS.value,
+            Permission.USERS_READ.value,
+        ]
         session = AsyncMock()
 
         with (
@@ -153,12 +159,52 @@ class TestSetUserPermissions:
                 "features.admin.audit_log.service.log_action", new_callable=AsyncMock
             ) as mock_log,
         ):
-            await set_user_permissions(session, user.id, ["customers:read"], actor_id=actor_id)
+            await set_user_permissions(
+                session, user.id, [Permission.USERS_READ.value], actor=actor
+            )
             mock_log.assert_awaited_once()
             call_kwargs = mock_log.call_args[1]
             assert call_kwargs["action"] == "UPDATE_PERMISSIONS"
             assert call_kwargs["entity_type"] == "user"
-            assert call_kwargs["actor_id"] == actor_id
+            assert call_kwargs["actor_id"] == actor.id
+
+    @pytest.mark.asyncio
+    async def test_rejects_escalation_beyond_actor(self):
+        user = _make_mock_user()
+        actor = _make_mock_user()
+        actor.permissions = [Permission.USERS_ASSIGN_PERMISSIONS.value]
+        session = AsyncMock()
+
+        with pytest.raises(PermissionAssignmentDeniedException):
+            await set_user_permissions(
+                session, user.id, [Permission.ADMIN_ACCESS.value], actor=actor
+            )
+
+    @pytest.mark.asyncio
+    async def test_rejects_actor_without_assign_permission(self):
+        user = _make_mock_user()
+        actor = _make_mock_user()
+        actor.permissions = [Permission.ADMIN_ACCESS.value]
+        session = AsyncMock()
+
+        with pytest.raises(PermissionAssignmentDeniedException):
+            await set_user_permissions(
+                session, user.id, [Permission.USERS_READ.value], actor=actor
+            )
+
+    @pytest.mark.asyncio
+    async def test_rejects_self_change(self):
+        actor = _make_mock_user()
+        actor.permissions = [
+            Permission.USERS_ASSIGN_PERMISSIONS.value,
+            Permission.USERS_READ.value,
+        ]
+        session = AsyncMock()
+
+        with pytest.raises(PermissionAssignmentDeniedException):
+            await set_user_permissions(
+                session, actor.id, [Permission.USERS_READ.value], actor=actor
+            )
 
 
 class TestGetUsersList:

@@ -8,9 +8,11 @@ from features.restaurants.exceptions import RestaurantNotFoundException
 
 
 async def resolve_restaurant_uuid(session: AsyncSession, identifier: str) -> uuid.UUID:
+    if not identifier:
+        raise RestaurantNotFoundException()
     try:
         return uuid.UUID(identifier)
-    except ValueError:
+    except (ValueError, TypeError):
         pass
     result = await session.execute(
         select(Restaurant.id).where(Restaurant.display_id == identifier)

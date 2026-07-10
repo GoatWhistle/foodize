@@ -25,6 +25,11 @@ CMD ["alembic", "upgrade", "head"]
 FROM base AS backend
 RUN useradd -m appuser
 USER appuser
+CMD ["gunicorn", "main:app", "-k", "uvicorn.workers.UvicornWorker", "-w", "4", "-b", "0.0.0.0:8000"]
+
+FROM base AS backend-dev
+RUN useradd -m appuser
+USER appuser
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
 FROM base AS worker

@@ -73,6 +73,11 @@ class TestConsumer:
         with (
             caplog.at_level(logging.INFO, logger="features.notifications.handlers"),
             patch("features.notifications.handlers._notify_user", new_callable=AsyncMock),
+            patch(
+                "features.notifications.consumer._claim_event",
+                new_callable=AsyncMock,
+                return_value=True,
+            ),
         ):
             await _process_message(message, "order.placed")
         assert "order.placed" in caplog.text
@@ -89,9 +94,47 @@ class TestConsumer:
         with (
             caplog.at_level(logging.INFO, logger="features.notifications.handlers"),
             patch("features.notifications.handlers._notify_user", new_callable=AsyncMock),
+            patch(
+                "features.notifications.consumer._claim_event",
+                new_callable=AsyncMock,
+                return_value=True,
+            ),
         ):
             await _process_message(message, "order.status_changed")
         assert "order.status_changed" in caplog.text
+
+    @pytest.mark.asyncio
+    async def test_process_message_skips_duplicate_event(self):
+        event = _make_placed_event()
+        message = MagicMock()
+        message.body = event.model_dump_json().encode()
+        message.process = MagicMock(
+            return_value=MagicMock(__aenter__=AsyncMock(), __aexit__=AsyncMock())
+        )
+
+        handler = AsyncMock()
+        with (
+            patch("features.notifications.consumer.handle_order_placed", handler),
+            patch(
+                "features.notifications.consumer._claim_event",
+                new_callable=AsyncMock,
+                return_value=False,
+            ),
+        ):
+            await _process_message(message, "order.placed")
+        handler.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_process_message_rejects_oversized_body(self):
+        message = MagicMock()
+        message.body = b"x" * (64 * 1024 + 1)
+        message.nack = AsyncMock()
+        message.process = MagicMock(
+            return_value=MagicMock(__aenter__=AsyncMock(), __aexit__=AsyncMock())
+        )
+
+        await _process_message(message, "order.placed")
+        message.nack.assert_awaited_once()
 
     @pytest.mark.asyncio
     async def test_process_message_unknown_routing_key_no_crash(self):
@@ -112,10 +155,17 @@ class TestConsumer:
             return_value=MagicMock(__aenter__=AsyncMock(), __aexit__=AsyncMock())
         )
 
-        with patch(
-            "features.notifications.consumer.handle_order_placed",
-            new_callable=AsyncMock,
-            side_effect=RuntimeError("fail"),
+        with (
+            patch(
+                "features.notifications.consumer.handle_order_placed",
+                new_callable=AsyncMock,
+                side_effect=RuntimeError("fail"),
+            ),
+            patch(
+                "features.notifications.consumer._claim_event",
+                new_callable=AsyncMock,
+                return_value=True,
+            ),
         ):
             await _process_message(message, "order.placed")
 

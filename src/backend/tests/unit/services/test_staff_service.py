@@ -13,7 +13,7 @@ from features.staff.service import (
     remove_staff_member,
 )
 from shared.enums.staff_request_status import StaffRequestStatus
-from shared.exceptions import AccessDeniedException, NotFoundException
+from shared.exceptions import NotFoundException
 
 
 def _make_staff_request(
@@ -369,16 +369,16 @@ class TestRemoveStaffMember:
         restaurant.vendor_id = uuid.uuid4()
         session.get = AsyncMock(return_value=restaurant)
         with patch("features.staff.service.crud.get_staff_profile_by_id", new_callable=AsyncMock, return_value=profile):
-            with pytest.raises(AccessDeniedException):
+            with pytest.raises(NotFoundException):
                 await remove_staff_member(session, profile.id, uuid.uuid4())
 
     @pytest.mark.asyncio
-    async def test_raises_access_denied_when_restaurant_not_found(self):
+    async def test_raises_not_found_when_restaurant_not_found(self):
         session = AsyncMock()
         profile = _make_profile()
         session.get = AsyncMock(return_value=None)
         with patch("features.staff.service.crud.get_staff_profile_by_id", new_callable=AsyncMock, return_value=profile):
-            with pytest.raises(AccessDeniedException):
+            with pytest.raises(NotFoundException):
                 await remove_staff_member(session, profile.id, uuid.uuid4())
 
     @pytest.mark.asyncio

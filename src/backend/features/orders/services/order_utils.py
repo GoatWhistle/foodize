@@ -1,14 +1,13 @@
 import hashlib
 import json
+import logging
 import uuid
-from datetime import datetime, time as dt_time, timedelta, timezone
+from datetime import datetime, timedelta, timezone
+from datetime import time as dt_time
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
-import logging
-
 from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.menu.models import MenuItem, MenuItemOption
 from features.orders.exceptions import InvalidStatusTransitionException
@@ -30,6 +29,7 @@ _ALLOWED_TRANSITIONS: dict[OrderStatus, set[OrderStatus]] = {
 }
 
 _CANCELLABLE_STATUSES = {OrderStatus.PENDING, OrderStatus.ACCEPTED}
+_TERMINAL_STATUSES = {OrderStatus.COMPLETED, OrderStatus.CANCELLED}
 _PICKUP_TIME_HORIZON_DAYS = 7
 
 

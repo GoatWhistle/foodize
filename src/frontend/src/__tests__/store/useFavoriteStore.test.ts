@@ -1,0 +1,62 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useFavoriteStore } from '@shared/store/useFavoriteStore.js';
+import { favoriteService } from '@shared/services/favoriteService.js';
+
+vi.mock('@shared/services/favoriteService.js', () => ({
+  favoriteService: {
+    getAll: vi.fn(),
+    add: vi.fn(),
+    remove: vi.fn(),
+  },
+}));
+
+describe('useFavoriteStore', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useFavoriteStore.setState({ favoriteIds: [], loaded: false });
+  });
+
+  it('loads favorite restaurant ids', async () => {
+    vi.mocked(favoriteService.getAll).mockResolvedValueOnce({
+      data: {
+        data: [{ restaurant: { id: 'r1' } }, { restaurant: { id: 'r2' } }],
+      },
+    } as never);
+
+    await useFavoriteStore.getState().loadFavorites();
+
+    expect(favoriteService.getAll).toHaveBeenCalledWith({ size: 100 });
+    expect(useFavoriteStore.getState().favoriteIds).toEqual(['r1', 'r2']);
+    expect(useFavoriteStore.getState().loaded).toBe(true);
+  });
+
+  it('marks loaded even when loading favorites fails', async () => {
+    vi.mocked(favoriteService.getAll).mockRejectedValueOnce(new Error('offline'));
+
+    await useFavoriteStore.getState().loadFavorites();
+
+    expect(useFavoriteStore.getState().loaded).toBe(true);
+    expect(useFavoriteStore.getState().favoriteIds).toEqual([]);
+  });
+
+  it('adds and removes favorites optimistically', async () => {
+    vi.mocked(favoriteService.add).mockResolvedValueOnce({} as never);
+    vi.mocked(favoriteService.remove).mockResolvedValueOnce({} as never);
+
+    await useFavoriteStore.getState().toggle('r1');
+    expect(useFavoriteStore.getState().favoriteIds.includes('r1')).toBe(true);
+    expect(favoriteService.add).toHaveBeenCalledWith('r1');
+
+    await useFavoriteStore.getState().toggle('r1');
+    expect(useFavoriteStore.getState().favoriteIds.includes('r1')).toBe(false);
+    expect(favoriteService.remove).toHaveBeenCalledWith('r1');
+  });
+
+  it('rolls back optimistic favorite changes on API failure', async () => {
+    vi.mocked(favoriteService.add).mockRejectedValueOnce(new Error('fail'));
+
+    await useFavoriteStore.getState().toggle('r1');
+
+    expect(useFavoriteStore.getState().favoriteIds.includes('r1')).toBe(false);
+  });
+});

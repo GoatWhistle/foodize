@@ -1,0 +1,37 @@
+.tag-pill {
+  background: var(--on-photo-mute);
+  backdrop-filter: blur(8px);
+  color: var(--on-photo);
+  border-radius: 100px;
+  padding: 4px 10px;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-strong);
+  letter-spacing: 0.04em;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--on-photo-mute);
+}
+
+.tag-pill.orange {
+  background: var(--fire);
+  border-color: transparent;
+}
+
+.restaurant-card-fade {
+  animation: card-fade-in 0.3s ease both;
+}
+
+.restaurant-card-skeleton {
+  border-radius: var(--r-lg);
+  min-height: 200px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    var(--bg-raised) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 800px 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  border: 1px solid var(--border);
+}

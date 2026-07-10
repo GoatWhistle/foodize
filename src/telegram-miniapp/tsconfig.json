@@ -1,0 +1,40 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
+    "types": ["node"],
+    "typeRoots": ["./node_modules/@types"],
+    "baseUrl": ".",
+    "paths": {
+      "@shared/services/api.instance": ["./src/services/api.ts"],
+      "@shared/store/useOrderStore.instance": ["./src/store/useOrderStore.ts"],
+      "@shared/store/useAuthStore.instance": ["./src/store/useAuthStore.ts"],
+      "@shared/*": ["../shared/*"],
+      "react": ["./node_modules/@types/react"],
+      "react/jsx-runtime": ["./node_modules/@types/react/jsx-runtime"],
+      "react-dom": ["./node_modules/@types/react-dom"],
+      "react-dom/*": ["./node_modules/@types/react-dom/*"],
+      "react-router-dom": ["./node_modules/react-router-dom"],
+      "axios": ["./node_modules/axios"],
+      "zustand": ["./node_modules/zustand"],
+      "zustand/*": ["./node_modules/zustand/*"],
+      "@phosphor-icons/react": ["./node_modules/@phosphor-icons/react"]
+    }
+  },
+  "include": ["src", "../shared"]
+}

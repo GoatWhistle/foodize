@@ -1,9 +1,7 @@
-import uuid
 from datetime import date
 
 from fastapi import APIRouter, Depends, Header, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from shared.restaurant_resolver import resolve_restaurant_uuid
 
 from database import db_helper
 from features.auth.service import get_current_user
@@ -31,6 +29,7 @@ from shared.enums.permissions import Permission
 from shared.exceptions import AccessDeniedException, NotFoundException
 from shared.permissions import has_permission
 from shared.response import build_list_response, build_response
+from shared.restaurant_resolver import resolve_restaurant_uuid
 from shared.schemas.response import SuccessListResponse, SuccessResponse
 
 router = APIRouter(prefix="/orders", tags=["Orders"])

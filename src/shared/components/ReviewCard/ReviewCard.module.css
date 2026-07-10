@@ -1,0 +1,83 @@
+.card {
+  padding: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  transition: all var(--dur-sm);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--fire), var(--amber));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-white);
+  font-size: 0.75rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.name {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text-1);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.time {
+  color: var(--text-3);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.deleteBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-xs);
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--danger);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.text {
+  color: var(--text-2);
+  margin: 10px 0 0;
+  line-height: 1.6;
+  font-size: 0.875rem;
+}

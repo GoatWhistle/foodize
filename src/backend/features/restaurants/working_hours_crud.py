@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import delete, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.restaurants.working_hours import WorkingHours
@@ -22,22 +23,35 @@ async def set_working_hours(
     restaurant_id: uuid.UUID,
     entries: list[WorkingHoursEntry],
 ) -> list[WorkingHours]:
-    await session.execute(delete(WorkingHours).where(WorkingHours.restaurant_id == restaurant_id))
-    rows = [
-        WorkingHours(
-            restaurant_id=restaurant_id,
-            day_of_week=e.day_of_week,
-            open_time=e.open_time,
-            close_time=e.close_time,
-            is_closed=e.is_closed,
+    incoming_days = [e.day_of_week for e in entries]
+    await session.execute(
+        delete(WorkingHours).where(
+            WorkingHours.restaurant_id == restaurant_id,
+            WorkingHours.day_of_week.notin_(incoming_days) if incoming_days else True,
         )
-        for e in entries
-    ]
-    session.add_all(rows)
+    )
+    for e in entries:
+        stmt = (
+            pg_insert(WorkingHours)
+            .values(
+                restaurant_id=restaurant_id,
+                day_of_week=e.day_of_week,
+                open_time=e.open_time,
+                close_time=e.close_time,
+                is_closed=e.is_closed,
+            )
+            .on_conflict_do_update(
+                constraint="uq_working_hours_restaurant_day",
+                set_={
+                    "open_time": e.open_time,
+                    "close_time": e.close_time,
+                    "is_closed": e.is_closed,
+                },
+            )
+        )
+        await session.execute(stmt)
     await session.commit()
-    for r in rows:
-        await session.refresh(r)
-    return rows
+    return await get_working_hours(session, restaurant_id)
 
 
 def is_open_now(hours: list[WorkingHours]) -> bool | None:

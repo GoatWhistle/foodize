@@ -90,11 +90,11 @@ class TestChangeOrderStatus:
                 new_callable=AsyncMock,
             ) as mock_event,
             patch(
-                "features.orders.services.order.enqueue_event",
+                "features.orders.services.order_status.enqueue_event",
                 new_callable=AsyncMock,
             ),
             patch(
-                "features.orders.services.order.get_redis_cache",
+                "features.orders.services.order_utils.get_redis_cache",
                 return_value=MagicMock(publish=AsyncMock()),
             ),
         ):

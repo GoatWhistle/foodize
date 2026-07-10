@@ -17,7 +17,8 @@ async def add_favorite(
     user_id: uuid.UUID,
     restaurant_id: uuid.UUID,
 ) -> FavoriteResponse:
-    if not await restaurant_crud.get_restaurant_by_id(session, restaurant_id):
+    restaurant = await restaurant_crud.get_restaurant_by_id(session, restaurant_id)
+    if not restaurant or not restaurant.is_active:
         raise RestaurantNotFoundException()
 
     existing = await favorites_crud.get_favorite(session, user_id, restaurant_id)

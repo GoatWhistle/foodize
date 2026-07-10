@@ -18,7 +18,6 @@ async def create_user(
     )
     session.add(db_user)
     await session.flush()
-    await session.refresh(db_user)
     return db_user
 
 

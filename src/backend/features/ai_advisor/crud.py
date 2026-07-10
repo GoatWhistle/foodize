@@ -10,6 +10,15 @@ from features.restaurants.models import Restaurant
 from features.reviews.models import Review
 from shared.enums.order_status import OrderStatus
 
+_REVIEW_TEXT_MAX_CHARS = 500
+
+
+def _sanitize_review_text(text: str | None) -> str:
+    if not text:
+        return ""
+    trimmed = text[:_REVIEW_TEXT_MAX_CHARS]
+    return f"<<<REVIEW>>>{trimmed}<<<END_REVIEW>>>"
+
 
 def _day_bounds(start_date: date, end_date: date) -> tuple[datetime, datetime]:
     start = datetime.combine(start_date, datetime.min.time(), tzinfo=UTC)
@@ -151,7 +160,10 @@ async def get_reviews_summary(
         .order_by(Review.created_at.desc())
         .limit(recent_limit)
     )
-    recent = [{"rating": int(rating), "text": text} for rating, text in recent_rows.all()]
+    recent = [
+        {"rating": int(rating), "text": _sanitize_review_text(text)}
+        for rating, text in recent_rows.all()
+    ]
 
     return {
         "average_rating": round(float(avg_rating or 0), 2),

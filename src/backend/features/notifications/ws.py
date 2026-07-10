@@ -16,6 +16,10 @@ from utils.JWT import decode_jwt
 
 router = APIRouter(prefix="/ws", tags=["WebSockets"])
 
+_MAX_WS_MESSAGE_BYTES = 4096
+_WS_MAX_MESSAGES_PER_WINDOW = 30
+_WS_WINDOW_SECONDS = 10.0
+
 
 async def _safe_send_text(websocket: WebSocket, payload: str) -> None:
     try:
@@ -101,9 +105,30 @@ async def user_notifications_ws(
                         pass
 
         async def listen_ws():
+            window_start = asyncio.get_running_loop().time()
+            message_count = 0
             try:
                 while True:
                     client_message = await websocket.receive_text()
+
+                    now = asyncio.get_running_loop().time()
+                    if now - window_start >= _WS_WINDOW_SECONDS:
+                        window_start = now
+                        message_count = 0
+                    message_count += 1
+                    if message_count > _WS_MAX_MESSAGES_PER_WINDOW:
+                        await _safe_send_text(
+                            websocket, json.dumps({"error": "rate_limited"})
+                        )
+                        await websocket.close(code=1008)
+                        return
+
+                    if len(client_message.encode("utf-8")) > _MAX_WS_MESSAGE_BYTES:
+                        await _safe_send_text(
+                            websocket, json.dumps({"error": "message_too_large"})
+                        )
+                        continue
+
                     try:
                         client_data = json.loads(client_message)
                         if client_data.get("type") == "ping":

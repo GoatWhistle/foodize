@@ -1,9 +1,10 @@
 import uuid
 
 from sqlalchemy import func, select, update
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from features.promos.models import Promo
+from features.promos.models import Promo, PromoUsage
 from features.promos.schemas import PromoCreate
 from features.restaurants.models import Restaurant
 
@@ -57,6 +58,9 @@ async def create_promo(session: AsyncSession, data: PromoCreate) -> Promo:
         restaurant_id=data.restaurant_id,
         max_uses=data.max_uses,
         expires_at=data.expires_at,
+        first_order_only=data.first_order_only,
+        min_order_amount=data.min_order_amount,
+        menu_category=data.menu_category,
     )
     session.add(promo)
     await session.commit()
@@ -73,6 +77,31 @@ async def increment_used_count(session: AsyncSession, promo: Promo) -> bool:
     )
     result = await session.execute(stmt)
     return result.rowcount == 1  # type: ignore[attr-defined]
+
+
+async def has_used_promo(
+    session: AsyncSession, promo_id: uuid.UUID, user_id: uuid.UUID
+) -> bool:
+    result = await session.execute(
+        select(PromoUsage.id).where(
+            PromoUsage.promo_id == promo_id,
+            PromoUsage.user_id == user_id,
+        )
+    )
+    return result.scalar_one_or_none() is not None
+
+
+async def reserve_promo_usage(
+    session: AsyncSession, promo_id: uuid.UUID, user_id: uuid.UUID
+) -> bool:
+    stmt = (
+        pg_insert(PromoUsage)
+        .values(promo_id=promo_id, user_id=user_id)
+        .on_conflict_do_nothing(index_elements=["promo_id", "user_id"])
+        .returning(PromoUsage.id)
+    )
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none() is not None
 
 
 async def deactivate_promo(session: AsyncSession, promo: Promo) -> Promo:

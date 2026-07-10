@@ -97,7 +97,7 @@ async def grant_admin_permissions(
     if user_id == actor.id:
         raise HTTPException(status_code=403, detail="Cannot grant admin rights to yourself")
     result = await service.set_user_permissions(
-        session, user_id, serialize_permissions(ADMIN_PERMISSIONS), actor_id=actor.id
+        session, user_id, serialize_permissions(ADMIN_PERMISSIONS), actor=actor
     )
     return build_response(result)
 
@@ -110,7 +110,7 @@ async def change_user_permissions(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminUserResponse]:
     result = await service.set_user_permissions(
-        session, user_id, body.permissions, actor_id=actor.id
+        session, user_id, body.permissions, actor=actor
     )
     return build_response(result)
 
@@ -120,7 +120,7 @@ async def reset_my_permissions(
     user: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminUserResponse]:
-    result = await service.set_user_permissions(
-        session, user.id, serialize_permissions(CUSTOMER_PERMISSIONS), actor_id=user.id
+    result = await service.reset_own_permissions(
+        session, user, serialize_permissions(CUSTOMER_PERMISSIONS)
     )
     return build_response(result)

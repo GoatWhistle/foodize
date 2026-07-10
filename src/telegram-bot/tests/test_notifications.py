@@ -136,6 +136,49 @@ async def test_handle_order_status_changed(mocker):
 
 
 @pytest.mark.asyncio
+async def test_handle_order_placed_escapes_html(mocker):
+    mock_get_tg = mocker.patch("notifications.handlers._get_telegram_id")
+    mock_get_tg.return_value = 12345
+    bot = AsyncMock()
+    bot_config.mini_app_url = "https://t.me/bot/app"
+
+    event = {
+        "user_id": "user_1",
+        "restaurant_name": "<b>Evil & Co</b>",
+        "total_price": 50000,
+        "items_count": 3,
+        "order_display_id": "9<9&9",
+    }
+    await handle_order_placed(event, bot)
+    text = bot.send_message.call_args.kwargs["text"]
+    assert "<b>Evil & Co</b>" not in text
+    assert "&lt;b&gt;Evil &amp; Co&lt;/b&gt;" in text
+    assert "#9&lt;9&amp;9" in text
+
+
+@pytest.mark.asyncio
+async def test_handle_order_status_changed_escapes_html(mocker):
+    mock_get_tg = mocker.patch("notifications.handlers._get_telegram_id")
+    mock_get_tg.return_value = 12345
+    bot = AsyncMock()
+    bot_config.mini_app_url = "https://t.me/bot/app"
+
+    event = {
+        "user_id": "user_1",
+        "new_status": "<i>hacked</i>",
+        "restaurant_name": "<b>Evil & Co</b>",
+        "total_price": 50000,
+        "order_display_id": "9<9&9",
+    }
+    await handle_order_status_changed(event, bot)
+    text = bot.send_message.call_args.kwargs["text"]
+    assert "<b>Evil & Co</b>" not in text
+    assert "&lt;b&gt;Evil &amp; Co&lt;/b&gt;" in text
+    assert "&lt;i&gt;hacked&lt;/i&gt;" in text
+    assert "#9&lt;9&amp;9" in text
+
+
+@pytest.mark.asyncio
 async def test_process_notification_success():
     message = AsyncMock()
     message.body = json.dumps({"test": "data"}).encode("utf-8")

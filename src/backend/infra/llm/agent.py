@@ -10,6 +10,12 @@ logger = logging.getLogger("ai.agent")
 
 ToolExecutor = Callable[[ToolCall], Awaitable[str]]
 
+_DEFAULT_MAX_TOKENS = 200_000
+
+
+class LLMBudgetExceededError(Exception):
+    pass
+
 
 def _log_usage(model: str, response: LLMResponse) -> None:
     usage = response.usage
@@ -22,11 +28,23 @@ def _log_usage(model: str, response: LLMResponse) -> None:
     )
 
 
+def _account(spent: int, response: LLMResponse, max_tokens: int) -> int:
+    spent += response.usage.input_tokens + response.usage.output_tokens
+    if spent > max_tokens:
+        raise LLMBudgetExceededError(
+            f"token budget exceeded: spent={spent} max={max_tokens}"
+        )
+    return spent
+
+
 async def _run_tools(call: ToolCall, execute: ToolExecutor) -> Message:
     try:
         result = await execute(call)
-    except Exception as exc:
+    except ValueError as exc:
         result = f"Error while running tool '{call.name}': {exc}"
+    except Exception:
+        logger.exception("tool '%s' failed", call.name)
+        result = f"Error while running tool '{call.name}': internal error"
     return Message(
         role=Role.TOOL,
         content=result,
@@ -43,12 +61,15 @@ async def run_agent(
     tools: list[ToolSpec],
     execute: ToolExecutor,
     max_steps: int = 8,
+    max_tokens: int = _DEFAULT_MAX_TOKENS,
 ) -> tuple[str, list[Message]]:
 
     history = list(messages)
+    spent = 0
     for _ in range(max_steps):
         response = await client.complete(system=system, messages=history, tools=tools)
         _log_usage(client.model, response)
+        spent = _account(spent, response, max_tokens)
         if not response.tool_calls:
             history.append(Message(role=Role.ASSISTANT, content=response.text))
             return response.text, history
@@ -75,15 +96,18 @@ async def stream_agent(
     tools: list[ToolSpec],
     execute: ToolExecutor,
     max_steps: int = 8,
+    max_tokens: int = _DEFAULT_MAX_TOKENS,
 ) -> AsyncIterator[str]:
     try:
         history = list(messages)
+        spent = 0
         for _ in range(max_steps):
             response = await client.complete(system=system, messages=history, tools=tools)
             _log_usage(client.model, response)
+            spent = _account(spent, response, max_tokens)
             if not response.tool_calls:
-                history.append(Message(role=Role.ASSISTANT, content=response.text))
-                break
+                yield response.text
+                return
             history.append(
                 Message(role=Role.ASSISTANT, content=response.text, tool_calls=response.tool_calls)
             )
@@ -91,10 +115,6 @@ async def stream_agent(
                 *[_run_tools(call, execute) for call in response.tool_calls]
             )
             history.extend(tool_results)
-        else:
-            response = await client.complete(system=system, messages=history, tools=None)
-            _log_usage(client.model, response)
-            history.append(Message(role=Role.ASSISTANT, content=response.text))
 
         async for chunk in client.stream_text(system=system, messages=history):
             yield chunk

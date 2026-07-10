@@ -57,6 +57,7 @@ async def stream_chat(
             tools=ORDER_TOOLS,
             execute=execute,
             max_steps=settings.llm.max_agent_steps,
+            max_tokens=settings.llm.max_session_tokens,
         ):
             yield chunk
     except Exception:

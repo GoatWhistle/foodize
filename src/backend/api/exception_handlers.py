@@ -77,8 +77,6 @@ async def integrity_error_handler(request: Request, exc: IntegrityError):
     friendly_msg = "Duplicate entry: this information already exists."
     if "uq_restaurants_address" in error_msg:
         friendly_msg = "A restaurant with this address already exists."
-    elif "uq_users_phone_number" in error_msg:
-        friendly_msg = "A user with this phone number already exists."
 
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,

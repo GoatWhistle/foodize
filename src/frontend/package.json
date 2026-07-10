@@ -5,14 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest",
-    "api:types": "openapi-typescript ../../openapi/foodize.openapi.json -o src/services/generated/schema.ts",
-    "api:client": "node ../../tools/generate_openapi_client.mjs --schema=../../openapi/foodize.openapi.json --output=src/services/generated/client.ts --api-import=../api",
-    "api:format": "prettier --write \"src/services/generated/*.ts\"",
-    "api:generate": "npm run api:types && npm run api:client && npm run api:format",
+    "api:types": "openapi-typescript ../../openapi/foodize.openapi.json -o ../shared/types/api.ts",
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
@@ -30,6 +28,7 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.0.0",
     "@testing-library/user-event": "^14.0.0",
+    "@types/node": "^26.1.1",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "@vitejs/plugin-react": "^5.1.0",
@@ -46,6 +45,8 @@
     "msw": "^2.0.0",
     "openapi-typescript": "^7.10.1",
     "prettier": "^3.6.2",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.63.0",
     "vite": "^7.2.4",
     "vitest": "^3.0.0"
   }

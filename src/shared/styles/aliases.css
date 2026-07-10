@@ -1,0 +1,45 @@
+:root {
+  --walnut:        var(--n-900);
+  --walnut-soft:   var(--n-800);
+  --bark:          var(--n-700);
+  --umber:         var(--n-600);
+  --dusk:          var(--n-500);
+  --sand:          var(--n-400);
+  --linen:         var(--n-300);
+  --vellum:        var(--bg-card);
+  --parchment:     var(--bg);
+  --parchment-off: var(--n-0);
+  --white:         var(--n-0);
+
+  --success:     var(--color-success);
+  --danger:      var(--color-error);
+  --color-white: var(--n-0);
+
+  --mustard:        var(--accent);
+  --mustard-dim:    var(--accent-dim);
+  --mustard-deep:   var(--accent-deep);
+  --mustard-glow:   var(--accent-glow);
+  --mustard-subtle: var(--accent-subtle);
+  --mustard-text:   var(--accent-text);
+}
+
+[data-theme="dark"] {
+  --walnut:        var(--n-0);
+  --walnut-soft:   var(--n-50);
+  --bark:          var(--n-200);
+  --umber:         var(--n-300);
+  --dusk:          var(--n-400);
+  --sand:          var(--n-400);
+  --linen:         var(--n-600);
+  --vellum:        var(--bg-card);
+  --parchment:     var(--bg);
+  --parchment-off: var(--bg-card);
+  --white:         var(--n-0);
+
+  --mustard:        var(--accent);
+  --mustard-dim:    var(--accent-dim);
+  --mustard-deep:   var(--accent-deep);
+  --mustard-glow:   var(--accent-glow);
+  --mustard-subtle: var(--accent-subtle);
+  --mustard-text:   var(--accent-text);
+}

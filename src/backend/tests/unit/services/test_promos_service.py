@@ -251,6 +251,17 @@ class TestValidatePromo:
                 await validate_promo(MagicMock(), "TEST10", promo.restaurant_id)
 
     @pytest.mark.asyncio
+    async def test_not_expired_aware_datetime(self):
+        promo = _make_promo(expires_at=datetime.now(timezone.utc) + timedelta(hours=1))
+        with patch(
+            "features.promos.crud.get_promo_by_code",
+            new_callable=AsyncMock,
+            return_value=promo,
+        ):
+            result = await validate_promo(MagicMock(), "TEST10", promo.restaurant_id)
+            assert result.code == promo.code
+
+    @pytest.mark.asyncio
     async def test_usage_limit_reached(self):
         from features.promos.exceptions import PromoUsageLimitException
 

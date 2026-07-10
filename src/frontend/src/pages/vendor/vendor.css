@@ -34,15 +34,22 @@
   background: var(--bg-card);
   border-radius: var(--r-md);
   border: 1px solid var(--border);
+  border-left: 3px solid transparent;
   box-shadow: var(--shadow-sm);
   cursor: pointer;
   transition: all var(--dur-sm);
 }
 
-.restaurant-row:hover,
+.restaurant-row:hover {
+  border-color: var(--border-hi);
+  border-left-color: var(--border-hi);
+  background: var(--bg-raised);
+}
+
 .restaurant-row.active {
-  border-color: var(--fire);
-  background: var(--fire-subtle);
+  border-color: var(--border);
+  border-left-color: var(--fire);
+  background: var(--bg-raised);
 }
 
 .restaurant-row-name {

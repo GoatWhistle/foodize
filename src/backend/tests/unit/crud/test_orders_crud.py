@@ -118,11 +118,12 @@ class TestGetOrderByIdentifierForUpdate:
         assert result == order
 
     @pytest.mark.asyncio
-    async def test_resolves_display_id_with_for_update(self):
+    async def test_rejects_display_id_with_for_update(self):
         order = MagicMock()
         session = _make_session(scalar_result=order)
         result = await get_order_by_identifier_for_update(session, "1002")
-        assert result == order
+        assert result is None
+        session.execute.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_returns_none_for_invalid(self):

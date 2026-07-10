@@ -194,7 +194,7 @@
 
 .cart-fab {
   position: fixed;
-  right: 14px;
+  right: max(14px, calc(50% - 240px + 14px));
   bottom: calc(var(--bottom-tab-h) + env(safe-area-inset-bottom, 0px) + 18px);
   height: 50px;
   background: var(--action-bg);

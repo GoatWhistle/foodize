@@ -1,5 +1,5 @@
 WELCOME = "Добро пожаловать в <b>Foodize</b>!"
-WELCOME_RESTAURANT = "Добро пожаловать в <b>Foodize</b>! 🍽\n\nОткрыть заведение <b>{name}</b>:"
+WELCOME_RESTAURANT = "Добро пожаловать в <b>Foodize</b>!\n\nОткрыть заведение <b>{name}</b>:"
 OPEN_APP = "Открыть приложение:"
 MINI_APP_NOT_CONFIGURED = "Mini App URL пока не настроен. Задайте MINI_APP_URL в .env и в BotFather."
 

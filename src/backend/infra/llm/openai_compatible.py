@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from collections.abc import AsyncIterator
 from typing import Any, cast
+
+from openai import AsyncOpenAI
 
 from infra.llm.base import LLMClient, LLMResponse, Message, Role, ToolCall, ToolSpec, Usage
 
@@ -62,13 +65,12 @@ class OpenAICompatibleClient(LLMClient):
         max_tokens: int = 4096,
         timeout: int = 60,
     ) -> None:
-        from openai import AsyncOpenAI
-
         self._client = AsyncOpenAI(
             api_key=api_key or "not-needed", base_url=base_url, timeout=timeout
         )
         self._model = model
         self._max_tokens = max_tokens
+        self._timeout = timeout
 
     @property
     def model(self) -> str:
@@ -127,14 +129,22 @@ class OpenAICompatibleClient(LLMClient):
     ) -> AsyncIterator[str]:
         stream = cast(
             "AsyncIterator[Any]",
-            await self._client.chat.completions.create(
-                model=self._model,
-                max_tokens=self._max_tokens,
-                messages=_to_messages(system, messages),  # type: ignore[arg-type]
-                stream=True,
+            await asyncio.wait_for(
+                self._client.chat.completions.create(
+                    model=self._model,
+                    max_tokens=self._max_tokens,
+                    messages=_to_messages(system, messages),  # type: ignore[arg-type]
+                    stream=True,
+                ),
+                timeout=self._timeout,
             ),
         )
-        async for chunk in stream:
+        iterator = stream.__aiter__()
+        while True:
+            try:
+                chunk = await asyncio.wait_for(iterator.__anext__(), timeout=self._timeout)
+            except StopAsyncIteration:
+                break
             if not chunk.choices:
                 continue
             delta = chunk.choices[0].delta

@@ -1,0 +1,52 @@
+import { Star } from "@phosphor-icons/react";
+
+interface StarRatingInputProps {
+  value?: number;
+  onChange?: (value: number) => void;
+  size?: number;
+  readOnly?: boolean;
+  activeColor?: string;
+  inactiveColor?: string;
+  gap?: number;
+}
+
+const StarRatingInput = ({
+  value = 0,
+  onChange,
+  size = 24,
+  readOnly = false,
+  activeColor = "var(--star)",
+  inactiveColor = "var(--border-mid)",
+  gap = 6,
+}: StarRatingInputProps) => (
+  <div style={{ display: "flex", gap, justifyContent: "center", alignItems: "center" }}>
+    {[1, 2, 3, 4, 5].map((s) => {
+      const filled = s <= value;
+      const star = (
+        <Star
+          size={size}
+          weight={filled ? "fill" : "regular"}
+          color={filled ? activeColor : inactiveColor}
+        />
+      );
+      if (readOnly) {
+        return <span key={s} style={{ display: "inline-flex" }}>{star}</span>;
+      }
+      return (
+        <span
+          key={s}
+          role="button"
+          tabIndex={0}
+          aria-label={`Оценка ${s}`}
+          style={{ cursor: "pointer", display: "inline-flex" }}
+          onClick={() => onChange?.(s)}
+          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onChange?.(s)}
+        >
+          {star}
+        </span>
+      );
+    })}
+  </div>
+);
+
+export default StarRatingInput;

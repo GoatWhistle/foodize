@@ -1,4 +1,5 @@
 from infra.storage.s3 import (
+    ALLOWED_IMAGE_CONTENT_TYPES,
     MAX_IMAGE_BYTES,
     UnsupportedImageType,
     delete_image,
@@ -7,6 +8,7 @@ from infra.storage.s3 import (
 )
 
 __all__ = [
+    "ALLOWED_IMAGE_CONTENT_TYPES",
     "MAX_IMAGE_BYTES",
     "UnsupportedImageType",
     "delete_image",

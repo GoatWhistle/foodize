@@ -92,7 +92,8 @@ async def get_current_user(
         parsed_user_id = uuid.UUID(user_id)
     except ValueError:
         raise AuthException(detail="Invalid token")
-    if await cache.exists(f"{_ACCESS_BLACKLIST_PREFIX}{token}"):
+    jti = payload.get("jti")
+    if jti and await cache.exists(f"{_ACCESS_BLACKLIST_PREFIX}{jti}"):
         raise AuthException(detail="Token has been invalidated")
     user = await get_user_by_id_or_404(session, parsed_user_id)
     if not user.is_active:
@@ -141,20 +142,22 @@ async def logout_user(
         try:
             payload = decode_jwt(access_token)
             ttl = payload.get("exp", 0) - now
-            if ttl > 0:
-                await cache.set(f"{_ACCESS_BLACKLIST_PREFIX}{access_token}", "1", ttl=ttl)
+            jti = payload.get("jti")
+            if ttl > 0 and jti:
+                await cache.set(f"{_ACCESS_BLACKLIST_PREFIX}{jti}", "1", ttl=ttl)
         except jwt.InvalidTokenError:
             pass
         except Exception:
             logger.warning("logout: failed to blacklist access token")
 
-    refresh_token = request.cookies.get("refresh_token") or request.headers.get("x-refresh-token")
+    refresh_token = request.cookies.get("refresh_token")
     if refresh_token:
         try:
             payload = decode_jwt(refresh_token)
             ttl = payload.get("exp", 0) - now
-            if ttl > 0:
-                await cache.set(f"{_REFRESH_BLACKLIST_PREFIX}{refresh_token}", "1", ttl=ttl)
+            jti = payload.get("jti")
+            if ttl > 0 and jti:
+                await cache.set(f"{_REFRESH_BLACKLIST_PREFIX}{jti}", "1", ttl=ttl)
         except jwt.InvalidTokenError:
             pass
         except Exception:
@@ -171,11 +174,7 @@ async def refresh_user_token(
     session: AsyncSession,
     cache: RedisCache | None = None,
 ) -> TokenResponse:
-    token = (
-        request.cookies.get("refresh_token")
-        or request.headers.get("x-refresh-token")
-        or await _get_bearer_token(request)
-    )
+    token = request.cookies.get("refresh_token") or await _get_bearer_token(request)
     if not token:
         raise AuthException(detail="Refresh token missing")
     try:
@@ -201,7 +200,10 @@ async def refresh_user_token(
 
     if cache is None:
         cache = get_redis_cache()
-    blacklist_key = f"{_REFRESH_BLACKLIST_PREFIX}{token}"
+    jti = payload.get("jti")
+    if not jti:
+        raise AuthException(detail="Invalid refresh token")
+    blacklist_key = f"{_REFRESH_BLACKLIST_PREFIX}{jti}"
     ttl = payload.get("exp", 0) - now
     if ttl <= 0:
         raise AuthException(detail="Refresh token has expired")

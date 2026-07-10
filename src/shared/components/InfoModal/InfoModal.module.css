@@ -1,0 +1,52 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay-scrim-soft);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: info-modal-fade-in var(--dur-md) var(--ease-out);
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.content {
+  background: var(--bg-card);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-xl);
+  animation: info-modal-appear var(--dur-lg) var(--ease-out);
+  max-width: 400px;
+  width: 100%;
+  padding: 24px;
+}
+
+@keyframes info-modal-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes info-modal-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@media (max-width: 599px) {
+  .overlay {
+    align-items: center;
+    padding: 12px;
+  }
+}

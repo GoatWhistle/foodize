@@ -1,0 +1,14 @@
+:root {
+  --overlay-scrim:       oklch(0% 0 0 / 0.55);
+  --overlay-scrim-soft:  oklch(0% 0 0 / 0.40);
+  --overlay-scrim-strong: oklch(0% 0 0 / 0.62);
+  --overlay-hero:        oklch(14% 0.03 60 / 0.82);
+  --bg-blur:             oklch(97.5% 0.004 70 / 0.9);
+  --sort-glow:           oklch(70% 0.17 60 / 0.08);
+  --sort-ring:           oklch(70% 0.17 60 / 0.18);
+  --on-photo:       oklch(100% 0 0 / 0.92);
+  --on-photo-dim:   oklch(100% 0 0 / 0.55);
+  --on-photo-mute:  oklch(100% 0 0 / 0.30);
+  --on-photo-hover: oklch(100% 0 0 / 0.26);
+  --on-photo-press: oklch(100% 0 0 / 0.36);
+}

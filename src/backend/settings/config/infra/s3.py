@@ -17,3 +17,7 @@ class S3Config(BaseConfig):
     @property
     def enabled(self) -> bool:
         return bool(self.bucket and (self.endpoint_url or self.access_key))
+
+    @property
+    def is_default_insecure(self) -> bool:
+        return self.access_key == "minioadmin" or self.secret_key == "minioadmin"

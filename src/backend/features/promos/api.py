@@ -64,5 +64,7 @@ async def validate_promo(
     _current_user: User = Depends(require_permission(Permission.PROMOS_VALIDATE)),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[PromoValidateResponse]:
-    result = await service.validate_promo(session, data.code, data.restaurant_id)
+    result = await service.validate_promo(
+        session, data.code, data.restaurant_id, user_id=_current_user.id
+    )
     return build_response(result)

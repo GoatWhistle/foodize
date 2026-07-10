@@ -5,15 +5,11 @@
 @import "./styles/forms.css";
 @import "./styles/utilities.css";
 
-@import "./components/ui/RestaurantCard.css";
-@import "./components/ui/MenuItemCard.css";
-@import "./components/ui/CartDrawer.css";
-@import "./components/ui/ProductSheet.css";
-@import "./components/ui/Modal.css";
-@import "./components/ui/Spinner.css";
-@import "./components/ui/EmptyState.css";
-@import "./components/ui/Pagination.css";
-@import "./components/ui/SplashScreen.css";
+@import "./styles/restaurant-card.css";
+@import "./styles/modal.css";
+@import "./styles/spinner.css";
+@import "./styles/empty-state.css";
+@import "./styles/pagination.css";
 
 @import "./pages/auth/auth.css";
 @import "./pages/home/home.css";

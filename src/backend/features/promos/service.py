@@ -104,12 +104,22 @@ def _validate_promo_active(
             raise AppException(status_code=400, detail="promo_min_order_amount")
 
 
+def _compute_discounted_total(promo: Promo, order_total: int, discount_base: int) -> int:
+    if promo.discount_type == DiscountType.PERCENT.value:
+        discount = int(discount_base * promo.discount_value / 100)
+    else:
+        discount = min(promo.discount_value, discount_base)
+    return max(0, order_total - discount)
+
+
 async def validate_promo(
     session: AsyncSession,
     code: str,
     restaurant_id: uuid.UUID,
     order_total: int | None = None,
     is_first_order: bool = False,
+    discount_base: int | None = None,
+    user_id: uuid.UUID | None = None,
 ) -> PromoValidateResponse:
     promo = await crud.get_promo_by_code(session, code)
     if not promo:
@@ -117,13 +127,13 @@ async def validate_promo(
     _validate_promo_active(
         promo, restaurant_id, order_total=order_total, is_first_order=is_first_order
     )
+    if user_id is not None and await crud.has_used_promo(session, promo.id, user_id):
+        raise PromoUsageLimitException()
 
     discounted_amount: int | None = None
     if order_total is not None:
-        if promo.discount_type == DiscountType.PERCENT.value:
-            discounted_amount = max(0, order_total - int(order_total * promo.discount_value / 100))
-        else:
-            discounted_amount = max(0, order_total - promo.discount_value)
+        base = discount_base if discount_base is not None else order_total
+        discounted_amount = _compute_discounted_total(promo, order_total, base)
 
     return PromoValidateResponse(
         code=promo.code,
@@ -135,12 +145,18 @@ async def validate_promo(
     )
 
 
+async def get_promo_for_order(session: AsyncSession, code: str) -> Promo | None:
+    return await crud.get_promo_by_code(session, code)
+
+
 async def apply_promo(
     session: AsyncSession,
     code: str,
     restaurant_id: uuid.UUID,
     order_total: int,
     is_first_order: bool = False,
+    user_id: uuid.UUID | None = None,
+    discount_base: int | None = None,
 ) -> int:
     promo = await crud.get_promo_by_code(session, code)
     if not promo:
@@ -149,10 +165,13 @@ async def apply_promo(
         promo, restaurant_id, order_total=order_total, is_first_order=is_first_order
     )
 
-    if promo.discount_type == DiscountType.PERCENT.value:
-        new_total = max(0, order_total - int(order_total * promo.discount_value / 100))
-    else:
-        new_total = max(0, order_total - promo.discount_value)
+    base = discount_base if discount_base is not None else order_total
+    new_total = _compute_discounted_total(promo, order_total, base)
+
+    if user_id is not None:
+        reserved = await crud.reserve_promo_usage(session, promo.id, user_id)
+        if not reserved:
+            raise PromoUsageLimitException()
 
     incremented = await crud.increment_used_count(session, promo)
     if not incremented:

@@ -1,4 +1,5 @@
 import asyncio
+import html
 import logging
 
 import redis.asyncio as aioredis
@@ -93,12 +94,12 @@ async def handle_order_placed(event: dict, bot: Bot) -> None:
     if not telegram_id:
         return
 
-    restaurant = event.get("restaurant_name", "")
+    restaurant = html.escape(str(event.get("restaurant_name", "")))
     total = event.get("total_price", 0)
     count = event.get("items_count", 0)
     display_id = event.get("order_display_id")
 
-    order_ref = f" <b>#{display_id}</b>" if display_id else ""
+    order_ref = f" <b>#{html.escape(str(display_id))}</b>" if display_id else ""
     text = (
         f"Заказ{order_ref} в <b>{restaurant}</b> принят!\n\n"
         f"Позиций: {count}\n"
@@ -122,14 +123,14 @@ async def handle_order_status_changed(event: dict, bot: Bot) -> None:
         return
 
     new_status = event.get("new_status", "")
-    restaurant = event.get("restaurant_name", "")
+    restaurant = html.escape(str(event.get("restaurant_name", "")))
     total = event.get("total_price", 0)
     display_id = event.get("order_display_id")
 
-    order_ref = f" <b>#{display_id}</b>" if display_id else ""
+    order_ref = f" <b>#{html.escape(str(display_id))}</b>" if display_id else ""
     text = (
         f"Обновление заказа{order_ref} в <b>{restaurant}</b>\n\n"
-        f"Статус: <b>{format_status(new_status)}</b>\n"
+        f"Статус: <b>{html.escape(format_status(new_status))}</b>\n"
         f"Сумма: {format_price(total)}"
     )
     await _send_notification(

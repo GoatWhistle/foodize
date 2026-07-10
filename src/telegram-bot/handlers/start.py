@@ -50,7 +50,7 @@ async def _call_backend_api(
 
 
 DISPLAY_ID_RE = re.compile(r"^[a-zA-Z0-9-]{1,64}$")
-RESTART_TEXT = "🔄 Перезапустить бота"
+RESTART_TEXT = "Перезапустить бота"
 
 
 def _mini_app_keyboard() -> InlineKeyboardMarkup | None:

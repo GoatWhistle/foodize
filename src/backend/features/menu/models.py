@@ -24,7 +24,9 @@ class MenuItem(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin
     is_available: Mapped[bool] = mapped_column(default=True, server_default="true")
     is_deleted: Mapped[bool] = mapped_column(default=False, server_default="false")
     photo_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
-    restaurant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("restaurants.id"))
+    restaurant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("restaurants.id", ondelete="CASCADE")
+    )
     restaurant: Mapped["Restaurant"] = relationship(back_populates="menu_items")
     order_items: Mapped[list["OrderItem"]] = relationship(back_populates="menu_item")
     option_groups: Mapped[list["MenuItemOptionGroup"]] = relationship(
@@ -35,7 +37,9 @@ class MenuItem(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin
 
 
 class MenuItemOptionGroup(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
-    menu_item_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("menu_items.id"))
+    menu_item_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("menu_items.id", ondelete="CASCADE")
+    )
     name: Mapped[str] = mapped_column(String(128))
     selection_type: Mapped[str] = mapped_column(
         String(16),
@@ -56,7 +60,9 @@ class MenuItemOptionGroup(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
 
 
 class MenuItemOption(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
-    group_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("menu_item_option_groups.id"))
+    group_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("menu_item_option_groups.id", ondelete="CASCADE")
+    )
     name: Mapped[str] = mapped_column(String(128))
     price_delta: Mapped[int] = mapped_column(default=0, server_default="0")
     is_available: Mapped[bool] = mapped_column(default=True, server_default="true")

@@ -94,7 +94,8 @@ def configure_logging() -> None:
             dsn=settings.logs.sentry_dsn,
             environment=settings.logs.environment,
             integrations=integrations,
-            traces_sample_rate=1.0,
+            traces_sample_rate=settings.logs.sentry_traces_sample_rate,
+            send_default_pii=False,
         )
 
     shared_processors = [

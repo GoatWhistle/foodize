@@ -6,8 +6,9 @@
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
-  transition: border-color var(--dur-sm), transform var(--dur-sm), background var(--dur-sm);
+  transition: border-color var(--dur-sm), transform var(--dur-sm), background var(--dur-sm), box-shadow var(--dur-md);
   -webkit-tap-highlight-color: transparent;
   width: 100%;
   text-align: left;
@@ -16,6 +17,7 @@
 .card:hover {
   border-color: var(--border-mid);
   background: var(--bg-surface);
+  box-shadow: var(--shadow-md);
 }
 
 .card:active {
@@ -27,12 +29,12 @@
   width: 40px;
   height: 40px;
   border-radius: var(--r-sm);
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
+  background: var(--fire-subtle);
+  border: 1px solid var(--fire-glow);
+  color: var(--fire);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.3rem;
   flex-shrink: 0;
 }
 
@@ -114,7 +116,6 @@
   color: var(--text-3);
 }
 
-/* ── Expandable variant (miniapp) ─────────────────────────── */
 .cardCol {
   background: var(--bg-card);
   border: 1px solid var(--border);

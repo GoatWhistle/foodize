@@ -8,7 +8,7 @@ from features.orders.models.order import Order
 from features.restaurants.crud import get_restaurant_by_id
 from features.restaurants.exceptions import RestaurantNotFoundException
 from features.reviews import crud
-from features.reviews.exceptions import ReviewLimitExceededException
+from features.reviews.exceptions import ReviewLimitExceededException, ReviewNotAllowedException
 from features.reviews.models import Review
 from features.reviews.schemas import RatingResponse, ReviewCreate, ReviewResponse
 from shared.enums.order_status import OrderStatus
@@ -55,10 +55,12 @@ async def create_review_for_user(
     restaurant_id: uuid.UUID,
 ) -> ReviewResponse:
     restaurant = await get_restaurant_by_id(session, restaurant_id)
-    if not restaurant:
+    if not restaurant or not restaurant.is_active:
         raise RestaurantNotFoundException()
 
     is_verified = await _has_completed_order(session, user_id, restaurant_id)
+    if not is_verified:
+        raise ReviewNotAllowedException()
 
     user_reviews_count = await crud.count_user_reviews_for_restaurant(
         session, user_id, restaurant_id

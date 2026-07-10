@@ -20,9 +20,11 @@ from features.telegram.exceptions import (
 )
 from features.telegram.schemas import TelegramCheckResponse
 from features.users.models import User
+from infra.cache.redis import get_redis_cache
 from settings.config.app_config import settings
 
 _INIT_DATA_MAX_AGE = 3600
+_INIT_DATA_NONCE_PREFIX = "telegram_initdata_nonce:"
 
 
 def _validate_init_data(init_data: str) -> dict:
@@ -59,7 +61,22 @@ def _validate_init_data(init_data: str) -> dict:
     if not hmac.compare_digest(expected_hash, received_hash):
         raise InvalidTelegramInitDataException()
 
+    parsed["hash"] = received_hash
+    parsed["auth_date"] = str(auth_date)
     return parsed
+
+
+async def _consume_init_data_nonce(parsed: dict) -> None:
+    received_hash = parsed.get("hash")
+    auth_date = int(parsed["auth_date"])
+    now = int(time.time())
+    ttl = auth_date + _INIT_DATA_MAX_AGE - now
+    if ttl <= 0:
+        raise InvalidTelegramInitDataException(detail="initData expired")
+    cache = get_redis_cache()
+    is_new = await cache.set_nx(f"{_INIT_DATA_NONCE_PREFIX}{received_hash}", "1", ttl=ttl)
+    if not is_new:
+        raise InvalidTelegramInitDataException(detail="initData already used")
 
 
 def _extract_tg_user(parsed: dict) -> dict:
@@ -93,6 +110,7 @@ async def telegram_register(
     name: str,
 ) -> TokenResponse:
     parsed = _validate_init_data(init_data)
+    await _consume_init_data_nonce(parsed)
     tg_user = _extract_tg_user(parsed)
     telegram_id = int(tg_user["id"])
     telegram_username = tg_user.get("username")
@@ -110,6 +128,7 @@ async def telegram_register(
 
 async def telegram_auth_existing(session: AsyncSession, init_data: str) -> TokenResponse:
     parsed = _validate_init_data(init_data)
+    await _consume_init_data_nonce(parsed)
     tg_user = _extract_tg_user(parsed)
     telegram_id = int(tg_user["id"])
 

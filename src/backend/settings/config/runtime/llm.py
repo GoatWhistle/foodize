@@ -16,6 +16,8 @@ class LLMConfig(BaseConfig):
     max_output_tokens: int = 4096
     request_timeout_seconds: int = 60
     max_agent_steps: int = 8
+    max_session_tokens: int = 200_000
+    user_requests_per_minute: int = 20
 
     anthropic_api_key: str = ""
     anthropic_order_model: str = "claude-haiku-4-5"

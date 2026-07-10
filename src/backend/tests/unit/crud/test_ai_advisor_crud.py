@@ -159,7 +159,8 @@ class TestGetReviewsSummary:
         assert result["review_count"] == 10
         assert result["distribution"] == {5: 7, 4: 3}
         assert len(result["recent"]) == 2
-        assert result["recent"][0]["text"] == "Отлично!"
+        assert result["recent"][0]["text"] == "<<<REVIEW>>>Отлично!<<<END_REVIEW>>>"
+        assert "Отлично!" in result["recent"][0]["text"]
 
     @pytest.mark.asyncio
     async def test_with_restaurant_filter(self):

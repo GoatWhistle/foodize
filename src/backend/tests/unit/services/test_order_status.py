@@ -129,9 +129,21 @@ async def test_cancel_order_success():
 
 @pytest.mark.asyncio
 async def test_force_cancel_order_raises_not_found():
-    with patch("features.orders.crud.order.get_order_by_id", new_callable=AsyncMock, return_value=None):
+    with patch("features.orders.crud.order.get_order_by_id_for_update", new_callable=AsyncMock, return_value=None):
         with pytest.raises(OrderNotFoundException):
             await force_cancel_order(AsyncMock(), uuid.uuid4(), _actor(), "reason")
+
+
+@pytest.mark.asyncio
+async def test_force_cancel_order_raises_not_cancellable_when_terminal():
+    order = _order(status=OrderStatus.COMPLETED)
+    with patch(
+        "features.orders.crud.order.get_order_by_id_for_update",
+        new_callable=AsyncMock,
+        return_value=order,
+    ):
+        with pytest.raises(OrderNotCancellableException):
+            await force_cancel_order(AsyncMock(), order.id, _actor(), "reason")
 
 
 @pytest.mark.asyncio
@@ -141,7 +153,7 @@ async def test_force_cancel_order_success():
     mock_response = MagicMock()
 
     with (
-        patch("features.orders.crud.order.get_order_by_id", new_callable=AsyncMock, return_value=order),
+        patch("features.orders.crud.order.get_order_by_id_for_update", new_callable=AsyncMock, return_value=order),
         patch("features.orders.crud.order.update_order_status", new_callable=AsyncMock, return_value=order),
         patch("features.orders.crud.order.create_order_event", new_callable=AsyncMock),
         patch("features.admin.audit_log.service.log_action", new_callable=AsyncMock),

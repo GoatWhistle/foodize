@@ -1,0 +1,226 @@
+.wrap {
+  padding: var(--space-sm) var(--gutter);
+  position: sticky;
+  top: var(--nav-h, 0);
+  background: var(--bg-blur);
+  z-index: 10;
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.search {
+  position: relative;
+  flex: 1;
+}
+
+.search input {
+  width: 100%;
+  background: var(--bg-card);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--r-md);
+  padding: 12px 40px 12px 48px;
+  font-size: var(--text-md);
+  font-weight: var(--weight-body);
+  color: var(--text-1);
+  outline: none;
+  transition:
+    border-color var(--dur-sm),
+    box-shadow var(--dur-sm);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.search input:focus {
+  border-color: var(--fire);
+  box-shadow: 0 0 0 3px var(--fire-subtle);
+}
+
+.searchIcon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-3);
+  pointer-events: none;
+}
+
+.spinner {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-mid);
+  border-top-color: var(--fire);
+  border-radius: 50%;
+  animation: sfb-spin 0.7s linear infinite;
+}
+
+@keyframes sfb-spin {
+  to {
+    transform: translateY(-50%) rotate(360deg);
+  }
+}
+
+.filterAnchor {
+  position: relative;
+}
+
+.filterButton {
+  height: 46px;
+  width: 46px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-mid);
+  background: var(--bg-card);
+  color: var(--text-2);
+  cursor: pointer;
+  transition:
+    border-color var(--dur-sm),
+    background var(--dur-sm),
+    color var(--dur-sm);
+}
+
+.filterButton:hover {
+  border-color: var(--border-hi);
+  color: var(--text-1);
+}
+
+.filterButtonOpen {
+  background: var(--fire);
+  border-color: var(--fire);
+  color: var(--fire-text);
+}
+
+.filterButtonActive:not(.filterButtonOpen) {
+  border-color: var(--fire);
+  color: var(--fire);
+}
+
+.dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 6px;
+  min-width: 214px;
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+}
+
+.sortPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.sortLabel {
+  padding: 2px 10px 4px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.sortRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 38px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-2);
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background var(--dur-sm),
+    color var(--dur-sm);
+}
+
+.sortRow:hover {
+  background: var(--bg-surface);
+  color: var(--text-1);
+}
+
+.sortRowLeft {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sortRowIconSpacer {
+  display: inline-block;
+  width: 15px;
+}
+
+.sortRowActive {
+  color: var(--fire);
+}
+
+.sortRowActive:hover {
+  background: var(--fire-subtle);
+  color: var(--fire);
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background var(--dur-sm);
+}
+
+.checkbox:hover {
+  background: var(--bg-surface);
+}
+
+.checkbox input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--fire);
+  margin: 0;
+}
+
+.extraPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 599px) {
+  .wrap {
+    padding: 10px var(--gutter);
+    gap: 8px;
+  }
+}

@@ -1,9 +1,13 @@
 import asyncio
+import re
 import uuid
 from functools import lru_cache
+from io import BytesIO
 
 import boto3
 from botocore.config import Config
+from botocore.exceptions import ClientError
+from PIL import Image, UnidentifiedImageError
 
 from settings.config.app_config import settings
 
@@ -14,11 +18,40 @@ _ALLOWED_TYPES: dict[str, str] = {
     "image/webp": "webp",
 }
 
+_FORMAT_TO_EXT: dict[str, str] = {
+    "JPEG": "jpg",
+    "PNG": "png",
+    "WEBP": "webp",
+}
+
+_EXT_TO_CONTENT_TYPE: dict[str, str] = {
+    "jpg": "image/jpeg",
+    "png": "image/png",
+    "webp": "image/webp",
+}
+
+_KEY_RE = re.compile(r"^(menu|restaurants)/[a-f0-9]{32}\.(jpg|png|webp)$")
+
+ALLOWED_IMAGE_CONTENT_TYPES = frozenset(_ALLOWED_TYPES)
+
 MAX_IMAGE_BYTES = 5 * 1024 * 1024  # 5 MB
 
 
 class UnsupportedImageType(Exception):
     """Raised when the uploaded file is not an accepted image type."""
+
+
+def _detect_image_ext(data: bytes) -> str:
+    try:
+        with Image.open(BytesIO(data)) as image:
+            image.verify()
+            fmt = image.format or ""
+    except (UnidentifiedImageError, OSError, ValueError) as exc:
+        raise UnsupportedImageType("unrecognized image") from exc
+    ext = _FORMAT_TO_EXT.get(fmt)
+    if ext is None:
+        raise UnsupportedImageType(fmt or "unknown")
+    return ext
 
 
 @lru_cache(maxsize=1)
@@ -56,15 +89,16 @@ def _key_from_url(url: str) -> str | None:
 
 
 def _upload_image_sync(data: bytes, content_type: str, prefix: str) -> str:
-    ext = _ALLOWED_TYPES.get(content_type)
-    if ext is None:
+    if content_type not in _ALLOWED_TYPES:
         raise UnsupportedImageType(content_type)
+    ext = _detect_image_ext(data)
+    stored_content_type = _EXT_TO_CONTENT_TYPE[ext]
     key = f"{prefix}/{uuid.uuid4().hex}.{ext}"
     _client().put_object(
         Bucket=settings.s3.bucket,
         Key=key,
         Body=data,
-        ContentType=content_type,
+        ContentType=stored_content_type,
         CacheControl="public, max-age=31536000, immutable",
     )
     return _public_url(key)
@@ -72,14 +106,12 @@ def _upload_image_sync(data: bytes, content_type: str, prefix: str) -> str:
 
 def _delete_image_sync(url: str) -> None:
     key = _key_from_url(url)
-    if not key:
+    if not key or not _KEY_RE.fullmatch(key):
         return
     _client().delete_object(Bucket=settings.s3.bucket, Key=key)
 
 
 def _fetch_object_sync(key: str) -> tuple[bytes, str] | None:
-    from botocore.exceptions import ClientError
-
     try:
         obj = _client().get_object(Bucket=settings.s3.bucket, Key=key)
     except ClientError as e:
