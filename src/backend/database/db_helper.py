@@ -13,8 +13,6 @@ from settings.config.app_config import settings
 
 
 def _json_fallback(obj: object) -> str:
-    # JSONB columns receive raw dicts (e.g. audit-log details) that may contain
-    # enums, UUIDs or datetimes; stdlib json can't encode those by itself.
     if isinstance(obj, Enum):
         return obj.value
     return str(obj)

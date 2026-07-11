@@ -1,15 +1,11 @@
 import uuid
 
 from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
-from infra.storage import ALLOWED_IMAGE_CONTENT_TYPES, MAX_IMAGE_BYTES
-from shared.exceptions import BadRequestException
 from features.restaurants import service
 from features.restaurants.dependencies import get_restaurant_and_check_ownership
-from features.restaurants.models import Restaurant
 from features.restaurants.schemas import (
     RestaurantCreate,
     RestaurantResponse,
@@ -23,13 +19,15 @@ from features.restaurants.working_hours_schemas import (
 from features.users.models import User
 from features.vendors.dependencies import get_current_vendor
 from features.vendors.models import VendorProfile
+from infra.storage import ALLOWED_IMAGE_CONTENT_TYPES, MAX_IMAGE_BYTES
 from middlewares.limiter import limiter
 from shared.dependencies import require_permission
 from shared.enums.permissions import Permission
 from shared.enums.restaurant_sort import RestaurantSort
 from shared.enums.sort_direction import SortDirection
-from shared.exceptions.existence import NotFoundException
+from shared.exceptions import BadRequestException
 from shared.response import build_list_response, build_response
+from shared.restaurant_resolver import resolve_restaurant_uuid
 from shared.schemas.response import SuccessListResponse, SuccessResponse
 
 router = APIRouter(prefix="/restaurants", tags=["Restaurants"])
@@ -176,17 +174,7 @@ async def read_working_hours(
     restaurant_id: str,
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[list[WorkingHoursRead]]:
-    try:
-        parsed_uuid = uuid.UUID(restaurant_id)
-        where_clause = Restaurant.id == parsed_uuid
-    except ValueError:
-        where_clause = Restaurant.display_id == restaurant_id
-
-    result = await session.execute(select(Restaurant.id).where(where_clause))
-    real_id = result.scalar_one_or_none()
-    if not real_id:
-        raise NotFoundException(detail="Restaurant not found")
-
+    real_id = await resolve_restaurant_uuid(session, restaurant_id)
     rows = await get_working_hours(session, real_id)
     return build_response([WorkingHoursRead.model_validate(r) for r in rows])
 

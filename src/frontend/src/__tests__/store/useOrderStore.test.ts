@@ -48,7 +48,7 @@ describe('useOrderStore', () => {
 
   it('addToCart clears previous cart if restaurant changes', async () => {
     useOrderStore.setState({
-      cart: [{ menuItem: { id: '1' } as CartMenuItem, quantity: 1 }],
+      cart: [{ menuItem: { id: '1' } as CartMenuItem, quantity: 1, selectedOptionIds: [], selectedOptions: [] }],
       cartRestaurantId: 'old-rest',
     });
 
@@ -64,7 +64,7 @@ describe('useOrderStore', () => {
   it('removeFromCart decreases quantity or removes item', () => {
     const item = { id: '1', name: 'Pizza', price: 100 };
     useOrderStore.setState({
-      cart: [{ menuItem: item, quantity: 2 }],
+      cart: [{ menuItem: item, quantity: 2, selectedOptionIds: [], selectedOptions: [] }],
       cartRestaurantId: 'rest-1',
     });
 
@@ -79,7 +79,7 @@ describe('useOrderStore', () => {
   it('placeOrder calls service and clears cart', async () => {
     const item = { id: '1', name: 'Pizza', price: 100 };
     useOrderStore.setState({
-      cart: [{ menuItem: item, quantity: 2, selectedOptionIds: [] }],
+      cart: [{ menuItem: item, quantity: 2, selectedOptionIds: [], selectedOptions: [] }],
       cartRestaurantId: 'rest-1',
     });
 
@@ -105,7 +105,7 @@ describe('useOrderStore', () => {
   it('placeOrder includes promo, trimmed comment and requested pickup time', async () => {
     const item = { id: '1', name: 'Pizza', price: 100 };
     useOrderStore.setState({
-      cart: [{ menuItem: item, quantity: 2, selectedOptionIds: ['opt-1'] }],
+      cart: [{ menuItem: item, quantity: 2, selectedOptionIds: ['opt-1'], selectedOptions: [] }],
       cartRestaurantId: 'rest-1',
     });
 
@@ -143,5 +143,41 @@ describe('useOrderStore', () => {
     expect(state.cart[1].quantity).toBe(2);
     expect(state.cartTotal()).toBe(1060);
     expect(cartService.updateCart).toHaveBeenCalled();
+  });
+
+  it('keeps syncing after a failed updateCart (chain not poisoned)', async () => {
+    vi.mocked(cartService.updateCart)
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce({ data: {} } as never);
+
+    const item = { id: '1', name: 'Pizza', price: 100 };
+
+    await useOrderStore.getState().addToCart(item, 'rest-1');
+    expect(useOrderStore.getState().cartError).not.toBeNull();
+
+    await useOrderStore.getState().addToCart(item, 'rest-1');
+
+    expect(cartService.updateCart).toHaveBeenCalledTimes(2);
+    expect(useOrderStore.getState().cartError).toBeNull();
+  });
+
+  it('notifies subscribers with an updated cartCount when cart changes', async () => {
+    const seen: number[] = [];
+    const unsub = useOrderStore.subscribe((s) => {
+      seen.push(s.cartCount());
+    });
+
+    const item = { id: '1', name: 'Pizza', price: 100 };
+
+    await useOrderStore.getState().addToCart(item, 'rest-1');
+    expect(useOrderStore.getState().cartCount()).toBe(1);
+
+    await useOrderStore.getState().addToCart(item, 'rest-1');
+    expect(useOrderStore.getState().cartCount()).toBe(2);
+
+    unsub();
+
+    expect(seen).toContain(1);
+    expect(seen).toContain(2);
   });
 });

@@ -43,7 +43,9 @@ async def export_orders_csv(
         query_restaurant_id = None
 
     if date_from is None and date_to is None:
-        from datetime import date as _date, timedelta
+        from datetime import date as _date
+        from datetime import timedelta
+
         date_to = _date.today()
         date_from = date_to - timedelta(days=90)
 

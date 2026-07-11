@@ -5,11 +5,11 @@ from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
-from features.admin import service
+from features.admin.api.schemas import BatchIdsRequest, BatchRejectRequest
 from features.admin.audit_log import service as audit_service
 from features.admin.dependencies import require_admin
 from features.admin.schemas import AdminVendorResponse, ModerationDecision
-from features.admin.api.schemas import BatchIdsRequest, BatchRejectRequest
+from features.admin.service import catalog, moderation
 from features.users.models import User
 from shared.enums.moderation_status import ModerationStatus
 from shared.response import build_list_response, build_response
@@ -31,7 +31,7 @@ async def read_vendors(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessListResponse[AdminVendorResponse]:
     offset = (page - 1) * size
-    data, total = await service.get_vendors_list(
+    data, total = await catalog.get_vendors_list(
         session,
         search=search,
         approval_status=approval_status,
@@ -51,13 +51,12 @@ async def batch_approve_vendors(
     for vid in body.ids:
         try:
             async with session.begin_nested():
-                await service.moderate_vendor(session, vid, ModerationStatus.APPROVED.value)
+                await moderation.moderate_vendor(session, vid, ModerationStatus.APPROVED.value)
                 await audit_service.log_action(session, actor.id, "APPROVE_VENDOR", "vendor", vid)
             approved.append(str(vid))
-        except Exception as exc:
+        except Exception:
             logger.exception("batch_approve_vendors failed for id=%s", vid)
-            failed.append({"id": str(vid), "error": str(exc)})
-    await session.commit()
+            failed.append({"id": str(vid), "error": "operation_failed"})
     return build_response({"approved": approved, "failed": failed})
 
 
@@ -71,17 +70,16 @@ async def batch_reject_vendors(
     for vid in body.ids:
         try:
             async with session.begin_nested():
-                await service.moderate_vendor(
+                await moderation.moderate_vendor(
                     session, vid, ModerationStatus.REJECTED.value, body.reason
                 )
                 await audit_service.log_action(
                     session, actor.id, "REJECT_VENDOR", "vendor", vid, {"reason": body.reason}
                 )
             rejected.append(str(vid))
-        except Exception as exc:
+        except Exception:
             logger.exception("batch_reject_vendors failed for id=%s", vid)
-            failed.append({"id": str(vid), "error": str(exc)})
-    await session.commit()
+            failed.append({"id": str(vid), "error": "operation_failed"})
     return build_response({"rejected": rejected, "failed": failed})
 
 
@@ -91,7 +89,7 @@ async def read_vendor(
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminVendorResponse]:
-    result = await service.get_vendor_or_404(session, vendor_id)
+    result = await catalog.get_vendor_or_404(session, vendor_id)
     return build_response(result)
 
 
@@ -101,9 +99,9 @@ async def delete_vendor(
     actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminVendorResponse]:
-    result = await service.delete_vendor_service(session, vendor_id)
+    result = await catalog.delete_vendor_service(session, vendor_id)
     await audit_service.log_action(session, actor.id, "DEACTIVATE_VENDOR", "vendor", vendor_id)
-    await session.commit()
+    await session.flush()
     return build_response(result)
 
 
@@ -113,7 +111,7 @@ async def approve_vendor(
     actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminVendorResponse]:
-    result = await service.moderate_vendor(
+    result = await moderation.moderate_vendor(
         session, vendor_id, ModerationStatus.APPROVED.value, actor_id=actor.id
     )
     return build_response(result)
@@ -126,7 +124,7 @@ async def reject_vendor(
     actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminVendorResponse]:
-    result = await service.moderate_vendor(
+    result = await moderation.moderate_vendor(
         session, vendor_id, ModerationStatus.REJECTED.value, body.reason, actor_id=actor.id
     )
     return build_response(result)

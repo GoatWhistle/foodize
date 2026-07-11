@@ -1,11 +1,15 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.auth.schemas import TokenResponse
-from features.telegram.crud import get_user_by_phone, get_user_by_telegram_id, get_user_by_telegram_username
+from features.telegram.crud import (
+    get_user_by_phone,
+    get_user_by_telegram_id,
+    get_user_by_telegram_username,
+)
 from features.users.models import User
 from infra.cache.redis import get_redis_cache
 from shared.permissions import CUSTOMER_PERMISSIONS, serialize_permissions
-from utils.JWT import create_access_token, create_refresh_token
+from utils.jwt_tokens import create_access_token, create_refresh_token
 
 
 def normalize_username(username: str) -> str:
@@ -46,7 +50,7 @@ async def find_or_create_telegram_user(
             normalized = normalize_username(telegram_username)
             if existing_by_tg.telegram_username != normalized:
                 existing_by_tg.telegram_username = normalized
-                await session.commit()
+                await session.flush()
                 await session.refresh(existing_by_tg)
         await cache_telegram_id(str(existing_by_tg.id), telegram_id)
         return existing_by_tg
@@ -57,7 +61,7 @@ async def find_or_create_telegram_user(
         if existing_by_username:
             existing_by_username.telegram_id = telegram_id
             existing_by_username.telegram_username = normalized_username
-            await session.commit()
+            await session.flush()
             await session.refresh(existing_by_username)
             await cache_telegram_id(str(existing_by_username.id), telegram_id)
             return existing_by_username
@@ -66,7 +70,7 @@ async def find_or_create_telegram_user(
     if existing_by_phone:
         existing_by_phone.telegram_id = telegram_id
         existing_by_phone.telegram_username = telegram_username
-        await session.commit()
+        await session.flush()
         await session.refresh(existing_by_phone)
         await cache_telegram_id(str(existing_by_phone.id), telegram_id)
         return existing_by_phone
@@ -80,7 +84,7 @@ async def find_or_create_telegram_user(
         permissions=serialize_permissions(CUSTOMER_PERMISSIONS),
     )
     session.add(new_user)
-    await session.commit()
+    await session.flush()
     await session.refresh(new_user)
     await cache_telegram_id(str(new_user.id), telegram_id)
     return new_user

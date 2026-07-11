@@ -7,7 +7,7 @@ from features.auth.schemas import UserLogin
 from features.users.exceptions import UserAlreadyExistsException
 from features.users.models import User
 from shared.exceptions.existence import InvalidCredentialsException, NotFoundException
-from utils.JWT import validate_password
+from utils.jwt_tokens import validate_password
 
 
 async def get_user_by_phone_or_401(
@@ -18,7 +18,7 @@ async def get_user_by_phone_or_401(
     if (
         not user
         or not user.hashed_password
-        or not validate_password(user_data.password, user.hashed_password)
+        or not await validate_password(user_data.password, user.hashed_password)
     ):
         raise InvalidCredentialsException()
     return user

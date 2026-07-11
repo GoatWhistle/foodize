@@ -1,10 +1,11 @@
 import type { Dispatch, SetStateAction } from 'react';
-import { Monitor, Star, DownloadSimple } from '@phosphor-icons/react';
+import { DownloadSimple } from '@phosphor-icons/react';
 import Pagination from '@shared/components/Pagination/Pagination';
 import EmptyState from '@shared/components/EmptyState/EmptyState';
-import { APPROVAL_STATUS_RU } from '@shared/utils/locales';
 import type { adminService as adminServiceType } from '../../../services/adminService';
 import type { AdminRestaurant, RestaurantFilters } from '../hooks/useAdminRestaurants';
+import { AdminRestaurantsFilters } from '../components/AdminRestaurantsFilters';
+import { AdminRestaurantRow } from '../components/AdminRestaurantRow';
 
 interface AdminRestaurantsTabProps {
   restaurants: AdminRestaurant[];
@@ -27,35 +28,6 @@ interface AdminRestaurantsTabProps {
   adminService: typeof adminServiceType;
   PAGE_SIZE: number;
 }
-
-const cardStyle = {
-  background: 'var(--bg-card)',
-  border: '1px solid var(--border)',
-  borderRadius: 'var(--r-md)',
-  boxShadow: 'var(--shadow-sm)',
-};
-
-const filterGridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
-  gap: 8,
-  alignItems: 'center',
-};
-
-const filterControlStyle = {
-  minWidth: 0,
-  height: 48,
-  paddingTop: 11,
-  paddingBottom: 11,
-  fontSize: '0.86rem',
-  lineHeight: 1.2,
-};
-
-const selectFilterStyle = {
-  ...filterControlStyle,
-  paddingRight: 34,
-  backgroundPosition: 'right 10px center',
-};
 
 export default function AdminRestaurantsTab({
   restaurants,
@@ -106,71 +78,15 @@ export default function AdminRestaurantsTab({
       className={restaurantsLoading ? 'loading-dim' : undefined}
       style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
     >
-      <div style={filterGridStyle}>
-        <input
-          className="form-input"
-          style={filterControlStyle}
-          placeholder="Ресторан"
-          value={restaurantSearchRaw}
-          onChange={(event) => {
-            setRestaurantsPage(1);
-            setRestaurantSearchRaw(event.target.value);
-          }}
-        />
-        <input
-          className="form-input"
-          style={filterControlStyle}
-          placeholder="Вендор или телефон"
-          value={restaurantVendorSearchRaw}
-          onChange={(event) => {
-            setRestaurantsPage(1);
-            setRestaurantVendorSearchRaw(event.target.value);
-          }}
-        />
-        <select
-          className="form-input"
-          style={selectFilterStyle}
-          value={restaurantFilters.is_open}
-          onChange={(event) => {
-            setRestaurantsPage(1);
-            setRestaurantFilters((prev) => ({ ...prev, is_open: event.target.value }));
-          }}
-        >
-          <option value="">Любой статус</option>
-          <option value="true">Открыт</option>
-          <option value="false">Закрыт</option>
-        </select>
-        <select
-          className="form-input"
-          style={selectFilterStyle}
-          value={restaurantFilters.moderation_status}
-          onChange={(event) => {
-            setRestaurantsPage(1);
-            setRestaurantFilters((prev) => ({ ...prev, moderation_status: event.target.value }));
-          }}
-        >
-          <option value="">Модерация</option>
-          {Object.entries(APPROVAL_STATUS_RU).map(([val, label]) => (
-            <option key={val} value={val}>
-              {label}
-            </option>
-          ))}
-        </select>
-        <select
-          className="form-input"
-          style={selectFilterStyle}
-          value={restaurantFilters.min_rating}
-          onChange={(event) => {
-            setRestaurantsPage(1);
-            setRestaurantFilters((prev) => ({ ...prev, min_rating: event.target.value }));
-          }}
-        >
-          <option value="">Любой рейтинг</option>
-          <option value="4">от 4 звёзд</option>
-          <option value="3">от 3 звёзд</option>
-          <option value="2">от 2 звёзд</option>
-        </select>
-      </div>
+      <AdminRestaurantsFilters
+        restaurantSearchRaw={restaurantSearchRaw}
+        setRestaurantSearchRaw={setRestaurantSearchRaw}
+        restaurantVendorSearchRaw={restaurantVendorSearchRaw}
+        setRestaurantVendorSearchRaw={setRestaurantVendorSearchRaw}
+        restaurantFilters={restaurantFilters}
+        setRestaurantFilters={setRestaurantFilters}
+        setRestaurantsPage={setRestaurantsPage}
+      />
 
       <div
         style={{
@@ -213,96 +129,13 @@ export default function AdminRestaurantsTab({
       </div>
 
       {restaurants.map((restaurant) => (
-        <div key={restaurant.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <input
-            type="checkbox"
-            checked={selectedRestaurantIds.has(restaurant.id)}
-            onChange={(e) => {
-              setSelectedRestaurantIds((prev) => {
-                const next = new Set(prev);
-                if (e.target.checked) next.add(restaurant.id);
-                else next.delete(restaurant.id);
-                return next;
-              });
-            }}
-            style={{ flexShrink: 0 }}
-          />
-          <button
-            type="button"
-            onClick={() => loadRestaurantDetails(restaurant.id)}
-            style={{
-              ...cardStyle,
-              padding: 16,
-              flex: 1,
-              textAlign: 'left',
-              display: 'flex',
-              justifyContent: 'space-between',
-              gap: 14,
-            }}
-          >
-            <div>
-              <div style={{ color: 'var(--text-1)', fontWeight: 900 }}>{restaurant.name}</div>
-              <div style={{ color: 'var(--text-3)', fontSize: '0.84rem', marginTop: 4 }}>
-                {restaurant.address}
-              </div>
-              <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
-                <span
-                  className={`order-status-badge ${restaurant.is_open ? 'ready' : 'cancelled'}`}
-                >
-                  {restaurant.is_open ? 'Открыт' : 'Закрыт'}
-                </span>
-                <span
-                  className={`order-status-badge ${restaurant.is_hiring ? 'pending' : 'cancelled'}`}
-                >
-                  {restaurant.is_hiring ? 'Нанимает' : 'Не нанимает'}
-                </span>
-              </div>
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-end',
-                gap: 6,
-              }}
-            >
-              <div style={{ color: 'var(--text-3)', fontSize: '0.82rem', textAlign: 'right' }}>
-                {restaurant.orders_count || 0} заказов
-                <br />
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  <Star size={14} weight="fill" color="var(--star)" /> {restaurant.average_rating || 0}
-                </span>
-              </div>
-              <div
-                onClick={(e) => {
-                  e.stopPropagation();
-                  window.open(
-                    `/display-board/${restaurant.id}`,
-                    '_blank',
-                    'noopener,noreferrer'
-                  );
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  fontSize: '0.72rem',
-                  fontWeight: 700,
-                  color: 'var(--text-3)',
-                  padding: '3px 7px',
-                  borderRadius: 6,
-                  border: '1px solid var(--border)',
-                  background: 'var(--bg-surface)',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                <Monitor size={11} />
-                Табло
-              </div>
-            </div>
-          </button>
-        </div>
+        <AdminRestaurantRow
+          key={restaurant.id}
+          restaurant={restaurant}
+          selectedRestaurantIds={selectedRestaurantIds}
+          setSelectedRestaurantIds={setSelectedRestaurantIds}
+          loadRestaurantDetails={loadRestaurantDetails}
+        />
       ))}
 
       {isEmpty && (

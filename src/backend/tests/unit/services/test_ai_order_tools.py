@@ -6,7 +6,6 @@ import pytest
 
 from features.ai_order_agent.tools import (
     _dumps,
-    _existing_items,
     _parse_uuid,
     build_order_executor,
 )
@@ -45,7 +44,9 @@ def _make_user():
     return user
 
 
-def _make_cart_item(item_id=None, restaurant_id=None, name="Бургер", price=250, qty=1, options=None):
+def _make_cart_item(
+    item_id=None, restaurant_id=None, name="Бургер", price=250, qty=1, options=None
+):
     item = MagicMock()
     item.menuItem = MagicMock()
     item.menuItem.id = item_id or uuid.uuid4()
@@ -65,6 +66,20 @@ def _make_cart(items=None, restaurant_id=None):
     cart.items = items or []
     cart.restaurant_id = restaurant_id
     return cart
+
+
+class FakeCache:
+    def __init__(self):
+        self.store = {}
+
+    async def get(self, key):
+        return self.store.get(key)
+
+    async def set(self, key, value, ttl=None):
+        self.store[key] = value
+
+    async def delete(self, key):
+        self.store.pop(key, None)
 
 
 class TestBuildOrderExecutor:
@@ -95,7 +110,7 @@ class TestBuildOrderExecutor:
 
     @pytest.fixture
     def cache(self):
-        return AsyncMock()
+        return FakeCache()
 
     @pytest.fixture
     def executor(self, user, cart_service, cache):
@@ -138,7 +153,7 @@ class TestBuildOrderExecutor:
             call = ToolCall(id="t1", name="search_menu", arguments={"query": "шаурма"})
             result = json.loads(await executor(call))
         assert "results" in result
-        assert result["results"][0]["name"] == "Шаурма"
+        assert result["results"][0]["name"] == "<<<ITEM>>>Шаурма<<<END_ITEM>>>"
 
     @pytest.mark.asyncio
     async def test_search_menu_empty_results(self, session, user, cart_service, cache):
@@ -202,7 +217,9 @@ class TestBuildOrderExecutor:
         menu_item.option_groups = []
 
         cart_item = _make_cart_item(restaurant_id=existing_rid)
-        cart_service.get_cart.return_value = _make_cart(items=[cart_item], restaurant_id=existing_rid)
+        cart_service.get_cart.return_value = _make_cart(
+            items=[cart_item], restaurant_id=existing_rid
+        )
         executor = build_order_executor(user, cart_service, cache)
         with patch(
             "features.ai_order_agent.tools.get_menu_item_by_id",
@@ -248,11 +265,13 @@ class TestBuildOrderExecutor:
         assert result["error"] == "cart_not_confirmed"
 
     @pytest.mark.asyncio
-    async def test_place_order_empty_cart(self, executor, cart_service):
+    async def test_place_order_empty_cart(self, user, cart_service, cache):
         cart_service.get_cart.return_value = _make_cart(items=[])
-        await executor(ToolCall(id="t0", name="view_cart", arguments={}))
+        view = build_order_executor(user, cart_service, cache, user_turn=1)
+        place = build_order_executor(user, cart_service, cache, user_turn=2)
+        await view(ToolCall(id="t0", name="view_cart", arguments={}))
         call = ToolCall(id="t1", name="place_order", arguments={})
-        result = json.loads(await executor(call))
+        result = json.loads(await place(call))
         assert result["error"] == "cart_empty"
 
     @pytest.mark.asyncio
@@ -278,14 +297,16 @@ class TestBuildOrderExecutor:
             "total_price": 250,
         }
 
-        executor = build_order_executor(user, cart_service, cache)
-        mock_hash = MagicMock()
-        mock_hash.hexdigest.return_value = "a" * 64
-        await executor(ToolCall(id="t0", name="view_cart", arguments={}))
-        with patch("features.ai_order_agent.tools.place_order", new_callable=AsyncMock, return_value=order_result), \
-             patch("features.ai_order_agent.tools.hashlib.sha256", return_value=mock_hash):
+        view = build_order_executor(user, cart_service, cache, user_turn=1)
+        place = build_order_executor(user, cart_service, cache, user_turn=2)
+        await view(ToolCall(id="t0", name="view_cart", arguments={}))
+        with patch(
+            "features.ai_order_agent.tools.place_order",
+            new_callable=AsyncMock,
+            return_value=order_result,
+        ):
             call = ToolCall(id="t1", name="place_order", arguments={})
-            result = json.loads(await executor(call))
+            result = json.loads(await place(call))
 
         assert result["ok"] is True
         assert result["order"]["number"] == "ORD-001"

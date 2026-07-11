@@ -7,7 +7,13 @@ import prettierConfig from "eslint-config-prettier";
 
 export default tseslint.config(
   {
-    ignores: ["dist/**", "node_modules/**", "coverage/**", "*.config.js", "*.config.ts"],
+    ignores: [
+      "dist/**",
+      "node_modules/**",
+      "coverage/**",
+      "*.config.js",
+      "*.config.ts",
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
@@ -41,7 +47,10 @@ export default tseslint.config(
       "react-hooks/exhaustive-deps": "error",
       "no-empty": ["error", { allowEmptyCatch: true }],
       "no-console": ["error", { allow: ["warn", "error"] }],
-      "@typescript-eslint/no-unused-vars": ["error", { caughtErrorsIgnorePattern: "^_", argsIgnorePattern: "^_" }],
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { caughtErrorsIgnorePattern: "^_", argsIgnorePattern: "^_" },
+      ],
       "@typescript-eslint/no-floating-promises": "error",
       "@typescript-eslint/no-misused-promises": "error",
       "@typescript-eslint/await-thenable": "error",

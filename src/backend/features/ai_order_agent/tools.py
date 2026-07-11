@@ -1,177 +1,71 @@
 import hashlib
-import json
-import re
 import uuid
 
 from database import db_helper
 from features.admin.crud import CATEGORY_RU
 from features.ai_order_agent import search as search_mod
-from features.cart.schemas import CartItemIn, CartResponse, CartSelectedOption, CartUpdate
+from features.ai_order_agent.tool_helpers import (
+    CONFIRM_TTL_SECONDS,
+    PLACE_ORDER_ERRORS,
+    PROMO_RE,
+    _dumps,
+    _existing_items,
+    _parse_confirm,
+    _parse_uuid,
+    _strip_item_markers,
+    cart_state_hash,
+    cart_summary,
+    order_confirm_key,
+)
+from features.ai_order_agent.tool_specs import ORDER_TOOLS
+from features.cart.schemas import CartItemIn, CartSelectedOption, CartUpdate
 from features.cart.service import CartService
 from features.menu.crud import get_menu_item_by_id
 from features.orders.schemas.order import OrderCreate, OrderItemCreate
-from features.orders.services.order import place_order
+from features.orders.services.order_placement import place_order
 from features.users.models import User
 from infra.cache.base import CacheRepository
-from infra.llm import ToolCall, ToolExecutor, ToolSpec
+from infra.llm import ToolCall, ToolExecutor
+from shared.exceptions import AppException
 
-ORDER_TOOLS: list[ToolSpec] = [
-    ToolSpec(
-        name="search_menu",
-        description=(
-            "Найти позиции меню по тексту запроса (название/описание), с фильтром по "
-            "максимальной цене и/или конкретному ресторану. Возвращает menu_item_id, "
-            "цену, ресторан и адрес."
-        ),
-        input_schema={
-            "type": "object",
-            "properties": {
-                "query": {"type": "string", "description": "Что ищем, напр. 'острая шаурма'."},
-                "max_price": {"type": "integer", "description": "Максимальная цена в рублях."},
-                "restaurant_id": {"type": "string", "description": "UUID ресторана (опц.)."},
-            },
-            "required": ["query"],
-        },
-    ),
-    ToolSpec(
-        name="view_cart",
-        description="Показать текущую корзину пользователя и итоговую сумму.",
-        input_schema={"type": "object", "properties": {}},
-    ),
-    ToolSpec(
-        name="add_to_cart",
-        description=(
-            "Добавить позицию в корзину. Корзина может содержать позиции только одного "
-            "ресторана — если в ней товары из другого, сначала очистить (clear_cart)."
-        ),
-        input_schema={
-            "type": "object",
-            "properties": {
-                "menu_item_id": {"type": "string", "description": "UUID позиции меню."},
-                "quantity": {"type": "integer", "description": "Количество (1–99), по умолч. 1."},
-                "option_ids": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "UUID выбранных опций (опц.).",
-                },
-            },
-            "required": ["menu_item_id"],
-        },
-    ),
-    ToolSpec(
-        name="remove_from_cart",
-        description="Убрать позицию из корзины по menu_item_id.",
-        input_schema={
-            "type": "object",
-            "properties": {"menu_item_id": {"type": "string"}},
-            "required": ["menu_item_id"],
-        },
-    ),
-    ToolSpec(
-        name="clear_cart",
-        description="Полностью очистить корзину.",
-        input_schema={"type": "object", "properties": {}},
-    ),
-    ToolSpec(
-        name="place_order",
-        description=(
-            "Оформить заказ из текущей корзины. Перед этим подтвердите состав у пользователя. "
-            "Требует, чтобы view_cart был вызван после последнего изменения корзины — иначе "
-            "вернётся ошибка cart_not_confirmed."
-        ),
-        input_schema={
-            "type": "object",
-            "properties": {
-                "comment": {"type": "string", "description": "Комментарий к заказу (опц.)."},
-                "promo_code": {"type": "string", "description": "Промокод (опц.)."},
-            },
-        },
-    ),
-]
-
-
-def _dumps(payload: object) -> str:
-    return json.dumps(payload, ensure_ascii=False, default=str)
-
-
-def _parse_uuid(value) -> uuid.UUID | None:
-    if not value:
-        return None
-    try:
-        return uuid.UUID(str(value))
-    except (TypeError, ValueError):
-        return None
-
-
-def _existing_items(cart: CartResponse) -> list[CartItemIn]:
-    items: list[CartItemIn] = []
-    for it in cart.items:
-        items.append(
-            CartItemIn(
-                menu_item_id=it.menuItem.id,
-                name=it.menuItem.name,
-                price=it.menuItem.price,
-                image_url=it.menuItem.image_url,
-                quantity=it.quantity,
-                selected_option_ids=list(it.selected_option_ids),
-                selected_options=[
-                    CartSelectedOption(
-                        option_id=o.option_id, name=o.name, price_delta=o.price_delta
-                    )
-                    for o in it.selected_options
-                ],
-            )
-        )
-    return items
-
-
-_PROMO_RE = re.compile(r"^[A-Za-z0-9_\-]{1,64}$")
+__all__ = ["ORDER_TOOLS", "build_order_executor"]
 
 
 def build_order_executor(
     user: User,
     cart_service: CartService,
     cache: CacheRepository,
+    *,
+    user_turn: int = 0,
 ) -> ToolExecutor:
     identifier = str(user.id)
-    state = {"viewed_cart": False}
+    confirm_key = order_confirm_key(identifier)
 
     async def _cart_summary() -> dict:
         cart = await cart_service.get_cart(identifier)
-        items = []
-        total = 0
-        for it in cart.items:
-            options_sum = sum(o.price_delta for o in it.selected_options)
-            unit = it.menuItem.price + options_sum
-            line_total = unit * it.quantity
-            total += line_total
-            items.append(
-                {
-                    "menu_item_id": str(it.menuItem.id),
-                    "name": it.menuItem.name,
-                    "quantity": it.quantity,
-                    "unit_price": unit,
-                    "options": [o.name for o in it.selected_options],
-                    "line_total": line_total,
-                }
-            )
-        return {
-            "restaurant_id": str(cart.restaurant_id) if cart.restaurant_id else None,
-            "items": items,
-            "total": total,
-        }
+        return cart_summary(cart)
 
     async def _search(args: dict) -> str:
+        raw_max_price = args.get("max_price")
+        max_price: int | None = None
+        if raw_max_price is not None:
+            try:
+                max_price = max(0, int(raw_max_price))
+            except (TypeError, ValueError):
+                max_price = None
         async with db_helper.session_factory() as session:
             results = await search_mod.semantic_search(
                 session,
                 cache,
                 query=args.get("query"),
-                max_price=args.get("max_price"),
+                max_price=max_price,
                 restaurant_id=_parse_uuid(args.get("restaurant_id")),
             )
         for r in results:
             r["category"] = CATEGORY_RU.get(r["category"], r["category"])
+            if r.get("name"):
+                clean_name = _strip_item_markers(r["name"])
+                r["name"] = f"<<<ITEM>>>{clean_name}<<<END_ITEM>>>"
         if not results:
             return _dumps(
                 {
@@ -185,8 +79,14 @@ def build_order_executor(
         return _dumps({"results": results})
 
     async def _view_cart(_args: dict) -> str:
-        state["viewed_cart"] = True
-        return _dumps(await _cart_summary())
+        cart = await cart_service.get_cart(identifier)
+        token = uuid.uuid4().hex
+        state_hash = cart_state_hash(cart)
+        await cache.set(confirm_key, f"{user_turn}:{token}:{state_hash}", ttl=CONFIRM_TTL_SECONDS)
+        return _dumps(cart_summary(cart))
+
+    async def _invalidate_confirm() -> None:
+        await cache.delete(confirm_key)
 
     async def _add(args: dict) -> str:
         item_id = _parse_uuid(args.get("menu_item_id"))
@@ -257,7 +157,7 @@ def build_order_executor(
         await cart_service.update_cart(
             identifier, CartUpdate(restaurant_id=item.restaurant_id, items=items)
         )
-        state["viewed_cart"] = False
+        await _invalidate_confirm()
         return _dumps({"ok": True, "cart": await _cart_summary()})
 
     async def _remove(args: dict) -> str:
@@ -272,16 +172,18 @@ def build_order_executor(
             await cart_service.update_cart(
                 identifier, CartUpdate(restaurant_id=cart.restaurant_id, items=items)
             )
-        state["viewed_cart"] = False
+        await _invalidate_confirm()
         return _dumps({"ok": True, "cart": await _cart_summary()})
 
     async def _clear(_args: dict) -> str:
         await cart_service.clear_cart(identifier)
-        state["viewed_cart"] = False
+        await _invalidate_confirm()
         return _dumps({"ok": True, "cart": {"items": [], "total": 0}})
 
     async def _place(args: dict) -> str:
-        if not state["viewed_cart"]:
+        stored = await cache.get(confirm_key)
+        confirmed_turn, confirm_token, confirmed_hash = _parse_confirm(stored)
+        if confirm_token is None:
             return _dumps(
                 {
                     "error": "cart_not_confirmed",
@@ -291,13 +193,37 @@ def build_order_executor(
                     ),
                 }
             )
+        if confirmed_turn is None or confirmed_turn >= user_turn:
+            return _dumps(
+                {
+                    "error": "cart_not_confirmed",
+                    "message": (
+                        "Состав корзины показан, но пользователь ещё не подтвердил заказ "
+                        "новым сообщением. Дождись явного согласия в новом сообщении "
+                        "пользователя, затем оформляй."
+                    ),
+                }
+            )
 
         cart = await cart_service.get_cart(identifier)
         if not cart.items or not cart.restaurant_id:
             return _dumps({"error": "cart_empty", "message": "Корзина пуста."})
 
+        if confirmed_hash is not None and confirmed_hash != cart_state_hash(cart):
+            await _invalidate_confirm()
+            return _dumps(
+                {
+                    "error": "cart_changed",
+                    "message": (
+                        "Состав корзины изменился после подтверждения. Покажи актуальный "
+                        "состав через view_cart и дождись нового подтверждения."
+                    ),
+                }
+            )
+
         raw_promo = args.get("promo_code")
-        promo_code = raw_promo if raw_promo and _PROMO_RE.match(raw_promo) else None
+        promo_code = raw_promo if raw_promo and PROMO_RE.match(raw_promo) else None
+        comment = str(args.get("comment") or "")[:500].strip() or None
 
         order_items = [
             OrderItemCreate(
@@ -311,29 +237,48 @@ def build_order_executor(
         if not order_items:
             return _dumps({"error": "item_unavailable", "message": "Позиции недоступны."})
 
-        cart_fingerprint = hashlib.sha256(
-            (
-                f"{user.id}:{cart.restaurant_id}:"
-                + ":".join(
-                    f"{it.menuItem.id}x{it.quantity}" for it in cart.items if it.menuItem is not None
-                )
-            ).encode()
-        ).hexdigest()[:32]
+        items_part = ";".join(
+            "{}x{}:{}".format(
+                it.menuItem.id,
+                it.quantity,
+                ",".join(sorted(str(o) for o in it.selected_option_ids)),
+            )
+            for it in cart.items
+            if it.menuItem is not None
+        )
+        fingerprint_source = "|".join(
+            [
+                str(user.id),
+                str(cart.restaurant_id),
+                items_part,
+                comment or "",
+                promo_code or "",
+                confirm_token,
+            ]
+        )
+        cart_fingerprint = hashlib.sha256(fingerprint_source.encode()).hexdigest()[:32]
 
         order_in = OrderCreate(
             restaurant_id=cart.restaurant_id,
             items=order_items,
             promo_code=promo_code,
-            comment=str(args.get("comment") or "")[:500].strip() or None,
+            comment=comment,
         )
-        async with db_helper.session_factory() as session:
-            result = await place_order(
-                session=session,
-                order_data=order_in,
-                user_id=user.id,
-                idempotency_key=cart_fingerprint,
-            )
+        try:
+            async with db_helper.session_factory() as session:
+                result = await place_order(
+                    session=session,
+                    order_data=order_in,
+                    user_id=user.id,
+                    idempotency_key=cart_fingerprint,
+                )
+        except AppException as exc:
+            error_code = PLACE_ORDER_ERRORS.get(type(exc))
+            if error_code is None:
+                raise
+            return _dumps({"error": error_code, "message": exc.detail})
         await cart_service.clear_cart(identifier)
+        await _invalidate_confirm()
         data = result.model_dump()
         return _dumps(
             {

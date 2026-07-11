@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import func, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -63,7 +63,7 @@ async def create_promo(session: AsyncSession, data: PromoCreate) -> Promo:
         menu_category=data.menu_category,
     )
     session.add(promo)
-    await session.commit()
+    await session.flush()
     await session.refresh(promo)
     return promo
 
@@ -79,9 +79,7 @@ async def increment_used_count(session: AsyncSession, promo: Promo) -> bool:
     return result.rowcount == 1  # type: ignore[attr-defined]
 
 
-async def has_used_promo(
-    session: AsyncSession, promo_id: uuid.UUID, user_id: uuid.UUID
-) -> bool:
+async def has_used_promo(session: AsyncSession, promo_id: uuid.UUID, user_id: uuid.UUID) -> bool:
     result = await session.execute(
         select(PromoUsage.id).where(
             PromoUsage.promo_id == promo_id,
@@ -104,8 +102,25 @@ async def reserve_promo_usage(
     return result.scalar_one_or_none() is not None
 
 
+async def release_promo_usage(
+    session: AsyncSession, promo_id: uuid.UUID, user_id: uuid.UUID
+) -> None:
+    result = await session.execute(
+        delete(PromoUsage).where(
+            PromoUsage.promo_id == promo_id,
+            PromoUsage.user_id == user_id,
+        )
+    )
+    if result.rowcount:  # type: ignore[attr-defined]
+        await session.execute(
+            update(Promo)
+            .where(Promo.id == promo_id, Promo.used_count > 0)
+            .values(used_count=Promo.used_count - 1)
+        )
+
+
 async def deactivate_promo(session: AsyncSession, promo: Promo) -> Promo:
     promo.is_active = False
-    await session.commit()
+    await session.flush()
     await session.refresh(promo)
     return promo

@@ -37,8 +37,8 @@ const TelegramLogo = ({ size = 24, variant = "color", className, style }: Telegr
     >
       <defs>
         <linearGradient id="foodize-tg-grad" x1="50%" x2="50%" y1="0%" y2="100%">
-          <stop offset="0%" stopColor="#2AABEE" />
-          <stop offset="100%" stopColor="#229ED9" />
+          <stop offset="0%" stopColor="var(--brand-telegram-light)" />
+          <stop offset="100%" stopColor="var(--brand-telegram)" />
         </linearGradient>
       </defs>
       <path

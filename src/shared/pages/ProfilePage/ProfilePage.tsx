@@ -31,6 +31,7 @@ interface ProfilePageRoutes {
 }
 
 interface ExtraMenuItem {
+  id?: string;
   icon?: ReactNode;
   label: ReactNode;
   onClick?: () => void;
@@ -185,7 +186,7 @@ const ProfilePage = ({
 
               {extraMenuItems.map((item, i) => (
                 <button
-                  key={i}
+                  key={item.id ?? i}
                   className={`${s.menuItem}${item.onClick ? "" : ` ${s.menuItemStatic}`}`}
                   onClick={item.onClick}
                   disabled={!item.onClick}

@@ -1,11 +1,3 @@
-"""Tests for provider message mapping.
-
-Both providers consume the same generic ``Message`` list; each maps it to its
-own wire shape. Anthropic carries tool results as ``tool_result`` blocks inside
-a *user* turn (parallel results merged), while OpenAI uses a dedicated ``tool``
-role message per result.
-"""
-
 from infra.llm.anthropic_client import _to_messages as anthropic_messages
 from infra.llm.base import Message, Role, ToolCall
 from infra.llm.openai_compatible import _to_messages as openai_messages

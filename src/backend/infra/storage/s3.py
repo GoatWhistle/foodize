@@ -1,8 +1,10 @@
 import asyncio
 import re
 import uuid
+from collections.abc import AsyncIterator
 from functools import lru_cache
 from io import BytesIO
+from typing import Any
 
 import boto3
 from botocore.config import Config
@@ -11,7 +13,6 @@ from PIL import Image, UnidentifiedImageError
 
 from settings.config.app_config import settings
 
-# Allowed image content types mapped to the file extension used for the S3 key.
 _ALLOWED_TYPES: dict[str, str] = {
     "image/jpeg": "jpg",
     "image/png": "png",
@@ -34,11 +35,11 @@ _KEY_RE = re.compile(r"^(menu|restaurants)/[a-f0-9]{32}\.(jpg|png|webp)$")
 
 ALLOWED_IMAGE_CONTENT_TYPES = frozenset(_ALLOWED_TYPES)
 
-MAX_IMAGE_BYTES = 5 * 1024 * 1024  # 5 MB
+MAX_IMAGE_BYTES = 5 * 1024 * 1024
 
 
 class UnsupportedImageType(Exception):
-    """Raised when the uploaded file is not an accepted image type."""
+    pass
 
 
 def _detect_image_ext(data: bytes) -> str:
@@ -65,11 +66,10 @@ def _client():
         aws_secret_access_key=cfg.secret_key or None,
         config=Config(
             signature_version="s3v4",
-            # Cloud.ru (and most S3-compatible providers) address buckets as
-            # <endpoint>/<bucket> rather than <bucket>.<endpoint>. Forcing
-            # path-style avoids DNS/TLS failures against s3.cloud.ru.
             s3={"addressing_style": "path"},
             retries={"max_attempts": 3},
+            connect_timeout=5,
+            read_timeout=30,
         ),
     )
 
@@ -123,23 +123,50 @@ def _fetch_object_sync(key: str) -> tuple[bytes, str] | None:
 
 
 async def fetch_object(key: str) -> tuple[bytes, str] | None:
-    """Fetch an object's bytes and content type; None if the key doesn't exist.
-
-    Used by the /media proxy because the storage provider (Cloud.ru) does not
-    allow anonymous public reads, so the backend serves stored images itself.
-    """
     return await asyncio.to_thread(_fetch_object_sync, key)
 
 
-async def upload_image(data: bytes, content_type: str, prefix: str = "menu") -> str:
-    """Upload image bytes to object storage and return the public URL.
+def _open_object_sync(key: str) -> tuple[Any, str, str | None] | None:
+    try:
+        obj = _client().get_object(Bucket=settings.s3.bucket, Key=key)
+    except ClientError as e:
+        code = e.response.get("Error", {}).get("Code", "")
+        if code in ("NoSuchKey", "404", "NotFound"):
+            return None
+        raise
+    content_length = obj.get("ContentLength")
+    return (
+        obj["Body"],
+        obj.get("ContentType") or "application/octet-stream",
+        str(content_length) if content_length is not None else None,
+    )
 
-    boto3 is synchronous, so the blocking call runs in a worker thread to avoid
-    stalling the event loop.
-    """
+
+async def fetch_object_stream(
+    key: str,
+    chunk_size: int = 64 * 1024,
+) -> tuple[AsyncIterator[bytes], str, str | None] | None:
+    opened = await asyncio.to_thread(_open_object_sync, key)
+    if opened is None:
+        return None
+    body, content_type, content_length = opened
+
+    async def _iterator() -> AsyncIterator[bytes]:
+        try:
+            while True:
+                chunk = await asyncio.to_thread(body.read, chunk_size)
+                if not chunk:
+                    break
+                yield chunk
+        finally:
+            await asyncio.to_thread(body.close)
+
+    return _iterator(), content_type, content_length
+
+
+async def upload_image(data: bytes, content_type: str, prefix: str = "menu") -> str:
     return await asyncio.to_thread(_upload_image_sync, data, content_type, prefix)
 
 
 async def delete_image(url: str) -> None:
-    """Best-effort delete of a previously uploaded object by its public URL."""
     await asyncio.to_thread(_delete_image_sync, url)

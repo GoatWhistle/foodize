@@ -1,43 +1,18 @@
-import { useEffect, useState, lazy, Suspense } from "react";
-import {
-  Navigate,
-  RouterProvider,
-  createBrowserRouter,
-  Outlet,
-  useNavigate,
-  useNavigationType,
-  useLocation,
-  NavigationType,
-} from "react-router-dom";
-import { ShoppingCart } from "@phosphor-icons/react";
+import { useEffect, useState } from "react";
+import { RouterProvider } from "react-router-dom";
 
 import { useAuthStore } from "./store/useAuthStore";
 import { useOrderStore } from "./store/useOrderStore";
 import { useFavoriteStore } from "@shared/store/useFavoriteStore";
 import { useNotificationStore } from "./store/useNotificationStore";
 import { useThemeStore } from "@shared/store/useThemeStore";
-import { authExistingUser, initTelegramApp } from "./telegram/init";
+import { runBootFlow } from "./telegram/bootFlow";
 import { tg } from "./telegram/sdk";
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
-import BottomNav from "./components/BottomNav/BottomNav";
 import ErrorBoundary from "@shared/components/ErrorBoundary/ErrorBoundary";
 import ConfirmDialog from "@shared/components/ConfirmDialog/ConfirmDialog";
-import ActiveOrderBanner from "./components/ActiveOrderBanner/ActiveOrderBanner";
-
-const LazyHome = lazy(() => import("./pages/home/HomePage"));
-const LazyRestaurant = lazy(() => import("./pages/restaurant/RestaurantPage"));
-const LazyOrders = lazy(() => import("./pages/orders/OrdersPage"));
-const LazyOrderStatus = lazy(() => import("./pages/orders/OrderStatusPage"));
-const LazyProfile = lazy(() => import("./pages/profile/ProfilePage"));
-const LazySettings = lazy(() => import("./pages/profile/SettingsPage"));
-const LazyFavorites = lazy(() => import("./pages/profile/FavoritesPage"));
-const LazyNotifications = lazy(
-  () => import("./pages/notifications/NotificationsPage"),
-);
-const LazyLegal = lazy(() =>
-  import("@shared/components").then((m) => ({ default: m.LegalPage })),
-);
+import { router } from "./routes";
 
 const DEEP_LINK_ID_RE = /^[a-zA-Z0-9-]{1,64}$/;
 
@@ -53,80 +28,6 @@ const Spinner = () => (
     <div className="spinner" />
   </div>
 );
-
-const GlobalCartFab = () => {
-  const cartCount = useOrderStore((s) => s.cartCount);
-  const count = cartCount();
-  const navigate = useNavigate();
-
-  const isRestaurant =
-    typeof window !== "undefined" &&
-    window.location.pathname.startsWith("/restaurant/");
-
-  if (count === 0 || isRestaurant) return null;
-
-  return (
-    <button
-      className="cart-fab"
-      onClick={() => {
-        void navigate(
-          "/restaurant/" + useOrderStore.getState().cartRestaurantId,
-        );
-      }}
-    >
-      <ShoppingCart size={22} weight="bold" />
-      <span className="cart-fab-label">Корзина</span>
-      <span className="cart-badge">{count}</span>
-    </button>
-  );
-};
-
-const Layout = () => {
-  const navigationType = useNavigationType();
-  const location = useLocation();
-  return (
-    <>
-      <ActiveOrderBanner />
-      <Suspense fallback={null}>
-        <div
-          key={location.key}
-          className={navigationType !== NavigationType.Pop ? "page-enter" : ""}
-        >
-          <Outlet />
-        </div>
-      </Suspense>
-      <GlobalCartFab />
-      <BottomNav />
-    </>
-  );
-};
-
-const router = createBrowserRouter([
-  {
-    element: <Layout />,
-    children: [
-      { path: "/", element: <LazyHome /> },
-      { path: "/restaurant/:id", element: <LazyRestaurant /> },
-      { path: "/orders", element: <LazyOrders /> },
-      { path: "/orders/:id", element: <LazyOrderStatus /> },
-      { path: "/profile", element: <LazyProfile /> },
-      { path: "/settings", element: <LazySettings /> },
-      { path: "/favorites", element: <LazyFavorites /> },
-      { path: "/notifications", element: <LazyNotifications /> },
-    ],
-  },
-  {
-    element: (
-      <Suspense fallback={null}>
-        <Outlet />
-      </Suspense>
-    ),
-    children: [
-      { path: "/legal/:doc", element: <LazyLegal /> },
-    ],
-  },
-  { path: "*", element: <Navigate to="/" replace /> },
-]);
 
 function applyTelegramTheme(): void {
   if (!tg) return;
@@ -205,29 +106,26 @@ export default function App() {
   useEffect(() => {
     async function boot() {
       try {
-        const result = await initTelegramApp();
-        const forceLogin =
-          localStorage.getItem("foodize_tg_logged_out") === "1";
+        const action = await runBootFlow({
+          fetchMe,
+          isAuthenticated: () => useAuthStore.getState().isAuthenticated,
+          isForcedLogout: () =>
+            localStorage.getItem("foodize_tg_logged_out") === "1",
+        });
 
-        if (forceLogin) {
-          setInitData(result.initData ?? "");
+        if (action.type === "login") {
+          setInitData(action.initData);
           setPrefillPhone(null);
           setAppState("login");
-        } else if (result.status === "registered") {
-          await authExistingUser(result.initData ?? "");
-          await fetchMe();
-
-          if (result.start_param) {
-            handleDeepLink(result.start_param);
-          }
-
-          setAppState("ready");
-        } else if (result.status === "new_user") {
-          setInitData(result.initData ?? "");
-          setPrefillPhone(result.phone_number ?? null);
-          setPendingStartParam(result.start_param ?? null);
+        } else if (action.type === "register") {
+          setInitData(action.initData);
+          setPrefillPhone(action.phoneNumber);
+          setPendingStartParam(action.startParam);
           setAppState("register");
         } else {
+          if (action.startParam) {
+            handleDeepLink(action.startParam);
+          }
           setAppState("ready");
         }
       } catch {

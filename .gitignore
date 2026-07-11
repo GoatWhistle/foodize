@@ -4,6 +4,9 @@
 __pycache__/
 .ruff_cache/
 .pytest_cache/
+.mypy_cache/
+.coverage
+.coverage.*
 node_modules/
 dist/
 
@@ -11,6 +14,9 @@ dist/
 jwt-private.key
 jwt-private.key.pub
 certs/
+
+# Database dumps (tools/backup.sh default BACKUP_DIR=./backups) — may contain PII.
+backups/
 
 .env
 

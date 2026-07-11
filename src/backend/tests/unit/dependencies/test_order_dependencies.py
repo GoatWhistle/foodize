@@ -37,6 +37,12 @@ def _make_restaurant(vendor_id: uuid.UUID) -> MagicMock:
     return r
 
 
+def _execute_result(value: object | None) -> MagicMock:
+    result = MagicMock()
+    result.scalar_one_or_none.return_value = value
+    return result
+
+
 class TestVerifyRestaurantAccess:
     @pytest.mark.asyncio
     async def test_vendor_correct_ownership(self):
@@ -48,7 +54,7 @@ class TestVerifyRestaurantAccess:
         vendor_mock.id = vendor_id
 
         session = AsyncMock()
-        session.get = AsyncMock(return_value=restaurant)
+        session.execute = AsyncMock(return_value=_execute_result(restaurant))
 
         with patch(
             "features.orders.dependencies.get_vendor_by_user_id",
@@ -67,7 +73,7 @@ class TestVerifyRestaurantAccess:
         vendor_mock.id = uuid.uuid4()
 
         session = AsyncMock()
-        session.get = AsyncMock(return_value=restaurant)
+        session.execute = AsyncMock(return_value=_execute_result(restaurant))
 
         with patch(
             "features.orders.dependencies.get_vendor_by_user_id",
@@ -85,12 +91,11 @@ class TestVerifyRestaurantAccess:
         user = _make_user(UserRole.STAFF.value)
 
         staff_profile = MagicMock()
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none = MagicMock(return_value=staff_profile)
 
         session = AsyncMock()
-        session.get = AsyncMock(return_value=restaurant)
-        session.execute = AsyncMock(return_value=mock_result)
+        session.execute = AsyncMock(
+            side_effect=[_execute_result(restaurant), _execute_result(staff_profile)]
+        )
 
         result = await verify_restaurant_access(session, restaurant_id, user)
         assert result == restaurant
@@ -102,12 +107,10 @@ class TestVerifyRestaurantAccess:
         restaurant.id = restaurant_id
         user = _make_user(UserRole.STAFF.value)
 
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none = MagicMock(return_value=None)
-
         session = AsyncMock()
-        session.get = AsyncMock(return_value=restaurant)
-        session.execute = AsyncMock(return_value=mock_result)
+        session.execute = AsyncMock(
+            side_effect=[_execute_result(restaurant), _execute_result(None)]
+        )
 
         with pytest.raises(AccessDeniedException):
             await verify_restaurant_access(session, restaurant_id, user)
@@ -118,7 +121,7 @@ class TestVerifyRestaurantAccess:
         user = _make_user(UserRole.CUSTOMER.value)
 
         session = AsyncMock()
-        session.get = AsyncMock(return_value=restaurant)
+        session.execute = AsyncMock(return_value=_execute_result(restaurant))
 
         with pytest.raises(AccessDeniedException):
             await verify_restaurant_access(session, restaurant.id, user)
@@ -128,7 +131,7 @@ class TestVerifyRestaurantAccess:
         user = _make_user(UserRole.VENDOR.value)
 
         session = AsyncMock()
-        session.get = AsyncMock(return_value=None)
+        session.execute = AsyncMock(return_value=_execute_result(None))
 
         with pytest.raises(NotFoundException):
             await verify_restaurant_access(session, uuid.uuid4(), user)

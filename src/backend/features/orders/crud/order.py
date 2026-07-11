@@ -82,11 +82,23 @@ async def get_order_by_identifier_for_update(
 ) -> Order | None:
     try:
         parsed_uuid = uuid.UUID(identifier)
+        stmt = (
+            select(Order)
+            .where(Order.id == parsed_uuid)
+            .options(*_full_options())
+            .with_for_update(of=Order)
+        )
     except ValueError:
-        return None
-    stmt = (
-        select(Order).where(Order.id == parsed_uuid).options(*_full_options()).with_for_update()
-    )
+        try:
+            display_id = int(identifier)
+        except ValueError:
+            return None
+        stmt = (
+            select(Order)
+            .where(Order.display_id == display_id)
+            .options(*_full_options())
+            .with_for_update(of=Order)
+        )
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
 

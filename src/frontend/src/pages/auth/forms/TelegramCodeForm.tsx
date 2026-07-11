@@ -82,7 +82,7 @@ const TelegramCodeForm = ({
               style={{
                 marginLeft: 8,
                 fontSize: '0.85em',
-                color: 'var(--text-secondary)',
+                color: 'var(--text-2)',
                 fontVariantNumeric: 'tabular-nums',
               }}
             >

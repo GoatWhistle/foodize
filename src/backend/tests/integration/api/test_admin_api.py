@@ -184,7 +184,7 @@ class TestAdminUsers:
         promoted = {**mock_user, "permissions": [Permission.ADMIN_ACCESS.value]}
 
         with patch(
-            "features.admin.service.set_user_permissions",
+            "features.admin.api.users.users_service.set_user_permissions",
             new_callable=AsyncMock,
             return_value=promoted,
         ):

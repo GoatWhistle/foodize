@@ -42,7 +42,7 @@ async def create_promo(
         entity_id=promo.id,
         details={"code": promo.code, "restaurant_id": str(promo.restaurant_id)},
     )
-    await session.commit()
+    await session.flush()
     return PromoResponse.model_validate(promo)
 
 
@@ -79,7 +79,7 @@ async def deactivate_promo(
         entity_id=updated.id,
         details={"code": code},
     )
-    await session.commit()
+    await session.flush()
     return PromoResponse.model_validate(updated)
 
 

@@ -123,25 +123,29 @@ describe("Telegram initialization flows", () => {
     expect(res.status).toBe("error");
   });
 
-  it("should completeTelegramAuth", async () => {
+  it("should completeTelegramAuth without persisting tokens", async () => {
     authServiceMock.telegramRegister.mockResolvedValueOnce({
       data: { data: { access_token: "acc", refresh_token: "ref" } },
     });
 
-    const res = await completeTelegramAuth("init", "+123", "Name");
-    expect(res.access_token).toBe("acc");
-    expect(sessionStorage.getItem("access_token")).toBe("acc");
-    expect(sessionStorage.getItem("refresh_token")).toBe("ref");
+    await completeTelegramAuth("init", "+123", "Name");
+    expect(authServiceMock.telegramRegister).toHaveBeenCalledWith(
+      "init",
+      "+123",
+      "Name",
+    );
+    expect(sessionStorage.getItem("access_token")).toBeNull();
+    expect(sessionStorage.getItem("refresh_token")).toBeNull();
   });
 
-  it("should authExistingUser", async () => {
+  it("should authExistingUser without persisting tokens", async () => {
     authServiceMock.telegramAuth.mockResolvedValueOnce({
       data: { data: { access_token: "acc", refresh_token: "ref" } },
     });
 
-    const res = await authExistingUser("init");
-    expect(res.access_token).toBe("acc");
-    expect(sessionStorage.getItem("access_token")).toBe("acc");
-    expect(sessionStorage.getItem("refresh_token")).toBe("ref");
+    await authExistingUser("init");
+    expect(authServiceMock.telegramAuth).toHaveBeenCalledWith("init");
+    expect(sessionStorage.getItem("access_token")).toBeNull();
+    expect(sessionStorage.getItem("refresh_token")).toBeNull();
   });
 });

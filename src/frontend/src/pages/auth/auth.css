@@ -15,7 +15,12 @@
   display: none;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(155deg, var(--bg-surface) 0%, var(--bg) 55%, var(--bg-surface) 100%);
+  background: linear-gradient(
+    155deg,
+    var(--bg-surface) 0%,
+    var(--bg) 55%,
+    var(--bg-surface) 100%
+  );
 }
 
 @media (min-width: 768px) {
@@ -31,8 +36,18 @@
   inset: 0;
   background-image: radial-gradient(var(--border-mid) 1px, transparent 1px);
   background-size: 22px 22px;
-  mask-image: linear-gradient(155deg, transparent 0%, black 45%, transparent 100%);
-  -webkit-mask-image: linear-gradient(155deg, transparent 0%, black 45%, transparent 100%);
+  mask-image: linear-gradient(
+    155deg,
+    transparent 0%,
+    black 45%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    155deg,
+    transparent 0%,
+    black 45%,
+    transparent 100%
+  );
   opacity: 0.5;
 }
 
@@ -82,7 +97,7 @@
 }
 
 .auth-visual-eyebrow::before {
-  content: "";
+  content: '';
   width: 28px;
   height: 2px;
   background: var(--fire);
@@ -182,17 +197,19 @@
   height: 52px;
   border-radius: var(--r-sm);
   border: none;
-  background: #229ED9;
-  color: #fff;
+  background: var(--brand-telegram-strong);
+  color: var(--color-white);
   font-size: var(--text-base);
   font-weight: 700;
   cursor: pointer;
-  transition: background var(--dur-sm) var(--ease-out), opacity var(--dur-sm);
+  transition:
+    background var(--dur-sm) var(--ease-out),
+    opacity var(--dur-sm);
   font-family: inherit;
 }
 
 .auth-tg-btn:hover:not(:disabled) {
-  background: #1a8abf;
+  background: var(--brand-telegram-hover);
 }
 
 .auth-tg-btn:disabled {

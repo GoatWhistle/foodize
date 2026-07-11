@@ -1,11 +1,23 @@
+import logging
 from collections.abc import Awaitable, Callable
 from typing import Any
 
 import redis.asyncio as aioredis
 from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject, Update
+from redis.exceptions import RedisError
 
-from config import bot_config
+from services import redis_client
+
+logger = logging.getLogger(__name__)
+
+_THROTTLE_LUA = """
+local current = redis.call('INCR', KEYS[1])
+if current == 1 then
+  redis.call('EXPIRE', KEYS[1], ARGV[1])
+end
+return current
+"""
 
 
 class ThrottlingMiddleware(BaseMiddleware):
@@ -25,9 +37,12 @@ class ThrottlingMiddleware(BaseMiddleware):
             return await handler(event, data)
 
         key = f"tg_throttle:{user_id}"
-        count = await self._redis.incr(key)
-        if count == 1:
-            await self._redis.expire(key, self._window_seconds)
+        try:
+            count = await self._redis.eval(_THROTTLE_LUA, 1, key, self._window_seconds)
+        except RedisError as exc:
+            logger.warning("Throttling disabled for update, Redis unavailable: %s", exc)
+            return await handler(event, data)
+
         if count > self._limit:
             return None
 
@@ -43,6 +58,5 @@ def _extract_user_id(event: TelegramObject) -> int | None:
     return user.id if user is not None else None
 
 
-def build_throttling_middleware() -> ThrottlingMiddleware:
-    redis = aioredis.from_url(bot_config.redis_url, decode_responses=True)
-    return ThrottlingMiddleware(redis=redis)
+def build_throttling_middleware(redis: aioredis.Redis | None = None) -> ThrottlingMiddleware:
+    return ThrottlingMiddleware(redis=redis or redis_client.get_client())

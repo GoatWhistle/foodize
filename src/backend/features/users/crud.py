@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from features.users.models import User
 from features.users.schemas import UserCreate, UserUpdate
 from shared.permissions import CUSTOMER_PERMISSIONS, serialize_permissions
-from utils.JWT import hash_password
+from utils.jwt_tokens import hash_password
 
 
 async def create_user(
@@ -14,7 +14,7 @@ async def create_user(
     db_user = User(
         **user_data,
         permissions=serialize_permissions(CUSTOMER_PERMISSIONS),
-        hashed_password=hash_password(user_in.password),
+        hashed_password=await hash_password(user_in.password),
     )
     session.add(db_user)
     await session.flush()
@@ -30,5 +30,5 @@ async def update_user(session: AsyncSession, user: User, data: UserUpdate) -> Us
 
 
 async def update_user_password(session: AsyncSession, user: User, new_password: str) -> None:
-    user.hashed_password = hash_password(new_password)
+    user.hashed_password = await hash_password(new_password)
     await session.flush()

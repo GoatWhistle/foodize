@@ -97,7 +97,11 @@ class TestCreateMenuItem:
 
         item_data = MenuItemCreate(name="Бургер", price=250, category="BURGER")
 
-        with patch("features.menu.crud.get_menu_item_by_id", new_callable=AsyncMock, return_value=loaded_item):
+        with patch(
+            "features.menu.crud.get_menu_item_by_id",
+            new_callable=AsyncMock,
+            return_value=loaded_item,
+        ):
             result = await create_menu_item(session, item_data, restaurant_id)
 
         session.add.assert_called_once()
@@ -109,7 +113,9 @@ class TestCreateMenuItem:
         session = _make_session()
         item_data = MenuItemCreate(name="Бургер", price=250, category="BURGER")
 
-        with patch("features.menu.crud.get_menu_item_by_id", new_callable=AsyncMock, return_value=None):
+        with patch(
+            "features.menu.crud.get_menu_item_by_id", new_callable=AsyncMock, return_value=None
+        ):
             with pytest.raises(RuntimeError, match="not found"):
                 await create_menu_item(session, item_data, uuid.uuid4())
 
@@ -123,7 +129,9 @@ class TestUpdateMenuItem:
         loaded = MagicMock()
 
         update_data = MenuItemUpdate(name="Новый бургер")
-        with patch("features.menu.crud.get_menu_item_by_id", new_callable=AsyncMock, return_value=loaded):
+        with patch(
+            "features.menu.crud.get_menu_item_by_id", new_callable=AsyncMock, return_value=loaded
+        ):
             result = await update_menu_item(session, item, update_data)
 
         session.flush.assert_awaited_once()
@@ -136,7 +144,9 @@ class TestUpdateMenuItem:
         item.id = uuid.uuid4()
 
         update_data = MenuItemUpdate(name="X")
-        with patch("features.menu.crud.get_menu_item_by_id", new_callable=AsyncMock, return_value=None):
+        with patch(
+            "features.menu.crud.get_menu_item_by_id", new_callable=AsyncMock, return_value=None
+        ):
             with pytest.raises(RuntimeError, match="not found"):
                 await update_menu_item(session, item, update_data)
 
@@ -169,7 +179,7 @@ class TestCreateOptionGroup:
             mock_group = MagicMock()
             mock_group.options = []
             MockGroup.return_value = mock_group
-            result = await create_option_group(session, item, data)
+            await create_option_group(session, item, data)
 
         session.add.assert_called_once()
         session.flush.assert_awaited_once()
@@ -198,7 +208,7 @@ class TestUpdateOptionGroup:
         group = MagicMock()
         group.selection_type = SelectionType.MULTIPLE.value
         data = MenuItemOptionGroupUpdate(name="Напитки")
-        result = await update_option_group(session, group, data)
+        await update_option_group(session, group, data)
         session.flush.assert_awaited_once()
 
     @pytest.mark.asyncio
@@ -231,7 +241,7 @@ class TestCreateOption:
 
         with patch("features.menu.crud.MenuItemOption") as MockOption:
             MockOption.return_value = MagicMock()
-            result = await create_option(session, group, data)
+            await create_option(session, group, data)
 
         session.add.assert_called_once()
         session.flush.assert_awaited_once()

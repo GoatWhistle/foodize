@@ -120,7 +120,11 @@ async def test_create_restaurant_success():
     session.rollback = AsyncMock()
 
     with (
-        patch("features.restaurants.crud._generate_unique_display_id", new_callable=AsyncMock, return_value="abc123"),
+        patch(
+            "features.restaurants.crud._generate_unique_display_id",
+            new_callable=AsyncMock,
+            return_value="abc123",
+        ),
         patch("features.restaurants.crud.Restaurant", return_value=mock_restaurant),
     ):
         result = await create_restaurant(session, data, vendor_id)
@@ -132,6 +136,7 @@ async def test_create_restaurant_success():
 @pytest.mark.asyncio
 async def test_create_restaurant_integrity_error():
     from sqlalchemy.exc import IntegrityError
+
     from features.restaurants.schemas import RestaurantCreate
 
     data = RestaurantCreate(
@@ -148,7 +153,11 @@ async def test_create_restaurant_integrity_error():
     session.rollback = AsyncMock()
 
     with (
-        patch("features.restaurants.crud._generate_unique_display_id", new_callable=AsyncMock, return_value="xyz"),
+        patch(
+            "features.restaurants.crud._generate_unique_display_id",
+            new_callable=AsyncMock,
+            return_value="xyz",
+        ),
         patch("features.restaurants.crud.Restaurant", return_value=MagicMock()),
     ):
         with pytest.raises(AlreadyExistsException):
@@ -169,7 +178,7 @@ async def test_update_restaurant_success():
     session.flush = AsyncMock()
     session.refresh = AsyncMock()
 
-    result = await update_restaurant(session, restaurant, data)
+    await update_restaurant(session, restaurant, data)
     assert restaurant.name == "New Name"
     session.flush.assert_awaited_once()
 
@@ -177,6 +186,7 @@ async def test_update_restaurant_success():
 @pytest.mark.asyncio
 async def test_update_restaurant_integrity_error():
     from sqlalchemy.exc import IntegrityError
+
     from features.restaurants.schemas import RestaurantUpdate
 
     restaurant = MagicMock()

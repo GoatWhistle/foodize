@@ -12,9 +12,13 @@ if TYPE_CHECKING:
 
 class WorkingHours(Base, IdUuidPkMixin):
     __tablename__ = "working_hours"
-    __table_args__ = (UniqueConstraint("restaurant_id", "day_of_week", name="uq_working_hours_restaurant_day"),)
+    __table_args__ = (
+        UniqueConstraint("restaurant_id", "day_of_week", name="uq_working_hours_restaurant_day"),
+    )
 
-    restaurant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("restaurants.id", ondelete="CASCADE"), nullable=False)
+    restaurant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("restaurants.id", ondelete="CASCADE"), nullable=False
+    )
     day_of_week: Mapped[int] = mapped_column(Integer, nullable=False)
     open_time: Mapped[str] = mapped_column(String(5), nullable=False)
     close_time: Mapped[str] = mapped_column(String(5), nullable=False)

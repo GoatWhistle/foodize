@@ -4,6 +4,7 @@ import { useRestaurantStore } from '@shared/store/useRestaurantStore';
 import { vendorService } from '@shared/services/vendorService';
 import { restaurantService } from '@shared/services/restaurantService';
 import { translateApiError } from '@shared/utils/translateApiError';
+import { logError } from '@shared/utils/logError';
 import { WEEKDAYS_SHORT_RU } from '@shared/utils/datetime';
 import type {
   Restaurant,
@@ -101,7 +102,7 @@ export const useVendorRestaurants = ({ activeTab, setFormLoading, setFormError }
     vendorService
       .getMyProfile()
       .then((res) => setVendorProfile(res.data?.data || null))
-      .catch(() => {});
+      .catch((err) => logError('useVendorRestaurants.getMyProfile', err));
   }, [fetchMyRestaurants]);
 
   useEffect(() => {

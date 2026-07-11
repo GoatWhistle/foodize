@@ -1,5 +1,3 @@
-import uuid
-
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,9 +39,7 @@ async def add_favorite(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[FavoriteResponse]:
     rid = await resolve_restaurant_uuid(session, restaurant_id)
-    result = await service.add_favorite(
-        session=session, user_id=current_user.id, restaurant_id=rid
-    )
+    result = await service.add_favorite(session=session, user_id=current_user.id, restaurant_id=rid)
     return build_response(result)
 
 
@@ -54,6 +50,4 @@ async def remove_favorite(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> None:
     rid = await resolve_restaurant_uuid(session, restaurant_id)
-    await service.remove_favorite(
-        session=session, user_id=current_user.id, restaurant_id=rid
-    )
+    await service.remove_favorite(session=session, user_id=current_user.id, restaurant_id=rid)

@@ -16,9 +16,9 @@ const getPasswordStrength = (value: string): PasswordStrengthResult => {
   if (/[^A-Za-z0-9]/.test(value)) score += 1;
 
   if (!value) return { score: 0, label: 'Введите пароль', color: 'var(--border-mid)' };
-  if (score <= 2) return { score, label: 'Слабый пароль', color: '#ef4444' };
-  if (score <= 4) return { score, label: 'Средний пароль', color: '#f59e0b' };
-  return { score, label: 'Сильный пароль', color: '#22c55e' };
+  if (score <= 2) return { score, label: 'Слабый пароль', color: 'var(--color-error)' };
+  if (score <= 4) return { score, label: 'Средний пароль', color: 'var(--color-warning)' };
+  return { score, label: 'Сильный пароль', color: 'var(--color-success)' };
 };
 
 const PasswordStrength = ({ value }: { value: string }) => {

@@ -1,10 +1,3 @@
-"""Shared fakes for the provider-agnostic LLM layer tests.
-
-``FakeLLMClient`` lets us drive the agent loop deterministically without any
-network or provider SDK: each ``complete`` call pops the next scripted response,
-and ``stream_text`` yields a fixed list of chunks.
-"""
-
 from collections.abc import AsyncIterator
 
 from infra.llm.base import LLMClient, LLMResponse, Message, ToolSpec
@@ -31,8 +24,16 @@ class FakeLLMClient(LLMClient):
         system: str,
         messages: list[Message],
         tools: list[ToolSpec] | None = None,
+        tool_choice: str | None = None,
     ) -> LLMResponse:
-        self.complete_calls.append({"system": system, "messages": list(messages), "tools": tools})
+        self.complete_calls.append(
+            {
+                "system": system,
+                "messages": list(messages),
+                "tools": tools,
+                "tool_choice": tool_choice,
+            }
+        )
         return self._responses.pop(0)
 
     async def stream_text(
@@ -41,7 +42,18 @@ class FakeLLMClient(LLMClient):
         system: str,
         messages: list[Message],
         tools: list[ToolSpec] | None = None,
+        tool_choice: str | None = None,
     ) -> AsyncIterator[str]:
-        self.stream_calls.append({"system": system, "messages": list(messages)})
+        self.stream_calls.append(
+            {
+                "system": system,
+                "messages": list(messages),
+                "tools": tools,
+                "tool_choice": tool_choice,
+            }
+        )
         for chunk in self._stream_chunks:
             yield chunk
+
+    async def aclose(self) -> None:
+        return None

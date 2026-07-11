@@ -1,7 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import CheckConstraint, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base, CreatedAtMixin, IdUuidPkMixin, UpdatedAtMixin
@@ -19,7 +19,10 @@ class MenuItem(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin
     price: Mapped[int]
     prep_time_minutes: Mapped[int] = mapped_column(default=15, server_default="15")
     category: Mapped[str] = mapped_column(
-        String, default=Category.SHAURMA.value, server_default=Category.SHAURMA.value, nullable=True
+        String,
+        default=Category.SHAURMA.value,
+        server_default=Category.SHAURMA.value,
+        nullable=False,
     )
     is_available: Mapped[bool] = mapped_column(default=True, server_default="true")
     is_deleted: Mapped[bool] = mapped_column(default=False, server_default="false")
@@ -37,8 +40,14 @@ class MenuItem(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin
 
 
 class MenuItemOptionGroup(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
+    __table_args__ = (
+        CheckConstraint(
+            "selection_type IN ('single', 'multiple')",
+            name="ck_menu_item_option_groups_selection_type",
+        ),
+    )
     menu_item_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("menu_items.id", ondelete="CASCADE")
+        ForeignKey("menu_items.id", ondelete="CASCADE"), index=True
     )
     name: Mapped[str] = mapped_column(String(128))
     selection_type: Mapped[str] = mapped_column(
@@ -61,7 +70,7 @@ class MenuItemOptionGroup(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
 
 class MenuItemOption(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
     group_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("menu_item_option_groups.id", ondelete="CASCADE")
+        ForeignKey("menu_item_option_groups.id", ondelete="CASCADE"), index=True
     )
     name: Mapped[str] = mapped_column(String(128))
     price_delta: Mapped[int] = mapped_column(default=0, server_default="0")

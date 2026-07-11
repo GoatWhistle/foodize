@@ -1,19 +1,19 @@
-@import "./styles/base.css";
-@import "./styles/animations.css";
-@import "./styles/layout.css";
-@import "./styles/buttons.css";
-@import "./styles/forms.css";
-@import "./styles/utilities.css";
+@import './styles/base.css';
+@import './styles/animations.css';
+@import './styles/layout.css';
+@import './styles/buttons.css';
+@import './styles/forms.css';
+@import './styles/utilities.css';
 
-@import "./styles/restaurant-card.css";
-@import "./styles/modal.css";
-@import "./styles/spinner.css";
-@import "./styles/empty-state.css";
-@import "./styles/pagination.css";
+@import './styles/restaurant-card.css';
+@import './styles/modal.css';
+@import './styles/spinner.css';
+@import './styles/empty-state.css';
+@import './styles/pagination.css';
 
-@import "./pages/auth/auth.css";
-@import "./pages/home/home.css";
-@import "./pages/restaurant/restaurant.css";
-@import "./pages/orders/orders.css";
-@import "./pages/vendor/vendor.css";
-@import "./pages/profile/profile.css";
+@import './pages/auth/auth.css';
+@import './pages/home/home.css';
+@import './pages/restaurant/restaurant.css';
+@import './pages/orders/orders.css';
+@import './pages/vendor/vendor.css';
+@import './pages/profile/profile.css';

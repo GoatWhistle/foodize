@@ -12,7 +12,7 @@ FROM base AS build-stage
 COPY . .
 RUN npm run build
 
-FROM nginx:1.28-alpine AS production
+FROM nginxinc/nginx-unprivileged:1.28-alpine AS production
 COPY --from=build-stage /frontend/dist /usr/share/nginx/html
 COPY nginx/default.conf /etc/nginx/conf.d/default.conf
 CMD ["nginx", "-g", "daemon off;"]

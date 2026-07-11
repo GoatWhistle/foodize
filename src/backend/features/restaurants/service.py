@@ -20,10 +20,10 @@ from features.restaurants.working_hours_crud import get_working_hours, is_open_n
 from features.vendors.models import VendorProfile
 from infra.storage import UnsupportedImageType, delete_image, upload_image
 from shared.enums.moderation_status import ModerationStatus
-from shared.exceptions import BadRequestException
 from shared.enums.permissions import Permission
 from shared.enums.restaurant_sort import RestaurantSort
 from shared.enums.sort_direction import SortDirection
+from shared.exceptions import BadRequestException
 from shared.exceptions.rules import AccessDeniedException
 from shared.permissions import has_permission
 
@@ -47,7 +47,7 @@ async def create_restaurant_for_vendor(
     if vendor and has_permission(vendor.user.permissions, Permission.RESTAURANTS_MODERATE):
         restaurant.moderation_status = ModerationStatus.APPROVED.value
         restaurant.rejection_reason = None
-    await session.commit()
+    await session.flush()
     await session.refresh(restaurant)
     return RestaurantResponse.model_validate(restaurant)
 
@@ -62,7 +62,7 @@ async def update_restaurant_for_vendor(
         session=session, restaurant_id=restaurant_id, vendor_id=vendor_id
     )
     updated = await crud.update_restaurant(session, restaurant, update_data)
-    await session.commit()
+    await session.flush()
     return RestaurantResponse.model_validate(updated)
 
 
@@ -83,7 +83,7 @@ async def set_restaurant_photo(
         raise BadRequestException(detail="Поддерживаются только изображения JPEG, PNG или WebP")
 
     restaurant.photo_url = url
-    await session.commit()
+    await session.flush()
 
     if old_url and old_url != url:
         try:
@@ -108,7 +108,7 @@ async def remove_restaurant_photo(
         return RestaurantResponse.model_validate(restaurant)
 
     restaurant.photo_url = None
-    await session.commit()
+    await session.flush()
 
     try:
         await delete_image(old_url)
@@ -137,7 +137,7 @@ def _apply_restaurant_filters(
     is_hiring: bool | None,
     is_open: bool | None,
 ):
-    query = query.where(Restaurant.is_active.is_(True))
+    query = query.where(Restaurant.is_active.is_(True), Restaurant.deleted_at.is_(None))
     if name:
         query = query.where(Restaurant.name.ilike(f"%{name}%"))
     if is_hiring is not None:

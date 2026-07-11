@@ -12,7 +12,7 @@ const STYLE: CSSProperties = {
   gap: 10,
   alignItems: 'center',
   zIndex: 1200,
-  boxShadow: '0 -4px 16px rgba(0,0,0,0.12)',
+  boxShadow: 'var(--shadow-bar)',
 };
 
 export interface BatchAction {

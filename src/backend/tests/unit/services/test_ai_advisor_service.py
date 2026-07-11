@@ -5,7 +5,7 @@ import pytest
 
 from features.ai_advisor.schemas import ChatMessageIn
 from features.ai_advisor.service import _to_messages, generate_insights, stream_chat
-from infra.llm import Message, Role
+from infra.llm import Role
 
 
 class TestToMessages:
@@ -52,9 +52,11 @@ class TestStreamChat:
             yield "chunk1"
             yield "chunk2"
 
-        with patch("features.ai_advisor.service.get_llm_client", new_callable=AsyncMock) as mock_client, \
-             patch("features.ai_advisor.service.build_advisor_executor", return_value=AsyncMock()), \
-             patch("features.ai_advisor.service.stream_agent", side_effect=_fake_stream):
+        with (
+            patch("features.ai_advisor.service.get_llm_client", new_callable=AsyncMock),
+            patch("features.ai_advisor.service.build_advisor_executor", return_value=AsyncMock()),
+            patch("features.ai_advisor.service.stream_agent", side_effect=_fake_stream),
+        ):
             chunks = []
             async for chunk in stream_chat(vendor, history):
                 chunks.append(chunk)
@@ -66,9 +68,11 @@ class TestStreamChat:
         vendor = _make_vendor()
         history = [ChatMessageIn(role="user", content="Анализ")]
 
-        with patch("features.ai_advisor.service.get_llm_client", new_callable=AsyncMock), \
-             patch("features.ai_advisor.service.build_advisor_executor", return_value=AsyncMock()), \
-             patch("features.ai_advisor.service.stream_agent", side_effect=RuntimeError("fail")):
+        with (
+            patch("features.ai_advisor.service.get_llm_client", new_callable=AsyncMock),
+            patch("features.ai_advisor.service.build_advisor_executor", return_value=AsyncMock()),
+            patch("features.ai_advisor.service.stream_agent", side_effect=RuntimeError("fail")),
+        ):
             chunks = []
             async for chunk in stream_chat(vendor, history):
                 chunks.append(chunk)
@@ -91,9 +95,11 @@ class TestStreamChat:
             captured["rid"] = default_restaurant_id
             return AsyncMock()
 
-        with patch("features.ai_advisor.service.get_llm_client", new_callable=AsyncMock), \
-             patch("features.ai_advisor.service.build_advisor_executor", side_effect=_fake_executor), \
-             patch("features.ai_advisor.service.stream_agent", side_effect=_fake_stream):
+        with (
+            patch("features.ai_advisor.service.get_llm_client", new_callable=AsyncMock),
+            patch("features.ai_advisor.service.build_advisor_executor", side_effect=_fake_executor),
+            patch("features.ai_advisor.service.stream_agent", side_effect=_fake_stream),
+        ):
             async for _ in stream_chat(vendor, history, restaurant_id=rid):
                 pass
 
@@ -105,13 +111,15 @@ class TestGenerateInsights:
     async def test_returns_text(self):
         vendor = _make_vendor()
 
-        with patch("features.ai_advisor.service.get_llm_client", new_callable=AsyncMock), \
-             patch("features.ai_advisor.service.build_advisor_executor", return_value=AsyncMock()), \
-             patch(
+        with (
+            patch("features.ai_advisor.service.get_llm_client", new_callable=AsyncMock),
+            patch("features.ai_advisor.service.build_advisor_executor", return_value=AsyncMock()),
+            patch(
                 "features.ai_advisor.service.run_agent",
                 new_callable=AsyncMock,
                 return_value=("Отчёт готов", []),
-             ):
+            ),
+        ):
             result = await generate_insights(vendor)
 
         assert result == "Отчёт готов"
@@ -120,12 +128,14 @@ class TestGenerateInsights:
     async def test_reraises_exception(self):
         vendor = _make_vendor()
 
-        with patch("features.ai_advisor.service.get_llm_client", new_callable=AsyncMock), \
-             patch("features.ai_advisor.service.build_advisor_executor", return_value=AsyncMock()), \
-             patch(
+        with (
+            patch("features.ai_advisor.service.get_llm_client", new_callable=AsyncMock),
+            patch("features.ai_advisor.service.build_advisor_executor", return_value=AsyncMock()),
+            patch(
                 "features.ai_advisor.service.run_agent",
                 new_callable=AsyncMock,
                 side_effect=ValueError("db error"),
-             ):
+            ),
+        ):
             with pytest.raises(ValueError, match="db error"):
                 await generate_insights(vendor)

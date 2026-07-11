@@ -22,6 +22,10 @@ def _orderable_filters(max_price: int | None, restaurant_id: uuid.UUID | None) -
     return filters
 
 
+def _escape_like(value: str) -> str:
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 def _row_to_dict(row) -> dict:
     return {
         "menu_item_id": str(row.id),
@@ -75,8 +79,13 @@ async def search_menu_items(
 ) -> list[dict]:
     filters = _orderable_filters(max_price, restaurant_id)
     if query:
-        pattern = f"%{query.strip()}%"
-        filters.append(or_(MenuItem.name.ilike(pattern), MenuItem.description.ilike(pattern)))
+        pattern = f"%{_escape_like(query.strip())}%"
+        filters.append(
+            or_(
+                MenuItem.name.ilike(pattern, escape="\\"),
+                MenuItem.description.ilike(pattern, escape="\\"),
+            )
+        )
 
     stmt = (
         select(*_SELECT_COLUMNS)

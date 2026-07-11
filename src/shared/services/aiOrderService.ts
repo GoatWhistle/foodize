@@ -1,6 +1,7 @@
 import { streamSseRequest, type StreamOptions } from '@shared/services/streamRequest';
+import { API_BASE_URL } from '@shared/config';
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api/v1';
+const BASE_URL = API_BASE_URL;
 
 export interface ChatMessage {
   role: string;
@@ -8,10 +9,6 @@ export interface ChatMessage {
 }
 
 export const aiOrderService = {
-  streamChat: (messages: ChatMessage[], { onChunk, signal }: StreamOptions = {}) =>
-    streamSseRequest(
-      `${BASE_URL}/ai/order/chat`,
-      { messages },
-      { onChunk, signal },
-    ),
+  streamChat: (messages: ChatMessage[], options: StreamOptions = {}) =>
+    streamSseRequest(`${BASE_URL}/ai/order/chat`, { messages }, options),
 };

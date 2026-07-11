@@ -1,7 +1,7 @@
 import enum
 import uuid
 
-from sqlalchemy import Boolean, ForeignKey, String
+from sqlalchemy import Boolean, ForeignKey, Index, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database import Base, CreatedAtMixin, IdUuidPkMixin
@@ -13,6 +13,13 @@ class NotificationType(str, enum.Enum):
 
 
 class Notification(Base, IdUuidPkMixin, CreatedAtMixin):
+    __table_args__ = (
+        Index(
+            "ix_notifications_user_id_unread",
+            "user_id",
+            postgresql_where=text("is_read = false"),
+        ),
+    )
     user_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )

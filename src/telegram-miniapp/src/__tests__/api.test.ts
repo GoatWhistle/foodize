@@ -13,13 +13,13 @@ interface MockWebSocket {
 
 vi.mock("@shared/services/api", () => ({
   createApi: vi.fn(() => ({})),
-  createWebSocketFactories: vi.fn((getToken: TokenGetter) => ({
+  createWebSocketFactories: vi.fn((getToken?: TokenGetter) => ({
     createOrderWebSocket: (orderId: string): MockWebSocket => {
-      const token = getToken();
+      const token = getToken?.() ?? null;
       return { orderId, token, close: vi.fn() };
     },
     createNotificationWebSocket: (userId: string): MockWebSocket => {
-      const token = getToken();
+      const token = getToken?.() ?? null;
       return { userId, token, close: vi.fn() };
     },
   })),
@@ -38,8 +38,7 @@ vi.mock("axios", () => ({
 }));
 
 vi.mock("../services/api", () => {
-  const getToken = (): string | null => sessionStorage.getItem("access_token");
-  const factories = createWebSocketFactories(getToken);
+  const factories = createWebSocketFactories();
   return {
     default: {},
     createOrderWebSocket: factories.createOrderWebSocket,
@@ -86,26 +85,18 @@ describe("miniapp api WebSocket factories", () => {
     sessionStorage.clear();
   });
 
-  it("createOrderWebSocket passes token from sessionStorage", async () => {
-    sessionStorage.setItem("access_token", "tok-abc");
+  it("createOrderWebSocket relies on cookie auth without a token", async () => {
     const { createOrderWebSocket } = await importApi();
     const ws = createOrderWebSocket("order-123", vi.fn());
-    expect(ws.token).toBe("tok-abc");
+    expect(ws.token).toBeNull();
     expect(ws.orderId).toBe("order-123");
   });
 
-  it("createNotificationWebSocket passes token from sessionStorage", async () => {
-    sessionStorage.setItem("access_token", "tok-xyz");
+  it("createNotificationWebSocket relies on cookie auth without a token", async () => {
     const { createNotificationWebSocket } = await importApi();
     const ws = createNotificationWebSocket("user-456", vi.fn());
-    expect(ws.token).toBe("tok-xyz");
-    expect(ws.userId).toBe("user-456");
-  });
-
-  it("token is null when sessionStorage is empty", async () => {
-    const { createOrderWebSocket } = await importApi();
-    const ws = createOrderWebSocket("order-999", vi.fn());
     expect(ws.token).toBeNull();
+    expect(ws.userId).toBe("user-456");
   });
 
   it("ws close method is callable", async () => {
@@ -133,23 +124,22 @@ describe("auth token lifecycle", () => {
     });
 
     useAuthStore.setState({ user: null, isAuthenticated: false });
-    await useAuthStore.getState().login({ username: "user", password: "pw" });
+    await useAuthStore.getState().login({ phone_number: "user", password: "pw" });
 
     expect(useAuthStore.getState().isAuthenticated).toBe(true);
     expect(useAuthStore.getState().user).toEqual({ id: "u1", name: "User" });
   });
 
-  it("clears access_token on logout", async () => {
+  it("clears auth state and calls cookie logout", async () => {
     const { useAuthStore } = await import("../store/useAuthStore");
     const authService = await importAuthService();
 
-    sessionStorage.setItem("access_token", "old-access");
     useAuthStore.setState({ user: { id: "u1" } as unknown as UserRead, isAuthenticated: true });
     authService.logout.mockResolvedValueOnce({});
 
     await useAuthStore.getState().logout();
 
-    expect(sessionStorage.getItem("access_token")).toBeNull();
+    expect(authService.logout).toHaveBeenCalled();
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
   });
 });

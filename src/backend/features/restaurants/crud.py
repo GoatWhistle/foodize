@@ -60,7 +60,7 @@ async def get_vendor_restaurants(
 ) -> list[Restaurant]:
     result = await session.execute(
         select(Restaurant)
-        .where(Restaurant.vendor_id == vendor_id)
+        .where(Restaurant.vendor_id == vendor_id, Restaurant.deleted_at.is_(None))
         .order_by(Restaurant.id)
         .offset(offset)
         .limit(limit)
@@ -70,7 +70,9 @@ async def get_vendor_restaurants(
 
 async def count_vendor_restaurants(session: AsyncSession, vendor_id: uuid.UUID) -> int:
     result = await session.execute(
-        select(func.count()).select_from(Restaurant).where(Restaurant.vendor_id == vendor_id)
+        select(func.count())
+        .select_from(Restaurant)
+        .where(Restaurant.vendor_id == vendor_id, Restaurant.deleted_at.is_(None))
     )
     return result.scalar_one()
 
@@ -78,11 +80,15 @@ async def count_vendor_restaurants(session: AsyncSession, vendor_id: uuid.UUID) 
 async def get_restaurant_by_id(
     session: AsyncSession, restaurant_id: uuid.UUID
 ) -> Restaurant | None:
-    return await session.get(Restaurant, restaurant_id)
+    stmt = select(Restaurant).where(Restaurant.id == restaurant_id, Restaurant.deleted_at.is_(None))
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
 
 
 async def get_restaurant_by_display_id(session: AsyncSession, display_id: str) -> Restaurant | None:
-    stmt = select(Restaurant).where(Restaurant.display_id == display_id)
+    stmt = select(Restaurant).where(
+        Restaurant.display_id == display_id, Restaurant.deleted_at.is_(None)
+    )
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -93,7 +99,7 @@ async def count_restaurants(
     is_hiring: bool | None = None,
     is_open: bool | None = None,
 ) -> int:
-    stmt = select(func.count()).select_from(Restaurant)
+    stmt = select(func.count()).select_from(Restaurant).where(Restaurant.deleted_at.is_(None))
     if name is not None:
         stmt = stmt.where(Restaurant.name.ilike(f"%{name}%"))
     if is_hiring is not None:
@@ -112,7 +118,7 @@ async def get_all_restaurants(
     offset: int = 0,
     limit: int = 20,
 ) -> list[Restaurant]:
-    stmt = select(Restaurant)
+    stmt = select(Restaurant).where(Restaurant.deleted_at.is_(None))
     if name is not None:
         stmt = stmt.where(Restaurant.name.ilike(f"%{name}%"))
     if is_hiring is not None:

@@ -1,7 +1,7 @@
 import pytest
 from aiogram import Router
-from aiohttp.test_utils import TestClient, TestServer
 from aiohttp import web
+from aiohttp.test_utils import TestClient, TestServer
 
 import main
 from config import bot_config
@@ -62,9 +62,7 @@ async def test_webhook_handler_configured_with_secret_token(mocker):
     mock_bot_instance.set_webhook = mocker.AsyncMock()
     mocker.patch("main.Bot", return_value=mock_bot_instance)
 
-    handler_spy = mocker.patch(
-        "main.SimpleRequestHandler", wraps=main.SimpleRequestHandler
-    )
+    handler_spy = mocker.patch("main.SimpleRequestHandler", wraps=main.SimpleRequestHandler)
 
     async def _stop_after_setup(*args, **kwargs):
         raise _StopMain()
@@ -76,9 +74,7 @@ async def test_webhook_handler_configured_with_secret_token(mocker):
 
     assert handler_spy.call_args.kwargs["secret_token"] == "top-secret"
     mock_bot_instance.set_webhook.assert_awaited_once()
-    assert (
-        mock_bot_instance.set_webhook.call_args.kwargs["secret_token"] == "top-secret"
-    )
+    assert mock_bot_instance.set_webhook.call_args.kwargs["secret_token"] == "top-secret"
 
     bot_config.mode = "polling"
 

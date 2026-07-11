@@ -74,7 +74,9 @@ class TestGetRestaurantOr404:
     @pytest.mark.asyncio
     async def test_not_found(self):
         mock_session = AsyncMock()
-        mock_session.get.return_value = None
+        result = MagicMock()
+        result.scalar_one_or_none.return_value = None
+        mock_session.execute = AsyncMock(return_value=result)
         with pytest.raises(NotFoundException):
             await get_restaurant_or_404(uuid.uuid4(), mock_session)
 

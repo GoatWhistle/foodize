@@ -2,12 +2,17 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from collections.abc import AsyncIterator
 from typing import Any, cast
 
 from openai import AsyncOpenAI
 
 from infra.llm.base import LLMClient, LLMResponse, Message, Role, ToolCall, ToolSpec, Usage
+
+logger = logging.getLogger("ai.openai_compatible")
+
+_EMPTY_PLACEHOLDER = "(пустой ответ)"
 
 
 def _to_tools(tools: list[ToolSpec]) -> list[dict[str, Any]]:
@@ -28,7 +33,7 @@ def _to_messages(system: str, messages: list[Message]) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = [{"role": "system", "content": system}]
     for message in messages:
         if message.role == Role.USER:
-            out.append({"role": "user", "content": message.content})
+            out.append({"role": "user", "content": message.content or _EMPTY_PLACEHOLDER})
         elif message.role == Role.ASSISTANT:
             entry: dict[str, Any] = {"role": "assistant", "content": message.content or None}
             if message.tool_calls:
@@ -43,13 +48,15 @@ def _to_messages(system: str, messages: list[Message]) -> list[dict[str, Any]]:
                     }
                     for call in message.tool_calls
                 ]
+            elif entry["content"] is None:
+                entry["content"] = _EMPTY_PLACEHOLDER
             out.append(entry)
         elif message.role == Role.TOOL:
             out.append(
                 {
                     "role": "tool",
                     "tool_call_id": message.tool_call_id,
-                    "content": message.content,
+                    "content": message.content or _EMPTY_PLACEHOLDER,
                 }
             )
     return out
@@ -64,9 +71,13 @@ class OpenAICompatibleClient(LLMClient):
         base_url: str | None = None,
         max_tokens: int = 4096,
         timeout: int = 60,
+        max_retries: int = 3,
     ) -> None:
         self._client = AsyncOpenAI(
-            api_key=api_key or "not-needed", base_url=base_url, timeout=timeout
+            api_key=api_key or "not-needed",
+            base_url=base_url,
+            timeout=timeout,
+            max_retries=max_retries,
         )
         self._model = model
         self._max_tokens = max_tokens
@@ -82,6 +93,7 @@ class OpenAICompatibleClient(LLMClient):
         system: str,
         messages: list[Message],
         tools: list[ToolSpec] | None = None,
+        tool_choice: str | None = None,
     ) -> LLMResponse:
         kwargs: dict[str, Any] = {
             "model": self._model,
@@ -90,7 +102,7 @@ class OpenAICompatibleClient(LLMClient):
         }
         if tools:
             kwargs["tools"] = _to_tools(tools)
-            kwargs["tool_choice"] = "auto"
+            kwargs["tool_choice"] = tool_choice or "auto"
 
         response = await self._client.chat.completions.create(**kwargs)
         if not response.choices:
@@ -103,6 +115,12 @@ class OpenAICompatibleClient(LLMClient):
             try:
                 arguments = json.loads(tool_call.function.arguments or "{}")
             except json.JSONDecodeError:
+                logger.warning(
+                    "malformed tool arguments model=%s tool=%s raw=%r",
+                    self._model,
+                    tool_call.function.name,
+                    tool_call.function.arguments,
+                )
                 arguments = {}
             calls.append(
                 ToolCall(id=tool_call.id, name=tool_call.function.name, arguments=arguments)
@@ -126,16 +144,22 @@ class OpenAICompatibleClient(LLMClient):
         system: str,
         messages: list[Message],
         tools: list[ToolSpec] | None = None,
+        tool_choice: str | None = None,
     ) -> AsyncIterator[str]:
+        create_kwargs: dict[str, Any] = {
+            "model": self._model,
+            "max_tokens": self._max_tokens,
+            "messages": _to_messages(system, messages),
+            "stream": True,
+        }
+        if tools:
+            create_kwargs["tools"] = _to_tools(tools)
+            create_kwargs["tool_choice"] = tool_choice or "auto"
+
         stream = cast(
             "AsyncIterator[Any]",
             await asyncio.wait_for(
-                self._client.chat.completions.create(
-                    model=self._model,
-                    max_tokens=self._max_tokens,
-                    messages=_to_messages(system, messages),  # type: ignore[arg-type]
-                    stream=True,
-                ),
+                self._client.chat.completions.create(**create_kwargs),
                 timeout=self._timeout,
             ),
         )
@@ -150,3 +174,6 @@ class OpenAICompatibleClient(LLMClient):
             delta = chunk.choices[0].delta
             if delta and delta.content:
                 yield delta.content
+
+    async def aclose(self) -> None:
+        await self._client.close()

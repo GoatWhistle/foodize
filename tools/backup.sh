@@ -1,20 +1,100 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-CONTAINER="${PG_CONTAINER:-foodize_pg}"
+log() { echo "[backup] $*"; }
+warn() { echo "[backup][WARN] $*" >&2; }
+die() { echo "[backup][ERROR] $*" >&2; exit 1; }
+
 DB="${POSTGRES_DB:-foodize}"
-USER="${POSTGRES_USER:-foodize_user}"
+DB_USER="${POSTGRES_USER:-foodize_user}"
 BACKUP_DIR="${BACKUP_DIR:-./backups}"
+KEEP="${KEEP_LAST:-7}"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-FILE="${BACKUP_DIR}/foodize_${TIMESTAMP}.dump"
+
+command -v docker >/dev/null 2>&1 || die "docker CLI not found"
+
+detect_container() {
+  if [[ -n "${PG_CONTAINER:-}" ]] \
+     && docker ps --format '{{.Names}}' | grep -qx "${PG_CONTAINER}"; then
+    echo "${PG_CONTAINER}"
+    return 0
+  fi
+  local found
+  found=$(docker ps --filter "label=com.docker.compose.service=pg" \
+                    --format '{{.Names}}' | head -n1)
+  if [[ -n "$found" ]]; then
+    echo "$found"
+    return 0
+  fi
+  found=$(docker ps --format '{{.Names}}' | grep -E 'postgres|_pg' | head -n1 || true)
+  if [[ -n "$found" ]]; then
+    echo "$found"
+    return 0
+  fi
+  echo "${PG_CONTAINER:-foodize_pg}"
+}
+
+CONTAINER=$(detect_container)
 
 mkdir -p "$BACKUP_DIR"
 
-echo "[backup] Dumping $DB from container $CONTAINER..."
-docker exec "$CONTAINER" pg_dump -U "$USER" -Fc "$DB" > "$FILE"
-echo "[backup] Saved to $FILE ($(du -sh "$FILE" | cut -f1))"
+BASENAME="foodize_${TIMESTAMP}.dump"
+FINAL="${BACKUP_DIR}/${BASENAME}"
+TMP="${BACKUP_DIR}/.${BASENAME}.tmp.$$"
 
-KEEP="${KEEP_LAST:-7}"
-echo "[backup] Keeping last $KEEP backups..."
-ls -t "$BACKUP_DIR"/*.dump 2>/dev/null | tail -n +"$((KEEP + 1))" | xargs -r rm --
-echo "[backup] Done."
+cleanup() { rm -f "$TMP" 2>/dev/null || true; }
+trap cleanup EXIT
+
+log "Dumping database '$DB' from container '$CONTAINER'..."
+if ! docker exec "$CONTAINER" pg_dump -U "$DB_USER" -Fc "$DB" > "$TMP"; then
+  die "pg_dump failed; partial dump discarded"
+fi
+if [[ ! -s "$TMP" ]]; then
+  die "pg_dump produced an empty file; discarded"
+fi
+
+if [[ -n "${BACKUP_ENCRYPTION_PASSPHRASE:-}" ]]; then
+  command -v openssl >/dev/null 2>&1 || die "openssl not found but BACKUP_ENCRYPTION_PASSPHRASE is set"
+  log "Encrypting dump with AES-256-CBC (pbkdf2)..."
+  ENC_TMP="${TMP}.enc"
+  if ! openssl enc -aes-256-cbc -pbkdf2 -salt \
+        -pass env:BACKUP_ENCRYPTION_PASSPHRASE \
+        -in "$TMP" -out "$ENC_TMP"; then
+    rm -f "$ENC_TMP" 2>/dev/null || true
+    die "openssl encryption failed"
+  fi
+  rm -f "$TMP"
+  TMP="$ENC_TMP"
+  FINAL="${FINAL}.enc"
+  BASENAME="${BASENAME}.enc"
+else
+  warn "BACKUP_ENCRYPTION_PASSPHRASE is not set; backup will be stored UNENCRYPTED"
+fi
+
+mv -f "$TMP" "$FINAL"
+trap - EXIT
+log "Saved to $FINAL ($(du -sh "$FINAL" | cut -f1))"
+
+if [[ -n "${BACKUP_S3_BUCKET:-}" ]]; then
+  S3_PREFIX="${BACKUP_S3_PREFIX:-foodize-backups}"
+  DEST="s3://${BACKUP_S3_BUCKET}/${S3_PREFIX}/${BASENAME}"
+  if command -v aws >/dev/null 2>&1; then
+    log "Uploading to $DEST via aws cli..."
+    aws s3 cp "$FINAL" "$DEST" || warn "aws s3 upload failed"
+  elif command -v mc >/dev/null 2>&1; then
+    MC_DEST="${BACKUP_S3_ALIAS:-s3}/${BACKUP_S3_BUCKET}/${S3_PREFIX}/${BASENAME}"
+    log "Uploading to $MC_DEST via mc cli..."
+    mc cp "$FINAL" "$MC_DEST" || warn "mc upload failed"
+  else
+    warn "BACKUP_S3_BUCKET set but neither aws nor mc CLI found; skipping offsite upload"
+  fi
+else
+  log "BACKUP_S3_BUCKET not set; skipping offsite upload"
+fi
+
+log "Applying retention: keeping last $KEEP backups (incl. encrypted)..."
+ls -t "$BACKUP_DIR"/foodize_*.dump "$BACKUP_DIR"/foodize_*.dump.enc 2>/dev/null \
+  | tail -n +"$((KEEP + 1))" \
+  | xargs -r rm -f --
+
+log "Done."

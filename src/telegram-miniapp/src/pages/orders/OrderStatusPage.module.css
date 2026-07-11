@@ -40,12 +40,13 @@
 }
 
 @keyframes pulseDot {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 0 0 var(--accent-glow);
     transform: scale(1);
   }
   50% {
-    box-shadow: 0 0 0 6px oklch(18% 0.010 60 / 0);
+    box-shadow: 0 0 0 6px transparent;
     transform: scale(1.15);
   }
 }
@@ -55,8 +56,12 @@
 }
 
 @keyframes stepLineFlow {
-  from { background-position: -100% 0; }
-  to { background-position: 200% 0; }
+  from {
+    background-position: -100% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
 }
 
 .stepLineActive {
@@ -71,9 +76,15 @@
 }
 
 @keyframes flashBg {
-  0% { background: transparent; }
-  15% { background: var(--accent-subtle); }
-  100% { background: transparent; }
+  0% {
+    background: transparent;
+  }
+  15% {
+    background: var(--accent-subtle);
+  }
+  100% {
+    background: transparent;
+  }
 }
 
 .readyFlash {
@@ -85,8 +96,12 @@
     transform: scale(0.5);
     opacity: 0;
   }
-  60% { transform: scale(1.1); }
-  80% { transform: scale(0.95); }
+  60% {
+    transform: scale(1.1);
+  }
+  80% {
+    transform: scale(0.95);
+  }
   100% {
     transform: scale(1);
     opacity: 1;

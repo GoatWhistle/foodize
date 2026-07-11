@@ -46,8 +46,8 @@ const AuthCard = ({ authMode, telegramUsername, error, showBotLink, children }: 
               width: 36,
               height: 36,
               borderRadius: '50%',
-              background: '#229ED9',
-              color: '#fff',
+              background: 'var(--brand-telegram)',
+              color: 'var(--color-white)',
               flexShrink: 0,
             }}
           >
@@ -82,8 +82,8 @@ const AuthCard = ({ authMode, telegramUsername, error, showBotLink, children }: 
                 gap: 8,
                 marginTop: 10,
                 padding: '10px 14px',
-                background: '#229ED9',
-                color: '#fff',
+                background: 'var(--brand-telegram-strong)',
+                color: 'var(--color-white)',
                 borderRadius: 'var(--r-sm)',
                 fontWeight: 600,
                 fontSize: '0.9rem',

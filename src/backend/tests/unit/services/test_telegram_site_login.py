@@ -24,8 +24,13 @@ def _user(*, telegram_id: int | None = 123456, hashed_password: str | None = Non
 
 
 class _HttpResponse:
+    status_code = 200
+
     def raise_for_status(self):
         return None
+
+    def json(self):
+        return {}
 
 
 class _HttpClient:
@@ -149,11 +154,13 @@ async def test_set_site_password_hashes_only_empty_password():
     user = _user(hashed_password=None)
     session = AsyncMock()
 
-    with patch("features.telegram.site_login.hash_password", return_value="hashed"):
+    with patch(
+        "features.telegram.site_login.hash_password", new_callable=AsyncMock, return_value="hashed"
+    ):
         result = await set_site_password(session, user, "strongpassword")
 
     assert result.hashed_password == "hashed"
-    session.commit.assert_awaited_once()
+    session.flush.assert_awaited_once()
     session.refresh.assert_awaited_once_with(user)
 
 

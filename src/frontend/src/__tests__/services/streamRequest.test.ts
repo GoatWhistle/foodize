@@ -124,6 +124,89 @@ describe('streamSseRequest', () => {
     ).rejects.toThrow('Ошибка 403');
   });
 
+  it('attaches Authorization header when getToken returns a token', async () => {
+    mockFetch.mockResolvedValue(makeResponse(200, ['ok']));
+
+    await streamSseRequest(
+      'http://localhost:8000/api/v1/ai/order/chat',
+      { q: 1 },
+      { getToken: () => 'tok-123' }
+    );
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      'http://localhost:8000/api/v1/ai/order/chat',
+      expect.objectContaining({
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer tok-123',
+        },
+      })
+    );
+  });
+
+  it('omits credentials when withCredentials is false', async () => {
+    mockFetch.mockResolvedValue(makeResponse(200, ['ok']));
+
+    await streamSseRequest(
+      'http://localhost:8000/api/v1/ai/order/chat',
+      {},
+      { getToken: () => 'tok', withCredentials: false }
+    );
+
+    const init = mockFetch.mock.calls[0][1] as RequestInit;
+    expect(init.credentials).toBeUndefined();
+  });
+
+  it('does not attach Authorization when getToken returns null', async () => {
+    mockFetch.mockResolvedValue(makeResponse(200, ['ok']));
+
+    await streamSseRequest(
+      'http://localhost:8000/api/v1/ai/order/chat',
+      {},
+      { getToken: () => null }
+    );
+
+    const init = mockFetch.mock.calls[0][1] as RequestInit;
+    expect(init.headers).toEqual({ 'Content-Type': 'application/json' });
+    expect(init.credentials).toBe('include');
+  });
+
+  it('on 401 calls provided refreshToken then retries with refreshed token', async () => {
+    let token = 'stale';
+    const refreshToken = vi.fn(() => {
+      token = 'fresh';
+      return Promise.resolve();
+    });
+    const onChunk = vi.fn();
+
+    mockFetch
+      .mockResolvedValueOnce({ status: 401, ok: false, body: null })
+      .mockResolvedValueOnce(makeResponse(200, ['retried']));
+
+    await streamSseRequest(
+      'http://localhost:8000/api/v1/ai/order/chat',
+      {},
+      {
+        getToken: () => token,
+        refreshToken,
+        withCredentials: false,
+        onChunk,
+      }
+    );
+
+    expect(refreshToken).toHaveBeenCalledTimes(1);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    const firstInit = mockFetch.mock.calls[0][1] as RequestInit;
+    const secondInit = mockFetch.mock.calls[1][1] as RequestInit;
+    expect((firstInit.headers as Record<string, string>).Authorization).toBe(
+      'Bearer stale'
+    );
+    expect((secondInit.headers as Record<string, string>).Authorization).toBe(
+      'Bearer fresh'
+    );
+    expect(onChunk).toHaveBeenCalledWith('retried');
+  });
+
   it('passes signal to fetch', async () => {
     mockFetch.mockResolvedValue(makeResponse(200, []));
     const controller = new AbortController();

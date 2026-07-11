@@ -1,7 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, String
+from sqlalchemy import CheckConstraint, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base, CreatedAtMixin, IdUuidPkMixin, UpdatedAtMixin
@@ -13,8 +13,13 @@ if TYPE_CHECKING:
 
 
 class StaffProfile(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), unique=True)
-    restaurant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("restaurants.id", ondelete="CASCADE"))
+    __table_args__ = (CheckConstraint("role IN ('COOK')", name="ck_staff_profiles_role"),)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), unique=True
+    )
+    restaurant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("restaurants.id", ondelete="CASCADE")
+    )
 
     role: Mapped[str] = mapped_column(
         String, default=StaffRole.COOK.value, server_default=StaffRole.COOK.value, nullable=False

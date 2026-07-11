@@ -13,7 +13,9 @@ if TYPE_CHECKING:
 
 class Favorite(Base, IdUuidPkMixin, CreatedAtMixin):
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    restaurant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("restaurants.id", ondelete="CASCADE"))
+    restaurant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("restaurants.id", ondelete="CASCADE")
+    )
 
     user: Mapped["User"] = relationship(back_populates="favorites")
     restaurant: Mapped["Restaurant"] = relationship(back_populates="favorited_by")

@@ -96,7 +96,7 @@ export default function ActiveOrderBanner() {
       <div
         style={{
           fontSize: "0.78rem",
-          color: "var(--brand)",
+          color: "var(--accent)",
           fontWeight: 600,
           display: "flex",
           alignItems: "center",

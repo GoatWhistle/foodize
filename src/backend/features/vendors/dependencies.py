@@ -47,7 +47,7 @@ async def _ensure_admin_vendor_profile(
         vendor.approval_status = ModerationStatus.APPROVED.value
         vendor.rejection_reason = None
 
-    await session.commit()
+    await session.flush()
     await session.refresh(vendor, attribute_names=["restaurants"])
     vendor.user = loaded_user
     return vendor

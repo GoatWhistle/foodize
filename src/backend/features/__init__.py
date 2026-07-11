@@ -3,6 +3,7 @@ from features.favorites.models import Favorite
 from features.menu.models import MenuItem, MenuItemOption, MenuItemOptionGroup
 from features.notifications.models import Notification
 from features.notifications.outbox import OutboxEvent
+from features.notifications.processed_event import ProcessedEvent
 from features.orders.models import IdempotencyKey, Order, OrderEvent, OrderItem, OrderItemOption
 from features.promos.models import Promo, PromoUsage
 from features.restaurants.models import Restaurant
@@ -34,4 +35,5 @@ __all__ = [
     "PromoUsage",
     "Notification",
     "OutboxEvent",
+    "ProcessedEvent",
 ]

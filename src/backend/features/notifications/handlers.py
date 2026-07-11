@@ -1,10 +1,16 @@
-import asyncio
 import uuid
+from datetime import datetime, timedelta, timezone
 
-from database import db_helper
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from features.notifications.crud import create_notification
-from features.notifications.events import OrderPlacedEvent, OrderStatusChangedEvent
+from features.notifications.events import (
+    FeedbackRequestedEvent,
+    OrderPlacedEvent,
+    OrderStatusChangedEvent,
+)
 from features.notifications.models import NotificationType
+from features.notifications.outbox_service import enqueue_event
 from features.notifications.schemas import NotificationResponse
 from infra.cache.redis import get_redis_cache
 from shared.enums.order_status import OrderStatus
@@ -15,40 +21,40 @@ logger = get_logger(__name__)
 _FEEDBACK_DELAY_SECONDS = 1800
 
 
-def _log_feedback_task_error(task: asyncio.Task) -> None:
-    exc = task.exception()
-    if exc is not None:
-        logger.error("feedback task failed", error=repr(exc))
+async def _create_user_notification(
+    session: AsyncSession, user_id: uuid.UUID, title: str, message: str
+) -> str:
+    notification = await create_notification(
+        session=session,
+        user_id=user_id,
+        title=title,
+        message=message,
+        type=NotificationType.ORDER_STATUS,
+    )
+    return NotificationResponse.model_validate(notification).model_dump_json()
 
 
-async def _notify_user(user_id: uuid.UUID, title: str, message: str) -> None:
-    async with db_helper.session_factory() as session:
-        notification = await create_notification(
-            session=session,
-            user_id=user_id,
-            title=title,
-            message=message,
-            type=NotificationType.ORDER_STATUS,
-        )
-
-    data = NotificationResponse.model_validate(notification).model_dump_json()
+async def _publish_user_notification(user_id: uuid.UUID, payload: str) -> None:
     redis_client = get_redis_cache()
-    await redis_client.publish(f"user_notifications:{user_id}", data)
+    await redis_client.publish(f"user_notifications:{user_id}", payload)
 
 
-async def _schedule_feedback_request(
-    user_id: uuid.UUID, restaurant_name: str, delay_seconds: int = _FEEDBACK_DELAY_SECONDS
-) -> None:
-    await asyncio.sleep(delay_seconds)
+async def handle_feedback_requested(session: AsyncSession, event: FeedbackRequestedEvent) -> None:
+    logger.info(
+        "notification.feedback_requested",
+        order_id=str(event.order_id),
+        restaurant_id=str(event.restaurant_id),
+    )
     title = "Оцените ваш заказ"
     message = (
-        f"Как вам заказ из {restaurant_name}? Пожалуйста, оставьте отзыв"
+        f"Как вам заказ из {event.restaurant_name}? Пожалуйста, оставьте отзыв"
         " в мини-приложении, это поможет ресторану стать лучше!"
     )
-    await _notify_user(user_id, title, message)
+    payload = await _create_user_notification(session, event.user_id, title, message)
+    session.info["notification_payload"] = (event.user_id, payload)
 
 
-async def handle_order_placed(event: OrderPlacedEvent) -> None:
+async def handle_order_placed(session: AsyncSession, event: OrderPlacedEvent) -> None:
     logger.info(
         "order.placed",
         order_id=str(event.order_id),
@@ -57,10 +63,13 @@ async def handle_order_placed(event: OrderPlacedEvent) -> None:
     )
     title = f"Заказ в {event.restaurant_name} принят"
     message = f"Ваш заказ на сумму {event.total_price} ₽ успешно оформлен и ожидает подтверждения."
-    await _notify_user(event.user_id, title, message)
+    payload = await _create_user_notification(session, event.user_id, title, message)
+    session.info["notification_payload"] = (event.user_id, payload)
 
 
-async def handle_order_status_changed(event: OrderStatusChangedEvent) -> None:
+async def handle_order_status_changed(
+    session: AsyncSession, event: OrderStatusChangedEvent
+) -> None:
     logger.info(
         "order.status_changed",
         order_id=str(event.order_id),
@@ -86,11 +95,17 @@ async def handle_order_status_changed(event: OrderStatusChangedEvent) -> None:
         message = f"Ваш заказ из {event.restaurant_name} готов к выдаче. Приятного аппетита!"
 
     if event.new_status == OrderStatus.COMPLETED:
-        task = asyncio.create_task(
-            _schedule_feedback_request(
-                event.user_id, event.restaurant_name, _FEEDBACK_DELAY_SECONDS
-            )
+        run_at = datetime.now(timezone.utc) + timedelta(seconds=_FEEDBACK_DELAY_SECONDS)
+        await enqueue_event(
+            session,
+            FeedbackRequestedEvent(
+                order_id=event.order_id,
+                user_id=event.user_id,
+                restaurant_id=event.restaurant_id,
+                restaurant_name=event.restaurant_name,
+            ),
+            run_at=run_at,
         )
-        task.add_done_callback(_log_feedback_task_error)
 
-    await _notify_user(event.user_id, title, message)
+    payload = await _create_user_notification(session, event.user_id, title, message)
+    session.info["notification_payload"] = (event.user_id, payload)

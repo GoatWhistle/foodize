@@ -5,9 +5,10 @@ from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
-from features.admin import crud, service
+from features.admin import crud
 from features.admin.dependencies import require_admin
 from features.admin.schemas import AdvancedAnalytics, FinanceAnalytics, PlatformStats
+from features.admin.service import analytics, catalog
 from features.orders.schemas.order import OrderResponse
 from features.users.models import User
 from shared.enums.order_status import OrderStatus
@@ -32,7 +33,7 @@ async def read_orders(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessListResponse[OrderResponse]:
     offset = (page - 1) * size
-    data, total = await service.get_orders_list(
+    data, total = await catalog.get_orders_list(
         session=session,
         status=status,
         restaurant_id=restaurant_id,
@@ -51,7 +52,7 @@ async def read_platform_stats(
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[PlatformStats]:
-    result = await service.get_stats(session)
+    result = await analytics.get_stats(session)
     return build_response(result)
 
 
@@ -63,7 +64,7 @@ async def read_finance(
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[FinanceAnalytics]:
-    result = await service.get_finance(
+    result = await analytics.get_finance(
         session, date_from=date_from, date_to=date_to, restaurant_id=restaurant_id
     )
     return build_response(result)
@@ -77,7 +78,7 @@ async def read_advanced_analytics(
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdvancedAnalytics]:
-    result = await service.get_advanced_analytics(
+    result = await analytics.get_advanced_analytics(
         session, date_from=date_from, date_to=date_to, restaurant_id=restaurant_id
     )
     return build_response(result)

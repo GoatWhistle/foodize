@@ -47,9 +47,7 @@ def _compact_exception(logger, method_name, event_dict):
     if exc_type is None:
         return event_dict
 
-    formatted = traceback.format_exception(
-        exc_type, exc_value, exc_tb, limit=TRACEBACK_FRAME_LIMIT
-    )
+    formatted = traceback.format_exception(exc_type, exc_value, exc_tb, limit=TRACEBACK_FRAME_LIMIT)
     event_dict["exception"] = "".join(formatted).strip()
     return event_dict
 

@@ -54,15 +54,9 @@ const LoginPage = () => {
 
   const login = useAuthStore((s) => s.login);
   const loginWithTelegramCodeByUsername = useAuthStore(
-    (s) =>
-      s.loginWithTelegramCodeByUsername as (data: {
-        telegram_username: string;
-        code: string;
-      }) => Promise<{ requiresPassword: boolean }>,
+    (s) => s.loginWithTelegramCodeByUsername,
   );
-  const setTelegramSitePassword = useAuthStore(
-    (s) => s.setTelegramSitePassword as (password: string) => Promise<void>,
-  );
+  const setTelegramSitePassword = useAuthStore((s) => s.setTelegramSitePassword);
   const fetchMe = useAuthStore((s) => s.fetchMe);
   const navigate = useNavigate();
   const location = useLocation();

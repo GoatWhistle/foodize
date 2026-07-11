@@ -31,14 +31,14 @@ class TestCreateNotification:
     async def test_creates_and_returns(self):
         session = AsyncMock()
         session.add = MagicMock()
-        session.commit = AsyncMock()
+        session.flush = AsyncMock()
         session.refresh = AsyncMock()
 
         uid = uuid.uuid4()
         await create_notification(session, uid, "Hello", "World", NotificationType.ORDER_STATUS)
 
         session.add.assert_called_once()
-        session.commit.assert_awaited_once()
+        session.flush.assert_awaited_once()
         session.refresh.assert_awaited_once()
 
     @pytest.mark.asyncio
@@ -105,7 +105,7 @@ class TestMarkAsRead:
         returned = await mark_as_read(session, n.id, uid)
 
         assert n.is_read is True
-        session.commit.assert_awaited_once()
+        session.flush.assert_awaited_once()
         assert returned is n
 
     @pytest.mark.asyncio
@@ -119,7 +119,7 @@ class TestMarkAsRead:
 
         await mark_as_read(session, n.id, uuid.uuid4())
 
-        session.commit.assert_not_awaited()
+        session.flush.assert_not_awaited()
 
     @pytest.mark.asyncio
     async def test_returns_none_when_not_found(self):
@@ -141,7 +141,7 @@ class TestMarkAllAsRead:
         await mark_all_as_read(session, uuid.uuid4())
 
         session.execute.assert_awaited_once()
-        session.commit.assert_awaited_once()
+        session.flush.assert_awaited_once()
 
 
 class TestDeleteNotification:
@@ -176,4 +176,4 @@ class TestDeleteAllNotifications:
         await delete_all_notifications(session, uuid.uuid4())
 
         session.execute.assert_awaited_once()
-        session.commit.assert_awaited_once()
+        session.flush.assert_awaited_once()

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { vendorService } from '@shared/services/vendorService';
+import { logError } from '@shared/utils/logError';
 import type { StaffMember, StaffRequest, StaffRequestStatus } from '@shared/types/models';
 
 export type StaffSubTab = 'members' | 'requests';
@@ -23,7 +24,7 @@ export const useVendorStaff = () => {
         setStaffRequests(list);
         setStaffTotal(res.data?.pagination?.total || list.length);
       })
-      .catch(() => {});
+      .catch((err) => logError('useVendorStaff.getStaffRequests', err));
   }, [staffPage]);
 
   useEffect(() => {
@@ -34,7 +35,7 @@ export const useVendorStaff = () => {
         setStaffMembers(list);
         setStaffMembersTotal(res.data?.pagination?.total || list.length);
       })
-      .catch(() => {});
+      .catch((err) => logError('useVendorStaff.getStaffMembers', err));
   }, [staffMembersPage]);
 
   const handleStaffDecision = async (requestId: string, status: StaffRequestStatus) => {
@@ -52,9 +53,10 @@ export const useVendorStaff = () => {
             setStaffMembers(list);
             setStaffMembersTotal(res.data?.pagination?.total || list.length);
           })
-          .catch(() => {});
+          .catch((err) => logError('useVendorStaff.refreshMembers', err));
       }
-    } catch {
+    } catch (err) {
+      logError('useVendorStaff.handleStaffDecision', err);
     } finally {
       setStaffDecisionLoading(null);
     }
@@ -67,7 +69,8 @@ export const useVendorStaff = () => {
       await vendorService.removeStaffMember(profileId);
       setStaffMembers((prev) => prev.filter((m) => m.id !== profileId));
       setStaffMembersTotal((t) => t - 1);
-    } catch {
+    } catch (err) {
+      logError('useVendorStaff.handleRemoveStaffMember', err);
     } finally {
       setStaffMemberRemoving(null);
     }

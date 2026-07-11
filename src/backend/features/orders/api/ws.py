@@ -1,67 +1,26 @@
-import asyncio
 import json
 import uuid
 
-import jwt
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from uvicorn.protocols.utils import ClientDisconnected
+from redis.asyncio.client import PubSub
 
 from database import db_helper
+from features.orders.api.ws_helpers import (
+    TERMINAL_STATUSES,
+    _authenticate_ws_user,
+    _consume_client_messages,
+    _run_ws_tasks,
+    _safe_send_text,
+)
 from features.orders.crud.order import get_active_orders_for_display, get_order_by_id
 from features.orders.dependencies import verify_restaurant_access
 from features.orders.schemas.order import OrderResponse
-from features.users.dependencies import get_user_by_id
 from infra.cache.redis import get_redis_cache
 from shared.enums.order_status import OrderStatus
 from shared.enums.permissions import Permission
 from shared.permissions import has_permission
-from utils.JWT import decode_jwt
 
 router = APIRouter()
-
-
-async def _authenticate_ws_user(websocket: WebSocket, token: str | None):
-    if not token:
-        token = websocket.cookies.get("access_token")
-    if not token:
-        try:
-            raw = await asyncio.wait_for(websocket.receive_text(), timeout=3.0)
-            data = json.loads(raw)
-            token = data.get("token") if isinstance(data, dict) else None
-        except (asyncio.TimeoutError, json.JSONDecodeError, WebSocketDisconnect, ClientDisconnected):
-            token = None
-
-    if not token:
-        await websocket.send_text(json.dumps({"error": "not_authenticated"}))
-        await websocket.close()
-        return None
-
-    try:
-        payload = decode_jwt(token)
-        if payload.get("typ") != "access":
-            raise ValueError("wrong token type")
-        user_id = payload.get("sub")
-        if user_id is None:
-            raise ValueError
-        parsed_user_id = uuid.UUID(user_id)
-    except (jwt.InvalidTokenError, ValueError):
-        await websocket.send_text(json.dumps({"error": "invalid_token"}))
-        await websocket.close()
-        return None
-
-    cache = get_redis_cache()
-    if await cache.exists(f"access_blacklist:{token}"):
-        await websocket.send_text(json.dumps({"error": "token_revoked"}))
-        await websocket.close()
-        return None
-
-    async with db_helper.session_factory() as session:
-        user = await get_user_by_id(session, parsed_user_id)
-        if user is None or not user.is_active:
-            await websocket.send_text(json.dumps({"error": "not_authenticated"}))
-            await websocket.close()
-            return None
-        return user
 
 
 async def _can_read_order(session, order, user) -> bool:
@@ -89,13 +48,13 @@ async def order_status_ws(
     if user is None:
         return
 
-    last_status: str | None = None
     redis_client = get_redis_cache().get_raw_client()
 
     async with db_helper.session_factory() as session:
         order = await get_order_by_id(session, order_id)
         if order is None:
             await websocket.send_text(json.dumps({"error": "not_found"}))
+            await websocket.close()
             return
         if not await _can_read_order(session, order, user):
             await websocket.send_text(json.dumps({"error": "forbidden"}))
@@ -104,9 +63,9 @@ async def order_status_ws(
 
         last_status = str(order.status)
         data = OrderResponse.model_validate(order).model_dump(mode="json")
-        await websocket.send_text(json.dumps(data))
+        await _safe_send_text(websocket, json.dumps(data))
 
-        if last_status in (OrderStatus.COMPLETED.value, OrderStatus.CANCELLED.value):
+        if last_status in TERMINAL_STATUSES:
             return
 
     pubsub = redis_client.pubsub()
@@ -114,39 +73,43 @@ async def order_status_ws(
     await pubsub.subscribe(channel)
 
     try:
-        while True:
-            message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
-            if message is not None:
-                async with db_helper.session_factory() as session:
-                    order = await get_order_by_id(session, order_id)
-                    if order is None:
-                        break
-
-                    current_status = str(order.status)
-                    if current_status != last_status:
-                        last_status = current_status
-                        data = OrderResponse.model_validate(order).model_dump(mode="json")
-                        await websocket.send_text(json.dumps(data))
-
-                    if current_status in (OrderStatus.COMPLETED.value, OrderStatus.CANCELLED.value):
-                        break
-
-            try:
-                client_message = await asyncio.wait_for(websocket.receive_text(), timeout=0.01)
-                try:
-                    client_data = json.loads(client_message)
-                    if client_data.get("type") == "ping":
-                        await websocket.send_text(json.dumps({"type": "pong"}))
-                except json.JSONDecodeError:
-                    pass
-            except asyncio.TimeoutError:
-                pass
-
+        await _run_ws_tasks(
+            _order_status_pubsub_loop(websocket, pubsub, order_id, last_status),
+            _consume_client_messages(websocket),
+        )
     except WebSocketDisconnect:
         pass
     finally:
         await pubsub.unsubscribe(channel)
         await pubsub.aclose()
+
+
+async def _order_status_pubsub_loop(
+    websocket: WebSocket,
+    pubsub: PubSub,
+    order_id: uuid.UUID,
+    last_status: str,
+) -> None:
+    async for message in pubsub.listen():
+        if message["type"] != "message":
+            continue
+
+        new_status = message["data"]
+        if isinstance(new_status, bytes):
+            new_status = new_status.decode("utf-8")
+        if new_status == last_status:
+            continue
+
+        async with db_helper.session_factory() as session:
+            order = await get_order_by_id(session, order_id)
+            if order is None:
+                return
+            last_status = str(order.status)
+            data = OrderResponse.model_validate(order).model_dump(mode="json")
+
+        await _safe_send_text(websocket, json.dumps(data))
+        if last_status in TERMINAL_STATUSES:
+            return
 
 
 def _build_display_board(rows: list[tuple[int, str]]) -> dict:
@@ -184,7 +147,7 @@ async def display_board_ws(
             return
 
         rows = await get_active_orders_for_display(session, restaurant_id)
-        await websocket.send_text(json.dumps(_build_display_board(rows)))
+        await _safe_send_text(websocket, json.dumps(_build_display_board(rows)))
 
     redis_client = get_redis_cache().get_raw_client()
     pubsub = redis_client.pubsub()
@@ -192,28 +155,28 @@ async def display_board_ws(
     await pubsub.subscribe(channel)
 
     try:
-        while True:
-            message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
-            if message is not None:
-                async with db_helper.session_factory() as session:
-                    rows = await get_active_orders_for_display(session, restaurant_id)
-                    await websocket.send_text(json.dumps(_build_display_board(rows)))
-
-            try:
-                client_message = await asyncio.wait_for(websocket.receive_text(), timeout=0.01)
-                try:
-                    client_data = json.loads(client_message)
-                    if client_data.get("type") == "ping":
-                        await websocket.send_text(json.dumps({"type": "pong"}))
-                except json.JSONDecodeError:
-                    pass
-            except asyncio.TimeoutError:
-                pass
+        await _run_ws_tasks(
+            _display_board_pubsub_loop(websocket, pubsub, restaurant_id),
+            _consume_client_messages(websocket),
+        )
     except WebSocketDisconnect:
         pass
     finally:
         await pubsub.unsubscribe(channel)
         await pubsub.aclose()
+
+
+async def _display_board_pubsub_loop(
+    websocket: WebSocket,
+    pubsub: PubSub,
+    restaurant_id: uuid.UUID,
+) -> None:
+    async for message in pubsub.listen():
+        if message["type"] != "message":
+            continue
+        async with db_helper.session_factory() as session:
+            rows = await get_active_orders_for_display(session, restaurant_id)
+        await _safe_send_text(websocket, json.dumps(_build_display_board(rows)))
 
 
 @router.websocket("/ws/restaurants/{restaurant_id}/orders")
@@ -241,26 +204,25 @@ async def restaurant_orders_ws(
     await pubsub.subscribe(channel)
 
     try:
-        while True:
-            message = await pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
-            if message is not None:
-                data_str = message["data"]
-                if isinstance(data_str, bytes):
-                    data_str = data_str.decode("utf-8")
-                await websocket.send_text(json.dumps({"event": data_str}))
-
-            try:
-                client_message = await asyncio.wait_for(websocket.receive_text(), timeout=0.01)
-                try:
-                    client_data = json.loads(client_message)
-                    if client_data.get("type") == "ping":
-                        await websocket.send_text(json.dumps({"type": "pong"}))
-                except json.JSONDecodeError:
-                    pass
-            except asyncio.TimeoutError:
-                pass
+        await _run_ws_tasks(
+            _restaurant_orders_pubsub_loop(websocket, pubsub),
+            _consume_client_messages(websocket),
+        )
     except WebSocketDisconnect:
         pass
     finally:
         await pubsub.unsubscribe(channel)
         await pubsub.aclose()
+
+
+async def _restaurant_orders_pubsub_loop(
+    websocket: WebSocket,
+    pubsub: PubSub,
+) -> None:
+    async for message in pubsub.listen():
+        if message["type"] != "message":
+            continue
+        data_str = message["data"]
+        if isinstance(data_str, bytes):
+            data_str = data_str.decode("utf-8")
+        await _safe_send_text(websocket, json.dumps({"event": data_str}))

@@ -13,7 +13,7 @@ export default function VendorApprovalBanner({ vendorProfile }: VendorApprovalBa
     <div
       style={{
         padding: 16,
-        background: isPending ? 'var(--bg-card)' : 'rgba(239, 68, 68, 0.1)',
+        background: isPending ? 'var(--bg-card)' : 'var(--color-error-bg)',
         border: `1px solid ${isPending ? 'var(--border)' : 'var(--error)'}`,
         borderRadius: 'var(--radius-md)',
         marginBottom: 28,

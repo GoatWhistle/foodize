@@ -69,6 +69,7 @@ class TestOrdersAPI:
                     "restaurant_id": str(restaurant_id),
                     "items": [{"menu_item_id": str(menu_item_id), "quantity": 2}],
                 },
+                headers={"Idempotency-Key": "test-idempotency-key-1"},
             )
 
         assert response.status_code == 201
@@ -122,6 +123,7 @@ class TestOrdersAPI:
                 "restaurant_id": str(uuid.uuid4()),
                 "items": [{"menu_item_id": str(uuid.uuid4()), "quantity": 1}],
             },
+            headers={"Idempotency-Key": "test-idempotency-key-1"},
         )
         assert response.status_code == 401
 

@@ -17,7 +17,7 @@
   justify-content: center;
   color: var(--fire);
   background: var(--fire-subtle);
-  border: 1px solid rgba(255, 107, 53, 0.18);
+  border: 1px solid var(--accent-glow);
   box-shadow: 0 8px 24px var(--fire-glow);
   animation: float 4.8s var(--ease-in-out) infinite;
 }

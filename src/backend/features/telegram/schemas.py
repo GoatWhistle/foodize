@@ -50,6 +50,14 @@ class TelegramBotOrderSummary(BaseModel):
     created_at: datetime
 
 
+class TelegramBotTelegramIdRequest(BaseModel):
+    user_id: str = Field(min_length=1, max_length=64)
+
+
+class TelegramBotTelegramIdResponse(BaseModel):
+    telegram_id: int | None = None
+
+
 class TelegramSiteLoginStartRequest(BaseModel):
     phone_number: str = Field(min_length=7, max_length=16, pattern=r"^\+?[0-9]{7,15}$")
 

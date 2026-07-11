@@ -47,7 +47,7 @@ async def create_favorite(
 ) -> Favorite:
     favorite = Favorite(user_id=user_id, restaurant_id=restaurant_id)
     session.add(favorite)
-    await session.commit()
+    await session.flush()
     result = await session.execute(
         select(Favorite)
         .where(Favorite.id == favorite.id)
@@ -58,4 +58,4 @@ async def create_favorite(
 
 async def delete_favorite(session: AsyncSession, favorite: Favorite) -> None:
     await session.delete(favorite)
-    await session.commit()
+    await session.flush()

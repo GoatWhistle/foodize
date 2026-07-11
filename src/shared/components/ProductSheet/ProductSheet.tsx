@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { Clock, Minus, Plus, X } from "@phosphor-icons/react";
 import { getCategoryIcon } from "@shared/utils/categoryIcons";
 import { formatPrice } from "@shared/utils/price";
+import { useFocusTrap } from "@shared/hooks/useFocusTrap";
 import type { MenuItem } from "@shared/types/models";
 import s from "./ProductSheet.module.css";
 
@@ -81,6 +82,10 @@ const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }: Product
   const isClosed = isRestaurantOpen === false;
   const categoryKey = item?.category_name ?? item?.category;
   const icon = getCategoryIcon(categoryKey, { size: 52 });
+  const sheetRef = useFocusTrap<HTMLElement>({
+    active: Boolean(item),
+    onEscape: () => onClose?.(),
+  });
 
   useEffect(() => {
     if (!item) return;
@@ -94,12 +99,6 @@ const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }: Product
     setQuantity(1);
     setError("");
   }, [item, groups]);
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => e.key === "Escape" && onClose?.();
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [onClose]);
 
   useEffect(() => {
     if (!item) return;
@@ -150,9 +149,12 @@ const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }: Product
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose?.(); }}
     >
       <section
+        ref={sheetRef}
         className={`${s.sheet}${groups.length === 0 ? ` ${s.compact}` : ""}`}
         role="dialog"
         aria-modal="true"
+        aria-label={item.name}
+        tabIndex={-1}
       >
         <button className={s.close} type="button" onClick={onClose} aria-label="Закрыть">
           <X size={18} weight="bold" />

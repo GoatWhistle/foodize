@@ -3,8 +3,8 @@ import logging
 
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from features.menu.crud import get_menu_items_by_ids_simple
 
+from features.menu.crud import get_menu_items_by_ids_simple
 from infra.cache.base import CacheRepository
 from infra.cache.redis import get_redis_cache
 

@@ -1,10 +1,7 @@
+from features.admin.crud.advanced_analytics import get_advanced_analytics
+from features.admin.crud.analytics_shared import CATEGORY_RU, STATUS_RU
 from features.admin.crud.audit import get_audit_logs
-from features.admin.crud.finance import (
-    CATEGORY_RU,
-    STATUS_RU,
-    get_advanced_analytics,
-    get_finance_analytics,
-)
+from features.admin.crud.finance import get_finance_analytics
 from features.admin.crud.orders import count_all_orders, get_all_orders
 from features.admin.crud.platform_stats import get_platform_stats
 from features.admin.crud.restaurants import (

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, Copy, Check } from '@phosphor-icons/react';
 import TelegramLogo from '@shared/components/BrandIcons/TelegramLogo';
+import { useFocusTrap } from '@shared/hooks/useFocusTrap';
 import type { Restaurant } from '@shared/types/models';
 
 interface ShareModalProps {
@@ -11,6 +12,7 @@ interface ShareModalProps {
 const ShareModal = ({ restaurant, onClose }: ShareModalProps) => {
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
+  const contentRef = useFocusTrap<HTMLDivElement>({ onEscape: onClose });
 
   const miniAppUrl = import.meta.env.VITE_MINI_APP_URL || '';
   const webUrl = import.meta.env.VITE_WEB_URL || window.location.origin;
@@ -51,7 +53,12 @@ const ShareModal = ({ restaurant, onClose }: ShareModalProps) => {
       }}
     >
       <div
+        ref={contentRef}
         className="modal-content"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="share-modal-title"
+        tabIndex={-1}
         style={{
           maxWidth: 340,
           padding: '24px',
@@ -68,6 +75,7 @@ const ShareModal = ({ restaurant, onClose }: ShareModalProps) => {
           }}
         >
           <span
+            id="share-modal-title"
             style={{
               fontWeight: 800,
               fontSize: '1.1rem',
@@ -101,9 +109,9 @@ const ShareModal = ({ restaurant, onClose }: ShareModalProps) => {
               justifyContent: 'center',
               gap: 8,
               padding: '12px',
-              background: 'rgba(0, 136, 204, 0.1)',
-              color: '#0088cc',
-              border: '1px solid rgba(0, 136, 204, 0.2)',
+              background: 'var(--brand-telegram-subtle)',
+              color: 'var(--brand-telegram-strong)',
+              border: '1px solid var(--brand-telegram-border)',
             }}
           >
             <TelegramLogo size={20} variant="color" />
@@ -131,7 +139,7 @@ const ShareModal = ({ restaurant, onClose }: ShareModalProps) => {
                 </span>
               </>
             ) : copyError ? (
-              <span style={{ color: 'var(--error)' }}>
+              <span style={{ color: 'var(--color-error)' }}>
                 Не удалось скопировать
               </span>
             ) : (

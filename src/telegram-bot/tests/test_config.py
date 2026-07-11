@@ -1,7 +1,8 @@
 import os
 from unittest.mock import patch
-from utils.enums import EventType
+
 from config import BotConfig
+from utils.enums import EventType
 
 
 def test_enums():

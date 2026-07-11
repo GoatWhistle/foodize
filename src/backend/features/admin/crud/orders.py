@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -50,10 +50,13 @@ async def get_all_orders(
             | (Restaurant.name.ilike(pattern))
         )
     if date_from is not None:
-        stmt = stmt.where(Order.created_at >= datetime.combine(date_from, datetime.min.time()))
+        stmt = stmt.where(
+            Order.created_at >= datetime.combine(date_from, datetime.min.time(), tzinfo=UTC)
+        )
     if date_to is not None:
         stmt = stmt.where(
-            Order.created_at < datetime.combine(date_to + timedelta(days=1), datetime.min.time())
+            Order.created_at
+            < datetime.combine(date_to + timedelta(days=1), datetime.min.time(), tzinfo=UTC)
         )
     result = await session.execute(stmt)
     return list(result.scalars().all())
@@ -88,10 +91,13 @@ async def count_all_orders(
             | (Restaurant.name.ilike(pattern))
         )
     if date_from is not None:
-        stmt = stmt.where(Order.created_at >= datetime.combine(date_from, datetime.min.time()))
+        stmt = stmt.where(
+            Order.created_at >= datetime.combine(date_from, datetime.min.time(), tzinfo=UTC)
+        )
     if date_to is not None:
         stmt = stmt.where(
-            Order.created_at < datetime.combine(date_to + timedelta(days=1), datetime.min.time())
+            Order.created_at
+            < datetime.combine(date_to + timedelta(days=1), datetime.min.time(), tzinfo=UTC)
         )
     result = await session.execute(stmt)
     return result.scalar_one()

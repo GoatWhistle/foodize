@@ -45,7 +45,7 @@ const Sparkline = ({ points = [], color = 'var(--fire)' }: SparklineProps) => {
       aria-hidden="true"
       style={{ width: '100%', height: 76, display: 'block', marginTop: 14 }}
     >
-      <polyline points={area} fill="rgba(255, 107, 53, 0.1)" stroke="none" />
+      <polyline points={area} fill="var(--accent-subtle)" stroke="none" />
       <polyline
         points={line}
         fill="none"

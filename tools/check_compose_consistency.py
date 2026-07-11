@@ -25,6 +25,8 @@ REQUIRED_ENV_STUBS = {
     "DB__URL": "postgresql+asyncpg://stub_user:stub_password@pg:5432/stub_db",
     "RABBITMQ__URL": "amqp://stub_user:stub_pass@rabbitmq:5672/",
     "BOT_TOKEN": "0000000000:stub-token-stub-token-stub-tok",
+    "S3_ACCESS_KEY": "stub_access_key",
+    "S3_SECRET_KEY": "stub_secret_key",
 }
 
 

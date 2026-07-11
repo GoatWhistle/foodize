@@ -77,20 +77,20 @@ export interface TelegramWebApp {
 export const tg: TelegramWebApp | null =
   (window.Telegram?.WebApp as TelegramWebApp | undefined) ?? null;
 
-export const TELEGRAM_INIT_DATA_STORAGE_KEY = "foodize_tg_init_data";
+let cachedInitData = "";
 
 export function getTelegramInitData(): string {
   const initData = tg?.initData ?? "";
   if (initData) {
-    sessionStorage.setItem(TELEGRAM_INIT_DATA_STORAGE_KEY, initData);
+    cachedInitData = initData;
     return initData;
   }
 
-  return sessionStorage.getItem(TELEGRAM_INIT_DATA_STORAGE_KEY) ?? "";
+  return cachedInitData;
 }
 
 export function clearTelegramInitData(): void {
-  sessionStorage.removeItem(TELEGRAM_INIT_DATA_STORAGE_KEY);
+  cachedInitData = "";
 }
 
 export function getTelegramUser(): TelegramWebAppUser | null {

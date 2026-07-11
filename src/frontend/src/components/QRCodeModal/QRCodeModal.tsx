@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { X, DownloadSimple, QrCode } from '@phosphor-icons/react';
+import { useFocusTrap } from '@shared/hooks/useFocusTrap';
+import { logError } from '@shared/utils/logError';
 import type { Restaurant } from '@shared/types/models';
 
 type QRCodeType = 'site' | 'telegram';
@@ -15,6 +17,7 @@ interface QRCodeModalProps {
 
 const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCodeModalProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const contentRef = useFocusTrap<HTMLDivElement>({ onEscape: onClose });
   const [type, setType] = useState<QRCodeType>(initialType);
 
   const webUrl = String(import.meta.env.VITE_WEB_URL || window.location.origin);
@@ -49,7 +52,7 @@ const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCodeModalP
         dark: '#2E2418',
         light: '#F5F0E8',
       },
-    }).catch(() => {});
+    }).catch((error) => logError('QRCodeModal.toCanvas', error));
   }, [deepLink]);
 
   const handleDownload = async () => {
@@ -64,7 +67,9 @@ const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCodeModalP
       a.href = dataUrl;
       a.download = `qr_${type}_${restaurant.name.replace(/\s+/g, '_')}.png`;
       a.click();
-    } catch {}
+    } catch (error) {
+      logError('QRCodeModal.download', error);
+    }
   };
 
   return (
@@ -76,7 +81,12 @@ const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCodeModalP
       }}
     >
       <div
+        ref={contentRef}
         className="modal-content"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="qr-modal-title"
+        tabIndex={-1}
         style={{ maxWidth: 320, padding: '28px 24px', textAlign: 'center' }}
       >
         <div
@@ -90,6 +100,7 @@ const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCodeModalP
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <QrCode size={20} color="var(--fire)" weight="fill" />
             <span
+              id="qr-modal-title"
               style={{
                 fontWeight: 800,
                 fontSize: '1rem',

@@ -7,6 +7,10 @@ from enum import Enum
 from typing import Any
 
 
+class ToolInputError(Exception):
+    pass
+
+
 class Role(str, Enum):
     USER = "user"
     ASSISTANT = "assistant"
@@ -66,6 +70,7 @@ class LLMClient(ABC):
         system: str,
         messages: list[Message],
         tools: list[ToolSpec] | None = None,
+        tool_choice: str | None = None,
     ) -> LLMResponse: ...
 
     @abstractmethod
@@ -75,4 +80,8 @@ class LLMClient(ABC):
         system: str,
         messages: list[Message],
         tools: list[ToolSpec] | None = None,
+        tool_choice: str | None = None,
     ) -> AsyncIterator[str]: ...
+
+    @abstractmethod
+    async def aclose(self) -> None: ...

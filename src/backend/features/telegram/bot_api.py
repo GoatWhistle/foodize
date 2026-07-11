@@ -4,7 +4,7 @@ from sqlalchemy.orm import selectinload
 
 from features.orders.models import Order
 from features.telegram._shared import find_or_create_telegram_user, normalize_username
-from features.telegram.crud import get_user_by_telegram_id
+from features.telegram.crud import get_telegram_id_by_user_id, get_user_by_telegram_id
 from features.users.models import User
 from features.vendors.models import VendorProfile
 from shared.enums.order_status import OrderStatus
@@ -54,6 +54,10 @@ async def get_vendor_status_for_telegram_id(
 
     result = await session.execute(select(VendorProfile).where(VendorProfile.user_id == user.id))
     return result.scalar_one_or_none()
+
+
+async def get_telegram_id_for_user_id(session: AsyncSession, user_id: str) -> int | None:
+    return await get_telegram_id_by_user_id(session, user_id)
 
 
 async def get_active_orders_for_telegram_id(

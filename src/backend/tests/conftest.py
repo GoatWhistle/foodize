@@ -25,9 +25,17 @@ _order_display_id = 1000
 @event.listens_for(Order, "before_insert")
 def _set_order_display_id_for_sqlite_tests(mapper, connection, target) -> None:
     global _order_display_id
+    if connection.dialect.name != "sqlite":
+        return
     if target.display_id is None:
         target.display_id = _order_display_id
         _order_display_id += 1
+
+
+@pytest.fixture(autouse=True)
+def _reset_order_display_id() -> None:
+    global _order_display_id
+    _order_display_id = 1000
 
 
 @pytest_asyncio.fixture
@@ -47,7 +55,7 @@ async def client(mock_db_session: AsyncMock) -> AsyncGenerator[AsyncClient, None
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://testserver") as c:
         yield c
-    app.dependency_overrides.clear()
+    app.dependency_overrides.pop(db_helper.dependency_session_getter, None)
 
 
 @pytest.fixture

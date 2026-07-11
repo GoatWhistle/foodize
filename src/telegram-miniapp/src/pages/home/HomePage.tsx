@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ForkKnife, Sparkle } from "@phosphor-icons/react";
+import { ForkKnife, Sparkle, X } from "@phosphor-icons/react";
 import { useAuthStore } from "../../store/useAuthStore";
 import RestaurantCard from "@shared/components/RestaurantCard/RestaurantCard";
 import EmptyState from "@shared/components/EmptyState/EmptyState";
@@ -7,12 +8,20 @@ import SearchFilterBar from "@shared/components/SearchFilterBar/SearchFilterBar"
 import { useHomePageLogic } from "@shared/hooks/useHomePageLogic";
 import { getGreeting } from "@shared/utils/restaurant";
 import { aiOrderService } from "@shared/services/aiOrderService";
+import { refreshAccessToken } from "../../services/api";
 import type { Restaurant } from "@shared/types/models";
 import s from "./HomePage.module.css";
+
+interface AiReplyState {
+  text: string;
+  error: boolean;
+}
 
 const HomePage = () => {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
+  const [aiReply, setAiReply] = useState<AiReplyState | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
 
   const {
     search, setSearch,
@@ -29,15 +38,26 @@ const HomePage = () => {
   const firstName = user?.first_name || user?.name?.split(" ")[0] || "";
 
   const askAiAssistant = async (): Promise<void> => {
+    setAiLoading(true);
+    setAiReply({ text: "", error: false });
     let reply = "";
     try {
       await aiOrderService.streamChat(
         [{ role: "user", content: "Что можно заказать быстро и недорого?" }],
-        { onChunk: (chunk) => { reply += chunk; } }
+        {
+          onChunk: (chunk) => {
+            reply += chunk;
+            setAiReply({ text: reply, error: false });
+          },
+          refreshToken: refreshAccessToken,
+          withCredentials: true,
+        }
       );
-      window.alert(reply || "Ответ пуст");
+      setAiReply({ text: reply || "Ответ пуст", error: false });
     } catch {
-      window.alert("Не удалось получить ответ ассистента");
+      setAiReply({ text: "Не удалось получить ответ ассистента", error: true });
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -78,6 +98,30 @@ const HomePage = () => {
           </button>
         )}
       />
+
+      {aiReply && (
+        <div className={s.aiPanel} role="status" aria-live="polite">
+          <div className={s.aiPanelHead}>
+            <span className={s.aiPanelTitle}>
+              <Sparkle size={15} weight="fill" />
+              AI-помощник
+            </span>
+            <button
+              type="button"
+              className={s.aiPanelClose}
+              aria-label="Закрыть"
+              onClick={() => setAiReply(null)}
+            >
+              <X size={16} weight="bold" />
+            </button>
+          </div>
+          <div
+            className={`${s.aiPanelBody}${aiReply.error ? ` ${s.aiPanelError}` : ""}`}
+          >
+            {aiReply.text || (aiLoading ? "Думаю…" : "")}
+          </div>
+        </div>
+      )}
 
       <div className={s.section}>
         <div className={s.sectionHeader}>

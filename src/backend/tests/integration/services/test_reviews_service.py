@@ -63,9 +63,9 @@ class TestCreateReviewForUser:
             return_value=_mock_review(self.user_id, self.restaurant_id),
         ).start()
         self.mock_avg_rating = patch(
-            "features.reviews.crud.get_restaurant_avg_rating",
+            "features.reviews.crud.sync_restaurant_rating",
             new_callable=AsyncMock,
-            return_value=(4.0, 1),
+            return_value=None,
         ).start()
 
         yield

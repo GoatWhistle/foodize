@@ -1,17 +1,36 @@
-"""Tests for the shared tool-calling agent loop (``infra/llm/agent.py``)."""
-
 import pytest
 
 from infra.llm.agent import LLMBudgetExceededError, run_agent, stream_agent
-from infra.llm.base import LLMResponse, Message, Role, ToolCall, Usage
+from infra.llm.base import (
+    LLMResponse,
+    Message,
+    Role,
+    ToolCall,
+    ToolInputError,
+    ToolSpec,
+    Usage,
+)
 
 from .conftest import FakeLLMClient
 
+_TOOLS = [ToolSpec(name="loop", description="d", input_schema={"type": "object"})]
 
-def _tool_response(name: str, args: dict) -> LLMResponse:
+
+def _tool_response(name: str, args: dict, call_id: str = "call-1") -> LLMResponse:
     return LLMResponse(
         text="",
-        tool_calls=[ToolCall(id="call-1", name=name, arguments=args)],
+        tool_calls=[ToolCall(id=call_id, name=name, arguments=args)],
+        stop_reason="tool_use",
+        usage=Usage(input_tokens=1, output_tokens=1),
+    )
+
+
+def _multi_tool_response(names: list[str]) -> LLMResponse:
+    return LLMResponse(
+        text="",
+        tool_calls=[
+            ToolCall(id=f"call-{i}", name=name, arguments={}) for i, name in enumerate(names)
+        ],
         stop_reason="tool_use",
         usage=Usage(input_tokens=1, output_tokens=1),
     )
@@ -92,7 +111,7 @@ async def test_run_agent_surfaces_validation_errors_to_model():
     client = FakeLLMClient([_tool_response("boom", {}), _text_response("recovered")])
 
     async def execute(call: ToolCall) -> str:
-        raise ValueError("invalid restaurant_id")
+        raise ToolInputError("invalid restaurant_id")
 
     text, history = await run_agent(
         client,
@@ -120,14 +139,43 @@ async def test_run_agent_forces_final_answer_when_budget_exhausted():
         client,
         system="s",
         messages=[Message(role=Role.USER, content="hi")],
-        tools=[],
+        tools=_TOOLS,
         execute=execute,
         max_steps=3,
     )
 
-    assert text == "forced final"
+    assert text.startswith("forced final")
     assert len(client.complete_calls) == 4
-    assert client.complete_calls[-1]["tools"] is None
+    assert client.complete_calls[-1]["tools"] == _TOOLS
+    assert client.complete_calls[-1]["tool_choice"] == "none"
+
+
+@pytest.mark.asyncio
+async def test_run_agent_executes_step_tools_sequentially():
+    client = FakeLLMClient([_multi_tool_response(["add", "remove", "clear"]), _text_response("ok")])
+    order: list[str] = []
+
+    async def execute(call: ToolCall) -> str:
+        order.append(f"start:{call.name}")
+        order.append(f"end:{call.name}")
+        return "{}"
+
+    await run_agent(
+        client,
+        system="s",
+        messages=[Message(role=Role.USER, content="hi")],
+        tools=_TOOLS,
+        execute=execute,
+    )
+
+    assert order == [
+        "start:add",
+        "end:add",
+        "start:remove",
+        "end:remove",
+        "start:clear",
+        "end:clear",
+    ]
 
 
 @pytest.mark.asyncio
@@ -200,7 +248,7 @@ async def test_stream_agent_streams_only_when_step_budget_exhausted():
             client,
             system="s",
             messages=[Message(role=Role.USER, content="hi")],
-            tools=[],
+            tools=_TOOLS,
             execute=execute,
             max_steps=2,
         )
@@ -209,3 +257,5 @@ async def test_stream_agent_streams_only_when_step_budget_exhausted():
     assert "".join(chunks) == "Привет"
     assert len(client.complete_calls) == 2
     assert len(client.stream_calls) == 1
+    assert client.stream_calls[-1]["tools"] == _TOOLS
+    assert client.stream_calls[-1]["tool_choice"] == "none"

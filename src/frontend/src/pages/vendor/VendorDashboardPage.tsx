@@ -2,18 +2,11 @@ import { Storefront } from '@phosphor-icons/react';
 import type { Order } from '@shared/types/models';
 import { ORDER_STATUS_RU } from '@shared/utils/locales';
 import QRCodeModal from '../../components/QRCodeModal/QRCodeModal';
-import VendorAdvisorPanel from './VendorAdvisorPanel';
 import { vendorService } from '@shared/services/vendorService';
-import VendorMenuTab from './tabs/VendorMenuTab';
-import VendorOrdersTab from './tabs/VendorOrdersTab';
-import VendorPromosTab from './tabs/VendorPromosTab';
-import VendorScheduleTab from './tabs/VendorScheduleTab';
-import VendorStaffTab from './tabs/VendorStaffTab';
-import VendorAnalyticsTab from './tabs/VendorAnalyticsTab';
-import VendorSettingsTab from './tabs/VendorSettingsTab';
 import VendorRestaurantList from './VendorRestaurantList';
 import VendorSidebar from './VendorSidebar';
 import VendorApprovalBanner from './VendorApprovalBanner';
+import { VendorTabContent } from './components/VendorTabContent';
 import { useVendorDashboard } from './useVendorDashboard';
 
 const STATUS_LABEL_RU = ORDER_STATUS_RU;
@@ -143,161 +136,17 @@ const VendorDashboardPage = () => {
             setShowQr={d.setShowQr}
           />
 
-          <div className="vendor-section" style={{ flex: 1, minWidth: 0, margin: 0 }}>
-            {d.activeTab === 'menu' && (
-              <VendorMenuTab
-                selectedRestaurant={d.selectedRestaurant}
-                selectedMenu={d.selectedMenu}
-                loading={d.loading}
-                exportLoading={d.exportLoading}
-                todayStr={todayStr}
-                showAddItem={d.showAddItem}
-                setShowAddItem={d.setShowAddItem}
-                editingItem={d.editingItem}
-                setEditingItem={d.setEditingItem}
-                menuItemForm={d.menuItemForm}
-                setMenuItemForm={d.setMenuItemForm}
-                formLoading={d.formLoading}
-                formError={d.formError}
-                menuError={d.menuError}
-                menuSuccess={d.menuSuccess}
-                handleSaveMenuItem={(e) => {
-                  void d.handleSaveMenuItem(e);
-                }}
-                handleDeleteMenuItem={d.handleDeleteMenuItem}
-                handleVendorExport={handleVendorExport}
-                vendorService={vendorService}
-              />
-            )}
-
-            {d.activeTab === 'orders' && (
-              <VendorOrdersTab
-                restaurantOrders={d.restaurantOrders}
-                ordersPage={d.ordersPage}
-                setOrdersPage={d.setOrdersPage}
-                ordersTotal={d.ordersTotal}
-                ordersStatusFilter={d.ordersStatusFilter}
-                setOrdersStatusFilter={d.setOrdersStatusFilter}
-                ordersDateFromFilter={d.ordersDateFromFilter}
-                setOrdersDateFromFilter={d.setOrdersDateFromFilter}
-                ordersDateToFilter={d.ordersDateToFilter}
-                setOrdersDateToFilter={d.setOrdersDateToFilter}
-                ordersLoading={d.ordersLoading}
-                exportLoading={d.exportLoading}
-                updatingOrderId={d.updatingOrderId}
-                selectedOrder={d.selectedOrder}
-                setSelectedOrder={d.setSelectedOrder}
-                todayStr={todayStr}
-                groupedRestaurantOrders={groupedRestaurantOrders}
-                ordersError={d.ordersError}
-                handleVendorExport={handleVendorExport}
-                fetchVendorOrders={() => {
-                  void d.fetchVendorOrders();
-                }}
-                handleOrderChange={d.handleOrderChange}
-                handleCancelOrder={d.handleCancelOrder}
-                vendorService={vendorService}
-                selectedRestaurant={d.selectedRestaurant}
-                STATUS_LABEL_RU={STATUS_LABEL_RU}
-                getOrderDisplayId={getOrderDisplayId}
-                formatOrderTime={formatOrderTime}
-              />
-            )}
-
-            {d.activeTab === 'promos' && (
-              <VendorPromosTab
-                selectedRestaurant={d.selectedRestaurant}
-                promosList={d.promosList}
-                promosLoading={d.promosLoading}
-                promosError={d.promosError}
-                promosSuccess={d.promosSuccess}
-                showPromoForm={d.showPromoForm}
-                setShowPromoForm={d.setShowPromoForm}
-                promoForm={d.promoForm}
-                setPromoForm={d.setPromoForm}
-                promoFormLoading={d.promoFormLoading}
-                deactivatingPromo={d.deactivatingPromo}
-                handleCreatePromo={(e) => {
-                  void d.handleCreatePromo(e);
-                }}
-                handleDeactivatePromo={(code) => {
-                  void d.handleDeactivatePromo(code);
-                }}
-              />
-            )}
-
-            {d.activeTab === 'schedule' && (
-              <VendorScheduleTab
-                workingHours={d.workingHours}
-                setWorkingHours={d.setWorkingHours}
-                workingHoursLoading={d.workingHoursLoading}
-                workingHoursSaved={d.workingHoursSaved}
-                workingHoursError={d.workingHoursError}
-                handleSaveWorkingHours={() => {
-                  void d.handleSaveWorkingHours();
-                }}
-              />
-            )}
-
-            {d.activeTab === 'staff' && (
-              <VendorStaffTab
-                staffSubTab={d.staffSubTab}
-                setStaffSubTab={d.setStaffSubTab}
-                staffMembers={d.staffMembers}
-                staffMembersTotal={d.staffMembersTotal}
-                staffMembersPage={d.staffMembersPage}
-                setStaffMembersPage={d.setStaffMembersPage}
-                staffMemberRemoving={d.staffMemberRemoving}
-                handleRemoveStaffMember={(profileId) => {
-                  void d.handleRemoveStaffMember(profileId);
-                }}
-                staffRequests={d.staffRequests}
-                staffTotal={d.staffTotal}
-                staffPage={d.staffPage}
-                setStaffPage={d.setStaffPage}
-                staffDecisionLoading={d.staffDecisionLoading}
-                handleStaffDecision={(requestId, status) => {
-                  void d.handleStaffDecision(requestId, status);
-                }}
-              />
-            )}
-
-            {d.activeTab === 'analytics' && (
-              <VendorAnalyticsTab
-                finance={d.finance}
-                financeLoading={d.financeLoading}
-                advancedAnalytics={d.advancedAnalytics}
-                analyticsLoading={d.analyticsLoading}
-                financeFilters={d.financeFilters}
-                setFinanceFilters={d.setFinanceFilters}
-                activePreset={d.activePreset}
-                setActivePreset={d.setActivePreset}
-                exportLoading={d.exportLoading}
-                handleVendorExport={handleVendorExport}
-                vendorService={vendorService}
-                selectedRestaurant={d.selectedRestaurant}
-                getVendorRestaurantLabel={getVendorRestaurantLabel}
-                getVendorDateRange={getVendorDateRange}
-              />
-            )}
-
-            {d.activeTab === 'ai' && (
-              <VendorAdvisorPanel restaurantId={d.selectedRestaurant.id} />
-            )}
-
-            {d.activeTab === 'settings' && (
-              <VendorSettingsTab
-                selectedRestaurant={d.selectedRestaurant}
-                editRestaurant={d.editRestaurant}
-                setEditRestaurant={d.setEditRestaurant}
-                formError={d.formError}
-                formLoading={d.formLoading}
-                handleUpdateRestaurant={(e) => {
-                  void d.handleUpdateRestaurant(e);
-                }}
-              />
-            )}
-          </div>
+          <VendorTabContent
+            d={d}
+            todayStr={todayStr}
+            statusLabelRu={STATUS_LABEL_RU}
+            groupedRestaurantOrders={groupedRestaurantOrders}
+            handleVendorExport={handleVendorExport}
+            getVendorRestaurantLabel={getVendorRestaurantLabel}
+            getVendorDateRange={getVendorDateRange}
+            getOrderDisplayId={getOrderDisplayId}
+            formatOrderTime={formatOrderTime}
+          />
         </div>
       )}
 

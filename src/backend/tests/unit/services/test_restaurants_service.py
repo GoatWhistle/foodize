@@ -1,11 +1,10 @@
 import uuid
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from unittest.mock import AsyncMock, MagicMock, patch
-
 from features.restaurants.exceptions import RestaurantNotFoundException
+from features.restaurants.schemas import RestaurantCreate, RestaurantUpdate
 from features.restaurants.service import (
     create_restaurant_for_vendor,
     get_all_restaurants_public,
@@ -13,7 +12,6 @@ from features.restaurants.service import (
     get_restaurant_public,
     update_restaurant_for_vendor,
 )
-from features.restaurants.schemas import RestaurantCreate, RestaurantUpdate
 from shared.enums.moderation_status import ModerationStatus
 from shared.exceptions.rules import AccessDeniedException
 
@@ -193,8 +191,15 @@ class TestCreateRestaurantForVendor:
         data = RestaurantCreate(name="Test", address="Addr", is_open=True, is_hiring=False)
 
         with (
-            patch("features.restaurants.service.crud.create_restaurant", new_callable=AsyncMock, return_value=mock_restaurant),
-            patch("features.restaurants.schemas.RestaurantResponse.model_validate", return_value=MagicMock()),
+            patch(
+                "features.restaurants.service.crud.create_restaurant",
+                new_callable=AsyncMock,
+                return_value=mock_restaurant,
+            ),
+            patch(
+                "features.restaurants.schemas.RestaurantResponse.model_validate",
+                return_value=MagicMock(),
+            ),
         ):
             result = await create_restaurant_for_vendor(session, data, uuid.uuid4())
         assert result is not None
@@ -212,9 +217,20 @@ class TestUpdateRestaurantForVendor:
         data = RestaurantUpdate(name="New Name")
 
         with (
-            patch("features.restaurants.service.get_restaurant_and_check_ownership", new_callable=AsyncMock, return_value=restaurant),
-            patch("features.restaurants.service.crud.update_restaurant", new_callable=AsyncMock, return_value=updated),
-            patch("features.restaurants.schemas.RestaurantResponse.model_validate", return_value=MagicMock()),
+            patch(
+                "features.restaurants.service.get_restaurant_and_check_ownership",
+                new_callable=AsyncMock,
+                return_value=restaurant,
+            ),
+            patch(
+                "features.restaurants.service.crud.update_restaurant",
+                new_callable=AsyncMock,
+                return_value=updated,
+            ),
+            patch(
+                "features.restaurants.schemas.RestaurantResponse.model_validate",
+                return_value=MagicMock(),
+            ),
         ):
             result = await update_restaurant_for_vendor(session, uuid.uuid4(), data, uuid.uuid4())
         assert result is not None
@@ -226,9 +242,20 @@ class TestGetMyRestaurants:
         restaurant = MagicMock()
 
         with (
-            patch("features.restaurants.service.crud.get_vendor_restaurants", new_callable=AsyncMock, return_value=[restaurant]),
-            patch("features.restaurants.service.crud.count_vendor_restaurants", new_callable=AsyncMock, return_value=1),
-            patch("features.restaurants.schemas.RestaurantResponse.model_validate", return_value=MagicMock()),
+            patch(
+                "features.restaurants.service.crud.get_vendor_restaurants",
+                new_callable=AsyncMock,
+                return_value=[restaurant],
+            ),
+            patch(
+                "features.restaurants.service.crud.count_vendor_restaurants",
+                new_callable=AsyncMock,
+                return_value=1,
+            ),
+            patch(
+                "features.restaurants.schemas.RestaurantResponse.model_validate",
+                return_value=MagicMock(),
+            ),
         ):
             data, total = await get_my_restaurants(AsyncMock(), uuid.uuid4())
         assert total == 1

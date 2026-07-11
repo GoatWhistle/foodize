@@ -1,5 +1,5 @@
-@import "../../../shared/fonts.css";
-@import "../../../shared/styles/index.css";
+@import '../../../shared/fonts.css';
+@import '../../../shared/styles/index.css';
 
 :root {
   --nav-h: 64px;
@@ -48,8 +48,7 @@ body {
   font-kerning: normal;
   font-optical-sizing: auto;
   background:
-    linear-gradient(180deg, rgba(255, 107, 53, 0.035), transparent 280px),
-    var(--bg);
+    linear-gradient(180deg, var(--accent-subtle), transparent 280px), var(--bg);
   color: var(--text-1);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
@@ -99,4 +98,21 @@ select {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--border-hi);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-xs, 4px);
+}
+
+button:focus-visible,
+a:focus-visible,
+[role='button']:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--accent-glow);
 }

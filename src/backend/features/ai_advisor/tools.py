@@ -7,6 +7,8 @@ from features.admin.crud import CATEGORY_RU, get_advanced_analytics, get_finance
 from features.ai_advisor import crud
 from features.vendors.models import VendorProfile
 from infra.llm import ToolCall, ToolExecutor, ToolSpec
+from infra.llm.base import ToolInputError
+from shared.dependencies.vendor_restaurant import get_vendor_restaurant_ids
 
 _PERIOD = {
     "type": "integer",
@@ -98,7 +100,7 @@ def _restaurant_id(args: dict) -> uuid.UUID | None:
     try:
         return uuid.UUID(str(raw))
     except (TypeError, ValueError):
-        raise ValueError(f"invalid restaurant_id: {raw!r} — provide a valid UUID")
+        raise ToolInputError(f"invalid restaurant_id: {raw!r} — provide a valid UUID") from None
 
 
 def build_advisor_executor(
@@ -106,11 +108,17 @@ def build_advisor_executor(
     default_restaurant_id: uuid.UUID | None = None,
 ) -> ToolExecutor:
     vendor_id = vendor.id
+    owned_restaurant_ids = get_vendor_restaurant_ids(vendor)
     _advanced_cache: dict[tuple, object] = {}
     _finance_cache: dict[tuple, object] = {}
 
     def resolve_restaurant(args: dict) -> uuid.UUID | None:
-        return _restaurant_id(args) or default_restaurant_id
+        restaurant_id = _restaurant_id(args)
+        if restaurant_id is None:
+            return default_restaurant_id
+        if restaurant_id not in owned_restaurant_ids:
+            raise ToolInputError(f"restaurant {restaurant_id} does not belong to this vendor")
+        return restaurant_id
 
     async def _get_advanced(start, end, restaurant_id):
         key = (start, end, restaurant_id)

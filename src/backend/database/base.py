@@ -6,7 +6,6 @@ from utils import pluralize_snake_case
 
 class Base(DeclarativeBase):
     __abstract__ = True
-    __table_args__ = {"extend_existing": True}
     metadata = metadata
 
     @declared_attr

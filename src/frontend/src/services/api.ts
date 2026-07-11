@@ -1,8 +1,9 @@
 import axios from 'axios';
 import type { AxiosInstance } from 'axios';
 import { createApi, createWebSocketFactories } from '@shared/services/api';
+import { API_BASE_URL } from '@shared/config';
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api/v1';
+const BASE_URL = API_BASE_URL;
 
 const api: AxiosInstance = createApi({
   withCredentials: true,

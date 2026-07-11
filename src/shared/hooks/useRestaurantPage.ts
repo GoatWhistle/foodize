@@ -6,6 +6,7 @@ import type { RestaurantStoreState } from "@shared/store/useRestaurantStore";
 import { reviewService } from "@shared/services/reviewService";
 import { restaurantService } from "@shared/services/restaurantService";
 import { translateApiError } from "@shared/utils/translateApiError";
+import { logError } from "@shared/utils/logError";
 import { isRestaurantOpen } from "../utils/restaurant";
 import type { MenuItem, Restaurant, Review } from "@shared/types/models";
 import type { components } from "@shared/types/api";
@@ -117,11 +118,11 @@ export const useRestaurantPage = ({
       reviewService
         .getRating(target)
         .then((res) => {
-          const d = res.data.data;
-          setRating(d?.average_rating ?? null);
-          setReviewCount(d?.review_count ?? null);
+          const ratingData = res.data.data;
+          setRating(ratingData?.average_rating ?? null);
+          setReviewCount(ratingData?.review_count ?? null);
         })
-        .catch(() => {});
+        .catch((err) => logError("useRestaurantPage.refreshRating", err));
     },
     [restaurantUUID],
   );
@@ -148,25 +149,44 @@ export const useRestaurantPage = ({
   );
 
   useEffect(() => {
-    if (!initialRestaurant) {
-      setRestaurantLoading(true);
-      setRestaurantError("");
-      restaurantService
-        .getById(id)
-        .then((res) => setRestaurantData(res.data.data ?? null))
-        .catch((err) => setRestaurantError(translateApiError(err, "Не удалось загрузить ресторан")))
-        .finally(() => setRestaurantLoading(false));
-    }
+    if (initialRestaurant) return;
+    let stale = false;
+    setRestaurantLoading(true);
+    setRestaurantError("");
+    restaurantService
+      .getById(id)
+      .then((res) => {
+        if (stale) return;
+        setRestaurantData(res.data.data ?? null);
+      })
+      .catch((err) => {
+        if (stale) return;
+        setRestaurantError(translateApiError(err, "Не удалось загрузить ресторан"));
+      })
+      .finally(() => {
+        if (stale) return;
+        setRestaurantLoading(false);
+      });
+    return () => {
+      stale = true;
+    };
   }, [id, initialRestaurant]);
 
   useEffect(() => {
     if (!restaurantUUID) return;
+    let stale = false;
     void fetchMenu(restaurantUUID);
     refreshRating(restaurantUUID);
     restaurantService
       .getWorkingHours(restaurantUUID)
-      .then((res) => setWorkingHours(res.data.data || []))
-      .catch(() => {});
+      .then((res) => {
+        if (stale) return;
+        setWorkingHours(res.data.data || []);
+      })
+      .catch((err) => logError("useRestaurantPage.getWorkingHours", err));
+    return () => {
+      stale = true;
+    };
   }, [restaurantUUID, fetchMenu, refreshRating]);
 
   useEffect(() => {

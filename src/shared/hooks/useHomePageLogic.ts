@@ -3,6 +3,7 @@ import type { Dispatch, SetStateAction, RefObject } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useRestaurantStore } from "@shared/store/useRestaurantStore";
 import type { RestaurantStoreState } from "@shared/store/useRestaurantStore";
+import { logError } from "@shared/utils/logError";
 import type { Restaurant } from "@shared/types/models";
 
 export interface UseHomePageLogicOptions {
@@ -45,7 +46,6 @@ export const useHomePageLogic = ({
   const [allRestaurants, setAllRestaurants] = useState<Restaurant[]>([]);
   const [hasMore, setHasMore] = useState(true);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
-  const fetchIdRef = useRef(0);
   const canLoadMoreRef = useRef<{ hasMore: boolean; loading: boolean }>({
     hasMore: true,
     loading: false,
@@ -86,7 +86,6 @@ export const useHomePageLogic = ({
   }, [debouncedSearch, onlyOpen, sort, direction, resetAndLoad]);
 
   useEffect(() => {
-    const id = ++fetchIdRef.current;
     fetchPublicRestaurants({
       name: debouncedSearch || undefined,
       is_open: onlyOpen ? true : undefined,
@@ -94,9 +93,7 @@ export const useHomePageLogic = ({
       direction,
       page,
       size: pageSize,
-    }).catch(() => {}).finally(() => {
-      if (fetchIdRef.current !== id) return;
-    });
+    }).catch((err) => logError("useHomePageLogic.fetchPublicRestaurants", err));
   }, [debouncedSearch, onlyOpen, sort, direction, page, pageSize, fetchPublicRestaurants]);
 
   useEffect(() => {

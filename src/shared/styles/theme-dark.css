@@ -65,4 +65,8 @@
   --shadow-xl: 0 24px 64px oklch(0% 0 0 / 0.54);
 
   --bg-blur: oklch(14% 0.005 50 / 0.9);
+
+  --glass-bg:     oklch(18% 0.018 60 / 0.74);
+  --glass-border: oklch(98% 0.008 60 / 0.08);
+  --shadow-bar:   0 -4px 16px oklch(0% 0 0 / 0.40);
 }

@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from features.menu.service import (
+from features.menu.services.menu_items import (
     add_menu_item,
     delete_menu_item_for_vendor,
     get_menu,
@@ -91,7 +91,7 @@ class TestMenuService:
 
         with (
             patch(
-                "features.menu.service.get_restaurant_and_check_ownership",
+                "features.menu.services.menu_items.get_restaurant_and_check_ownership",
                 new_callable=AsyncMock,
             ),
             patch(
@@ -140,7 +140,7 @@ class TestMenuService:
 
         with (
             patch(
-                "features.menu.service.get_restaurant_and_check_ownership",
+                "features.menu.services._shared.get_restaurant_and_check_ownership",
                 new_callable=AsyncMock,
             ),
             patch(
@@ -169,7 +169,7 @@ class TestMenuService:
 
         with (
             patch(
-                "features.menu.service.get_restaurant_and_check_ownership",
+                "features.menu.services._shared.get_restaurant_and_check_ownership",
                 new_callable=AsyncMock,
             ),
             patch(
@@ -191,7 +191,7 @@ class TestMenuService:
 
         with (
             patch(
-                "features.menu.service.get_restaurant_and_check_ownership",
+                "features.menu.services._shared.get_restaurant_and_check_ownership",
                 new_callable=AsyncMock,
             ),
             patch(

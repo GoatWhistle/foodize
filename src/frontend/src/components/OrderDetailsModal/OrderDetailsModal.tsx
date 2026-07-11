@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X } from '@phosphor-icons/react';
+import { useFocusTrap } from '@shared/hooks/useFocusTrap';
 import type { Order, OrderStatus } from '@shared/types/models';
 
 import {
@@ -53,6 +54,10 @@ const OrderDetailsModal = ({
   const [showCancelForm, setShowCancelForm] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelling, setCancelling] = useState(false);
+  const contentRef = useFocusTrap<HTMLDivElement>({
+    active: Boolean(order),
+    onEscape: onClose,
+  });
 
   if (!order) return null;
 
@@ -105,7 +110,11 @@ const OrderDetailsModal = ({
       }}
     >
       <div
+        ref={contentRef}
         className="modal-content"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="order-details-title"
         style={{
           maxWidth: 560,
           padding: 0,
@@ -127,6 +136,7 @@ const OrderDetailsModal = ({
         >
           <div>
             <div
+              id="order-details-title"
               style={{
                 color: 'var(--text-3)',
                 fontSize: '0.74rem',

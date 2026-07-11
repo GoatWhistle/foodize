@@ -1,18 +1,17 @@
 import asyncio
 import json
-import logging
 import uuid
 
-_logger = logging.getLogger(__name__)
-
-import jwt
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from uvicorn.protocols.utils import ClientDisconnected
 
 from database import db_helper
+from features.notifications.ws_auth import extract_ws_token, resolve_ws_token_user_id
 from features.users.dependencies import get_user_by_id
 from infra.cache.redis import get_redis_cache
-from utils.JWT import decode_jwt
+from utils.logging_setup import get_logger
+
+_logger = get_logger(__name__)
 
 router = APIRouter(prefix="/ws", tags=["WebSockets"])
 
@@ -43,33 +42,20 @@ async def user_notifications_ws(
 ) -> None:
     await websocket.accept()
 
-    if not token:
-        token = websocket.cookies.get("access_token")
-    if not token:
-        try:
-            raw = await asyncio.wait_for(websocket.receive_text(), timeout=3.0)
-            data = json.loads(raw)
-            token = data.get("token") if isinstance(data, dict) else None
-        except (asyncio.TimeoutError, json.JSONDecodeError, WebSocketDisconnect, ClientDisconnected):
-            token = None
+    token = await extract_ws_token(websocket, token)
     if not token:
         await _safe_send_text(websocket, json.dumps({"error": "not_authenticated"}))
         await websocket.close()
         return
 
     try:
-        payload = decode_jwt(token)
-        if payload.get("typ") != "access":
-            raise ValueError("wrong token type")
-        token_user_id = uuid.UUID(payload.get("sub", ""))
-    except (jwt.InvalidTokenError, ValueError, AttributeError):
-        await _safe_send_text(websocket, json.dumps({"error": "invalid_token"}))
+        token_user_id = await resolve_ws_token_user_id(token)
+    except PermissionError:
+        await _safe_send_text(websocket, json.dumps({"error": "token_revoked"}))
         await websocket.close()
         return
-
-    cache = get_redis_cache()
-    if await cache.exists(f"access_blacklist:{token}"):
-        await _safe_send_text(websocket, json.dumps({"error": "token_revoked"}))
+    if token_user_id is None:
+        await _safe_send_text(websocket, json.dumps({"error": "invalid_token"}))
         await websocket.close()
         return
 
@@ -117,16 +103,12 @@ async def user_notifications_ws(
                         message_count = 0
                     message_count += 1
                     if message_count > _WS_MAX_MESSAGES_PER_WINDOW:
-                        await _safe_send_text(
-                            websocket, json.dumps({"error": "rate_limited"})
-                        )
+                        await _safe_send_text(websocket, json.dumps({"error": "rate_limited"}))
                         await websocket.close(code=1008)
                         return
 
                     if len(client_message.encode("utf-8")) > _MAX_WS_MESSAGE_BYTES:
-                        await _safe_send_text(
-                            websocket, json.dumps({"error": "message_too_large"})
-                        )
+                        await _safe_send_text(websocket, json.dumps({"error": "message_too_large"}))
                         continue
 
                     try:
@@ -146,7 +128,7 @@ async def user_notifications_ws(
             task.cancel()
         for task in done:
             if not task.cancelled() and task.exception() is not None:
-                _logger.exception("WS task failed", exc_info=task.exception())
+                _logger.exception("ws_task_failed", exc_info=task.exception())
     except WebSocketDisconnect:
         pass
     finally:

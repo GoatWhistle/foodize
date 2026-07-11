@@ -50,16 +50,16 @@ import { useFavoriteStore } from '@shared/store/useFavoriteStore';
 
 const ProtectedRouteSimulator = () => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  if (!isAuthenticated) return <div data-testid="login-redirect">Redirect to login</div>;
-  return <div data-testid="protected">Protected content</div>;
+  if (!isAuthenticated) return <div>Redirect to login</div>;
+  return <div>Protected content</div>;
 };
 
 const RoleProtectedSimulator = ({ permission }: { permission: string | null }) => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const permissions = useAuthStore((s) => s.user?.permissions);
-  if (!isAuthenticated) return <div data-testid="login-redirect">Redirect to login</div>;
-  if (permission && !permissions?.includes(permission as never)) return <div data-testid="denied">Access denied</div>;
-  return <div data-testid="role-content">Role content</div>;
+  if (!isAuthenticated) return <div>Redirect to login</div>;
+  if (permission && !permissions?.includes(permission as never)) return <div>Access denied</div>;
+  return <div>Role content</div>;
 };
 
 const AppBootstrapSimulator = () => {
@@ -97,14 +97,14 @@ describe('ProtectedRoute', () => {
   it('redirects unauthenticated user', () => {
     mockIsAuthenticated = false;
     render(<ProtectedRouteSimulator />);
-    expect(screen.getByTestId('login-redirect')).toBeInTheDocument();
-    expect(screen.queryByTestId('protected')).not.toBeInTheDocument();
+    expect(screen.getByText('Redirect to login')).toBeInTheDocument();
+    expect(screen.queryByText('Protected content')).not.toBeInTheDocument();
   });
 
   it('shows content for authenticated user', () => {
     mockIsAuthenticated = true;
     render(<ProtectedRouteSimulator />);
-    expect(screen.getByTestId('protected')).toBeInTheDocument();
+    expect(screen.getByText('Protected content')).toBeInTheDocument();
   });
 });
 
@@ -113,27 +113,27 @@ describe('RoleProtectedRoute', () => {
     mockIsAuthenticated = true;
     mockPermissions = ['customers:read'];
     render(<RoleProtectedSimulator permission="restaurants.create" />);
-    expect(screen.getByTestId('denied')).toBeInTheDocument();
+    expect(screen.getByText('Access denied')).toBeInTheDocument();
   });
 
   it('allows access when user has required permission', () => {
     mockIsAuthenticated = true;
     mockPermissions = ['restaurants.create', 'customers:read'];
     render(<RoleProtectedSimulator permission="restaurants.create" />);
-    expect(screen.getByTestId('role-content')).toBeInTheDocument();
+    expect(screen.getByText('Role content')).toBeInTheDocument();
   });
 
   it('redirects unauthenticated user regardless of permission', () => {
     mockIsAuthenticated = false;
     render(<RoleProtectedSimulator permission="restaurants.create" />);
-    expect(screen.getByTestId('login-redirect')).toBeInTheDocument();
+    expect(screen.getByText('Redirect to login')).toBeInTheDocument();
   });
 
   it('allows access with no permission requirement', () => {
     mockIsAuthenticated = true;
     mockPermissions = [];
     render(<RoleProtectedSimulator permission={null} />);
-    expect(screen.getByTestId('role-content')).toBeInTheDocument();
+    expect(screen.getByText('Role content')).toBeInTheDocument();
   });
 });
 

@@ -4,7 +4,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from features.restaurants.working_hours_crud import get_working_hours, is_open_now, set_working_hours
+from features.restaurants.working_hours_crud import (
+    get_working_hours,
+    is_open_now,
+    set_working_hours,
+)
 
 
 def _mock_wh(day_of_week: int, open_time: str, close_time: str, is_closed: bool = False):
@@ -51,7 +55,7 @@ async def test_set_working_hours():
 
     session = AsyncMock()
     session.execute = AsyncMock()
-    session.commit = AsyncMock()
+    session.flush = AsyncMock()
 
     with patch(
         "features.restaurants.working_hours_crud.get_working_hours",
@@ -60,41 +64,39 @@ async def test_set_working_hours():
     ):
         await set_working_hours(session, restaurant_id, entries)
 
-    assert session.execute.await_count == len(entries) + 1
-    session.commit.assert_awaited_once()
+    session.flush.assert_awaited_once()
+
+
+_FIXED_NOW = datetime(2026, 7, 8, 12, 0, tzinfo=timezone.utc)
 
 
 def test_is_open_now_no_hours():
-    assert is_open_now([]) is None
+    assert is_open_now([], now=_FIXED_NOW) is None
 
 
 def test_is_open_now_is_open():
-    now = datetime.now(tz=timezone.utc)
-    dow = now.weekday()
-    wh = _mock_wh(dow, "00:00", "23:59", is_closed=False)
-    result = is_open_now([wh])
+    dow = _FIXED_NOW.weekday()
+    wh = _mock_wh(dow, "09:00", "22:00", is_closed=False)
+    result = is_open_now([wh], now=_FIXED_NOW)
     assert result is True
 
 
 def test_is_open_now_is_closed_flag():
-    now = datetime.now(tz=timezone.utc)
-    dow = now.weekday()
+    dow = _FIXED_NOW.weekday()
     wh = _mock_wh(dow, "00:00", "23:59", is_closed=True)
-    result = is_open_now([wh])
+    result = is_open_now([wh], now=_FIXED_NOW)
     assert result is False
 
 
 def test_is_open_now_no_matching_day():
-    now = datetime.now(tz=timezone.utc)
-    other_dow = (now.weekday() + 1) % 7
+    other_dow = (_FIXED_NOW.weekday() + 1) % 7
     wh = _mock_wh(other_dow, "09:00", "22:00")
-    result = is_open_now([wh])
+    result = is_open_now([wh], now=_FIXED_NOW)
     assert result is None
 
 
 def test_is_open_now_outside_hours():
-    now = datetime.now(tz=timezone.utc)
-    dow = now.weekday()
+    dow = _FIXED_NOW.weekday()
     wh = _mock_wh(dow, "00:00", "00:01", is_closed=False)
-    result = is_open_now([wh])
-    assert result in (True, False)
+    result = is_open_now([wh], now=_FIXED_NOW)
+    assert result is False

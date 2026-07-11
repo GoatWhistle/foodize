@@ -9,8 +9,8 @@ import { useEtaText } from "@shared/hooks/useEtaText";
 import { translateApiError } from "@shared/utils/translateApiError";
 import HorizontalSteps from "@shared/components/HorizontalSteps/HorizontalSteps";
 import { getOrderStatusStyle, getCustomerOrderStatusLabel } from "@shared/utils/orderStatus";
-import { formatOptionsSummary } from "@shared/utils/price";
 import { parseOrderMessage } from "@shared/utils/wsMessages";
+import { OrderStatusSkeleton, OrderDetails } from "./OrderStatusSections";
 import type { OrderStatus } from "@shared/types/models";
 
 interface OrderWebSocket {
@@ -29,7 +29,6 @@ interface OrderStatusPageProps {
 }
 
 const TERMINAL_STATUSES = new Set<OrderStatus>(["COMPLETED", "CANCELLED"]);
-
 
 const fmtTime = (iso: string | null | undefined): string => {
   if (!iso) return "";
@@ -99,24 +98,7 @@ const OrderStatusPage = ({ createOrderWebSocket, onBack, screenClassName = "stat
   const etaText = useEtaText(currentOrder?.estimated_ready_at, currentOrder?.status ?? "PENDING");
 
   if (!currentOrder) {
-    return (
-      <div className={screenClassName}>
-        {loadError && (
-          <div className="form-error" style={{ marginBottom: 16, maxWidth: 380, width: "100%" }}>{loadError}</div>
-        )}
-        <div className="skeleton" style={{ width: 60, height: 14, marginBottom: 8, borderRadius: 4 }} />
-        <div className="skeleton" style={{ width: 140, height: 72, borderRadius: 8, marginBottom: 16 }} />
-        <div className="skeleton" style={{ width: 280, height: 32, borderRadius: 20, marginBottom: 24 }} />
-        <div style={{ width: "100%", maxWidth: 380, background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--r-lg)", padding: 20 }}>
-          {[1, 2, 3].map((i) => (
-            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderBottom: "1px solid var(--border)" }}>
-              <div className="skeleton" style={{ width: "58%", height: 14 }} />
-              <div className="skeleton" style={{ width: "18%", height: 14 }} />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+    return <OrderStatusSkeleton screenClassName={screenClassName} loadError={loadError} />;
   }
 
   const pill = getOrderStatusStyle(currentOrder.status);
@@ -219,46 +201,7 @@ const OrderStatusPage = ({ createOrderWebSocket, onBack, screenClassName = "stat
         </div>
       </div>
 
-      {showDetails && (
-        <>
-      <div style={{ marginTop: 20, width: "100%", maxWidth: 380, background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--r-lg)", padding: "16px 18px" }}>
-        <div style={{ fontWeight: 700, fontSize: "0.64rem", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-3)", marginBottom: 12 }}>
-          Состав заказа
-        </div>
-        {Array.isArray(currentOrder.items) && currentOrder.items.map((item) => (
-          <div key={item.id} style={{ display: "flex", alignItems: "center", padding: "8px 0", borderBottom: "1px solid var(--border)", fontSize: "0.88rem", gap: 8 }}>
-            <span style={{ fontWeight: 700, color: "var(--accent)", minWidth: 24, fontSize: "0.78rem" }}>×{item.quantity}</span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ color: "var(--text-1)", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                {item.menu_item_name}
-              </div>
-              {(item.selected_options?.length ?? 0) > 0 && (
-                <div style={{ marginTop: 2, fontSize: "0.7rem", color: "var(--text-3)", lineHeight: 1.35 }}>
-                  {formatOptionsSummary(item.selected_options)}
-                </div>
-              )}
-            </div>
-            <span style={{ fontWeight: 700, flexShrink: 0, color: "var(--text-1)" }}>{item.price_at_purchase * item.quantity} ₽</span>
-          </div>
-        ))}
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, fontWeight: 800, fontSize: "1rem", letterSpacing: "-0.01em" }}>
-          <span style={{ color: "var(--text-2)" }}>Итого</span>
-          <span style={{ color: "var(--accent)" }}>{currentOrder.total_price} ₽</span>
-        </div>
-      </div>
-
-      {(currentOrder.restaurant_name || currentOrder.restaurant_address) && (
-        <div style={{ marginTop: 10, width: "100%", maxWidth: 380, background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--r-lg)", padding: "12px 18px" }}>
-          {currentOrder.restaurant_name && (
-            <div style={{ fontWeight: 700, fontSize: "0.88rem", color: "var(--text-1)" }}>{currentOrder.restaurant_name}</div>
-          )}
-          {currentOrder.restaurant_address && (
-            <div style={{ fontSize: "0.78rem", color: "var(--text-3)", marginTop: 2 }}>{currentOrder.restaurant_address}</div>
-          )}
-        </div>
-      )}
-        </>
-      )}
+      {showDetails && <OrderDetails order={currentOrder} />}
 
       {completeError && (
         <div className="form-error" style={{ marginTop: 16, maxWidth: 380, width: "100%" }}>{completeError}</div>

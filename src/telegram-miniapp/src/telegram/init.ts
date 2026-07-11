@@ -2,11 +2,6 @@ import axios from "axios";
 import { authService } from "../services/authService";
 import { expandApp, getStartParam, getTelegramInitData, readyApp } from "./sdk";
 
-interface TelegramTokenResult {
-  access_token: string;
-  refresh_token: string;
-}
-
 export interface InitTelegramAppResult {
   status: string;
   start_param: string;
@@ -57,13 +52,9 @@ export async function completeTelegramAuth(
   initData: string,
   phoneNumber: string,
   name: string,
-): Promise<TelegramTokenResult> {
+): Promise<void> {
   try {
-    const resp = await authService.telegramRegister(initData, phoneNumber, name);
-    const { access_token, refresh_token } = resp.data.data;
-    sessionStorage.setItem("access_token", access_token);
-    sessionStorage.setItem("refresh_token", refresh_token);
-    return resp.data.data;
+    await authService.telegramRegister(initData, phoneNumber, name);
   } catch (err) {
     const { status, message } = describeError(err);
     console.warn("[completeTelegramAuth] failed:", status, message);
@@ -71,15 +62,9 @@ export async function completeTelegramAuth(
   }
 }
 
-export async function authExistingUser(
-  initData: string,
-): Promise<TelegramTokenResult> {
+export async function authExistingUser(initData: string): Promise<void> {
   try {
-    const resp = await authService.telegramAuth(initData);
-    const { access_token, refresh_token } = resp.data.data;
-    sessionStorage.setItem("access_token", access_token);
-    sessionStorage.setItem("refresh_token", refresh_token);
-    return resp.data.data;
+    await authService.telegramAuth(initData);
   } catch (err) {
     const { status, message } = describeError(err);
     console.warn("[authExistingUser] failed:", status, message);

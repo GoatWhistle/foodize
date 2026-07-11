@@ -35,6 +35,19 @@ async def test_get_menu_items_by_ids_empty():
 
 
 @pytest.mark.asyncio
+async def test_get_menu_items_by_ids_filters_soft_deleted():
+    item_id = uuid.uuid4()
+    session = AsyncMock()
+    session.execute = AsyncMock(return_value=_scalars_result([]))
+
+    await get_menu_items_by_ids(session, [item_id])
+
+    executed_query = session.execute.call_args.args[0]
+    compiled = str(executed_query.compile(compile_kwargs={"literal_binds": False}))
+    assert "is_deleted" in compiled
+
+
+@pytest.mark.asyncio
 async def test_get_options_by_ids_empty():
     session = AsyncMock()
     result = await get_options_by_ids(session, [])

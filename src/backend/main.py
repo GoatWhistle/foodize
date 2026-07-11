@@ -1,10 +1,13 @@
 from contextlib import asynccontextmanager
+from secrets import compare_digest
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Header, status
+from fastapi import Response as FastAPIResponse
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from prometheus_fastapi_instrumentator import Instrumentator
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -73,9 +76,11 @@ async def lifespan(app: FastAPI):
         )
     await broker.connect()
     yield
+    logger.info("application_shutdown_started")
     await broker.disconnect()
     await close_redis_pool()
     await db_helper.dispose()
+    logger.info("application_shutdown_complete")
 
 
 app = FastAPI(
@@ -96,8 +101,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors.allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-Id", "Idempotency-Key"],
 )
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 app.add_exception_handler(RequestValidationError, request_validation_error_handler)  # type: ignore[arg-type]
@@ -107,14 +112,16 @@ app.add_exception_handler(IntegrityError, integrity_error_handler)  # type: igno
 app.add_exception_handler(Exception, unhandled_exception_handler)
 app.include_router(api_router)
 
-from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
-from fastapi import Response as FastAPIResponse
-
 instrumentator = Instrumentator().instrument(app)
 
 
 @app.get("/metrics", include_in_schema=False)
-async def metrics():
+async def metrics(authorization: str | None = Header(default=None)):
+    token = settings.run.metrics_token
+    if token:
+        expected = f"Bearer {token}"
+        if not authorization or not compare_digest(authorization, expected):
+            return FastAPIResponse(status_code=status.HTTP_401_UNAUTHORIZED)
     return FastAPIResponse(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
@@ -123,8 +130,12 @@ async def ping():
     return {"status": "pong"}
 
 
-@app.get("/api/health")
-async def health():
+@app.get("/api/live")
+async def live() -> dict[str, str]:
+    return {"status": "alive"}
+
+
+async def _dependency_checks() -> tuple[str, dict[str, str]]:
     checks: dict[str, str] = {}
 
     try:
@@ -144,15 +155,25 @@ async def health():
         checks["redis"] = "error"
 
     try:
-        if broker._connection and not broker._connection.is_closed:
-            checks["rabbitmq"] = "ok"
-        else:
-            checks["rabbitmq"] = "error"
+        checks["rabbitmq"] = "ok" if broker.is_connected else "error"
     except Exception as exc:
         logger.warning("health_check_failed", component="rabbitmq", error=repr(exc))
         checks["rabbitmq"] = "error"
 
     overall = "ok" if all(v == "ok" for v in checks.values()) else "degraded"
+    return overall, checks
+
+
+@app.get("/api/health")
+async def health():
+    overall, checks = await _dependency_checks()
+    status_code = 200 if overall == "ok" else 503
+    return JSONResponse(status_code=status_code, content={"status": overall, "checks": checks})
+
+
+@app.get("/api/ready")
+async def ready():
+    overall, checks = await _dependency_checks()
     status_code = 200 if overall == "ok" else 503
     return JSONResponse(status_code=status_code, content={"status": overall, "checks": checks})
 
@@ -162,4 +183,5 @@ if __name__ == "__main__":
         "main:app",
         host=settings.run.host,
         port=settings.run.port,
+        timeout_graceful_shutdown=30,
     )

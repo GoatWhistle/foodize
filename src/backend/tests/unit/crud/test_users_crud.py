@@ -22,7 +22,9 @@ class TestCreateUser:
         session.refresh = AsyncMock()
 
         with (
-            patch("features.users.crud.hash_password", return_value="hashed"),
+            patch(
+                "features.users.crud.hash_password", new_callable=AsyncMock, return_value="hashed"
+            ),
             patch("features.users.crud.User", return_value=mock_db_user),
         ):
             result = await create_user(session, data)
@@ -55,7 +57,9 @@ class TestUsersCrud:
         session = AsyncMock()
         session.commit = AsyncMock()
 
-        with patch("features.users.crud.hash_password", return_value="new_hash"):
+        with patch(
+            "features.users.crud.hash_password", new_callable=AsyncMock, return_value="new_hash"
+        ):
             await update_user_password(session, user, "newpassword")
 
         assert user.hashed_password == "new_hash"

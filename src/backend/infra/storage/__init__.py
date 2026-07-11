@@ -4,6 +4,7 @@ from infra.storage.s3 import (
     UnsupportedImageType,
     delete_image,
     fetch_object,
+    fetch_object_stream,
     upload_image,
 )
 
@@ -13,5 +14,6 @@ __all__ = [
     "UnsupportedImageType",
     "delete_image",
     "fetch_object",
+    "fetch_object_stream",
     "upload_image",
 ]

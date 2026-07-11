@@ -1,3 +1,5 @@
 .page {
-  padding-bottom: calc(var(--bottom-tab-h) + env(safe-area-inset-bottom, 0px) + 24px);
+  padding-bottom: calc(
+    var(--bottom-tab-h) + env(safe-area-inset-bottom, 0px) + 24px
+  );
 }

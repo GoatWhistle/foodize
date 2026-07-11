@@ -19,7 +19,7 @@ async def create_vendor_profile(
     if has_permission(user.permissions, Permission.VENDORS_MODERATE):
         vendor.approval_status = ModerationStatus.APPROVED.value
     session.add(vendor)
-    await session.commit()
+    await session.flush()
     return vendor
 
 

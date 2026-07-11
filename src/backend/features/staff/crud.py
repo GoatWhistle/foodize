@@ -21,7 +21,7 @@ async def create_staff_request(
 ) -> StaffRequest:
     new_request = StaffRequest(user_id=user_id, restaurant_id=restaurant_id, message=data.message)
     session.add(new_request)
-    await session.commit()
+    await session.flush()
     await session.refresh(new_request)
     return new_request
 
@@ -97,7 +97,7 @@ async def update_request_status(
     session: AsyncSession, request: StaffRequest, new_status: StaffRequestStatus
 ) -> StaffRequest:
     request.status = new_status.value
-    await session.commit()
+    await session.flush()
     await session.refresh(request)
     return request
 
@@ -111,7 +111,7 @@ async def create_staff_profile(
 
     profile = StaffProfile(user_id=user_id, restaurant_id=restaurant_id, role=StaffRole.COOK.value)
     session.add(profile)
-    await session.commit()
+    await session.flush()
     return profile
 
 
@@ -154,4 +154,4 @@ async def delete_staff_profile(session: AsyncSession, profile: StaffProfile) -> 
     if user:
         user.permissions = permissions_without(user.permissions, STAFF_PERMISSIONS)
     await session.delete(profile)
-    await session.commit()
+    await session.flush()

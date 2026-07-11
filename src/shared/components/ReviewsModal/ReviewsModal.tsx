@@ -4,6 +4,7 @@ import { Star, X, ChatCircleText, PencilSimple } from "@phosphor-icons/react";
 import Pagination from "@shared/components/Pagination/Pagination";
 import ReviewCard from "@shared/components/ReviewCard/ReviewCard";
 import StarRatingInput from "@shared/components/StarRatingInput/StarRatingInput";
+import { useFocusTrap } from "@shared/hooks/useFocusTrap";
 import type { Review } from "@shared/types/models";
 import s from "./ReviewsModal.module.css";
 
@@ -80,6 +81,7 @@ const ReviewsModal = ({
   successText = "Отзыв успешно опубликован",
   submitLabel = "Опубликовать",
 }: ReviewsModalProps) => {
+  const contentRef = useFocusTrap<HTMLDivElement>({ onEscape: onClose });
   const openReviewForm = () => {
     setReviewForm(
       myReview
@@ -130,10 +132,16 @@ const ReviewsModal = ({
 
   const modal: ReactNode = (
     <div className={s.overlay} style={{ zIndex: 3000 }}>
-      <div className={s.content}>
+      <div
+        ref={contentRef}
+        className={s.content}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="reviews-modal-title"
+      >
         <div className={s.header}>
           <div className={s.headerTitle}>
-            <h2 className={s.title}>Отзывы</h2>
+            <h2 id="reviews-modal-title" className={s.title}>Отзывы</h2>
             {showRatingInHeader && rating != null && (
               <span className={s.headerRating}>
                 <Star size={14} weight="fill" color="var(--star)" />

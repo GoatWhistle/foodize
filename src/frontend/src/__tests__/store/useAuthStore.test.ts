@@ -70,9 +70,9 @@ describe('useAuthStore', () => {
     } as never);
     vi.mocked(authService.getMe).mockResolvedValueOnce({ data: { data: mockUser } } as never);
 
-    const result = await (
-      useAuthStore.getState().loginWithTelegramCode as (data: { code: string }) => Promise<{ requiresPassword: boolean }>
-    )({ code: '123456' });
+    const result = await useAuthStore
+      .getState()
+      .loginWithTelegramCode({ phone_number: '123', code: '123456' });
 
     expect(result).toEqual({ requiresPassword: false });
     expect(useAuthStore.getState().user).toEqual(mockUser);
@@ -84,7 +84,7 @@ describe('useAuthStore', () => {
     vi.mocked(authService.setTelegramSitePassword).mockResolvedValueOnce({} as never);
     vi.mocked(authService.getMe).mockResolvedValueOnce({ data: { data: mockUser } } as never);
 
-    await (useAuthStore.getState().setTelegramSitePassword as (password: string) => Promise<void>)('strongpassword');
+    await useAuthStore.getState().setTelegramSitePassword('strongpassword');
 
     expect(authService.setTelegramSitePassword).toHaveBeenCalledWith({ password: 'strongpassword' });
     expect(useAuthStore.getState().user).toEqual(mockUser);
@@ -105,7 +105,7 @@ describe('useAuthStore', () => {
     vi.mocked(authService.verifyTelegramLoginCode).mockRejectedValueOnce(new Error('invalid code'));
 
     await expect(
-      (useAuthStore.getState().loginWithTelegramCode as (data: { code: string }) => Promise<unknown>)({ code: 'bad' })
+      useAuthStore.getState().loginWithTelegramCode({ phone_number: '123', code: 'bad' }),
     ).rejects.toThrow('invalid code');
 
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
@@ -119,9 +119,9 @@ describe('useAuthStore', () => {
     } as never);
     vi.mocked(authService.getMe).mockResolvedValueOnce({ data: { data: mockUser } } as never);
 
-    const result = await (
-      useAuthStore.getState().loginWithTelegramCodeByUsername as (data: { username: string; code: string }) => Promise<{ requiresPassword: boolean }>
-    )({ username: 'foo', code: '123' });
+    const result = await useAuthStore
+      .getState()
+      .loginWithTelegramCodeByUsername({ telegram_username: 'foo', code: '123' });
 
     expect(result).toEqual({ requiresPassword: true });
     expect(useAuthStore.getState().user).toEqual(mockUser);
@@ -132,7 +132,9 @@ describe('useAuthStore', () => {
     vi.mocked(authService.verifyTelegramLoginCodeByUsername).mockRejectedValueOnce(new Error('bad username'));
 
     await expect(
-      (useAuthStore.getState().loginWithTelegramCodeByUsername as (data: { username: string }) => Promise<unknown>)({ username: 'x' })
+      useAuthStore
+        .getState()
+        .loginWithTelegramCodeByUsername({ telegram_username: 'x', code: '000000' }),
     ).rejects.toThrow('bad username');
 
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
@@ -142,7 +144,7 @@ describe('useAuthStore', () => {
     vi.mocked(authService.setTelegramSitePassword).mockRejectedValueOnce(new Error('weak password'));
 
     await expect(
-      (useAuthStore.getState().setTelegramSitePassword as (password: string) => Promise<void>)('123')
+      useAuthStore.getState().setTelegramSitePassword('123'),
     ).rejects.toThrow('weak password');
 
     expect(useAuthStore.getState().isAuthenticated).toBe(false);

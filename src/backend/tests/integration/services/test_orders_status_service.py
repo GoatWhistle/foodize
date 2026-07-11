@@ -7,7 +7,7 @@ from factories import make_user
 
 from features.orders.exceptions import InvalidStatusTransitionException
 from features.orders.schemas.order import OrderStatusUpdate
-from features.orders.services.order import _validate_transition, change_order_status
+from features.orders.services.order import change_order_status, validate_transition
 from shared.enums.order_status import OrderStatus
 from shared.enums.roles import UserRole
 
@@ -37,39 +37,39 @@ def make_mock_order(status: OrderStatus) -> MagicMock:
 
 class TestValidateTransition:
     def test_pending_to_accepted(self):
-        _validate_transition(OrderStatus.PENDING, OrderStatus.ACCEPTED)
+        validate_transition(OrderStatus.PENDING, OrderStatus.ACCEPTED)
 
     def test_accepted_to_ready(self):
-        _validate_transition(OrderStatus.ACCEPTED, OrderStatus.READY)
+        validate_transition(OrderStatus.ACCEPTED, OrderStatus.READY)
 
     def test_ready_to_completed(self):
-        _validate_transition(OrderStatus.READY, OrderStatus.COMPLETED)
+        validate_transition(OrderStatus.READY, OrderStatus.COMPLETED)
 
     def test_invalid_pending_to_ready(self):
         with pytest.raises(InvalidStatusTransitionException):
-            _validate_transition(OrderStatus.PENDING, OrderStatus.READY)
+            validate_transition(OrderStatus.PENDING, OrderStatus.READY)
 
     def test_invalid_pending_to_completed(self):
         with pytest.raises(InvalidStatusTransitionException):
-            _validate_transition(OrderStatus.PENDING, OrderStatus.COMPLETED)
+            validate_transition(OrderStatus.PENDING, OrderStatus.COMPLETED)
 
     def test_invalid_pending_to_cancelled(self):
         with pytest.raises(InvalidStatusTransitionException):
-            _validate_transition(OrderStatus.PENDING, OrderStatus.CANCELLED)
+            validate_transition(OrderStatus.PENDING, OrderStatus.CANCELLED)
 
     def test_invalid_ready_to_accepted(self):
         with pytest.raises(InvalidStatusTransitionException):
-            _validate_transition(OrderStatus.READY, OrderStatus.ACCEPTED)
+            validate_transition(OrderStatus.READY, OrderStatus.ACCEPTED)
 
     def test_invalid_completed_to_any(self):
         for status in OrderStatus:
             with pytest.raises(InvalidStatusTransitionException):
-                _validate_transition(OrderStatus.COMPLETED, status)
+                validate_transition(OrderStatus.COMPLETED, status)
 
     def test_invalid_cancelled_to_any(self):
         for status in OrderStatus:
             with pytest.raises(InvalidStatusTransitionException):
-                _validate_transition(OrderStatus.CANCELLED, status)
+                validate_transition(OrderStatus.CANCELLED, status)
 
 
 class TestChangeOrderStatus:

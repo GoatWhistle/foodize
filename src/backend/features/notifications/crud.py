@@ -20,7 +20,7 @@ async def create_notification(
         type=type,
     )
     session.add(notification)
-    await session.commit()
+    await session.flush()
     await session.refresh(notification)
     return notification
 
@@ -67,7 +67,7 @@ async def mark_as_read(
 
     if notification and not notification.is_read:
         notification.is_read = True
-        await session.commit()
+        await session.flush()
         await session.refresh(notification)
 
     return notification
@@ -80,7 +80,7 @@ async def mark_all_as_read(session: AsyncSession, user_id: uuid.UUID) -> None:
         .values(is_read=True)
     )
     await session.execute(stmt)
-    await session.commit()
+    await session.flush()
 
 
 async def delete_notification(
@@ -90,11 +90,11 @@ async def delete_notification(
         Notification.id == notification_id, Notification.user_id == user_id
     )
     result = await session.execute(stmt)
-    await session.commit()
+    await session.flush()
     return result.rowcount > 0  # type: ignore[attr-defined]
 
 
 async def delete_all_notifications(session: AsyncSession, user_id: uuid.UUID) -> None:
     stmt = delete(Notification).where(Notification.user_id == user_id)
     await session.execute(stmt)
-    await session.commit()
+    await session.flush()

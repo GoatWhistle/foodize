@@ -1,6 +1,6 @@
 import uuid
-from datetime import date, datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import date
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -18,7 +18,6 @@ from features.orders.crud.order import (
     update_order_status,
 )
 from shared.enums.order_status import OrderStatus
-from shared.enums.roles import UserRole
 
 
 def _scalar_result(value):
@@ -118,12 +117,12 @@ class TestGetOrderByIdentifierForUpdate:
         assert result == order
 
     @pytest.mark.asyncio
-    async def test_rejects_display_id_with_for_update(self):
+    async def test_resolves_display_id_with_for_update(self):
         order = MagicMock()
         session = _make_session(scalar_result=order)
         result = await get_order_by_identifier_for_update(session, "1002")
-        assert result is None
-        session.execute.assert_not_called()
+        assert result == order
+        session.execute.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_returns_none_for_invalid(self):
@@ -215,7 +214,7 @@ class TestUpdateOrderStatus:
         order.ready_at = None
         session = AsyncMock()
         session.flush = AsyncMock()
-        result = await update_order_status(session, order, OrderStatus.ACCEPTED)
+        await update_order_status(session, order, OrderStatus.ACCEPTED)
         assert order.status == OrderStatus.ACCEPTED.value
         session.flush.assert_called_once()
 

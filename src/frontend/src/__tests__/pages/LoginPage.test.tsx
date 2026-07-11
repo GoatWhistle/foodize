@@ -1,4 +1,5 @@
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import LoginPage from '../../pages/auth/LoginPage';
@@ -65,19 +66,16 @@ describe('LoginPage', () => {
       return sel ? sel(state) : state;
     }) as typeof useAuthStore);
 
+    const user = userEvent.setup();
     render(
       <BrowserRouter>
         <LoginPage />
       </BrowserRouter>
     );
 
-    fireEvent.change(screen.getByLabelText('Телефон'), {
-      target: { value: '+7123' },
-    });
-    fireEvent.change(screen.getByLabelText('Пароль'), {
-      target: { value: 'password123' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Войти' }));
+    await user.type(screen.getByLabelText('Телефон'), '+7123');
+    await user.type(screen.getByLabelText('Пароль'), 'password123');
+    await user.click(screen.getByRole('button', { name: 'Войти' }));
 
     await waitFor(() => {
       expect(mockLogin).toHaveBeenCalledWith({
@@ -103,15 +101,16 @@ describe('LoginPage', () => {
       return sel ? sel(state) : state;
     }) as typeof useAuthStore);
 
+    const user = userEvent.setup();
     render(
       <BrowserRouter>
         <LoginPage />
       </BrowserRouter>
     );
 
-    fireEvent.change(screen.getByLabelText('Телефон'), { target: { value: '+79001234567' } });
-    fireEvent.change(screen.getByLabelText('Пароль'), { target: { value: 'wrongpassword' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Войти' }));
+    await user.type(screen.getByLabelText('Телефон'), '+79001234567');
+    await user.type(screen.getByLabelText('Пароль'), 'wrongpassword');
+    await user.click(screen.getByRole('button', { name: 'Войти' }));
 
     await waitFor(() => {
       expect(screen.getByText('Неверный телефон или пароль')).toBeDefined();
@@ -119,13 +118,14 @@ describe('LoginPage', () => {
   });
 
   it('shows validation error when submitting empty form', async () => {
+    const user = userEvent.setup();
     render(
       <BrowserRouter>
         <LoginPage />
       </BrowserRouter>
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Войти' }));
+    await user.click(screen.getByRole('button', { name: 'Войти' }));
 
     await waitFor(() => {
       expect(screen.getByText('Введите телефон и пароль')).toBeDefined();
@@ -146,15 +146,16 @@ describe('LoginPage', () => {
       return sel ? sel(state) : state;
     }) as typeof useAuthStore);
 
+    const user = userEvent.setup();
     render(
       <BrowserRouter>
         <LoginPage />
       </BrowserRouter>
     );
 
-    fireEvent.change(screen.getByLabelText('Телефон'), { target: { value: '+7999' } });
-    fireEvent.change(screen.getByLabelText('Пароль'), { target: { value: 'password123' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Войти' }));
+    await user.type(screen.getByLabelText('Телефон'), '+7999');
+    await user.type(screen.getByLabelText('Пароль'), 'password123');
+    await user.click(screen.getByRole('button', { name: 'Войти' }));
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /Вход/ })).toBeDisabled();

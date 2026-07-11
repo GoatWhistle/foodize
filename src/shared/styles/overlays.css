@@ -11,4 +11,12 @@
   --on-photo-mute:  oklch(100% 0 0 / 0.30);
   --on-photo-hover: oklch(100% 0 0 / 0.26);
   --on-photo-press: oklch(100% 0 0 / 0.36);
+  --on-photo-fill: oklch(100% 0 0 / 0.12);
+  --on-photo-line: oklch(100% 0 0 / 0.20);
+  --glass-bg:     oklch(96% 0.008 60 / 0.82);
+  --glass-border: oklch(18% 0.018 60 / 0.08);
+  --shadow-bar:   0 -4px 16px oklch(0% 0 0 / 0.12);
+  --star-glow:    oklch(74% 0.16 80 / 0.24);
+  --star-border:  oklch(72% 0.13 80 / 0.35);
+  --star-fill:    oklch(72% 0.13 80 / 0.12);
 }

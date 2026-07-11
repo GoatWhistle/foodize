@@ -48,10 +48,12 @@ services:
     image: redis:${REDIS_IMAGE_TAG:-7.4-alpine}
     command: redis-server --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli ping"]
       interval: 5s
       timeout: 3s
       retries: 5
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     networks:
       - foodize-network
     deploy:
@@ -67,6 +69,8 @@ services:
       target: migrations
     env_file:
       - .env
+    volumes:
+      - ./src/backend/certs:/backend/certs:ro
     depends_on:
       pg:
         condition: service_healthy
@@ -95,13 +99,16 @@ services:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       RABBITMQ__URL: ${RABBITMQ__URL}
       TELEGRAM__BOT_API_SECRET: ${TELEGRAM__BOT_API_SECRET}
+      FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:-172.16.0.0/12}
+    volumes:
+      - ./src/backend/certs:/backend/certs:ro
     ports:
       - "127.0.0.1:8000:8000"
     restart: unless-stopped
     labels:
       - autoheal=true
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/health', timeout=3).status == 200 else 1)"]
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/ready', timeout=3).status == 200 else 1)"]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -121,12 +128,25 @@ services:
       target: worker
     env_file:
       - .env
+    volumes:
+      - ./src/backend/certs:/backend/certs:ro
     depends_on:
       rabbitmq:
         condition: service_healthy
     environment:
       RABBITMQ__URL: ${RABBITMQ__URL}
+      WORKER_METRICS_PORT: ${WORKER_METRICS_PORT:-9200}
     restart: unless-stopped
+    labels:
+      - autoheal=true
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "python -c \"import urllib.request,os,sys; body=urllib.request.urlopen('http://localhost:'+os.environ.get('WORKER_METRICS_PORT','9200')+'/metrics',timeout=3).read().decode(); sys.exit(0 if 'worker_broker_connected 1.0' in body else 1)\" || exit 1"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     networks:
       - foodize-network
     deploy:
@@ -143,9 +163,9 @@ services:
     depends_on:
       - backend
     ports:
-      - "127.0.0.1:5173:80"
+      - "127.0.0.1:5173:8080"
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/"]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -208,9 +228,9 @@ services:
     depends_on:
       - backend
     ports:
-      - "127.0.0.1:5174:80"
+      - "127.0.0.1:5174:8080"
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/"]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -222,6 +242,90 @@ services:
         limits:
           cpus: "0.25"
           memory: 64M
+
+  # Scheduled Postgres logical backups. Uses the same postgres image (pg_dump
+  # matches server version) and dumps over the private network — no docker.sock,
+  # no exposed ports. Optional AES-256 encryption and S3 offsite upload are
+  # controlled by env vars and skipped (with a log) when unset.
+  pg-backup:
+    image: postgres:${POSTGRES_IMAGE_TAG:-17-alpine}
+    depends_on:
+      pg:
+        condition: service_healthy
+    environment:
+      PGHOST: pg
+      PGPORT: "5432"
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      BACKUP_CRON: ${BACKUP_CRON:-0 3 * * *}
+      BACKUP_DIR: /backups
+      KEEP_LAST: ${KEEP_LAST:-7}
+      BACKUP_ENCRYPTION_PASSPHRASE: ${BACKUP_ENCRYPTION_PASSPHRASE:-}
+      BACKUP_S3_BUCKET: ${BACKUP_S3_BUCKET:-}
+      BACKUP_S3_PREFIX: ${BACKUP_S3_PREFIX:-foodize-backups}
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -eu
+        log() { echo "[pg-backup] $$*"; }
+        run_backup() {
+          ts=$$(date +%Y%m%d_%H%M%S)
+          base="foodize_$${ts}.dump"
+          final="$${BACKUP_DIR}/$${base}"
+          tmp="$${BACKUP_DIR}/.$${base}.tmp"
+          log "Dumping $${POSTGRES_DB} from $${PGHOST}..."
+          if ! pg_dump -h "$$PGHOST" -p "$$PGPORT" -U "$$POSTGRES_USER" -Fc "$$POSTGRES_DB" > "$$tmp"; then
+            log "pg_dump FAILED; discarding partial dump"; rm -f "$$tmp"; return 1
+          fi
+          [ -s "$$tmp" ] || { log "empty dump; discarding"; rm -f "$$tmp"; return 1; }
+          if [ -n "$${BACKUP_ENCRYPTION_PASSPHRASE:-}" ] && command -v openssl >/dev/null 2>&1; then
+            log "Encrypting dump..."
+            if openssl enc -aes-256-cbc -pbkdf2 -salt -pass env:BACKUP_ENCRYPTION_PASSPHRASE -in "$$tmp" -out "$${tmp}.enc"; then
+              rm -f "$$tmp"; tmp="$${tmp}.enc"; final="$${final}.enc"; base="$${base}.enc"
+            else
+              log "encryption FAILED"; rm -f "$${tmp}.enc" "$$tmp"; return 1
+            fi
+          elif [ -n "$${BACKUP_ENCRYPTION_PASSPHRASE:-}" ]; then
+            log "WARN: passphrase set but openssl unavailable; storing UNENCRYPTED"
+          else
+            log "WARN: no passphrase; storing UNENCRYPTED"
+          fi
+          mv -f "$$tmp" "$$final"
+          log "Saved $$final"
+          if [ -n "$${BACKUP_S3_BUCKET:-}" ]; then
+            if command -v aws >/dev/null 2>&1; then
+              log "Uploading to s3://$${BACKUP_S3_BUCKET}/$${BACKUP_S3_PREFIX}/$${base}"
+              aws s3 cp "$$final" "s3://$${BACKUP_S3_BUCKET}/$${BACKUP_S3_PREFIX}/$${base}" || log "WARN: s3 upload failed"
+            else
+              log "WARN: BACKUP_S3_BUCKET set but aws cli unavailable; skipping upload"
+            fi
+          fi
+          log "Retention: keeping last $${KEEP_LAST}"
+          ls -t "$$BACKUP_DIR"/foodize_*.dump "$$BACKUP_DIR"/foodize_*.dump.enc 2>/dev/null | tail -n +$$(( KEEP_LAST + 1 )) | xargs -r rm -f
+        }
+        mkdir -p "$$BACKUP_DIR"
+        log "Started; schedule (BACKUP_CRON) is informational for the sleep loop. Interval driven daily."
+        # Lightweight scheduler: run once shortly after start, then every 24h.
+        # BACKUP_CRON is surfaced for operators who prefer host cron / a real
+        # cron sidecar; the loop guarantees a daily backup without extra images.
+        log "BACKUP_CRON=$${BACKUP_CRON}"
+        run_backup || log "initial backup failed"
+        while true; do
+          sleep 86400
+          run_backup || log "scheduled backup failed"
+        done
+    volumes:
+      - pgbackups:/backups
+    restart: unless-stopped
+    networks:
+      - foodize-network
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
 
   # Restarts containers labeled autoheal=true when their healthcheck goes unhealthy.
   autoheal:
@@ -241,6 +345,8 @@ services:
 
 volumes:
   pgdata:
+  pgbackups:
 
 networks:
   foodize-network:
+    name: foodize-network

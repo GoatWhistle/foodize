@@ -82,14 +82,16 @@
 
 .pillRating {
   color: var(--star);
-  border-color: oklch(72% 0.13 80 / 0.35);
-  background: oklch(72% 0.13 80 / 0.12);
+  border-color: var(--star-border);
+  background: var(--star-fill);
   pointer-events: none;
 }
 
 .content {
   padding: 0 var(--gutter);
-  padding-bottom: calc(var(--bottom-tab-h) + env(safe-area-inset-bottom, 0px) + 80px);
+  padding-bottom: calc(
+    var(--bottom-tab-h) + env(safe-area-inset-bottom, 0px) + 80px
+  );
 }
 
 .categoriesScroll {
@@ -125,6 +127,8 @@
   }
   .content {
     padding: 0 var(--gutter);
-    padding-bottom: calc(var(--bottom-tab-h) + env(safe-area-inset-bottom, 0px) + 80px);
+    padding-bottom: calc(
+      var(--bottom-tab-h) + env(safe-area-inset-bottom, 0px) + 80px
+    );
   }
 }

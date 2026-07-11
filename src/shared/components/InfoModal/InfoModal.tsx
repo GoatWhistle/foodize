@@ -1,6 +1,7 @@
 import { createPortal } from "react-dom";
 import { X } from "@phosphor-icons/react";
 import { WEEKDAYS_SHORT_RU } from "@shared/utils/datetime";
+import { useFocusTrap } from "@shared/hooks/useFocusTrap";
 import type { Restaurant } from "@shared/types/models";
 import styles from "./InfoModal.module.css";
 
@@ -20,6 +21,7 @@ interface InfoModalProps {
 }
 
 const InfoModal = ({ restaurant, workingHours, onClose, usePortal = false, showDescription = false }: InfoModalProps) => {
+  const contentRef = useFocusTrap<HTMLDivElement>({ onEscape: onClose });
   const modal = (
     <div
       className={styles.overlay}
@@ -27,9 +29,15 @@ const InfoModal = ({ restaurant, workingHours, onClose, usePortal = false, showD
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className={styles.content}>
+      <div
+        ref={contentRef}
+        className={styles.content}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="info-modal-title"
+      >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <h2 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 800 }}>Информация</h2>
+          <h2 id="info-modal-title" style={{ margin: 0, fontSize: "1.2rem", fontWeight: 800 }}>Информация</h2>
           <button
             onClick={onClose}
             aria-label="Закрыть"

@@ -65,9 +65,14 @@ async def get_all_users(
     if role is not None:
         stmt = _apply_role_filter(stmt, role)
     if date_from is not None:
-        stmt = stmt.where(User.created_at >= datetime.combine(date_from, datetime.min.time(), tzinfo=UTC))
+        stmt = stmt.where(
+            User.created_at >= datetime.combine(date_from, datetime.min.time(), tzinfo=UTC)
+        )
     if date_to is not None:
-        stmt = stmt.where(User.created_at < datetime.combine(date_to + timedelta(days=1), datetime.min.time(), tzinfo=UTC))
+        stmt = stmt.where(
+            User.created_at
+            < datetime.combine(date_to + timedelta(days=1), datetime.min.time(), tzinfo=UTC)
+        )
     result = await session.execute(stmt.offset(offset).limit(limit))
     return list(result.scalars().all())
 

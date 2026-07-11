@@ -14,7 +14,6 @@ from features.ai_advisor.crud import (
 
 class TestDayBounds:
     def test_returns_datetime_bounds(self):
-        from datetime import UTC, datetime
 
         start_date = date(2024, 1, 1)
         end_date = date(2024, 1, 31)
@@ -26,7 +25,6 @@ class TestDayBounds:
         assert end.tzinfo is not None
 
     def test_start_at_midnight(self):
-        from datetime import time
 
         start, _ = _day_bounds(date(2024, 6, 1), date(2024, 6, 30))
         assert start.hour == 0
@@ -129,7 +127,9 @@ class TestGetMenuOverview:
     async def test_with_restaurant_filter(self):
         rows = [("R", "Item", "cat", 100, True)]
         session = _make_session_with_rows(rows)
-        result = await get_menu_overview(session, vendor_id=uuid.uuid4(), restaurant_id=uuid.uuid4())
+        result = await get_menu_overview(
+            session, vendor_id=uuid.uuid4(), restaurant_id=uuid.uuid4()
+        )
         assert len(result) == 1
 
 

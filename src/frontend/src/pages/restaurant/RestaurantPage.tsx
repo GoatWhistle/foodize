@@ -3,15 +3,7 @@ import type { FormEvent } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { CATEGORY_RU } from '@shared/utils/locales';
 import type { Restaurant } from '@shared/types/models';
-import {
-  Star,
-  Briefcase,
-  ForkKnife,
-  List,
-  Heart,
-  ShareNetwork,
-  Info,
-} from '@phosphor-icons/react';
+import { Briefcase, List } from '@phosphor-icons/react';
 import { useOrderStore } from '../../store/useOrderStore';
 import MenuItemCard from '@shared/components/MenuItemCard/MenuItemCard';
 import ProductSheet from '@shared/components/ProductSheet/ProductSheet';
@@ -27,6 +19,7 @@ import ReviewsModal from '@shared/components/ReviewsModal/ReviewsModal';
 import InfoModal from '@shared/components/InfoModal/InfoModal';
 import { getCategoryIcon } from '@shared/utils/categoryIcons';
 import { pluralizeRu } from '@shared/utils/pluralize';
+import { RestaurantHero } from './components/RestaurantHero';
 
 const RestaurantPage = () => {
   const { id } = useParams();
@@ -153,71 +146,24 @@ const RestaurantPage = () => {
 
   return (
     <div className="page-enter" style={{ minHeight: '100vh' }}>
-      <div className="restaurant-hero">
-        {restaurantView.photo_url ? (
-          <img
-            className="restaurant-hero-img"
-            src={restaurantView.photo_url}
-            alt={restaurant.name}
-            style={{ viewTransitionName: `restaurant-image-${restaurant.id}` }}
-          />
-        ) : (
-          <div className="restaurant-hero-placeholder">
-            <ForkKnife size={48} color="var(--on-photo-mute)" />
-          </div>
-        )}
-        <div className="restaurant-hero-overlay" />
-        <div className="restaurant-hero-info">
-          <h1 className="restaurant-hero-name">{restaurant.name}</h1>
-          {restaurantView.description && (
-            <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.875rem', margin: '4px 0 8px', lineHeight: 1.4 }}>
-              {restaurantView.description}
-            </p>
-          )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button
-              className="btn btn-secondary btn-sm"
-              onClick={() => { setShowReviewsModal(true); setReviewFormOpen(false); }}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff' }}
-            >
-              <Star size={14} weight="fill" color="#fbbf24" />
-              {reviewsButtonLabel}
-            </button>
-            <button
-              className="btn btn-secondary btn-sm"
-              onClick={() => setShowInfoModal(true)}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff' }}
-            >
-              <Info size={14} weight="bold" />
-              Инфо
-            </button>
-            <button
-              onClick={() => setShowShareModal(true)}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: '50%', background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', cursor: 'pointer', transition: 'all 0.15s', flexShrink: 0 }}
-              aria-label="Поделиться рестораном"
-            >
-              <ShareNetwork size={16} weight="bold" />
-            </button>
-            {currentUser && (
-              <button
-                onClick={() => {
-                  if (restaurantUUID) void toggleFavorite(restaurantUUID);
-                }}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: '50%', background: isFav ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255,255,255,0.12)', backdropFilter: 'blur(8px)', border: isFav ? '1px solid var(--error)' : '1px solid rgba(255,255,255,0.2)', color: isFav ? 'var(--error)' : '#fff', cursor: 'pointer', transition: 'all 0.15s', flexShrink: 0 }}
-                aria-label={isFav ? 'Убрать из избранного' : 'В избранное'}
-                aria-pressed={isFav}
-              >
-                <Heart size={16} weight={isFav ? 'fill' : 'regular'} />
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+      <RestaurantHero
+        restaurant={restaurant as Restaurant}
+        restaurantView={restaurantView}
+        reviewsButtonLabel={reviewsButtonLabel}
+        showFavorite={Boolean(currentUser)}
+        isFav={isFav}
+        onOpenReviews={() => { setShowReviewsModal(true); setReviewFormOpen(false); }}
+        onOpenInfo={() => setShowInfoModal(true)}
+        onOpenShare={() => setShowShareModal(true)}
+        onToggleFavorite={() => {
+          if (restaurantUUID) void toggleFavorite(restaurantUUID);
+        }}
+      />
 
       <div className="restaurant-content">
         {restaurantView.is_open === false && (
           <div
-            style={{ padding: '12px 16px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid var(--error)', borderRadius: 'var(--r-md)', color: 'var(--error)', fontSize: '0.85rem', fontWeight: 800, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}
+            style={{ padding: '12px 16px', background: 'var(--color-error-bg)', border: '1px solid var(--error)', borderRadius: 'var(--r-md)', color: 'var(--error)', fontSize: '0.85rem', fontWeight: 800, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}
           >
             Заведение временно закрыто и не принимает заказы
           </div>

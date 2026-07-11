@@ -19,7 +19,7 @@ from features.users.schemas import UserCreate, UserRead
 from infra.cache.redis import RedisCache, get_redis_cache, redis_cache_dependency
 from settings.config.app_config import settings
 from shared.exceptions.existence import AuthException
-from utils.JWT import create_access_token, create_refresh_token, decode_jwt
+from utils.jwt_tokens import create_access_token, create_refresh_token, decode_jwt
 from utils.logging_setup import get_logger
 
 logger = get_logger()
@@ -28,15 +28,20 @@ _REFRESH_BLACKLIST_PREFIX = "refresh_blacklist:"
 _ACCESS_BLACKLIST_PREFIX = "access_blacklist:"
 
 
-def _set_auth_cookies(response: Response, access_token: str, refresh_token: str) -> None:
-    secure = settings.logs.environment != "development"
+def _set_auth_cookies(
+    response: Response,
+    access_token: str,
+    refresh_token: str,
+    same_site: str = "lax",
+) -> None:
+    secure = settings.logs.environment != "development" or same_site == "none"
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,
         secure=secure,
         max_age=settings.auth.access_token_lifetime_seconds,
-        samesite="lax",
+        samesite=same_site,
     )
     response.set_cookie(
         key="refresh_token",
@@ -44,7 +49,16 @@ def _set_auth_cookies(response: Response, access_token: str, refresh_token: str)
         httponly=True,
         secure=secure,
         max_age=settings.auth.refresh_token_lifetime_seconds,
-        samesite="lax",
+        samesite=same_site,
+    )
+
+
+def set_telegram_auth_cookies(response: Response, tokens: TokenResponse) -> None:
+    _set_auth_cookies(
+        response,
+        tokens.access_token,
+        tokens.refresh_token,
+        same_site="none",
     )
 
 
@@ -132,6 +146,7 @@ async def logout_user(
     request: Request,
     response: Response,
     cache: RedisCache | None = None,
+    same_site: str = "lax",
 ) -> None:
     if cache is None:
         cache = get_redis_cache()
@@ -163,9 +178,9 @@ async def logout_user(
         except Exception:
             logger.warning("logout: failed to blacklist refresh token")
 
-    secure = settings.logs.environment != "development"
-    response.delete_cookie("access_token", httponly=True, secure=secure, samesite="lax")
-    response.delete_cookie("refresh_token", httponly=True, secure=secure, samesite="lax")
+    secure = settings.logs.environment != "development" or same_site == "none"
+    response.delete_cookie("access_token", httponly=True, secure=secure, samesite=same_site)
+    response.delete_cookie("refresh_token", httponly=True, secure=secure, samesite=same_site)
 
 
 async def refresh_user_token(
@@ -173,6 +188,7 @@ async def refresh_user_token(
     response: Response,
     session: AsyncSession,
     cache: RedisCache | None = None,
+    same_site: str = "lax",
 ) -> TokenResponse:
     token = request.cookies.get("refresh_token") or await _get_bearer_token(request)
     if not token:
@@ -217,7 +233,7 @@ async def refresh_user_token(
 
     access_token = create_access_token(user.id)
     new_refresh_token = create_refresh_token(user.id, session_exp=session_exp)
-    _set_auth_cookies(response, access_token, new_refresh_token)
+    _set_auth_cookies(response, access_token, new_refresh_token, same_site=same_site)
     return TokenResponse(
         access_token=access_token, refresh_token=new_refresh_token, token_type="Bearer"
     )

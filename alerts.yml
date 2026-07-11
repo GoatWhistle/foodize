@@ -39,3 +39,104 @@ groups:
           severity: critical
         annotations:
           summary: "Less than 10% disk space on {{ $labels.instance }}"
+
+      - alert: PostgresDown
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL is unreachable (pg_up == 0)"
+
+      - alert: RedisDown
+        expr: redis_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis is unreachable (redis_up == 0)"
+
+      - alert: RabbitMQQueueBacklog
+        expr: rabbitmq_queue_messages_ready > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "RabbitMQ queue {{ $labels.queue }} backlog > 1000 ready messages"
+
+      - alert: HighCpuSaturation
+        expr: |
+          (1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))) > 0.9
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU saturation > 90% on {{ $labels.instance }}"
+
+      - alert: HighMemorySaturation
+        expr: |
+          (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.9
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Memory usage > 90% on {{ $labels.instance }}"
+
+      - alert: RabbitMQDown
+        expr: up{job=~".*rabbitmq.*"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "RabbitMQ scrape target is down (up == 0)"
+
+      - alert: WorkerBrokerDisconnected
+        expr: worker_broker_connected == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Notifications worker is disconnected from RabbitMQ (worker_broker_connected == 0)"
+
+      - alert: WorkerTaskFailures
+        expr: |
+          sum(rate(worker_events_failed_total[5m])) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Notifications worker task failures ongoing (>0 failures/s over 5m)"
+
+      - alert: WorkerStalled
+        expr: |
+          (time() - worker_last_message_timestamp_seconds) > 900
+          or worker_broker_connected == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Notifications worker stalled (no message processed for > 15m or broker disconnected)"
+
+      - alert: OutboxBacklog
+        expr: outbox_pending_oldest_age_seconds > 300
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Outbox backlog: oldest due event unpublished for > 5m (publisher stalled?)"
+
+      - alert: OutboxFailedEvents
+        expr: outbox_failed_events > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Outbox has {{ $value }} event(s) in FAILED state"
+
+      - alert: DLQGrowing
+        expr: rabbitmq_queue_messages{queue="foodize.dlq"} > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Dead-letter queue foodize.dlq has {{ $value }} message(s)"

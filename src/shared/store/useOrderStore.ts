@@ -2,36 +2,26 @@ import { create, type StoreApi, type UseBoundStore } from "zustand";
 import { cartService } from "@shared/services/cartService";
 import { orderService } from "@shared/services/orderService";
 import { translateApiError } from "@shared/utils/translateApiError";
-import type {
-  MenuItem,
-  MenuItemShort,
-  Order,
-  OrderItem,
-  OrderCreate,
-  CartItemIn,
-  CartSelectedOption,
-} from "@shared/types/models";
+import {
+  getOptionIds,
+  getLinePrice,
+  getLineKey,
+  normalizeCartLine,
+  normalizeOrderItemForCart,
+  uniqueOptions,
+  buildCartItemIn,
+  makeIdempotencyKey,
+  type CartLine,
+  type CartLineOption,
+  type CartMenuItem,
+} from "@shared/utils/cartLine";
+import type { Order, OrderCreate } from "@shared/types/models";
 
-export interface CartLineOption {
-  id?: string;
-  option_id?: string;
-  name?: string;
-  price_delta?: number | null;
-}
-
-export type CartMenuItem = (MenuItem | MenuItemShort) & {
-  image_url?: string | null;
-};
-
-export interface CartLine {
-  menuItem: CartMenuItem;
-  quantity: number;
-  selectedOptionIds?: string[];
-  selectedOptions?: CartLineOption[];
-  selected_options?: CartLineOption[];
-  selected_option_ids?: string[];
-  lineKey?: string;
-}
+export type {
+  CartLine,
+  CartLineOption,
+  CartMenuItem,
+} from "@shared/utils/cartLine";
 
 export interface CreateOrderStoreOptions {
   onRestaurantChange?: (() => Promise<boolean>) | null;
@@ -77,90 +67,6 @@ export interface OrderStoreState {
   fetchOrder: (id: string) => Promise<Order>;
 }
 
-const getOptionIds = (item: CartLine): string[] =>
-  [
-    ...new Set(
-      item.selectedOptionIds ??
-        item.selected_option_ids ??
-        getSelectedOptions(item).map((o) => o.id ?? o.option_id),
-    ),
-  ].filter((id): id is string => Boolean(id));
-
-const getSelectedOptions = (item: CartLine): CartLineOption[] =>
-  item.selectedOptions ?? item.selected_options ?? [];
-
-const getOptionsTotal = (item: CartLine): number =>
-  getSelectedOptions(item).reduce(
-    (sum, o) => sum + (Number(o.price_delta) || 0),
-    0,
-  );
-
-const getLinePrice = (item: CartLine): number =>
-  (Number(item.menuItem.price) || 0) + getOptionsTotal(item);
-
-const getLineKey = (
-  menuItemId: string,
-  selectedOptionIds: string[] = [],
-): string => `${menuItemId}:${[...selectedOptionIds].sort().join(",")}`;
-
-const normalizeOrderItemForCart = (i: OrderItem): CartItemIn => {
-  const options = i.selected_options ?? [];
-  const optionIds = options
-    .map((o) => o.option_id)
-    .filter((id): id is string => Boolean(id));
-  const optionsTotal = options.reduce(
-    (sum, o) => sum + (Number(o.price_delta) || 0),
-    0,
-  );
-  const basePrice = Math.max(0, (Number(i.price_at_purchase) || 0) - optionsTotal);
-  return {
-    menu_item_id: i.menu_item_id,
-    name: i.menu_item_name,
-    price: basePrice,
-    image_url: null,
-    quantity: i.quantity,
-    selected_option_ids: optionIds,
-    selected_options: options.map((o) => ({
-      option_id: o.option_id ?? "",
-      name: o.name,
-      price_delta: Number(o.price_delta) || 0,
-    })),
-  };
-};
-
-const uniqueOptions = (options: CartLineOption[] = []): CartLineOption[] => {
-  const seen = new Set<string>();
-  return options.filter((o) => {
-    const id = o.id ?? o.option_id;
-    if (!id || seen.has(id)) return false;
-    seen.add(id);
-    return true;
-  });
-};
-
-const toCartSelectedOptions = (
-  options: CartLineOption[],
-): CartSelectedOption[] =>
-  options.map((o) => ({
-    option_id: o.option_id ?? o.id ?? "",
-    name: o.name ?? "",
-    price_delta: Number(o.price_delta) || 0,
-  }));
-
-const buildCartItemIn = (i: CartLine): CartItemIn => ({
-  menu_item_id: i.menuItem.id,
-  name: i.menuItem.name,
-  price: i.menuItem.price,
-  image_url: i.menuItem.image_url ?? null,
-  quantity: i.quantity,
-  selected_option_ids: getOptionIds(i),
-  selected_options: toCartSelectedOptions(uniqueOptions(getSelectedOptions(i))),
-});
-
-const makeIdempotencyKey = (): string =>
-  globalThis.crypto?.randomUUID?.() ??
-  `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-
 export function createOrderStore({
   onRestaurantChange = null,
 }: CreateOrderStoreOptions = {}): UseBoundStore<StoreApi<OrderStoreState>> {
@@ -183,7 +89,7 @@ export function createOrderStore({
       try {
         const res = await cartService.getCart();
         set({
-          cart: res.data.data.items ?? [],
+          cart: (res.data.data.items ?? []).map(normalizeCartLine),
           cartRestaurantId: res.data.data.restaurant_id ?? null,
           cartError: null,
         });
@@ -193,15 +99,23 @@ export function createOrderStore({
     },
 
     _syncCart: () => {
-      syncChain = syncChain.then(async () => {
-        const { cart, cartRestaurantId } = get();
-        if (!cartRestaurantId) return;
-        await cartService.updateCart({
-          restaurant_id: cartRestaurantId,
-          items: cart.map(buildCartItemIn),
+      const run = syncChain
+        .catch(() => {})
+        .then(async () => {
+          const { cart, cartRestaurantId } = get();
+          if (!cartRestaurantId) return;
+          await cartService.updateCart({
+            restaurant_id: cartRestaurantId,
+            items: cart.map(buildCartItemIn),
+          });
+          set({ cartError: null });
+        });
+      syncChain = run.catch(() => {});
+      return run.catch((err) => {
+        set({
+          cartError: translateApiError(err, "Не удалось синхронизировать корзину"),
         });
       });
-      return syncChain;
     },
 
     addToCart: async (menuItem, restaurantId, selectedOptions = [], quantity = 1) => {

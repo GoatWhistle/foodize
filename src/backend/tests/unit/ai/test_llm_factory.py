@@ -1,5 +1,3 @@
-"""Tests for provider/model resolution and client caching (``infra/llm/factory.py``)."""
-
 import pytest
 
 from infra.llm import factory
@@ -44,11 +42,42 @@ async def test_get_llm_client_is_cached_per_role_and_provider():
     assert first is second
 
 
+def test_gigachat_routes_through_openai_compatible_client():
+    from infra.llm.openai_compatible import OpenAICompatibleClient
+
+    cfg = LLMConfig(gigachat_model="gigachat-model", gigachat_api_key="giga-key")
+
+    client = factory._build(LLMProvider.GIGACHAT, "gigachat-model", cfg)
+
+    assert isinstance(client, OpenAICompatibleClient)
+
+
+def test_build_requires_gigachat_key():
+    cfg = LLMConfig(gigachat_api_key="")
+
+    with pytest.raises(ValueError, match="GIGACHAT_API_KEY"):
+        factory._build(LLMProvider.GIGACHAT, "gigachat-model", cfg)
+
+
+def test_build_requires_openai_key():
+    cfg = LLMConfig(openai_api_key="")
+
+    with pytest.raises(ValueError, match="OPENAI_API_KEY"):
+        factory._build(LLMProvider.OPENAI, "openai-model", cfg)
+
+
+def test_build_requires_anthropic_key_only_for_anthropic():
+    cfg = LLMConfig(anthropic_api_key="")
+
+    with pytest.raises(ValueError, match="ANTHROPIC_API_KEY"):
+        factory._build(LLMProvider.ANTHROPIC, "some-model", cfg)
+
+
 @pytest.mark.asyncio
-async def test_gigachat_routes_through_openai_compatible_client():
+async def test_non_anthropic_provider_builds_without_anthropic_key():
     factory._clients.clear()
     from infra.llm.openai_compatible import OpenAICompatibleClient
 
-    client = await get_llm_client(AgentRole.ADVISOR, provider=LLMProvider.GIGACHAT)
+    client = await get_llm_client(AgentRole.ORDER, provider=LLMProvider.OLLAMA)
 
     assert isinstance(client, OpenAICompatibleClient)

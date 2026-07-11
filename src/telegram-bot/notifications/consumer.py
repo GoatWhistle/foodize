@@ -8,9 +8,30 @@ from aiogram import Bot
 
 from config import bot_config
 from notifications.handlers import handle_order_placed, handle_order_status_changed
+from services import redis_client
 from utils.enums import EventType
 
 logger = logging.getLogger(__name__)
+
+_MAX_RETRIES = 3
+_RETRY_BASE_DELAY = 2.0
+_DEDUP_TTL_SECONDS = 86400
+
+
+def _dedup_key(event_id: str) -> str:
+    return f"bot_event:{event_id}"
+
+
+async def _claim_event(event_id: str) -> bool:
+    claimed = await redis_client.get_client().set(
+        _dedup_key(event_id), "1", nx=True, ex=_DEDUP_TTL_SECONDS
+    )
+    return bool(claimed)
+
+
+async def _release_event(event_id: str) -> None:
+    await redis_client.get_client().delete(_dedup_key(event_id))
+
 
 _BINDINGS = [
     ("bot.notifications.order.placed", EventType.ORDER_PLACED.value, handle_order_placed),
@@ -29,17 +50,33 @@ async def _process(
     exchange: aio_pika.Exchange,
     routing_key: str,
 ) -> None:
+    event_id: str | None = None
     try:
         event = json.loads(message.body)
+        raw_event_id = event.get("event_id")
+        event_id = str(raw_event_id) if raw_event_id else None
+        if event_id and not await _claim_event(event_id):
+            logger.info("Skipping duplicate event_id=%s", event_id)
+            await message.ack()
+            return
         await handler(event, bot)
         await message.ack()
     except Exception:
         logger.exception("Failed to process notification message")
+        if event_id:
+            await _release_event(event_id)
         headers = message.headers or {}
         retry_count = headers.get("x-retry-count", 0)
 
-        if retry_count < 3:
-            logger.info("Requeueing message (attempt %d/3)", retry_count + 1)
+        if retry_count < _MAX_RETRIES:
+            backoff = _RETRY_BASE_DELAY * (2**retry_count)
+            logger.info(
+                "Requeueing message (attempt %d/%d) after %.1fs backoff",
+                retry_count + 1,
+                _MAX_RETRIES,
+                backoff,
+            )
+            await asyncio.sleep(backoff)
             new_headers = dict(headers)
             new_headers["x-retry-count"] = retry_count + 1
 
@@ -85,7 +122,11 @@ async def start_notification_consumer(bot: Bot) -> None:
             },
         )
         await queue.bind(exchange, routing_key=routing_key)
-        await queue.consume(functools.partial(_process, handler=handler, bot=bot, exchange=exchange, routing_key=routing_key))
+        await queue.consume(
+            functools.partial(
+                _process, handler=handler, bot=bot, exchange=exchange, routing_key=routing_key
+            )
+        )
         logger.info("Bot subscribed: queue=%s routing_key=%s", queue_name, routing_key)
 
     logger.info("Notification consumer started")

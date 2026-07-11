@@ -1,10 +1,11 @@
 exclude: '(^|.*/)(package(-lock)?\.json|__pycache__|\.mypy_cache|\.venv|\.vite)/'
 
 repos:
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
+  - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.4
     hooks:
-      - id: ruff
+      - id: ruff-check
+        name: ruff (backend + telegram-bot)
         args:
           - --fix
           - --exit-non-zero-on-fix
@@ -15,6 +16,7 @@ repos:
     rev: 25.9.0
     hooks:
       - id: black
+        name: black (backend + telegram-bot)
         args:
           - "--config"
           - "src/backend/pyproject.toml"
@@ -37,68 +39,73 @@ repos:
 
   - repo: local
     hooks:
+      - id: eslint-shared
+        name: eslint (shared)
+        entry: bash -c 'cd src/shared && ./node_modules/.bin/eslint .'
+        language: system
+        pass_filenames: false
+        files: ^src/shared/.*\.(ts|tsx|js|jsx)$
+        exclude: ^src/shared/(eslint|vite|vitest)\.config\.(js|ts)$
       - id: eslint-frontend
         name: eslint (frontend)
-        entry: eslint
-        args:
-          - "--config"
-          - "src/frontend/eslint.config.js"
-        language: node
-        language_version: "22.17.0"
-        files: ^src/frontend/.*\.(js|jsx)$
-        additional_dependencies:
-          - "eslint@9.39.1"
-          - "@eslint/js@9.39.4"
-          - "eslint-plugin-react@7.37.5"
-          - "eslint-plugin-react-hooks@5.2.0"
-          - "eslint-plugin-react-refresh@0.4.24"
-          - "globals@16.5.0"
-          - "eslint-config-prettier@10.1.8"
+        entry: bash -c 'cd src/frontend && ./node_modules/.bin/eslint .'
+        language: system
+        pass_filenames: false
+        files: ^src/frontend/.*\.(ts|tsx|js|jsx)$
+        exclude: ^src/frontend/(eslint|vite|vitest)\.config\.(js|ts)$
       - id: eslint-miniapp
         name: eslint (telegram-miniapp)
-        entry: eslint
-        args:
-          - "--config"
-          - "src/telegram-miniapp/eslint.config.js"
-        language: node
-        language_version: "22.17.0"
-        files: ^src/telegram-miniapp/.*\.(js|jsx)$
-        additional_dependencies:
-          - "eslint@9.39.1"
-          - "@eslint/js@9.39.4"
-          - "eslint-plugin-react@7.37.5"
-          - "eslint-plugin-react-hooks@5.2.0"
-          - "globals@16.5.0"
-          - "eslint-config-prettier@10.1.8"
+        entry: bash -c 'cd src/telegram-miniapp && ./node_modules/.bin/eslint .'
+        language: system
+        pass_filenames: false
+        files: ^src/telegram-miniapp/.*\.(ts|tsx|js|jsx)$
+        exclude: ^src/telegram-miniapp/(eslint|vite|vitest)\.config\.(js|ts)$
+      - id: typecheck-shared
+        name: typecheck (shared)
+        entry: bash -c 'cd src/shared && ./node_modules/.bin/tsc --noEmit'
+        language: system
+        pass_filenames: false
+        files: ^src/shared/.*\.(ts|tsx)$
+      - id: typecheck-frontend
+        name: typecheck (frontend)
+        entry: bash -c 'cd src/frontend && ./node_modules/.bin/tsc --noEmit'
+        language: system
+        pass_filenames: false
+        files: ^src/frontend/.*\.(ts|tsx)$
+      - id: typecheck-miniapp
+        name: typecheck (telegram-miniapp)
+        entry: bash -c 'cd src/telegram-miniapp && ./node_modules/.bin/tsc --noEmit'
+        language: system
+        pass_filenames: false
+        files: ^src/telegram-miniapp/.*\.(ts|tsx)$
       - id: prettier-frontend
         name: prettier (frontend)
-        entry: npm
-        args:
-          - "--prefix"
-          - "src/frontend"
-          - "exec"
-          - "prettier"
-          - "--"
-          - "--write"
+        entry: bash -c './src/frontend/node_modules/.bin/prettier --write "$@"' --
         language: system
-        files: "^src/frontend/.*\\.(js|jsx|css|html)$"
-        exclude: "^src/frontend/coverage/"
+        files: ^src/frontend/.*\.(js|jsx|css|html)$
+        exclude: ^src/frontend/coverage/
       - id: prettier-miniapp
         name: prettier (telegram-miniapp)
-        entry: npm
-        args:
-          - "--prefix"
-          - "src/telegram-miniapp"
-          - "exec"
-          - "prettier"
-          - "--"
-          - "--write"
+        entry: bash -c './src/telegram-miniapp/node_modules/.bin/prettier --write "$@"' --
         language: system
-        files: "^src/telegram-miniapp/.*\\.(js|jsx|css|html)$"
-        exclude: "^src/telegram-miniapp/coverage/"
+        files: ^src/telegram-miniapp/.*\.(js|jsx|css|html)$
+        exclude: ^src/telegram-miniapp/coverage/
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
+      - id: check-yaml
+        args:
+          - --unsafe
+      - id: check-toml
+      - id: check-json
+        exclude: ^(.*/tsconfig.*\.json|.*/\.vscode/.*\.json)$
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-added-large-files
+        args:
+          - --maxkb=1024
+      - id: detect-private-key
+        exclude: ^src/backend/certs/

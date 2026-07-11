@@ -83,11 +83,11 @@ const RestaurantPage = () => {
 
   const restaurantView = restaurant as Restaurant;
 
-  const { addToCart, cartCount, cartTotal } = useOrderStore(
+  const { addToCart, count, total } = useOrderStore(
     useShallow((s) => ({
       addToCart: s.addToCart,
-      cartCount: s.cartCount,
-      cartTotal: s.cartTotal,
+      count: s.cartCount(),
+      total: s.cartTotal(),
     })),
   );
   const { favoriteIds, toggle } = useFavoriteStore(
@@ -100,8 +100,6 @@ const RestaurantPage = () => {
   const requestConfirm = useModalStore((s) => s.requestConfirm);
 
   const isFav = favoriteIds.includes(restaurantUUID || id);
-  const count = cartCount ? cartCount() : 0;
-  const total = cartTotal ? cartTotal() : 0;
 
   const myReview =
     reviewsList.find((r) => r.user_id === currentUser?.id) ?? null;

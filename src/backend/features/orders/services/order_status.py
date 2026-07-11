@@ -17,11 +17,12 @@ from features.orders.exceptions import (
 from features.orders.models import Order
 from features.orders.schemas.order import OrderCancelRequest, OrderResponse, OrderStatusUpdate
 from features.orders.services.order_utils import (
-    _CANCELLABLE_STATUSES,
-    _TERMINAL_STATUSES,
-    _safe_publish,
-    _validate_transition,
+    CANCELLABLE_STATUSES,
+    TERMINAL_STATUSES,
+    safe_publish,
+    validate_transition,
 )
+from features.promos import crud as promo_crud
 from features.users.models import User
 from shared.enums.order_status import OrderStatus
 from shared.permissions import CUSTOMER_PERMISSIONS, serialize_permissions
@@ -34,7 +35,7 @@ async def change_order_status(
     actor: User,
 ) -> OrderResponse:
     old_status = OrderStatus(order.status)
-    _validate_transition(old_status, status_data.status)
+    validate_transition(old_status, status_data.status)
     if status_data.status == OrderStatus.ACCEPTED:
         if status_data.estimated_ready_at:
             order.estimated_ready_at = status_data.estimated_ready_at
@@ -55,6 +56,8 @@ async def _finalize_order(
     actor_permissions: list[str],
 ) -> OrderResponse:
     old_status = OrderStatus(order.status)
+    if new_status == OrderStatus.CANCELLED and order.promo_id is not None:
+        await promo_crud.release_promo_usage(session, order.promo_id, order.user_id)
     updated = await order_crud.update_order_status(session, order, new_status)
     await order_crud.create_order_event(
         session,
@@ -78,8 +81,8 @@ async def _finalize_order(
         ),
     )
     await session.commit()
-    await _safe_publish(f"order_status:{order.id}", new_status.value)
-    await _safe_publish(
+    await safe_publish(f"order_status:{order.id}", new_status.value)
+    await safe_publish(
         f"restaurant_orders:{order.restaurant_id}",
         f"status_changed:{new_status.value}",
     )
@@ -99,7 +102,10 @@ async def complete_order(
     if order.status != OrderStatus.READY.value:
         raise OrderNotCompletableException()
     return await _finalize_order(
-        session, order, OrderStatus.COMPLETED, user_id,
+        session,
+        order,
+        OrderStatus.COMPLETED,
+        user_id,
         serialize_permissions(CUSTOMER_PERMISSIONS),
     )
 
@@ -115,11 +121,14 @@ async def cancel_order(
         raise OrderNotFoundException()
     if order.user_id != user_id:
         raise OrderAccessDeniedException()
-    if OrderStatus(order.status) not in _CANCELLABLE_STATUSES:
+    if OrderStatus(order.status) not in CANCELLABLE_STATUSES:
         raise OrderNotCancellableException()
     order.cancellation_reason = cancel_data.reason
     return await _finalize_order(
-        session, order, OrderStatus.CANCELLED, user_id,
+        session,
+        order,
+        OrderStatus.CANCELLED,
+        user_id,
         serialize_permissions(CUSTOMER_PERMISSIONS),
     )
 
@@ -135,9 +144,11 @@ async def force_cancel_order(
         raise OrderNotFoundException()
 
     old_status = OrderStatus(order.status)
-    if old_status in _TERMINAL_STATUSES:
+    if old_status in TERMINAL_STATUSES:
         raise OrderNotCancellableException()
     order.cancellation_reason = reason
+    if order.promo_id is not None:
+        await promo_crud.release_promo_usage(session, order.promo_id, order.user_id)
     updated = await order_crud.update_order_status(session, order, OrderStatus.CANCELLED)
 
     await order_crud.create_order_event(
@@ -170,8 +181,8 @@ async def force_cancel_order(
         ),
     )
     await session.commit()
-    await _safe_publish(f"order_status:{order.id}", OrderStatus.CANCELLED.value)
-    await _safe_publish(
+    await safe_publish(f"order_status:{order.id}", OrderStatus.CANCELLED.value)
+    await safe_publish(
         f"restaurant_orders:{order.restaurant_id}",
         f"status_changed:{OrderStatus.CANCELLED.value}",
     )

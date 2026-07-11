@@ -10,7 +10,7 @@ from shared.enums.permissions import Permission
 class OrderEventResponse(BaseModel):
     id: uuid.UUID
     order_id: uuid.UUID
-    actor_id: uuid.UUID
+    actor_id: uuid.UUID | None
     actor_permissions: list[Permission]
     old_status: OrderStatus
     new_status: OrderStatus

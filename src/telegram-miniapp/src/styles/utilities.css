@@ -177,15 +177,10 @@
 }
 
 .glass {
-  background: oklch(18% 0.018 60 / 0.74);
+  background: var(--glass-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid oklch(98% 0.008 60 / 0.08);
-}
-
-[data-theme="light"] .glass {
-  background: oklch(96% 0.008 60 / 0.82);
-  border: 1px solid oklch(18% 0.018 60 / 0.08);
+  border: 1px solid var(--glass-border);
 }
 
 .review-card:active {
@@ -230,7 +225,7 @@
 }
 
 .cart-badge {
-  background: oklch(98.5% 0.004 60);
+  background: var(--n-0);
   color: var(--ink-2);
   border-radius: 50%;
   width: 22px;

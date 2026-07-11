@@ -75,10 +75,10 @@ describe('RegisterPage', () => {
           name: 'Test',
           phone_number: '+79991234567',
           password: 'password123',
-          email: null,
         })
       );
       expect(registerMock.mock.calls[0][0]).not.toHaveProperty('user_role');
+      expect(registerMock.mock.calls[0][0]).not.toHaveProperty('email');
     });
   });
 
@@ -94,10 +94,10 @@ describe('RegisterPage', () => {
           name: 'Ivan',
           phone_number: expect.stringContaining('79991234567'),
           password: 'pw123456',
-          email: null,
         })
       );
       expect(registerMock.mock.calls[0][0]).not.toHaveProperty('user_role');
+      expect(registerMock.mock.calls[0][0]).not.toHaveProperty('email');
       expect(loginMock).toHaveBeenCalled();
       expect(mockNavigate).toHaveBeenCalledWith('/');
     });

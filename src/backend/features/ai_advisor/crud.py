@@ -134,7 +134,7 @@ async def get_reviews_summary(
     restaurant_id: uuid.UUID | None = None,
     recent_limit: int = 5,
 ) -> dict:
-    filters = [Restaurant.vendor_id == vendor_id]
+    filters = [Restaurant.vendor_id == vendor_id, Review.deleted_at.is_(None)]
     if restaurant_id is not None:
         filters.append(Review.restaurant_id == restaurant_id)
 

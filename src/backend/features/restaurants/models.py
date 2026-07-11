@@ -1,10 +1,9 @@
 import uuid
 from datetime import datetime
+from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from decimal import Decimal
-
-from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base, CreatedAtMixin, DeletedAtMixin, IdUuidPkMixin, UpdatedAtMixin
@@ -23,12 +22,20 @@ if TYPE_CHECKING:
 
 
 class Restaurant(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin, DeletedAtMixin):
+    __table_args__ = (
+        CheckConstraint(
+            "moderation_status IN ('PENDING', 'APPROVED', 'REJECTED')",
+            name="ck_restaurants_moderation_status",
+        ),
+    )
     display_id: Mapped[str | None] = mapped_column(
         String(12), unique=True, index=True, nullable=True
     )
     address: Mapped[str] = mapped_column(unique=True)
     description: Mapped[str | None] = mapped_column(String(1000), nullable=True)
-    vendor_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("vendor_profiles.id", ondelete="CASCADE"))
+    vendor_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("vendor_profiles.id", ondelete="CASCADE")
+    )
     is_hiring: Mapped[bool] = mapped_column(default=True, server_default="true")
     is_open: Mapped[bool] = mapped_column(default=True, server_default="true")
     is_ordering_paused: Mapped[bool] = mapped_column(default=False, server_default="false")

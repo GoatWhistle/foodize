@@ -2,8 +2,8 @@ import pytest
 
 from features.menu.crud import create_menu_item
 from features.menu.schemas import MenuItemCreate
-from features.orders.schemas.order import OrderCreate, OrderStatusUpdate
 from features.orders.crud.order import get_order_by_id
+from features.orders.schemas.order import OrderCreate, OrderStatusUpdate
 from features.orders.schemas.order_item import OrderItemCreate
 from features.orders.services.order import change_order_status, place_order
 from features.restaurants.crud import create_restaurant

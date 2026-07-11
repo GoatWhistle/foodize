@@ -2,8 +2,6 @@ import asyncio
 import logging
 import signal
 
-logger = logging.getLogger(__name__)
-
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.client.session.aiohttp import AiohttpSession
@@ -16,6 +14,10 @@ from config import bot_config
 from handlers import start
 from middlewares.throttling import build_throttling_middleware
 from notifications.consumer import start_notification_consumer
+from services import backend_client, redis_client
+from utils.logging_setup import setup_logging
+
+logger = logging.getLogger(__name__)
 
 
 async def _on_error(event: ErrorEvent) -> None:
@@ -30,8 +32,13 @@ async def _health(request: web.Request) -> web.Response:
     return web.json_response({"status": "ok"})
 
 
+def _log_consumer_stopped(task: asyncio.Task[None]) -> None:
+    if not task.cancelled() and task.exception():
+        logger.error("Notification consumer stopped: %s", task.exception())
+
+
 async def main() -> None:
-    logging.basicConfig(level=logging.INFO)
+    setup_logging()
 
     session = AiohttpSession(proxy=bot_config.proxy_url) if bot_config.proxy_url else None
     bot = Bot(
@@ -39,9 +46,11 @@ async def main() -> None:
         session=session,
         default=DefaultBotProperties(parse_mode=ParseMode.HTML),
     )
+    backend_client.init_client()
+    redis = redis_client.init_client()
     dp = Dispatcher()
     dp.errors.register(_on_error)
-    dp.update.outer_middleware(build_throttling_middleware())
+    dp.update.outer_middleware(build_throttling_middleware(redis))
     dp.include_router(start.router)
 
     if bot_config.mode == "webhook":
@@ -74,9 +83,7 @@ async def main() -> None:
         await site.start()
 
         consumer_task = asyncio.create_task(start_notification_consumer(bot))
-        consumer_task.add_done_callback(
-            lambda t: logger.error("Notification consumer stopped: %s", t.exception()) if not t.cancelled() and t.exception() else None
-        )
+        consumer_task.add_done_callback(_log_consumer_stopped)
 
         stop_event = asyncio.Event()
         loop = asyncio.get_running_loop()
@@ -90,13 +97,7 @@ async def main() -> None:
             await stop_event.wait()
         finally:
             logger.info("Shutting down telegram bot (webhook mode)")
-            consumer_task.cancel()
-            try:
-                await consumer_task
-            except asyncio.CancelledError:
-                pass
-            await runner.cleanup()
-            await bot.session.close()
+            await _shutdown(consumer_task, runner=runner, bot=bot)
     else:
         health_app = web.Application()
         health_app.router.add_get("/health", _health)
@@ -106,11 +107,30 @@ async def main() -> None:
         await health_site.start()
 
         consumer_task = asyncio.create_task(start_notification_consumer(bot))
-        consumer_task.add_done_callback(
-            lambda t: logger.error("Notification consumer stopped: %s", t.exception()) if not t.cancelled() and t.exception() else None
-        )
+        consumer_task.add_done_callback(_log_consumer_stopped)
         await bot.delete_webhook(drop_pending_updates=False)
-        await dp.start_polling(bot)
+        try:
+            await dp.start_polling(bot)
+        finally:
+            logger.info("Shutting down telegram bot (polling mode)")
+            await _shutdown(consumer_task, runner=health_runner, bot=bot)
+
+
+async def _shutdown(
+    consumer_task: asyncio.Task[None],
+    *,
+    runner: web.AppRunner,
+    bot: Bot,
+) -> None:
+    consumer_task.cancel()
+    try:
+        await consumer_task
+    except asyncio.CancelledError:
+        pass
+    await runner.cleanup()
+    await backend_client.close_client()
+    await redis_client.close_client()
+    await bot.session.close()
 
 
 if __name__ == "__main__":

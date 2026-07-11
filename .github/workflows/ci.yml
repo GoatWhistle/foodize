@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   backend-ci:
     runs-on: ubuntu-latest
@@ -46,14 +53,16 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
 
-      - name: Run Ruff check
-        run: uv run ruff check .
-
       - name: Run Mypy
         run: uv run mypy .
 
       - name: Run Tests
         run: uv run pytest --cov=. --cov-report=xml
+
+      - name: Run DB tests against Postgres
+        env:
+          TEST_DATABASE_URL: postgresql+asyncpg://foodize_user:test_password@localhost:5432/foodize_test
+        run: uv run pytest tests/db -q
 
       - name: Run Alembic check
         run: |
@@ -62,6 +71,51 @@ jobs:
 
       - name: Run pip-audit (dependency vulnerability scan)
         run: uvx pip-audit --strict -r <(uv export --frozen --no-hashes --no-emit-project)
+
+  pre-commit-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          version: "latest"
+
+      - name: Set up Python
+        working-directory: src/backend
+        run: uv python install 3.13
+
+      - name: Install backend dependencies
+        working-directory: src/backend
+        run: uv sync --frozen
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            src/shared/package-lock.json
+            src/frontend/package-lock.json
+            src/telegram-miniapp/package-lock.json
+
+      - name: Install shared dependencies
+        working-directory: src/shared
+        run: npm ci
+
+      - name: Install frontend dependencies
+        working-directory: src/frontend
+        run: npm ci
+
+      - name: Install miniapp dependencies
+        working-directory: src/telegram-miniapp
+        run: npm ci
+
+      - name: Run all pre-commit hooks
+        working-directory: src/backend
+        run: uv run pre-commit run --all-files --show-diff-on-failure
 
   frontend-ci:
     runs-on: ubuntu-latest
@@ -81,17 +135,37 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Linter
-        run: npm run lint
-
-      - name: Run Tests
-        run: npm run test -- --run
-
       - name: Run Tests with Coverage
         run: npm run test:coverage -- --run
 
       - name: Run npm audit (dependency vulnerability scan)
         run: npm audit --audit-level=high
+
+  telegram-bot-ci:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/telegram-bot
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Run Tests
+        run: uv run pytest
+
+      - name: Run pip-audit (dependency vulnerability scan)
+        run: uvx pip-audit --strict -r <(uv export --frozen --no-hashes --no-emit-project)
 
   telegram-miniapp-ci:
     runs-on: ubuntu-latest
@@ -111,8 +185,29 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run Linter
-        run: npm run lint
+      - name: Run Tests with Coverage
+        run: npm run test:coverage -- --run
+
+      - name: Run npm audit (dependency vulnerability scan)
+        run: npm audit --audit-level=high
+
+  shared-ci:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/shared
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: src/shared/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Run npm audit (dependency vulnerability scan)
         run: npm audit --audit-level=high
@@ -166,3 +261,51 @@ jobs:
 
       - name: Check docker-compose.yaml vs docker-compose.prod.yaml consistency
         run: python3 tools/check_compose_consistency.py
+
+  docker-security:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Hadolint backend Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: src/backend/Dockerfile
+
+      - name: Hadolint frontend Dockerfile.prod
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: src/frontend/Dockerfile.prod
+
+      - name: Hadolint miniapp Dockerfile.prod
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: src/telegram-miniapp/Dockerfile.prod
+
+      - name: Build backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: src/backend
+          file: src/backend/Dockerfile
+          target: backend
+          load: true
+          push: false
+          tags: foodize-backend:ci
+
+      - name: Trivy scan backend image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: foodize-backend:ci
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '0'
+          format: table
+
+      - name: Gitleaks secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

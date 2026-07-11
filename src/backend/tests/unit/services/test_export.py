@@ -195,7 +195,7 @@ async def test_export_finance_pdf():
             new_callable=AsyncMock,
             return_value=mock_analytics,
         ),
-        patch("features.admin.export._PDF", DummyPDF),
+        patch("features.admin.export.pdf_reports._PDF", DummyPDF),
     ):
         res = await export_finance_pdf(mock_session, date.today(), date.today())
         assert res == b"mock_pdf_bytes"
@@ -216,7 +216,7 @@ async def test_export_analytics_pdf():
             new_callable=AsyncMock,
             return_value=mock_analytics,
         ),
-        patch("features.admin.export._PDF", DummyPDF),
+        patch("features.admin.export.pdf_reports._PDF", DummyPDF),
     ):
         res = await export_analytics_pdf(mock_session)
         assert res == b"mock_pdf_bytes"
@@ -240,7 +240,7 @@ async def test_export_overview_pdf():
             new_callable=AsyncMock,
             return_value=mock_stats,
         ),
-        patch("features.admin.export._PDF", DummyPDF),
+        patch("features.admin.export.pdf_reports._PDF", DummyPDF),
     ):
         res = await export_overview_pdf(mock_session)
         assert res == b"mock_pdf_bytes"

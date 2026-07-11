@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { useAuthStore } from "../../store/useAuthStore";
 import { authService } from "../../services/authService";
-import { TELEGRAM_INIT_DATA_STORAGE_KEY } from "../../telegram/sdk";
 import type { AuthUser } from "@shared/store/createAuthStore";
 
 vi.mock("../../services/authService", () => ({
@@ -37,9 +36,7 @@ describe("useAuthStore", () => {
 
   it("should set authenticated state", () => {
     const mockUser = { id: 1, name: "Test" } as unknown as AuthUser;
-    const setAuthenticated = useAuthStore.getState().setAuthenticated as (
-      user: AuthUser,
-    ) => void;
+    const setAuthenticated = useAuthStore.getState().setAuthenticated;
     setAuthenticated(mockUser);
     const state = useAuthStore.getState();
     expect(state.user).toEqual(mockUser);
@@ -55,13 +52,13 @@ describe("useAuthStore", () => {
       data: { data: mockUser },
     });
 
-    await useAuthStore.getState().login({ username: "user", password: "pw" });
+    await useAuthStore.getState().login({ phone_number: "user", password: "pw" });
 
     const state = useAuthStore.getState();
     expect(state.user).toEqual(mockUser);
     expect(state.isAuthenticated).toBe(true);
     expect(authServiceMock.login).toHaveBeenCalledWith({
-      username: "user",
+      phone_number: "user",
       password: "pw",
     });
     expect(localStorage.getItem("foodize_tg_logged_out")).toBeNull();
@@ -93,8 +90,6 @@ describe("useAuthStore", () => {
   it("should logout successfully", async () => {
     const mockUser = { id: 1, phone_number: "+123456" } as unknown as AuthUser;
     useAuthStore.setState({ user: mockUser, isAuthenticated: true });
-    sessionStorage.setItem("access_token", "access");
-    sessionStorage.setItem(TELEGRAM_INIT_DATA_STORAGE_KEY, "init_data");
     authServiceMock.logout.mockResolvedValueOnce({});
 
     await useAuthStore.getState().logout();
@@ -103,9 +98,6 @@ describe("useAuthStore", () => {
     expect(state.user).toBeNull();
     expect(state.isAuthenticated).toBe(false);
     expect(localStorage.getItem("foodize_tg_logged_out")).toBe("1");
-    expect(sessionStorage.getItem(TELEGRAM_INIT_DATA_STORAGE_KEY)).toBe(
-      "init_data",
-    );
-    expect(sessionStorage.getItem("access_token")).toBeNull();
+    expect(authServiceMock.logout).toHaveBeenCalled();
   });
 });

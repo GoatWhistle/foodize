@@ -66,7 +66,6 @@ const RegisterPage = () => {
       await register({
         name,
         phone_number: cleanPhone,
-        email: email || null,
         password,
       });
       await login({ phone_number: cleanPhone, password });

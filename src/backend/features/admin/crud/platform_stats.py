@@ -45,26 +45,32 @@ def _growth_points(counts: dict[date, int], start_date: date, days: int) -> list
 
 
 async def get_platform_stats(session: AsyncSession) -> PlatformStats:
-    users_result = await session.execute(select(User.permissions))
-    users_by_permission: dict[str, int] = {}
+    is_admin = json_array_contains_string(User.permissions, Permission.ADMIN_ACCESS.value)
+    is_vendor = json_array_contains_string(User.permissions, Permission.RESTAURANTS_CREATE.value)
+    is_staff = json_array_contains_string(User.permissions, Permission.ORDERS_MANAGE_STATUS.value)
+    roles_row = await session.execute(
+        select(
+            func.count().filter(is_admin),
+            func.count().filter(~is_admin & is_vendor),
+            func.count().filter(~is_admin & ~is_vendor & is_staff),
+            func.count().filter(~is_admin & ~is_vendor & ~is_staff),
+        )
+    )
+    admins, vendors, staff, customers = roles_row.one()
     users_by_role: dict[str, int] = {
-        UserRole.CUSTOMER.value: 0,
-        UserRole.VENDOR.value: 0,
-        UserRole.STAFF.value: 0,
-        UserRole.ADMIN.value: 0,
+        UserRole.CUSTOMER.value: customers,
+        UserRole.VENDOR.value: vendors,
+        UserRole.STAFF.value: staff,
+        UserRole.ADMIN.value: admins,
     }
-    for permissions in users_result.scalars().all():
-        perm_set = set(serialize_permissions(permissions))
-        for permission in perm_set:
+
+    permission_counts = await session.execute(
+        select(User.permissions).where(User.permissions.isnot(None))
+    )
+    users_by_permission: dict[str, int] = {}
+    for permissions in permission_counts.scalars().all():
+        for permission in set(serialize_permissions(permissions)):
             users_by_permission[permission] = users_by_permission.get(permission, 0) + 1
-        if Permission.ADMIN_ACCESS.value in perm_set:
-            users_by_role[UserRole.ADMIN.value] += 1
-        elif Permission.RESTAURANTS_CREATE.value in perm_set:
-            users_by_role[UserRole.VENDOR.value] += 1
-        elif Permission.ORDERS_MANAGE_STATUS.value in perm_set:
-            users_by_role[UserRole.STAFF.value] += 1
-        else:
-            users_by_role[UserRole.CUSTOMER.value] += 1
 
     orders_by_status_rows = await session.execute(
         select(Order.status, func.count()).group_by(Order.status)

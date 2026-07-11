@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 from enum import Enum
 
 from infra.llm.base import LLMClient
@@ -13,7 +14,7 @@ class AgentRole(str, Enum):
     ADVISOR = "advisor"
 
 
-_clients: dict[tuple[str, str], LLMClient] = {}
+_clients: dict[tuple[str, str, str], LLMClient] = {}
 _clients_lock: asyncio.Lock | None = None
 
 
@@ -22,6 +23,27 @@ def _get_lock() -> asyncio.Lock:
     if _clients_lock is None:
         _clients_lock = asyncio.Lock()
     return _clients_lock
+
+
+def _config_fingerprint(provider: LLMProvider, cfg: LLMConfig) -> str:
+    api_key = {
+        LLMProvider.ANTHROPIC: cfg.anthropic_api_key,
+        LLMProvider.OPENAI: cfg.openai_api_key,
+        LLMProvider.OLLAMA: "",
+        LLMProvider.GIGACHAT: cfg.gigachat_api_key,
+    }.get(provider, "")
+    base_url = {
+        LLMProvider.OPENAI: cfg.openai_base_url or "",
+        LLMProvider.OLLAMA: cfg.ollama_base_url,
+        LLMProvider.GIGACHAT: cfg.gigachat_base_url,
+    }.get(provider, "")
+    parts = (
+        str(cfg.max_output_tokens),
+        str(cfg.request_timeout_seconds),
+        api_key,
+        base_url,
+    )
+    return hashlib.sha256("|".join(parts).encode()).hexdigest()[:16]
 
 
 def _resolve_model(role: AgentRole, provider: LLMProvider, cfg: LLMConfig) -> str:
@@ -52,6 +74,8 @@ def _build(provider: LLMProvider, model: str, cfg: LLMConfig) -> LLMClient:
     from infra.llm.openai_compatible import OpenAICompatibleClient
 
     if provider == LLMProvider.OPENAI:
+        if not cfg.openai_api_key:
+            raise ValueError("LLM__OPENAI_API_KEY is not set")
         return OpenAICompatibleClient(
             api_key=cfg.openai_api_key,
             model=model,
@@ -68,6 +92,8 @@ def _build(provider: LLMProvider, model: str, cfg: LLMConfig) -> LLMClient:
             timeout=cfg.request_timeout_seconds,
         )
     if provider == LLMProvider.GIGACHAT:
+        if not cfg.gigachat_api_key:
+            raise ValueError("LLM__GIGACHAT_API_KEY is not set")
         return OpenAICompatibleClient(
             api_key=cfg.gigachat_api_key,
             model=model,
@@ -82,10 +108,19 @@ async def get_llm_client(role: AgentRole, *, provider: LLMProvider | None = None
     cfg = settings.llm
     provider = provider or cfg.provider
     model = _resolve_model(role, provider, cfg)
-    key = (provider.value, model)
+    key = (provider.value, model, _config_fingerprint(provider, cfg))
     if key in _clients:
         return _clients[key]
     async with _get_lock():
         if key not in _clients:
+            stale = [
+                existing_key
+                for existing_key in _clients
+                if existing_key[0] == key[0]
+                and existing_key[1] == key[1]
+                and existing_key[2] != key[2]
+            ]
+            for existing_key in stale:
+                await _clients.pop(existing_key).aclose()
             _clients[key] = _build(provider, model, cfg)
         return _clients[key]

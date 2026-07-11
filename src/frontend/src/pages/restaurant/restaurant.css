@@ -31,7 +31,11 @@
   left: 0;
   right: 0;
   height: 74%;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.72) 0%, transparent 100%);
+  background: linear-gradient(
+    to top,
+    var(--overlay-scrim-strong) 0%,
+    transparent 100%
+  );
 }
 
 .restaurant-hero-info {
@@ -122,7 +126,7 @@
 .rating-star--selected {
   color: var(--amber);
   transform: scale(1.14);
-  filter: drop-shadow(0 3px 10px rgba(245, 158, 11, 0.24));
+  filter: drop-shadow(0 3px 10px var(--star-glow));
   animation: star-select 360ms var(--ease-out);
 }
 

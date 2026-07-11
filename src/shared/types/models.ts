@@ -52,6 +52,8 @@ export type StaffRequest = Schemas["StaffRequestResponse"];
 export type StaffRequestStatus = Schemas["StaffRequestStatus"];
 
 export type UserRead = Schemas["UserRead"];
+export type UserLogin = Schemas["UserLogin"];
+export type UserCreate = Schemas["UserCreate"];
 
 export type AnalyticsPoint = Schemas["AnalyticsPoint"];
 export type FinanceSeriesPoint = Schemas["FinanceSeriesPoint"];

@@ -58,7 +58,7 @@ const TelegramUsernameForm = ({
               left: 14,
               top: '50%',
               transform: 'translateY(-50%)',
-              color: showError ? '#ef4444' : 'var(--text-secondary)',
+              color: showError ? 'var(--color-error)' : 'var(--text-2)',
               fontWeight: 500,
               pointerEvents: 'none',
               userSelect: 'none',
@@ -80,18 +80,18 @@ const TelegramUsernameForm = ({
             autoFocus
             style={{
               paddingLeft: 28,
-              borderColor: showError ? '#ef4444' : undefined,
+              borderColor: showError ? 'var(--color-error)' : undefined,
               transition: 'border-color 0.15s',
             }}
           />
         </div>
 
         {showError ? (
-          <div style={{ marginTop: 6, fontSize: '0.82rem', color: '#ef4444' }}>
+          <div style={{ marginTop: 6, fontSize: '0.82rem', color: 'var(--color-error)' }}>
             {validationError}
           </div>
         ) : telegramUsername && !isValid ? (
-          <div style={{ marginTop: 6, fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+          <div style={{ marginTop: 6, fontSize: '0.82rem', color: 'var(--text-2)' }}>
             a–z, 0–9 и _ · минимум 5 символов
           </div>
         ) : null}

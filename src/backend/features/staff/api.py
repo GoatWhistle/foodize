@@ -5,8 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
 from features.auth.service import get_current_user
-from features.menu import service as menu_service
 from features.menu.schemas import AvailabilityUpdate, MenuItemResponse
+from features.menu.services import menu_items as menu_service
 from features.staff import service
 from features.staff.crud import get_last_request_by_user, get_staff_profile_by_user_id
 from features.staff.dependencies import get_valid_staff_request

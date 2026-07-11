@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 from middlewares.throttling import ThrottlingMiddleware, _extract_user_id
 
@@ -7,8 +8,7 @@ from middlewares.throttling import ThrottlingMiddleware, _extract_user_id
 @pytest.mark.asyncio
 async def test_allows_requests_under_limit():
     redis = AsyncMock()
-    redis.incr = AsyncMock(side_effect=[1, 2, 3])
-    redis.expire = AsyncMock()
+    redis.eval = AsyncMock(side_effect=[1, 2, 3])
     middleware = ThrottlingMiddleware(redis=redis, limit=5, window_seconds=3)
 
     handler = AsyncMock(return_value="ok")
@@ -19,14 +19,15 @@ async def test_allows_requests_under_limit():
         assert result == "ok"
 
     assert handler.await_count == 3
-    redis.expire.assert_awaited_once_with("tg_throttle:42", 3)
+    first_call = redis.eval.await_args_list[0]
+    assert first_call.args[2] == "tg_throttle:42"
+    assert first_call.args[3] == 3
 
 
 @pytest.mark.asyncio
 async def test_blocks_requests_over_limit():
     redis = AsyncMock()
-    redis.incr = AsyncMock(side_effect=[1, 2, 3, 4, 5, 6])
-    redis.expire = AsyncMock()
+    redis.eval = AsyncMock(side_effect=[1, 2, 3, 4, 5, 6])
     middleware = ThrottlingMiddleware(redis=redis, limit=5, window_seconds=3)
 
     handler = AsyncMock(return_value="ok")
@@ -50,7 +51,24 @@ async def test_skips_throttling_when_no_user():
     result = await middleware(handler, event, {})
 
     assert result == "ok"
-    redis.incr.assert_not_called()
+    redis.eval.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_fails_open_when_redis_unavailable():
+    from redis.exceptions import RedisError
+
+    redis = AsyncMock()
+    redis.eval = AsyncMock(side_effect=RedisError("down"))
+    middleware = ThrottlingMiddleware(redis=redis, limit=1, window_seconds=3)
+
+    handler = AsyncMock(return_value="ok")
+    event = MagicMock(from_user=MagicMock(id=42))
+
+    result = await middleware(handler, event, {})
+
+    assert result == "ok"
+    assert handler.await_count == 1
 
 
 @pytest.mark.asyncio
@@ -58,12 +76,11 @@ async def test_tracks_distinct_users_independently():
     redis = AsyncMock()
     call_counts: dict[str, int] = {}
 
-    async def _incr(key):
+    async def _eval(script, numkeys, key, window):
         call_counts[key] = call_counts.get(key, 0) + 1
         return call_counts[key]
 
-    redis.incr = AsyncMock(side_effect=_incr)
-    redis.expire = AsyncMock()
+    redis.eval = AsyncMock(side_effect=_eval)
     middleware = ThrottlingMiddleware(redis=redis, limit=1, window_seconds=3)
 
     handler = AsyncMock(return_value="ok")

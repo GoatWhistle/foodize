@@ -12,7 +12,7 @@ async def get_menu_items_by_ids(
 ) -> dict[uuid.UUID, MenuItem]:
     query = (
         select(MenuItem)
-        .where(MenuItem.id.in_(ids))
+        .where(MenuItem.id.in_(ids), MenuItem.is_deleted.is_(False))
         .options(selectinload(MenuItem.option_groups).selectinload(MenuItemOptionGroup.options))
     )
     if for_update:

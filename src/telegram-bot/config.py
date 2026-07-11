@@ -1,4 +1,6 @@
-from pydantic import Field
+from typing import Literal
+
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -11,7 +13,7 @@ class BotConfig(BaseSettings):
     rabbitmq_url: str = Field(
         default="amqp://foodize:foodize@rabbitmq:5672/foodize", alias="RABBITMQ__URL"
     )
-    mode: str = Field(default="polling", alias="BOT_MODE")
+    mode: Literal["polling", "webhook"] = Field(default="polling", alias="BOT_MODE")
     webhook_url: str = Field(default="", alias="BOT_WEBHOOK_URL")
     webhook_secret: str = Field(default="", alias="BOT_WEBHOOK_SECRET")
     proxy_url: str = Field(default="", alias="BOT_PROXY_URL")
@@ -21,6 +23,12 @@ class BotConfig(BaseSettings):
         extra="ignore",
         populate_by_name=True,
     )
+
+    @model_validator(mode="after")
+    def _validate_webhook(self) -> "BotConfig":
+        if self.mode == "webhook" and not self.webhook_url:
+            raise ValueError("BOT_WEBHOOK_URL must be set when BOT_MODE=webhook")
+        return self
 
 
 bot_config = BotConfig()

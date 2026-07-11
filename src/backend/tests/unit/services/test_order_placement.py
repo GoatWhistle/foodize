@@ -49,8 +49,14 @@ def _menu_item(restaurant_id, available=True):
 async def test_place_order_restaurant_not_found():
     data = _make_order_data()
 
-    with patch("features.restaurants.crud.get_restaurant_by_id", new_callable=AsyncMock, return_value=None):
-        with patch("features.orders.services.order_placement._start_idempotency_record", new_callable=AsyncMock, return_value=None):
+    with patch(
+        "features.restaurants.crud.get_restaurant_by_id", new_callable=AsyncMock, return_value=None
+    ):
+        with patch(
+            "features.orders.services.order_placement.start_idempotency_record",
+            new_callable=AsyncMock,
+            return_value=None,
+        ):
             with pytest.raises(RestaurantNotFoundException):
                 await place_order(AsyncMock(), data, uuid.uuid4())
 
@@ -61,8 +67,16 @@ async def test_place_order_restaurant_closed():
     data = _make_order_data(restaurant_id=restaurant.id)
 
     with (
-        patch("features.orders.services.order_placement._start_idempotency_record", new_callable=AsyncMock, return_value=None),
-        patch("features.restaurants.crud.get_restaurant_by_id", new_callable=AsyncMock, return_value=restaurant),
+        patch(
+            "features.orders.services.order_placement.start_idempotency_record",
+            new_callable=AsyncMock,
+            return_value=None,
+        ),
+        patch(
+            "features.restaurants.crud.get_restaurant_by_id",
+            new_callable=AsyncMock,
+            return_value=restaurant,
+        ),
     ):
         with pytest.raises(RestaurantClosedException):
             await place_order(AsyncMock(), data, uuid.uuid4())
@@ -75,8 +89,16 @@ async def test_place_order_ordering_paused():
     data = _make_order_data(restaurant_id=restaurant.id)
 
     with (
-        patch("features.orders.services.order_placement._start_idempotency_record", new_callable=AsyncMock, return_value=None),
-        patch("features.restaurants.crud.get_restaurant_by_id", new_callable=AsyncMock, return_value=restaurant),
+        patch(
+            "features.orders.services.order_placement.start_idempotency_record",
+            new_callable=AsyncMock,
+            return_value=None,
+        ),
+        patch(
+            "features.restaurants.crud.get_restaurant_by_id",
+            new_callable=AsyncMock,
+            return_value=restaurant,
+        ),
     ):
         with pytest.raises(RestaurantClosedException):
             await place_order(AsyncMock(), data, uuid.uuid4())
@@ -88,10 +110,26 @@ async def test_place_order_menu_items_not_found():
     data = _make_order_data(restaurant_id=restaurant.id)
 
     with (
-        patch("features.orders.services.order_placement._start_idempotency_record", new_callable=AsyncMock, return_value=None),
-        patch("features.restaurants.crud.get_restaurant_by_id", new_callable=AsyncMock, return_value=restaurant),
-        patch("features.orders.services.order_placement.get_working_hours", new_callable=AsyncMock, return_value=[]),
-        patch("features.orders.crud.order_item.get_menu_items_by_ids", new_callable=AsyncMock, return_value={}),
+        patch(
+            "features.orders.services.order_placement.start_idempotency_record",
+            new_callable=AsyncMock,
+            return_value=None,
+        ),
+        patch(
+            "features.restaurants.crud.get_restaurant_by_id",
+            new_callable=AsyncMock,
+            return_value=restaurant,
+        ),
+        patch(
+            "features.orders.services.order_placement.get_working_hours",
+            new_callable=AsyncMock,
+            return_value=[],
+        ),
+        patch(
+            "features.orders.crud.order_item.get_menu_items_by_ids",
+            new_callable=AsyncMock,
+            return_value={},
+        ),
     ):
         with pytest.raises(MenuItemsNotFoundException):
             await place_order(AsyncMock(), data, uuid.uuid4())
@@ -107,10 +145,26 @@ async def test_place_order_menu_item_restaurant_mismatch():
     mi.id = item_id
 
     with (
-        patch("features.orders.services.order_placement._start_idempotency_record", new_callable=AsyncMock, return_value=None),
-        patch("features.restaurants.crud.get_restaurant_by_id", new_callable=AsyncMock, return_value=restaurant),
-        patch("features.orders.services.order_placement.get_working_hours", new_callable=AsyncMock, return_value=[]),
-        patch("features.orders.crud.order_item.get_menu_items_by_ids", new_callable=AsyncMock, return_value={item_id: mi}),
+        patch(
+            "features.orders.services.order_placement.start_idempotency_record",
+            new_callable=AsyncMock,
+            return_value=None,
+        ),
+        patch(
+            "features.restaurants.crud.get_restaurant_by_id",
+            new_callable=AsyncMock,
+            return_value=restaurant,
+        ),
+        patch(
+            "features.orders.services.order_placement.get_working_hours",
+            new_callable=AsyncMock,
+            return_value=[],
+        ),
+        patch(
+            "features.orders.crud.order_item.get_menu_items_by_ids",
+            new_callable=AsyncMock,
+            return_value={item_id: mi},
+        ),
     ):
         with pytest.raises(MenuItemRestaurantMismatchException):
             await place_order(AsyncMock(), data, uuid.uuid4())
@@ -126,12 +180,59 @@ async def test_place_order_menu_item_unavailable():
     mi.id = item_id
 
     with (
-        patch("features.orders.services.order_placement._start_idempotency_record", new_callable=AsyncMock, return_value=None),
-        patch("features.restaurants.crud.get_restaurant_by_id", new_callable=AsyncMock, return_value=restaurant),
-        patch("features.orders.services.order_placement.get_working_hours", new_callable=AsyncMock, return_value=[]),
-        patch("features.orders.crud.order_item.get_menu_items_by_ids", new_callable=AsyncMock, return_value={item_id: mi}),
+        patch(
+            "features.orders.services.order_placement.start_idempotency_record",
+            new_callable=AsyncMock,
+            return_value=None,
+        ),
+        patch(
+            "features.restaurants.crud.get_restaurant_by_id",
+            new_callable=AsyncMock,
+            return_value=restaurant,
+        ),
+        patch(
+            "features.orders.services.order_placement.get_working_hours",
+            new_callable=AsyncMock,
+            return_value=[],
+        ),
+        patch(
+            "features.orders.crud.order_item.get_menu_items_by_ids",
+            new_callable=AsyncMock,
+            return_value={item_id: mi},
+        ),
     ):
         with pytest.raises(MenuItemUnavailableException):
+            await place_order(AsyncMock(), data, uuid.uuid4())
+
+
+@pytest.mark.asyncio
+async def test_place_order_soft_deleted_menu_item_rejected():
+    restaurant = _make_restaurant()
+    data = _make_order_data(restaurant_id=restaurant.id)
+
+    with (
+        patch(
+            "features.orders.services.order_placement.start_idempotency_record",
+            new_callable=AsyncMock,
+            return_value=None,
+        ),
+        patch(
+            "features.restaurants.crud.get_restaurant_by_id",
+            new_callable=AsyncMock,
+            return_value=restaurant,
+        ),
+        patch(
+            "features.orders.services.order_placement.get_working_hours",
+            new_callable=AsyncMock,
+            return_value=[],
+        ),
+        patch(
+            "features.orders.crud.order_item.get_menu_items_by_ids",
+            new_callable=AsyncMock,
+            return_value={},
+        ),
+    ):
+        with pytest.raises(MenuItemsNotFoundException):
             await place_order(AsyncMock(), data, uuid.uuid4())
 
 
@@ -146,8 +247,14 @@ async def test_place_order_idempotency_hit():
     idempotency_record.response_json = mock_response.response_json
 
     with (
-        patch("features.orders.services.order_placement._start_idempotency_record", new_callable=AsyncMock, return_value=idempotency_record),
-        patch("features.orders.schemas.order.OrderResponse.model_validate", return_value=mock_response),
+        patch(
+            "features.orders.services.order_placement.start_idempotency_record",
+            new_callable=AsyncMock,
+            return_value=idempotency_record,
+        ),
+        patch(
+            "features.orders.schemas.order.OrderResponse.model_validate", return_value=mock_response
+        ),
     ):
         result = await place_order(AsyncMock(), data, uuid.uuid4(), idempotency_key="key123")
 
@@ -186,17 +293,51 @@ async def test_place_order_success():
     session.commit = AsyncMock()
 
     with (
-        patch("features.orders.services.order_placement._start_idempotency_record", new_callable=AsyncMock, return_value=None),
-        patch("features.restaurants.crud.get_restaurant_by_id", new_callable=AsyncMock, return_value=restaurant),
-        patch("features.orders.services.order_placement.get_working_hours", new_callable=AsyncMock, return_value=[]),
-        patch("features.orders.crud.order_item.get_menu_items_by_ids", new_callable=AsyncMock, return_value={item_id: mi}),
-        patch("features.orders.crud.order_item.get_options_by_ids", new_callable=AsyncMock, return_value={}),
-        patch("features.orders.crud.order.count_orders_by_user_id", new_callable=AsyncMock, return_value=0),
-        patch("features.orders.services.order_queries.estimate_restaurant_load", new_callable=AsyncMock, return_value=mock_load),
-        patch("features.orders.crud.order.get_order_by_id", new_callable=AsyncMock, return_value=mock_order),
+        patch(
+            "features.orders.services.order_placement.start_idempotency_record",
+            new_callable=AsyncMock,
+            return_value=None,
+        ),
+        patch(
+            "features.restaurants.crud.get_restaurant_by_id",
+            new_callable=AsyncMock,
+            return_value=restaurant,
+        ),
+        patch(
+            "features.orders.services.order_placement.get_working_hours",
+            new_callable=AsyncMock,
+            return_value=[],
+        ),
+        patch(
+            "features.orders.crud.order_item.get_menu_items_by_ids",
+            new_callable=AsyncMock,
+            return_value={item_id: mi},
+        ),
+        patch(
+            "features.orders.crud.order_item.get_options_by_ids",
+            new_callable=AsyncMock,
+            return_value={},
+        ),
+        patch(
+            "features.orders.crud.order.count_orders_by_user_id",
+            new_callable=AsyncMock,
+            return_value=0,
+        ),
+        patch(
+            "features.orders.services.order_placement.estimate_restaurant_load",
+            new_callable=AsyncMock,
+            return_value=mock_load,
+        ),
+        patch(
+            "features.orders.crud.order.get_order_by_id",
+            new_callable=AsyncMock,
+            return_value=mock_order,
+        ),
         patch("features.notifications.outbox_service.enqueue_event", new_callable=AsyncMock),
-        patch("features.orders.services.order_utils._safe_publish", new_callable=AsyncMock),
-        patch("features.orders.schemas.order.OrderResponse.model_validate", return_value=mock_response),
+        patch("features.orders.services.order_utils.safe_publish", new_callable=AsyncMock),
+        patch(
+            "features.orders.schemas.order.OrderResponse.model_validate", return_value=mock_response
+        ),
         patch("features.orders.services.order_placement.Order", return_value=mock_order),
         patch("features.orders.services.order_placement.OrderItem", return_value=MagicMock()),
     ):

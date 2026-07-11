@@ -10,6 +10,34 @@ from utils.logging_setup import get_logger
 
 logger = get_logger()
 
+_CONSTRAINT_MESSAGES: dict[str, str] = {
+    "uq_restaurants_address": "A restaurant with this address already exists.",
+    "uq_reviews_user_restaurant_active": "You have already reviewed this restaurant.",
+    "uq_promo_usages_promo_user": "This promo code has already been used.",
+    "ix_promos_code": "A promo code with this value already exists.",
+    "uq_promos_code": "A promo code with this value already exists.",
+}
+_DEFAULT_INTEGRITY_MESSAGE = "Duplicate entry: this information already exists."
+
+
+def _resolve_integrity_message(error_msg: str) -> str:
+    for constraint, message in _CONSTRAINT_MESSAGES.items():
+        if constraint in error_msg:
+            return message
+    return _DEFAULT_INTEGRITY_MESSAGE
+
+
+def _extract_constraint_name(exc: IntegrityError) -> str:
+    constraint = getattr(getattr(exc, "orig", None), "diag", None)
+    name = getattr(constraint, "constraint_name", None)
+    if name:
+        return name
+    error_msg = str(exc.orig) if getattr(exc, "orig", None) else str(exc)
+    for known in _CONSTRAINT_MESSAGES:
+        if known in error_msg:
+            return known
+    return "unknown"
+
 
 async def request_validation_error_handler(request: Request, exc: RequestValidationError):
     errors = [
@@ -65,18 +93,17 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 
 
 async def integrity_error_handler(request: Request, exc: IntegrityError):
-    error_msg = str(exc.orig) if hasattr(exc, "orig") else str(exc)
+    error_msg = str(exc.orig) if getattr(exc, "orig", None) else str(exc)
+    constraint_name = _extract_constraint_name(exc)
     request_id = getattr(request.state, "request_id", None)
     logger.warning(
         "IntegrityError",
-        error=error_msg,
+        constraint=constraint_name,
         request_id=request_id,
         path=str(request.url.path),
     )
 
-    friendly_msg = "Duplicate entry: this information already exists."
-    if "uq_restaurants_address" in error_msg:
-        friendly_msg = "A restaurant with this address already exists."
+    friendly_msg = _resolve_integrity_message(error_msg)
 
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,

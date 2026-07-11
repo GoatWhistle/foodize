@@ -15,8 +15,6 @@ class TelegramConfig(BaseConfig):
     mini_app_url: str = ""
     bot_api_secret: str = ""
     bot_username: str = "FoodizeBot"
-    # Egress proxy for api.telegram.org calls (TELEGRAM__PROXY_URL, http://user:pass@host:port).
-    # Needed when the hosting network cannot reach Telegram directly; empty = direct.
     proxy_url: str = ""
 
     @property

@@ -35,12 +35,18 @@ class Order(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
         ),
         Index("ix_orders_restaurant_created", "restaurant_id", "created_at"),
         CheckConstraint("total_price >= 0", name="total_price_non_negative"),
+        CheckConstraint(
+            "status IN ('PENDING', 'ACCEPTED', 'READY', 'COMPLETED', 'CANCELLED')",
+            name="ck_orders_status",
+        ),
     )
     display_id: Mapped[int] = mapped_column(
         Integer, Identity(always=False), unique=True, index=True
     )
-    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    restaurant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("restaurants.id", ondelete="CASCADE"))
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"))
+    restaurant_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("restaurants.id", ondelete="RESTRICT")
+    )
     status: Mapped[str] = mapped_column(
         String,
         default=OrderStatus.PENDING.value,
@@ -48,6 +54,9 @@ class Order(Base, IdUuidPkMixin, CreatedAtMixin, UpdatedAtMixin):
         nullable=False,
     )
     total_price: Mapped[int]
+    promo_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("promos.id", ondelete="SET NULL"), nullable=True
+    )
     comment: Mapped[str | None] = mapped_column(String(500), nullable=True)
     cancellation_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
     requested_pickup_at: Mapped[datetime | None] = mapped_column(

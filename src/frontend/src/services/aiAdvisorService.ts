@@ -1,7 +1,8 @@
 import api from './api';
 import { streamSseRequest } from '@shared/services/streamRequest';
+import { API_BASE_URL } from '@shared/config';
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api/v1';
+const BASE_URL = API_BASE_URL;
 
 export interface AdvisorChatMessage {
   role: string;

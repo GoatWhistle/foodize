@@ -1,0 +1,172 @@
+import uuid
+from datetime import datetime, timezone
+from unittest.mock import patch
+
+import pytest
+
+from utils.jwt_tokens import (
+    create_access_token,
+    create_refresh_token,
+    decode_jwt,
+    encode_jwt,
+    hash_password,
+    validate_password,
+)
+
+
+class TestPasswordHashing:
+    @pytest.mark.asyncio
+    async def test_hash_differs_from_plain(self):
+        plain = "supersecret123"
+        hashed = await hash_password(plain)
+        assert hashed != plain
+
+    @pytest.mark.asyncio
+    async def test_correct_password_validates(self):
+        plain = "supersecret123"
+        hashed = await hash_password(plain)
+        assert await validate_password(plain, hashed) is True
+
+    @pytest.mark.asyncio
+    async def test_wrong_password_rejected(self):
+        hashed = await hash_password("supersecret123")
+        assert await validate_password("wrongpassword1", hashed) is False
+
+    @pytest.mark.asyncio
+    async def test_empty_password_hashed(self):
+        hashed = await hash_password("")
+        assert isinstance(hashed, str)
+        assert await validate_password("", hashed) is True
+
+    @pytest.mark.asyncio
+    async def test_two_hashes_of_same_password_differ(self):
+        plain = "samepassword1"
+        h1 = await hash_password(plain)
+        h2 = await hash_password(plain)
+        assert h1 != h2
+
+
+class TestEncodeDecodeJwt:
+    def test_encode_calls_jwt_encode(self):
+        payload = {"sub": "abc", "exp": 9999999999}
+        with patch("utils.jwt_tokens.jwt.encode", return_value="tok") as mock_enc:
+            with patch("utils.jwt_tokens.settings.auth.private_key_path") as mock_path:
+                mock_path.read_text.return_value = "private-key"
+                result = encode_jwt(payload)
+        assert result == "tok"
+        mock_enc.assert_called_once()
+
+    def test_decode_calls_jwt_decode(self):
+        expected = {"sub": str(uuid.uuid4())}
+        with patch("utils.jwt_tokens.jwt.decode", return_value=expected) as mock_dec:
+            with patch("utils.jwt_tokens.settings.auth.public_key_path") as mock_path:
+                mock_path.read_text.return_value = "public-key"
+                result = decode_jwt("some.jwt.token")
+        assert result == expected
+        mock_dec.assert_called_once()
+
+    def test_decode_accepts_explicit_public_key(self):
+        expected = {"sub": "user-123"}
+        with patch("utils.jwt_tokens.jwt.decode", return_value=expected):
+            result = decode_jwt("some.jwt.token", public_key="explicit-key")
+        assert result["sub"] == "user-123"
+
+
+class TestCreateJwtToken:
+    def test_payload_contains_required_fields(self):
+        user_id = uuid.uuid4()
+        captured: dict = {}
+
+        def fake_encode(payload, private_key=None, algorithm=None):
+            captured.update(payload)
+            return "mocked-token"
+
+        with patch("utils.jwt_tokens.encode_jwt", side_effect=fake_encode):
+            token = create_access_token(user_id=user_id)
+
+        assert token == "mocked-token"
+        assert captured["sub"] == str(user_id)
+        assert "phone" not in captured
+        assert "exp" in captured
+        assert "iat" in captured
+        assert captured["typ"] == "access"
+
+    def test_expiry_is_in_future(self):
+        user_id = uuid.uuid4()
+        captured: dict = {}
+
+        def fake_encode(payload, private_key=None, algorithm=None):
+            captured.update(payload)
+            return "tok"
+
+        with patch("utils.jwt_tokens.encode_jwt", side_effect=fake_encode):
+            create_access_token(user_id=user_id)
+
+        now = datetime.now(timezone.utc)
+        assert captured["exp"] > now
+
+
+class TestAccessRefreshTokens:
+    def test_access_token_delegates_to_create_jwt_token(self):
+        user_id = uuid.uuid4()
+        with patch("utils.jwt_tokens._create_jwt_token", return_value="access") as mock_create:
+            result = create_access_token(user_id=user_id)
+        assert result == "access"
+        args = mock_create.call_args
+        assert args.kwargs["user_id"] == user_id
+        assert "lifetime_seconds" in args.kwargs
+
+    def test_refresh_token_delegates_to_create_jwt_token(self):
+        user_id = uuid.uuid4()
+        with patch("utils.jwt_tokens._create_jwt_token", return_value="refresh") as mock_create:
+            result = create_refresh_token(user_id=user_id)
+        assert result == "refresh"
+        mock_create.assert_called_once()
+
+    def test_refresh_token_includes_session_exp_in_payload(self):
+        user_id = uuid.uuid4()
+        captured: dict = {}
+
+        def fake_encode(payload, private_key=None, algorithm=None):
+            captured.update(payload)
+            return "mocked-refresh"
+
+        with patch("utils.jwt_tokens.encode_jwt", side_effect=fake_encode):
+            create_refresh_token(user_id=user_id)
+
+        assert "session_exp" in captured
+        assert isinstance(captured["session_exp"], int)
+
+    def test_refresh_token_uses_explicit_session_exp(self):
+        user_id = uuid.uuid4()
+        captured: dict = {}
+
+        def fake_encode(payload, private_key=None, algorithm=None):
+            captured.update(payload)
+            return "mocked-refresh"
+
+        with patch("utils.jwt_tokens.encode_jwt", side_effect=fake_encode):
+            create_refresh_token(user_id=user_id, session_exp=9999999999)
+
+        assert captured["session_exp"] == 9999999999
+
+    def test_access_and_refresh_use_different_lifetimes(self):
+        user_id = uuid.uuid4()
+        access_lifetime: list[int] = []
+        refresh_lifetime: list[int] = []
+
+        def capture_access(**kwargs):
+            access_lifetime.append(kwargs["lifetime_seconds"])
+            return "access"
+
+        def capture_refresh(**kwargs):
+            refresh_lifetime.append(kwargs["lifetime_seconds"])
+            return "refresh"
+
+        with patch("utils.jwt_tokens._create_jwt_token", side_effect=capture_access):
+            create_access_token(user_id=user_id)
+
+        with patch("utils.jwt_tokens._create_jwt_token", side_effect=capture_refresh):
+            create_refresh_token(user_id=user_id)
+
+        assert access_lifetime[0] < refresh_lifetime[0]

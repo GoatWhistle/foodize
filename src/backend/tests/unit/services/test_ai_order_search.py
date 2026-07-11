@@ -1,8 +1,7 @@
 import json
 import uuid
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
-import numpy as np
 import pytest
 
 from features.ai_order_agent.search import (
@@ -74,12 +73,14 @@ class TestSemanticSearch:
         cache = AsyncMock()
         items = [{"id": str(uuid.uuid4()), "name": "Бургер", "price": 200}]
 
-        with patch("features.ai_order_agent.search.settings") as mock_settings, \
-             patch(
+        with (
+            patch("features.ai_order_agent.search.settings") as mock_settings,
+            patch(
                 "features.ai_order_agent.search.crud.search_menu_items",
                 new_callable=AsyncMock,
                 return_value=items,
-             ):
+            ),
+        ):
             mock_settings.llm.embeddings_enabled = False
             result = await semantic_search(session, cache, query="бургер")
 
@@ -91,12 +92,14 @@ class TestSemanticSearch:
         cache = AsyncMock()
         items = [{"id": str(uuid.uuid4()), "name": "Пицца"}]
 
-        with patch("features.ai_order_agent.search.settings") as mock_settings, \
-             patch(
+        with (
+            patch("features.ai_order_agent.search.settings") as mock_settings,
+            patch(
                 "features.ai_order_agent.search.crud.search_menu_items",
                 new_callable=AsyncMock,
                 return_value=items,
-             ):
+            ),
+        ):
             mock_settings.llm.embeddings_enabled = True
             result = await semantic_search(session, cache, query=None)
 
@@ -111,9 +114,19 @@ class TestSemanticSearch:
         mock_client.model = "model-x"
         mock_client.embed = AsyncMock(return_value=[[0.1, 0.2]])
 
-        with patch("features.ai_order_agent.search.settings") as mock_settings, \
-             patch("features.ai_order_agent.search.get_embedding_client", new_callable=AsyncMock, return_value=mock_client), \
-             patch("features.ai_order_agent.search.crud.list_orderable_items", new_callable=AsyncMock, return_value=[]):
+        with (
+            patch("features.ai_order_agent.search.settings") as mock_settings,
+            patch(
+                "features.ai_order_agent.search.get_embedding_client",
+                new_callable=AsyncMock,
+                return_value=mock_client,
+            ),
+            patch(
+                "features.ai_order_agent.search.crud.list_orderable_items",
+                new_callable=AsyncMock,
+                return_value=[],
+            ),
+        ):
             mock_settings.llm.embeddings_enabled = True
             mock_settings.llm.embedding_candidate_limit = 50
             result = await semantic_search(session, cache, query="еда")
@@ -130,15 +143,27 @@ class TestSemanticSearch:
             {"id": str(item_id), "name": "Бургер", "description": "Вкусный", "price": 250}
         ]
         embedding = [0.5, 0.5]
+        cache.get = AsyncMock(return_value=None)
+        cache.set = AsyncMock()
         cache.mget = AsyncMock(return_value=[json.dumps(embedding)])
 
         mock_client = AsyncMock()
         mock_client.model = "model-x"
         mock_client.embed = AsyncMock(return_value=[embedding])
 
-        with patch("features.ai_order_agent.search.settings") as mock_settings, \
-             patch("features.ai_order_agent.search.get_embedding_client", new_callable=AsyncMock, return_value=mock_client), \
-             patch("features.ai_order_agent.search.crud.list_orderable_items", new_callable=AsyncMock, return_value=candidates):
+        with (
+            patch("features.ai_order_agent.search.settings") as mock_settings,
+            patch(
+                "features.ai_order_agent.search.get_embedding_client",
+                new_callable=AsyncMock,
+                return_value=mock_client,
+            ),
+            patch(
+                "features.ai_order_agent.search.crud.list_orderable_items",
+                new_callable=AsyncMock,
+                return_value=candidates,
+            ),
+        ):
             mock_settings.llm.embeddings_enabled = True
             mock_settings.llm.embedding_candidate_limit = 50
             result = await semantic_search(session, cache, query="бургер")
@@ -151,6 +176,8 @@ class TestSemanticSearch:
     async def test_semantic_search_with_cache_miss(self):
         session = AsyncMock()
         cache = AsyncMock()
+        cache.get = AsyncMock(return_value=None)
+        cache.set = AsyncMock()
         cache.mget = AsyncMock(return_value=[None])
         cache.mset = AsyncMock()
 
@@ -164,9 +191,19 @@ class TestSemanticSearch:
         mock_client.model = "model-x"
         mock_client.embed = AsyncMock(return_value=[embedding])
 
-        with patch("features.ai_order_agent.search.settings") as mock_settings, \
-             patch("features.ai_order_agent.search.get_embedding_client", new_callable=AsyncMock, return_value=mock_client), \
-             patch("features.ai_order_agent.search.crud.list_orderable_items", new_callable=AsyncMock, return_value=candidates):
+        with (
+            patch("features.ai_order_agent.search.settings") as mock_settings,
+            patch(
+                "features.ai_order_agent.search.get_embedding_client",
+                new_callable=AsyncMock,
+                return_value=mock_client,
+            ),
+            patch(
+                "features.ai_order_agent.search.crud.list_orderable_items",
+                new_callable=AsyncMock,
+                return_value=candidates,
+            ),
+        ):
             mock_settings.llm.embeddings_enabled = True
             mock_settings.llm.embedding_candidate_limit = 50
             result = await semantic_search(session, cache, query="пицца")
@@ -180,9 +217,19 @@ class TestSemanticSearch:
         cache = AsyncMock()
         fallback = [{"id": str(uuid.uuid4()), "name": "Шаурма"}]
 
-        with patch("features.ai_order_agent.search.settings") as mock_settings, \
-             patch("features.ai_order_agent.search.get_embedding_client", new_callable=AsyncMock, side_effect=RuntimeError("fail")), \
-             patch("features.ai_order_agent.search.crud.search_menu_items", new_callable=AsyncMock, return_value=fallback):
+        with (
+            patch("features.ai_order_agent.search.settings") as mock_settings,
+            patch(
+                "features.ai_order_agent.search.get_embedding_client",
+                new_callable=AsyncMock,
+                side_effect=RuntimeError("fail"),
+            ),
+            patch(
+                "features.ai_order_agent.search.crud.search_menu_items",
+                new_callable=AsyncMock,
+                return_value=fallback,
+            ),
+        ):
             mock_settings.llm.embeddings_enabled = True
             mock_settings.llm.embedding_candidate_limit = 50
             result = await semantic_search(session, cache, query="шаурма")

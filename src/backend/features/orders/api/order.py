@@ -61,7 +61,7 @@ async def verify_order_read_access(session: AsyncSession, order: Order, current_
 async def create_order(
     request: Request,
     order_in: OrderCreate,
-    idempotency_key: str | None = Header(None, alias="Idempotency-Key"),
+    idempotency_key: str = Header(..., alias="Idempotency-Key", min_length=8, max_length=128),
     current_user: User = Depends(require_permission(Permission.ORDERS_CREATE)),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[OrderResponse]:

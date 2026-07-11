@@ -1,5 +1,7 @@
 .page {
-  padding-bottom: calc(var(--bottom-tab-h) + env(safe-area-inset-bottom, 0px) + 40px);
+  padding-bottom: calc(
+    var(--bottom-tab-h) + env(safe-area-inset-bottom, 0px) + 40px
+  );
 }
 
 .greeting {
@@ -48,6 +50,53 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
+}
+
+.aiPanel {
+  margin: 0 var(--gutter) 16px;
+  padding: 16px 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.aiPanelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.aiPanelTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-1);
+}
+
+.aiPanelClose {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-3);
+  display: inline-flex;
+  padding: 4px;
+}
+
+.aiPanelBody {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-2);
+  white-space: pre-wrap;
+}
+
+.aiPanelError {
+  color: var(--color-error);
 }
 
 @media (max-width: 599px) {

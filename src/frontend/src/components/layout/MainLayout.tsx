@@ -10,7 +10,6 @@ import OrderAssistant from '../OrderAssistant/OrderAssistant';
 
 import { useAuthStore } from '../../store/useAuthStore';
 import { useOrderStore } from '../../store/useOrderStore';
-import { useShallow } from 'zustand/react/shallow';
 import { ROUTES } from '../../constants/routes';
 
 const DEEP_LINK_ID_RE = /^[a-zA-Z0-9-]{1,64}$/;
@@ -20,16 +19,19 @@ const MainLayout = () => {
   const navigate = useNavigate();
 
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const { cart, cartTotal } = useOrderStore(
-    useShallow((s) => ({
-      cart: s.cart,
-      cartTotal: s.cartTotal,
-    }))
+  const cart = useOrderStore((s) => s.cart);
+  const total = useMemo(
+    () =>
+      cart.reduce((sum, line) => {
+        const optionsTotal = line.selectedOptions.reduce(
+          (acc, option) => acc + (Number(option.price_delta) || 0),
+          0
+        );
+        const linePrice = (Number(line.menuItem.price) || 0) + optionsTotal;
+        return sum + linePrice * line.quantity;
+      }, 0),
+    [cart]
   );
-  const total = useMemo(() => {
-    void cart;
-    return cartTotal();
-  }, [cart, cartTotal]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [badgePop, setBadgePop] = useState(false);
   const previousCartItemsCount = useRef(0);

@@ -2,32 +2,49 @@ import asyncio
 import html
 import logging
 
-import redis.asyncio as aioredis
 from aiogram import Bot
-from aiogram.exceptions import TelegramForbiddenError, TelegramRetryAfter, TelegramNetworkError
+from aiogram.exceptions import TelegramForbiddenError, TelegramNetworkError, TelegramRetryAfter
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 
 from config import bot_config
+from services import backend_client, redis_client
 from utils.formatting import format_price, format_status
 
 logger = logging.getLogger(__name__)
 
+_TG_CACHE_TTL_SECONDS = 86400 * 30
+_MAX_RATE_LIMIT_RETRIES = 3
+
+
+class RateLimitExhaustedError(Exception):
+    pass
+
+
+async def _cache_telegram_id(user_id: str, telegram_id: int) -> None:
+    await redis_client.get_client().set(
+        f"user_tg:{user_id}", str(telegram_id), ex=_TG_CACHE_TTL_SECONDS
+    )
+
+
 async def _get_telegram_id(user_id: str) -> int | None:
-    client = aioredis.from_url(bot_config.redis_url, decode_responses=True)
-    try:
-        val = await client.get(f"user_tg:{user_id}")
-        return int(val) if val else None
-    finally:
-        await client.aclose()
+    val = await redis_client.get_client().get(f"user_tg:{user_id}")
+    if val:
+        return int(val)
+
+    telegram_id = await backend_client.get_telegram_id_by_user(user_id)
+    if telegram_id is None:
+        logger.warning(
+            "No telegram_id for user_id=%s (cache miss and backend fallback failed)", user_id
+        )
+        return None
+
+    await _cache_telegram_id(user_id, telegram_id)
+    return telegram_id
 
 
 async def _deactivate_telegram_id(user_id: str) -> None:
-    client = aioredis.from_url(bot_config.redis_url, decode_responses=True)
-    try:
-        await client.delete(f"user_tg:{user_id}")
-        logger.info("Deactivated Telegram binding for user_id=%s (bot blocked)", user_id)
-    finally:
-        await client.aclose()
+    await redis_client.get_client().delete(f"user_tg:{user_id}")
+    logger.info("Deactivated Telegram binding for user_id=%s (bot blocked)", user_id)
 
 
 def _order_keyboard(order_display_id: str | None) -> InlineKeyboardMarkup | None:
@@ -60,32 +77,29 @@ async def _send_notification(
     telegram_id: int,
     text: str,
     display_id: str | None,
-    fail_log_message: str,
 ) -> None:
-    try:
-        await bot.send_message(
-            chat_id=telegram_id,
-            text=text,
-            reply_markup=_order_keyboard(display_id),
-        )
-    except TelegramForbiddenError:
-        logger.info("User %s blocked the bot, deactivating binding", user_id)
-        await _deactivate_telegram_id(user_id)
-    except TelegramRetryAfter as e:
-        logger.warning("Rate limited by Telegram, retrying after %s seconds", e.retry_after)
-        await asyncio.sleep(e.retry_after)
+    markup = _order_keyboard(display_id)
+    for attempt in range(_MAX_RATE_LIMIT_RETRIES):
         try:
-            await bot.send_message(
-                chat_id=telegram_id,
-                text=text,
-                reply_markup=_order_keyboard(display_id),
+            await bot.send_message(chat_id=telegram_id, text=text, reply_markup=markup)
+            return
+        except TelegramForbiddenError:
+            logger.info("User %s blocked the bot, deactivating binding", user_id)
+            await _deactivate_telegram_id(user_id)
+            return
+        except TelegramRetryAfter as exc:
+            logger.warning(
+                "Rate limited by Telegram (attempt %d/%d), retrying after %ss",
+                attempt + 1,
+                _MAX_RATE_LIMIT_RETRIES,
+                exc.retry_after,
             )
-        except Exception as retry_exc:
-            logger.warning("Retry after rate limit failed: %s", retry_exc)
-    except TelegramNetworkError as e:
-        logger.warning("Telegram network error: %s", e)
-    except Exception as e:
-        logger.warning(fail_log_message, e)
+            await asyncio.sleep(exc.retry_after)
+        except TelegramNetworkError as exc:
+            logger.warning("Telegram network error, will retry via queue: %s", exc)
+            raise
+    logger.error("Exhausted rate-limit retries for user %s, will retry via queue", user_id)
+    raise RateLimitExhaustedError(user_id)
 
 
 async def handle_order_placed(event: dict, bot: Bot) -> None:
@@ -112,7 +126,6 @@ async def handle_order_placed(event: dict, bot: Bot) -> None:
         telegram_id=telegram_id,
         text=text,
         display_id=display_id,
-        fail_log_message="Failed to send order_placed notification: %s",
     )
 
 
@@ -139,5 +152,4 @@ async def handle_order_status_changed(event: dict, bot: Bot) -> None:
         telegram_id=telegram_id,
         text=text,
         display_id=display_id,
-        fail_log_message="Failed to send status_changed notification: %s",
     )

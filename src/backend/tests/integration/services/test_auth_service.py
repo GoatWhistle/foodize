@@ -173,7 +173,12 @@ class TestRefreshUserToken:
         with (
             patch(
                 "features.auth.service.decode_jwt",
-                return_value={"sub": str(user.id), "exp": 4_102_444_800, "typ": "refresh", "jti": "jti1"},
+                return_value={
+                    "sub": str(user.id),
+                    "exp": 4_102_444_800,
+                    "typ": "refresh",
+                    "jti": "jti1",
+                },
             ),
             patch(
                 "features.auth.service.get_user_by_id_or_404",

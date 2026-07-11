@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, String, UniqueConstraint
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base, CreatedAtMixin, IdUuidPkMixin
@@ -13,6 +13,9 @@ if TYPE_CHECKING:
 
 class Promo(Base, IdUuidPkMixin, CreatedAtMixin):
     __tablename__ = "promos"
+    __table_args__ = (
+        CheckConstraint("discount_type IN ('PERCENT', 'FIXED')", name="ck_promos_discount_type"),
+    )
 
     code: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     discount_type: Mapped[str] = mapped_column(String(16))
@@ -22,9 +25,7 @@ class Promo(Base, IdUuidPkMixin, CreatedAtMixin):
     )
     max_uses: Mapped[int | None] = mapped_column(default=None)
     used_count: Mapped[int] = mapped_column(default=0, server_default="0")
-    expires_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), default=None
-    )
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
     is_active: Mapped[bool] = mapped_column(default=True, server_default="true")
     first_order_only: Mapped[bool] = mapped_column(default=False, server_default="false")
     min_order_amount: Mapped[int | None] = mapped_column(default=None)
@@ -35,9 +36,7 @@ class Promo(Base, IdUuidPkMixin, CreatedAtMixin):
 
 class PromoUsage(Base, IdUuidPkMixin, CreatedAtMixin):
     __tablename__ = "promo_usages"
-    __table_args__ = (
-        UniqueConstraint("promo_id", "user_id", name="uq_promo_usages_promo_user"),
-    )
+    __table_args__ = (UniqueConstraint("promo_id", "user_id", name="uq_promo_usages_promo_user"),)
 
     promo_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("promos.id", ondelete="CASCADE"), index=True

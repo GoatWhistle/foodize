@@ -1,3 +1,4 @@
+import asyncio
 import secrets
 
 import httpx
@@ -12,7 +13,7 @@ from features.users.models import User
 from infra.cache.redis import get_redis_cache
 from settings.config.app_config import settings
 from shared.exceptions.existence import AuthException
-from utils.JWT import hash_password
+from utils.jwt_tokens import hash_password
 
 _SITE_LOGIN_CODE_TTL = 300
 _SITE_LOGIN_CODE_PREFIX = "telegram_site_login:"
@@ -26,6 +27,30 @@ def _normalize_phone(phone: str) -> str:
     if digits.startswith("8") and len(digits) == 11:
         digits = "7" + digits[1:]
     return f"+{digits}"
+
+
+_TELEGRAM_SEND_RETRIES = 3
+
+
+async def _send_telegram_message(payload: dict) -> None:
+    url = f"https://api.telegram.org/bot{settings.telegram.bot_token}/sendMessage"
+    async with httpx.AsyncClient(timeout=10, proxy=settings.telegram.proxy_url or None) as client:
+        for attempt in range(_TELEGRAM_SEND_RETRIES):
+            response = await client.post(url, json=payload)
+            if response.status_code == 429 or response.status_code >= 500:
+                if attempt == _TELEGRAM_SEND_RETRIES - 1:
+                    response.raise_for_status()
+                retry_after = 1.0
+                try:
+                    retry_after = float(
+                        response.json().get("parameters", {}).get("retry_after", 2**attempt)
+                    )
+                except Exception:
+                    retry_after = 2**attempt
+                await asyncio.sleep(min(retry_after, 10))
+                continue
+            response.raise_for_status()
+            return
 
 
 async def request_site_login_code(session: AsyncSession, phone_number: str) -> None:
@@ -49,15 +74,7 @@ async def request_site_login_code(session: AsyncSession, phone_number: str) -> N
         "Если это были не вы, просто проигнорируйте сообщение."
     )
 
-    async with httpx.AsyncClient(timeout=10, proxy=settings.telegram.proxy_url or None) as client:
-        response = await client.post(
-            f"https://api.telegram.org/bot{settings.telegram.bot_token}/sendMessage",
-            json={
-                "chat_id": user.telegram_id,
-                "text": message,
-            },
-        )
-        response.raise_for_status()
+    await _send_telegram_message({"chat_id": user.telegram_id, "text": message})
 
 
 async def verify_site_login_code(
@@ -100,13 +117,15 @@ async def set_site_password(session: AsyncSession, user: User, password: str) ->
     if user.hashed_password:
         raise AuthException(detail="Password is already set")
 
-    user.hashed_password = hash_password(password)
-    await session.commit()
+    user.hashed_password = await hash_password(password)
+    await session.flush()
     await session.refresh(user)
     return user
 
 
-async def request_site_login_code_by_username(session: AsyncSession, telegram_username: str) -> None:
+async def request_site_login_code_by_username(
+    session: AsyncSession, telegram_username: str
+) -> None:
     username = normalize_username(telegram_username)
 
     cache = get_redis_cache()
@@ -127,16 +146,9 @@ async def request_site_login_code_by_username(session: AsyncSession, telegram_us
         "Если это были не вы, просто проигнорируйте сообщение."
     )
 
-    async with httpx.AsyncClient(timeout=10, proxy=settings.telegram.proxy_url or None) as client:
-        response = await client.post(
-            f"https://api.telegram.org/bot{settings.telegram.bot_token}/sendMessage",
-            json={
-                "chat_id": user.telegram_id,
-                "text": message,
-                "parse_mode": "HTML",
-            },
-        )
-        response.raise_for_status()
+    await _send_telegram_message(
+        {"chat_id": user.telegram_id, "text": message, "parse_mode": "HTML"}
+    )
 
 
 async def verify_site_login_code_by_username(

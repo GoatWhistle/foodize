@@ -1,9 +1,18 @@
+import os
+
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.pool import StaticPool
 
 from database import Base
 
-engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
+_TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL", "sqlite+aiosqlite:///:memory:")
+
+if _TEST_DATABASE_URL.startswith("sqlite"):
+    engine = create_async_engine(_TEST_DATABASE_URL, echo=False, poolclass=StaticPool)
+else:
+    engine = create_async_engine(_TEST_DATABASE_URL, echo=False)
+
 TestingSessionLocal = async_sessionmaker(
     expire_on_commit=False, autocommit=False, autoflush=False, bind=engine
 )

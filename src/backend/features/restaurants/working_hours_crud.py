@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime, timezone
+from datetime import time as dt_time
 
 from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -7,6 +8,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.restaurants.working_hours import WorkingHours
 from features.restaurants.working_hours_schemas import WorkingHoursEntry
+
+_MIDNIGHT = dt_time(0, 0)
+
+
+def _parse_time(value: str) -> dt_time:
+    hour, minute = value.split(":")
+    return dt_time(int(hour), int(minute))
 
 
 async def get_working_hours(session: AsyncSession, restaurant_id: uuid.UUID) -> list[WorkingHours]:
@@ -50,19 +58,26 @@ async def set_working_hours(
             )
         )
         await session.execute(stmt)
-    await session.commit()
+    await session.flush()
     return await get_working_hours(session, restaurant_id)
 
 
-def is_open_now(hours: list[WorkingHours]) -> bool | None:
+def is_open_now(hours: list[WorkingHours], now: datetime | None = None) -> bool | None:
     if not hours:
         return None
-    now = datetime.now(tz=timezone.utc)
+    if now is None:
+        now = datetime.now(tz=timezone.utc)
     dow = now.weekday()
-    current_time = now.strftime("%H:%M")
+    current_time = now.time().replace(tzinfo=None)
     for h in hours:
         if h.day_of_week == dow:
             if h.is_closed:
                 return False
-            return h.open_time <= current_time < h.close_time
+            open_t = _parse_time(h.open_time)
+            close_t = _parse_time(h.close_time)
+            if close_t == _MIDNIGHT:
+                return current_time >= open_t
+            if open_t < close_t:
+                return open_t <= current_time < close_t
+            return current_time >= open_t or current_time < close_t
     return None

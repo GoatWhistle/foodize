@@ -63,6 +63,7 @@ class TestUsersAPI:
         with (
             patch(
                 "features.users.api.validate_password",
+                new_callable=AsyncMock,
                 return_value=True,
             ),
             patch(
@@ -80,6 +81,7 @@ class TestUsersAPI:
     async def test_change_password_wrong_old(self, client: AsyncClient, as_user):
         with patch(
             "features.users.api.validate_password",
+            new_callable=AsyncMock,
             return_value=False,
         ):
             response = await client.post(

@@ -21,6 +21,13 @@
   --mustard-glow:   var(--accent-glow);
   --mustard-subtle: var(--accent-subtle);
   --mustard-text:   var(--accent-text);
+
+  --brand-telegram:        var(--tg-blue);
+  --brand-telegram-light:  var(--tg-blue-light);
+  --brand-telegram-strong: var(--tg-blue-strong);
+  --brand-telegram-hover:  var(--tg-blue-hover);
+  --brand-telegram-subtle: var(--tg-blue-subtle);
+  --brand-telegram-border: var(--tg-blue-border);
 }
 
 [data-theme="dark"] {

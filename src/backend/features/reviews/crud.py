@@ -6,6 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from features.restaurants.models import Restaurant
 from features.reviews.models import Review
 from features.reviews.schemas import ReviewCreate
 
@@ -147,3 +148,26 @@ async def get_restaurant_avg_rating(
 async def delete_review(session: AsyncSession, review: Review) -> None:
     review.deleted_at = datetime.now(UTC)
     await session.flush()
+
+
+async def sync_restaurant_rating(session: AsyncSession, restaurant_id: uuid.UUID) -> None:
+    active_reviews = (
+        select(Review)
+        .where(
+            Review.restaurant_id == restaurant_id,
+            Review.deleted_at.is_(None),
+        )
+        .subquery()
+    )
+    avg_expr = select(
+        func.round(func.cast(func.avg(active_reviews.c.rating), sa.Numeric(10, 2)), 2)
+    ).scalar_subquery()
+    count_expr = select(func.count(active_reviews.c.id)).scalar_subquery()
+    await session.execute(
+        sa.update(Restaurant)
+        .where(Restaurant.id == restaurant_id)
+        .values(
+            average_rating=func.coalesce(avg_expr, 0),
+            review_count=count_expr,
+        )
+    )

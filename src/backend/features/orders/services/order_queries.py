@@ -7,7 +7,7 @@ from features.orders.crud import order as order_crud
 from features.orders.exceptions import OrderAccessDeniedException, OrderNotFoundException
 from features.orders.schemas.order import OrderLoadEstimate, OrderResponse
 from features.orders.schemas.order_event import OrderEventResponse
-from features.orders.services.order_utils import _is_ordering_paused
+from features.orders.services.order_utils import is_ordering_paused
 from features.restaurants import crud as restaurant_crud
 from features.restaurants.exceptions import RestaurantNotFoundException
 from features.restaurants.working_hours_crud import get_working_hours, is_open_now
@@ -43,7 +43,7 @@ async def estimate_restaurant_load(
 
     wait_min = max(avg_prep_time, avg_prep_time * queue_multiplier)
     wait_max = wait_min + max(10, avg_prep_time)
-    paused = _is_ordering_paused(restaurant)
+    paused = is_ordering_paused(restaurant)
 
     return OrderLoadEstimate(
         restaurant_id=restaurant.id,
@@ -97,13 +97,20 @@ async def get_restaurant_orders(
 ) -> tuple[list[OrderResponse], int]:
     offset = (page - 1) * size
     data = await order_crud.get_orders_by_restaurant_id(
-        session, restaurant_id, status=status,
-        date_from=date_from, date_to=date_to,
-        offset=offset, limit=size,
+        session,
+        restaurant_id,
+        status=status,
+        date_from=date_from,
+        date_to=date_to,
+        offset=offset,
+        limit=size,
     )
     total = await order_crud.count_orders_by_restaurant_id(
-        session, restaurant_id, status=status,
-        date_from=date_from, date_to=date_to,
+        session,
+        restaurant_id,
+        status=status,
+        date_from=date_from,
+        date_to=date_to,
     )
     return [OrderResponse.model_validate(o) for o in data], total
 

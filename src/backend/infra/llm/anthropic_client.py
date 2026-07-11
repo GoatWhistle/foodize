@@ -5,6 +5,8 @@ from typing import Any
 
 from infra.llm.base import LLMClient, LLMResponse, Message, Role, ToolCall, ToolSpec, Usage
 
+_EMPTY_PLACEHOLDER = "(пустой ответ)"
+
 
 def _to_tools(tools: list[ToolSpec]) -> list[dict[str, Any]]:
     return [
@@ -36,7 +38,8 @@ def _to_messages(messages: list[Message]) -> list[dict[str, Any]]:
 
         flush()
         if message.role == Role.USER:
-            out.append({"role": "user", "content": message.content})
+            content_text = message.content or _EMPTY_PLACEHOLDER
+            out.append({"role": "user", "content": content_text})
         elif message.role == Role.ASSISTANT:
             content: list[dict[str, Any]] = []
             if message.content:
@@ -45,7 +48,9 @@ def _to_messages(messages: list[Message]) -> list[dict[str, Any]]:
                 content.append(
                     {"type": "tool_use", "id": call.id, "name": call.name, "input": call.arguments}
                 )
-            out.append({"role": "assistant", "content": content or message.content})
+            if not content:
+                content.append({"type": "text", "text": _EMPTY_PLACEHOLDER})
+            out.append({"role": "assistant", "content": content})
 
     flush()
     return out
@@ -59,10 +64,11 @@ class AnthropicClient(LLMClient):
         model: str,
         max_tokens: int = 4096,
         timeout: int = 60,
+        max_retries: int = 3,
     ) -> None:
         from anthropic import AsyncAnthropic
 
-        self._client = AsyncAnthropic(api_key=api_key, timeout=timeout)
+        self._client = AsyncAnthropic(api_key=api_key, timeout=timeout, max_retries=max_retries)
         self._model = model
         self._max_tokens = max_tokens
 
@@ -76,6 +82,7 @@ class AnthropicClient(LLMClient):
         system: str,
         messages: list[Message],
         tools: list[ToolSpec] | None = None,
+        tool_choice: str | None = None,
     ) -> LLMResponse:
         kwargs: dict[str, Any] = {
             "model": self._model,
@@ -85,6 +92,8 @@ class AnthropicClient(LLMClient):
         }
         if tools:
             kwargs["tools"] = _to_tools(tools)
+        if tool_choice is not None:
+            kwargs["tool_choice"] = {"type": tool_choice}
 
         response = await self._client.messages.create(**kwargs)
 
@@ -115,12 +124,22 @@ class AnthropicClient(LLMClient):
         system: str,
         messages: list[Message],
         tools: list[ToolSpec] | None = None,
+        tool_choice: str | None = None,
     ) -> AsyncIterator[str]:
-        async with self._client.messages.stream(
-            model=self._model,
-            max_tokens=self._max_tokens,
-            system=system,
-            messages=_to_messages(messages),  # type: ignore[arg-type]
-        ) as stream:
+        kwargs: dict[str, Any] = {
+            "model": self._model,
+            "max_tokens": self._max_tokens,
+            "system": system,
+            "messages": _to_messages(messages),
+        }
+        if tools:
+            kwargs["tools"] = _to_tools(tools)
+        if tool_choice is not None:
+            kwargs["tool_choice"] = {"type": tool_choice}
+
+        async with self._client.messages.stream(**kwargs) as stream:
             async for text in stream.text_stream:
                 yield text
+
+    async def aclose(self) -> None:
+        await self._client.close()

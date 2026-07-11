@@ -119,7 +119,7 @@ class TestCreatePromo:
 
         session = AsyncMock()
         session.add = MagicMock()
-        session.commit = AsyncMock()
+        session.flush = AsyncMock()
         session.refresh = AsyncMock()
 
         with patch("features.promos.crud.Promo") as MockPromo:
@@ -127,7 +127,7 @@ class TestCreatePromo:
             MockPromo.return_value = mock_promo
             result = await create_promo(session, data)
             session.add.assert_called_once_with(mock_promo)
-            session.commit.assert_awaited_once()
+            session.flush.assert_awaited_once()
             session.refresh.assert_awaited_once_with(mock_promo)
             assert result == mock_promo
 
@@ -139,12 +139,12 @@ class TestDeactivatePromo:
         promo.is_active = True
 
         session = AsyncMock()
-        session.commit = AsyncMock()
+        session.flush = AsyncMock()
         session.refresh = AsyncMock()
 
         await deactivate_promo(session, promo)
         assert promo.is_active is False
-        session.commit.assert_awaited_once()
+        session.flush.assert_awaited_once()
         session.refresh.assert_awaited_once_with(promo)
 
 

@@ -16,14 +16,15 @@ from features.orders.exceptions import (
 )
 from features.orders.models import Order, OrderItem, OrderItemOption
 from features.orders.schemas.order import OrderCreate, OrderResponse
+from features.orders.services.order_queries import estimate_restaurant_load
 from features.orders.services.order_utils import (
-    _is_open_at,
-    _is_ordering_paused,
-    _make_request_hash,
-    _safe_publish,
-    _start_idempotency_record,
-    _validate_item_options,
-    _validate_requested_pickup_at,
+    is_open_at,
+    is_ordering_paused,
+    make_request_hash,
+    safe_publish,
+    start_idempotency_record,
+    validate_item_options,
+    validate_requested_pickup_at,
 )
 from features.promos import service as promo_service
 from features.restaurants import crud as restaurant_crud
@@ -38,12 +39,8 @@ async def place_order(
     user_id: uuid.UUID,
     idempotency_key: str | None = None,
 ) -> OrderResponse:
-    from features.orders.services.order_queries import (
-        estimate_restaurant_load,  # noqa: avoid circular at module level
-    )
-
-    request_hash = _make_request_hash(order_data)
-    idempotency_record = await _start_idempotency_record(
+    request_hash = make_request_hash(order_data)
+    idempotency_record = await start_idempotency_record(
         session, user_id, idempotency_key, request_hash
     )
     if idempotency_record and idempotency_record.response_json:
@@ -54,7 +51,7 @@ async def place_order(
         raise RestaurantNotFoundException()
     if not restaurant.is_open:
         raise RestaurantClosedException()
-    if _is_ordering_paused(restaurant):
+    if is_ordering_paused(restaurant):
         raise RestaurantClosedException(detail="Restaurant is temporarily not accepting orders")
 
     working_hours = await get_working_hours(session, restaurant.id)
@@ -82,7 +79,7 @@ async def place_order(
         session, selected_option_ids, for_update=True
     )
     selected_options_by_item = {
-        index: _validate_item_options(item, menu_items[item.menu_item_id], options_by_id)
+        index: validate_item_options(item, menu_items[item.menu_item_id], options_by_id)
         for index, item in enumerate(order_data.items)
     }
 
@@ -96,30 +93,46 @@ async def place_order(
     fallback_ready_at = datetime.now(timezone.utc) + timedelta(
         minutes=load.estimated_wait_max_minutes
     )
-    requested_pickup_at = _validate_requested_pickup_at(order_data.requested_pickup_at, min_ready_at)
-    if requested_pickup_at and working_hours and _is_open_at(working_hours, requested_pickup_at) is False:
+    requested_pickup_at = validate_requested_pickup_at(order_data.requested_pickup_at, min_ready_at)
+    if (
+        requested_pickup_at
+        and working_hours
+        and is_open_at(working_hours, requested_pickup_at) is False
+    ):
         raise RestaurantClosedException(detail="Restaurant is closed at requested pickup time")
 
     order = await _create_order(
-        session, order_data, user_id, menu_items, selected_options_by_item,
+        session,
+        order_data,
+        user_id,
+        menu_items,
+        selected_options_by_item,
         estimated_ready_at=requested_pickup_at or fallback_ready_at,
         requested_pickup_at=requested_pickup_at,
     )
 
     if order_data.promo_code:
-        promo = await promo_service.get_promo_for_order(
-            session, order_data.promo_code
+        promo = await promo_service.get_promo_for_order(session, order_data.promo_code)
+        discount_base = (
+            _category_subtotal(
+                order_data, menu_items, selected_options_by_item, promo.menu_category
+            )
+            if promo and promo.menu_category
+            else order.total_price
         )
-        discount_base = _category_subtotal(
-            order_data, menu_items, selected_options_by_item, promo.menu_category
-        ) if promo and promo.menu_category else order.total_price
         new_total = await promo_service.apply_promo(
-            session, order_data.promo_code, order_data.restaurant_id,
-            order.total_price, is_first_order=is_first_order,
-            user_id=user_id, discount_base=discount_base,
+            session,
+            order_data.promo_code,
+            order_data.restaurant_id,
+            order.total_price,
+            is_first_order=is_first_order,
+            user_id=user_id,
+            discount_base=discount_base,
         )
         if new_total != order.total_price:
             order.total_price = new_total
+        if promo:
+            order.promo_id = promo.id
 
     await enqueue_event(
         session,
@@ -145,7 +158,7 @@ async def place_order(
         idempotency_record.completed_at = datetime.now(timezone.utc)
 
     await session.commit()
-    await _safe_publish(f"restaurant_orders:{order.restaurant_id}", "new_order")
+    await safe_publish(f"restaurant_orders:{order.restaurant_id}", "new_order")
     return response
 
 

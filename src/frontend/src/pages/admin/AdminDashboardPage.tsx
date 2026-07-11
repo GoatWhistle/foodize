@@ -1,19 +1,7 @@
-import { memo, useCallback } from 'react';
-import type { ReactNode } from 'react';
-import {
-  ChartLineUp,
-  UsersThree,
-  Package,
-  Storefront,
-  Star,
-  Clock,
-  CaretDown,
-  Rows,
-  ShieldWarning,
-} from '@phosphor-icons/react';
 import { adminService } from '../../services/adminService';
 import QRCodeModal from '../../components/QRCodeModal/QRCodeModal';
-import BatchActionBar from '../../components/BatchActionBar/BatchActionBar';
+import { AdminSidebar } from './components/AdminSidebar';
+import { AdminBatchBars } from './components/AdminBatchBars';
 import AdminStatsTab from './tabs/AdminStatsTab';
 import AdminFinanceTab from './tabs/AdminFinanceTab';
 import AdminAuditTab from './tabs/AdminAuditTab';
@@ -26,111 +14,20 @@ import AdminReviewsTab from './tabs/AdminReviewsTab';
 import AdminDetailModals, { ReasonDialog } from './tabs/AdminDetailModals';
 import { useAdminDashboard, PAGE_SIZE } from './useAdminDashboard';
 
-const ENTITY_TAB_IDS = new Set(['users', 'orders', 'restaurants', 'vendors', 'reviews']);
-
-interface TabDef {
-  id: string;
-  label: string;
-  icon: ReactNode;
-}
-
-interface TabButtonProps {
-  tab: TabDef;
-  activeTab: string;
-  indented?: boolean;
-  onClick: (id: string) => void;
-}
-
-const TabButton = memo(({ tab, activeTab, indented, onClick }: TabButtonProps) => (
-  <button
-    className={`btn ${activeTab === tab.id ? 'btn-primary' : 'btn-secondary'}`}
-    onClick={() => onClick(tab.id)}
-    style={{
-      justifyContent: 'flex-start',
-      border: 'none',
-      padding: indented ? '8px 16px' : '10px 16px',
-      gap: 10,
-      fontSize: indented ? '0.88rem' : '0.95rem',
-      fontWeight: activeTab === tab.id ? 700 : 500,
-    }}
-  >
-    {tab.icon}
-    {tab.label}
-  </button>
-));
-
 const AdminDashboardPage = () => {
   const d = useAdminDashboard();
-  const { setActiveTab } = d;
-  const handleTabClick = useCallback((id: string) => setActiveTab(id), [setActiveTab]);
-
-  const tabs = [
-    { id: 'stats', label: 'Статистика', icon: <ChartLineUp size={18} /> },
-    { id: 'users', label: 'Пользователи', icon: <UsersThree size={18} /> },
-    { id: 'orders', label: 'Заказы', icon: <Package size={18} /> },
-    { id: 'resolution', label: 'Модерация', icon: <ShieldWarning size={18} /> },
-    { id: 'restaurants', label: 'Рестораны', icon: <Storefront size={18} /> },
-    { id: 'vendors', label: 'Вендоры', icon: <UsersThree size={18} /> },
-    { id: 'reviews', label: 'Отзывы', icon: <Star size={18} /> },
-    { id: 'finance', label: 'Аналитика', icon: <ChartLineUp size={18} /> },
-    { id: 'audit', label: 'Логи', icon: <Clock size={18} /> },
-  ];
 
   return (
     <div
       className="page-enter"
       style={{ padding: '80px 20px 100px', maxWidth: 1200, margin: '0 auto', display: 'flex', gap: 24, alignItems: 'flex-start' }}
     >
-      <div
-        className="admin-sidebar"
-        style={{
-          width: 240, flexShrink: 0, position: 'sticky', top: 80,
-          display: 'flex', flexDirection: 'column', gap: 6,
-          background: 'var(--bg-card)', padding: 16,
-          borderRadius: 'var(--r-md)', border: '1px solid var(--border)',
-        }}
-      >
-        <h1 style={{ fontSize: '1.2rem', fontWeight: 900, marginBottom: 16 }}>Админ-панель</h1>
-        {tabs
-          .filter((t) => t.id === 'stats')
-          .map((tab) => <TabButton key={tab.id} tab={tab} activeTab={d.activeTab} onClick={handleTabClick} />)}
-        <div>
-          <button
-            onClick={() => d.setEntitiesOpen((o) => !o)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 8, width: '100%',
-              padding: '10px 14px',
-              background: d.entitiesOpen ? 'var(--bg-surface)' : 'none',
-              border: '1px solid',
-              borderColor: d.entitiesOpen ? 'var(--border)' : 'transparent',
-              cursor: 'pointer', color: 'var(--text-2)', fontSize: '0.9rem',
-              fontWeight: 700, borderRadius: 'var(--r-sm)', marginTop: 4,
-              transition: 'background 0.15s, border-color 0.15s',
-            }}
-          >
-            <Rows size={16} weight="bold" />
-            Сущности
-            <CaretDown
-              size={14} weight="bold"
-              style={{
-                marginLeft: 'auto',
-                transform: d.entitiesOpen ? 'rotate(180deg)' : 'none',
-                transition: 'transform 0.2s', color: 'var(--text-3)',
-              }}
-            />
-          </button>
-          {d.entitiesOpen && (
-            <div style={{ paddingLeft: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {tabs
-                .filter((t) => ENTITY_TAB_IDS.has(t.id))
-                .map((tab) => <TabButton key={tab.id} tab={tab} activeTab={d.activeTab} indented onClick={handleTabClick} />)}
-            </div>
-          )}
-        </div>
-        {tabs
-          .filter((t) => !ENTITY_TAB_IDS.has(t.id) && t.id !== 'stats')
-          .map((tab) => <TabButton key={tab.id} tab={tab} activeTab={d.activeTab} onClick={handleTabClick} />)}
-      </div>
+      <AdminSidebar
+        activeTab={d.activeTab}
+        setActiveTab={d.setActiveTab}
+        entitiesOpen={d.entitiesOpen}
+        setEntitiesOpen={d.setEntitiesOpen}
+      />
 
       <div style={{ flex: 1, minWidth: 0 }}>
         {d.actionError && (
@@ -139,8 +36,8 @@ const AdminDashboardPage = () => {
         {d.actionSuccess && (
           <div style={{
             marginBottom: 16, padding: '10px 12px', borderRadius: 'var(--r-sm)',
-            border: '1px solid rgba(34, 197, 94, 0.35)', background: 'rgba(34, 197, 94, 0.1)',
-            color: '#16a34a', fontSize: '0.86rem', fontWeight: 700,
+            border: '1px solid var(--color-success-border)', background: 'var(--color-success-bg)',
+            color: 'var(--color-success-dim)', fontSize: '0.86rem', fontWeight: 700,
           }}>
             {d.actionSuccess}
           </div>
@@ -354,48 +251,7 @@ const AdminDashboardPage = () => {
           onConfirm={(reason) => { void d.runReasonAction(reason); }}
         />
 
-        <BatchActionBar
-          count={d.selectedUserIds.size}
-          label="пользователей"
-          loading={d.batchLoading}
-          onClear={() => d.setSelectedUserIds(new Set())}
-          actions={[
-            { label: 'Активировать', color: 'var(--color-success)', onClick: () => d.handleBatchUsers('activate') },
-            { label: 'Деактивировать', color: 'var(--error)', onClick: () => d.handleBatchUsers('deactivate') },
-          ]}
-        />
-
-        <BatchActionBar
-          count={d.selectedReviewIds.size}
-          label="отзывов"
-          loading={d.batchLoading}
-          onClear={() => d.setSelectedReviewIds(new Set())}
-          actions={[
-            { label: 'Удалить выбранные', color: 'var(--error)', onClick: d.handleBatchDeleteReviews },
-          ]}
-        />
-
-        <BatchActionBar
-          count={d.selectedVendorIds.size}
-          label="вендоров"
-          loading={d.batchLoading}
-          onClear={() => d.setSelectedVendorIds(new Set())}
-          actions={[
-            { label: 'Одобрить выбранных', color: 'var(--color-success)', onClick: () => { void d.handleBatchVendors('approve'); } },
-            { label: 'Отклонить выбранных', color: 'var(--error)', onClick: () => d.requestReason({ title: 'Причина отклонения', confirmLabel: 'Отклонить', onConfirm: (reason) => d.handleBatchVendors('reject', reason) }) },
-          ]}
-        />
-
-        <BatchActionBar
-          count={d.selectedRestaurantIds.size}
-          label="ресторанов"
-          loading={d.batchLoading}
-          onClear={() => d.setSelectedRestaurantIds(new Set())}
-          actions={[
-            { label: 'Одобрить выбранных', color: 'var(--color-success)', onClick: () => { void d.handleBatchRestaurants('approve'); } },
-            { label: 'Отклонить выбранных', color: 'var(--error)', onClick: () => d.requestReason({ title: 'Причина отклонения', confirmLabel: 'Отклонить', onConfirm: (reason) => d.handleBatchRestaurants('reject', reason) }) },
-          ]}
-        />
+        <AdminBatchBars d={d} />
 
         {d.qrRestaurant && (
           <QRCodeModal

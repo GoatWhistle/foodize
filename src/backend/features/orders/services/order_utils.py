@@ -1,9 +1,7 @@
 import hashlib
 import json
-import logging
 import uuid
 from datetime import datetime, timedelta, timezone
-from datetime import time as dt_time
 
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -13,14 +11,16 @@ from features.menu.models import MenuItem, MenuItemOption
 from features.orders.exceptions import InvalidStatusTransitionException
 from features.orders.models import IdempotencyKey
 from features.orders.schemas.order import OrderCreate
+from features.restaurants.working_hours_crud import is_open_now
 from infra.cache.redis import get_redis_cache
 from shared.enums.order_status import OrderStatus
 from shared.enums.selection_type import SelectionType
 from shared.exceptions import BadRequestException
+from utils.logging_setup import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
-_ALLOWED_TRANSITIONS: dict[OrderStatus, set[OrderStatus]] = {
+ALLOWED_TRANSITIONS: dict[OrderStatus, set[OrderStatus]] = {
     OrderStatus.PENDING: {OrderStatus.ACCEPTED},
     OrderStatus.ACCEPTED: {OrderStatus.READY},
     OrderStatus.READY: {OrderStatus.COMPLETED},
@@ -28,19 +28,19 @@ _ALLOWED_TRANSITIONS: dict[OrderStatus, set[OrderStatus]] = {
     OrderStatus.CANCELLED: set(),
 }
 
-_CANCELLABLE_STATUSES = {OrderStatus.PENDING, OrderStatus.ACCEPTED}
-_TERMINAL_STATUSES = {OrderStatus.COMPLETED, OrderStatus.CANCELLED}
+CANCELLABLE_STATUSES = {OrderStatus.PENDING, OrderStatus.ACCEPTED}
+TERMINAL_STATUSES = {OrderStatus.COMPLETED, OrderStatus.CANCELLED}
 _PICKUP_TIME_HORIZON_DAYS = 7
 
 
-async def _safe_publish(channel: str, message: str) -> None:
+async def safe_publish(channel: str, message: str) -> None:
     try:
         await get_redis_cache().publish(channel, message)
     except Exception:
-        logger.warning("Redis publish failed: channel=%s", channel)
+        logger.warning("redis_publish_failed", channel=channel)
 
 
-def _is_ordering_paused(restaurant) -> bool:
+def is_ordering_paused(restaurant) -> bool:
     if getattr(restaurant, "is_ordering_paused", False) is not True:
         return False
     paused_until = restaurant.ordering_paused_until
@@ -51,12 +51,12 @@ def _is_ordering_paused(restaurant) -> bool:
     return paused_until > datetime.now(timezone.utc)
 
 
-def _validate_transition(old: OrderStatus, new: OrderStatus) -> None:
-    if new not in _ALLOWED_TRANSITIONS.get(old, set()):
+def validate_transition(old: OrderStatus, new: OrderStatus) -> None:
+    if new not in ALLOWED_TRANSITIONS.get(old, set()):
         raise InvalidStatusTransitionException()
 
 
-def _validate_item_options(
+def validate_item_options(
     item_data,
     menu_item: MenuItem,
     options_by_id: dict[uuid.UUID, MenuItemOption],
@@ -96,25 +96,25 @@ def _validate_item_options(
     return selected_options
 
 
-def _make_request_hash(order_data: OrderCreate) -> str:
+def make_request_hash(order_data: OrderCreate) -> str:
     payload = order_data.model_dump(mode="json")
     raw = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(raw.encode()).hexdigest()
 
 
-def _as_aware_utc(value: datetime) -> datetime:
+def as_aware_utc(value: datetime) -> datetime:
     if value.tzinfo is None:
         return value.replace(tzinfo=timezone.utc)
     return value.astimezone(timezone.utc)
 
 
-def _validate_requested_pickup_at(
+def validate_requested_pickup_at(
     requested_pickup_at: datetime | None,
     min_ready_at: datetime,
 ) -> datetime | None:
     if requested_pickup_at is None:
         return None
-    pickup_at = _as_aware_utc(requested_pickup_at)
+    pickup_at = as_aware_utc(requested_pickup_at)
     now = datetime.now(timezone.utc)
     latest = now + timedelta(days=_PICKUP_TIME_HORIZON_DAYS)
     if pickup_at < min_ready_at:
@@ -126,34 +126,13 @@ def _validate_requested_pickup_at(
     return pickup_at
 
 
-def _is_open_at(hours, value: datetime) -> bool | None:
+def is_open_at(hours, value: datetime) -> bool | None:
     if not hours:
         return None
-    pickup_at = _as_aware_utc(value)
-    day_of_week = pickup_at.weekday()
-    current_time = pickup_at.time().replace(tzinfo=None)
-
-    def _parse_time(t: str) -> dt_time:
-        h, m = t.split(":")
-        return dt_time(int(h), int(m))
-
-    _MIDNIGHT = dt_time(0, 0)
-
-    for entry in hours:
-        if entry.day_of_week == day_of_week:
-            if entry.is_closed:
-                return False
-            open_t = _parse_time(entry.open_time)
-            close_t = _parse_time(entry.close_time)
-            if close_t == _MIDNIGHT:
-                return current_time >= open_t
-            if open_t < close_t:
-                return open_t <= current_time < close_t
-            return current_time >= open_t or current_time < close_t
-    return None
+    return is_open_now(hours, as_aware_utc(value))
 
 
-async def _get_idempotency_record(
+async def get_idempotency_record(
     session: AsyncSession,
     user_id: uuid.UUID,
     key: str,
@@ -167,7 +146,7 @@ async def _get_idempotency_record(
     return result.scalar_one_or_none()
 
 
-async def _start_idempotency_record(
+async def start_idempotency_record(
     session: AsyncSession,
     user_id: uuid.UUID,
     key: str | None,
@@ -187,7 +166,7 @@ async def _start_idempotency_record(
     if record is not None:
         return record
 
-    existing = await _get_idempotency_record(session, user_id, key)
+    existing = await get_idempotency_record(session, user_id, key)
     if existing is None:
         raise BadRequestException(detail="Idempotent request is still being processed")
     if existing.request_hash != request_hash:

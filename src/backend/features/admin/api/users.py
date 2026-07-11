@@ -4,11 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
-from features.admin import crud, service
+from features.admin import crud
+from features.admin.api.schemas import BatchIdsRequest, SetPermissionsRequest
 from features.admin.audit_log import service as audit_service
 from features.admin.dependencies import require_admin
 from features.admin.schemas import AdminUserResponse
-from features.admin.api.schemas import BatchIdsRequest, SetPermissionsRequest
+from features.admin.service import users as users_service
 from features.users.models import User
 from shared.permissions import ADMIN_PERMISSIONS, CUSTOMER_PERMISSIONS, serialize_permissions
 from shared.response import build_list_response, build_response
@@ -28,7 +29,7 @@ async def read_users(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessListResponse[AdminUserResponse]:
     offset = (page - 1) * size
-    data, total = await service.get_users_list(session, role, offset, size, search=search)
+    data, total = await users_service.get_users_list(session, role, offset, size, search=search)
     return build_list_response(data=data, total=total, page=page, size=size, request=request)
 
 
@@ -39,7 +40,7 @@ async def batch_deactivate_users(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[dict]:
     count = await crud.batch_deactivate_users(session, body.ids)
-    await session.commit()
+    await session.flush()
     return build_response({"affected": count})
 
 
@@ -50,7 +51,7 @@ async def batch_activate_users(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[dict]:
     count = await crud.batch_activate_users(session, body.ids)
-    await session.commit()
+    await session.flush()
     return build_response({"affected": count})
 
 
@@ -60,7 +61,7 @@ async def read_user(
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminUserResponse]:
-    result = await service.get_user_or_404(session, user_id)
+    result = await users_service.get_user_or_404(session, user_id)
     return build_response(result)
 
 
@@ -70,9 +71,9 @@ async def delete_user(
     actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminUserResponse]:
-    result = await service.deactivate_user_service(session, user_id)
+    result = await users_service.deactivate_user_service(session, user_id)
     await audit_service.log_action(session, actor.id, "DEACTIVATE_USER", "user", user_id)
-    await session.commit()
+    await session.flush()
     return build_response(result)
 
 
@@ -82,9 +83,9 @@ async def activate_user(
     actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminUserResponse]:
-    result = await service.activate_user_service(session, user_id)
+    result = await users_service.activate_user_service(session, user_id)
     await audit_service.log_action(session, actor.id, "ACTIVATE_USER", "user", user_id)
-    await session.commit()
+    await session.flush()
     return build_response(result)
 
 
@@ -96,7 +97,7 @@ async def grant_admin_permissions(
 ) -> SuccessResponse[AdminUserResponse]:
     if user_id == actor.id:
         raise HTTPException(status_code=403, detail="Cannot grant admin rights to yourself")
-    result = await service.set_user_permissions(
+    result = await users_service.set_user_permissions(
         session, user_id, serialize_permissions(ADMIN_PERMISSIONS), actor=actor
     )
     return build_response(result)
@@ -109,7 +110,7 @@ async def change_user_permissions(
     actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminUserResponse]:
-    result = await service.set_user_permissions(
+    result = await users_service.set_user_permissions(
         session, user_id, body.permissions, actor=actor
     )
     return build_response(result)
@@ -120,7 +121,7 @@ async def reset_my_permissions(
     user: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminUserResponse]:
-    result = await service.reset_own_permissions(
+    result = await users_service.reset_own_permissions(
         session, user, serialize_permissions(CUSTOMER_PERMISSIONS)
     )
     return build_response(result)

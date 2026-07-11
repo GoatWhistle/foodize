@@ -81,8 +81,8 @@ class TestDeleteFavorite:
 
         session = AsyncMock()
         session.delete = AsyncMock()
-        session.commit = AsyncMock()
+        session.flush = AsyncMock()
 
         await delete_favorite(session, fav)
         session.delete.assert_awaited_once_with(fav)
-        session.commit.assert_awaited_once()
+        session.flush.assert_awaited_once()

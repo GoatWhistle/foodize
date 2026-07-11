@@ -1,12 +1,12 @@
-import logging
 from urllib.parse import urlsplit, urlunsplit
 
 import aio_pika
 import aio_pika.abc
 
 from settings.config.app_config import settings
+from utils.logging_setup import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def _sanitize_amqp_url(url: str) -> str:
@@ -16,8 +16,15 @@ def _sanitize_amqp_url(url: str) -> str:
         host = f"{host}:{parts.port}"
     return urlunsplit((parts.scheme, host, parts.path, "", ""))
 
+
 EXCHANGE_NAME = "foodize.events"
 EXCHANGE_TYPE = aio_pika.ExchangeType.TOPIC
+DLX_NAME = "foodize.dlx"
+DLQ_NAME = "foodize.dlq"
+RETRY_EXCHANGE_NAME = "foodize.retry"
+RETRY_QUEUE_NAME = "foodize.retry.wait"
+RETRY_TTL_MS = 30_000
+PREFETCH_COUNT = 10
 
 
 class RabbitMQBroker:
@@ -26,18 +33,19 @@ class RabbitMQBroker:
         self._connection: aio_pika.abc.AbstractRobustConnection | None = None
         self._channel: aio_pika.abc.AbstractChannel | None = None
         self._exchange: aio_pika.abc.AbstractExchange | None = None
+        self._retry_exchange: aio_pika.abc.AbstractExchange | None = None
 
     async def connect(self) -> None:
         self._connection = await aio_pika.connect_robust(self._url)
         self._channel = await self._connection.channel()
-        await self._channel.set_qos(prefetch_count=10)
+        await self._channel.set_qos(prefetch_count=PREFETCH_COUNT)
         dlx = await self._channel.declare_exchange(
-            "foodize.dlx",
+            DLX_NAME,
             aio_pika.ExchangeType.TOPIC,
             durable=True,
         )
         dlq = await self._channel.declare_queue(
-            "foodize.dlq",
+            DLQ_NAME,
             durable=True,
         )
         await dlq.bind(dlx, routing_key="#")
@@ -46,12 +54,30 @@ class RabbitMQBroker:
             EXCHANGE_TYPE,
             durable=True,
         )
-        logger.info("RabbitMQ connected: %s", _sanitize_amqp_url(self._url))
+        self._retry_exchange = await self._channel.declare_exchange(
+            RETRY_EXCHANGE_NAME,
+            aio_pika.ExchangeType.TOPIC,
+            durable=True,
+        )
+        retry_queue = await self._channel.declare_queue(
+            RETRY_QUEUE_NAME,
+            durable=True,
+            arguments={
+                "x-message-ttl": RETRY_TTL_MS,
+                "x-dead-letter-exchange": EXCHANGE_NAME,
+            },
+        )
+        await retry_queue.bind(self._retry_exchange, routing_key="#")
+        logger.info("rabbitmq_connected", url=_sanitize_amqp_url(self._url))
 
     async def disconnect(self) -> None:
         if self._connection and not self._connection.is_closed:
             await self._connection.close()
-        logger.info("RabbitMQ disconnected")
+        logger.info("rabbitmq_disconnected")
+
+    @property
+    def is_connected(self) -> bool:
+        return self._connection is not None and not self._connection.is_closed
 
     @property
     def exchange(self) -> aio_pika.abc.AbstractExchange:
@@ -64,6 +90,12 @@ class RabbitMQBroker:
         if self._channel is None:
             raise RuntimeError("RabbitMQ broker is not connected. Call connect() first.")
         return self._channel
+
+    @property
+    def retry_exchange(self) -> aio_pika.abc.AbstractExchange:
+        if self._retry_exchange is None:
+            raise RuntimeError("RabbitMQ broker is not connected. Call connect() first.")
+        return self._retry_exchange
 
 
 broker = RabbitMQBroker(url=str(settings.rabbitmq.url))

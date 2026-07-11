@@ -103,7 +103,7 @@ const NotificationBell = () => {
             {notifications.length > 0 && (
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 {unreadCount > 0 && (
-                  <button onClick={() => { void markAllAsRead(); }} style={{ background: "none", border: "none", color: "var(--brand)", fontSize: "0.8rem", fontWeight: 700, cursor: "pointer", padding: 0 }}>
+                  <button onClick={() => { void markAllAsRead(); }} style={{ background: "none", border: "none", color: "var(--accent)", fontSize: "0.8rem", fontWeight: 700, cursor: "pointer", padding: 0 }}>
                     Прочитать все
                   </button>
                 )}
@@ -130,7 +130,7 @@ const NotificationBell = () => {
                       <div
                         key={n.id}
                         onClick={() => { if (!n.is_read) void markAsRead(n.id); }}
-                        style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", background: n.is_read ? "transparent" : "var(--brand-alpha)", cursor: n.is_read ? "default" : "pointer", transition: "background 0.2s" }}
+                        style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", background: n.is_read ? "transparent" : "var(--accent-subtle)", cursor: n.is_read ? "default" : "pointer", transition: "background 0.2s" }}
                       >
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, gap: 8 }}>
                           <strong style={{ fontSize: "0.875rem", color: "var(--text-1)", lineHeight: 1.2 }}>{n.title}</strong>
@@ -153,7 +153,7 @@ const NotificationBell = () => {
                   </div>
                 ))}
                 {hasMore && (
-                  <button onClick={() => { void handleLoadMore(); }} disabled={loadingMore} style={{ width: "100%", padding: "10px 16px", background: "none", border: "none", borderTop: "1px solid var(--border)", color: "var(--brand)", fontSize: "0.8rem", fontWeight: 700, cursor: loadingMore ? "default" : "pointer", opacity: loadingMore ? 0.6 : 1 }}>
+                  <button onClick={() => { void handleLoadMore(); }} disabled={loadingMore} style={{ width: "100%", padding: "10px 16px", background: "none", border: "none", borderTop: "1px solid var(--border)", color: "var(--accent)", fontSize: "0.8rem", fontWeight: 700, cursor: loadingMore ? "default" : "pointer", opacity: loadingMore ? 0.6 : 1 }}>
                     {loadingMore ? "Загрузка..." : "Загрузить ещё"}
                   </button>
                 )}

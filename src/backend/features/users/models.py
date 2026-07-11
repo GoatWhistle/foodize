@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import JSON, BigInteger, String
+from sqlalchemy import JSON, BigInteger, Index, String, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -17,6 +17,15 @@ if TYPE_CHECKING:
 
 
 class User(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin):
+    __table_args__ = (
+        Index(
+            "uq_users_email_active",
+            "email",
+            unique=True,
+            postgresql_where=text("email IS NOT NULL"),
+        ),
+    )
+
     phone_number: Mapped[str] = mapped_column(unique=True)
     hashed_password: Mapped[str | None] = mapped_column(nullable=True)
     telegram_id: Mapped[int | None] = mapped_column(

@@ -1,6 +1,11 @@
+.git
+.idea
 node_modules
 dist
+coverage
 .env*
 *.log
 .DS_Store
-coverage
+*.pem
+*.key
+secret*

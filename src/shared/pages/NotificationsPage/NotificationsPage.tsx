@@ -149,10 +149,10 @@ const NotificationsPage = ({
                 <div
                   key={n.id}
                   onClick={() => !n.is_read && markAsRead(n.id)}
-                  style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 16px", background: n.is_read ? "transparent" : "var(--brand-alpha)", borderBottom: "1px solid var(--border)", cursor: n.is_read ? "default" : "pointer" }}
+                  style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 16px", background: n.is_read ? "transparent" : "var(--accent-subtle)", borderBottom: "1px solid var(--border)", cursor: n.is_read ? "default" : "pointer" }}
                 >
                   {!n.is_read && (
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--brand)", flexShrink: 0, marginTop: 5 }} />
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--accent)", flexShrink: 0, marginTop: 5 }} />
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: "0.875rem", fontWeight: 600, color: "var(--text-1)", marginBottom: 2 }}>{n.title}</div>

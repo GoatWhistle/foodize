@@ -1,6 +1,7 @@
 import uuid
+from typing import Union
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
@@ -9,14 +10,14 @@ from features.users import crud
 from features.users.dependencies import get_user_by_id_or_404
 from features.users.models import User
 from features.users.schemas import ChangePasswordRequest, UserPublicRead, UserRead, UserUpdate
+from middlewares.limiter import limiter
 from shared.enums.permissions import Permission
 from shared.exceptions.existence import AuthException
 from shared.exceptions.rules import AccessDeniedException
 from shared.permissions import has_permission
 from shared.response import build_response
 from shared.schemas.response import SuccessResponse
-from typing import Union
-from utils.JWT import validate_password
+from utils.jwt_tokens import validate_password
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -39,12 +40,14 @@ async def update_my_profile(
 
 
 @router.post("/me/change-password", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("5/minute")
 async def change_my_password(
+    request: Request,
     data: ChangePasswordRequest,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> None:
-    if not current_user.hashed_password or not validate_password(
+    if not current_user.hashed_password or not await validate_password(
         data.old_password, current_user.hashed_password
     ):
         raise AuthException(detail="Wrong password")

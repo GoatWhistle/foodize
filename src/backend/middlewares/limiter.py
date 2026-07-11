@@ -1,12 +1,34 @@
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+from starlette.requests import Request
 
-# NOTE: get_remote_address trusts the socket peer address as-is. If this service runs
-# behind a reverse proxy (nginx, load balancer) that terminates client connections and
-# forwards X-Forwarded-For/X-Real-IP, get_remote_address will see the proxy's IP for
-# every request unless Starlette/uvicorn is configured with a trusted proxy list
-# (proxy_headers=True + forwarded_allow_ips), which would make every client share one
-# rate-limit bucket, or — if trusted blindly — let clients spoof X-Forwarded-For to
-# bypass rate limiting entirely. Verify prod proxy topology and configure a trusted
-# proxy allowlist before relying on this limiter as a real anti-brute-force control.
-limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
+from utils.jwt_tokens import decode_jwt
+
+
+def _client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return get_remote_address(request)
+
+
+def _bearer_token(request: Request) -> str | None:
+    header = request.headers.get("authorization")
+    if header and header.lower().startswith("bearer "):
+        return header[7:].strip()
+    return None
+
+
+def user_or_ip_key(request: Request) -> str:
+    token = request.cookies.get("access_token") or _bearer_token(request)
+    if token:
+        try:
+            payload = decode_jwt(token)
+        except Exception:
+            payload = None
+        if payload and payload.get("sub"):
+            return f"user:{payload['sub']}"
+    return f"ip:{_client_ip(request)}"
+
+
+limiter = Limiter(key_func=_client_ip, default_limits=["100/minute"])

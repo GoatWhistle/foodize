@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { useNavigate } from "react-router-dom";
 import { favoriteService } from "@shared/services/favoriteService";
+import { logError } from "@shared/utils/logError";
 import { useFavoriteStore } from "@shared/store/useFavoriteStore";
 import type { Favorite, Restaurant } from "@shared/types/models";
 
@@ -43,7 +44,7 @@ export const useFavoritesPage = ({
         setFavorites(list);
         setTotal(body?.pagination?.total ?? list.length);
       })
-      .catch(() => {})
+      .catch((err) => logError("useFavoritesPage.load", err))
       .finally(() => setLoading(false));
   }, [page, pageSize]);
 

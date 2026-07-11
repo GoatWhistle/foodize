@@ -22,6 +22,17 @@ class OrderStatusChangedEvent(BaseModel):
     total_price: int
 
 
+class FeedbackRequestedEvent(BaseModel):
+    event_type: str = EventType.FEEDBACK_REQUESTED.value
+    event_id: uuid.UUID = Field(default_factory=uuid.uuid4)
+    occurred_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    order_id: uuid.UUID
+    user_id: uuid.UUID
+    restaurant_id: uuid.UUID
+    restaurant_name: str
+
+
 class OrderPlacedEvent(BaseModel):
     event_type: str = EventType.ORDER_PLACED.value
     event_id: uuid.UUID = Field(default_factory=uuid.uuid4)

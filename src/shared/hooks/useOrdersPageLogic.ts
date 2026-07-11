@@ -3,6 +3,7 @@ import type { Dispatch, SetStateAction, RefObject } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useOrderStore } from "@shared/store/useOrderStore.instance";
 import type { OrderStoreState } from "@shared/store/useOrderStore";
+import { logError } from "@shared/utils/logError";
 import type { Order } from "@shared/types/models";
 
 export interface UseOrdersPageLogicOptions {
@@ -46,7 +47,6 @@ export const useOrdersPageLogic = ({
   const [hasMore, setHasMore] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
-  const fetchIdRef = useRef(0);
 
   const refresh = useCallback(() => {
     setAllOrders([]);
@@ -62,14 +62,11 @@ export const useOrdersPageLogic = ({
   }, [statusFilter]);
 
   useEffect(() => {
-    const id = ++fetchIdRef.current;
     fetchMyOrders({
       page,
       size: pageSize,
       status: statusFilter === "DONE" ? "COMPLETED" : undefined,
-    }).then(() => {
-      if (fetchIdRef.current !== id) return;
-    }).catch(() => {});
+    }).catch((err) => logError("useOrdersPageLogic.fetchMyOrders", err));
   }, [page, statusFilter, fetchMyOrders, pageSize, refreshKey]);
 
   useEffect(() => {

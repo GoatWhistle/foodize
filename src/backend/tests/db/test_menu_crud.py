@@ -14,6 +14,7 @@ from features.menu.crud import (
     update_option,
     update_option_group,
 )
+from features.menu.models import MenuItem
 from features.menu.schemas import (
     MenuItemCreate,
     MenuItemOptionCreate,
@@ -109,9 +110,11 @@ async def test_delete_menu_item_soft_deletes(db_session, restaurant):
     count = await count_menu_items(db_session, restaurant.id)
     assert count == 0
 
-    fetched = await get_menu_item_by_id(db_session, item.id)
-    assert fetched is not None
-    assert fetched.is_deleted is True
+    assert await get_menu_item_by_id(db_session, item.id) is None
+
+    persisted = await db_session.get(MenuItem, item.id)
+    assert persisted is not None
+    assert persisted.is_deleted is True
 
 
 @pytest.mark.asyncio

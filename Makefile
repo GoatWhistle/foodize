@@ -4,6 +4,7 @@ BACKEND_DIR := $(CURDIR)/src/backend
 FRONTEND_DIR := $(CURDIR)/src/frontend
 MINIAPP_DIR := $(CURDIR)/src/telegram-miniapp
 BOT_DIR := $(CURDIR)/src/telegram-bot
+SHARED_DIR := $(CURDIR)/src/shared
 CERTS_DIR := $(BACKEND_DIR)/certs
 JWT_PRIVATE_KEY := $(CERTS_DIR)/jwt-private.pem
 JWT_PUBLIC_KEY := $(CERTS_DIR)/jwt-public.pem
@@ -32,7 +33,7 @@ help:
 	@echo " "
 
 seed:
-	docker compose exec -e PYTHONPATH=/backend backend python /tools/seed.py
+	docker compose exec -e PYTHONPATH=/backend:/tools backend python -m seed
 
 tg:
 	@bash tools/tg.sh
@@ -40,6 +41,7 @@ tg:
 sync:
 	cd "$(BACKEND_DIR)" && pip install uv && uv sync
 	cd "$(BOT_DIR)" && pip install uv && uv sync
+	cd "$(SHARED_DIR)" && npm install --silent
 	cd "$(FRONTEND_DIR)" && npm install --silent
 	cd "$(MINIAPP_DIR)" && npm install --silent
 	@echo " "
@@ -47,8 +49,9 @@ sync:
 
 lint:
 	cd "$(BACKEND_DIR)" && uv run pre-commit run --all-files
-	cd "$(FRONTEND_DIR)" && npm run lint
-	cd "$(MINIAPP_DIR)" && npm run lint
+	cd "$(SHARED_DIR)" && npm run lint && npm run typecheck
+	cd "$(FRONTEND_DIR)" && npm run lint && npm run typecheck
+	cd "$(MINIAPP_DIR)" && npm run lint && npm run typecheck
 	@echo " "
 	@echo "Linting completed!"
 
@@ -58,6 +61,7 @@ test:
 	cd "$(FRONTEND_DIR)" && npm test -- --run
 	cd "$(MINIAPP_DIR)" && npm test -- --run
 	@echo " "
+	@echo "Shared code is exercised by frontend and miniapp test suites."
 	@echo "Tests completed!"
 
 openapi:
