@@ -1,6 +1,7 @@
 from datetime import date
+from http import HTTPStatus
 
-from fastapi import APIRouter, Depends, Header, Query, Request, status
+from fastapi import APIRouter, Depends, Header, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
@@ -55,7 +56,7 @@ async def verify_order_read_access(session: AsyncSession, order: Order, current_
 @router.post(
     "/",
     response_model=SuccessResponse[OrderResponse],
-    status_code=status.HTTP_201_CREATED,
+    status_code=HTTPStatus.CREATED,
 )
 @limiter.limit("10/minute")
 async def create_order(

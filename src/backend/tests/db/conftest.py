@@ -1,7 +1,8 @@
 import os
+from collections.abc import AsyncGenerator
 
 import pytest_asyncio
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
 from database import Base
@@ -19,7 +20,7 @@ TestingSessionLocal = async_sessionmaker(
 
 
 @pytest_asyncio.fixture(loop_scope="function", autouse=True)
-async def setup_test_db():
+async def setup_test_db() -> AsyncGenerator[None]:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
@@ -29,7 +30,7 @@ async def setup_test_db():
 
 
 @pytest_asyncio.fixture
-async def db_session():
+async def db_session() -> AsyncGenerator[AsyncSession]:
     async with TestingSessionLocal() as session:
         yield session
         await session.rollback()

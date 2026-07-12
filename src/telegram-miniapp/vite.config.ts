@@ -16,8 +16,12 @@ export default defineConfig({
         replacement: path.resolve(__dirname, "src/services/api"),
       },
       {
-        find: "@shared/store/useOrderStore.instance",
-        replacement: path.resolve(__dirname, "src/store/useOrderStore"),
+        find: "@shared/store/useCartStore.instance",
+        replacement: path.resolve(__dirname, "src/store/useCartStore"),
+      },
+      {
+        find: "@shared/store/useOrdersStore.instance",
+        replacement: path.resolve(__dirname, "src/store/useOrdersStore"),
       },
       {
         find: "@shared/store/useAuthStore.instance",
@@ -63,6 +67,9 @@ export default defineConfig({
         coverageGlob("src/store/**/*.{ts,tsx}"),
         coverageGlob("src/telegram/**/*.{ts,tsx}"),
         coverageGlob("src/utils/**/*.{ts,tsx}"),
+        coverageGlob("src/components/**/*.{ts,tsx}"),
+        coverageGlob("src/pages/**/*.{ts,tsx}"),
+        coverageGlob("src/hooks/**/*.{ts,tsx}"),
         sharedGlob("store"),
         sharedGlob("services"),
         sharedGlob("utils"),

@@ -6,14 +6,14 @@ Create Date: 2026-07-10 20:34:37.381453
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 from alembic import op
 
 revision: str = "05379e9c7397"
-down_revision: Union[str, Sequence[str], None] = "ebaed8f0979d"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = "ebaed8f0979d"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 _INDEXES: tuple[tuple[str, str, str], ...] = (
     ("ix_menu_items_restaurant_id", "menu_items", "restaurant_id"),

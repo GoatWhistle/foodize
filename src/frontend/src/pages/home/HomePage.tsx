@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Storefront } from '@phosphor-icons/react';
+import { StorefrontIcon } from '@phosphor-icons/react';
 import RestaurantCard from '@shared/components/RestaurantCard/RestaurantCard';
 import EmptyState from '@shared/components/EmptyState/EmptyState';
 import Pagination from '@shared/components/Pagination/Pagination';
@@ -12,9 +12,7 @@ import { useHomePageLogic } from '@shared/hooks/useHomePageLogic';
 import type { Restaurant } from '@shared/types/models';
 
 const HomePage = () => {
-  const { isAuthenticated } = useAuthStore(
-    useShallow((s) => ({ isAuthenticated: s.isAuthenticated }))
-  );
+  const isAuthenticated = useAuthStore((s) => s.user !== null);
   const { favoriteIds } = useFavoriteStore(
     useShallow((s) => ({ favoriteIds: s.favoriteIds }))
   );
@@ -40,7 +38,7 @@ const HomePage = () => {
       return;
     }
     void navigate(
-      ROUTES.RESTAURANT.replace(':id', String(restaurant.display_id ?? restaurant.id)),
+      ROUTES.RESTAURANT.replace(':id', restaurant.display_id ?? restaurant.id),
       {
         state: { restaurant },
         viewTransition: true,
@@ -64,7 +62,7 @@ const HomePage = () => {
 
       <div className="restaurants-section">
         <div className="section-header">
-          <Storefront size={20} weight="bold" color="var(--fire)" />
+          <StorefrontIcon size={20} weight="bold" color="var(--fire)" />
           <h1 className="section-title">Все заведения</h1>
           <span
             className="text-muted"
@@ -102,7 +100,7 @@ const HomePage = () => {
                 >
                   <RestaurantCard
                     restaurant={r}
-                    onClick={() => handleCardClick(r)}
+                    onClick={() => { handleCardClick(r); }}
                     isFavorite={isAuthenticated && favoriteIds.includes(r.id)}
                   />
                 </div>

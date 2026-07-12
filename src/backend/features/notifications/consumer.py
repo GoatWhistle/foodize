@@ -1,5 +1,4 @@
 import asyncio
-import os
 import signal
 import time
 from collections.abc import Awaitable, Callable
@@ -8,6 +7,7 @@ from typing import Any, cast
 
 import aio_pika
 import aio_pika.abc
+import structlog
 from prometheus_client import Counter, Gauge, start_http_server
 from pydantic import BaseModel
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -27,6 +27,7 @@ from features.notifications.handlers import (
     handle_order_status_changed,
 )
 from features.notifications.processed_event import ProcessedEvent
+from settings.config.app_config import settings
 from utils.logging_setup import configure_logging, get_logger
 
 logger = get_logger(__name__)
@@ -125,13 +126,15 @@ async def _handle_event(
         await binding(session, event)
         payload = session.info.get("notification_payload")
         await session.commit()
-        return payload
+        return cast("tuple[Any, str] | None", payload)
 
 
 async def _process_message(
     message: aio_pika.abc.AbstractIncomingMessage,
     routing_key: str,
 ) -> None:
+    structlog.contextvars.clear_contextvars()
+    structlog.contextvars.bind_contextvars(routing_key=routing_key)
     async with message.process(requeue=False, ignore_processed=True):
         worker_last_message_timestamp.set(time.time())
         model_cls = _EVENT_MODELS.get(routing_key)
@@ -153,8 +156,10 @@ async def _process_message(
             _record_failure(routing_key, "invalid_payload")
             await message.nack(requeue=False)
             return
+        domain_event = cast("DomainEvent", event)
+        structlog.contextvars.bind_contextvars(event_id=str(domain_event.event_id))
         try:
-            payload = await _handle_event(binding[2], cast(DomainEvent, event), routing_key)
+            payload = await _handle_event(binding[2], domain_event, routing_key)
         except Exception:
             attempt = _retry_count(message) + 1
             if attempt > _MAX_RETRIES:
@@ -229,18 +234,13 @@ async def start_consuming() -> None:
 
     try:
         await asyncio.wait_for(outbox_task, timeout=_DRAIN_TIMEOUT_SECONDS)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.warning("outbox_drain_timeout")
         outbox_task.cancel()
 
 
 def _start_metrics_server() -> None:
-    port_raw = os.environ.get("WORKER_METRICS_PORT", "9200")
-    try:
-        port = int(port_raw)
-    except ValueError:
-        logger.warning("worker_metrics_port_invalid", value=port_raw)
-        return
+    port = settings.rabbitmq.worker_metrics_port
     start_http_server(port)
     logger.info("worker_metrics_server_started", port=port)
 

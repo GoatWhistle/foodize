@@ -262,6 +262,64 @@ jobs:
       - name: Check docker-compose.yaml vs docker-compose.prod.yaml consistency
         run: python3 tools/check_compose_consistency.py
 
+  backup-restore-ci:
+    runs-on: ubuntu-latest
+    env:
+      PG_CONTAINER: foodize_pg
+      POSTGRES_DB: foodize
+      POSTGRES_USER: foodize_user
+      POSTGRES_PASSWORD: test_password
+      BACKUP_DIR: ./backups
+      BACKUP_ENCRYPTION_PASSPHRASE: ci-test-passphrase
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start ephemeral Postgres (named to match backup/restore scripts)
+        run: |
+          docker run -d --name "$PG_CONTAINER" \
+            -e POSTGRES_DB="$POSTGRES_DB" \
+            -e POSTGRES_USER="$POSTGRES_USER" \
+            -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
+            postgres:17-alpine
+          for i in $(seq 1 30); do
+            if docker exec "$PG_CONTAINER" pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" >/dev/null 2>&1; then
+              break
+            fi
+            sleep 2
+          done
+
+      - name: Seed known data
+        run: |
+          docker exec -i "$PG_CONTAINER" psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<'SQL'
+          CREATE TABLE restore_probe (id int PRIMARY KEY, note text);
+          INSERT INTO restore_probe VALUES (1, 'foodize-backup-restore-canary');
+          SQL
+
+      - name: Take an encrypted backup (tools/backup.sh)
+        run: bash tools/backup.sh
+
+      - name: Corrupt live data to prove restore actually rewrites it
+        run: |
+          docker exec -i "$PG_CONTAINER" psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+            -c "DELETE FROM restore_probe;"
+
+      - name: Restore from the encrypted backup (tools/restore.sh)
+        run: |
+          DUMP=$(ls -t ./backups/foodize_*.dump.enc | head -n1)
+          echo "Restoring from $DUMP"
+          bash tools/restore.sh "$DUMP" --yes
+
+      - name: Verify restored data matches the canary
+        run: |
+          RESULT=$(docker exec -i "$PG_CONTAINER" psql -tA -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+            -c "SELECT note FROM restore_probe WHERE id = 1;")
+          echo "Restored value: '$RESULT'"
+          test "$RESULT" = "foodize-backup-restore-canary"
+
+      - name: Tear down
+        if: always()
+        run: docker rm -f "$PG_CONTAINER" || true
+
   docker-security:
     runs-on: ubuntu-latest
     permissions:
@@ -286,6 +344,11 @@ jobs:
         with:
           dockerfile: src/telegram-miniapp/Dockerfile.prod
 
+      - name: Hadolint telegram-bot Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: src/telegram-bot/Dockerfile
+
       - name: Build backend image
         uses: docker/build-push-action@v6
         with:
@@ -296,13 +359,70 @@ jobs:
           push: false
           tags: foodize-backend:ci
 
+      - name: Build frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: src
+          file: src/frontend/Dockerfile.prod
+          target: production
+          load: true
+          push: false
+          tags: foodize-frontend:ci
+
+      - name: Build miniapp image
+        uses: docker/build-push-action@v6
+        with:
+          context: src
+          file: src/telegram-miniapp/Dockerfile.prod
+          target: production
+          load: true
+          push: false
+          tags: foodize-miniapp:ci
+
+      - name: Build telegram-bot image
+        uses: docker/build-push-action@v6
+        with:
+          context: src/telegram-bot
+          file: src/telegram-bot/Dockerfile
+          target: production
+          load: true
+          push: false
+          tags: foodize-telegram-bot:ci
+
       - name: Trivy scan backend image
         uses: aquasecurity/trivy-action@0.28.0
         with:
           image-ref: foodize-backend:ci
           severity: HIGH,CRITICAL
           ignore-unfixed: true
-          exit-code: '0'
+          exit-code: '1'
+          format: table
+
+      - name: Trivy scan frontend image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: foodize-frontend:ci
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+          format: table
+
+      - name: Trivy scan miniapp image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: foodize-miniapp:ci
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+          format: table
+
+      - name: Trivy scan telegram-bot image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: foodize-telegram-bot:ci
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
           format: table
 
       - name: Gitleaks secret scan

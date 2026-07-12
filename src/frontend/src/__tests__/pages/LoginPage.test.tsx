@@ -14,7 +14,6 @@ vi.mock('../../store/useAuthStore', () => ({
       loginWithTelegramCode: vi.fn(),
       setTelegramSitePassword: vi.fn(),
       fetchMe: vi.fn(),
-      isAuthenticated: false,
       error: null,
     };
     return selector ? selector(state) : state;
@@ -62,7 +61,7 @@ describe('LoginPage', () => {
   it('calls login and navigates on successful submit', async () => {
     const mockLogin = vi.fn().mockResolvedValueOnce(undefined);
     vi.mocked(useAuthStore).mockImplementation(((sel?: AuthSelector) => {
-      const state = { login: mockLogin, isAuthenticated: false };
+      const state = { login: mockLogin };
       return sel ? sel(state) : state;
     }) as typeof useAuthStore);
 
@@ -96,7 +95,6 @@ describe('LoginPage', () => {
         loginWithTelegramCode: vi.fn(),
         setTelegramSitePassword: vi.fn(),
         fetchMe: vi.fn(),
-        isAuthenticated: false,
       };
       return sel ? sel(state) : state;
     }) as typeof useAuthStore);
@@ -141,7 +139,6 @@ describe('LoginPage', () => {
         loginWithTelegramCode: vi.fn(),
         setTelegramSitePassword: vi.fn(),
         fetchMe: vi.fn(),
-        isAuthenticated: false,
       };
       return sel ? sel(state) : state;
     }) as typeof useAuthStore);

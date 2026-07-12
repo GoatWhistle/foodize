@@ -50,14 +50,14 @@ export default function MenuItemForm({
         className="form-input"
         placeholder="Название"
         value={menuItemForm.name}
-        onChange={(e) => setMenuItemForm({ ...menuItemForm, name: e.target.value })}
+        onChange={(e) => { setMenuItemForm({ ...menuItemForm, name: e.target.value }); }}
         required
       />
       <textarea
         className="form-input"
         placeholder="Описание"
         value={menuItemForm.description}
-        onChange={(e) => setMenuItemForm({ ...menuItemForm, description: e.target.value })}
+        onChange={(e) => { setMenuItemForm({ ...menuItemForm, description: e.target.value }); }}
       />
       <div style={{ display: 'flex', gap: 10 }}>
         <input
@@ -65,7 +65,7 @@ export default function MenuItemForm({
           type="number"
           placeholder="Цена"
           value={menuItemForm.price}
-          onChange={(e) => setMenuItemForm({ ...menuItemForm, price: e.target.value })}
+          onChange={(e) => { setMenuItemForm({ ...menuItemForm, price: e.target.value }); }}
           required
           style={{ flex: 1 }}
         />
@@ -73,7 +73,7 @@ export default function MenuItemForm({
           className="form-input"
           value={menuItemForm.category}
           onChange={(e) =>
-            setMenuItemForm({ ...menuItemForm, category: e.target.value as Category })
+            { setMenuItemForm({ ...menuItemForm, category: e.target.value as Category }); }
           }
           style={{ flex: 1 }}
         >

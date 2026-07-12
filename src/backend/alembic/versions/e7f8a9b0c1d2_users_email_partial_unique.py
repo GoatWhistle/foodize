@@ -6,14 +6,14 @@ Create Date: 2026-07-11 00:00:00.000000
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 from alembic import op
 
 revision: str = "e7f8a9b0c1d2"
-down_revision: Union[str, Sequence[str], None] = "d1e2f3a4b5c6"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = "d1e2f3a4b5c6"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 _INDEX_NAME = "uq_users_email_active"
 

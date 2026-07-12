@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 
 from sqlalchemy import JSON, ForeignKey, String
 from sqlalchemy.dialects.postgresql import JSONB
@@ -14,7 +15,7 @@ class AuditLog(Base, IdUuidPkMixin, CreatedAtMixin):
     action: Mapped[str] = mapped_column(String(64), index=True)
     entity_type: Mapped[str] = mapped_column(String(32), index=True)
     entity_id: Mapped[uuid.UUID | None] = mapped_column(nullable=True)
-    details: Mapped[dict] = mapped_column(
+    details: Mapped[dict[str, Any]] = mapped_column(
         JSONB().with_variant(JSON(), "sqlite"),
         default=dict,
         server_default="{}",

@@ -36,44 +36,44 @@ def make_mock_order(status: OrderStatus) -> MagicMock:
 
 
 class TestValidateTransition:
-    def test_pending_to_accepted(self):
+    def test_pending_to_accepted(self) -> None:
         validate_transition(OrderStatus.PENDING, OrderStatus.ACCEPTED)
 
-    def test_accepted_to_ready(self):
+    def test_accepted_to_ready(self) -> None:
         validate_transition(OrderStatus.ACCEPTED, OrderStatus.READY)
 
-    def test_ready_to_completed(self):
+    def test_ready_to_completed(self) -> None:
         validate_transition(OrderStatus.READY, OrderStatus.COMPLETED)
 
-    def test_invalid_pending_to_ready(self):
+    def test_invalid_pending_to_ready(self) -> None:
         with pytest.raises(InvalidStatusTransitionException):
             validate_transition(OrderStatus.PENDING, OrderStatus.READY)
 
-    def test_invalid_pending_to_completed(self):
+    def test_invalid_pending_to_completed(self) -> None:
         with pytest.raises(InvalidStatusTransitionException):
             validate_transition(OrderStatus.PENDING, OrderStatus.COMPLETED)
 
-    def test_invalid_pending_to_cancelled(self):
+    def test_invalid_pending_to_cancelled(self) -> None:
         with pytest.raises(InvalidStatusTransitionException):
             validate_transition(OrderStatus.PENDING, OrderStatus.CANCELLED)
 
-    def test_invalid_ready_to_accepted(self):
+    def test_invalid_ready_to_accepted(self) -> None:
         with pytest.raises(InvalidStatusTransitionException):
             validate_transition(OrderStatus.READY, OrderStatus.ACCEPTED)
 
-    def test_invalid_completed_to_any(self):
+    def test_invalid_completed_to_any(self) -> None:
         for status in OrderStatus:
             with pytest.raises(InvalidStatusTransitionException):
                 validate_transition(OrderStatus.COMPLETED, status)
 
-    def test_invalid_cancelled_to_any(self):
+    def test_invalid_cancelled_to_any(self) -> None:
         for status in OrderStatus:
             with pytest.raises(InvalidStatusTransitionException):
                 validate_transition(OrderStatus.CANCELLED, status)
 
 
 class TestChangeOrderStatus:
-    async def test_creates_event_on_success(self, mock_db_session):
+    async def test_creates_event_on_success(self, mock_db_session: AsyncMock) -> None:
         actor = make_user(user_role=UserRole.VENDOR.value)
         order = make_mock_order(OrderStatus.PENDING)
         status_data = OrderStatusUpdate(status=OrderStatus.ACCEPTED, estimated_ready_in_minutes=15)
@@ -109,7 +109,7 @@ class TestChangeOrderStatus:
             new_status=OrderStatus.ACCEPTED,
         )
 
-    async def test_raises_on_invalid_transition(self, mock_db_session):
+    async def test_raises_on_invalid_transition(self, mock_db_session: AsyncMock) -> None:
         actor = make_user(user_role=UserRole.STAFF.value)
         order = make_mock_order(OrderStatus.PENDING)
         status_data = OrderStatusUpdate(status=OrderStatus.COMPLETED)
@@ -117,7 +117,9 @@ class TestChangeOrderStatus:
         with pytest.raises(InvalidStatusTransitionException):
             await change_order_status(mock_db_session, order, status_data, actor=actor)
 
-    async def test_does_not_create_event_on_invalid_transition(self, mock_db_session):
+    async def test_does_not_create_event_on_invalid_transition(
+        self, mock_db_session: AsyncMock
+    ) -> None:
         actor = make_user(user_role=UserRole.STAFF.value)
         order = make_mock_order(OrderStatus.READY)
         status_data = OrderStatusUpdate(status=OrderStatus.PENDING)

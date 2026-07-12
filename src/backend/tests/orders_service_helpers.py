@@ -7,7 +7,7 @@ from shared.enums.order_status import OrderStatus
 
 def make_mock_menu_item(
     item_id: uuid.UUID, price: int = 500, restaurant_id: uuid.UUID | None = None
-):
+) -> MagicMock:
     item = MagicMock()
     item.id = item_id
     item.price = price
@@ -18,7 +18,7 @@ def make_mock_menu_item(
     return item
 
 
-def make_mock_restaurant(restaurant_id: uuid.UUID, is_open: bool = True):
+def make_mock_restaurant(restaurant_id: uuid.UUID, is_open: bool = True) -> MagicMock:
     r = MagicMock()
     r.id = restaurant_id
     r.is_open = is_open
@@ -31,7 +31,7 @@ def make_mock_restaurant(restaurant_id: uuid.UUID, is_open: bool = True):
 
 def make_mock_order(
     order_id: uuid.UUID, user_id: uuid.UUID, status: str = OrderStatus.PENDING.value
-):
+) -> MagicMock:
     order = MagicMock()
     order.id = order_id
     order.display_id = 1001

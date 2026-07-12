@@ -11,7 +11,7 @@ from features.admin.export import (
 )
 
 
-def _make_restaurant(rid=None):
+def _make_restaurant(rid: uuid.UUID | None = None) -> MagicMock:
     r = MagicMock()
     r.id = rid or uuid.uuid4()
     r.name = "Тест Кафе"
@@ -26,7 +26,7 @@ def _make_restaurant(rid=None):
     return r
 
 
-def _make_vendor(vid=None):
+def _make_vendor(vid: uuid.UUID | None = None) -> MagicMock:
     v = MagicMock()
     v.id = vid or uuid.uuid4()
     v.approval_status = "APPROVED"
@@ -38,7 +38,7 @@ def _make_vendor(vid=None):
     return v
 
 
-def _make_review(rvid=None):
+def _make_review(rvid: uuid.UUID | None = None) -> MagicMock:
     rv = MagicMock()
     rv.id = rvid or uuid.uuid4()
     rv.restaurant_name = "Тест Кафе"
@@ -52,7 +52,7 @@ def _make_review(rvid=None):
 
 class TestExportRestaurantsCsv:
     @pytest.mark.asyncio
-    async def test_returns_csv_with_data(self):
+    async def test_returns_csv_with_data(self) -> None:
         session = AsyncMock()
         with patch(
             "features.admin.export.csv_exports.crud.get_all_restaurants", new_callable=AsyncMock
@@ -64,7 +64,7 @@ class TestExportRestaurantsCsv:
         assert "ул. Ленина, 1" in content
 
     @pytest.mark.asyncio
-    async def test_includes_rating_and_counts(self):
+    async def test_includes_rating_and_counts(self) -> None:
         session = AsyncMock()
         resto = _make_restaurant()
         resto.average_rating = 4.8
@@ -81,7 +81,7 @@ class TestExportRestaurantsCsv:
 
 class TestExportVendorsCsv:
     @pytest.mark.asyncio
-    async def test_returns_csv_with_vendor_data(self):
+    async def test_returns_csv_with_vendor_data(self) -> None:
         session = AsyncMock()
         with patch(
             "features.admin.export.csv_exports.crud.get_all_vendors", new_callable=AsyncMock
@@ -93,7 +93,7 @@ class TestExportVendorsCsv:
         assert "APPROVED" in content
 
     @pytest.mark.asyncio
-    async def test_restaurant_count_in_row(self):
+    async def test_restaurant_count_in_row(self) -> None:
         session = AsyncMock()
         v = _make_vendor()
         v.restaurants = [MagicMock(), MagicMock(), MagicMock()]
@@ -108,7 +108,7 @@ class TestExportVendorsCsv:
 
 class TestExportReviewsCsv:
     @pytest.mark.asyncio
-    async def test_returns_csv_with_review_data(self):
+    async def test_returns_csv_with_review_data(self) -> None:
         session = AsyncMock()
         with patch(
             "features.admin.export.csv_exports.crud.get_all_reviews", new_callable=AsyncMock
@@ -120,7 +120,7 @@ class TestExportReviewsCsv:
         assert "Отлично!" in content
 
     @pytest.mark.asyncio
-    async def test_min_rating_filter(self):
+    async def test_min_rating_filter(self) -> None:
         session = AsyncMock()
         reviews = [_make_review(), _make_review()]
         reviews[0].rating = 2
@@ -135,7 +135,7 @@ class TestExportReviewsCsv:
         assert len(lines) == 2
 
     @pytest.mark.asyncio
-    async def test_max_rating_filter(self):
+    async def test_max_rating_filter(self) -> None:
         session = AsyncMock()
         reviews = [_make_review(), _make_review()]
         reviews[0].rating = 3
@@ -150,7 +150,7 @@ class TestExportReviewsCsv:
         assert len(lines) == 2
 
     @pytest.mark.asyncio
-    async def test_verified_purchase_yes(self):
+    async def test_verified_purchase_yes(self) -> None:
         session = AsyncMock()
         rv = _make_review()
         rv.is_verified_purchase = True

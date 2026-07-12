@@ -16,3 +16,12 @@ class BatchIdsRequest(BaseModel):
 class BatchRejectRequest(BaseModel):
     ids: list[uuid.UUID]
     reason: str | None = None
+
+
+class BatchModerationResult(BaseModel):
+    succeeded: list[str]
+    failed: list[dict[str, str]]
+
+
+class BatchAffectedResult(BaseModel):
+    affected: int

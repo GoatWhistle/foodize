@@ -11,6 +11,8 @@ from features.orders.models import Order, OrderItem
 from features.restaurants.models import Restaurant
 from shared.enums.order_status import OrderStatus
 
+_DEFAULT_ANALYTICS_WINDOW_DAYS = 30
+
 
 async def get_advanced_analytics(
     session: AsyncSession,
@@ -20,7 +22,7 @@ async def get_advanced_analytics(
     vendor_id: uuid.UUID | None = None,
 ) -> AdvancedAnalytics:
     end_date = date_to or datetime.now(UTC).date()
-    start_date = date_from or (end_date - timedelta(days=29))
+    start_date = date_from or (end_date - timedelta(days=_DEFAULT_ANALYTICS_WINDOW_DAYS - 1))
 
     filters = [
         Order.created_at >= datetime.combine(start_date, datetime.min.time(), tzinfo=UTC),

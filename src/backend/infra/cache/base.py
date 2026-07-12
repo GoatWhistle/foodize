@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import builtins
 
 
 class CacheRepository(ABC):
@@ -23,7 +27,7 @@ class CacheRepository(ABC):
     async def sadd(self, key: str, *values: str) -> None: ...
 
     @abstractmethod
-    async def smembers(self, key: str) -> set[str]: ...
+    async def smembers(self, key: str) -> builtins.set[str]: ...
 
     @abstractmethod
     async def delete_many(self, *keys: str) -> None: ...

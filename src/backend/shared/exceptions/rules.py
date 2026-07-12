@@ -14,3 +14,8 @@ class InactiveObjectException(RuleException):
 
 class AccessDeniedException(RuleException):
     detail: str = "Access denied"
+
+
+class RateLimitException(AppException):
+    status_code: int = HTTPStatus.TOO_MANY_REQUESTS
+    detail: str = "Rate limit exceeded"

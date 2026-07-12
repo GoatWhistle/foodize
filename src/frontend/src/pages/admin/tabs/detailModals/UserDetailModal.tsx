@@ -35,7 +35,7 @@ export const UserDetailModal = ({
     title={selectedUser.name || 'Пользователь'}
     subtitle="Детали профиля"
     loading={userDetailsLoading}
-    onClose={() => setSelectedUser(null)}
+    onClose={() => { setSelectedUser(null); }}
   >
     <div
       style={{
@@ -98,7 +98,7 @@ export const UserDetailModal = ({
                       key={role}
                       className="btn btn-secondary btn-sm"
                       disabled={permissionActionLoading}
-                      onClick={() => handleSetPermissionPreset(selectedUser.id, role)}
+                      onClick={() => { handleSetPermissionPreset(selectedUser.id, role); }}
                     >
                       {PERMISSION_PRESET_RU[role]}
                     </button>
@@ -107,7 +107,7 @@ export const UserDetailModal = ({
               <button
                 className="btn btn-secondary btn-sm"
                 disabled={permissionActionLoading}
-                onClick={() => handleMakeAdmin(selectedUser.id)}
+                onClick={() => { handleMakeAdmin(selectedUser.id); }}
                 style={{ color: 'var(--error)' }}
               >
                 Сделать админом
@@ -120,7 +120,7 @@ export const UserDetailModal = ({
           <button
             className="btn btn-secondary"
             disabled={permissionActionLoading}
-            onClick={() => handleActivateUser(selectedUser.id)}
+            onClick={() => { handleActivateUser(selectedUser.id); }}
             style={{ color: 'var(--success)' }}
           >
             {permissionActionLoading ? 'Применяю...' : 'Разблокировать'}
@@ -132,7 +132,7 @@ export const UserDetailModal = ({
             <button
               className="btn btn-secondary"
               disabled={permissionActionLoading}
-              onClick={() => handleDeleteUser(selectedUser.id)}
+              onClick={() => { handleDeleteUser(selectedUser.id); }}
               style={{ color: 'var(--error)' }}
             >
               Заблокировать пользователя

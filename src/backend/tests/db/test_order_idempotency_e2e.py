@@ -1,11 +1,14 @@
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.menu.crud import create_menu_item
+from features.menu.models import MenuItem
 from features.menu.schemas import MenuItemCreate
 from features.orders.schemas.order import OrderCreate
 from features.orders.schemas.order_item import OrderItemCreate
 from features.orders.services.order import place_order
 from features.restaurants.crud import create_restaurant
+from features.restaurants.models import Restaurant
 from features.restaurants.schemas import RestaurantCreate
 from features.users.crud import create_user
 from features.users.schemas import UserCreate
@@ -18,7 +21,7 @@ from shared.exceptions import BadRequestException
 pytestmark = pytest.mark.asyncio
 
 
-async def _seed_menu(db_session):
+async def _seed_menu(db_session: AsyncSession) -> tuple[Restaurant, MenuItem]:
     vendor_user = await create_user(
         db_session,
         UserCreate(
@@ -42,12 +45,12 @@ async def _seed_menu(db_session):
     return restaurant, menu_item
 
 
-def _skip_if_not_postgres(db_session) -> None:
+def _skip_if_not_postgres(db_session: AsyncSession) -> None:
     if db_session.bind.dialect.name != "postgresql":
         pytest.skip("Idempotency uses PostgreSQL ON CONFLICT; run against Postgres")
 
 
-async def test_repeated_placement_same_key_returns_same_order(db_session):
+async def test_repeated_placement_same_key_returns_same_order(db_session: AsyncSession) -> None:
     _skip_if_not_postgres(db_session)
     customer = await create_user(
         db_session,
@@ -66,7 +69,7 @@ async def test_repeated_placement_same_key_returns_same_order(db_session):
     assert first.display_id == second.display_id
 
 
-async def test_same_key_different_payload_rejected(db_session):
+async def test_same_key_different_payload_rejected(db_session: AsyncSession) -> None:
     _skip_if_not_postgres(db_session)
     customer = await create_user(
         db_session,

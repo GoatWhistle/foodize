@@ -54,8 +54,8 @@ vi.mock('@shared/hooks/useHomePageLogic.js', () => ({
 }));
 
 vi.mock('../../store/useAuthStore', () => ({
-  useAuthStore: (sel?: (s: { isAuthenticated: boolean }) => unknown) => {
-    const state = { isAuthenticated: true };
+  useAuthStore: (sel?: (s: { user: { id: string } | null }) => unknown) => {
+    const state = { user: { id: 'u1' } };
     return sel ? sel(state) : state;
   },
 }));

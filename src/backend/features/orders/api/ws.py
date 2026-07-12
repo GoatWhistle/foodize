@@ -1,40 +1,49 @@
 import json
 import uuid
+from typing import Any
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket
 from redis.asyncio.client import PubSub
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
-from features.orders.api.ws_helpers import (
-    TERMINAL_STATUSES,
-    _authenticate_ws_user,
-    _consume_client_messages,
-    _run_ws_tasks,
-    _safe_send_text,
-)
+from features.orders.api.order import verify_order_read_access
 from features.orders.crud.order import get_active_orders_for_display, get_order_by_id
 from features.orders.dependencies import verify_restaurant_access
+from features.orders.models import Order
 from features.orders.schemas.order import OrderResponse
-from infra.cache.redis import get_redis_cache
+from features.users.models import User
 from shared.enums.order_status import OrderStatus
 from shared.enums.permissions import Permission
+from shared.exceptions import AppException
 from shared.permissions import has_permission
+from shared.ws import authenticate_ws_user as _authenticate_ws_user
+from shared.ws import run_channel_ws
+from shared.ws import safe_send_text as _safe_send_text
+
+TERMINAL_STATUSES = (OrderStatus.COMPLETED.value, OrderStatus.CANCELLED.value)
 
 router = APIRouter()
 
 
-async def _can_read_order(session, order, user) -> bool:
-    if has_permission(user.permissions, Permission.ORDERS_MODERATE):
+async def _can_read_order(session: AsyncSession, order: Order, user: User) -> bool:
+    try:
+        await verify_order_read_access(session, order, user)
         return True
-    if has_permission(user.permissions, Permission.ORDERS_READ_OWN) and order.user_id == user.id:
+    except AppException:
+        return False
+
+
+async def _verify_restaurant_access_or_close(
+    websocket: WebSocket, session: AsyncSession, restaurant_id: uuid.UUID, user: User
+) -> bool:
+    try:
+        await verify_restaurant_access(session, restaurant_id, user)
         return True
-    if has_permission(user.permissions, Permission.ORDERS_READ_RESTAURANT):
-        try:
-            await verify_restaurant_access(session, order.restaurant_id, user)
-            return True
-        except Exception:
-            return False
-    return False
+    except AppException:
+        await websocket.send_text(json.dumps({"error": "forbidden"}))
+        await websocket.close()
+        return False
 
 
 @router.websocket("/ws/orders/{order_id}")
@@ -47,8 +56,6 @@ async def order_status_ws(
     user = await _authenticate_ws_user(websocket, token)
     if user is None:
         return
-
-    redis_client = get_redis_cache().get_raw_client()
 
     async with db_helper.session_factory() as session:
         order = await get_order_by_id(session, order_id)
@@ -68,20 +75,11 @@ async def order_status_ws(
         if last_status in TERMINAL_STATUSES:
             return
 
-    pubsub = redis_client.pubsub()
-    channel = f"order_status:{order_id}"
-    await pubsub.subscribe(channel)
-
-    try:
-        await _run_ws_tasks(
-            _order_status_pubsub_loop(websocket, pubsub, order_id, last_status),
-            _consume_client_messages(websocket),
-        )
-    except WebSocketDisconnect:
-        pass
-    finally:
-        await pubsub.unsubscribe(channel)
-        await pubsub.aclose()
+    await run_channel_ws(
+        websocket,
+        f"order_status:{order_id}",
+        lambda pubsub: _order_status_pubsub_loop(websocket, pubsub, order_id, last_status),
+    )
 
 
 async def _order_status_pubsub_loop(
@@ -112,7 +110,7 @@ async def _order_status_pubsub_loop(
             return
 
 
-def _build_display_board(rows: list[tuple[int, str]]) -> dict:
+def _build_display_board(rows: list[tuple[int, str]]) -> dict[str, Any]:
     cooking_statuses = {
         OrderStatus.PENDING.value,
         OrderStatus.ACCEPTED.value,
@@ -139,31 +137,29 @@ async def display_board_ws(
             await websocket.close()
             return
 
-        try:
-            await verify_restaurant_access(session, restaurant_id, user)
-        except Exception:
-            await websocket.send_text(json.dumps({"error": "forbidden"}))
-            await websocket.close()
+        if not await _verify_restaurant_access_or_close(websocket, session, restaurant_id, user):
             return
 
         rows = await get_active_orders_for_display(session, restaurant_id)
         await _safe_send_text(websocket, json.dumps(_build_display_board(rows)))
 
-    redis_client = get_redis_cache().get_raw_client()
-    pubsub = redis_client.pubsub()
-    channel = f"restaurant_orders:{restaurant_id}"
-    await pubsub.subscribe(channel)
+    await run_channel_ws(
+        websocket,
+        f"restaurant_orders:{restaurant_id}",
+        lambda pubsub: _display_board_pubsub_loop(websocket, pubsub, restaurant_id),
+    )
 
-    try:
-        await _run_ws_tasks(
-            _display_board_pubsub_loop(websocket, pubsub, restaurant_id),
-            _consume_client_messages(websocket),
+
+_DISPLAY_BOARD_COALESCE_SECONDS = 0.3
+
+
+async def _drain_pending_messages(pubsub: PubSub) -> None:
+    while True:
+        pending = await pubsub.get_message(
+            ignore_subscribe_messages=True, timeout=_DISPLAY_BOARD_COALESCE_SECONDS
         )
-    except WebSocketDisconnect:
-        pass
-    finally:
-        await pubsub.unsubscribe(channel)
-        await pubsub.aclose()
+        if pending is None:
+            return
 
 
 async def _display_board_pubsub_loop(
@@ -174,6 +170,7 @@ async def _display_board_pubsub_loop(
     async for message in pubsub.listen():
         if message["type"] != "message":
             continue
+        await _drain_pending_messages(pubsub)
         async with db_helper.session_factory() as session:
             rows = await get_active_orders_for_display(session, restaurant_id)
         await _safe_send_text(websocket, json.dumps(_build_display_board(rows)))
@@ -191,28 +188,14 @@ async def restaurant_orders_ws(
         return
 
     async with db_helper.session_factory() as session:
-        try:
-            await verify_restaurant_access(session, restaurant_id, user)
-        except Exception:
-            await websocket.send_text(json.dumps({"error": "forbidden"}))
-            await websocket.close()
+        if not await _verify_restaurant_access_or_close(websocket, session, restaurant_id, user):
             return
 
-    redis_client = get_redis_cache().get_raw_client()
-    pubsub = redis_client.pubsub()
-    channel = f"restaurant_orders:{restaurant_id}"
-    await pubsub.subscribe(channel)
-
-    try:
-        await _run_ws_tasks(
-            _restaurant_orders_pubsub_loop(websocket, pubsub),
-            _consume_client_messages(websocket),
-        )
-    except WebSocketDisconnect:
-        pass
-    finally:
-        await pubsub.unsubscribe(channel)
-        await pubsub.aclose()
+    await run_channel_ws(
+        websocket,
+        f"restaurant_orders:{restaurant_id}",
+        lambda pubsub: _restaurant_orders_pubsub_loop(websocket, pubsub),
+    )
 
 
 async def _restaurant_orders_pubsub_loop(

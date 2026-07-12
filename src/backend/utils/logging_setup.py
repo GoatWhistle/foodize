@@ -1,11 +1,13 @@
 import logging
 import sys
 import traceback
+from typing import cast
 
 import sentry_sdk
 import structlog
 from sentry_sdk.integrations import Integration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+from structlog.typing import EventDict, WrappedLogger
 
 from settings.config.app_config import settings
 
@@ -36,7 +38,7 @@ _LEVEL_COLORS = {
 }
 
 
-def _compact_exception(logger, method_name, event_dict):
+def _compact_exception(logger: WrappedLogger, method_name: str, event_dict: EventDict) -> EventDict:
     exc_info = event_dict.pop("exc_info", None)
     if not exc_info:
         return event_dict
@@ -52,7 +54,9 @@ def _compact_exception(logger, method_name, event_dict):
     return event_dict
 
 
-def _colored_console_renderer(logger, method_name, event_dict):
+def _colored_console_renderer(
+    logger: WrappedLogger, method_name: str, event_dict: EventDict
+) -> str:
     timestamp = event_dict.pop("timestamp", "")
     level = event_dict.pop("level", "info")
     event = event_dict.pop("event", "")
@@ -96,7 +100,7 @@ def configure_logging() -> None:
             send_default_pii=False,
         )
 
-    shared_processors = [
+    shared_processors: list[structlog.typing.Processor] = [
         structlog.contextvars.merge_contextvars,
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
@@ -116,4 +120,4 @@ def configure_logging() -> None:
 
 
 def get_logger(name: str = LOGGER_NAME) -> structlog.BoundLogger:
-    return structlog.get_logger(name).bind(service="foodize")
+    return cast("structlog.BoundLogger", structlog.get_logger(name).bind(service="foodize"))

@@ -16,7 +16,7 @@ def _group(
     max_selected: int | None = None,
     selection_type: str = SelectionType.MULTIPLE.value,
     is_active: bool = True,
-):
+) -> MagicMock:
     group = MagicMock()
     group.id = uuid.uuid4()
     group.menu_item_id = menu_item_id
@@ -29,7 +29,7 @@ def _group(
     return group
 
 
-def _option(group, *, is_available: bool = True):
+def _option(group: MagicMock, *, is_available: bool = True) -> MagicMock:
     option = MagicMock()
     option.id = uuid.uuid4()
     option.group_id = group.id
@@ -38,7 +38,7 @@ def _option(group, *, is_available: bool = True):
     return option
 
 
-def _menu_item(*groups):
+def _menu_item(*groups: MagicMock) -> MagicMock:
     item = MagicMock()
     item.id = uuid.uuid4()
     item.option_groups = list(groups)
@@ -47,13 +47,13 @@ def _menu_item(*groups):
     return item
 
 
-def _item_data(*selected_ids):
+def _item_data(*selected_ids: uuid.UUID) -> MagicMock:
     data = MagicMock()
     data.selected_option_ids = list(selected_ids)
     return data
 
 
-def test_validate_item_options_accepts_valid_selection():
+def test_validate_item_options_accepts_valid_selection() -> None:
     group = _group(menu_item_id=uuid.uuid4(), is_required=True, max_selected=2)
     menu_item = _menu_item(group)
     option = _option(group)
@@ -63,7 +63,7 @@ def test_validate_item_options_accepts_valid_selection():
     assert result == [option]
 
 
-def test_validate_item_options_rejects_duplicate_option_ids():
+def test_validate_item_options_rejects_duplicate_option_ids() -> None:
     group = _group(menu_item_id=uuid.uuid4())
     menu_item = _menu_item(group)
     option = _option(group)
@@ -72,7 +72,7 @@ def test_validate_item_options_rejects_duplicate_option_ids():
         validate_item_options(_item_data(option.id, option.id), menu_item, {option.id: option})
 
 
-def test_validate_item_options_rejects_missing_required_group():
+def test_validate_item_options_rejects_missing_required_group() -> None:
     group = _group(menu_item_id=uuid.uuid4(), is_required=True)
     menu_item = _menu_item(group)
 
@@ -80,7 +80,7 @@ def test_validate_item_options_rejects_missing_required_group():
         validate_item_options(_item_data(), menu_item, {})
 
 
-def test_validate_item_options_rejects_too_many_options():
+def test_validate_item_options_rejects_too_many_options() -> None:
     group = _group(menu_item_id=uuid.uuid4(), max_selected=1)
     menu_item = _menu_item(group)
     option_1 = _option(group)
@@ -94,7 +94,7 @@ def test_validate_item_options_rejects_too_many_options():
         )
 
 
-def test_validate_item_options_rejects_multiple_values_for_single_group():
+def test_validate_item_options_rejects_multiple_values_for_single_group() -> None:
     group = _group(
         menu_item_id=uuid.uuid4(),
         selection_type=SelectionType.SINGLE.value,
@@ -111,7 +111,7 @@ def test_validate_item_options_rejects_multiple_values_for_single_group():
         )
 
 
-def test_validate_item_options_rejects_option_from_another_menu_item():
+def test_validate_item_options_rejects_option_from_another_menu_item() -> None:
     group = _group(menu_item_id=uuid.uuid4())
     menu_item = _menu_item()
     option = _option(group)
@@ -120,7 +120,7 @@ def test_validate_item_options_rejects_option_from_another_menu_item():
         validate_item_options(_item_data(option.id), menu_item, {option.id: option})
 
 
-def test_validate_item_options_rejects_unavailable_option():
+def test_validate_item_options_rejects_unavailable_option() -> None:
     group = _group(menu_item_id=uuid.uuid4())
     menu_item = _menu_item(group)
     option = _option(group, is_available=False)

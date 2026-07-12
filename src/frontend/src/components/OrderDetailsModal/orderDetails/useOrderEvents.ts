@@ -4,13 +4,14 @@ import type { OrderEvent } from '@shared/types/models';
 
 import { extractEvents } from './orderDetails.helpers';
 
-interface AxiosLikeError {
-  response?: {
-    status?: number;
-    data?: { detail?: unknown };
-  };
-  name?: string;
-}
+const extractErrorInfo = (error: unknown): { status?: unknown; detail?: unknown } => {
+  if (typeof error !== 'object' || error === null || !('response' in error)) return {};
+  const { response } = error as { response?: unknown };
+  if (typeof response !== 'object' || response === null) return {};
+  const resp = response as { status?: unknown; data?: unknown };
+  const data = typeof resp.data === 'object' && resp.data !== null ? (resp.data as { detail?: unknown }) : undefined;
+  return { status: resp.status, detail: data?.detail };
+};
 
 export interface UseOrderEventsResult {
   events: OrderEvent[];
@@ -36,12 +37,9 @@ export const useOrderEvents = (orderId: string | undefined): UseOrderEventsResul
       setEvents(extractEvents(res));
       setEventsUnavailable(false);
     } catch (error) {
-      const err = error as AxiosLikeError;
       if (import.meta.env.DEV) {
-        console.error('Order events fetch failed', {
-          status: err?.response?.status,
-          detail: err?.response?.data?.detail,
-        });
+        const { status, detail } = extractErrorInfo(error);
+        console.error('Order events fetch failed', { status, detail });
       }
       setEvents([]);
       setEventsError('');
@@ -68,13 +66,11 @@ export const useOrderEvents = (orderId: string | undefined): UseOrderEventsResul
           setEventsUnavailable(false);
         }
       })
-      .catch((error: AxiosLikeError) => {
+      .catch((error: unknown) => {
         if (!cancelled) {
           if (import.meta.env.DEV) {
-            console.error('Order events fetch failed', {
-              status: error?.response?.status,
-              detail: error?.response?.data?.detail,
-            });
+            const { status, detail } = extractErrorInfo(error);
+            console.error('Order events fetch failed', { status, detail });
           }
           setEvents([]);
           setEventsUnavailable(true);

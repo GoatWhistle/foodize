@@ -4,8 +4,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockFetchCart = vi.fn();
 const mockStreamChat = vi.fn();
 
-vi.mock('../../store/useOrderStore', () => ({
-  useOrderStore: vi.fn((sel?: (s: { fetchCart: typeof mockFetchCart }) => unknown) => {
+vi.mock('../../store/useCartStore', () => ({
+  useCartStore: vi.fn((sel?: (s: { fetchCart: typeof mockFetchCart }) => unknown) => {
     const state = { fetchCart: mockFetchCart };
     return sel ? sel(state) : state;
   }),
@@ -105,7 +105,7 @@ describe('OrderAssistant', () => {
       fireEvent.submit(screen.getByPlaceholderText('Что хотите заказать?').closest('form') as HTMLFormElement);
       await Promise.resolve();
     });
-    await waitFor(() => expect(mockFetchCart).toHaveBeenCalled());
+    await waitFor(() => { expect(mockFetchCart).toHaveBeenCalled(); });
   });
 
   it('shows error message when streamChat fails', async () => {

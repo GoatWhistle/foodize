@@ -1,50 +1,20 @@
-import type { ChangeEvent, Dispatch, ReactNode, SetStateAction } from 'react';
-import { Package, Clock, CheckCircle, HandPalm, DownloadSimple } from '@phosphor-icons/react';
+import type { ChangeEvent, Dispatch, SetStateAction } from 'react';
+import { DownloadSimpleIcon } from '@phosphor-icons/react';
 import Pagination from '@shared/components/Pagination/Pagination';
 import EmptyState from '@shared/components/EmptyState/EmptyState';
-import { ORDER_STATUS_RU } from '@shared/utils/locales';
 import type { Order } from '@shared/types/models';
 import type { adminService as AdminService } from '../../../services/adminService';
 import type { OrderFilters } from '../hooks/useAdminOrders';
+import { AdminOrderCard } from './components/AdminOrderCard';
+import styles from './components/adminTable.module.css';
 
-const cardStyle = {
-  background: 'var(--bg-card)',
-  border: '1px solid var(--border)',
-  borderRadius: 'var(--r-md)',
-  boxShadow: 'var(--shadow-sm)',
-};
-
-const wideFilterGridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-  gap: 8,
-  alignItems: 'center',
-};
-
-const filterControlStyle = {
-  minWidth: 0,
-  height: 48,
-  paddingTop: 11,
-  paddingBottom: 11,
-  fontSize: '0.86rem',
-  lineHeight: 1.2,
-};
-
-interface StatusConfig {
-  label: string;
-  className: string;
-  icon: ReactNode;
-}
-
-const STATUS_MAP: Record<string, StatusConfig> = {
-  PENDING: { label: ORDER_STATUS_RU.PENDING, className: 'pending', icon: <Clock /> },
-  ACCEPTED: { label: ORDER_STATUS_RU.ACCEPTED, className: 'pending', icon: <CheckCircle /> },
-  READY: { label: ORDER_STATUS_RU.READY, className: 'ready', icon: <HandPalm /> },
-  COMPLETED: { label: ORDER_STATUS_RU.COMPLETED, className: 'ready', icon: <CheckCircle weight="fill" /> },
-};
-
-const shortId = (value?: string | null): string => (value ? value.slice(0, 8) : '—');
-const orderTitle = (order: Order): string | number => order.display_id ?? shortId(order.id);
+const STATUS_CHIPS = [
+  ['', 'Все'],
+  ['PENDING', 'Новые'],
+  ['ACCEPTED', 'Принятые'],
+  ['READY', 'Готовы'],
+  ['COMPLETED', 'Выданы'],
+] as const;
 
 export interface AdminOrdersTabProps {
   orders: Order[];
@@ -85,19 +55,11 @@ export default function AdminOrdersTab({
 
   if (ordersLoading && isEmpty) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className={styles.list}>
         {[1, 2, 3, 4, 5].map((i) => (
-          <div
-            key={i}
-            style={{
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--r-md)',
-              padding: 16,
-            }}
-          >
-            <div className="skeleton" style={{ width: '30%', height: 16, marginBottom: 8, borderRadius: 4 }} />
-            <div className="skeleton" style={{ width: '70%', height: 12, borderRadius: 4 }} />
+          <div key={i} className={styles.skeletonCard}>
+            <div className={`skeleton ${styles.skeletonLine}`} style={{ width: '30%' }} />
+            <div className={`skeleton ${styles.skeletonLineSub}`} style={{ width: '70%' }} />
           </div>
         ))}
       </div>
@@ -105,14 +67,10 @@ export default function AdminOrdersTab({
   }
 
   return (
-    <div
-      className={ordersLoading ? 'loading-dim' : undefined}
-      style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
-    >
-      <div style={wideFilterGridStyle}>
+    <div className={`${styles.list} ${ordersLoading ? 'loading-dim' : ''}`}>
+      <div className={styles.wideFilterGrid}>
         <input
-          className="form-input"
-          style={filterControlStyle}
+          className={`form-input ${styles.filterControl}`}
           placeholder="Клиент, телефон или ресторан"
           value={orderSearchRaw}
           onChange={(event: ChangeEvent<HTMLInputElement>) => {
@@ -121,8 +79,7 @@ export default function AdminOrdersTab({
           }}
         />
         <input
-          className="form-input"
-          style={filterControlStyle}
+          className={`form-input ${styles.filterControl}`}
           type="date"
           value={orderFilters.date_from}
           onChange={(event: ChangeEvent<HTMLInputElement>) => {
@@ -131,8 +88,7 @@ export default function AdminOrdersTab({
           }}
         />
         <input
-          className="form-input"
-          style={filterControlStyle}
+          className={`form-input ${styles.filterControl}`}
           type="date"
           value={orderFilters.date_to}
           onChange={(event: ChangeEvent<HTMLInputElement>) => {
@@ -143,13 +99,7 @@ export default function AdminOrdersTab({
       </div>
 
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
-        {([
-          ['', 'Все'],
-          ['PENDING', 'Новые'],
-          ['ACCEPTED', 'Принятые'],
-          ['READY', 'Готовы'],
-          ['COMPLETED', 'Выданы'],
-        ] as const).map(([key, label]) => (
+        {STATUS_CHIPS.map(([key, label]) => (
           <button
             key={key}
             className={`category-chip${orderFilters.status === key ? ' active' : ''}`}
@@ -169,7 +119,7 @@ export default function AdminOrdersTab({
           className="btn btn-secondary btn-sm"
           disabled={exportLoading}
           onClick={() =>
-            handleExport(
+            { handleExport(
               () =>
                 adminService.exportOrdersCSV({
                   date_from: orderFilters.date_from || undefined,
@@ -177,87 +127,16 @@ export default function AdminOrdersTab({
                   status: orderFilters.status || undefined,
                 }),
               `заказы_${todayStr}.csv`
-            )
+            ); }
           }
         >
-          {exportLoading ? '...' : <><DownloadSimple size={16} weight="bold" /> CSV</>}
+          {exportLoading ? '...' : <><DownloadSimpleIcon size={16} weight="bold" /> CSV</>}
         </button>
       </div>
 
-      {orders.map((o) => {
-        const cfg = STATUS_MAP[o.status] || {
-          label: o.status,
-          className: 'pending',
-          icon: <Package />,
-        };
-        return (
-          <button
-            key={o.id}
-            type="button"
-            onClick={() => setSelectedOrder(o)}
-            style={{
-              ...cardStyle,
-              padding: 16,
-              textAlign: 'left',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 10,
-              width: '100%',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                gap: 12,
-                alignItems: 'flex-start',
-              }}
-            >
-              <div>
-                <div style={{ color: 'var(--text-3)', fontSize: '0.74rem', fontWeight: 800 }}>
-                  Заказ #{orderTitle(o)}
-                </div>
-                <div
-                  style={{
-                    color: 'var(--text-1)',
-                    fontWeight: 900,
-                    fontSize: '1.05rem',
-                    marginTop: 2,
-                  }}
-                >
-                  {o.total_price} ₽
-                </div>
-              </div>
-              <span className={`order-status-badge ${cfg.className}`}>
-                {cfg.icon} {cfg.label}
-              </span>
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 3,
-                color: 'var(--text-3)',
-                fontSize: '0.84rem',
-              }}
-            >
-              <div>
-                <b style={{ color: 'var(--text-2)' }}>{o.customer_name || 'Клиент'}</b>
-                {o.customer_phone && <span> · {o.customer_phone}</span>}
-              </div>
-              {(o.restaurant_name || o.restaurant_address) && (
-                <div>
-                  {o.restaurant_name && (
-                    <b style={{ color: 'var(--text-2)' }}>{o.restaurant_name}</b>
-                  )}
-                  {o.restaurant_name && o.restaurant_address && <span> · </span>}
-                  {o.restaurant_address && <span>{o.restaurant_address}</span>}
-                </div>
-              )}
-            </div>
-          </button>
-        );
-      })}
+      {orders.map((o) => (
+        <AdminOrderCard key={o.id} order={o} onOpen={setSelectedOrder} />
+      ))}
 
       {isEmpty && (
         <EmptyState

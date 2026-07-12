@@ -1,5 +1,5 @@
 import type { MouseEventHandler, ReactNode } from "react";
-import { ShoppingBag, Trash } from "@phosphor-icons/react";
+import { ShoppingBagIcon, TrashIcon } from "@phosphor-icons/react";
 import { formatReviewTime } from "@shared/utils/formatReviewTime";
 import StarRatingInput from "@shared/components/StarRatingInput/StarRatingInput";
 import type { Review } from "@shared/types/models";
@@ -11,7 +11,7 @@ interface ReviewCardProps {
   onDelete?: MouseEventHandler<HTMLButtonElement>;
   showAvatar?: boolean;
   showVerifiedBadge?: boolean;
-  className?: string;
+  className?: string | undefined;
   headerExtra?: ReactNode;
   actionsExtra?: ReactNode;
 }
@@ -33,7 +33,7 @@ const ReviewCard = ({
         <div className={s.identity}>
           {showAvatar && (
             <div className={s.avatar}>
-              {review.user_id?.slice(0, 1).toUpperCase() || "U"}
+              {review.user_id.slice(0, 1).toUpperCase() || "U"}
             </div>
           )}
           <div>
@@ -47,7 +47,7 @@ const ReviewCard = ({
             </div>
             {showVerifiedBadge && review.is_verified_purchase && (
               <span className="verified-purchase-badge" style={{ marginTop: 3 }}>
-                <ShoppingBag size={10} weight="fill" />
+                <ShoppingBagIcon size={10} weight="fill" />
                 Подтверждённый заказ
               </span>
             )}
@@ -63,7 +63,7 @@ const ReviewCard = ({
                 onClick={onDelete}
                 className={s.deleteBtn}
               >
-                <Trash size={13} weight="bold" />
+                <TrashIcon size={13} weight="bold" />
               </button>
             )}
           </div>

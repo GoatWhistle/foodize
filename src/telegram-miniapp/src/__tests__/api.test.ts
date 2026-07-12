@@ -41,8 +41,12 @@ vi.mock("../services/api", () => {
   const factories = createWebSocketFactories();
   return {
     default: {},
-    createOrderWebSocket: factories.createOrderWebSocket,
-    createNotificationWebSocket: factories.createNotificationWebSocket,
+    createOrderWebSocket: (orderId: string, onMsg: (data: unknown) => void) =>
+      factories.createOrderWebSocket(orderId, onMsg),
+    createNotificationWebSocket: (
+      userId: string,
+      onMsg: (data: unknown) => void,
+    ) => factories.createNotificationWebSocket(userId, onMsg),
   };
 });
 
@@ -102,7 +106,7 @@ describe("miniapp api WebSocket factories", () => {
   it("ws close method is callable", async () => {
     const { createOrderWebSocket } = await importApi();
     const ws = createOrderWebSocket("order-1", vi.fn());
-    expect(() => ws.close()).not.toThrow();
+    expect(() => { ws.close(); }).not.toThrow();
   });
 });
 
@@ -123,10 +127,10 @@ describe("auth token lifecycle", () => {
       data: { data: { id: "u1", name: "User" } as unknown as UserRead },
     });
 
-    useAuthStore.setState({ user: null, isAuthenticated: false });
+    useAuthStore.setState({ user: null });
     await useAuthStore.getState().login({ phone_number: "user", password: "pw" });
 
-    expect(useAuthStore.getState().isAuthenticated).toBe(true);
+    expect(useAuthStore.getState().user).not.toBeNull();
     expect(useAuthStore.getState().user).toEqual({ id: "u1", name: "User" });
   });
 
@@ -134,12 +138,12 @@ describe("auth token lifecycle", () => {
     const { useAuthStore } = await import("../store/useAuthStore");
     const authService = await importAuthService();
 
-    useAuthStore.setState({ user: { id: "u1" } as unknown as UserRead, isAuthenticated: true });
+    useAuthStore.setState({ user: { id: "u1" } as unknown as UserRead });
     authService.logout.mockResolvedValueOnce({});
 
     await useAuthStore.getState().logout();
 
     expect(authService.logout).toHaveBeenCalled();
-    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+    expect(useAuthStore.getState().user).toBeNull();
   });
 });

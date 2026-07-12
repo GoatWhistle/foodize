@@ -11,7 +11,10 @@ export interface InitTelegramAppResult {
 
 function describeError(err: unknown): { status?: number; message?: string } {
   if (axios.isAxiosError(err)) {
-    return { status: err.response?.status, message: err.message };
+    return {
+      ...(err.response?.status !== undefined ? { status: err.response.status } : {}),
+      message: err.message,
+    };
   }
   if (err instanceof Error) {
     return { message: err.message };
@@ -36,7 +39,7 @@ export async function initTelegramApp(): Promise<InitTelegramAppResult> {
     readyApp();
     return {
       status: result.status,
-      phone_number: result.phone_number,
+      ...(result.phone_number !== undefined ? { phone_number: result.phone_number } : {}),
       initData,
       start_param: startParam,
     };

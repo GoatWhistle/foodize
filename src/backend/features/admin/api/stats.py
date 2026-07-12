@@ -1,5 +1,6 @@
 import uuid
 from datetime import date
+from typing import Any
 
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -96,7 +97,7 @@ async def get_audit_logs(
     size: int = Query(50, ge=1, le=200),
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-):
+) -> SuccessListResponse[dict[str, Any]]:
     rows, total = await crud.get_audit_logs(
         session,
         action=action,

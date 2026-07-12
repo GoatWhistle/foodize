@@ -21,14 +21,14 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, info: ErrorInfo): void {
-    console.error("[ErrorBoundary]", error, info?.componentStack);
+  override componentDidCatch(error: Error, info: ErrorInfo): void {
+    console.error("[ErrorBoundary]", error, info.componentStack);
   }
 
-  render(): ReactNode {
+  override render(): ReactNode {
     if (this.state.hasError) {
       if (this.props.fallback) {
-        return this.props.fallback(this.state.error, () => this.setState({ hasError: false, error: null }));
+        return this.props.fallback(this.state.error, () => { this.setState({ hasError: false, error: null }); });
       }
       return (
         <div
@@ -51,7 +51,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
           </div>
           <button
             className="btn btn-secondary"
-            onClick={() => this.setState({ hasError: false, error: null })}
+            onClick={() => { this.setState({ hasError: false, error: null }); }}
           >
             Попробовать снова
           </button>

@@ -30,7 +30,7 @@ from features.menu.schemas import (
 from shared.enums.selection_type import SelectionType
 
 
-def _make_session():
+def _make_session() -> AsyncMock:
     session = AsyncMock()
     result = MagicMock()
     result.scalar_one_or_none.return_value = None
@@ -45,13 +45,13 @@ def _make_session():
 
 class TestGetMenuItemById:
     @pytest.mark.asyncio
-    async def test_returns_none(self):
+    async def test_returns_none(self) -> None:
         session = _make_session()
         result = await get_menu_item_by_id(session, uuid.uuid4())
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_returns_item(self):
+    async def test_returns_item(self) -> None:
         session = _make_session()
         item = MagicMock()
         session.execute.return_value.scalar_one_or_none.return_value = item
@@ -61,7 +61,7 @@ class TestGetMenuItemById:
 
 class TestGetMenuItems:
     @pytest.mark.asyncio
-    async def test_returns_list(self):
+    async def test_returns_list(self) -> None:
         session = _make_session()
         items = [MagicMock(), MagicMock()]
         session.execute.return_value.scalars.return_value.all.return_value = items
@@ -69,7 +69,7 @@ class TestGetMenuItems:
         assert result == items
 
     @pytest.mark.asyncio
-    async def test_empty_list(self):
+    async def test_empty_list(self) -> None:
         session = _make_session()
         result = await get_menu_items(session, uuid.uuid4())
         assert result == []
@@ -77,7 +77,7 @@ class TestGetMenuItems:
 
 class TestCountMenuItems:
     @pytest.mark.asyncio
-    async def test_returns_count(self):
+    async def test_returns_count(self) -> None:
         session = _make_session()
         session.execute.return_value.scalar_one.return_value = 5
         result = await count_menu_items(session, uuid.uuid4())
@@ -86,7 +86,7 @@ class TestCountMenuItems:
 
 class TestCreateMenuItem:
     @pytest.mark.asyncio
-    async def test_creates_and_returns(self):
+    async def test_creates_and_returns(self) -> None:
         session = _make_session()
         restaurant_id = uuid.uuid4()
         item_id = uuid.uuid4()
@@ -109,7 +109,7 @@ class TestCreateMenuItem:
         assert result is loaded_item
 
     @pytest.mark.asyncio
-    async def test_raises_if_not_found_after_create(self):
+    async def test_raises_if_not_found_after_create(self) -> None:
         session = _make_session()
         item_data = MenuItemCreate(name="Бургер", price=250, category="BURGER")
 
@@ -122,7 +122,7 @@ class TestCreateMenuItem:
 
 class TestUpdateMenuItem:
     @pytest.mark.asyncio
-    async def test_updates_fields(self):
+    async def test_updates_fields(self) -> None:
         session = _make_session()
         item = MagicMock()
         item.id = uuid.uuid4()
@@ -138,7 +138,7 @@ class TestUpdateMenuItem:
         assert result is loaded
 
     @pytest.mark.asyncio
-    async def test_raises_if_not_found_after_update(self):
+    async def test_raises_if_not_found_after_update(self) -> None:
         session = _make_session()
         item = MagicMock()
         item.id = uuid.uuid4()
@@ -153,7 +153,7 @@ class TestUpdateMenuItem:
 
 class TestDeleteMenuItem:
     @pytest.mark.asyncio
-    async def test_marks_deleted(self):
+    async def test_marks_deleted(self) -> None:
         session = _make_session()
         item = MagicMock()
         await delete_menu_item(session, item)
@@ -163,7 +163,7 @@ class TestDeleteMenuItem:
 
 class TestCreateOptionGroup:
     @pytest.mark.asyncio
-    async def test_creates_group(self):
+    async def test_creates_group(self) -> None:
         session = _make_session()
         item = MagicMock()
         item.id = uuid.uuid4()
@@ -187,13 +187,13 @@ class TestCreateOptionGroup:
 
 class TestGetOptionGroupById:
     @pytest.mark.asyncio
-    async def test_returns_none(self):
+    async def test_returns_none(self) -> None:
         session = _make_session()
         result = await get_option_group_by_id(session, uuid.uuid4())
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_returns_group(self):
+    async def test_returns_group(self) -> None:
         session = _make_session()
         group = MagicMock()
         session.execute.return_value.scalar_one_or_none.return_value = group
@@ -203,7 +203,7 @@ class TestGetOptionGroupById:
 
 class TestUpdateOptionGroup:
     @pytest.mark.asyncio
-    async def test_updates(self):
+    async def test_updates(self) -> None:
         session = _make_session()
         group = MagicMock()
         group.selection_type = SelectionType.MULTIPLE.value
@@ -212,7 +212,7 @@ class TestUpdateOptionGroup:
         session.flush.assert_awaited_once()
 
     @pytest.mark.asyncio
-    async def test_single_type_sets_max_1(self):
+    async def test_single_type_sets_max_1(self) -> None:
         session = _make_session()
         group = MagicMock()
         group.selection_type = SelectionType.SINGLE.value
@@ -223,7 +223,7 @@ class TestUpdateOptionGroup:
 
 class TestDeleteOptionGroup:
     @pytest.mark.asyncio
-    async def test_deactivates(self):
+    async def test_deactivates(self) -> None:
         session = _make_session()
         group = MagicMock()
         await delete_option_group(session, group)
@@ -233,7 +233,7 @@ class TestDeleteOptionGroup:
 
 class TestCreateOption:
     @pytest.mark.asyncio
-    async def test_creates_option(self):
+    async def test_creates_option(self) -> None:
         session = _make_session()
         group = MagicMock()
         group.id = uuid.uuid4()
@@ -249,7 +249,7 @@ class TestCreateOption:
 
 class TestGetOptionById:
     @pytest.mark.asyncio
-    async def test_returns_option(self):
+    async def test_returns_option(self) -> None:
         session = AsyncMock()
         option = MagicMock()
         session.get = AsyncMock(return_value=option)
@@ -257,7 +257,7 @@ class TestGetOptionById:
         assert result is option
 
     @pytest.mark.asyncio
-    async def test_returns_none(self):
+    async def test_returns_none(self) -> None:
         session = AsyncMock()
         session.get = AsyncMock(return_value=None)
         result = await get_option_by_id(session, uuid.uuid4())
@@ -266,7 +266,7 @@ class TestGetOptionById:
 
 class TestUpdateOption:
     @pytest.mark.asyncio
-    async def test_updates(self):
+    async def test_updates(self) -> None:
         session = _make_session()
         option = MagicMock()
         data = MenuItemOptionUpdate(name="Очень острый")
@@ -277,7 +277,7 @@ class TestUpdateOption:
 
 class TestDeleteOption:
     @pytest.mark.asyncio
-    async def test_deactivates(self):
+    async def test_deactivates(self) -> None:
         session = _make_session()
         option = MagicMock()
         await delete_option(session, option)

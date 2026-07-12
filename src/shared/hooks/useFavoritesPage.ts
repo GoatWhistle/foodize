@@ -28,24 +28,33 @@ export const useFavoritesPage = ({
   navigateTo = (r: NavigableRestaurant) => `/restaurant/${r.display_id}`,
 }: UseFavoritesPageOptions = {}): UseFavoritesPageResult => {
   const navigate = useNavigate();
-  const { toggle } = useFavoriteStore();
+  const toggle = useFavoriteStore((s) => s.toggle);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let active = true;
     setLoading(true);
-    favoriteService
-      .getAll({ page, size: pageSize })
-      .then((res) => {
+    const load = async (): Promise<void> => {
+      try {
+        const res = await favoriteService.getAll({ page, size: pageSize });
+        if (!active) return;
         const body = res.data;
-        const list = Array.isArray(body?.data) ? body.data : [];
+        const list = Array.isArray(body.data) ? body.data : [];
         setFavorites(list);
-        setTotal(body?.pagination?.total ?? list.length);
-      })
-      .catch((err) => logError("useFavoritesPage.load", err))
-      .finally(() => setLoading(false));
+        setTotal(body.pagination.total);
+      } catch (err) {
+        if (active) logError("useFavoritesPage.load", err);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    void load();
+    return () => {
+      active = false;
+    };
   }, [page, pageSize]);
 
   const handleUnfavorite = async (restaurantId: string): Promise<void> => {

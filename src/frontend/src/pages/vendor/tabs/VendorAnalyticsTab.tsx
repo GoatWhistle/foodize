@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react';
 import type { AxiosResponse } from 'axios';
-import { DownloadSimple } from '@phosphor-icons/react';
+import { DownloadSimpleIcon } from '@phosphor-icons/react';
 import {
   RevenueChart,
   HourlyLoadChart,
@@ -161,7 +161,7 @@ export default function VendorAnalyticsTab({
           className="btn btn-secondary btn-sm"
           disabled={exportLoading}
           onClick={() =>
-            handleVendorExport(
+            { handleVendorExport(
               () =>
                 vendorService.exportFinancePDF({
                   date_from: financeFilters.date_from || undefined,
@@ -169,16 +169,16 @@ export default function VendorAnalyticsTab({
                   restaurant_id: selectedRestaurant?.id || undefined,
                 }),
               `финансы_${getVendorRestaurantLabel()}_${getVendorDateRange()}.pdf`
-            )
+            ); }
           }
         >
-          {exportLoading ? '...' : <><DownloadSimple size={16} weight="bold" /> Финансы PDF</>}
+          {exportLoading ? '...' : <><DownloadSimpleIcon size={16} weight="bold" /> Финансы PDF</>}
         </button>
         <button
           className="btn btn-secondary btn-sm"
           disabled={exportLoading}
           onClick={() =>
-            handleVendorExport(
+            { handleVendorExport(
               () =>
                 vendorService.exportAnalyticsPDF({
                   date_from: financeFilters.date_from || undefined,
@@ -186,15 +186,15 @@ export default function VendorAnalyticsTab({
                   restaurant_id: selectedRestaurant?.id || undefined,
                 }),
               `аналитика_${getVendorRestaurantLabel()}_${getVendorDateRange()}.pdf`
-            )
+            ); }
           }
         >
-          {exportLoading ? '...' : <><DownloadSimple size={16} weight="bold" /> Аналитика PDF</>}
+          {exportLoading ? '...' : <><DownloadSimpleIcon size={16} weight="bold" /> Аналитика PDF</>}
         </button>
       </div>
       {financeLoading && !finance && <AnalyticsSkeleton />}
       {finance && <KPICards finance={finance} />}
-      {finance && <RevenueChart data={finance.revenue_by_day || []} />}
+      {finance && <RevenueChart data={finance.revenue_by_day} />}
       <div
         style={{
           display: 'grid',
@@ -215,19 +215,19 @@ export default function VendorAnalyticsTab({
                 Отменены: finance.cancelled_orders,
               }}
             />
-            <TopItemsChart data={finance.top_items || []} />
+            <TopItemsChart data={finance.top_items} />
           </>
         )}
         {advancedAnalytics && (
           <>
-            <HourlyLoadChart data={advancedAnalytics.hourly_load || []} />
+            <HourlyLoadChart data={advancedAnalytics.hourly_load} />
             <CategoryRevenueChart
-              data={(advancedAnalytics.category_revenue || []).map((item: AnalyticsPoint) => ({
+              data={advancedAnalytics.category_revenue.map((item: AnalyticsPoint) => ({
                 ...item,
                 label: translate(CATEGORY_RU, item.label),
               }))}
             />
-            <AOVDynamicsChart data={advancedAnalytics.aov_dynamics || []} />
+            <AOVDynamicsChart data={advancedAnalytics.aov_dynamics} />
           </>
         )}
       </div>

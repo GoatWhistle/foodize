@@ -12,7 +12,7 @@ from features.admin.export import (
 from shared.enums.order_status import OrderStatus
 
 
-def _make_user(uid=None):
+def _make_user(uid: uuid.UUID | None = None) -> MagicMock:
     u = MagicMock()
     u.id = uid or uuid.uuid4()
     u.name = "Иван Иванов"
@@ -25,7 +25,7 @@ def _make_user(uid=None):
     return u
 
 
-def _make_order(oid=None):
+def _make_order(oid: uuid.UUID | None = None) -> MagicMock:
     o = MagicMock()
     o.id = oid or uuid.uuid4()
     o.display_id = "A-101"
@@ -42,33 +42,33 @@ def _make_order(oid=None):
 
 
 class TestMakeCsv:
-    def test_returns_bytes(self):
+    def test_returns_bytes(self) -> None:
         result = _make_csv(["A", "B"], [["1", "2"], ["3", "4"]])
         assert isinstance(result, bytes)
 
-    def test_contains_headers(self):
+    def test_contains_headers(self) -> None:
         result = _make_csv(["Имя", "Телефон"], []).decode("utf-8-sig")
         assert "Имя" in result
         assert "Телефон" in result
 
-    def test_contains_rows(self):
+    def test_contains_rows(self) -> None:
         result = _make_csv(["X"], [["val1"], ["val2"]]).decode("utf-8-sig")
         assert "val1" in result
         assert "val2" in result
 
-    def test_empty_rows(self):
+    def test_empty_rows(self) -> None:
         result = _make_csv(["Col"], [])
         assert isinstance(result, bytes)
         assert b"Col" in result
 
-    def test_utf8_bom(self):
+    def test_utf8_bom(self) -> None:
         result = _make_csv(["Поле"], [["данные"]])
         assert result[:3] == b"\xef\xbb\xbf"
 
 
 class TestExportUsersCsv:
     @pytest.mark.asyncio
-    async def test_returns_csv_bytes(self):
+    async def test_returns_csv_bytes(self) -> None:
         session = AsyncMock()
         with patch(
             "features.admin.export.csv_exports.crud.get_all_users", new_callable=AsyncMock
@@ -81,7 +81,7 @@ class TestExportUsersCsv:
         assert "79001234567" in content
 
     @pytest.mark.asyncio
-    async def test_includes_all_headers(self):
+    async def test_includes_all_headers(self) -> None:
         session = AsyncMock()
         with patch(
             "features.admin.export.csv_exports.crud.get_all_users", new_callable=AsyncMock
@@ -93,7 +93,7 @@ class TestExportUsersCsv:
             assert col in content
 
     @pytest.mark.asyncio
-    async def test_date_range_defaults_applied(self):
+    async def test_date_range_defaults_applied(self) -> None:
         session = AsyncMock()
         with patch(
             "features.admin.export.csv_exports.crud.get_all_users", new_callable=AsyncMock
@@ -105,7 +105,7 @@ class TestExportUsersCsv:
             assert "date_to" in call_kwargs
 
     @pytest.mark.asyncio
-    async def test_explicit_date_range(self):
+    async def test_explicit_date_range(self) -> None:
         session = AsyncMock()
         d_from = date(2026, 1, 1)
         d_to = date(2026, 1, 31)
@@ -119,7 +119,7 @@ class TestExportUsersCsv:
             assert call_kwargs["date_to"] == d_to
 
     @pytest.mark.asyncio
-    async def test_marks_inactive_users(self):
+    async def test_marks_inactive_users(self) -> None:
         session = AsyncMock()
         user = _make_user()
         user.is_active = False
@@ -134,7 +134,7 @@ class TestExportUsersCsv:
 
 class TestExportOrdersCsv:
     @pytest.mark.asyncio
-    async def test_returns_csv_bytes(self):
+    async def test_returns_csv_bytes(self) -> None:
         session = AsyncMock()
         with patch(
             "features.admin.export.csv_exports.crud.get_all_orders", new_callable=AsyncMock
@@ -147,7 +147,7 @@ class TestExportOrdersCsv:
         assert "Тест Кафе" in content
 
     @pytest.mark.asyncio
-    async def test_includes_all_headers(self):
+    async def test_includes_all_headers(self) -> None:
         session = AsyncMock()
         with patch(
             "features.admin.export.csv_exports.crud.get_all_orders", new_callable=AsyncMock
@@ -159,7 +159,7 @@ class TestExportOrdersCsv:
             assert col in content
 
     @pytest.mark.asyncio
-    async def test_status_filter_passed(self):
+    async def test_status_filter_passed(self) -> None:
         session = AsyncMock()
         with patch(
             "features.admin.export.csv_exports.crud.get_all_orders", new_callable=AsyncMock
@@ -170,7 +170,7 @@ class TestExportOrdersCsv:
             assert call_kwargs["status"] == OrderStatus.COMPLETED
 
     @pytest.mark.asyncio
-    async def test_empty_orders(self):
+    async def test_empty_orders(self) -> None:
         session = AsyncMock()
         with patch(
             "features.admin.export.csv_exports.crud.get_all_orders", new_callable=AsyncMock

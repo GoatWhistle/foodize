@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from pydantic import BaseModel, Field
 
@@ -10,7 +10,7 @@ from shared.enums.order_status import OrderStatus
 class OrderStatusChangedEvent(BaseModel):
     event_type: str = EventType.ORDER_STATUS_CHANGED.value
     event_id: uuid.UUID = Field(default_factory=uuid.uuid4)
-    occurred_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    occurred_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     order_id: uuid.UUID
     order_display_id: str | None = None
@@ -25,7 +25,7 @@ class OrderStatusChangedEvent(BaseModel):
 class FeedbackRequestedEvent(BaseModel):
     event_type: str = EventType.FEEDBACK_REQUESTED.value
     event_id: uuid.UUID = Field(default_factory=uuid.uuid4)
-    occurred_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    occurred_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     order_id: uuid.UUID
     user_id: uuid.UUID
@@ -36,7 +36,7 @@ class FeedbackRequestedEvent(BaseModel):
 class OrderPlacedEvent(BaseModel):
     event_type: str = EventType.ORDER_PLACED.value
     event_id: uuid.UUID = Field(default_factory=uuid.uuid4)
-    occurred_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    occurred_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     order_id: uuid.UUID
     order_display_id: str | None = None

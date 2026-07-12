@@ -74,7 +74,7 @@ const TelegramUsernameForm = ({
             placeholder="username"
             value={telegramUsername}
             onChange={handleChange}
-            onBlur={() => setTouched(true)}
+            onBlur={() => { setTouched(true); }}
             required
             autoComplete="off"
             autoFocus

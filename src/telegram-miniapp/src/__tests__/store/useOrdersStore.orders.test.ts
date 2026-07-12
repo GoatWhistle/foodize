@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
-import { useOrderStore } from "../../store/useOrderStore";
+import { useCartStore } from "../../store/useCartStore";
+import { useOrdersStore } from "../../store/useOrdersStore";
 import { cartService } from "@shared/services/cartService";
 import { orderService } from "@shared/services/orderService";
-import type { CartLine } from "@shared/store/useOrderStore";
+import type { CartLine } from "@shared/store/createCartStore";
 import type { Order } from "@shared/types/models";
 
 vi.mock("@shared/services/cartService", () => ({
@@ -38,11 +39,15 @@ const asCartLines = (lines: Partial<CartLine>[]): CartLine[] =>
 
 const asOrder = (o: Partial<Order>): Order => o as Order;
 
-describe("useOrderStore orders", () => {
+describe("useOrdersStore orders", () => {
   beforeEach(() => {
-    useOrderStore.setState({
+    useCartStore.setState({
       cart: [],
       cartRestaurantId: null,
+      cartError: null,
+      orderPlacing: false,
+    });
+    useOrdersStore.setState({
       orders: [],
       currentOrder: null,
       ordersLoading: false,
@@ -58,7 +63,12 @@ describe("useOrderStore orders", () => {
       data: {
         data: {
           items: [
-            { menuItem: { id: "m1", name: "Pizza", price: 90 }, quantity: 2 },
+            {
+              menuItem: { id: "m1", name: "Pizza", price: 90 },
+              quantity: 2,
+              selected_options: [],
+              selected_option_ids: [],
+            },
           ],
           restaurant_id: "rest-1",
         },
@@ -80,20 +90,20 @@ describe("useOrderStore orders", () => {
       ],
     } as unknown as Order;
 
-    await useOrderStore.getState().repeatOrder(repeatable);
+    await useCartStore.getState().repeatOrder(repeatable);
 
     expect(cartServiceMock.updateCart).toHaveBeenCalled();
-    const state = useOrderStore.getState();
+    const state = useCartStore.getState();
     expect(state.cart.length).toBe(1);
   });
 
   it("should set and clear active order", () => {
     const activeOrder = asOrder({ id: "o1" });
-    useOrderStore.getState().setActiveOrder(activeOrder);
-    expect(useOrderStore.getState().activeOrder).toEqual(activeOrder);
+    useOrdersStore.getState().setActiveOrder(activeOrder);
+    expect(useOrdersStore.getState().activeOrder).toEqual(activeOrder);
 
-    useOrderStore.getState().clearActiveOrder();
-    expect(useOrderStore.getState().activeOrder).toBeNull();
+    useOrdersStore.getState().clearActiveOrder();
+    expect(useOrdersStore.getState().activeOrder).toBeNull();
   });
 
   it("should fetch active order successfully", async () => {
@@ -106,9 +116,9 @@ describe("useOrderStore orders", () => {
       },
     });
 
-    await useOrderStore.getState().fetchActiveOrder();
+    await useOrdersStore.getState().fetchActiveOrder();
 
-    expect(useOrderStore.getState().activeOrder).toEqual({
+    expect(useOrdersStore.getState().activeOrder).toEqual({
       id: "o2",
       status: "READY",
     });
@@ -122,7 +132,7 @@ describe("useOrderStore orders", () => {
     });
     cartServiceMock.clearCart.mockResolvedValueOnce({});
 
-    useOrderStore.setState({
+    useCartStore.setState({
       cart: asCartLines([
         {
           menuItem: { id: "m1" } as CartLine["menuItem"],
@@ -133,7 +143,7 @@ describe("useOrderStore orders", () => {
       cartRestaurantId: "rest-1",
     });
 
-    const res = await useOrderStore
+    const res = await useCartStore
       .getState()
       .placeOrder("PROMO", "Please rush", "18:00");
 
@@ -141,11 +151,13 @@ describe("useOrderStore orders", () => {
     expect(cartServiceMock.clearCart).toHaveBeenCalled();
     expect(res).toEqual({ id: "o1", status: "PENDING" });
 
-    const state = useOrderStore.getState();
-    expect(state.cart.length).toBe(0);
-    expect(state.cartRestaurantId).toBeNull();
-    expect(state.orders[0]).toEqual({ id: "o1", status: "PENDING" });
-    expect(state.activeOrder).toEqual({ id: "o1", status: "PENDING" });
+    const cart = useCartStore.getState();
+    expect(cart.cart.length).toBe(0);
+    expect(cart.cartRestaurantId).toBeNull();
+
+    const orders = useOrdersStore.getState();
+    expect(orders.orders[0]).toEqual({ id: "o1", status: "PENDING" });
+    expect(orders.activeOrder).toEqual({ id: "o1", status: "PENDING" });
   });
 
   it("should fetch my orders successfully", async () => {
@@ -156,9 +168,9 @@ describe("useOrderStore orders", () => {
       },
     });
 
-    await useOrderStore.getState().fetchMyOrders({ page: 1 });
+    await useOrdersStore.getState().fetchMyOrders({ page: 1 });
 
-    const state = useOrderStore.getState();
+    const state = useOrdersStore.getState();
     expect(state.ordersLoading).toBe(false);
     expect(state.orders).toEqual([{ id: "o1" }]);
     expect(state.ordersTotal).toBe(10);
@@ -167,9 +179,9 @@ describe("useOrderStore orders", () => {
   it("should handle error when fetching my orders", async () => {
     orderServiceMock.getMyOrders.mockRejectedValueOnce(new Error("Failed"));
 
-    await useOrderStore.getState().fetchMyOrders();
+    await useOrdersStore.getState().fetchMyOrders();
 
-    const state = useOrderStore.getState();
+    const state = useOrdersStore.getState();
     expect(state.ordersLoading).toBe(false);
     expect(state.orders).toEqual([]);
     expect(state.ordersTotal).toBe(0);
@@ -182,9 +194,9 @@ describe("useOrderStore orders", () => {
       },
     });
 
-    const res = await useOrderStore.getState().fetchOrder("o1");
+    const res = await useOrdersStore.getState().fetchOrder("o1");
 
     expect(res).toEqual({ id: "o1" });
-    expect(useOrderStore.getState().currentOrder).toEqual({ id: "o1" });
+    expect(useOrdersStore.getState().currentOrder).toEqual({ id: "o1" });
   });
 });

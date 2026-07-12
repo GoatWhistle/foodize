@@ -9,4 +9,5 @@ class DeletedAtMixin:
         DateTime(timezone=True),
         nullable=True,
         default=None,
+        index=True,
     )

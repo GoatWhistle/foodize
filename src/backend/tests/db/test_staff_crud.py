@@ -1,8 +1,10 @@
 import uuid
 
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.restaurants.crud import create_restaurant
+from features.restaurants.models import Restaurant
 from features.restaurants.schemas import RestaurantCreate
 from features.staff.crud import (
     create_staff_profile,
@@ -16,8 +18,10 @@ from features.staff.crud import (
 from features.staff.dependencies import get_restaurant_or_404
 from features.staff.schemas import StaffRequestCreate
 from features.users.crud import create_user
+from features.users.models import User
 from features.users.schemas import UserCreate
 from features.vendors.crud import create_vendor_profile
+from features.vendors.models import VendorProfile
 from features.vendors.schemas import VendorCreate
 from shared.enums.roles import UserRole
 from shared.enums.staff_request_status import StaffRequestStatus
@@ -25,7 +29,7 @@ from shared.exceptions import NotFoundException
 
 
 @pytest.fixture
-async def vendor_and_restaurant(db_session):
+async def vendor_and_restaurant(db_session: AsyncSession) -> tuple[VendorProfile, Restaurant]:
     vendor_data = UserCreate(
         name="Vendor",
         phone_number="79003333333",
@@ -41,7 +45,7 @@ async def vendor_and_restaurant(db_session):
 
 
 @pytest.fixture
-async def staff_candidate(db_session):
+async def staff_candidate(db_session: AsyncSession) -> User:
     user_data = UserCreate(
         name="Candidate",
         phone_number="79004444444",
@@ -52,7 +56,11 @@ async def staff_candidate(db_session):
 
 
 @pytest.mark.asyncio
-async def test_staff_crud_lifecycle(db_session, vendor_and_restaurant, staff_candidate):
+async def test_staff_crud_lifecycle(
+    db_session: AsyncSession,
+    vendor_and_restaurant: tuple[VendorProfile, Restaurant],
+    staff_candidate: User,
+) -> None:
     vendor, restaurant = vendor_and_restaurant
     candidate = staff_candidate
 
@@ -85,8 +93,12 @@ async def test_staff_crud_lifecycle(db_session, vendor_and_restaurant, staff_can
 
 
 @pytest.mark.asyncio
-async def test_update_request_status_no_profile(db_session, vendor_and_restaurant, staff_candidate):
-    vendor, restaurant = vendor_and_restaurant
+async def test_update_request_status_no_profile(
+    db_session: AsyncSession,
+    vendor_and_restaurant: tuple[VendorProfile, Restaurant],
+    staff_candidate: User,
+) -> None:
+    _vendor, restaurant = vendor_and_restaurant
     candidate = staff_candidate
 
     data = StaffRequestCreate(message="Wanna work")
@@ -100,7 +112,9 @@ async def test_update_request_status_no_profile(db_session, vendor_and_restauran
 
 
 @pytest.mark.asyncio
-async def test_get_restaurant_or_404_returns_instance(db_session, vendor_and_restaurant):
+async def test_get_restaurant_or_404_returns_instance(
+    db_session: AsyncSession, vendor_and_restaurant: tuple[VendorProfile, Restaurant]
+) -> None:
     _, restaurant = vendor_and_restaurant
 
     fetched_restaurant = await get_restaurant_or_404(
@@ -111,6 +125,6 @@ async def test_get_restaurant_or_404_returns_instance(db_session, vendor_and_res
 
 
 @pytest.mark.asyncio
-async def test_get_restaurant_or_404_raises_not_found(db_session):
+async def test_get_restaurant_or_404_raises_not_found(db_session: AsyncSession) -> None:
     with pytest.raises(NotFoundException):
         await get_restaurant_or_404(restaurant_id=uuid.uuid4(), session=db_session)

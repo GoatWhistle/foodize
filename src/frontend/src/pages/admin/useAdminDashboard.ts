@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useMemo } from 'react';
 import { adminService } from '../../services/adminService';
 import { useAuthStore } from '../../store/useAuthStore';
 import { ORDER_STATUS_RU, translate } from '@shared/utils/locales';
-import type { AdminRestaurant, PlatformStats, SuccessResponse } from '@shared/types/models';
+import type { AdminRestaurant, PlatformStats } from '@shared/types/models';
 import { downloadBlob } from '../../utils/download';
 import { useAdminUsers } from './hooks/useAdminUsers';
 import { useAdminRestaurants } from './hooks/useAdminRestaurants';
@@ -38,7 +38,7 @@ export const useAdminDashboard = () => {
   const [permissionActionLoading, setPermissionActionLoading] = useState(false);
   const actionSuccessTimerRef = useRef<number | undefined>(undefined);
 
-  useEffect(() => () => clearTimeout(actionSuccessTimerRef.current), []);
+  useEffect(() => () => { clearTimeout(actionSuccessTimerRef.current); }, []);
 
   useEffect(() => {
     setActionError('');
@@ -58,7 +58,7 @@ export const useAdminDashboard = () => {
     }
   }, [activeTab]);
 
-  const requestReason: RequestReason = (dialog) => setReasonDialog(dialog);
+  const requestReason: RequestReason = (dialog) => { setReasonDialog(dialog); };
 
   const runReasonAction = async (reason: string) => {
     if (!reasonDialog?.onConfirm) return;
@@ -76,7 +76,7 @@ export const useAdminDashboard = () => {
     setActionSuccess(message);
     clearTimeout(actionSuccessTimerRef.current);
     actionSuccessTimerRef.current = window.setTimeout(
-      () => setActionSuccess(''),
+      () => { setActionSuccess(''); },
       SUCCESS_TOAST_DURATION
     );
   };
@@ -85,8 +85,8 @@ export const useAdminDashboard = () => {
     if (activeTab === 'stats' && !stats) {
       adminService
         .getPlatformStats()
-        .then((res) => setStats((res.data as SuccessResponse<PlatformStats>).data))
-        .catch(() => setActionError('Не удалось загрузить статистику'));
+        .then((res) => { setStats(res.data.data); })
+        .catch(() => { setActionError('Не удалось загрузить статистику'); });
     }
   }, [activeTab, stats]);
 

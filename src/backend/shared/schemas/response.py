@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from typing import Generic, TypeVar
+from typing import TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -19,12 +19,12 @@ class Pagination(BaseModel):
     previous: str | None
 
 
-class SuccessResponse(BaseModel, Generic[T]):
+class SuccessResponse[T](BaseModel):
     data: T
     meta: Meta = Field(default_factory=Meta)
 
 
-class SuccessListResponse(BaseModel, Generic[T]):
+class SuccessListResponse[T](BaseModel):
     data: list[T]
     pagination: Pagination
     meta: Meta = Field(default_factory=Meta)

@@ -1,4 +1,4 @@
-import { Star } from "@phosphor-icons/react";
+import { StarIcon } from "@phosphor-icons/react";
 
 interface StarRatingInputProps {
   value?: number;
@@ -23,7 +23,7 @@ const StarRatingInput = ({
     {[1, 2, 3, 4, 5].map((s) => {
       const filled = s <= value;
       const star = (
-        <Star
+        <StarIcon
           size={size}
           weight={filled ? "fill" : "regular"}
           color={filled ? activeColor : inactiveColor}

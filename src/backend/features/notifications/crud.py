@@ -1,6 +1,7 @@
 import uuid
+from typing import Any, cast
 
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import CursorResult, delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.notifications.models import Notification, NotificationType
@@ -89,9 +90,9 @@ async def delete_notification(
     stmt = delete(Notification).where(
         Notification.id == notification_id, Notification.user_id == user_id
     )
-    result = await session.execute(stmt)
+    result = cast("CursorResult[Any]", await session.execute(stmt))
     await session.flush()
-    return result.rowcount > 0  # type: ignore[attr-defined]
+    return result.rowcount > 0
 
 
 async def delete_all_notifications(session: AsyncSession, user_id: uuid.UUID) -> None:

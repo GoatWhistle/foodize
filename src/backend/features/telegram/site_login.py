@@ -1,5 +1,7 @@
 import asyncio
 import secrets
+from http import HTTPStatus
+from typing import Any
 
 import httpx
 from fastapi import Response
@@ -32,12 +34,15 @@ def _normalize_phone(phone: str) -> str:
 _TELEGRAM_SEND_RETRIES = 3
 
 
-async def _send_telegram_message(payload: dict) -> None:
+async def _send_telegram_message(payload: dict[str, Any]) -> None:
     url = f"https://api.telegram.org/bot{settings.telegram.bot_token}/sendMessage"
     async with httpx.AsyncClient(timeout=10, proxy=settings.telegram.proxy_url or None) as client:
         for attempt in range(_TELEGRAM_SEND_RETRIES):
             response = await client.post(url, json=payload)
-            if response.status_code == 429 or response.status_code >= 500:
+            if (
+                response.status_code == HTTPStatus.TOO_MANY_REQUESTS
+                or response.status_code >= HTTPStatus.INTERNAL_SERVER_ERROR
+            ):
                 if attempt == _TELEGRAM_SEND_RETRIES - 1:
                     response.raise_for_status()
                 retry_after = 1.0

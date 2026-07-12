@@ -19,16 +19,15 @@ from features.restaurants.working_hours_schemas import (
 from features.users.models import User
 from features.vendors.dependencies import get_current_vendor
 from features.vendors.models import VendorProfile
-from infra.storage import ALLOWED_IMAGE_CONTENT_TYPES, MAX_IMAGE_BYTES
 from middlewares.limiter import limiter
 from shared.dependencies import require_permission
 from shared.enums.permissions import Permission
 from shared.enums.restaurant_sort import RestaurantSort
 from shared.enums.sort_direction import SortDirection
-from shared.exceptions import BadRequestException
 from shared.response import build_list_response, build_response
 from shared.restaurant_resolver import resolve_restaurant_uuid
 from shared.schemas.response import SuccessListResponse, SuccessResponse
+from shared.uploads import read_image_upload
 
 router = APIRouter(prefix="/restaurants", tags=["Restaurants"])
 
@@ -109,29 +108,12 @@ async def upload_restaurant_photo(
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[RestaurantResponse]:
-    content_type = file.content_type or ""
-    if content_type not in ALLOWED_IMAGE_CONTENT_TYPES:
-        raise BadRequestException(detail="Недопустимый тип файла")
-
-    content_length = request.headers.get("content-length")
-    if (
-        content_length is not None
-        and content_length.isdigit()
-        and int(content_length) > MAX_IMAGE_BYTES
-    ):
-        raise BadRequestException(detail="Файл слишком большой (максимум 5 МБ)")
-
-    data = await file.read(MAX_IMAGE_BYTES + 1)
-    if not data:
-        raise BadRequestException(detail="Пустой файл")
-    if len(data) > MAX_IMAGE_BYTES:
-        raise BadRequestException(detail="Файл слишком большой (максимум 5 МБ)")
-
+    data = await read_image_upload(file, request, validate_content_type=True)
     result = await service.set_restaurant_photo(
         session=session,
         restaurant_id=restaurant_id,
         data=data,
-        content_type=content_type,
+        content_type=file.content_type or "",
         vendor_id=current_vendor.id,
     )
     return build_response(result)

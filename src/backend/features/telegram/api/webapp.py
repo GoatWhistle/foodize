@@ -1,3 +1,5 @@
+from http import HTTPStatus
+
 from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -84,7 +86,7 @@ async def telegram_refresh(
     return build_response(result)
 
 
-@router.post("/session-logout", status_code=204)
+@router.post("/session-logout", status_code=HTTPStatus.NO_CONTENT)
 @limiter.limit("20/minute")
 async def telegram_session_logout(
     request: Request,
@@ -167,7 +169,9 @@ async def telegram_site_login_verify_by_username(
 
 
 @router.post("/site-login/password", response_model=SuccessResponse[UserRead])
+@limiter.limit("5/minute")
 async def telegram_site_login_set_password(
+    request: Request,
     data: TelegramSitePasswordRequest,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),

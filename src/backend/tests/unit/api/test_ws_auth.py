@@ -15,7 +15,7 @@ def _make_cache(exists: bool) -> AsyncMock:
 
 class TestResolveWsTokenUserId:
     @pytest.mark.asyncio
-    async def test_valid_token_returns_user_id(self):
+    async def test_valid_token_returns_user_id(self) -> None:
         user_id = uuid.uuid4()
         payload = {"typ": "access", "sub": str(user_id), "jti": "jti-abc"}
         cache = _make_cache(exists=False)
@@ -30,7 +30,7 @@ class TestResolveWsTokenUserId:
         cache.exists.assert_awaited_once_with("access_blacklist:jti-abc")
 
     @pytest.mark.asyncio
-    async def test_revoked_token_by_jti_raises_permission_error(self):
+    async def test_revoked_token_by_jti_raises_permission_error(self) -> None:
         user_id = uuid.uuid4()
         payload = {"typ": "access", "sub": str(user_id), "jti": "jti-revoked"}
         cache = _make_cache(exists=True)
@@ -45,7 +45,7 @@ class TestResolveWsTokenUserId:
         cache.exists.assert_awaited_once_with("access_blacklist:jti-revoked")
 
     @pytest.mark.asyncio
-    async def test_blacklist_checked_by_jti_not_raw_token(self):
+    async def test_blacklist_checked_by_jti_not_raw_token(self) -> None:
         user_id = uuid.uuid4()
         raw_token = "raw.jwt.token"
         payload = {"typ": "access", "sub": str(user_id), "jti": "jti-xyz"}
@@ -62,7 +62,7 @@ class TestResolveWsTokenUserId:
         assert raw_token not in called_key
 
     @pytest.mark.asyncio
-    async def test_wrong_token_type_returns_none(self):
+    async def test_wrong_token_type_returns_none(self) -> None:
         payload = {"typ": "refresh", "sub": str(uuid.uuid4()), "jti": "jti-abc"}
 
         with patch("features.notifications.ws_auth.decode_jwt", return_value=payload):
@@ -71,7 +71,7 @@ class TestResolveWsTokenUserId:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_invalid_token_returns_none(self):
+    async def test_invalid_token_returns_none(self) -> None:
         with patch(
             "features.notifications.ws_auth.decode_jwt",
             side_effect=jwt.InvalidTokenError,
@@ -81,7 +81,7 @@ class TestResolveWsTokenUserId:
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_missing_jti_skips_blacklist_check(self):
+    async def test_missing_jti_skips_blacklist_check(self) -> None:
         user_id = uuid.uuid4()
         payload = {"typ": "access", "sub": str(user_id)}
         cache = _make_cache(exists=True)

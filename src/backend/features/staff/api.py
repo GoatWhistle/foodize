@@ -1,6 +1,7 @@
 import uuid
+from http import HTTPStatus
 
-from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
@@ -113,7 +114,7 @@ async def get_vendor_members(
     return build_list_response(data=data, total=total, page=page, size=size, request=request)
 
 
-@router.delete("/members/{profile_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/members/{profile_id}", status_code=HTTPStatus.NO_CONTENT)
 async def remove_staff_member(
     profile_id: uuid.UUID,
     _user: User = Depends(require_permission(Permission.STAFF_MEMBERS_MANAGE)),

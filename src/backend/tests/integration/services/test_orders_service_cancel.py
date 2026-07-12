@@ -15,7 +15,7 @@ from shared.enums.order_status import OrderStatus
 
 
 class TestCancelOrder:
-    async def test_cancel_pending_success(self, mock_db_session):
+    async def test_cancel_pending_success(self, mock_db_session: AsyncMock) -> None:
         user_id = uuid.uuid4()
         order_id = uuid.uuid4()
         mock_order = make_mock_order(order_id, user_id, OrderStatus.PENDING.value)
@@ -50,7 +50,7 @@ class TestCancelOrder:
         mock_cancel.assert_awaited_once()
         assert isinstance(result, OrderResponse)
 
-    async def test_cancel_wrong_user_raises(self, mock_db_session):
+    async def test_cancel_wrong_user_raises(self, mock_db_session: AsyncMock) -> None:
         owner_id = uuid.uuid4()
         other_id = uuid.uuid4()
         order_id = uuid.uuid4()
@@ -64,7 +64,7 @@ class TestCancelOrder:
             with pytest.raises(OrderAccessDeniedException):
                 await cancel_order(mock_db_session, order_id, other_id, OrderCancelRequest())
 
-    async def test_cancel_non_pending_raises(self, mock_db_session):
+    async def test_cancel_non_pending_raises(self, mock_db_session: AsyncMock) -> None:
         user_id = uuid.uuid4()
         order_id = uuid.uuid4()
         mock_order = make_mock_order(order_id, user_id, OrderStatus.COMPLETED.value)
@@ -77,7 +77,7 @@ class TestCancelOrder:
             with pytest.raises(OrderNotCancellableException):
                 await cancel_order(mock_db_session, order_id, user_id, OrderCancelRequest())
 
-    async def test_cancel_not_found_raises(self, mock_db_session):
+    async def test_cancel_not_found_raises(self, mock_db_session: AsyncMock) -> None:
         with patch(
             "features.orders.crud.order.get_order_by_identifier_for_update",
             new_callable=AsyncMock,

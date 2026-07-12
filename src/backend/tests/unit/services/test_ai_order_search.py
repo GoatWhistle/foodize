@@ -1,6 +1,7 @@
 import json
 import uuid
-from unittest.mock import AsyncMock, patch
+from typing import Any
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -13,31 +14,31 @@ from features.ai_order_agent.search import (
 
 
 class TestItemText:
-    def test_with_description(self):
+    def test_with_description(self) -> None:
         item = {"name": "Бургер", "description": "Сочный"}
         assert _item_text(item) == "Бургер. Сочный"
 
-    def test_without_description(self):
+    def test_without_description(self) -> None:
         item = {"name": "Бургер", "description": None}
         assert _item_text(item) == "Бургер."
 
-    def test_missing_description(self):
+    def test_missing_description(self) -> None:
         item = {"name": "Пицца"}
         assert _item_text(item) == "Пицца."
 
 
 class TestQueryCacheKey:
-    def test_starts_with_prefix(self):
+    def test_starts_with_prefix(self) -> None:
         assert _query_cache_key("model", "text").startswith("emb:query:")
 
-    def test_same_inputs_same_key(self):
+    def test_same_inputs_same_key(self) -> None:
         assert _query_cache_key("model", "text") == _query_cache_key("model", "text")
 
-    def test_different_inputs_different_keys(self):
+    def test_different_inputs_different_keys(self) -> None:
         assert _query_cache_key("model", "text1") != _query_cache_key("model", "text2")
 
 
-def _candidate(name: str, description: str | None = None) -> dict:
+def _candidate(name: str, description: str | None = None) -> dict[str, Any]:
     return {
         "menu_item_id": str(uuid.uuid4()),
         "name": name,
@@ -50,7 +51,7 @@ def _candidate(name: str, description: str | None = None) -> dict:
     }
 
 
-def _ranked(item: dict, distance: float) -> dict:
+def _ranked(item: dict[str, Any], distance: float) -> dict[str, Any]:
     return {**item, "_distance": distance}
 
 
@@ -61,7 +62,7 @@ def _mock_client(embeddings: list[list[float]] | None = None) -> AsyncMock:
     return client
 
 
-def _settings(mock_settings, dim: int = 2) -> None:
+def _settings(mock_settings: MagicMock, dim: int = 2) -> None:
     mock_settings.llm.embeddings_enabled = True
     mock_settings.llm.embedding_candidate_limit = 50
     mock_settings.llm.embedding_dim = dim
@@ -69,7 +70,7 @@ def _settings(mock_settings, dim: int = 2) -> None:
 
 class TestSemanticSearch:
     @pytest.mark.asyncio
-    async def test_embeddings_disabled_falls_back(self):
+    async def test_embeddings_disabled_falls_back(self) -> None:
         session = AsyncMock()
         cache = AsyncMock()
         items = [{"menu_item_id": str(uuid.uuid4()), "name": "Бургер", "price": 200}]
@@ -88,7 +89,7 @@ class TestSemanticSearch:
         assert result == items
 
     @pytest.mark.asyncio
-    async def test_empty_query_falls_back(self):
+    async def test_empty_query_falls_back(self) -> None:
         session = AsyncMock()
         cache = AsyncMock()
         items = [{"menu_item_id": str(uuid.uuid4()), "name": "Пицца"}]
@@ -107,7 +108,7 @@ class TestSemanticSearch:
         assert result == items
 
     @pytest.mark.asyncio
-    async def test_no_candidates_returns_empty(self):
+    async def test_no_candidates_returns_empty(self) -> None:
         session = AsyncMock()
         cache = AsyncMock()
         cache.get = AsyncMock(return_value=None)
@@ -137,7 +138,7 @@ class TestSemanticSearch:
         assert result == []
 
     @pytest.mark.asyncio
-    async def test_fresh_embeddings_skip_embedder_and_upsert(self):
+    async def test_fresh_embeddings_skip_embedder_and_upsert(self) -> None:
         session = AsyncMock()
         cache = AsyncMock()
         item = _candidate("Бургер", "Вкусный")
@@ -183,7 +184,7 @@ class TestSemanticSearch:
         assert "_distance" not in result[0]
 
     @pytest.mark.asyncio
-    async def test_stale_hash_reembeds_and_upserts(self):
+    async def test_stale_hash_reembeds_and_upserts(self) -> None:
         session = AsyncMock()
         cache = AsyncMock()
         item = _candidate("Пицца", "Итальянская")
@@ -224,7 +225,7 @@ class TestSemanticSearch:
 
         client.embed.assert_awaited_once_with([_item_text(item)])
         upsert.assert_awaited_once()
-        rows = upsert.await_args.args[1]
+        rows = upsert.await_args.args[1]  # type: ignore[union-attr]
         assert rows == [
             {
                 "menu_item_id": uuid.UUID(item["menu_item_id"]),
@@ -233,10 +234,58 @@ class TestSemanticSearch:
                 "embedding": item_embedding,
             }
         ]
+        session.commit.assert_awaited()
         assert len(result) == 1
 
     @pytest.mark.asyncio
-    async def test_lexical_bonus_reorders_results(self):
+    async def test_sync_acquires_lock_and_commits_when_fresh(self) -> None:
+        session = AsyncMock()
+        cache = AsyncMock()
+        item = _candidate("Суп", "Горячий")
+        digest = _text_hash(_item_text(item))
+        cache.get = AsyncMock(return_value=json.dumps([0.5, 0.5]))
+        client = _mock_client()
+
+        with (
+            patch("features.ai_order_agent.search.settings") as mock_settings,
+            patch(
+                "features.ai_order_agent.search.get_embedding_client",
+                new_callable=AsyncMock,
+                return_value=client,
+            ),
+            patch(
+                "features.ai_order_agent.search.crud.list_orderable_items",
+                new_callable=AsyncMock,
+                return_value=[item],
+            ),
+            patch(
+                "features.ai_order_agent.search.crud.acquire_embedding_sync_lock",
+                new_callable=AsyncMock,
+            ) as lock,
+            patch(
+                "features.ai_order_agent.search.crud.get_embedding_meta",
+                new_callable=AsyncMock,
+                return_value={uuid.UUID(item["menu_item_id"]): digest},
+            ),
+            patch(
+                "features.ai_order_agent.search.crud.upsert_embeddings",
+                new_callable=AsyncMock,
+            ) as upsert,
+            patch(
+                "features.ai_order_agent.search.crud.semantic_rank_items",
+                new_callable=AsyncMock,
+                return_value=[_ranked(item, 0.1)],
+            ),
+        ):
+            _settings(mock_settings)
+            await semantic_search(session, cache, query="суп")
+
+        lock.assert_awaited_once_with(session, "model-x")
+        upsert.assert_not_awaited()
+        session.commit.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_lexical_bonus_reorders_results(self) -> None:
         session = AsyncMock()
         cache = AsyncMock()
         closest = _candidate("Ролл")
@@ -259,8 +308,6 @@ class TestSemanticSearch:
             patch(
                 "features.ai_order_agent.search.crud.semantic_rank_items",
                 new_callable=AsyncMock,
-                # «Ролл» ближе по вектору, но бонус за вхождение «бургер» в
-                # название должен вывести «Бургер классический» вперёд.
                 return_value=[_ranked(closest, 0.10), _ranked(lexical, 0.13)],
             ),
         ):
@@ -270,7 +317,7 @@ class TestSemanticSearch:
         assert [item["name"] for item in result] == ["Бургер классический", "Ролл"]
 
     @pytest.mark.asyncio
-    async def test_dimension_mismatch_falls_back_to_keyword(self):
+    async def test_dimension_mismatch_falls_back_to_keyword(self) -> None:
         session = AsyncMock()
         cache = AsyncMock()
         cache.get = AsyncMock(return_value=json.dumps([0.1, 0.2, 0.3]))
@@ -301,7 +348,7 @@ class TestSemanticSearch:
         assert result == fallback
 
     @pytest.mark.asyncio
-    async def test_exception_falls_back_to_keyword(self):
+    async def test_exception_falls_back_to_keyword(self) -> None:
         session = AsyncMock()
         cache = AsyncMock()
         fallback = [{"menu_item_id": str(uuid.uuid4()), "name": "Шаурма"}]

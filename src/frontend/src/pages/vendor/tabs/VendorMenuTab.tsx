@@ -1,4 +1,4 @@
-import { Plus, DownloadSimple } from '@phosphor-icons/react';
+import { PlusIcon, DownloadSimpleIcon } from '@phosphor-icons/react';
 import type { Category, MenuItem, MenuItemOptionGroup, Restaurant } from '@shared/types/models';
 import { vendorService } from '@shared/services/vendorService';
 import MenuItemForm from './MenuItemForm';
@@ -44,11 +44,11 @@ export const normalizeOptionGroups = (
     is_required: group.is_required,
     min_selected: group.min_selected,
     max_selected: group.max_selected ?? '',
-    options: (group.options || []).map((option) => ({
+    options: group.options.map((option) => ({
       draftId: option.id || crypto.randomUUID(),
       id: option.id,
       name: option.name,
-      price_delta: option.price_delta?.toString?.() ?? '0',
+      price_delta: option.price_delta.toString(),
     })),
   }));
 
@@ -135,16 +135,16 @@ export default function VendorMenuTab({
             className="btn btn-secondary btn-sm"
             disabled={exportLoading}
             onClick={() =>
-              handleVendorExport(
+              { handleVendorExport(
                 () =>
                   vendorService.exportMenuCSV({
-                    restaurant_id: selectedRestaurant?.id || undefined,
+                    restaurant_id: selectedRestaurant.id || undefined,
                   }),
                 `меню_${todayStr}.csv`
-              )
+              ); }
             }
           >
-            {exportLoading ? '...' : <><DownloadSimple size={16} weight="bold" /> CSV</>}
+            {exportLoading ? '...' : <><DownloadSimpleIcon size={16} weight="bold" /> CSV</>}
           </button>
           <button
             className="btn btn-primary btn-sm"
@@ -154,7 +154,7 @@ export default function VendorMenuTab({
               setShowAddItem(!showAddItem);
             }}
           >
-            <Plus size={16} /> Позиция
+            <PlusIcon size={16} /> Позиция
           </button>
         </div>
       </div>

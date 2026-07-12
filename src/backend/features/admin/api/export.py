@@ -1,3 +1,4 @@
+import contextlib
 from datetime import date
 
 from fastapi import APIRouter, Depends, Query
@@ -38,10 +39,8 @@ async def export_orders_csv(
 ) -> Response:
     order_status = None
     if status:
-        try:
+        with contextlib.suppress(ValueError):
             order_status = OrderStatus(status)
-        except ValueError:
-            pass
     data = await admin_export.export_orders_csv(
         session, date_from=date_from, date_to=date_to, status=order_status
     )

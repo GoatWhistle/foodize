@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Clock, Minus, Plus, X } from "@phosphor-icons/react";
+import { ClockIcon, MinusIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
 import { getCategoryIcon } from "@shared/utils/categoryIcons";
 import { formatPrice } from "@shared/utils/price";
 import { useFocusTrap } from "@shared/hooks/useFocusTrap";
@@ -48,7 +48,7 @@ const getActiveOptionGroups = (item: SheetItem | null): OptionGroup[] =>
     .filter((group) => group.is_active !== false)
     .map((group) => ({
       ...group,
-      options: (group.options || []).filter((o) => o.is_available !== false),
+      options: group.options.filter((o) => o.is_available !== false),
     }))
     .filter((group) => group.options.length > 0);
 
@@ -58,7 +58,7 @@ const getSelectedOptions = (groups: OptionGroup[], ids: string[]): Option[] => {
 };
 
 const getMinSelected = (group: OptionGroup): number =>
-  group.is_required ? Math.max(1, Number(group.min_selected) || 0) : Number(group.min_selected) || 0;
+  group.is_required ? Math.max(1, group.min_selected || 0) : group.min_selected || 0;
 
 const getGroupHint = (group: OptionGroup): string => {
   const max = group.selection_type === "single" ? 1 : group.max_selected;
@@ -79,7 +79,7 @@ const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }: Product
   const [quantity, setQuantity] = useState(1);
   const [error, setError] = useState("");
   const groups = useMemo(() => getActiveOptionGroups(item), [item]);
-  const isClosed = isRestaurantOpen === false;
+  const isClosed = !isRestaurantOpen;
   const categoryKey = item?.category_name ?? item?.category;
   const icon = getCategoryIcon(categoryKey, { size: 52 });
   const sheetRef = useFocusTrap<HTMLElement>({
@@ -90,11 +90,14 @@ const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }: Product
   useEffect(() => {
     if (!item) return;
     setSelectedOptionIds(
-      groups.flatMap((group) =>
-        group.is_required && group.selection_type === "single"
-          ? [group.options[0].id]
-          : [],
-      ),
+      groups.flatMap((group) => {
+        const firstOption = group.options[0];
+        return group.is_required &&
+          group.selection_type === "single" &&
+          firstOption
+          ? [firstOption.id]
+          : [];
+      }),
     );
     setQuantity(1);
     setError("");
@@ -113,8 +116,8 @@ const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }: Product
 
   const selectedOptions = getSelectedOptions(groups, selectedOptionIds);
   const unitPrice =
-    (Number(item.price) || 0) +
-    selectedOptions.reduce((sum, o) => sum + (Number(o.price_delta) || 0), 0);
+    (item.price || 0) +
+    selectedOptions.reduce((sum, o) => sum + (o.price_delta || 0), 0);
 
   const toggleOption = (group: OptionGroup, option: Option) => {
     setError("");
@@ -157,7 +160,7 @@ const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }: Product
         tabIndex={-1}
       >
         <button className={s.close} type="button" onClick={onClose} aria-label="Закрыть">
-          <X size={18} weight="bold" />
+          <XIcon size={18} weight="bold" />
         </button>
         <div className={s.media}>
           {item.photo_url ? (
@@ -175,7 +178,7 @@ const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }: Product
             <div className={s.basePrice}>{formatPrice(item.price)}</div>
             <div className={s.meta}>
               <span>
-                <Clock size={14} weight="bold" />~{item.prep_time_minutes || 15} мин
+                <ClockIcon size={14} weight="bold" />~{item.prep_time_minutes || 15} мин
               </span>
             </div>
           </div>
@@ -208,8 +211,8 @@ const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }: Product
                                 type={group.selection_type === "single" ? "radio" : "checkbox"}
                                 name={`option-group-${group.id}`}
                                 checked={checked}
-                                disabled={Boolean(disabled)}
-                                onChange={() => toggleOption(group, option)}
+                                disabled={disabled}
+                                onChange={() => { toggleOption(group, option); }}
                               />
                               {option.name}
                             </span>
@@ -227,12 +230,12 @@ const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }: Product
         </div>
         <div className={s.footer}>
           <div className={s.qty}>
-            <button type="button" onClick={() => setQuantity((v) => Math.max(1, v - 1))} aria-label="Уменьшить">
-              <Minus size={16} weight="bold" />
+            <button type="button" onClick={() => { setQuantity((v) => Math.max(1, v - 1)); }} aria-label="Уменьшить">
+              <MinusIcon size={16} weight="bold" />
             </button>
             <span>{quantity}</span>
-            <button type="button" onClick={() => setQuantity((v) => Math.min(99, v + 1))} aria-label="Увеличить">
-              <Plus size={16} weight="bold" />
+            <button type="button" onClick={() => { setQuantity((v) => Math.min(99, v + 1)); }} aria-label="Увеличить">
+              <PlusIcon size={16} weight="bold" />
             </button>
           </div>
           <button className={s.addBtn} onClick={handleAdd}>

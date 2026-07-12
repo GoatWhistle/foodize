@@ -1,17 +1,17 @@
 import json
-import logging
 from typing import Any
 
 import aio_pika
 
-from features.notifications.broker import broker
+from features.notifications.broker import RabbitMQBroker, broker
 from infra.messaging.base import MessagePublisher
+from utils.logging_setup import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class RabbitMQPublisher(MessagePublisher):
-    def __init__(self, broker) -> None:
+    def __init__(self, broker: RabbitMQBroker) -> None:
         self._broker = broker
 
     async def publish(self, routing_key: str, body: bytes | dict[str, Any]) -> None:
@@ -24,9 +24,9 @@ class RabbitMQPublisher(MessagePublisher):
         )
         try:
             await self._broker.exchange.publish(message, routing_key=routing_key)
-            logger.debug("Published message routing_key=%s", routing_key)
+            logger.debug("message_published", routing_key=routing_key)
         except Exception:
-            logger.exception("Failed to publish message routing_key=%s", routing_key)
+            logger.exception("message_publish_failed", routing_key=routing_key)
             raise
 
 

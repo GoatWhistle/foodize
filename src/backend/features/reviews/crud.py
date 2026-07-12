@@ -2,13 +2,30 @@ import uuid
 from datetime import UTC, datetime
 
 import sqlalchemy as sa
-from sqlalchemy import func, select
+from sqlalchemy import exists, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from features.orders.models.order import Order
 from features.restaurants.models import Restaurant
 from features.reviews.models import Review
 from features.reviews.schemas import ReviewCreate
+from shared.enums.order_status import OrderStatus
+
+
+async def has_completed_order(
+    session: AsyncSession, user_id: uuid.UUID, restaurant_id: uuid.UUID
+) -> bool:
+    result = await session.execute(
+        select(
+            exists().where(
+                Order.user_id == user_id,
+                Order.restaurant_id == restaurant_id,
+                Order.status == OrderStatus.COMPLETED.value,
+            )
+        )
+    )
+    return bool(result.scalar_one())
 
 
 async def create_review(

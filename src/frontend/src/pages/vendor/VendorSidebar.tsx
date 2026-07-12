@@ -1,13 +1,13 @@
 import {
-  ForkKnife,
-  Package,
-  Gear,
-  Clock,
-  ChartLineUp,
-  MonitorPlay,
-  QrCode,
-  Users,
-  Tag,
+  ForkKnifeIcon,
+  PackageIcon,
+  GearIcon,
+  ClockIcon,
+  ChartLineUpIcon,
+  MonitorPlayIcon,
+  QrCodeIcon,
+  UsersIcon,
+  TagIcon,
 } from '@phosphor-icons/react';
 import type { Dispatch, SetStateAction } from 'react';
 import { ROUTES } from '../../constants/routes';
@@ -24,14 +24,14 @@ interface VendorSidebarProps {
 }
 
 const TABS = [
-  { id: 'menu', label: 'Меню', icon: <ForkKnife size={18} /> },
-  { id: 'orders', label: 'Заказы', icon: <Package size={18} /> },
-  { id: 'analytics', label: 'Аналитика', icon: <ChartLineUp size={18} /> },
-  { id: 'ai', label: 'ИИ-аналитик', icon: <ChartLineUp size={18} /> },
-  { id: 'promos', label: 'Промокоды', icon: <Tag size={18} /> },
-  { id: 'schedule', label: 'Расписание', icon: <Clock size={18} /> },
-  { id: 'staff', label: 'Сотрудники', icon: <Users size={18} /> },
-  { id: 'settings', label: 'Настройки', icon: <Gear size={18} /> },
+  { id: 'menu', label: 'Меню', icon: <ForkKnifeIcon size={18} /> },
+  { id: 'orders', label: 'Заказы', icon: <PackageIcon size={18} /> },
+  { id: 'analytics', label: 'Аналитика', icon: <ChartLineUpIcon size={18} /> },
+  { id: 'ai', label: 'ИИ-аналитик', icon: <ChartLineUpIcon size={18} /> },
+  { id: 'promos', label: 'Промокоды', icon: <TagIcon size={18} /> },
+  { id: 'schedule', label: 'Расписание', icon: <ClockIcon size={18} /> },
+  { id: 'staff', label: 'Сотрудники', icon: <UsersIcon size={18} /> },
+  { id: 'settings', label: 'Настройки', icon: <GearIcon size={18} /> },
 ];
 
 export default function VendorSidebar({
@@ -94,7 +94,7 @@ export default function VendorSidebar({
           className={`btn ${activeTab === tab.id ? 'btn-primary' : 'btn-secondary'}`}
           onClick={() => {
             setActiveTab(tab.id);
-            if (tab.id === 'settings' && selectedRestaurant) {
+            if (tab.id === 'settings') {
               setEditRestaurant({ ...selectedRestaurant });
             }
           }}
@@ -138,7 +138,7 @@ export default function VendorSidebar({
             borderRadius: 'var(--r-sm)',
           }}
         >
-          <MonitorPlay size={18} weight="bold" />
+          <MonitorPlayIcon size={18} weight="bold" />
           Открыть табло
         </a>
         <button
@@ -157,7 +157,7 @@ export default function VendorSidebar({
             color: 'var(--text-2)',
           }}
         >
-          <QrCode size={18} />
+          <QrCodeIcon size={18} />
           QR для сайта
         </button>
         <button
@@ -176,7 +176,7 @@ export default function VendorSidebar({
             color: 'var(--text-2)',
           }}
         >
-          <QrCode size={18} />
+          <QrCodeIcon size={18} />
           QR для Telegram
         </button>
       </div>

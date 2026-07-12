@@ -6,7 +6,7 @@ from middlewares.throttling import ThrottlingMiddleware, _extract_user_id
 
 
 @pytest.mark.asyncio
-async def test_allows_requests_under_limit():
+async def test_allows_requests_under_limit() -> None:
     redis = AsyncMock()
     redis.eval = AsyncMock(side_effect=[1, 2, 3])
     middleware = ThrottlingMiddleware(redis=redis, limit=5, window_seconds=3)
@@ -25,7 +25,7 @@ async def test_allows_requests_under_limit():
 
 
 @pytest.mark.asyncio
-async def test_blocks_requests_over_limit():
+async def test_blocks_requests_over_limit() -> None:
     redis = AsyncMock()
     redis.eval = AsyncMock(side_effect=[1, 2, 3, 4, 5, 6])
     middleware = ThrottlingMiddleware(redis=redis, limit=5, window_seconds=3)
@@ -41,7 +41,7 @@ async def test_blocks_requests_over_limit():
 
 
 @pytest.mark.asyncio
-async def test_skips_throttling_when_no_user():
+async def test_skips_throttling_when_no_user() -> None:
     redis = AsyncMock()
     middleware = ThrottlingMiddleware(redis=redis)
 
@@ -55,7 +55,7 @@ async def test_skips_throttling_when_no_user():
 
 
 @pytest.mark.asyncio
-async def test_fails_open_when_redis_unavailable():
+async def test_fails_open_when_redis_unavailable() -> None:
     from redis.exceptions import RedisError
 
     redis = AsyncMock()
@@ -72,11 +72,11 @@ async def test_fails_open_when_redis_unavailable():
 
 
 @pytest.mark.asyncio
-async def test_tracks_distinct_users_independently():
+async def test_tracks_distinct_users_independently() -> None:
     redis = AsyncMock()
     call_counts: dict[str, int] = {}
 
-    async def _eval(script, numkeys, key, window):
+    async def _eval(script: str, numkeys: int, key: str, window: int) -> int:
         call_counts[key] = call_counts.get(key, 0) + 1
         return call_counts[key]
 
@@ -93,7 +93,7 @@ async def test_tracks_distinct_users_independently():
     assert await middleware(handler, user_b, {}) is None
 
 
-def test_extract_user_id_from_update_and_plain_event():
+def test_extract_user_id_from_update_and_plain_event() -> None:
     from aiogram.types import Update
 
     update = MagicMock(spec=Update)

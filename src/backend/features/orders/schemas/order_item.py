@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -28,7 +29,7 @@ class OrderItemOptionResponse(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def flatten_option_snapshot(cls, data):
+    def flatten_option_snapshot(cls, data: Any) -> Any:
         if hasattr(data, "name_snapshot"):
             return {
                 "id": data.id,
@@ -53,7 +54,7 @@ class OrderItemResponse(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def flatten_menu_item(cls, data):
+    def flatten_menu_item(cls, data: Any) -> Any:
         if hasattr(data, "menu_item"):
             mi = data.menu_item
             return {

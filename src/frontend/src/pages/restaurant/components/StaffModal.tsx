@@ -1,5 +1,5 @@
 import type { Dispatch, FormEvent, SetStateAction } from 'react';
-import { X } from '@phosphor-icons/react';
+import { XIcon } from '@phosphor-icons/react';
 
 interface StaffModalProps {
   restaurantName: string;
@@ -19,7 +19,7 @@ const StaffModal = ({ restaurantName, message, setMessage, onClose, onSubmit, lo
           Работа
         </h2>
         <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', display: 'flex' }}>
-          <X size={28} weight="bold" />
+          <XIcon size={28} weight="bold" />
         </button>
       </div>
       <p style={{ fontSize: '1rem', color: 'var(--text-2)', marginBottom: '24px', lineHeight: 1.6 }}>
@@ -30,7 +30,7 @@ const StaffModal = ({ restaurantName, message, setMessage, onClose, onSubmit, lo
           className="form-input"
           placeholder="Расскажите о себе..."
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={(e) => { setMessage(e.target.value); }}
           rows={5}
           required
           style={{ borderRadius: 'var(--r-md)', resize: 'vertical' }}

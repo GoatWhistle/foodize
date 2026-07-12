@@ -17,7 +17,7 @@ from shared.exceptions import AccessDeniedException, NotFoundException
 
 class TestVendorDependencies:
     @pytest.mark.asyncio
-    async def test_get_current_vendor(self):
+    async def test_get_current_vendor(self) -> None:
         current_user = MagicMock(
             id=uuid.uuid4(),
             user_role=UserRole.VENDOR.value,
@@ -37,7 +37,7 @@ class TestVendorDependencies:
         assert res is mock_vendor
 
     @pytest.mark.asyncio
-    async def test_get_current_vendor_creates_admin_profile(self):
+    async def test_get_current_vendor_creates_admin_profile(self) -> None:
         current_user = MagicMock(
             id=uuid.uuid4(),
             user_role=UserRole.ADMIN.value,
@@ -57,11 +57,11 @@ class TestVendorDependencies:
         ) as ensure_admin_vendor:
             res = await get_current_vendor(mock_session, current_user)
 
-        assert res == "ADMIN_PROFILE"
+        assert res == "ADMIN_PROFILE"  # type: ignore[comparison-overlap]
         ensure_admin_vendor.assert_awaited_once_with(mock_session, current_user)
 
     @pytest.mark.asyncio
-    async def test_get_current_vendor_approves_admin_profile(self):
+    async def test_get_current_vendor_approves_admin_profile(self) -> None:
         current_user = MagicMock(
             id=uuid.uuid4(),
             user_role=UserRole.ADMIN.value,
@@ -85,18 +85,18 @@ class TestVendorDependencies:
         ) as ensure_admin_vendor:
             res = await get_current_vendor(mock_session, current_user)
 
-        assert res == "ADMIN_PROFILE"
+        assert res == "ADMIN_PROFILE"  # type: ignore[comparison-overlap]
         ensure_admin_vendor.assert_awaited_once_with(mock_session, current_user)
 
     @pytest.mark.asyncio
-    async def test_get_current_vendor_requires_permission(self):
+    async def test_get_current_vendor_requires_permission(self) -> None:
         current_user = MagicMock(id=uuid.uuid4(), user_role=UserRole.CUSTOMER.value)
 
         with pytest.raises(AccessDeniedException):
             await get_current_vendor(AsyncMock(), current_user)
 
     @pytest.mark.asyncio
-    async def test_ensure_no_vendor_profile_raises(self):
+    async def test_ensure_no_vendor_profile_raises(self) -> None:
         with patch(
             "features.vendors.dependencies.get_vendor_by_user_id",
             new_callable=AsyncMock,
@@ -106,7 +106,7 @@ class TestVendorDependencies:
                 await ensure_no_vendor_profile(MagicMock(id=uuid.uuid4()), MagicMock())
 
     @pytest.mark.asyncio
-    async def test_get_vendor_or_404_raises(self):
+    async def test_get_vendor_or_404_raises(self) -> None:
         with patch(
             "features.vendors.dependencies.get_vendor_by_user_id",
             new_callable=AsyncMock,

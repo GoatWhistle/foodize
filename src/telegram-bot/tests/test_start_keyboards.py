@@ -10,7 +10,7 @@ from handlers.start import (
 from keyboards import start_keyboards as kbmod
 
 
-def test_mini_app_keyboard():
+def test_mini_app_keyboard() -> None:
     bot_config.mini_app_url = ""
     assert kbmod.mini_app_keyboard() is None
     bot_config.mini_app_url = "https://app.url"
@@ -18,7 +18,7 @@ def test_mini_app_keyboard():
     assert isinstance(kb, InlineKeyboardMarkup)
 
 
-def test_restaurant_keyboard():
+def test_restaurant_keyboard() -> None:
     bot_config.mini_app_url = ""
     assert kbmod.restaurant_keyboard("123", "Rest") is None
     bot_config.mini_app_url = "https://app.url"
@@ -26,7 +26,7 @@ def test_restaurant_keyboard():
     assert isinstance(kb, InlineKeyboardMarkup)
 
 
-def test_order_deep_link_keyboard():
+def test_order_deep_link_keyboard() -> None:
     bot_config.mini_app_url = ""
     assert kbmod.order_deep_link_keyboard("123") is None
     bot_config.mini_app_url = "https://app.url"
@@ -34,7 +34,7 @@ def test_order_deep_link_keyboard():
     assert isinstance(kb, InlineKeyboardMarkup)
 
 
-def test_orders_keyboard():
+def test_orders_keyboard() -> None:
     bot_config.mini_app_url = ""
     assert kbmod.orders_keyboard([{"display_id": "123"}]) is None
     bot_config.mini_app_url = "https://app.url"
@@ -44,12 +44,12 @@ def test_orders_keyboard():
     assert kbmod.orders_keyboard([{}]) is None
 
 
-def test_phone_keyboard():
+def test_phone_keyboard() -> None:
     kb = kbmod.phone_keyboard()
     assert isinstance(kb, ReplyKeyboardMarkup)
 
 
-def test_display_name():
+def test_display_name() -> None:
     m = MagicMock()
     m.from_user = None
     assert _display_name(m) == "Telegram User"
@@ -68,7 +68,7 @@ def test_display_name():
     assert _display_name(m) == "Telegram 123"
 
 
-def test_vendor_status_text():
+def test_vendor_status_text() -> None:
     assert "профиль не найден" in _vendor_status_text({"is_vendor": False})
     assert "одобрена" in _vendor_status_text({"is_vendor": True, "approval_status": "APPROVED"})
     assert "отклонена" in _vendor_status_text({"is_vendor": True, "approval_status": "REJECTED"})

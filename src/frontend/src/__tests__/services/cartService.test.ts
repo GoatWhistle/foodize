@@ -15,17 +15,17 @@ import api from '../../services/api';
 describe('cartService', () => {
   it('getCart calls GET /cart', async () => {
     await cartService.getCart();
-    expect(api.get).toHaveBeenCalledWith('/cart');
+    expect(vi.mocked(api).get).toHaveBeenCalledWith('/cart');
   });
 
   it('updateCart calls POST /cart with data', async () => {
     const data = { items: [{ id: '1', qty: 2 }] } as unknown as CartUpdate;
     await cartService.updateCart(data);
-    expect(api.post).toHaveBeenCalledWith('/cart', data);
+    expect(vi.mocked(api).post).toHaveBeenCalledWith('/cart', data);
   });
 
   it('clearCart calls DELETE /cart', async () => {
     await cartService.clearCart();
-    expect(api.delete).toHaveBeenCalledWith('/cart');
+    expect(vi.mocked(api).delete).toHaveBeenCalledWith('/cart');
   });
 });

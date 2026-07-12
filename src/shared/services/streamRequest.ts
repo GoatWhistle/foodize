@@ -1,5 +1,6 @@
-import axios from 'axios';
 import { API_BASE_URL } from '@shared/config';
+import { makeId } from '@shared/utils/id';
+import { cookieRefresh } from '@shared/services/cookieRefresh';
 
 const BASE_URL = API_BASE_URL;
 
@@ -17,24 +18,23 @@ export interface StreamOptions extends StreamAuth {
 
 const DEFAULT_IDLE_TIMEOUT_MS = 60_000;
 
-async function cookieRefresh(): Promise<void> {
-  await axios.post(`${BASE_URL}/refresh`, {}, { withCredentials: true });
-}
-
 function buildInit(
   body: unknown,
   auth: StreamAuth,
   signal?: AbortSignal,
 ): RequestInit {
   const withCredentials = auth.withCredentials ?? true;
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'X-Request-Id': makeId(),
+  };
   const token = auth.getToken?.();
   if (token) headers.Authorization = `Bearer ${token}`;
   const init: RequestInit = {
     method: 'POST',
     headers,
     body: JSON.stringify(body),
-    signal,
+    ...(signal ? { signal } : {}),
   };
   if (withCredentials) init.credentials = 'include';
   return init;
@@ -45,11 +45,15 @@ async function doStreamRequest(
   body: unknown,
   { signal, getToken, refreshToken, withCredentials }: StreamOptions = {},
 ): Promise<Response> {
-  const auth: StreamAuth = { getToken, refreshToken, withCredentials };
+  const auth: StreamAuth = {
+    ...(getToken ? { getToken } : {}),
+    ...(refreshToken ? { refreshToken } : {}),
+    ...(withCredentials !== undefined ? { withCredentials } : {}),
+  };
   const response = await fetch(url, buildInit(body, auth, signal));
 
   if (response.status === 401) {
-    const refresh = refreshToken ?? cookieRefresh;
+    const refresh = refreshToken ?? (() => cookieRefresh(BASE_URL, '/refresh'));
     await refresh();
 
     const retryResponse = await fetch(url, buildInit(body, auth, signal));
@@ -74,24 +78,27 @@ export async function streamSseRequest(
   const response = await doStreamRequest(url, body, options);
   const reader = (response.body as ReadableStream<Uint8Array>).getReader();
   const decoder = new TextDecoder();
-  try {
-    while (true) {
+  const readChunk =
+    async (): Promise<ReadableStreamReadResult<Uint8Array>> => {
       let timer: ReturnType<typeof setTimeout> | undefined;
       const idle = new Promise<never>((_, reject) => {
-        timer = setTimeout(
-          () => reject(new Error('Ответ не пришёл вовремя. Попробуйте ещё раз.')),
-          idleTimeoutMs,
-        );
+        timer = setTimeout(() => {
+          reject(new Error('Ответ не пришёл вовремя. Попробуйте ещё раз.'));
+        }, idleTimeoutMs);
       });
-      let result: ReadableStreamReadResult<Uint8Array>;
       try {
-        result = await Promise.race([reader.read(), idle]);
+        return await Promise.race([reader.read(), idle]);
       } finally {
         if (timer) clearTimeout(timer);
       }
-      const { value, done } = result;
-      if (done) break;
-      const text = decoder.decode(value, { stream: true });
+    };
+  try {
+    for (
+      let result = await readChunk();
+      !result.done;
+      result = await readChunk()
+    ) {
+      const text = decoder.decode(result.value, { stream: true });
       if (text) onChunk?.(text);
     }
   } catch (err) {

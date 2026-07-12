@@ -14,6 +14,7 @@ class LLMConfig(BaseConfig):
     provider: LLMProvider = LLMProvider.ANTHROPIC
     max_output_tokens: int = 4096
     request_timeout_seconds: int = 60
+    max_retries: int = 3
     max_agent_steps: int = 8
     max_session_tokens: int = 200_000
     user_requests_per_minute: int = 20
@@ -37,6 +38,5 @@ class LLMConfig(BaseConfig):
     embedding_base_url: str = "http://localhost:11434/v1"
     embedding_api_key: str = ""
     embedding_model: str = "bge-m3"
-    # Должна совпадать с размерностью vector-колонки menu_item_embeddings (миграция).
     embedding_dim: int = 1024
     embedding_candidate_limit: int = 300

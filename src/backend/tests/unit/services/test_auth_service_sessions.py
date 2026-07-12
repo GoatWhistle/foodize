@@ -14,7 +14,7 @@ from shared.exceptions.existence import AuthException
 
 class TestLogoutUser:
     @pytest.mark.asyncio
-    async def test_deletes_both_cookies(self):
+    async def test_deletes_both_cookies(self) -> None:
         request = MagicMock()
         request.cookies = {}
         request.headers = {}
@@ -28,7 +28,7 @@ class TestLogoutUser:
         assert "refresh_token" in calls
 
     @pytest.mark.asyncio
-    async def test_blacklists_valid_access_token(self):
+    async def test_blacklists_valid_access_token(self) -> None:
         access_token = "valid_access"
         now = int(time.time())
         request = MagicMock()
@@ -48,7 +48,7 @@ class TestLogoutUser:
         mock_cache.set.assert_awaited()
 
     @pytest.mark.asyncio
-    async def test_logout_ignores_invalid_token_error(self):
+    async def test_logout_ignores_invalid_token_error(self) -> None:
         request = MagicMock()
         request.cookies = {"access_token": "bad_token"}
         request.headers = {}
@@ -64,7 +64,7 @@ class TestLogoutUser:
 
 class TestRegisterUser:
     @pytest.mark.asyncio
-    async def test_register_user(self):
+    async def test_register_user(self) -> None:
         from features.users.schemas import UserCreate
 
         data = UserCreate(name="Test", phone_number="+79001234567", password="Password1")
@@ -85,7 +85,7 @@ class TestRegisterUser:
 
 class TestRefreshUserToken:
     @pytest.mark.asyncio
-    async def test_no_token_raises(self):
+    async def test_no_token_raises(self) -> None:
         request = MagicMock()
         request.cookies = {}
         request.headers = {}
@@ -93,7 +93,7 @@ class TestRefreshUserToken:
             await refresh_user_token(request, MagicMock(), AsyncMock())
 
     @pytest.mark.asyncio
-    async def test_expired_refresh_raises(self):
+    async def test_expired_refresh_raises(self) -> None:
         request = MagicMock()
         request.cookies = {"refresh_token": "old"}
         request.headers = {}
@@ -103,7 +103,7 @@ class TestRefreshUserToken:
                 await refresh_user_token(request, MagicMock(), AsyncMock())
 
     @pytest.mark.asyncio
-    async def test_wrong_type_raises(self):
+    async def test_wrong_type_raises(self) -> None:
         request = MagicMock()
         request.cookies = {"refresh_token": "tok"}
         request.headers = {}
@@ -116,7 +116,7 @@ class TestRefreshUserToken:
                 await refresh_user_token(request, MagicMock(), AsyncMock())
 
     @pytest.mark.asyncio
-    async def test_session_expired_raises(self):
+    async def test_session_expired_raises(self) -> None:
         request = MagicMock()
         request.cookies = {"refresh_token": "tok"}
         request.headers = {}
@@ -134,7 +134,7 @@ class TestRefreshUserToken:
                 await refresh_user_token(request, MagicMock(), AsyncMock())
 
     @pytest.mark.asyncio
-    async def test_already_used_raises(self):
+    async def test_already_used_raises(self) -> None:
         request = MagicMock()
         request.cookies = {"refresh_token": "tok"}
         request.headers = {}
@@ -158,7 +158,7 @@ class TestRefreshUserToken:
                 await refresh_user_token(request, MagicMock(), AsyncMock(), cache=mock_cache)
 
     @pytest.mark.asyncio
-    async def test_success(self):
+    async def test_success(self) -> None:
         request = MagicMock()
         request.cookies = {"refresh_token": "tok"}
         request.headers = {}

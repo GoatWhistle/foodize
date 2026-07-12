@@ -1,11 +1,12 @@
 import type { Dispatch, SetStateAction } from 'react';
 import type { AxiosResponse } from 'axios';
-import { ArrowsClockwise, DownloadSimple } from '@phosphor-icons/react';
 import EmptyState from '@shared/components/EmptyState/EmptyState';
 import Pagination from '@shared/components/Pagination/Pagination';
 import OrderDetailsModal, { type OrderStatusChangeData } from '../../../components/OrderDetailsModal/OrderDetailsModal';
 import type { Order, Restaurant, OrderStatus } from '@shared/types/models';
 import { VendorOrderCard } from './components/VendorOrderCard';
+import { VendorOrdersToolbar } from './components/VendorOrdersToolbar';
+import styles from './components/VendorOrders.module.css';
 
 interface OrderGroup {
   dateKey: string;
@@ -104,127 +105,29 @@ export default function VendorOrdersTab({
             {ordersError}
           </div>
         )}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: 12,
-            marginBottom: 12,
-          }}
-        >
-          <div>
-            <div style={{ fontWeight: 800, fontSize: '0.95rem' }}>
-              Заказы заведения
-            </div>
-            <div style={{ color: 'var(--text-3)', fontSize: '0.76rem' }}>
-              Новые заказы обновляются автоматически
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              disabled={exportLoading}
-              onClick={() =>
-                handleVendorExport(
-                  () =>
-                    vendorService.exportOrdersCSV({
-                      restaurant_id: selectedRestaurant?.id || undefined,
-                      status: ordersStatusFilter || undefined,
-                    }),
-                  `заказы_${todayStr}.csv`
-                )
-              }
-            >
-              {exportLoading ? '...' : <><DownloadSimple size={16} weight="bold" /> CSV</>}
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={() => fetchVendorOrders()}
-              disabled={ordersLoading}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}
-            >
-              <ArrowsClockwise size={14} />
-              {ordersLoading ? '...' : 'Обновить'}
-            </button>
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
-          {[
-            { key: '', label: 'Все' },
-            { key: 'PENDING', label: 'Новые' },
-            { key: 'ACCEPTED', label: 'Принятые' },
-            { key: 'READY', label: 'Готовые' },
-            { key: 'COMPLETED', label: 'Выданные' },
-          ].map(({ key, label }) => (
-            <button
-              key={key}
-              className={`category-chip${ordersStatusFilter === key ? ' active' : ''}`}
-              style={{ fontSize: '0.78rem', padding: '4px 12px' }}
-              onClick={() => {
-                setOrdersStatusFilter(key);
-                setOrdersPage(1);
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            gap: 8,
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            marginBottom: 12,
-          }}
-        >
-          <input
-            className="form-input"
-            type="date"
-            value={ordersDateFromFilter}
-            onChange={(e) => {
-              setOrdersDateFromFilter(e.target.value);
-              setOrdersPage(1);
-            }}
-            style={{ maxWidth: 140, height: 36, fontSize: '0.82rem' }}
-            aria-label="Дата с"
-          />
-          <span style={{ color: 'var(--text-3)', fontSize: '0.9rem' }}>—</span>
-          <input
-            className="form-input"
-            type="date"
-            value={ordersDateToFilter}
-            onChange={(e) => {
-              setOrdersDateToFilter(e.target.value);
-              setOrdersPage(1);
-            }}
-            style={{ maxWidth: 140, height: 36, fontSize: '0.82rem' }}
-            aria-label="Дата по"
-          />
-          {(ordersDateFromFilter || ordersDateToFilter) && (
-            <button
-              type="button"
-              className="btn btn-secondary btn-sm"
-              onClick={() => {
-                setOrdersDateFromFilter('');
-                setOrdersDateToFilter('');
-                setOrdersPage(1);
-              }}
-            >
-              Сбросить период
-            </button>
-          )}
-        </div>
+        <VendorOrdersToolbar
+          ordersStatusFilter={ordersStatusFilter}
+          setOrdersStatusFilter={setOrdersStatusFilter}
+          ordersDateFromFilter={ordersDateFromFilter}
+          setOrdersDateFromFilter={setOrdersDateFromFilter}
+          ordersDateToFilter={ordersDateToFilter}
+          setOrdersDateToFilter={setOrdersDateToFilter}
+          setOrdersPage={setOrdersPage}
+          ordersLoading={ordersLoading}
+          exportLoading={exportLoading}
+          todayStr={todayStr}
+          selectedRestaurant={selectedRestaurant}
+          handleVendorExport={handleVendorExport}
+          fetchVendorOrders={fetchVendorOrders}
+          vendorService={vendorService}
+        />
         {ordersLoading && (!Array.isArray(restaurantOrders) || restaurantOrders.length === 0) ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div className={styles.list}>
             {[1, 2].map((i) => (
-              <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <div className="skeleton" style={{ width: '100px', height: 12, borderRadius: 4 }} />
+              <div key={i} className={styles.group}>
+                <div className={`skeleton ${styles.skeletonLabel}`} />
                 {[1, 2].map((j) => (
-                  <div key={j} className="order-card skeleton" style={{ height: 80, border: 'none' }} />
+                  <div key={j} className={`order-card skeleton ${styles.skeletonCard}`} />
                 ))}
               </div>
             ))}
@@ -235,23 +138,10 @@ export default function VendorOrdersTab({
             subtitle={ordersStatusFilter ? 'В этом статусе заказов нет' : 'Пока никто не сделал заказ'}
           />
         ) : (
-          <div
-            className={ordersLoading ? 'loading-dim' : undefined}
-            style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
-          >
+          <div className={`${styles.list} ${ordersLoading ? 'loading-dim' : ''}`}>
             {groupedRestaurantOrders.map((group) => (
-              <div key={group.dateKey} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <div
-                  style={{
-                    color: 'var(--text-3)',
-                    fontSize: '0.78rem',
-                    fontWeight: 800,
-                    textTransform: 'uppercase',
-                    padding: '2px 2px',
-                  }}
-                >
-                  {group.title}
-                </div>
+              <div key={group.dateKey} className={styles.group}>
+                <div className={styles.groupTitle}>{group.title}</div>
                 {group.orders.map((order) => (
                   <VendorOrderCard
                     key={order.id}
@@ -278,7 +168,7 @@ export default function VendorOrdersTab({
       {selectedOrder && (
         <OrderDetailsModal
           order={selectedOrder}
-          onClose={() => setSelectedOrder(null)}
+          onClose={() => { setSelectedOrder(null); }}
           nextStatus={NEXT_ORDER_STATUS}
           nextLabel={NEXT_ORDER_LABEL_RU}
           onStatusChange={handleOrderChange}

@@ -1,6 +1,6 @@
 import logging
 from collections.abc import Awaitable, Callable
-from typing import Any
+from typing import Any, cast
 
 import redis.asyncio as aioredis
 from aiogram import BaseMiddleware
@@ -38,7 +38,12 @@ class ThrottlingMiddleware(BaseMiddleware):
 
         key = f"tg_throttle:{user_id}"
         try:
-            count = await self._redis.eval(_THROTTLE_LUA, 1, key, self._window_seconds)
+            count = int(
+                await cast(
+                    "Awaitable[Any]",
+                    self._redis.eval(_THROTTLE_LUA, 1, key, self._window_seconds),
+                )
+            )
         except RedisError as exc:
             logger.warning("Throttling disabled for update, Redis unavailable: %s", exc)
             return await handler(event, data)
@@ -50,10 +55,7 @@ class ThrottlingMiddleware(BaseMiddleware):
 
 
 def _extract_user_id(event: TelegramObject) -> int | None:
-    if isinstance(event, Update):
-        inner = event.event
-    else:
-        inner = event
+    inner = event.event if isinstance(event, Update) else event
     user = getattr(inner, "from_user", None)
     return user.id if user is not None else None
 

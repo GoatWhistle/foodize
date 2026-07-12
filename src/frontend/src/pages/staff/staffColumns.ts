@@ -1,4 +1,4 @@
-import { CookingPot, CheckCircle, Clock } from '@phosphor-icons/react';
+import { CookingPotIcon, CheckCircleIcon, ClockIcon } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import { getOrderStatusStyle } from '@shared/utils/orderStatus';
 import type { OrderStatus } from '@shared/types/models';
@@ -12,7 +12,7 @@ export interface StaffColumnDef {
 }
 
 export const COLUMN_DEFS: StaffColumnDef[] = [
-  { id: 'pending', label: 'Новые', statuses: ['PENDING'], color: getOrderStatusStyle('PENDING').solid, Icon: Clock },
-  { id: 'accepted', label: 'Принято', statuses: ['ACCEPTED'], color: getOrderStatusStyle('ACCEPTED').solid, Icon: CookingPot },
-  { id: 'ready', label: 'Готово', statuses: ['READY'], color: getOrderStatusStyle('READY').solid, Icon: CheckCircle },
+  { id: 'pending', label: 'Новые', statuses: ['PENDING'], color: getOrderStatusStyle('PENDING').solid, Icon: ClockIcon },
+  { id: 'accepted', label: 'Принято', statuses: ['ACCEPTED'], color: getOrderStatusStyle('ACCEPTED').solid, Icon: CookingPotIcon },
+  { id: 'ready', label: 'Готово', statuses: ['READY'], color: getOrderStatusStyle('READY').solid, Icon: CheckCircleIcon },
 ];

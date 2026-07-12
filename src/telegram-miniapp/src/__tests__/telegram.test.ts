@@ -15,7 +15,7 @@ vi.hoisted(() => {
       close: () => {},
       showAlert: () => {},
       showConfirm: () => {},
-      requestContact: (callback: (granted: boolean) => void) => callback(true),
+      requestContact: (callback: (granted: boolean) => void) => { callback(true); },
     },
   };
 });
@@ -54,8 +54,11 @@ const authServiceMock = authService as unknown as {
   telegramAuth: Mock;
 };
 
-const webApp = (): NonNullable<NonNullable<Window["Telegram"]>["WebApp"]> =>
-  window.Telegram!.WebApp!;
+const webApp = (): NonNullable<NonNullable<Window["Telegram"]>["WebApp"]> => {
+  const app = window.Telegram?.WebApp;
+  if (!app) throw new Error("Telegram.WebApp is not initialized in test setup");
+  return app;
+};
 
 describe("Telegram WebApp SDK functions", () => {
   beforeEach(() => {

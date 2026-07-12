@@ -4,12 +4,12 @@ import { BrowserRouter } from 'react-router-dom';
 import MainLayout from '../../components/layout/MainLayout';
 import { useAuthStore } from '../../store/useAuthStore';
 
-type AuthState = { isAuthenticated: boolean };
+type AuthState = { user: { id: string } | null };
 type ThemeState = { theme: string };
 
 vi.mock('../../store/useAuthStore', () => ({
   useAuthStore: vi.fn((sel?: (s: AuthState) => unknown) => {
-    const state: AuthState = { isAuthenticated: true };
+    const state: AuthState = { user: { id: 'user-1' } };
     return sel ? sel(state) : state;
   }),
 }));
@@ -40,7 +40,7 @@ describe('MainLayout', () => {
 
   it('shows login button when not authenticated', () => {
     vi.mocked(useAuthStore).mockImplementation(((sel?: (s: AuthState) => unknown) => {
-      const state: AuthState = { isAuthenticated: false };
+      const state: AuthState = { user: null };
       return sel ? sel(state) : state;
     }) as typeof useAuthStore);
 

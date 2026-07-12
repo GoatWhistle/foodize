@@ -61,6 +61,7 @@ export type FinanceAnalytics = Schemas["FinanceAnalytics"];
 export type FinanceTopItem = Schemas["FinanceTopItem"];
 export type FinanceTopRestaurant = Schemas["FinanceTopRestaurant"];
 export type AdvancedAnalytics = Schemas["AdvancedAnalytics"];
+export type AdvisorInsights = Schemas["AdvisorInsightsResponse"];
 
 export type AdminUser = Schemas["AdminUserResponse"];
 export type AdminRestaurant = Schemas["AdminRestaurantResponse"];

@@ -55,7 +55,7 @@ def generate_valid_init_data(
 
 class TestValidateInitData:
 
-    def test_valid_init_data(self):
+    def test_valid_init_data(self) -> None:
         init_data = generate_valid_init_data()
         result = _validate_init_data(init_data)
 
@@ -63,7 +63,7 @@ class TestValidateInitData:
         assert result["user"]
         assert result["auth_date"]
 
-    def test_invalid_hash(self):
+    def test_invalid_hash(self) -> None:
         auth_date = int(time.time())
         user_data = json.dumps(
             {
@@ -85,14 +85,14 @@ class TestValidateInitData:
         with pytest.raises(InvalidTelegramInitDataException):
             _validate_init_data(init_data)
 
-    def test_expired_init_data(self):
+    def test_expired_init_data(self) -> None:
         expired_auth_date = int(time.time()) - (86400 + 3600)
         init_data = generate_valid_init_data(override_auth_date=expired_auth_date)
 
         with pytest.raises(InvalidTelegramInitDataException):
             _validate_init_data(init_data)
 
-    def test_missing_hash(self):
+    def test_missing_hash(self) -> None:
         auth_date = int(time.time())
         user_data = json.dumps({"id": 123456, "first_name": "Test"})
 
@@ -107,7 +107,7 @@ class TestValidateInitData:
         with pytest.raises(MalformedTelegramInitDataException):
             _validate_init_data(init_data)
 
-    def test_missing_auth_date(self):
+    def test_missing_auth_date(self) -> None:
         user_data = json.dumps({"id": 123456, "first_name": "Test"})
 
         data_dict = {
@@ -129,13 +129,13 @@ class TestValidateInitData:
         with pytest.raises(MalformedTelegramInitDataException):
             _validate_init_data(init_data)
 
-    def test_malformed_init_data(self):
+    def test_malformed_init_data(self) -> None:
         malformed_data = "not_a_valid_url_encoded_string!!!@@@"
 
         with pytest.raises(MalformedTelegramInitDataException):
             _validate_init_data(malformed_data)
 
-    def test_invalid_user_json_is_not_validated_by_init_data(self):
+    def test_invalid_user_json_is_not_validated_by_init_data(self) -> None:
         auth_date = int(time.time())
 
         data_dict = {
@@ -161,19 +161,19 @@ class TestValidateInitData:
 
 class TestExtractTgUser:
 
-    def test_valid_user(self):
+    def test_valid_user(self) -> None:
         user_data = {"id": 123456, "first_name": "Test"}
         parsed = {"user": json.dumps(user_data)}
         result = _extract_tg_user(parsed)
         assert result["id"] == 123456
 
-    def test_missing_user_id(self):
+    def test_missing_user_id(self) -> None:
         user_data = {"first_name": "Test"}
         parsed = {"user": json.dumps(user_data)}
         with pytest.raises(MalformedTelegramInitDataException, match="Missing user id"):
             _extract_tg_user(parsed)
 
-    def test_invalid_json(self):
+    def test_invalid_json(self) -> None:
         parsed = {"user": "not_json"}
         with pytest.raises(MalformedTelegramInitDataException, match="Invalid user payload"):
             _extract_tg_user(parsed)
@@ -191,11 +191,11 @@ class _FakeRedisCache:
 
 
 class TestConsumeInitDataNonce:
-    def _parsed(self) -> dict:
+    def _parsed(self) -> dict[str, str]:
         return {"hash": "deadbeef", "auth_date": str(int(time.time()))}
 
     @pytest.mark.asyncio
-    async def test_same_purpose_replay_is_rejected(self):
+    async def test_same_purpose_replay_is_rejected(self) -> None:
         cache = _FakeRedisCache()
         parsed = self._parsed()
         with patch("features.telegram.webapp_auth.get_redis_cache", return_value=cache):
@@ -204,7 +204,7 @@ class TestConsumeInitDataNonce:
                 await _consume_init_data_nonce(parsed, "auth")
 
     @pytest.mark.asyncio
-    async def test_auth_and_register_do_not_conflict(self):
+    async def test_auth_and_register_do_not_conflict(self) -> None:
         cache = _FakeRedisCache()
         parsed = self._parsed()
         with patch("features.telegram.webapp_auth.get_redis_cache", return_value=cache):
@@ -214,7 +214,7 @@ class TestConsumeInitDataNonce:
         assert len(cache.store) == 2
 
     @pytest.mark.asyncio
-    async def test_expired_init_data_is_rejected(self):
+    async def test_expired_init_data_is_rejected(self) -> None:
         cache = _FakeRedisCache()
         parsed = {
             "hash": "deadbeef",
@@ -226,14 +226,14 @@ class TestConsumeInitDataNonce:
 
 
 class TestEdgeCases:
-    def test_edge_case_auth_date_exactly_at_limit(self):
+    def test_edge_case_auth_date_exactly_at_limit(self) -> None:
         auth_date = int(time.time()) - 86400
         init_data = generate_valid_init_data(override_auth_date=auth_date)
 
         with pytest.raises(InvalidTelegramInitDataException):
             _validate_init_data(init_data)
 
-    def test_edge_case_auth_date_within_limit(self):
+    def test_edge_case_auth_date_within_limit(self) -> None:
         auth_date = int(time.time()) - 1800
         init_data = generate_valid_init_data(override_auth_date=auth_date)
 

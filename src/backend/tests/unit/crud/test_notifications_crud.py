@@ -15,7 +15,7 @@ from features.notifications.crud import (
 from features.notifications.models import Notification, NotificationType
 
 
-def _make_notification(user_id=None, is_read=False):
+def _make_notification(user_id: uuid.UUID | None = None, is_read: bool = False) -> MagicMock:
     n = MagicMock(spec=Notification)
     n.id = uuid.uuid4()
     n.user_id = user_id or uuid.uuid4()
@@ -28,7 +28,7 @@ def _make_notification(user_id=None, is_read=False):
 
 class TestCreateNotification:
     @pytest.mark.asyncio
-    async def test_creates_and_returns(self):
+    async def test_creates_and_returns(self) -> None:
         session = AsyncMock()
         session.add = MagicMock()
         session.flush = AsyncMock()
@@ -42,7 +42,7 @@ class TestCreateNotification:
         session.refresh.assert_awaited_once()
 
     @pytest.mark.asyncio
-    async def test_default_type_is_system(self):
+    async def test_default_type_is_system(self) -> None:
         session = AsyncMock()
         session.add = MagicMock()
         added = []
@@ -55,7 +55,7 @@ class TestCreateNotification:
 
 class TestGetUserNotifications:
     @pytest.mark.asyncio
-    async def test_returns_list_and_total(self):
+    async def test_returns_list_and_total(self) -> None:
         session = AsyncMock()
         uid = uuid.uuid4()
 
@@ -80,7 +80,7 @@ class TestGetUserNotifications:
 
 class TestGetUnreadCount:
     @pytest.mark.asyncio
-    async def test_returns_count(self):
+    async def test_returns_count(self) -> None:
         session = AsyncMock()
         result_mock = MagicMock()
         result_mock.scalar_one.return_value = 5
@@ -93,7 +93,7 @@ class TestGetUnreadCount:
 
 class TestMarkAsRead:
     @pytest.mark.asyncio
-    async def test_marks_unread_notification(self):
+    async def test_marks_unread_notification(self) -> None:
         session = AsyncMock()
         uid = uuid.uuid4()
         n = _make_notification(uid, is_read=False)
@@ -109,7 +109,7 @@ class TestMarkAsRead:
         assert returned is n
 
     @pytest.mark.asyncio
-    async def test_skips_already_read(self):
+    async def test_skips_already_read(self) -> None:
         session = AsyncMock()
         n = _make_notification(is_read=True)
 
@@ -122,7 +122,7 @@ class TestMarkAsRead:
         session.flush.assert_not_awaited()
 
     @pytest.mark.asyncio
-    async def test_returns_none_when_not_found(self):
+    async def test_returns_none_when_not_found(self) -> None:
         session = AsyncMock()
         result_mock = MagicMock()
         result_mock.scalar_one_or_none.return_value = None
@@ -135,7 +135,7 @@ class TestMarkAsRead:
 
 class TestMarkAllAsRead:
     @pytest.mark.asyncio
-    async def test_commits(self):
+    async def test_commits(self) -> None:
         session = AsyncMock()
 
         await mark_all_as_read(session, uuid.uuid4())
@@ -146,7 +146,7 @@ class TestMarkAllAsRead:
 
 class TestDeleteNotification:
     @pytest.mark.asyncio
-    async def test_returns_true_when_deleted(self):
+    async def test_returns_true_when_deleted(self) -> None:
         session = AsyncMock()
         result_mock = MagicMock()
         result_mock.rowcount = 1
@@ -157,7 +157,7 @@ class TestDeleteNotification:
         assert deleted is True
 
     @pytest.mark.asyncio
-    async def test_returns_false_when_not_found(self):
+    async def test_returns_false_when_not_found(self) -> None:
         session = AsyncMock()
         result_mock = MagicMock()
         result_mock.rowcount = 0
@@ -170,7 +170,7 @@ class TestDeleteNotification:
 
 class TestDeleteAllNotifications:
     @pytest.mark.asyncio
-    async def test_commits(self):
+    async def test_commits(self) -> None:
         session = AsyncMock()
 
         await delete_all_notifications(session, uuid.uuid4())

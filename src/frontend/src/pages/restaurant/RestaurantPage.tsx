@@ -3,8 +3,8 @@ import type { FormEvent } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { CATEGORY_RU } from '@shared/utils/locales';
 import type { Restaurant } from '@shared/types/models';
-import { Briefcase, List } from '@phosphor-icons/react';
-import { useOrderStore } from '../../store/useOrderStore';
+import { BriefcaseIcon, ListIcon } from '@phosphor-icons/react';
+import { useCartStore } from '../../store/useCartStore';
 import MenuItemCard from '@shared/components/MenuItemCard/MenuItemCard';
 import ProductSheet from '@shared/components/ProductSheet/ProductSheet';
 import ShareModal from '../../components/ShareModal/ShareModal';
@@ -61,7 +61,7 @@ const RestaurantPage = () => {
     handleReviewDelete,
   } = useRestaurantPage({ id: id ?? '', initialRestaurant: locationState?.restaurant ?? null });
 
-  const { addToCart } = useOrderStore(
+  const { addToCart } = useCartStore(
     useShallow((s) => ({ addToCart: s.addToCart }))
   );
   const currentUser = useAuthStore((s) => s.user);
@@ -79,7 +79,7 @@ const RestaurantPage = () => {
   const isFav = restaurantUUID ? favoriteIds.includes(restaurantUUID) : false;
   const myReview = reviewsList.find((r) => r.user_id === currentUser?.id) ?? null;
   const otherReviews = reviewsList.filter((r) => r.user_id !== currentUser?.id);
-  const canReview = currentUser?.permissions?.includes('reviews.create');
+  const canReview = currentUser?.permissions.includes('reviews.create') ?? false;
 
   const handleDeleteWithConfirm = (reviewId: string) => {
     requestConfirm({
@@ -137,7 +137,7 @@ const RestaurantPage = () => {
 
   const reviewsButtonLabel = (() => {
     const parts = [];
-    if (rating != null) parts.push(`${Number(rating).toFixed(1)}`);
+    if (rating != null) parts.push(rating.toFixed(1));
     if (reviewCount != null)
       parts.push(`${reviewCount} ${pluralizeRu(reviewCount, ['отзыв', 'отзыва', 'отзывов'])}`);
     else parts.push('Отзывы');
@@ -153,8 +153,8 @@ const RestaurantPage = () => {
         showFavorite={Boolean(currentUser)}
         isFav={isFav}
         onOpenReviews={() => { setShowReviewsModal(true); setReviewFormOpen(false); }}
-        onOpenInfo={() => setShowInfoModal(true)}
-        onOpenShare={() => setShowShareModal(true)}
+        onOpenInfo={() => { setShowInfoModal(true); }}
+        onOpenShare={() => { setShowShareModal(true); }}
         onToggleFavorite={() => {
           if (restaurantUUID) void toggleFavorite(restaurantUUID);
         }}
@@ -173,10 +173,10 @@ const RestaurantPage = () => {
             <button
               key={cat}
               className={`category-chip${activeCategory === cat ? ' active' : ''}`}
-              onClick={() => setActiveCategory(cat)}
+              onClick={() => { setActiveCategory(cat); }}
               style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
             >
-              {cat === 'ALL' ? <List size={14} /> : getCategoryIcon(cat, { size: 16 })}
+              {cat === 'ALL' ? <ListIcon size={14} /> : getCategoryIcon(cat, { size: 16 })}
               {cat === 'ALL' ? 'Все' : (CATEGORY_RU as Record<string, string>)[cat] || cat}
             </button>
           ))}
@@ -209,8 +209,8 @@ const RestaurantPage = () => {
         )}
 
         {restaurantView.is_hiring && (
-          <button className="hiring-hint" onClick={() => setShowStaffModal(true)}>
-            <Briefcase size={14} weight="bold" />
+          <button className="hiring-hint" onClick={() => { setShowStaffModal(true); }}>
+            <BriefcaseIcon size={14} weight="bold" />
             Заведение ищет сотрудников — откликнуться
           </button>
         )}
@@ -219,7 +219,7 @@ const RestaurantPage = () => {
       {selectedProduct && (
         <ProductSheet
           item={selectedProduct}
-          onClose={() => setSelectedProduct(null)}
+          onClose={() => { setSelectedProduct(null); }}
           onAdd={handleProductAdd}
           isRestaurantOpen={isRestaurantOpen}
         />
@@ -230,7 +230,7 @@ const RestaurantPage = () => {
           restaurantName={restaurant.name}
           message={staffMessage}
           setMessage={setStaffMessage}
-          onClose={() => setShowStaffModal(false)}
+          onClose={() => { setShowStaffModal(false); }}
           onSubmit={(e) => {
             void handleStaffSubmit(e);
           }}
@@ -257,7 +257,7 @@ const RestaurantPage = () => {
           otherReviews={otherReviews}
           canReview={canReview}
           currentUser={currentUser}
-          onClose={() => setShowReviewsModal(false)}
+          onClose={() => { setShowReviewsModal(false); }}
           onSubmit={handleReviewSubmitAdapter}
           onDeleteWithConfirm={handleDeleteWithConfirm}
           editableForm
@@ -269,7 +269,7 @@ const RestaurantPage = () => {
       )}
 
       {showShareModal && (
-        <ShareModal restaurant={restaurant as Restaurant} onClose={() => setShowShareModal(false)} />
+        <ShareModal restaurant={restaurant as Restaurant} onClose={() => { setShowShareModal(false); }} />
       )}
 
       {showInfoModal && (
@@ -280,7 +280,7 @@ const RestaurantPage = () => {
             opening_time: wh.open_time,
             closing_time: wh.close_time,
           }))}
-          onClose={() => setShowInfoModal(false)}
+          onClose={() => { setShowInfoModal(false); }}
         />
       )}
     </div>

@@ -96,10 +96,9 @@ async def _run_tools(call: ToolCall, execute: ToolExecutor, deadline: float) -> 
 async def _run_all_tools(
     calls: list[ToolCall], execute: ToolExecutor, deadline: float
 ) -> list[Message]:
-    results: list[Message] = []
-    for call in calls:
-        results.append(await _run_tools(call, execute, deadline))
-    return results
+    if len(calls) == 1:
+        return [await _run_tools(calls[0], execute, deadline)]
+    return list(await asyncio.gather(*(_run_tools(call, execute, deadline) for call in calls)))
 
 
 async def run_agent(
@@ -145,6 +144,7 @@ async def run_agent(
     )
     _log_usage(client.model, response)
     truncated = _check_truncation(client.model, response)
+    _account(output_spent, response, max_tokens)
     text = response.text + (_TRUNCATED_NOTICE if truncated else _STEPS_EXHAUSTED_NOTICE)
     history.append(Message(role=Role.ASSISTANT, content=text))
     return text, history
@@ -201,7 +201,10 @@ async def stream_agent(
                 else:
                     response = event
             if response is None:
-                raise RuntimeError(f"LLM stream ended without a final response ({client.model})")
+                raise RuntimeError(
+                    "LLM stream ended without a final response "
+                    f"(model={client.model}); connection likely dropped mid-stream"
+                )
             _log_usage(client.model, response)
             truncated = _check_truncation(client.model, response)
             output_spent = _account(output_spent, response, max_tokens)
@@ -235,6 +238,7 @@ async def stream_agent(
             elif isinstance(event, LLMResponse):
                 _log_usage(client.model, event)
                 _check_truncation(client.model, event)
+                output_spent = _account(output_spent, event, max_tokens)
         if not emitted:
             yield _STEPS_EXHAUSTED_NOTICE
     except Exception:

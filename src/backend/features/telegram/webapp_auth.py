@@ -2,7 +2,7 @@ import hashlib
 import hmac
 import json
 import time
-from typing import Any
+from typing import Any, cast
 from urllib.parse import parse_qsl
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -89,7 +89,7 @@ def _extract_tg_user(parsed: dict[str, str]) -> dict[str, Any]:
         raise MalformedTelegramInitDataException(detail="Invalid user payload") from exc
     if "id" not in data:
         raise MalformedTelegramInitDataException(detail="Missing user id")
-    return data
+    return cast("dict[str, Any]", data)
 
 
 async def telegram_check(session: AsyncSession, init_data: str) -> TelegramCheckResponse:

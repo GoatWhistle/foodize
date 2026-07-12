@@ -6,7 +6,7 @@ Create Date: 2026-07-11 00:00:00.000000
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
 from pgvector.sqlalchemy import Vector
@@ -15,11 +15,10 @@ from sqlalchemy.dialects import postgresql
 from alembic import op
 
 revision: str = "c9d0e1f2a3b4"
-down_revision: Union[str, Sequence[str], None] = "b8c9d0e1f2a3"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = "b8c9d0e1f2a3"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
-# Должна совпадать с LLM__EMBEDDING_DIM (bge-m3 = 1024).
 _EMBEDDING_DIM = 1024
 
 
@@ -56,4 +55,3 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_index("ix_menu_item_embeddings_embedding_hnsw", table_name="menu_item_embeddings")
     op.drop_table("menu_item_embeddings")
-    # Расширение vector намеренно не удаляем: им могут пользоваться другие объекты.

@@ -65,7 +65,7 @@ const SetPasswordForm = ({
         type="text"
         placeholder="Имя"
         value={profileForm.first_name}
-        onChange={(e) => setProfileForm((f) => ({ ...f, first_name: e.target.value }))}
+        onChange={(e) => { setProfileForm((f) => ({ ...f, first_name: e.target.value })); }}
         autoComplete="given-name"
       />
     </div>
@@ -80,7 +80,7 @@ const SetPasswordForm = ({
         type="text"
         placeholder="Фамилия"
         value={profileForm.last_name}
-        onChange={(e) => setProfileForm((f) => ({ ...f, last_name: e.target.value }))}
+        onChange={(e) => { setProfileForm((f) => ({ ...f, last_name: e.target.value })); }}
         autoComplete="family-name"
       />
     </div>
@@ -95,7 +95,7 @@ const SetPasswordForm = ({
         type="password"
         placeholder="Минимум 8 символов"
         value={newPassword}
-        onChange={(e) => setNewPassword(e.target.value)}
+        onChange={(e) => { setNewPassword(e.target.value); }}
         required
         minLength={8}
         autoComplete="new-password"
@@ -114,7 +114,7 @@ const SetPasswordForm = ({
         type="password"
         placeholder="Ещё раз новый пароль"
         value={confirmPassword}
-        onChange={(e) => setConfirmPassword(e.target.value)}
+        onChange={(e) => { setConfirmPassword(e.target.value); }}
         required
         minLength={8}
         autoComplete="new-password"

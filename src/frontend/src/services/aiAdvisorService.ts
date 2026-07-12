@@ -1,6 +1,7 @@
 import api from './api';
 import { streamSseRequest } from '@shared/services/streamRequest';
 import { API_BASE_URL } from '@shared/config';
+import type { SuccessResponse, AdvisorInsights } from '@shared/types/models';
 
 const BASE_URL = API_BASE_URL;
 
@@ -17,7 +18,7 @@ export interface StreamChatOptions {
 
 export const aiAdvisorService = {
   getInsights: (refresh = false) =>
-    api.get('/ai/advisor/insights', {
+    api.get<SuccessResponse<AdvisorInsights>>('/ai/advisor/insights', {
       params: refresh ? { refresh: true } : {},
     }),
 
@@ -28,6 +29,9 @@ export const aiAdvisorService = {
     streamSseRequest(
       `${BASE_URL}/ai/advisor/chat`,
       { messages, restaurant_id: restaurantId ?? null },
-      { onChunk, signal },
+      {
+        ...(onChunk ? { onChunk } : {}),
+        ...(signal ? { signal } : {}),
+      },
     ),
 };

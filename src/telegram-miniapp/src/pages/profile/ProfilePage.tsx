@@ -1,4 +1,4 @@
-import { useOrderStore } from "../../store/useOrderStore";
+import { useOrdersStore } from "../../store/useOrdersStore";
 import { useFavoriteStore } from "@shared/store/useFavoriteStore";
 import { useNotificationStore } from "../../store/useNotificationStore";
 import { getBackButton, getTelegramUser } from "../../telegram/sdk";
@@ -6,7 +6,7 @@ import SharedProfilePage from "@shared/pages/ProfilePage/ProfilePage";
 import s from "./ProfilePage.module.css";
 
 const ProfilePage = () => {
-  const ordersTotal = useOrderStore((s) => s.ordersTotal);
+  const ordersTotal = useOrdersStore((s) => s.ordersTotal);
   const favoriteIds = useFavoriteStore((s) => s.favoriteIds);
   const unreadCount = useNotificationStore((s) => s.unreadCount);
 
@@ -21,11 +21,11 @@ const ProfilePage = () => {
         home: "/",
         settings: "/settings",
       }}
-      onLogout={() => window.location.assign("/")}
+      onLogout={() => { window.location.assign("/"); }}
       BackButton={getBackButton()}
       avatarUrl={(tgUser?.photo_url as string | undefined) || null}
       ordersTotal={ordersTotal || 0}
-      favoritesCount={favoriteIds?.length || 0}
+      favoritesCount={favoriteIds.length || 0}
       unreadCount={unreadCount || 0}
       pageClassName={s.page}
     />

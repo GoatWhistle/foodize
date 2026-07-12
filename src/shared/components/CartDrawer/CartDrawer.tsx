@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Trash, Tag, X } from "@phosphor-icons/react";
+import { TrashIcon, TagIcon, XIcon } from "@phosphor-icons/react";
 import { useShallow } from "zustand/react/shallow";
-import { useOrderStore } from "@shared/store/useOrderStore.instance";
+import { useCartStore } from "@shared/store/useCartStore.instance";
+import { useOrdersStore } from "@shared/store/useOrdersStore.instance";
 import OrderButton from "@shared/components/OrderButton/OrderButton";
 import { promoService } from "@shared/services/promoService";
 import { orderService } from "@shared/services/orderService";
@@ -15,6 +16,12 @@ import {
   LoadEstimateSection,
 } from "./CartDrawerSections";
 import s from "./CartDrawer.module.css";
+
+const DEFAULT_WAIT_MINUTES = 15;
+const QUEUE_WARNING_EXTRA_MINUTES = 10;
+const MAX_PICKUP_DAYS = 7;
+const MS_PER_MINUTE = 60_000;
+const MS_PER_DAY = 24 * 60 * MS_PER_MINUTE;
 
 type AppliedPromo = PromoValidate & { originalTotal: number };
 
@@ -37,8 +44,8 @@ const fromDateTimeLocalValue = (value: string): string | null => {
 
 const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartDrawerProps) => {
   const navigate = useNavigate();
-  const { cart, cartRestaurantId, removeFromCart, addToCart, clearCart, placeOrder, orders } =
-    useOrderStore(
+  const { cart, cartRestaurantId, removeFromCart, addToCart, clearCart, placeOrder } =
+    useCartStore(
       useShallow((s) => ({
         cart: s.cart,
         cartRestaurantId: s.cartRestaurantId,
@@ -46,10 +53,10 @@ const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartDrawerPr
         addToCart: s.addToCart,
         clearCart: s.clearCart,
         placeOrder: s.placeOrder,
-        orders: s.orders,
       })),
     );
-  const total = useOrderStore((s) => s.cartTotal());
+  const total = useCartStore((s) => s.cartTotal());
+  const orders = useOrdersStore((s) => s.orders);
   const isFirstOrder = orders.length === 0;
   const drawerRef = useFocusTrap<HTMLDivElement>({ onEscape: onClose });
 
@@ -64,7 +71,7 @@ const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartDrawerPr
   const [error, setError] = useState("");
   const [loadEstimate, setLoadEstimate] = useState<OrderLoadEstimate | null>(null);
   const [estimateLoading, setEstimateLoading] = useState(false);
-  const isClosed = isRestaurantOpen === false;
+  const isClosed = !isRestaurantOpen;
 
   useEffect(() => {
     setAppliedPromo(null);
@@ -85,7 +92,7 @@ const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartDrawerPr
     setEstimateLoading(true);
     orderService
       .getEstimate(cartRestaurantId)
-      .then((res) => { if (!cancelled) setLoadEstimate(res.data?.data || null); })
+      .then((res) => { if (!cancelled) setLoadEstimate(res.data.data); })
       .catch(() => { if (!cancelled) setLoadEstimate(null); })
       .finally(() => { if (!cancelled) setEstimateLoading(false); });
     return () => { cancelled = true; };
@@ -109,15 +116,20 @@ const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartDrawerPr
   const handleRemovePromo = () => { setAppliedPromo(null); setPromoCode(""); setPromoError(""); };
 
   const finalTotal = appliedPromo?.discounted_amount != null ? appliedPromo.discounted_amount : total;
-  const orderingUnavailable = Boolean(loadEstimate && loadEstimate.ordering_available === false);
+  const orderingUnavailable = Boolean(loadEstimate && !loadEstimate.ordering_available);
   const hasQueueWarning = Boolean(
     loadEstimate &&
       loadEstimate.ordering_available &&
-      (loadEstimate.estimated_wait_min_minutes > loadEstimate.avg_prep_time_minutes + 10 ||
+      (loadEstimate.estimated_wait_min_minutes >
+        loadEstimate.avg_prep_time_minutes + QUEUE_WARNING_EXTRA_MINUTES ||
         (loadEstimate.max_active_orders && loadEstimate.active_orders_count >= loadEstimate.max_active_orders)),
   );
-  const minPickupDate = new Date(Date.now() + Math.max(loadEstimate?.estimated_wait_min_minutes ?? 15, 1) * 60000);
-  const maxPickupDate = new Date(Date.now() + 7 * 24 * 60 * 60000);
+  const minPickupDate = new Date(
+    Date.now() +
+      Math.max(loadEstimate?.estimated_wait_min_minutes ?? DEFAULT_WAIT_MINUTES, 1) *
+        MS_PER_MINUTE,
+  );
+  const maxPickupDate = new Date(Date.now() + MAX_PICKUP_DAYS * MS_PER_DAY);
   const minPickupValue = toDateTimeLocalValue(minPickupDate);
   const maxPickupValue = toDateTimeLocalValue(maxPickupDate);
   const selectedPickupIso = pickupMode === "scheduled" ? fromDateTimeLocalValue(requestedPickupAt) : null;
@@ -172,7 +184,7 @@ const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartDrawerPr
                   className="form-input"
                   placeholder="Промокод"
                   value={promoCode}
-                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                  onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); }}
                   onKeyDown={(e) => { if (e.key === "Enter") void handleApplyPromo(); }}
                   style={{ flex: 1, height: 40, fontSize: "0.85rem", borderRadius: "var(--r-md)", letterSpacing: "0.05em" }}
                 />
@@ -190,12 +202,12 @@ const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartDrawerPr
           ) : (
             <div style={{ marginTop: 16, padding: "10px 14px", background: "var(--color-success-bg)", border: "1px solid var(--color-success-border)", borderRadius: "var(--r-md)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.85rem", color: "var(--color-success)", fontWeight: 700 }}>
-                <Tag size={14} weight="fill" />
+                <TagIcon size={14} weight="fill" />
                 {appliedPromo.code}
                 {appliedPromo.discount_type === "PERCENT" ? ` −${appliedPromo.discount_value}%` : ` −${appliedPromo.discount_value} ₽`}
               </div>
               <button onClick={handleRemovePromo} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-success)", display: "flex" }}>
-                <X size={14} weight="bold" />
+                <XIcon size={14} weight="bold" />
               </button>
             </div>
           )}
@@ -216,13 +228,13 @@ const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartDrawerPr
             placeholder="Комментарий к заказу: побольше соуса, без острого..."
             value={comment}
             maxLength={500}
-            onChange={(e) => setComment(e.target.value)}
+            onChange={(e) => { setComment(e.target.value); }}
             style={{ marginTop: 14, minHeight: 72, resize: "vertical", fontSize: "0.82rem", lineHeight: 1.45 }}
           />
 
           <PickupTimeSection
             pickupMode={pickupMode}
-            onSelectAsap={() => setPickupMode("asap")}
+            onSelectAsap={() => { setPickupMode("asap"); }}
             onSelectScheduled={() => { setPickupMode("scheduled"); setRequestedPickupAt((c) => c || minPickupValue); }}
             requestedPickupAt={requestedPickupAt}
             onChangePickupAt={setRequestedPickupAt}
@@ -256,7 +268,7 @@ const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartDrawerPr
             style={{ marginTop: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", fontSize: "0.8rem" }}
             onClick={() => { void clearCart(); }}
           >
-            <Trash size={16} />
+            <TrashIcon size={16} />
             Очистить корзину
           </button>
         </div>

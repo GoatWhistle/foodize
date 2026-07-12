@@ -1,4 +1,4 @@
-import { Image as ImageIcon } from '@phosphor-icons/react';
+import { ImageIcon } from '@phosphor-icons/react';
 import type { MenuItemForm as MenuItemFormValues } from '../VendorMenuTab';
 
 interface MenuItemPhotoFieldProps {
@@ -67,7 +67,7 @@ export function MenuItemPhotoField({ menuItemForm, setMenuItemForm }: MenuItemPh
             className="btn btn-secondary btn-sm"
             style={{ color: 'var(--error)' }}
             onClick={() =>
-              setMenuItemForm((form) => ({ ...form, photoFile: null, photoUrl: '' }))
+              { setMenuItemForm((form) => ({ ...form, photoFile: null, photoUrl: '' })); }
             }
           >
             Удалить фото

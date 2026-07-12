@@ -1,4 +1,4 @@
-import { CaretRight } from '@phosphor-icons/react';
+import { CaretRightIcon } from '@phosphor-icons/react';
 import type { Order, OrderStatus } from '@shared/types/models';
 
 interface VendorOrderCardProps {
@@ -24,7 +24,7 @@ export function VendorOrderCard({
     <div
       className="order-card"
       style={{ cursor: 'pointer' }}
-      onClick={() => setSelectedOrder(order)}
+      onClick={() => { setSelectedOrder(order); }}
     >
       <div style={{ flex: 1 }}>
         <div style={{ fontWeight: 700, marginBottom: 4 }}>
@@ -34,12 +34,12 @@ export function VendorOrderCard({
           {formatOrderTime(order.created_at) && (
             <>{formatOrderTime(order.created_at)} • </>
           )}
-          {order.items?.length || 0} позиц. • {order.total_price} ₽
+          {order.items.length || 0} позиц. • {order.total_price} ₽
           {order.requested_pickup_at && (
             <> • к выдаче {formatOrderTime(order.requested_pickup_at)}</>
           )}
         </div>
-        {order.items?.length > 0 && (
+        {order.items.length > 0 && (
           <div
             style={{
               marginTop: 8,
@@ -50,10 +50,10 @@ export function VendorOrderCard({
               fontSize: '0.78rem',
             }}
           >
-            {(order.items ?? []).map((item) => (
+            {order.items.map((item) => (
               <div key={item.id}>
                 ×{item.quantity} {item.menu_item_name}
-                {item.selected_options?.length > 0 && (
+                {item.selected_options.length > 0 && (
                   <span style={{ color: 'var(--text-3)' }}>
                     {' '}(
                     {item.selected_options
@@ -99,7 +99,7 @@ export function VendorOrderCard({
             }}
           >
             Детали
-            <CaretRight size={16} />
+            <CaretRightIcon size={16} />
           </button>
         )}
       </div>

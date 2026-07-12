@@ -3,10 +3,13 @@ from __future__ import annotations
 import asyncio
 import hashlib
 from enum import Enum
+from typing import TYPE_CHECKING
 
-from infra.llm.base import LLMClient
 from settings.config.app_config import settings
 from settings.config.runtime.llm import LLMConfig, LLMProvider
+
+if TYPE_CHECKING:
+    from infra.llm.base import LLMClient
 
 
 class AgentRole(str, Enum):
@@ -40,6 +43,7 @@ def _config_fingerprint(provider: LLMProvider, cfg: LLMConfig) -> str:
     parts = (
         str(cfg.max_output_tokens),
         str(cfg.request_timeout_seconds),
+        str(cfg.max_retries),
         api_key,
         base_url,
     )
@@ -69,6 +73,7 @@ def _build(provider: LLMProvider, model: str, cfg: LLMConfig) -> LLMClient:
             model=model,
             max_tokens=cfg.max_output_tokens,
             timeout=cfg.request_timeout_seconds,
+            max_retries=cfg.max_retries,
         )
 
     from infra.llm.openai_compatible import OpenAICompatibleClient
@@ -82,6 +87,7 @@ def _build(provider: LLMProvider, model: str, cfg: LLMConfig) -> LLMClient:
             base_url=cfg.openai_base_url,
             max_tokens=cfg.max_output_tokens,
             timeout=cfg.request_timeout_seconds,
+            max_retries=cfg.max_retries,
         )
     if provider == LLMProvider.OLLAMA:
         return OpenAICompatibleClient(
@@ -90,6 +96,7 @@ def _build(provider: LLMProvider, model: str, cfg: LLMConfig) -> LLMClient:
             base_url=cfg.ollama_base_url,
             max_tokens=cfg.max_output_tokens,
             timeout=cfg.request_timeout_seconds,
+            max_retries=cfg.max_retries,
         )
     if provider == LLMProvider.GIGACHAT:
         if not cfg.gigachat_api_key:
@@ -100,6 +107,7 @@ def _build(provider: LLMProvider, model: str, cfg: LLMConfig) -> LLMClient:
             base_url=cfg.gigachat_base_url,
             max_tokens=cfg.max_output_tokens,
             timeout=cfg.request_timeout_seconds,
+            max_retries=cfg.max_retries,
         )
     raise ValueError(f"Unsupported LLM provider: {provider}")
 

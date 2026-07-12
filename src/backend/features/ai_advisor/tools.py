@@ -1,9 +1,11 @@
 import json
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
+from typing import Any
 
 from database import db_helper
 from features.admin.crud import CATEGORY_RU, get_advanced_analytics, get_finance_analytics
+from features.admin.schemas import AdvancedAnalytics, FinanceAnalytics
 from features.ai_advisor import crud
 from features.vendors.models import VendorProfile
 from infra.llm import ToolCall, ToolExecutor, ToolSpec
@@ -82,7 +84,7 @@ def _dumps(payload: object) -> str:
     return json.dumps(payload, ensure_ascii=False, default=str)
 
 
-def _period_range(args: dict) -> tuple:
+def _period_range(args: dict[str, Any]) -> tuple[date, date]:
     period = args.get("period_days") or 30
     try:
         period = max(1, min(int(period), 365))
@@ -93,7 +95,7 @@ def _period_range(args: dict) -> tuple:
     return start, end
 
 
-def _restaurant_id(args: dict) -> uuid.UUID | None:
+def _restaurant_id(args: dict[str, Any]) -> uuid.UUID | None:
     raw = args.get("restaurant_id")
     if not raw:
         return None
@@ -109,10 +111,10 @@ def build_advisor_executor(
 ) -> ToolExecutor:
     vendor_id = vendor.id
     owned_restaurant_ids = get_vendor_restaurant_ids(vendor)
-    _advanced_cache: dict[tuple, object] = {}
-    _finance_cache: dict[tuple, object] = {}
+    _advanced_cache: dict[tuple[date, date, uuid.UUID | None], AdvancedAnalytics] = {}
+    _finance_cache: dict[tuple[date, date, uuid.UUID | None], FinanceAnalytics] = {}
 
-    def resolve_restaurant(args: dict) -> uuid.UUID | None:
+    def resolve_restaurant(args: dict[str, Any]) -> uuid.UUID | None:
         restaurant_id = _restaurant_id(args)
         if restaurant_id is None:
             return default_restaurant_id
@@ -120,7 +122,9 @@ def build_advisor_executor(
             raise ToolInputError(f"restaurant {restaurant_id} does not belong to this vendor")
         return restaurant_id
 
-    async def _get_advanced(start, end, restaurant_id):
+    async def _get_advanced(
+        start: date, end: date, restaurant_id: uuid.UUID | None
+    ) -> AdvancedAnalytics:
         key = (start, end, restaurant_id)
         if key not in _advanced_cache:
             async with db_helper.session_factory() as session:
@@ -133,7 +137,9 @@ def build_advisor_executor(
                 )
         return _advanced_cache[key]
 
-    async def _get_finance(start, end, restaurant_id):
+    async def _get_finance(
+        start: date, end: date, restaurant_id: uuid.UUID | None
+    ) -> FinanceAnalytics:
         key = (start, end, restaurant_id)
         if key not in _finance_cache:
             async with db_helper.session_factory() as session:
@@ -146,7 +152,7 @@ def build_advisor_executor(
                 )
         return _finance_cache[key]
 
-    async def _sales_summary(args: dict) -> str:
+    async def _sales_summary(args: dict[str, Any]) -> str:
         start, end = _period_range(args)
         data = await _get_finance(start, end, resolve_restaurant(args))
         return _dumps(
@@ -170,7 +176,7 @@ def build_advisor_executor(
             }
         )
 
-    async def _peak_hours(args: dict) -> str:
+    async def _peak_hours(args: dict[str, Any]) -> str:
         start, end = _period_range(args)
         data = await _get_advanced(start, end, resolve_restaurant(args))
         return _dumps(
@@ -180,7 +186,7 @@ def build_advisor_executor(
             }
         )
 
-    async def _category_breakdown(args: dict) -> str:
+    async def _category_breakdown(args: dict[str, Any]) -> str:
         start, end = _period_range(args)
         data = await _get_advanced(start, end, resolve_restaurant(args))
         return _dumps(
@@ -192,7 +198,7 @@ def build_advisor_executor(
             }
         )
 
-    async def _top_and_bottom(args: dict) -> str:
+    async def _top_and_bottom(args: dict[str, Any]) -> str:
         start, end = _period_range(args)
         restaurant_id = resolve_restaurant(args)
         finance = await _get_finance(start, end, restaurant_id)
@@ -217,7 +223,7 @@ def build_advisor_executor(
             }
         )
 
-    async def _menu(args: dict) -> str:
+    async def _menu(args: dict[str, Any]) -> str:
         async with db_helper.session_factory() as session:
             items = await crud.get_menu_overview(
                 session, vendor_id=vendor_id, restaurant_id=resolve_restaurant(args)
@@ -226,7 +232,7 @@ def build_advisor_executor(
             item["category"] = CATEGORY_RU.get(item["category"], item["category"])
         return _dumps({"items": items})
 
-    async def _reviews(args: dict) -> str:
+    async def _reviews(args: dict[str, Any]) -> str:
         async with db_helper.session_factory() as session:
             data = await crud.get_reviews_summary(
                 session, vendor_id=vendor_id, restaurant_id=resolve_restaurant(args)

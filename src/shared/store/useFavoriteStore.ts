@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { favoriteService } from "@shared/services/favoriteService";
+import { logError } from "@shared/utils/logError";
 
 export interface FavoriteStoreState {
   favoriteIds: string[];
@@ -15,12 +16,13 @@ export const useFavoriteStore = create<FavoriteStoreState>((set, get) => ({
   loadFavorites: async () => {
     try {
       const res = await favoriteService.getAll({ size: 100 });
-      const list = Array.isArray(res.data?.data) ? res.data.data : [];
+      const list = Array.isArray(res.data.data) ? res.data.data : [];
       set({
         favoriteIds: list.map((f) => f.restaurant.id),
         loaded: true,
       });
-    } catch {
+    } catch (err) {
+      logError("useFavoriteStore.loadFavorites", err);
       set({ loaded: true });
     }
   },
@@ -34,7 +36,8 @@ export const useFavoriteStore = create<FavoriteStoreState>((set, get) => ({
       set({ favoriteIds: next });
       try {
         await favoriteService.remove(restaurantId);
-      } catch {
+      } catch (err) {
+        logError("useFavoriteStore.toggle.remove", err);
         set({ favoriteIds: prev });
       }
     } else {
@@ -42,7 +45,8 @@ export const useFavoriteStore = create<FavoriteStoreState>((set, get) => ({
       set({ favoriteIds: next });
       try {
         await favoriteService.add(restaurantId);
-      } catch {
+      } catch (err) {
+        logError("useFavoriteStore.toggle.add", err);
         set({ favoriteIds: prev });
       }
     }

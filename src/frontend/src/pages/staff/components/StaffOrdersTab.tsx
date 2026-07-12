@@ -1,4 +1,4 @@
-import { Fire } from '@phosphor-icons/react';
+import { FireIcon } from '@phosphor-icons/react';
 import KanbanColumn from './KanbanColumn';
 import { COLUMN_DEFS } from '../staffColumns';
 import type { StaffColumnDef } from '../staffColumns';
@@ -59,7 +59,7 @@ const StaffOrdersTab = ({
             gap: 8,
           }}
         >
-          <Fire size={16} weight="fill" /> {criticalOrders.length}{' '}
+          <FireIcon size={16} weight="fill" /> {criticalOrders.length}{' '}
           {criticalOrders.length === 1
             ? 'заказ задерживается'
             : criticalOrders.length < 5

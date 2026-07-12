@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { MouseEvent } from "react";
-import { Trash } from "@phosphor-icons/react";
+import { TrashIcon } from "@phosphor-icons/react";
 import { useShallow } from "zustand/react/shallow";
 import { useModalStore } from "@shared/store/useModalStore";
 import type { ModalStoreState } from "@shared/store/useModalStore";
@@ -24,7 +24,7 @@ const ConfirmDialog = () => {
       if (e.key === "Escape" && !loading) cancelConfirm();
     };
     document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
+    return () => { document.removeEventListener("keydown", handler); };
   }, [dialog, loading, cancelConfirm]);
 
   if (!dialog) return null;
@@ -32,7 +32,7 @@ const ConfirmDialog = () => {
   return (
     <div
       className="modal-overlay"
-      style={{ zIndex: 5000 }}
+      style={{ zIndex: "var(--z-toast)" }}
       onMouseDown={(e: MouseEvent<HTMLDivElement>) => {
         if (e.target === e.currentTarget && !loading) cancelConfirm();
       }}
@@ -58,7 +58,7 @@ const ConfirmDialog = () => {
               flexShrink: 0,
             }}
           >
-            <Trash size={20} />
+            <TrashIcon size={20} />
           </div>
           <div>
             <h3 id="confirm-dialog-title" style={{ color: "var(--text-1)", fontSize: "1.05rem", margin: 0 }}>{dialog.title}</h3>

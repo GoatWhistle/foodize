@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft } from "@phosphor-icons/react";
+import { ArrowLeftIcon } from "@phosphor-icons/react";
 import s from "./LegalPage.module.css";
 
 interface LegalDoc {
@@ -177,25 +177,49 @@ Foodize — платформа для предзаказа еды в завед�
   },
 };
 
-const renderContent = (md: string): ReactNode[] => {
-  return md.trim().split("\n").map((line, i) => {
-    if (line.startsWith("## ")) {
-      return <h2 key={i}>{line.slice(3)}</h2>;
-    }
-    if (line.startsWith("**") && line.endsWith("**")) {
-      return <p key={i}><strong>{line.slice(2, -2)}</strong></p>;
-    }
-    if (line.startsWith("- ")) {
-      return <li key={i}>{line.slice(2).replace(/\*\*(.*?)\*\*/g, (_: string, t: string) => t)}</li>;
-    }
-    if (line.trim() === "") return <br key={i} />;
-    const parts = line.split(/\*\*(.*?)\*\*/g);
-    return (
-      <p key={i}>
-        {parts.map((part, j) => j % 2 === 1 ? <strong key={j}>{part}</strong> : part)}
-      </p>
+const renderInline = (text: string): ReactNode[] =>
+  text
+    .split(/\*\*(.*?)\*\*/g)
+    .map((part, j) =>
+      j % 2 === 1 ? <strong key={j}>{part}</strong> : part,
     );
-  });
+
+const renderContent = (md: string): ReactNode[] => {
+  const lines = md.trim().split("\n");
+  const blocks: ReactNode[] = [];
+  let listItems: string[] = [];
+  let key = 0;
+
+  const flushList = (): void => {
+    if (listItems.length === 0) return;
+    const items = listItems;
+    blocks.push(
+      <ul key={`ul-${key++}`}>
+        {items.map((item, i) => (
+          <li key={i}>{renderInline(item)}</li>
+        ))}
+      </ul>,
+    );
+    listItems = [];
+  };
+
+  for (const line of lines) {
+    if (line.startsWith("- ")) {
+      listItems.push(line.slice(2));
+      continue;
+    }
+    flushList();
+    const trimmed = line.trim();
+    if (trimmed === "") continue;
+    if (line.startsWith("## ")) {
+      blocks.push(<h2 key={`h-${key++}`}>{line.slice(3)}</h2>);
+      continue;
+    }
+    blocks.push(<p key={`p-${key++}`}>{renderInline(line)}</p>);
+  }
+  flushList();
+
+  return blocks;
 };
 
 const LegalPage = () => {
@@ -213,16 +237,12 @@ const LegalPage = () => {
       <div className={s.header}>
         <div className={s.headerInner}>
           <button className={s.back} onClick={() => { void navigate(-1); }} aria-label="Назад">
-            <ArrowLeft size={20} weight="bold" />
+            <ArrowLeftIcon size={20} weight="bold" />
           </button>
           <h1 className={s.title}>{data.title}</h1>
         </div>
       </div>
-      <div className={s.body}>
-        <ul style={{ display: "contents" }}>
-          {renderContent(data.content)}
-        </ul>
-      </div>
+      <div className={s.body}>{renderContent(data.content)}</div>
     </div>
   );
 };

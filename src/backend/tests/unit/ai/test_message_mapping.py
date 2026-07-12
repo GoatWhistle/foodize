@@ -15,7 +15,7 @@ def _conversation() -> list[Message]:
     ]
 
 
-def test_anthropic_merges_parallel_tool_results_into_one_user_turn():
+def test_anthropic_merges_parallel_tool_results_into_one_user_turn() -> None:
     messages = [
         Message(
             role=Role.ASSISTANT,
@@ -37,7 +37,7 @@ def test_anthropic_merges_parallel_tool_results_into_one_user_turn():
     assert {b["tool_use_id"] for b in out[1]["content"]} == {"a", "b"}
 
 
-def test_anthropic_assistant_text_and_tool_use_in_one_turn():
+def test_anthropic_assistant_text_and_tool_use_in_one_turn() -> None:
     out = anthropic_messages(_conversation())
 
     assert out[0] == {"role": "user", "content": "найди пиццу"}
@@ -48,7 +48,7 @@ def test_anthropic_assistant_text_and_tool_use_in_one_turn():
     assert assistant["content"][1]["name"] == "search"
 
 
-def test_openai_prepends_system_and_uses_tool_role():
+def test_openai_prepends_system_and_uses_tool_role() -> None:
     out = openai_messages("you are a bot", _conversation())
 
     assert out[0] == {"role": "system", "content": "you are a bot"}
@@ -64,7 +64,7 @@ def test_openai_prepends_system_and_uses_tool_role():
     assert tool["tool_call_id"] == "t1"
 
 
-def test_openai_serializes_tool_arguments_as_json_without_ascii_escaping():
+def test_openai_serializes_tool_arguments_as_json_without_ascii_escaping() -> None:
     messages = [
         Message(
             role=Role.ASSISTANT,

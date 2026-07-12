@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft } from "@phosphor-icons/react";
+import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { useShallow } from "zustand/react/shallow";
-import { useOrderStore } from "@shared/store/useOrderStore.instance";
-import type { OrderStoreState } from "@shared/store/useOrderStore";
+import { useCartStore } from "@shared/store/useCartStore.instance";
+import { useOrdersStore } from "@shared/store/useOrdersStore.instance";
+import type { OrdersStoreState } from "@shared/store/createOrdersStore";
 import { orderService } from "@shared/services/orderService";
 import { useEtaText } from "@shared/hooks/useEtaText";
 import { translateApiError } from "@shared/utils/translateApiError";
@@ -12,6 +13,7 @@ import { getOrderStatusStyle, getCustomerOrderStatusLabel } from "@shared/utils/
 import { parseOrderMessage } from "@shared/utils/wsMessages";
 import { OrderStatusSkeleton, OrderDetails } from "./OrderStatusSections";
 import type { OrderStatus } from "@shared/types/models";
+import styles from "./OrderStatusPage.module.css";
 
 interface OrderWebSocket {
   close: () => void;
@@ -40,8 +42,8 @@ const OrderStatusPage = ({ createOrderWebSocket, onBack, screenClassName = "stat
   const { id } = useParams();
   const orderId = id ?? "";
   const navigate = useNavigate();
-  const { fetchOrder, currentOrder } = useOrderStore(
-    useShallow((s: OrderStoreState) => ({ fetchOrder: s.fetchOrder, currentOrder: s.currentOrder })),
+  const { fetchOrder, currentOrder } = useOrdersStore(
+    useShallow((s: OrdersStoreState) => ({ fetchOrder: s.fetchOrder, currentOrder: s.currentOrder })),
   );
   const wsRef = useRef<OrderWebSocket | null>(null);
   const prevStatusRef = useRef<OrderStatus | null>(null);
@@ -53,7 +55,7 @@ const OrderStatusPage = ({ createOrderWebSocket, onBack, screenClassName = "stat
   const [showBonAppetit, setShowBonAppetit] = useState(false);
 
   const loadOrder = useCallback(() => {
-    fetchOrder(orderId).catch((err) => {
+    fetchOrder(orderId).catch((err: unknown) => {
       setLoadError(translateApiError(err, "Не удалось загрузить заказ"));
     });
   }, [orderId, fetchOrder]);
@@ -65,10 +67,10 @@ const OrderStatusPage = ({ createOrderWebSocket, onBack, screenClassName = "stat
       (data) => {
         if (data.error) return;
         const order = parseOrderMessage(data);
-        if (order) useOrderStore.setState({ currentOrder: order });
+        if (order) useOrdersStore.setState({ currentOrder: order });
       },
       () => {
-        const status = useOrderStore.getState().currentOrder?.status;
+        const status = useOrdersStore.getState().currentOrder?.status;
         if (!status || !TERMINAL_STATUSES.has(status)) loadOrder();
       },
     );
@@ -135,67 +137,36 @@ const OrderStatusPage = ({ createOrderWebSocket, onBack, screenClassName = "stat
 
   return (
     <div className={`${screenClassName} page-enter${isReady ? " status-ready-flash" : ""}`}>
-      <div style={{ textAlign: "center" }}>
-        <div style={{ fontSize: "0.64rem", color: "var(--text-3)", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>
-          Заказ
-        </div>
-        <div
-          style={{
-            fontSize: "clamp(3.5rem, 14vw, 5rem)",
-            fontWeight: 900,
-            color: currentOrder.status === "CANCELLED" ? "var(--text-3)" : "var(--text-1)",
-            lineHeight: 0.95,
-            letterSpacing: "-0.04em",
-            fontVariantNumeric: "tabular-nums",
-          }}
-        >
+      <div className={styles.header}>
+        <div className={styles.headerLabel}>Заказ</div>
+        <div className={`${styles.orderNumber}${currentOrder.status === "CANCELLED" ? ` ${styles.orderNumberCancelled}` : ""}`}>
           #{currentOrder.display_id}
         </div>
       </div>
 
       <div
-        style={{
-          marginTop: 12,
-          display: "inline-flex",
-          alignItems: "center",
-          padding: "6px 16px",
-          borderRadius: 99,
-          background: pill.bg,
-          color: pill.color,
-          fontWeight: 800,
-          fontSize: "0.8rem",
-          letterSpacing: "0.04em",
-          textTransform: "uppercase",
-          border: `1px solid ${pill.border}`,
-        }}
+        className={styles.pill}
+        style={{ background: pill.bg, color: pill.color, border: `1px solid ${pill.border}` }}
       >
         {pillLabel}
       </div>
 
       {currentOrder.status === "CANCELLED" && currentOrder.cancellation_reason && (
-        <div style={{ marginTop: 8, fontSize: "0.82rem", color: "var(--text-2)", textAlign: "center", maxWidth: 300 }}>
-          {currentOrder.cancellation_reason}
-        </div>
+        <div className={styles.cancelReason}>{currentOrder.cancellation_reason}</div>
       )}
 
       <HorizontalSteps order={currentOrder} />
 
-      <div style={{ marginTop: 14, textAlign: "center", minHeight: 44 }}>
+      <div className={styles.etaBlock}>
         {isReady ? (
-          <div style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--color-success)" }}>
-            Подойдите к стойке — ваш заказ готов!
-          </div>
+          <div className={styles.etaReady}>Подойдите к стойке — ваш заказ готов!</div>
         ) : etaText ? (
-          <div style={{ fontWeight: 600, fontSize: "0.85rem", color: etaText.startsWith("Задерж") ? "var(--fire)" : "var(--text-2)" }}>
+          <div className={`${styles.etaText}${etaText.startsWith("Задерж") ? ` ${styles.etaTextDelayed}` : ""}`}>
             {etaText}
           </div>
         ) : null}
-        {showBonAppetit && (
-          <div style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--color-success)", marginTop: 4 }}>
-            Приятного аппетита!
-          </div>
-        )}
-        <div style={{ marginTop: 6, fontSize: "0.72rem", color: "var(--text-3)" }}>
+        {showBonAppetit && <div className={styles.bonAppetit}>Приятного аппетита!</div>}
+        <div className={styles.etaMeta}>
           Оформлен в {fmtTime(currentOrder.created_at)}
           {currentOrder.requested_pickup_at ? ` · выдача в ${fmtTime(currentOrder.requested_pickup_at)}` : ""}
         </div>
@@ -204,17 +175,16 @@ const OrderStatusPage = ({ createOrderWebSocket, onBack, screenClassName = "stat
       {showDetails && <OrderDetails order={currentOrder} />}
 
       {completeError && (
-        <div className="form-error" style={{ marginTop: 16, maxWidth: 380, width: "100%" }}>{completeError}</div>
+        <div className={`form-error ${styles.formError}`}>{completeError}</div>
       )}
       {cancelError && (
-        <div className="form-error" style={{ marginTop: 16, maxWidth: 380, width: "100%" }}>{cancelError}</div>
+        <div className={`form-error ${styles.formError}`}>{cancelError}</div>
       )}
 
-      <div style={{ display: "flex", gap: 10, marginTop: 16, width: "100%", maxWidth: 380 }}>
+      <div className={styles.actions}>
         {isReady && (
           <button
-            className="btn btn-primary"
-            style={{ flex: 1, background: "var(--color-success)", borderColor: "var(--color-success)" }}
+            className={`btn btn-primary ${styles.successBtn}`}
             onClick={() => { void handleComplete(); }}
             disabled={completing}
           >
@@ -223,11 +193,10 @@ const OrderStatusPage = ({ createOrderWebSocket, onBack, screenClassName = "stat
         )}
         {isDone && (
           <button
-            className="btn btn-primary"
-            style={{ flex: 1 }}
+            className={`btn btn-primary ${styles.actionBtn}`}
             onClick={() => {
               void (async () => {
-                const repeat = useOrderStore.getState().repeatOrder;
+                const repeat = useCartStore.getState().repeatOrder;
                 await repeat(currentOrder);
                 void navigate(`/restaurant/${currentOrder.restaurant_display_id}`);
               })();
@@ -238,8 +207,7 @@ const OrderStatusPage = ({ createOrderWebSocket, onBack, screenClassName = "stat
         )}
         {currentOrder.status === "PENDING" && (
           <button
-            className="btn btn-secondary"
-            style={{ flex: 1, color: "var(--color-error)", borderColor: "var(--color-error-border)" }}
+            className={`btn btn-secondary ${styles.cancelBtn}`}
             onClick={() => { void handleCancel(); }}
             disabled={cancelling}
           >
@@ -247,11 +215,10 @@ const OrderStatusPage = ({ createOrderWebSocket, onBack, screenClassName = "stat
           </button>
         )}
         <button
-          className="btn btn-secondary"
-          style={{ flex: isDone ? 1 : 2, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+          className={`btn btn-secondary ${styles.backBtn}${isDone ? ` ${styles.actionBtn}` : ` ${styles.backBtnWide}`}`}
           onClick={() => { if (typeof backPath === "function") backPath(); else void navigate(backPath); }}
         >
-          <ArrowLeft size={16} weight="bold" /> Мои заказы
+          <ArrowLeftIcon size={16} weight="bold" /> Мои заказы
         </button>
       </div>
     </div>

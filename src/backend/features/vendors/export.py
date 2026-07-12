@@ -1,5 +1,6 @@
 import uuid
-from datetime import date
+from datetime import UTC, date, datetime, timedelta
+from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -7,11 +8,13 @@ from features.admin import crud as admin_crud
 from features.admin.crud import CATEGORY_RU, STATUS_RU
 from features.admin.export import _build_analytics_pdf, _build_finance_pdf, _make_csv
 from features.menu.crud import get_menu_items
-from features.menu.models import MenuItem
 from features.promos.crud import get_promos_by_restaurant_ids
 from features.vendors.models import VendorProfile
 from shared.dependencies import get_vendor_restaurant_ids
 from shared.enums.order_status import OrderStatus
+
+if TYPE_CHECKING:
+    from features.menu.models import MenuItem
 
 
 async def export_orders_csv(
@@ -43,10 +46,7 @@ async def export_orders_csv(
         query_restaurant_id = None
 
     if date_from is None and date_to is None:
-        from datetime import date as _date
-        from datetime import timedelta
-
-        date_to = _date.today()
+        date_to = datetime.now(UTC).date()
         date_from = date_to - timedelta(days=90)
 
     orders = await admin_crud.get_all_orders(

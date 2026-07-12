@@ -84,7 +84,7 @@ describe('DisplayBoardPage', () => {
       wsMessageHandler?.({ cooking: ['A-1'], ready: [] });
       await Promise.resolve();
     });
-    await waitFor(() => expect(screen.getByText('A-1')).toBeInTheDocument());
+    await waitFor(() => { expect(screen.getByText('A-1')).toBeInTheDocument(); });
 
     await act(async () => {
       wsMessageHandler?.({ cooking: ['A-2'], ready: [] });

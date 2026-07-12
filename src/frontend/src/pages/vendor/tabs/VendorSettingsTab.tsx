@@ -51,7 +51,7 @@ export default function VendorSettingsTab({
             className="form-input"
             value={editRestaurant?.name ?? selectedRestaurant.name}
             onChange={(e) =>
-              setEditRestaurant({ ...(editRestaurant || selectedRestaurant), name: e.target.value })
+              { setEditRestaurant({ ...(editRestaurant || selectedRestaurant), name: e.target.value }); }
             }
           />
         </div>
@@ -62,10 +62,10 @@ export default function VendorSettingsTab({
             placeholder="Краткое описание заведения для посетителей..."
             value={editRestaurant?.description ?? selectedRestaurant.description ?? ''}
             onChange={(e) =>
-              setEditRestaurant({
+              { setEditRestaurant({
                 ...(editRestaurant || selectedRestaurant),
                 description: e.target.value,
-              })
+              }); }
             }
             rows={3}
             style={{ resize: 'vertical' }}
@@ -77,22 +77,22 @@ export default function VendorSettingsTab({
             className="form-input"
             value={editRestaurant?.address ?? selectedRestaurant.address}
             onChange={(e) =>
-              setEditRestaurant({
+              { setEditRestaurant({
                 ...(editRestaurant || selectedRestaurant),
                 address: e.target.value,
-              })
+              }); }
             }
           />
         </div>
         <label className="form-check" style={{ marginTop: 4 }}>
           <input
             type="checkbox"
-            checked={editRestaurant?.is_open ?? selectedRestaurant.is_open ?? true}
+            checked={editRestaurant?.is_open ?? selectedRestaurant.is_open}
             onChange={(e) =>
-              setEditRestaurant({
+              { setEditRestaurant({
                 ...(editRestaurant || selectedRestaurant),
                 is_open: e.target.checked,
-              })
+              }); }
             }
           />
           <span className="form-check-label">Заведение открыто</span>
@@ -102,14 +102,13 @@ export default function VendorSettingsTab({
             type="checkbox"
             checked={
               editRestaurant?.is_ordering_paused ??
-              selectedRestaurant.is_ordering_paused ??
-              false
+              selectedRestaurant.is_ordering_paused
             }
             onChange={(e) =>
-              setEditRestaurant({
+              { setEditRestaurant({
                 ...(editRestaurant || selectedRestaurant),
                 is_ordering_paused: e.target.checked,
-              })
+              }); }
             }
           />
           <span className="form-check-label">Пауза приёма заказов</span>
@@ -123,10 +122,10 @@ export default function VendorSettingsTab({
               editRestaurant?.ordering_paused_until ?? selectedRestaurant.ordering_paused_until
             )}
             onChange={(e) =>
-              setEditRestaurant({
+              { setEditRestaurant({
                 ...(editRestaurant || selectedRestaurant),
                 ordering_paused_until: e.target.value,
-              })
+              }); }
             }
           />
         </div>
@@ -141,14 +140,13 @@ export default function VendorSettingsTab({
             max="240"
             value={
               editRestaurant?.avg_prep_time_minutes ??
-              selectedRestaurant.avg_prep_time_minutes ??
-              15
+              selectedRestaurant.avg_prep_time_minutes
             }
             onChange={(e) =>
-              setEditRestaurant({
+              { setEditRestaurant({
                 ...(editRestaurant || selectedRestaurant),
                 avg_prep_time_minutes: Number(e.target.value),
-              })
+              }); }
             }
           />
         </div>
@@ -166,22 +164,22 @@ export default function VendorSettingsTab({
               editRestaurant?.max_active_orders ?? selectedRestaurant.max_active_orders ?? ''
             }
             onChange={(e) =>
-              setEditRestaurant({
+              { setEditRestaurant({
                 ...(editRestaurant || selectedRestaurant),
                 max_active_orders: e.target.value ? Number(e.target.value) : null,
-              })
+              }); }
             }
           />
         </div>
         <label className="form-check">
           <input
             type="checkbox"
-            checked={editRestaurant?.is_hiring ?? selectedRestaurant.is_hiring ?? false}
+            checked={editRestaurant?.is_hiring ?? selectedRestaurant.is_hiring}
             onChange={(e) =>
-              setEditRestaurant({
+              { setEditRestaurant({
                 ...(editRestaurant || selectedRestaurant),
                 is_hiring: e.target.checked,
-              })
+              }); }
             }
           />
           <span className="form-check-label">Набор сотрудников</span>

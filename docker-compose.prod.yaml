@@ -270,55 +270,80 @@ services:
       - |
         set -eu
         log() { echo "[pg-backup] $$*"; }
-        run_backup() {
-          ts=$$(date +%Y%m%d_%H%M%S)
-          base="foodize_$${ts}.dump"
-          final="$${BACKUP_DIR}/$${base}"
-          tmp="$${BACKUP_DIR}/.$${base}.tmp"
-          log "Dumping $${POSTGRES_DB} from $${PGHOST}..."
-          if ! pg_dump -h "$$PGHOST" -p "$$PGPORT" -U "$$POSTGRES_USER" -Fc "$$POSTGRES_DB" > "$$tmp"; then
-            log "pg_dump FAILED; discarding partial dump"; rm -f "$$tmp"; return 1
-          fi
-          [ -s "$$tmp" ] || { log "empty dump; discarding"; rm -f "$$tmp"; return 1; }
-          if [ -n "$${BACKUP_ENCRYPTION_PASSPHRASE:-}" ] && command -v openssl >/dev/null 2>&1; then
-            log "Encrypting dump..."
-            if openssl enc -aes-256-cbc -pbkdf2 -salt -pass env:BACKUP_ENCRYPTION_PASSPHRASE -in "$$tmp" -out "$${tmp}.enc"; then
-              rm -f "$$tmp"; tmp="$${tmp}.enc"; final="$${final}.enc"; base="$${base}.enc"
-            else
-              log "encryption FAILED"; rm -f "$${tmp}.enc" "$$tmp"; return 1
-            fi
-          elif [ -n "$${BACKUP_ENCRYPTION_PASSPHRASE:-}" ]; then
-            log "WARN: passphrase set but openssl unavailable; storing UNENCRYPTED"
+
+        # The actual backup routine, materialised as a standalone script so both
+        # the boot-time run and the cron-triggered runs execute identical code.
+        cat > /usr/local/bin/run-backup <<'BACKUP_SCRIPT'
+        #!/bin/sh
+        set -eu
+        log() { echo "[pg-backup] $$*"; }
+        ts=$$(date +%Y%m%d_%H%M%S)
+        base="foodize_$${ts}.dump"
+        final="$${BACKUP_DIR}/$${base}"
+        tmp="$${BACKUP_DIR}/.$${base}.tmp"
+        log "Dumping $${POSTGRES_DB} from $${PGHOST}..."
+        if ! pg_dump -h "$$PGHOST" -p "$$PGPORT" -U "$$POSTGRES_USER" -Fc "$$POSTGRES_DB" > "$$tmp"; then
+          log "pg_dump FAILED; discarding partial dump"; rm -f "$$tmp"; exit 1
+        fi
+        [ -s "$$tmp" ] || { log "empty dump; discarding"; rm -f "$$tmp"; exit 1; }
+        if [ -n "$${BACKUP_ENCRYPTION_PASSPHRASE:-}" ] && command -v openssl >/dev/null 2>&1; then
+          log "Encrypting dump..."
+          if openssl enc -aes-256-cbc -pbkdf2 -salt -pass env:BACKUP_ENCRYPTION_PASSPHRASE -in "$$tmp" -out "$${tmp}.enc"; then
+            rm -f "$$tmp"; tmp="$${tmp}.enc"; final="$${final}.enc"; base="$${base}.enc"
           else
-            log "WARN: no passphrase; storing UNENCRYPTED"
+            log "encryption FAILED"; rm -f "$${tmp}.enc" "$$tmp"; exit 1
           fi
-          mv -f "$$tmp" "$$final"
-          log "Saved $$final"
-          if [ -n "$${BACKUP_S3_BUCKET:-}" ]; then
-            if command -v aws >/dev/null 2>&1; then
-              log "Uploading to s3://$${BACKUP_S3_BUCKET}/$${BACKUP_S3_PREFIX}/$${base}"
-              aws s3 cp "$$final" "s3://$${BACKUP_S3_BUCKET}/$${BACKUP_S3_PREFIX}/$${base}" || log "WARN: s3 upload failed"
-            else
-              log "WARN: BACKUP_S3_BUCKET set but aws cli unavailable; skipping upload"
-            fi
+        elif [ -n "$${BACKUP_ENCRYPTION_PASSPHRASE:-}" ]; then
+          log "WARN: passphrase set but openssl unavailable; storing UNENCRYPTED"
+        else
+          log "WARN: no passphrase; storing UNENCRYPTED"
+        fi
+        mv -f "$$tmp" "$$final"
+        log "Saved $$final"
+        if [ -n "$${BACKUP_S3_BUCKET:-}" ]; then
+          if command -v aws >/dev/null 2>&1; then
+            log "Uploading to s3://$${BACKUP_S3_BUCKET}/$${BACKUP_S3_PREFIX}/$${base}"
+            aws s3 cp "$$final" "s3://$${BACKUP_S3_BUCKET}/$${BACKUP_S3_PREFIX}/$${base}" || log "WARN: s3 upload failed"
+          else
+            log "WARN: BACKUP_S3_BUCKET set but aws cli unavailable; skipping upload"
           fi
-          log "Retention: keeping last $${KEEP_LAST}"
-          ls -t "$$BACKUP_DIR"/foodize_*.dump "$$BACKUP_DIR"/foodize_*.dump.enc 2>/dev/null | tail -n +$$(( KEEP_LAST + 1 )) | xargs -r rm -f
-        }
-        mkdir -p "$$BACKUP_DIR"
-        log "Started; schedule (BACKUP_CRON) is informational for the sleep loop. Interval driven daily."
-        # Lightweight scheduler: run once shortly after start, then every 24h.
-        # BACKUP_CRON is surfaced for operators who prefer host cron / a real
-        # cron sidecar; the loop guarantees a daily backup without extra images.
-        log "BACKUP_CRON=$${BACKUP_CRON}"
-        run_backup || log "initial backup failed"
-        while true; do
-          sleep 86400
-          run_backup || log "scheduled backup failed"
+        fi
+        log "Retention: keeping last $${KEEP_LAST}"
+        ls -t "$$BACKUP_DIR"/foodize_*.dump "$$BACKUP_DIR"/foodize_*.dump.enc 2>/dev/null | tail -n +$$(( KEEP_LAST + 1 )) | xargs -r rm -f
+        BACKUP_SCRIPT
+        chmod +x /usr/local/bin/run-backup
+
+        mkdir -p "$$BACKUP_DIR" /usr/local/etc /etc/crontabs
+
+        # busybox crond runs jobs with an empty environment, so persist the
+        # container env to a file the cron entry sources before each run. Values are
+        # single-quoted (with embedded-quote escaping) so passwords containing shell
+        # metacharacters survive the round-trip through `. backup.env`.
+        : > /usr/local/etc/backup.env
+        for var in PGHOST PGPORT POSTGRES_DB POSTGRES_USER PGPASSWORD BACKUP_DIR KEEP_LAST BACKUP_ENCRYPTION_PASSPHRASE BACKUP_S3_BUCKET BACKUP_S3_PREFIX; do
+          eval "val=\$${$$var-}"
+          esc=$$(printf '%s' "$$val" | sed "s/'/'\\\\''/g")
+          printf "export %s='%s'\n" "$$var" "$$esc" >> /usr/local/etc/backup.env
         done
+
+        # Register the operator-provided schedule (BACKUP_CRON) with busybox cron.
+        echo "$${BACKUP_CRON} . /usr/local/etc/backup.env; /usr/local/bin/run-backup >> /proc/1/fd/1 2>&1" > /etc/crontabs/root
+        log "Scheduled backups with cron expression: $${BACKUP_CRON}"
+
+        # One backup at boot so a freshly provisioned host is protected immediately,
+        # then hand off to cron for the operator-defined schedule.
+        run-backup || log "initial backup failed"
+        log "Starting crond (foreground)..."
+        exec crond -f -l 8
     volumes:
       - pgbackups:/backups
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep crond >/dev/null 2>&1 || exit 1"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     networks:
       - foodize-network
     deploy:

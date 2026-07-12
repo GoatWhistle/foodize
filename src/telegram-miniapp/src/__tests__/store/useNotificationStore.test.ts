@@ -145,8 +145,8 @@ describe("useNotificationStore", () => {
     await useNotificationStore.getState().markAsRead("n1");
 
     const state = useNotificationStore.getState();
-    expect(state.notifications[0].is_read).toBe(true);
-    expect(state.notifications[1].is_read).toBe(false);
+    expect(state.notifications[0]?.is_read).toBe(true);
+    expect(state.notifications[1]?.is_read).toBe(false);
     expect(state.unreadCount).toBe(1);
   });
 

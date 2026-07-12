@@ -60,7 +60,9 @@ def _make_completed_event() -> OrderStatusChangedEvent:
 
 class TestHandlers:
     @pytest.mark.asyncio
-    async def test_handle_order_placed_logs_and_stages_payload(self, caplog):
+    async def test_handle_order_placed_logs_and_stages_payload(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
         event = _make_placed_event()
         session = _make_session()
         with (
@@ -76,7 +78,7 @@ class TestHandlers:
         assert session.info["notification_payload"] == (event.user_id, "{}")
 
     @pytest.mark.asyncio
-    async def test_handle_order_status_changed_logs(self, caplog):
+    async def test_handle_order_status_changed_logs(self, caplog: pytest.LogCaptureFixture) -> None:
         event = _make_status_event()
         session = _make_session()
         with (
@@ -91,7 +93,7 @@ class TestHandlers:
         assert "order.status_changed" in caplog.text
 
     @pytest.mark.asyncio
-    async def test_completed_status_enqueues_delayed_feedback(self):
+    async def test_completed_status_enqueues_delayed_feedback(self) -> None:
         event = _make_completed_event()
         session = _make_session()
         enqueue = AsyncMock()
@@ -107,7 +109,7 @@ class TestHandlers:
         enqueue.assert_awaited_once()
 
     @pytest.mark.asyncio
-    async def test_non_completed_status_does_not_enqueue_feedback(self):
+    async def test_non_completed_status_does_not_enqueue_feedback(self) -> None:
         event = _make_status_event()
         session = _make_session()
         enqueue = AsyncMock()
@@ -123,7 +125,7 @@ class TestHandlers:
         enqueue.assert_not_awaited()
 
     @pytest.mark.asyncio
-    async def test_handle_feedback_requested_stages_payload(self):
+    async def test_handle_feedback_requested_stages_payload(self) -> None:
         event = FeedbackRequestedEvent(
             order_id=uuid.uuid4(),
             user_id=uuid.uuid4(),

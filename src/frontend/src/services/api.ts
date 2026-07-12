@@ -1,6 +1,6 @@
-import axios from 'axios';
 import type { AxiosInstance } from 'axios';
 import { createApi, createWebSocketFactories } from '@shared/services/api';
+import { cookieRefresh } from '@shared/services/cookieRefresh';
 import { API_BASE_URL } from '@shared/config';
 
 const BASE_URL = API_BASE_URL;
@@ -8,13 +8,7 @@ const BASE_URL = API_BASE_URL;
 const api: AxiosInstance = createApi({
   withCredentials: true,
   skipRetryUrls: ['/login', '/refresh'],
-  refreshToken: async () => {
-    await axios.post(
-      `${BASE_URL}/refresh`,
-      {},
-      { withCredentials: true },
-    );
-  },
+  refreshToken: () => cookieRefresh(BASE_URL, '/refresh'),
   onUnauthorized: () => {
     const path = window.location.pathname;
     if (path !== '/login' && path !== '/register') {

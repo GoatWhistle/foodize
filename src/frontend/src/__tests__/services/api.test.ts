@@ -35,7 +35,7 @@ describe('api infrastructure', () => {
     const { createOrderWebSocket } = await importApiModule();
     createOrderWebSocket('order-1', vi.fn(), vi.fn());
 
-    expect(sockets[0].url).toBe('ws://localhost:8000/api/v1/ws/orders/order-1');
+    expect(sockets[0]?.url).toBe('ws://localhost:8000/api/v1/ws/orders/order-1');
   });
 
   it('restaurant orders websocket connects without token in URL', async () => {
@@ -57,7 +57,7 @@ describe('api infrastructure', () => {
     const { createRestaurantOrdersWebSocket } = await importApiModule();
     const ws = createRestaurantOrdersWebSocket('rest-1', vi.fn(), vi.fn());
 
-    expect(sockets[0].url).toBe('ws://localhost:8000/api/v1/ws/restaurants/rest-1/orders');
+    expect(sockets[0]?.url).toBe('ws://localhost:8000/api/v1/ws/restaurants/rest-1/orders');
     ws.close();
   });
 
@@ -77,7 +77,7 @@ describe('api infrastructure', () => {
     const { createDisplayBoardWebSocket } = await importApiModule();
     createDisplayBoardWebSocket('rest-2', vi.fn(), vi.fn());
 
-    expect(sockets[0].url).toBe(
+    expect(sockets[0]?.url).toBe(
       'ws://localhost:8000/api/v1/ws/restaurants/rest-2/display-board'
     );
   });
@@ -97,10 +97,16 @@ describe('api infrastructure', () => {
 
     const result = await api.get('/protected');
 
+    const headersMatcher: unknown = expect.objectContaining({
+      'X-Request-Id': expect.any(String) as unknown,
+    });
     expect(refresh).toHaveBeenCalledWith(
       'http://localhost:8000/api/v1/refresh',
       {},
-      { withCredentials: true }
+      expect.objectContaining({
+        withCredentials: true,
+        headers: headersMatcher,
+      })
     );
     expect(result.data).toEqual({ ok: true });
     mock.restore();
@@ -118,9 +124,7 @@ describe('api infrastructure', () => {
 
     mock.onGet('/double-401').reply(401, {});
 
-    try {
-      await api.get('/double-401');
-    } catch {}
+    await expect(api.get('/double-401')).rejects.toThrow();
 
     expect(window.location.href).toBe('/login');
     mock.restore();
@@ -138,9 +142,7 @@ describe('api infrastructure', () => {
 
     mock.onGet('/double-401-login').reply(401, {});
 
-    try {
-      await api.get('/double-401-login');
-    } catch {}
+    await expect(api.get('/double-401-login')).rejects.toThrow();
 
     expect(window.location.href).toBe('');
     mock.restore();

@@ -1,12 +1,11 @@
 import logging
 import secrets
-from http import HTTPStatus
 
-from fastapi import Header, HTTPException
+from fastapi import Header
 
 from infra.cache.redis import get_redis_cache
 from settings.config.app_config import settings
-from shared.exceptions import AccessDeniedException
+from shared.exceptions import AccessDeniedException, RateLimitException
 
 logger = logging.getLogger(__name__)
 
@@ -22,12 +21,12 @@ def verify_bot_secret(
 
 async def enforce_bot_rate_limit(
     name: str,
-    telegram_id: int,
+    identifier: int | str,
     limit: int,
     ttl: int,
 ) -> None:
-    key = f"rl:{name}:{telegram_id}"
+    key = f"rl:{name}:{identifier}"
     reqs = await get_redis_cache().incr_with_expire(key, ttl)
     if reqs > limit:
-        logger.warning("telegram %s rate limit exceeded: telegram_id=%s", name, telegram_id)
-        raise HTTPException(status_code=HTTPStatus.TOO_MANY_REQUESTS, detail="Rate limit exceeded")
+        logger.warning("telegram %s rate limit exceeded: identifier=%s", name, identifier)
+        raise RateLimitException()

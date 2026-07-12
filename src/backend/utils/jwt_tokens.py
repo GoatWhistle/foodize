@@ -1,6 +1,7 @@
 import asyncio
 import uuid
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import bcrypt
 import jwt
@@ -12,7 +13,7 @@ _public_key: str = settings.auth.public_key_path.read_text()
 
 
 def encode_jwt(
-    payload: dict,
+    payload: dict[str, Any],
     private_key: str = _private_key,
     algorithm: str = settings.auth.algorithm,
 ) -> str:
@@ -23,7 +24,7 @@ def decode_jwt(
     token: str,
     public_key: str = _public_key,
     algorithm: str = settings.auth.algorithm,
-) -> dict:
+) -> dict[str, Any]:
     return jwt.decode(token, public_key, algorithms=[algorithm])
 
 
@@ -31,7 +32,7 @@ def _create_jwt_token(
     user_id: uuid.UUID,
     lifetime_seconds: int,
     token_type: str,
-    extra: dict | None = None,
+    extra: dict[str, Any] | None = None,
 ) -> str:
     current_time_utc = datetime.now(UTC)
     expire = current_time_utc + timedelta(seconds=lifetime_seconds)

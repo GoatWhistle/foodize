@@ -1,4 +1,5 @@
 import uuid
+from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -64,7 +65,7 @@ class MenuItemOptionGroupCreate(BaseModel):
     options: list[MenuItemOptionCreate] = Field(default_factory=list, max_length=50)
 
     @model_validator(mode="after")
-    def validate_selection_limits(self):
+    def validate_selection_limits(self) -> Self:
         if self.selection_type == SelectionType.SINGLE.value:
             self.max_selected = 1
         if self.is_required and self.min_selected == 0:

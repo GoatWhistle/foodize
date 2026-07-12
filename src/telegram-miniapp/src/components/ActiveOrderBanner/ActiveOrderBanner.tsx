@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { ArrowRight } from "@phosphor-icons/react";
-import { useOrderStore } from "../../store/useOrderStore";
+import { ArrowRightIcon } from "@phosphor-icons/react";
+import { useOrdersStore } from "../../store/useOrdersStore";
 import { createOrderWebSocket } from "../../services/api";
 import { getOrderStatusStyle, getCustomerOrderStatusLabel } from "@shared/utils/orderStatus";
 import type { ReliableWebSocket } from "@shared/services/api";
@@ -12,9 +12,9 @@ const ACTIVE_STATUSES = new Set(["PENDING", "ACCEPTED", "COOKING", "READY"]);
 export default function ActiveOrderBanner() {
   const navigate = useNavigate();
   const location = useLocation();
-  const activeOrder = useOrderStore((s) => s.activeOrder);
-  const setActiveOrder = useOrderStore((s) => s.setActiveOrder);
-  const clearActiveOrder = useOrderStore((s) => s.clearActiveOrder);
+  const activeOrder = useOrdersStore((s) => s.activeOrder);
+  const setActiveOrder = useOrdersStore((s) => s.setActiveOrder);
+  const clearActiveOrder = useOrdersStore((s) => s.clearActiveOrder);
   const wsRef = useRef<ReliableWebSocket | null>(null);
 
   const activeOrderId = activeOrder?.id;
@@ -34,7 +34,7 @@ export default function ActiveOrderBanner() {
         if (["COMPLETED", "CANCELLED"].includes(status)) {
           clearActiveOrder();
         } else {
-          const current = useOrderStore.getState().activeOrder;
+          const current = useOrdersStore.getState().activeOrder;
           if (current) {
             setActiveOrder({ ...current, status: status as OrderStatus });
           }
@@ -53,7 +53,9 @@ export default function ActiveOrderBanner() {
   if (location.pathname === `/orders/${activeOrder.display_id}`) return null;
 
   return (
-    <div
+    <button
+      type="button"
+      aria-label={`Открыть заказ #${activeOrder.display_id}`}
       onClick={() => {
         void navigate(`/orders/${activeOrder.display_id}`);
       }}
@@ -63,14 +65,18 @@ export default function ActiveOrderBanner() {
         left: 0,
         right: 0,
         zIndex: 100,
-        background: "var(--bg-card)",
+        width: "100%",
+        border: "none",
         borderBottom: "1px solid var(--border)",
+        background: "var(--bg-card)",
         padding: "10px 16px",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
+        textAlign: "left",
         cursor: "pointer",
         boxShadow: "var(--shadow-md)",
+        font: "inherit",
       }}
     >
       <div>
@@ -103,8 +109,8 @@ export default function ActiveOrderBanner() {
           gap: 4,
         }}
       >
-        Смотреть <ArrowRight size={14} weight="bold" />
+        Смотреть <ArrowRightIcon size={14} weight="bold" />
       </div>
-    </div>
+    </button>
   );
 }

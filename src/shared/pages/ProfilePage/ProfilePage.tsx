@@ -2,13 +2,13 @@ import { useEffect } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Package,
-  Heart,
-  SignOut,
-  Crown,
-  CaretRight,
-  GearSix,
-  Bell,
+  PackageIcon,
+  HeartIcon,
+  SignOutIcon,
+  CrownIcon,
+  CaretRightIcon,
+  GearSixIcon,
+  BellIcon,
 } from "@phosphor-icons/react";
 import { useProfilePage } from "@shared/hooks/useProfilePage";
 import { hasPermission, PERMISSIONS } from "@shared/utils/permissions";
@@ -34,7 +34,7 @@ interface ExtraMenuItem {
   id?: string;
   icon?: ReactNode;
   label: ReactNode;
-  onClick?: () => void;
+  onClick?: (() => void) | undefined;
   right?: ReactNode;
 }
 
@@ -47,7 +47,7 @@ interface ProfilePageProps {
   favoritesCount?: number;
   unreadCount?: number;
   extraMenuItems?: ExtraMenuItem[];
-  pageClassName?: string;
+  pageClassName?: string | undefined;
 }
 
 const ProfilePage = ({
@@ -112,13 +112,13 @@ const ProfilePage = ({
 
         <div className={s.stats}>
           <div className={s.stat}>
-            <Package size={13} color="var(--text-3)" />
+            <PackageIcon size={13} color="var(--text-3)" />
             <strong>{ordersTotal}</strong>
             <span>заказов</span>
           </div>
           <span className={s.statSep}>·</span>
           <div className={s.stat}>
-            <Heart size={13} color="var(--color-error)" />
+            <HeartIcon size={13} color="var(--color-error)" />
             <strong>{favoritesCount}</strong>
             <span>избранных</span>
           </div>
@@ -127,33 +127,33 @@ const ProfilePage = ({
         <div className={s.group}>
           <div className={s.groupTitle}>Личное</div>
           <div className={s.menu}>
-            <button className={s.menuItem} onClick={() => navTo(routes.orders)}>
+            <button className={s.menuItem} onClick={() => { navTo(routes.orders); }}>
               <span className={s.menuItemLeft}>
-                <Package size={20} weight="bold" />
+                <PackageIcon size={20} weight="bold" />
                 Мои заказы
               </span>
-              <CaretRight size={16} color="var(--text-3)" />
+              <CaretRightIcon size={16} color="var(--text-3)" />
             </button>
 
-            <button className={s.menuItem} onClick={() => navTo(routes.favorites)}>
+            <button className={s.menuItem} onClick={() => { navTo(routes.favorites); }}>
               <span className={s.menuItemLeft}>
-                <Heart size={20} weight="bold" color="var(--color-error)" />
+                <HeartIcon size={20} weight="bold" color="var(--color-error)" />
                 Избранное
               </span>
-              <CaretRight size={16} color="var(--text-3)" />
+              <CaretRightIcon size={16} color="var(--text-3)" />
             </button>
 
             {routes.notifications && (
-              <button className={s.menuItem} onClick={() => navTo(routes.notifications)}>
+              <button className={s.menuItem} onClick={() => { navTo(routes.notifications); }}>
                 <span className={s.menuItemLeft}>
-                  <Bell size={20} weight="bold" />
+                  <BellIcon size={20} weight="bold" />
                   Уведомления
                 </span>
                 <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   {unreadCount > 0 && (
                     <span className={s.badge}>{unreadCount > 9 ? "9+" : unreadCount}</span>
                   )}
-                  <CaretRight size={16} color="var(--text-3)" />
+                  <CaretRightIcon size={16} color="var(--text-3)" />
                 </span>
               </button>
             )}
@@ -165,22 +165,22 @@ const ProfilePage = ({
             <div className={s.groupTitle}>Управление</div>
             <div className={s.menu}>
               {isAdmin && routes.admin && (
-                <button className={s.menuItem} onClick={() => navTo(routes.admin)}>
+                <button className={s.menuItem} onClick={() => { navTo(routes.admin); }}>
                   <span className={s.menuItemLeft}>
-                    <Crown size={20} weight="bold" color="var(--gold)" />
+                    <CrownIcon size={20} weight="bold" color="var(--gold)" />
                     Админ-панель
                   </span>
-                  <CaretRight size={16} color="var(--text-3)" />
+                  <CaretRightIcon size={16} color="var(--text-3)" />
                 </button>
               )}
 
               {isAdmin && !routes.admin && (
                 <button className={s.menuItem} onClick={() => window.Telegram?.WebApp?.showAlert?.("Панель администратора доступна только в веб-версии Foodize")}>
                   <span className={s.menuItemLeft}>
-                    <Crown size={20} weight="bold" color="var(--gold)" />
+                    <CrownIcon size={20} weight="bold" color="var(--gold)" />
                     Панель администратора
                   </span>
-                  <CaretRight size={16} color="var(--text-3)" />
+                  <CaretRightIcon size={16} color="var(--text-3)" />
                 </button>
               )}
 
@@ -195,7 +195,7 @@ const ProfilePage = ({
                     {item.icon}
                     {item.label}
                   </span>
-                  {item.right ?? (item.onClick && <CaretRight size={16} color="var(--text-3)" />)}
+                  {item.right ?? (item.onClick && <CaretRightIcon size={16} color="var(--text-3)" />)}
                 </button>
               ))}
             </div>
@@ -205,17 +205,17 @@ const ProfilePage = ({
         <div className={s.group}>
           <div className={s.groupTitle}>Система</div>
           <div className={s.menu}>
-            <button className={s.menuItem} onClick={() => navTo(routes.settings ?? "/settings")}>
+            <button className={s.menuItem} onClick={() => { navTo(routes.settings ?? "/settings"); }}>
               <span className={s.menuItemLeft}>
-                <GearSix size={20} weight="bold" />
+                <GearSixIcon size={20} weight="bold" />
                 Настройки
               </span>
-              <CaretRight size={16} color="var(--text-3)" />
+              <CaretRightIcon size={16} color="var(--text-3)" />
             </button>
 
             <button className={`${s.menuItem} ${s.danger}`} onClick={() => { void handleLogout(); }}>
               <span className={s.menuItemLeft}>
-                <SignOut size={20} weight="bold" />
+                <SignOutIcon size={20} weight="bold" />
                 Выйти
               </span>
             </button>

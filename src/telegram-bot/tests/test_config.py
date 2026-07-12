@@ -5,12 +5,12 @@ from config import BotConfig
 from utils.enums import EventType
 
 
-def test_enums():
-    assert EventType.ORDER_PLACED == "order.placed"
-    assert EventType.ORDER_STATUS_CHANGED == "order.status_changed"
+def test_enums() -> None:
+    assert EventType.ORDER_PLACED.value == "order.placed"
+    assert EventType.ORDER_STATUS_CHANGED.value == "order.status_changed"
 
 
-def test_config():
+def test_config() -> None:
     with patch.dict(
         os.environ,
         {

@@ -122,7 +122,7 @@ export default function AdminDetailModals({
       {selectedOrder && (
         <OrderDetailsModal
           order={selectedOrder}
-          onClose={() => setSelectedOrder(null)}
+          onClose={() => { setSelectedOrder(null); }}
           onStatusChange={noopStatusChange}
           updating={null}
         />

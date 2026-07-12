@@ -1,7 +1,8 @@
 import uuid
 from datetime import UTC, date, datetime, timedelta
+from typing import Any, cast
 
-from sqlalchemy import func, select, update
+from sqlalchemy import ColumnElement, CursorResult, Select, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import json_array_contains_string
@@ -28,8 +29,8 @@ _ROLE_PERMISSION_MARKER: dict[str, str] = {
 }
 
 
-def _apply_role_filter(stmt, role: str):
-    def _has_permission(perm: str):
+def _apply_role_filter(stmt: Select[Any], role: str) -> Select[Any]:
+    def _has_permission(perm: str) -> ColumnElement[bool]:
         return json_array_contains_string(User.permissions, perm)
 
     if role == UserRole.CUSTOMER.value:
@@ -117,10 +118,16 @@ async def activate_user(session: AsyncSession, user: User) -> User:
 
 
 async def batch_deactivate_users(session: AsyncSession, ids: list[uuid.UUID]) -> int:
-    result = await session.execute(update(User).where(User.id.in_(ids)).values(is_active=False))
-    return result.rowcount  # type: ignore[attr-defined]
+    result = cast(
+        "CursorResult[Any]",
+        await session.execute(update(User).where(User.id.in_(ids)).values(is_active=False)),
+    )
+    return result.rowcount
 
 
 async def batch_activate_users(session: AsyncSession, ids: list[uuid.UUID]) -> int:
-    result = await session.execute(update(User).where(User.id.in_(ids)).values(is_active=True))
-    return result.rowcount  # type: ignore[attr-defined]
+    result = cast(
+        "CursorResult[Any]",
+        await session.execute(update(User).where(User.id.in_(ids)).values(is_active=True)),
+    )
+    return result.rowcount

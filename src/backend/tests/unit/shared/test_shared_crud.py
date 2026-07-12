@@ -7,7 +7,7 @@ from shared.exceptions.existence import NotFoundException
 
 
 @pytest.mark.asyncio
-async def test_get_or_404_found():
+async def test_get_or_404_found() -> None:
     obj = MagicMock()
     mock_result = MagicMock()
     mock_result.scalars.return_value.first.return_value = obj
@@ -19,12 +19,12 @@ async def test_get_or_404_found():
     model.id = MagicMock()
 
     with patch("shared.crud.select", return_value=MagicMock()):
-        result = await get_or_404(session, model, 1)
+        result: object = await get_or_404(session, model, 1)
     assert result == obj
 
 
 @pytest.mark.asyncio
-async def test_get_or_404_not_found_default_detail():
+async def test_get_or_404_not_found_default_detail() -> None:
     mock_result = MagicMock()
     mock_result.scalars.return_value.first.return_value = None
     session = AsyncMock()
@@ -40,7 +40,7 @@ async def test_get_or_404_not_found_default_detail():
 
 
 @pytest.mark.asyncio
-async def test_get_or_404_not_found_custom_detail():
+async def test_get_or_404_not_found_custom_detail() -> None:
     mock_result = MagicMock()
     mock_result.scalars.return_value.first.return_value = None
     session = AsyncMock()

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { ChangeEvent, FormEvent } from "react";
+import type { ChangeEvent, SyntheticEvent } from "react";
 import FoodizeLogo from "@shared/components/FoodizeLogo/FoodizeLogo";
 import { completeTelegramAuth } from "../../telegram/init";
 import { useAuthStore } from "../../store/useAuthStore";
@@ -40,7 +40,7 @@ export default function RegisterPage({
     setPhoneError(validatePhone(val));
   };
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
+  const handleSubmit = async (e: SyntheticEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     const pErr = validatePhone(phone);
     if (pErr) {
@@ -163,7 +163,7 @@ export default function RegisterPage({
             <input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => { setName(e.target.value); }}
               className="form-input"
               placeholder="Имя"
               required

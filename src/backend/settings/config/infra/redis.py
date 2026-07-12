@@ -13,3 +13,8 @@ class RedisConfig(BaseConfig):
         if self.password:
             return f"redis://:{self.password}@{self.host}:{self.port}/{self.db}"
         return f"redis://{self.host}:{self.port}/{self.db}"
+
+    @property
+    def safe_url(self) -> str:
+        credentials = ":***@" if self.password else ""
+        return f"redis://{credentials}{self.host}:{self.port}/{self.db}"

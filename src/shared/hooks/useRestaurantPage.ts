@@ -88,16 +88,16 @@ export const useRestaurantPage = ({
     useShallow((s: RestaurantStoreState) => ({
       fetchMenu: s.fetchMenu,
       menus: s.menus,
-      loading: s.loading,
+      loading: s.menuLoading,
     })),
   );
 
-  const restaurantUUID = restaurantData?.id?.toString() ?? null;
+  const restaurantUUID = restaurantData?.id ?? null;
   const restaurant: RestaurantView = restaurantData ?? { id, name: "Ресторан", address: "" };
   const menuItems = menus[restaurantUUID ?? id] || [];
   const restaurantOpen = isRestaurantOpen(restaurantData);
 
-  const availableMenuItems = menuItems.filter((i) => i.is_available !== false);
+  const availableMenuItems = menuItems.filter((i) => i.is_available);
   const categories: string[] = [
     "ALL",
     ...new Set(
@@ -119,10 +119,10 @@ export const useRestaurantPage = ({
         .getRating(target)
         .then((res) => {
           const ratingData = res.data.data;
-          setRating(ratingData?.average_rating ?? null);
-          setReviewCount(ratingData?.review_count ?? null);
+          setRating(ratingData.average_rating);
+          setReviewCount(ratingData.review_count);
         })
-        .catch((err) => logError("useRestaurantPage.refreshRating", err));
+        .catch((err: unknown) => { logError("useRestaurantPage.refreshRating", err); });
     },
     [restaurantUUID],
   );
@@ -136,14 +136,14 @@ export const useRestaurantPage = ({
         .getReviews(target, { page: reviewsPage, size: reviewsPageSize })
         .then((res) => {
           const body = res.data;
-          const list = Array.isArray(body?.data) ? body.data : [];
+          const list = Array.isArray(body.data) ? body.data : [];
           setReviewsList(list);
-          setReviewsTotal(body?.pagination?.total || 0);
+          setReviewsTotal(body.pagination.total || 0);
         })
-        .catch((err) => {
+        .catch((err: unknown) => {
           setReviewError(translateApiError(err, "Не удалось загрузить отзывы"));
         })
-        .finally(() => setReviewsLoading(false));
+        .finally(() => { setReviewsLoading(false); });
     },
     [restaurantUUID, reviewsPage, reviewsPageSize],
   );
@@ -157,9 +157,9 @@ export const useRestaurantPage = ({
       .getById(id)
       .then((res) => {
         if (stale) return;
-        setRestaurantData(res.data.data ?? null);
+        setRestaurantData(res.data.data);
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         if (stale) return;
         setRestaurantError(translateApiError(err, "Не удалось загрузить ресторан"));
       })
@@ -181,9 +181,9 @@ export const useRestaurantPage = ({
       .getWorkingHours(restaurantUUID)
       .then((res) => {
         if (stale) return;
-        setWorkingHours(res.data.data || []);
+        setWorkingHours(res.data.data);
       })
-      .catch((err) => logError("useRestaurantPage.getWorkingHours", err));
+      .catch((err: unknown) => { logError("useRestaurantPage.getWorkingHours", err); });
     return () => {
       stale = true;
     };
@@ -212,7 +212,7 @@ export const useRestaurantPage = ({
       setReviewSuccess(true);
       loadReviews(rid);
       refreshRating(rid);
-      window.setTimeout(() => setReviewSuccess(false), 2200);
+      window.setTimeout(() => { setReviewSuccess(false); }, 2200);
       onSuccess?.();
     } catch (err) {
       setReviewError(translateApiError(err, "Не удалось отправить отзыв"));

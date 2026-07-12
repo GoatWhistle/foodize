@@ -49,7 +49,7 @@ def _make_status_event() -> OrderStatusChangedEvent:
 
 class TestConsumer:
     @pytest.mark.asyncio
-    async def test_process_message_publishes_notification_on_success(self):
+    async def test_process_message_publishes_notification_on_success(self) -> None:
         event = _make_placed_event()
         message = _make_message(event.model_dump_json().encode())
 
@@ -66,7 +66,7 @@ class TestConsumer:
         publish.assert_awaited_once_with(event.user_id, "{}")
 
     @pytest.mark.asyncio
-    async def test_process_message_skips_duplicate_event(self):
+    async def test_process_message_skips_duplicate_event(self) -> None:
         event = _make_placed_event()
         message = _make_message(event.model_dump_json().encode())
 
@@ -84,19 +84,19 @@ class TestConsumer:
         message.nack.assert_not_awaited()
 
     @pytest.mark.asyncio
-    async def test_process_message_rejects_oversized_body(self):
+    async def test_process_message_rejects_oversized_body(self) -> None:
         message = _make_message(b"x" * (64 * 1024 + 1))
         await _process_message(message, "order.placed")
         message.nack.assert_awaited_once()
 
     @pytest.mark.asyncio
-    async def test_process_message_unknown_routing_key_no_crash(self):
+    async def test_process_message_unknown_routing_key_no_crash(self) -> None:
         message = _make_message(b"{}")
         await _process_message(message, "unknown.routing.key")
         message.nack.assert_awaited_once()
 
     @pytest.mark.asyncio
-    async def test_process_message_handler_error_goes_to_retry(self):
+    async def test_process_message_handler_error_goes_to_retry(self) -> None:
         event = _make_placed_event()
         message = _make_message(event.model_dump_json().encode())
 
@@ -115,7 +115,7 @@ class TestConsumer:
         message.nack.assert_not_awaited()
 
     @pytest.mark.asyncio
-    async def test_process_message_dead_letters_after_max_retries(self):
+    async def test_process_message_dead_letters_after_max_retries(self) -> None:
         event = _make_placed_event()
         message = _make_message(event.model_dump_json().encode())
         message.headers = {"x-retry-count": 5}
@@ -133,12 +133,12 @@ class TestConsumer:
         send_retry.assert_not_awaited()
         message.nack.assert_awaited_once_with(requeue=False)
 
-    def test_retry_count_parses_header(self):
+    def test_retry_count_parses_header(self) -> None:
         message = MagicMock()
         message.headers = {"x-retry-count": 3}
         assert _retry_count(message) == 3
 
-    def test_retry_count_defaults_to_zero(self):
+    def test_retry_count_defaults_to_zero(self) -> None:
         message = MagicMock()
         message.headers = None
         assert _retry_count(message) == 0

@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Sequence
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
 
 from sqlalchemy import func, select
@@ -14,11 +14,11 @@ from shared.permissions import serialize_permissions
 
 
 def _day_start(value: date) -> datetime:
-    return datetime.combine(value, time.min, tzinfo=timezone.utc)
+    return datetime.combine(value, time.min, tzinfo=UTC)
 
 
 def _day_end_exclusive(value: date) -> datetime:
-    return datetime.combine(value + timedelta(days=1), time.min, tzinfo=timezone.utc)
+    return datetime.combine(value + timedelta(days=1), time.min, tzinfo=UTC)
 
 
 def _items_options() -> Any:
@@ -188,7 +188,7 @@ async def update_order_status(
 ) -> Order:
     order.status = new_status.value
     if new_status == OrderStatus.READY:
-        order.ready_at = datetime.now(timezone.utc)
+        order.ready_at = datetime.now(UTC)
     await session.flush()
     return order
 

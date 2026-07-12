@@ -1,4 +1,5 @@
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.menu.crud import (
     count_menu_items,
@@ -25,6 +26,7 @@ from features.menu.schemas import (
     MenuItemUpdate,
 )
 from features.restaurants.crud import create_restaurant
+from features.restaurants.models import Restaurant
 from features.restaurants.schemas import RestaurantCreate
 from features.users.crud import create_user
 from features.users.schemas import UserCreate
@@ -35,7 +37,7 @@ from shared.enums.roles import UserRole
 
 
 @pytest.fixture
-async def restaurant(db_session):
+async def restaurant(db_session: AsyncSession) -> Restaurant:
     vendor_data = UserCreate(
         name="Vendor3",
         phone_number="79006666666",
@@ -49,7 +51,7 @@ async def restaurant(db_session):
 
 
 @pytest.mark.asyncio
-async def test_create_and_get_menu_item(db_session, restaurant):
+async def test_create_and_get_menu_item(db_session: AsyncSession, restaurant: Restaurant) -> None:
     item_create = MenuItemCreate(
         name="Sushi", description="Fish", price=800, category=Category.SHAURMA
     )
@@ -76,7 +78,7 @@ async def test_create_and_get_menu_item(db_session, restaurant):
 
 
 @pytest.mark.asyncio
-async def test_update_menu_item(db_session, restaurant):
+async def test_update_menu_item(db_session: AsyncSession, restaurant: Restaurant) -> None:
     item = await create_menu_item(
         db_session,
         MenuItemCreate(name="Old Name", price=100, category=Category.SHAURMA),
@@ -95,7 +97,9 @@ async def test_update_menu_item(db_session, restaurant):
 
 
 @pytest.mark.asyncio
-async def test_delete_menu_item_soft_deletes(db_session, restaurant):
+async def test_delete_menu_item_soft_deletes(
+    db_session: AsyncSession, restaurant: Restaurant
+) -> None:
     item = await create_menu_item(
         db_session,
         MenuItemCreate(name="To Delete", price=50, category=Category.SHAURMA),
@@ -118,7 +122,9 @@ async def test_delete_menu_item_soft_deletes(db_session, restaurant):
 
 
 @pytest.mark.asyncio
-async def test_menu_item_option_group_crud(db_session, restaurant):
+async def test_menu_item_option_group_crud(
+    db_session: AsyncSession, restaurant: Restaurant
+) -> None:
     item = await create_menu_item(
         db_session,
         MenuItemCreate(name="Burger", price=300, category=Category.SHAURMA),

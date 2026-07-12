@@ -1,7 +1,9 @@
+from http import HTTPStatus
 from unittest.mock import AsyncMock, MagicMock
 
 import httpx
 import pytest
+from pytest_mock import MockerFixture
 
 from config import bot_config
 from handlers.start import (
@@ -13,7 +15,7 @@ from handlers.start import (
 
 
 @pytest.mark.asyncio
-async def test_cmd_start_deep_link_restaurant(mocker):
+async def test_cmd_start_deep_link_restaurant(mocker: MockerFixture) -> None:
     mocker.patch("handlers.start._auto_register", new_callable=AsyncMock)
     m = AsyncMock()
     m.text = "/start restaurant_123"
@@ -24,7 +26,7 @@ async def test_cmd_start_deep_link_restaurant(mocker):
     mock_get = mocker.patch("httpx.AsyncClient.get")
     req = httpx.Request("GET", "http://backend/api/v1/restaurants/public/123")
     mock_get.return_value = httpx.Response(
-        200, request=req, json={"data": {"name": "Cafe Delicious"}}
+        HTTPStatus.OK, request=req, json={"data": {"name": "Cafe Delicious"}}
     )
 
     await cmd_start(m)
@@ -38,7 +40,7 @@ async def test_cmd_start_deep_link_restaurant(mocker):
 
 
 @pytest.mark.asyncio
-async def test_cmd_start_deep_link_order(mocker):
+async def test_cmd_start_deep_link_order(mocker: MockerFixture) -> None:
     mocker.patch("handlers.start._auto_register", new_callable=AsyncMock)
     m = AsyncMock()
     m.text = "/start order_456"
@@ -49,7 +51,7 @@ async def test_cmd_start_deep_link_order(mocker):
 
 
 @pytest.mark.asyncio
-async def test_cmd_start_default(mocker):
+async def test_cmd_start_default(mocker: MockerFixture) -> None:
     mocker.patch("handlers.start._auto_register", new_callable=AsyncMock)
     m = AsyncMock()
     m.text = "/start"
@@ -60,7 +62,7 @@ async def test_cmd_start_default(mocker):
 
 
 @pytest.mark.asyncio
-async def test_handle_restart_button(mocker):
+async def test_handle_restart_button(mocker: MockerFixture) -> None:
     mock_cmd_start = mocker.patch("handlers.start.cmd_start")
     m = AsyncMock()
     await handle_restart_button(m)
@@ -68,7 +70,7 @@ async def test_handle_restart_button(mocker):
 
 
 @pytest.mark.asyncio
-async def test_auto_register_no_user_does_nothing(mocker):
+async def test_auto_register_no_user_does_nothing(mocker: MockerFixture) -> None:
     mock_register = mocker.patch("handlers.start.backend_client.register_by_telegram")
     m = AsyncMock()
     m.from_user = None
@@ -77,7 +79,7 @@ async def test_auto_register_no_user_does_nothing(mocker):
 
 
 @pytest.mark.asyncio
-async def test_auto_register_skips_without_bot_api_secret(mocker):
+async def test_auto_register_skips_without_bot_api_secret(mocker: MockerFixture) -> None:
     mock_register = mocker.patch("handlers.start.backend_client.register_by_telegram")
     m = AsyncMock()
     m.from_user = MagicMock(id=111, username="ivan")
@@ -87,7 +89,7 @@ async def test_auto_register_skips_without_bot_api_secret(mocker):
 
 
 @pytest.mark.asyncio
-async def test_auto_register_calls_backend_with_expected_args(mocker):
+async def test_auto_register_calls_backend_with_expected_args(mocker: MockerFixture) -> None:
     bot_config.bot_api_secret = "secret"
     mock_register = mocker.patch(
         "handlers.start.backend_client.register_by_telegram",
@@ -104,10 +106,10 @@ async def test_auto_register_calls_backend_with_expected_args(mocker):
 
 
 @pytest.mark.asyncio
-async def test_auto_register_swallows_http_status_error(mocker):
+async def test_auto_register_swallows_http_status_error(mocker: MockerFixture) -> None:
     bot_config.bot_api_secret = "secret"
     req = httpx.Request("POST", "http://backend/api/v1/telegram/bot/register")
-    resp = httpx.Response(403, request=req)
+    resp = httpx.Response(HTTPStatus.FORBIDDEN, request=req)
     mocker.patch(
         "handlers.start.backend_client.register_by_telegram",
         new_callable=AsyncMock,
@@ -120,7 +122,7 @@ async def test_auto_register_swallows_http_status_error(mocker):
 
 
 @pytest.mark.asyncio
-async def test_auto_register_swallows_http_network_error(mocker):
+async def test_auto_register_swallows_http_network_error(mocker: MockerFixture) -> None:
     bot_config.bot_api_secret = "secret"
     mocker.patch(
         "handlers.start.backend_client.register_by_telegram",
@@ -134,7 +136,7 @@ async def test_auto_register_swallows_http_network_error(mocker):
 
 
 @pytest.mark.asyncio
-async def test_cmd_start_calls_auto_register(mocker):
+async def test_cmd_start_calls_auto_register(mocker: MockerFixture) -> None:
     mock_auto_register = mocker.patch("handlers.start._auto_register", new_callable=AsyncMock)
     m = AsyncMock()
     m.text = "/start"
@@ -145,7 +147,7 @@ async def test_cmd_start_calls_auto_register(mocker):
 
 
 @pytest.mark.asyncio
-async def test_handle_contact(mocker):
+async def test_handle_contact(mocker: MockerFixture) -> None:
     m = AsyncMock()
     m.contact = None
     await handle_contact(m)

@@ -12,7 +12,7 @@ const FOCUSABLE_SELECTOR = [
 
 export interface UseFocusTrapOptions {
   active?: boolean;
-  onEscape?: () => void;
+  onEscape?: (() => void) | undefined;
 }
 
 export function useFocusTrap<T extends HTMLElement>({
@@ -35,8 +35,9 @@ export function useFocusTrap<T extends HTMLElement>({
 
     const focusFirst = (): void => {
       const focusable = getFocusable();
-      if (focusable.length > 0) {
-        focusable[0].focus();
+      const firstFocusable = focusable[0];
+      if (firstFocusable) {
+        firstFocusable.focus();
       } else {
         container.focus();
       }
@@ -58,6 +59,7 @@ export function useFocusTrap<T extends HTMLElement>({
       }
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
+      if (!first || !last) return;
       const activeElement = document.activeElement as HTMLElement | null;
       if (event.shiftKey) {
         if (activeElement === first || !container.contains(activeElement)) {
@@ -73,7 +75,7 @@ export function useFocusTrap<T extends HTMLElement>({
     document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
-      previouslyFocused?.focus?.();
+      previouslyFocused?.focus();
     };
   }, [active, onEscape]);
 

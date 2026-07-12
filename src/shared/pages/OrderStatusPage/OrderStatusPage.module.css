@@ -1,0 +1,119 @@
+.header {
+  text-align: center;
+}
+
+.headerLabel {
+  font-size: 0.64rem;
+  color: var(--text-3);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: var(--r-xs);
+}
+
+.orderNumber {
+  font-size: clamp(3.5rem, 14vw, 5rem);
+  font-weight: 900;
+  color: var(--text-1);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.orderNumberCancelled {
+  color: var(--text-3);
+}
+
+.pill {
+  margin-top: 12px;
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 16px;
+  border-radius: var(--r-pill);
+  font-weight: 800;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cancelReason {
+  margin-top: 8px;
+  font-size: 0.82rem;
+  color: var(--text-2);
+  text-align: center;
+  max-width: 300px;
+}
+
+.etaBlock {
+  margin-top: 14px;
+  text-align: center;
+  min-height: 44px;
+}
+
+.etaReady,
+.bonAppetit {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--color-success);
+}
+
+.bonAppetit {
+  margin-top: var(--r-xs);
+}
+
+.etaText {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-2);
+}
+
+.etaTextDelayed {
+  color: var(--fire);
+}
+
+.etaMeta {
+  margin-top: 6px;
+  font-size: 0.72rem;
+  color: var(--text-3);
+}
+
+.formError {
+  margin-top: 16px;
+  max-width: 380px;
+  width: 100%;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  width: 100%;
+  max-width: 380px;
+}
+
+.actionBtn {
+  flex: 1;
+}
+
+.successBtn {
+  flex: 1;
+  background: var(--color-success);
+  border-color: var(--color-success);
+}
+
+.cancelBtn {
+  flex: 1;
+  color: var(--color-error);
+  border-color: var(--color-error-border);
+}
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.backBtnWide {
+  flex: 2;
+}

@@ -96,9 +96,9 @@ export default function VendorScheduleTab({
                 value={row.open_time}
                 disabled={row.is_closed}
                 onChange={(e) =>
-                  setWorkingHours((prev) =>
+                  { setWorkingHours((prev) =>
                     prev.map((r, i) => (i === idx ? { ...r, open_time: e.target.value } : r))
-                  )
+                  ); }
                 }
                 style={{ padding: '6px 8px', fontSize: '0.85rem' }}
               />
@@ -108,9 +108,9 @@ export default function VendorScheduleTab({
                 value={row.close_time}
                 disabled={row.is_closed}
                 onChange={(e) =>
-                  setWorkingHours((prev) =>
+                  { setWorkingHours((prev) =>
                     prev.map((r, i) => (i === idx ? { ...r, close_time: e.target.value } : r))
-                  )
+                  ); }
                 }
                 style={{ padding: '6px 8px', fontSize: '0.85rem' }}
               />
@@ -119,11 +119,11 @@ export default function VendorScheduleTab({
                   type="checkbox"
                   checked={row.is_closed}
                   onChange={(e) =>
-                    setWorkingHours((prev) =>
+                    { setWorkingHours((prev) =>
                       prev.map((r, i) =>
                         i === idx ? { ...r, is_closed: e.target.checked } : r
                       )
-                    )
+                    ); }
                   }
                 />
                 <span className="form-check-label" style={{ fontSize: '0.75rem' }}>

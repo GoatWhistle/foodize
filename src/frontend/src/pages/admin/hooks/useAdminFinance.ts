@@ -5,8 +5,6 @@ import type {
   AdminRestaurant,
   AdvancedAnalytics,
   FinanceAnalytics,
-  SuccessResponse,
-  SuccessListResponse,
 } from '@shared/types/models';
 
 export type { FinanceAnalytics, AdvancedAnalytics, AdminRestaurant };
@@ -49,8 +47,8 @@ export const useAdminFinance = ({ activeTab, setActionError, todayStr }: UseAdmi
         adminService.getFinance(params),
         adminService.getAdvancedAnalytics(params),
       ]);
-      setFinance((finRes.data as SuccessResponse<FinanceAnalytics>).data);
-      setAdvancedAnalytics((advRes.data as SuccessResponse<AdvancedAnalytics>).data);
+      setFinance(finRes.data.data);
+      setAdvancedAnalytics(advRes.data.data);
     } catch {
       setActionError('Не удалось загрузить аналитику');
     } finally {
@@ -68,8 +66,7 @@ export const useAdminFinance = ({ activeTab, setActionError, todayStr }: UseAdmi
       void adminService
         .getRestaurants({ size: RESTAURANT_DROPDOWN_LIMIT })
         .then((res) => {
-          const body = res.data as SuccessListResponse<AdminRestaurant>;
-          setAllRestaurants(body.data || []);
+          setAllRestaurants(res.data.data);
         });
     }
   }, [activeTab, allRestaurants.length]);

@@ -1,32 +1,32 @@
 import {
-  Fire,
-  Hamburger,
-  Pizza,
-  BowlFood,
-  Leaf,
-  Cookie,
-  Coffee,
-  DotsThree,
-  Storefront,
-  CookingPot,
+  FireIcon,
+  HamburgerIcon,
+  PizzaIcon,
+  BowlFoodIcon,
+  LeafIcon,
+  CookieIcon,
+  CoffeeIcon,
+  DotsThreeIcon,
+  StorefrontIcon,
+  CookingPotIcon,
   type Icon,
 } from "@phosphor-icons/react";
 
 const ICON_BY_CATEGORY = {
-  SHAURMA: Fire,
-  BURGER: Hamburger,
-  PIZZA: Pizza,
-  SUSHI: BowlFood,
-  SALAD: Leaf,
-  SNACK: Cookie,
-  DRINK: Coffee,
-  OTHER: DotsThree,
+  SHAURMA: FireIcon,
+  BURGER: HamburgerIcon,
+  PIZZA: PizzaIcon,
+  SUSHI: BowlFoodIcon,
+  SALAD: LeafIcon,
+  SNACK: CookieIcon,
+  DRINK: CoffeeIcon,
+  OTHER: DotsThreeIcon,
 };
 
 const DEFAULT_ICON = {
-  dish: BowlFood,
-  venue: Storefront,
-  cooking: CookingPot,
+  dish: BowlFoodIcon,
+  venue: StorefrontIcon,
+  cooking: CookingPotIcon,
 };
 
 interface CategoryIconOptions {
@@ -40,6 +40,6 @@ export function getCategoryIcon(
   { size = 24, weight = "regular", fallback = "dish" }: CategoryIconOptions = {},
 ) {
   const iconByCategory = ICON_BY_CATEGORY as Record<string, Icon>;
-  const Icon = iconByCategory[String(category ?? "").toUpperCase()] ?? DEFAULT_ICON[fallback] ?? BowlFood;
+  const Icon = iconByCategory[(category ?? "").toUpperCase()] ?? DEFAULT_ICON[fallback];
   return <Icon size={size} weight={weight} />;
 }

@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -30,16 +30,17 @@ async def create_staff_request(
 ) -> StaffRequestResponse:
     if not await is_need_staff_for_restaurant(restaurant_id, session):
         raise RestaurantNotHiringException()
-    if await crud.get_staff_profile_by_user_id(session, user_id):
+    if await crud.staff_profile_exists(session, user_id):
         raise AlreadyStaffException()
 
     last_request = await crud.get_last_request(session, user_id, restaurant_id)
     if last_request:
         if last_request.status == StaffRequestStatus.PENDING.value:
             raise StaffRequestActiveExistsException()
-        if last_request.status == StaffRequestStatus.REJECTED.value:
-            if datetime.now(timezone.utc) - last_request.updated_at < timedelta(hours=24):
-                raise StaffRequestCooldownException()
+        if last_request.status == StaffRequestStatus.REJECTED.value and datetime.now(
+            UTC
+        ) - last_request.updated_at < timedelta(hours=24):
+            raise StaffRequestCooldownException()
 
     request = await crud.create_staff_request(
         session=session, user_id=user_id, restaurant_id=restaurant_id, data=request_data
@@ -54,7 +55,7 @@ async def process_staff_request(
         return None
 
     if new_status == StaffRequestStatus.ACCEPTED:
-        if await crud.get_staff_profile_by_user_id(session, request.user_id):
+        if await crud.staff_profile_exists(session, request.user_id):
             await crud.update_request_status(session, request, StaffRequestStatus.REJECTED)
             raise AlreadyStaffException()
         await crud.create_staff_profile(session, request.user_id, request.restaurant_id)

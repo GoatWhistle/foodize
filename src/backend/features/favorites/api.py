@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, Query, Request, status
+from http import HTTPStatus
+
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
@@ -31,7 +33,7 @@ async def get_my_favorites(
 @router.post(
     "/{restaurant_id}",
     response_model=SuccessResponse[FavoriteResponse],
-    status_code=status.HTTP_201_CREATED,
+    status_code=HTTPStatus.CREATED,
 )
 async def add_favorite(
     restaurant_id: str,
@@ -43,7 +45,7 @@ async def add_favorite(
     return build_response(result)
 
 
-@router.delete("/{restaurant_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{restaurant_id}", status_code=HTTPStatus.NO_CONTENT)
 async def remove_favorite(
     restaurant_id: str,
     current_user: User = Depends(require_permission(Permission.FAVORITES_MANAGE)),

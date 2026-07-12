@@ -1,11 +1,9 @@
 import uuid
-from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import asc, desc, func, select
+from sqlalchemy import ColumnElement
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
-from features.orders.models.order import Order
+from database.db_helper import register_after_commit
 from features.restaurants import crud
 from features.restaurants.dependencies import get_restaurant_and_check_ownership
 from features.restaurants.exceptions import RestaurantNotFoundException
@@ -17,7 +15,7 @@ from features.restaurants.schemas import (
 )
 from features.restaurants.working_hours import WorkingHours
 from features.restaurants.working_hours_crud import get_working_hours, is_open_now
-from features.vendors.models import VendorProfile
+from features.vendors import crud as vendor_crud
 from infra.storage import UnsupportedImageType, delete_image, upload_image
 from shared.enums.moderation_status import ModerationStatus
 from shared.enums.permissions import Permission
@@ -31,13 +29,7 @@ from shared.permissions import has_permission
 async def create_restaurant_for_vendor(
     session: AsyncSession, restaurant_data: RestaurantCreate, vendor_id: uuid.UUID
 ) -> RestaurantResponse:
-    vendor = (
-        await session.execute(
-            select(VendorProfile)
-            .where(VendorProfile.id == vendor_id)
-            .options(selectinload(VendorProfile.user))
-        )
-    ).scalar_one_or_none()
+    vendor = await vendor_crud.get_vendor_by_id_with_user(session, vendor_id)
     if not vendor:
         raise AccessDeniedException()
     if vendor.approval_status != ModerationStatus.APPROVED.value:
@@ -79,17 +71,16 @@ async def set_restaurant_photo(
     old_url = restaurant.photo_url
     try:
         url = await upload_image(data, content_type, prefix="restaurants")
-    except UnsupportedImageType:
-        raise BadRequestException(detail="Поддерживаются только изображения JPEG, PNG или WebP")
+    except UnsupportedImageType as exc:
+        raise BadRequestException(
+            detail="Поддерживаются только изображения JPEG, PNG или WebP"
+        ) from exc
 
     restaurant.photo_url = url
     await session.flush()
 
     if old_url and old_url != url:
-        try:
-            await delete_image(old_url)
-        except Exception:  # noqa: BLE001 - best-effort cleanup, never fail the request
-            pass
+        register_after_commit(session, lambda: delete_image(old_url))
 
     await session.refresh(restaurant)
     return RestaurantResponse.model_validate(restaurant)
@@ -110,10 +101,7 @@ async def remove_restaurant_photo(
     restaurant.photo_url = None
     await session.flush()
 
-    try:
-        await delete_image(old_url)
-    except Exception:  # noqa: BLE001 - best-effort cleanup
-        pass
+    register_after_commit(session, lambda: delete_image(old_url))
 
     await session.refresh(restaurant)
     return RestaurantResponse.model_validate(restaurant)
@@ -131,72 +119,44 @@ async def get_my_restaurants(
     return [RestaurantResponse.model_validate(r) for r in data], total
 
 
-def _apply_restaurant_filters(
-    query,
-    name: str | None,
-    is_hiring: bool | None,
-    is_open: bool | None,
-):
-    query = query.where(Restaurant.is_active.is_(True), Restaurant.deleted_at.is_(None))
-    if name:
-        query = query.where(Restaurant.name.ilike(f"%{name}%"))
-    if is_hiring is not None:
-        query = query.where(Restaurant.is_hiring == is_hiring)
-    if is_open is not None:
-        query = query.where(Restaurant.is_open == is_open)
-    query = query.where(Restaurant.moderation_status == ModerationStatus.APPROVED.value)
-    return query
+def _resolve_public_where_clause(identifier: str | uuid.UUID) -> ColumnElement[bool]:
+    try:
+        parsed_uuid = uuid.UUID(identifier) if isinstance(identifier, str) else identifier
+        return Restaurant.id == parsed_uuid
+    except ValueError:
+        return Restaurant.display_id == str(identifier)
 
 
 async def get_restaurant_public(
     session: AsyncSession,
     identifier: str | uuid.UUID,
 ) -> RestaurantResponse:
-    try:
-        if isinstance(identifier, str):
-            parsed_uuid = uuid.UUID(identifier)
-        else:
-            parsed_uuid = identifier
-        where_clause = Restaurant.id == parsed_uuid
-    except ValueError:
-        where_clause = Restaurant.display_id == str(identifier)
-
-    since = datetime.now(timezone.utc) - timedelta(days=7)
-    popularity_subquery = (
-        select(Order.restaurant_id, func.count(Order.id).label("orders_count_7d"))
-        .where(Order.created_at >= since)
-        .group_by(Order.restaurant_id)
-        .subquery()
-    )
-    result = await session.execute(
-        _apply_restaurant_filters(
-            select(
-                Restaurant,
-                func.coalesce(popularity_subquery.c.orders_count_7d, 0).label("orders_count_7d"),
-            )
-            .outerjoin(
-                popularity_subquery,
-                popularity_subquery.c.restaurant_id == Restaurant.id,
-            )
-            .where(where_clause),
-            None,
-            None,
-            None,
-        )
-    )
-    row = result.one_or_none()
-    if not row:
+    where_clause = _resolve_public_where_clause(identifier)
+    found = await crud.get_public_restaurant_with_popularity(session, where_clause)
+    if found is None:
         raise RestaurantNotFoundException()
-    restaurant = row[0]
-    restaurant.orders_count_7d = int(row[1] or 0)
+    restaurant, orders_count_7d = found
     response = RestaurantResponse.model_validate(restaurant)
+    response.orders_count_7d = orders_count_7d
 
     if response.is_open:
-        wh = await get_working_hours(session, response.id)
-        if wh and is_open_now(wh) is False:
+        hours = await get_working_hours(session, response.id)
+        if hours and is_open_now(hours) is False:
             response.is_open = False
 
     return response
+
+
+def _overlay_open_status(
+    responses: list[RestaurantResponse],
+    working_hours_by_restaurant: dict[uuid.UUID, list[WorkingHours]],
+) -> None:
+    for response in responses:
+        if not response.is_open:
+            continue
+        hours = working_hours_by_restaurant.get(response.id)
+        if hours and is_open_now(hours) is False:
+            response.is_open = False
 
 
 async def get_all_restaurants_public(
@@ -210,58 +170,22 @@ async def get_all_restaurants_public(
     size: int = 20,
 ) -> tuple[list[RestaurantResponse], int]:
     offset = (page - 1) * size
-    since = datetime.now(timezone.utc) - timedelta(days=7)
-    popularity_subquery = (
-        select(Order.restaurant_id, func.count(Order.id).label("orders_count_7d"))
-        .where(Order.created_at >= since)
-        .group_by(Order.restaurant_id)
-        .subquery()
+    rows = await crud.list_public_restaurants_with_popularity(
+        session, name, is_hiring, is_open, sort, direction, offset, size
     )
-    popularity_expr = func.coalesce(popularity_subquery.c.orders_count_7d, 0)
+    responses: list[RestaurantResponse] = []
+    restaurant_ids: list[uuid.UUID] = []
+    for restaurant, orders_count_7d in rows:
+        restaurant_ids.append(restaurant.id)
+        response = RestaurantResponse.model_validate(restaurant)
+        response.orders_count_7d = orders_count_7d
+        responses.append(response)
 
-    query = _apply_restaurant_filters(
-        select(Restaurant, popularity_expr.label("orders_count_7d")).outerjoin(
-            popularity_subquery,
-            popularity_subquery.c.restaurant_id == Restaurant.id,
-        ),
-        name,
-        is_hiring,
-        is_open,
-    )
-    sort_direction = asc if direction == SortDirection.ASC.value else desc
-    if sort == RestaurantSort.RATING.value:
-        query = query.order_by(sort_direction(Restaurant.average_rating), Restaurant.name)
-    elif sort == RestaurantSort.POPULARITY_7D.value:
-        query = query.order_by(sort_direction(popularity_expr), Restaurant.name)
-    else:
-        query = query.order_by(Restaurant.name)
-    result = await session.execute(query.offset(offset).limit(size))
-    restaurants = []
-    rest_ids = []
-    for row in result.all():
-        restaurant = row[0]
-        restaurant.orders_count_7d = int(row[1] or 0)
-        rest_ids.append(restaurant.id)
-        restaurants.append(RestaurantResponse.model_validate(restaurant))
-
-    if rest_ids:
-        wh_result = await session.execute(
-            select(WorkingHours).where(WorkingHours.restaurant_id.in_(rest_ids))
+    if restaurant_ids:
+        working_hours_by_restaurant = await crud.get_working_hours_for_restaurants(
+            session, restaurant_ids
         )
-        wh_rows = wh_result.scalars().all()
-        wh_map: dict[uuid.UUID, list[WorkingHours]] = {}
-        for wh in wh_rows:
-            wh_map.setdefault(wh.restaurant_id, []).append(wh)
+        _overlay_open_status(responses, working_hours_by_restaurant)
 
-        for r in restaurants:
-            if r.is_open:
-                hours = wh_map.get(r.id)
-                if hours and is_open_now(hours) is False:
-                    r.is_open = False
-
-    total_query = _apply_restaurant_filters(
-        select(func.count(Restaurant.id)), name, is_hiring, is_open
-    )
-    total = (await session.execute(total_query)).scalar_one()
-
-    return restaurants, total
+    total = await crud.count_public_restaurants(session, name, is_hiring, is_open)
+    return responses, total

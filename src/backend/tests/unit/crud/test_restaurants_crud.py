@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -16,7 +17,9 @@ from features.restaurants.crud import (
 from shared.exceptions.existence import AlreadyExistsException
 
 
-def _mock_session_with(scalar_result=None, scalars_list=None, scalar_one=None):
+def _mock_session_with(
+    scalar_result: Any = None, scalars_list: Any = None, scalar_one: Any = None
+) -> AsyncMock:
     session = AsyncMock()
     mock_result = MagicMock()
     if scalar_result is not None or scalar_result is None:
@@ -32,16 +35,15 @@ def _mock_session_with(scalar_result=None, scalars_list=None, scalar_one=None):
 
 
 @pytest.mark.asyncio
-async def test_get_restaurant_by_id():
+async def test_get_restaurant_by_id() -> None:
     restaurant = MagicMock()
-    session = AsyncMock()
-    session.get = AsyncMock(return_value=restaurant)
+    session = _mock_session_with(scalar_result=restaurant)
     result = await get_restaurant_by_id(session, uuid.uuid4())
     assert result == restaurant
 
 
 @pytest.mark.asyncio
-async def test_get_restaurant_by_display_id_found():
+async def test_get_restaurant_by_display_id_found() -> None:
     restaurant = MagicMock()
     session = _mock_session_with(scalar_result=restaurant)
     result = await get_restaurant_by_display_id(session, "abc123")
@@ -49,14 +51,14 @@ async def test_get_restaurant_by_display_id_found():
 
 
 @pytest.mark.asyncio
-async def test_get_restaurant_by_display_id_not_found():
+async def test_get_restaurant_by_display_id_not_found() -> None:
     session = _mock_session_with(scalar_result=None)
     result = await get_restaurant_by_display_id(session, "unknown")
     assert result is None
 
 
 @pytest.mark.asyncio
-async def test_get_vendor_restaurants():
+async def test_get_vendor_restaurants() -> None:
     restaurant = MagicMock()
     session = _mock_session_with(scalars_list=[restaurant])
     result = await get_vendor_restaurants(session, uuid.uuid4())
@@ -64,28 +66,28 @@ async def test_get_vendor_restaurants():
 
 
 @pytest.mark.asyncio
-async def test_count_vendor_restaurants():
+async def test_count_vendor_restaurants() -> None:
     session = _mock_session_with(scalar_one=3)
     result = await count_vendor_restaurants(session, uuid.uuid4())
     assert result == 3
 
 
 @pytest.mark.asyncio
-async def test_count_restaurants_no_filters():
+async def test_count_restaurants_no_filters() -> None:
     session = _mock_session_with(scalar_one=10)
     result = await count_restaurants(session)
     assert result == 10
 
 
 @pytest.mark.asyncio
-async def test_count_restaurants_with_filters():
+async def test_count_restaurants_with_filters() -> None:
     session = _mock_session_with(scalar_one=2)
     result = await count_restaurants(session, name="pizza", is_open=True, is_hiring=False)
     assert result == 2
 
 
 @pytest.mark.asyncio
-async def test_get_all_restaurants_no_filters():
+async def test_get_all_restaurants_no_filters() -> None:
     restaurant = MagicMock()
     session = _mock_session_with(scalars_list=[restaurant])
     result = await get_all_restaurants(session)
@@ -93,7 +95,7 @@ async def test_get_all_restaurants_no_filters():
 
 
 @pytest.mark.asyncio
-async def test_get_all_restaurants_with_filters():
+async def test_get_all_restaurants_with_filters() -> None:
     restaurant = MagicMock()
     session = _mock_session_with(scalars_list=[restaurant])
     result = await get_all_restaurants(session, name="burger", is_open=True, is_hiring=True)
@@ -101,7 +103,7 @@ async def test_get_all_restaurants_with_filters():
 
 
 @pytest.mark.asyncio
-async def test_create_restaurant_success():
+async def test_create_restaurant_success() -> None:
     from features.restaurants.schemas import RestaurantCreate
 
     data = RestaurantCreate(
@@ -134,7 +136,7 @@ async def test_create_restaurant_success():
 
 
 @pytest.mark.asyncio
-async def test_create_restaurant_integrity_error():
+async def test_create_restaurant_integrity_error() -> None:
     from sqlalchemy.exc import IntegrityError
 
     from features.restaurants.schemas import RestaurantCreate
@@ -167,7 +169,7 @@ async def test_create_restaurant_integrity_error():
 
 
 @pytest.mark.asyncio
-async def test_update_restaurant_success():
+async def test_update_restaurant_success() -> None:
     from features.restaurants.schemas import RestaurantUpdate
 
     restaurant = MagicMock()
@@ -184,7 +186,7 @@ async def test_update_restaurant_success():
 
 
 @pytest.mark.asyncio
-async def test_update_restaurant_integrity_error():
+async def test_update_restaurant_integrity_error() -> None:
     from sqlalchemy.exc import IntegrityError
 
     from features.restaurants.schemas import RestaurantUpdate

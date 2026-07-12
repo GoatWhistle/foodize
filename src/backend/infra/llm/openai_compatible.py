@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
-import logging
-from collections.abc import AsyncIterator
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from openai import AsyncOpenAI, BadRequestError
 
@@ -14,13 +12,17 @@ from infra.llm.base import (
     Message,
     Role,
     StreamEvent,
-    TextDelta,
     ToolCall,
     ToolSpec,
     Usage,
 )
+from infra.llm.openai_stream import OpenAIStreamAccumulator
+from utils.logging_setup import get_logger
 
-logger = logging.getLogger("ai.openai_compatible")
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
+logger = get_logger("ai.openai_compatible")
 
 _EMPTY_PLACEHOLDER = "(пустой ответ)"
 
@@ -140,18 +142,17 @@ class OpenAICompatibleClient(LLMClient):
                 input_tokens=getattr(usage, "prompt_tokens", 0) or 0,
                 output_tokens=getattr(usage, "completion_tokens", 0) or 0,
             ),
-            raw=response,
         )
 
     def _parse_arguments(self, tool_name: str, raw: str | None) -> dict[str, Any]:
         try:
-            return json.loads(raw or "{}")
+            return cast("dict[str, Any]", json.loads(raw or "{}"))
         except json.JSONDecodeError:
             logger.warning(
-                "malformed tool arguments model=%s tool=%s raw=%r",
-                self._model,
-                tool_name,
-                raw,
+                "malformed_tool_arguments",
+                model=self._model,
+                tool=tool_name,
+                length=len(raw or ""),
             )
             return {}
 
@@ -164,8 +165,7 @@ class OpenAICompatibleClient(LLMClient):
         except BadRequestError:
             if "stream_options" not in create_kwargs:
                 raise
-            # Некоторые совместимые провайдеры (GigaChat, старые Ollama) не знают stream_options.
-            logger.info("stream_options rejected model=%s, retrying without usage", self._model)
+            logger.info("stream_options_rejected_retrying", model=self._model)
             create_kwargs = {k: v for k, v in create_kwargs.items() if k != "stream_options"}
             stream = await asyncio.wait_for(
                 self._client.chat.completions.create(**create_kwargs),
@@ -194,59 +194,21 @@ class OpenAICompatibleClient(LLMClient):
 
         stream = await self._create_stream(create_kwargs)
 
-        text_parts: list[str] = []
-        calls_acc: dict[int, dict[str, str]] = {}
-        finish_reason = ""
-        usage = Usage()
-
+        accumulator = OpenAIStreamAccumulator()
         iterator = stream.__aiter__()
         while True:
             try:
                 chunk = await asyncio.wait_for(iterator.__anext__(), timeout=self._timeout)
             except StopAsyncIteration:
                 break
-            chunk_usage = getattr(chunk, "usage", None)
-            if chunk_usage is not None:
-                usage = Usage(
-                    input_tokens=getattr(chunk_usage, "prompt_tokens", 0) or 0,
-                    output_tokens=getattr(chunk_usage, "completion_tokens", 0) or 0,
-                )
-            if not chunk.choices:
-                continue
-            choice = chunk.choices[0]
-            if choice.finish_reason:
-                finish_reason = choice.finish_reason
-            delta = choice.delta
-            if delta is None:
-                continue
-            if delta.content:
-                text_parts.append(delta.content)
-                yield TextDelta(delta.content)
-            for fragment in delta.tool_calls or []:
-                acc = calls_acc.setdefault(fragment.index, {"id": "", "name": "", "arguments": ""})
-                if fragment.id:
-                    acc["id"] = fragment.id
-                function = fragment.function
-                if function is not None:
-                    if function.name:
-                        acc["name"] = function.name
-                    if function.arguments:
-                        acc["arguments"] += function.arguments
+            text_delta = accumulator.absorb(chunk)
+            if text_delta is not None:
+                yield text_delta
 
-        calls = [
-            ToolCall(
-                id=acc["id"] or f"call_{index}",
-                name=acc["name"],
-                arguments=self._parse_arguments(acc["name"], acc["arguments"]),
-            )
-            for index, acc in sorted(calls_acc.items())
-        ]
-        yield LLMResponse(
-            text="".join(text_parts),
-            tool_calls=calls,
-            stop_reason=finish_reason,
-            usage=usage,
-        )
+        usage = accumulator.usage
+        if usage.input_tokens == 0 and usage.output_tokens == 0:
+            logger.warning("stream_usage_missing", model=self._model)
+        yield accumulator.build_response(self._parse_arguments)
 
     async def aclose(self) -> None:
         await self._client.close()

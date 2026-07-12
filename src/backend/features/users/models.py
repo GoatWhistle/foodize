@@ -26,16 +26,16 @@ class User(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin):
         ),
     )
 
-    phone_number: Mapped[str] = mapped_column(unique=True)
-    hashed_password: Mapped[str | None] = mapped_column(nullable=True)
+    phone_number: Mapped[str] = mapped_column(String(32), unique=True)
+    hashed_password: Mapped[str | None] = mapped_column(String(255), nullable=True)
     telegram_id: Mapped[int | None] = mapped_column(
         BigInteger, unique=True, nullable=True, index=True
     )
     telegram_username: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    first_name: Mapped[str | None] = mapped_column(String, nullable=True)
-    last_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    first_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    last_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
     middle_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
-    email: Mapped[str | None] = mapped_column(String, nullable=True)
+    email: Mapped[str | None] = mapped_column(String(128), nullable=True)
     is_active: Mapped[bool] = mapped_column(default=True, server_default="true", nullable=False)
     permissions: Mapped[list[str]] = mapped_column(
         JSONB().with_variant(JSON(), "sqlite"),

@@ -16,7 +16,7 @@ from features.promos.crud import (
 
 class TestGetRestaurantIdsByVendor:
     @pytest.mark.asyncio
-    async def test_returns_ids(self):
+    async def test_returns_ids(self) -> None:
         rid = uuid.uuid4()
         mock_result = MagicMock()
         mock_result.fetchall = MagicMock(return_value=[(rid,)])
@@ -28,7 +28,7 @@ class TestGetRestaurantIdsByVendor:
         assert result == [rid]
 
     @pytest.mark.asyncio
-    async def test_returns_empty(self):
+    async def test_returns_empty(self) -> None:
         mock_result = MagicMock()
         mock_result.fetchall = MagicMock(return_value=[])
 
@@ -41,7 +41,7 @@ class TestGetRestaurantIdsByVendor:
 
 class TestGetPromoByCode:
     @pytest.mark.asyncio
-    async def test_found(self):
+    async def test_found(self) -> None:
         promo = MagicMock()
         mock_result = MagicMock()
         mock_result.scalar_one_or_none = MagicMock(return_value=promo)
@@ -53,7 +53,7 @@ class TestGetPromoByCode:
         assert result == promo
 
     @pytest.mark.asyncio
-    async def test_not_found(self):
+    async def test_not_found(self) -> None:
         mock_result = MagicMock()
         mock_result.scalar_one_or_none = MagicMock(return_value=None)
 
@@ -66,14 +66,14 @@ class TestGetPromoByCode:
 
 class TestGetPromosByRestaurantIds:
     @pytest.mark.asyncio
-    async def test_empty_ids_returns_empty(self):
+    async def test_empty_ids_returns_empty(self) -> None:
         session = AsyncMock()
         result = await get_promos_by_restaurant_ids(session, [])
         assert result == []
         session.execute.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_with_ids(self):
+    async def test_with_ids(self) -> None:
         promo = MagicMock()
         mock_result = MagicMock()
         mock_result.scalars = MagicMock(return_value=MagicMock(all=MagicMock(return_value=[promo])))
@@ -87,14 +87,14 @@ class TestGetPromosByRestaurantIds:
 
 class TestCountPromosByRestaurantIds:
     @pytest.mark.asyncio
-    async def test_empty_ids_returns_zero(self):
+    async def test_empty_ids_returns_zero(self) -> None:
         session = AsyncMock()
         result = await count_promos_by_restaurant_ids(session, [])
         assert result == 0
         session.execute.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_with_ids(self):
+    async def test_with_ids(self) -> None:
         mock_result = MagicMock()
         mock_result.scalar_one = MagicMock(return_value=5)
 
@@ -107,7 +107,7 @@ class TestCountPromosByRestaurantIds:
 
 class TestCreatePromo:
     @pytest.mark.asyncio
-    async def test_creates_and_returns(self):
+    async def test_creates_and_returns(self) -> None:
         from features.promos.schemas import PromoCreate
 
         data = PromoCreate(
@@ -134,7 +134,7 @@ class TestCreatePromo:
 
 class TestDeactivatePromo:
     @pytest.mark.asyncio
-    async def test_deactivates_and_returns(self):
+    async def test_deactivates_and_returns(self) -> None:
         promo = MagicMock()
         promo.is_active = True
 
@@ -150,7 +150,7 @@ class TestDeactivatePromo:
 
 class TestIncrementUsedCount:
     @pytest.mark.asyncio
-    async def test_increments_and_commits(self):
+    async def test_increments_and_commits(self) -> None:
         promo = MagicMock()
         promo.used_count = 3
 

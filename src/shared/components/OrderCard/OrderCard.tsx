@@ -1,12 +1,13 @@
 import { useState } from "react";
-import type { CSSProperties, KeyboardEvent, MouseEvent } from "react";
-import { CaretRight, CaretDown, Storefront } from "@phosphor-icons/react";
+import type { CSSProperties, MouseEvent } from "react";
+import { CaretRightIcon, CaretDownIcon, StorefrontIcon } from "@phosphor-icons/react";
 import { getOrderStatusStyle, getCustomerOrderStatusLabel } from "@shared/utils/orderStatus";
-import { formatOptionsSummary } from "@shared/utils/price";
+import { formatOptionsSummary, formatPrice } from "@shared/utils/price";
+import { activateOnKey } from "@shared/utils/a11y";
 import type { Order } from "@shared/types/models";
 import s from "./OrderCard.module.css";
 
-const getDisplayId = (order: Order): string => String(order.display_id ?? order.id.slice(0, 8));
+const getDisplayId = (order: Order): string => String(order.display_id);
 
 const formatOrderDate = (value: string | null | undefined): string => {
   if (!value) return "";
@@ -33,7 +34,7 @@ const OrderCard = ({ order, onClick, style, expandable = false }: OrderCardProps
   const rowContent = (
     <>
       <div className={s.icon}>
-        <Storefront size={22} weight="fill" />
+        <StorefrontIcon size={22} weight="fill" />
       </div>
 
       <div className={s.body}>
@@ -47,12 +48,12 @@ const OrderCard = ({ order, onClick, style, expandable = false }: OrderCardProps
           <span className={s.statusBadge} style={{ color: cfg.color, background: cfg.bg }}>
             {label}
           </span>
-          <span className={s.count}>{order.items?.length || 0} поз.</span>
+          <span className={s.count}>{order.items.length || 0} поз.</span>
         </div>
       </div>
 
       <div className={s.right}>
-        <div className={s.price}>{order.total_price} ₽</div>
+        <div className={s.price}>{formatPrice(order.total_price)}</div>
         <div className={s.date}>{formatOrderDate(order.created_at)}</div>
       </div>
     </>
@@ -60,16 +61,16 @@ const OrderCard = ({ order, onClick, style, expandable = false }: OrderCardProps
 
   if (!expandable) {
     return (
-      <div className={s.card} onClick={onClick} style={style} role="button" tabIndex={0} onKeyDown={(e: KeyboardEvent<HTMLDivElement>) => e.key === "Enter" && onClick?.()}>
+      <div className={s.card} onClick={onClick} style={style} role="button" tabIndex={0} onKeyDown={activateOnKey(() => onClick?.())}>
         {rowContent}
-        <CaretRight size={16} className={s.caret} />
+        <CaretRightIcon size={16} className={s.caret} />
       </div>
     );
   }
 
   return (
     <div className={s.cardCol} style={style}>
-      <div className={s.row} onClick={onClick} role="button" tabIndex={0} onKeyDown={(e: KeyboardEvent<HTMLDivElement>) => e.key === "Enter" && onClick?.()}>
+      <div className={s.row} onClick={onClick} role="button" tabIndex={0} onKeyDown={activateOnKey(() => onClick?.())}>
         {rowContent}
         <button
           type="button"
@@ -78,7 +79,7 @@ const OrderCard = ({ order, onClick, style, expandable = false }: OrderCardProps
           onClick={(e: MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); setOpen((v) => !v); }}
         >
           детали
-          <CaretDown size={12} weight="bold" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s var(--ease-out)" }} />
+          <CaretDownIcon size={12} weight="bold" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s var(--ease-out)" }} />
         </button>
       </div>
 
@@ -89,13 +90,13 @@ const OrderCard = ({ order, onClick, style, expandable = false }: OrderCardProps
               <span className={s.detailQty}>×{item.quantity}</span>
               <div className={s.detailInfo}>
                 <div className={s.detailName}>{item.menu_item_name}</div>
-                {item.selected_options?.length > 0 && (
+                {item.selected_options.length > 0 && (
                   <div className={s.detailOpts}>
                     {formatOptionsSummary(item.selected_options)}
                   </div>
                 )}
               </div>
-              <span className={s.detailPrice}>{item.price_at_purchase * item.quantity} ₽</span>
+              <span className={s.detailPrice}>{formatPrice(item.price_at_purchase * item.quantity)}</span>
             </div>
           ))}
           {order.restaurant_address && (

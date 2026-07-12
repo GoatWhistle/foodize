@@ -1,12 +1,16 @@
 import uuid
+from http import HTTPStatus
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from httpx import AsyncClient
+
+from features.vendors.models import VendorProfile
 
 
 class TestRestaurantsPublicAPI:
     @pytest.mark.asyncio
-    async def test_read_public_restaurants_no_auth(self, client):
+    async def test_read_public_restaurants_no_auth(self, client: AsyncClient) -> None:
         mock_restaurants = [
             {
                 "id": str(uuid.uuid4()),
@@ -24,7 +28,7 @@ class TestRestaurantsPublicAPI:
         ) as mock_get:
             response = await client.get("/api/v1/restaurants/public")
 
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK
         body = response.json()
         assert len(body["data"]) == 1
         assert body["data"][0]["name"] == "Шаурма у вуза"
@@ -32,7 +36,7 @@ class TestRestaurantsPublicAPI:
         mock_get.assert_awaited_once()
 
     @pytest.mark.asyncio
-    async def test_read_public_restaurants_returns_list(self, client):
+    async def test_read_public_restaurants_returns_list(self, client: AsyncClient) -> None:
         with patch(
             "features.restaurants.api.service.get_all_restaurants_public",
             new_callable=AsyncMock,
@@ -40,13 +44,13 @@ class TestRestaurantsPublicAPI:
         ):
             response = await client.get("/api/v1/restaurants/public")
 
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK
         body = response.json()
         assert body["data"] == []
         assert body["pagination"]["total"] == 0
 
     @pytest.mark.asyncio
-    async def test_read_public_restaurants_with_filters(self, client):
+    async def test_read_public_restaurants_with_filters(self, client: AsyncClient) -> None:
         with patch(
             "features.restaurants.api.service.get_all_restaurants_public",
             new_callable=AsyncMock,
@@ -54,11 +58,11 @@ class TestRestaurantsPublicAPI:
         ) as mock_get:
             response = await client.get("/api/v1/restaurants/public?is_open=true&is_hiring=true")
 
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK
         mock_get.assert_awaited_once()
 
     @pytest.mark.asyncio
-    async def test_read_public_restaurant_by_display_id(self, client):
+    async def test_read_public_restaurant_by_display_id(self, client: AsyncClient) -> None:
         restaurant = {
             "id": str(uuid.uuid4()),
             "display_id": "test-cafe",
@@ -75,7 +79,7 @@ class TestRestaurantsPublicAPI:
         ) as mock_get:
             response = await client.get("/api/v1/restaurants/public/test-cafe")
 
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK
         assert response.json()["data"]["display_id"] == "test-cafe"
         mock_get.assert_awaited_once()
         assert mock_get.call_args.kwargs["identifier"] == "test-cafe"
@@ -83,8 +87,10 @@ class TestRestaurantsPublicAPI:
 
 class TestRestaurantsAPI:
     @pytest.mark.asyncio
-    async def test_create_restaurant(self, vendor_client):
-        client, vendor_profile = vendor_client
+    async def test_create_restaurant(
+        self, vendor_client: tuple[AsyncClient, VendorProfile]
+    ) -> None:
+        client, _vendor_profile = vendor_client
 
         mock_restaurant = {
             "id": str(uuid.uuid4()),
@@ -103,14 +109,16 @@ class TestRestaurantsAPI:
                 json={"name": "New Sushi", "address": "Street 1"},
             )
 
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK
         data = response.json()["data"]
         assert data["name"] == "New Sushi"
         mock_register.assert_awaited_once()
 
     @pytest.mark.asyncio
-    async def test_update_restaurant(self, vendor_client):
-        client, vendor_profile = vendor_client
+    async def test_update_restaurant(
+        self, vendor_client: tuple[AsyncClient, VendorProfile]
+    ) -> None:
+        client, _vendor_profile = vendor_client
         restaurant_id = uuid.uuid4()
 
         mock_restaurant = {
@@ -129,13 +137,15 @@ class TestRestaurantsAPI:
                 f"/api/v1/restaurants/{restaurant_id}", json={"name": "Updated Sushi"}
             )
 
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK
         assert response.json()["data"]["name"] == "Updated Sushi"
         mock_update.assert_awaited_once()
 
     @pytest.mark.asyncio
-    async def test_read_my_restaurants(self, vendor_client):
-        client, vendor_profile = vendor_client
+    async def test_read_my_restaurants(
+        self, vendor_client: tuple[AsyncClient, VendorProfile]
+    ) -> None:
+        client, _vendor_profile = vendor_client
 
         with patch(
             "features.restaurants.api.service.get_my_restaurants",
@@ -144,13 +154,13 @@ class TestRestaurantsAPI:
         ) as mock_get:
             response = await client.get("/api/v1/restaurants/")
 
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK
         assert response.json()["data"] == []
         mock_get.assert_awaited_once()
 
     @pytest.mark.asyncio
-    async def test_create_restaurant_requires_auth(self, client):
+    async def test_create_restaurant_requires_auth(self, client: AsyncClient) -> None:
         response = await client.post(
             "/api/v1/restaurants/", json={"name": "Test", "address": "Addr"}
         )
-        assert response.status_code == 401
+        assert response.status_code == HTTPStatus.UNAUTHORIZED

@@ -18,7 +18,7 @@ from features.admin.service.catalog import (
 from shared.exceptions import NotFoundException
 
 
-def _make_mock_user(user_id: uuid.UUID | None = None):
+def _make_mock_user(user_id: uuid.UUID | None = None) -> MagicMock:
     u = MagicMock()
     u.id = user_id or uuid.uuid4()
     u.name = "Test User"
@@ -27,7 +27,7 @@ def _make_mock_user(user_id: uuid.UUID | None = None):
     return u
 
 
-def _make_mock_vendor(vendor_id: uuid.UUID | None = None):
+def _make_mock_vendor(vendor_id: uuid.UUID | None = None) -> MagicMock:
     v = MagicMock()
     v.id = vendor_id or uuid.uuid4()
     v.approval_status = "PENDING"
@@ -40,7 +40,7 @@ def _make_mock_vendor(vendor_id: uuid.UUID | None = None):
     return v
 
 
-def _make_mock_review(review_id: uuid.UUID | None = None):
+def _make_mock_review(review_id: uuid.UUID | None = None) -> MagicMock:
     rv = MagicMock()
     rv.id = review_id or uuid.uuid4()
     rv.rating = 4
@@ -57,7 +57,7 @@ def _make_mock_review(review_id: uuid.UUID | None = None):
 
 class TestGetOrdersList:
     @pytest.mark.asyncio
-    async def test_success(self):
+    async def test_success(self) -> None:
         orders = [MagicMock(), MagicMock()]
         with (
             patch(
@@ -72,7 +72,7 @@ class TestGetOrdersList:
 
 class TestGetRestaurantsList:
     @pytest.mark.asyncio
-    async def test_success(self):
+    async def test_success(self) -> None:
         rests = [MagicMock(), MagicMock()]
         with (
             patch(
@@ -91,7 +91,7 @@ class TestGetRestaurantsList:
             assert total == 2
 
     @pytest.mark.asyncio
-    async def test_restaurant_not_found(self):
+    async def test_restaurant_not_found(self) -> None:
         with patch(
             "features.admin.crud.get_restaurant_by_id",
             new_callable=AsyncMock,
@@ -103,7 +103,7 @@ class TestGetRestaurantsList:
 
 class TestDeleteRestaurantService:
     @pytest.mark.asyncio
-    async def test_success(self):
+    async def test_success(self) -> None:
         rest = MagicMock()
         rest.id = uuid.uuid4()
 
@@ -122,7 +122,7 @@ class TestDeleteRestaurantService:
             assert result is rest
 
     @pytest.mark.asyncio
-    async def test_not_found(self):
+    async def test_not_found(self) -> None:
         with patch(
             "features.admin.crud.get_restaurant_by_id",
             new_callable=AsyncMock,
@@ -134,7 +134,7 @@ class TestDeleteRestaurantService:
 
 class TestGetVendorsList:
     @pytest.mark.asyncio
-    async def test_success(self):
+    async def test_success(self) -> None:
         vendor = _make_mock_vendor()
         with (
             patch(
@@ -148,11 +148,11 @@ class TestGetVendorsList:
                 return_value=1,
             ),
         ):
-            result, total = await get_vendors_list(MagicMock())
+            _result, total = await get_vendors_list(MagicMock())
             assert total == 1
 
     @pytest.mark.asyncio
-    async def test_vendor_not_found(self):
+    async def test_vendor_not_found(self) -> None:
         with patch(
             "features.admin.crud.get_vendor_by_id",
             new_callable=AsyncMock,
@@ -164,7 +164,7 @@ class TestGetVendorsList:
 
 class TestDeleteVendorService:
     @pytest.mark.asyncio
-    async def test_success(self):
+    async def test_success(self) -> None:
         vendor = _make_mock_vendor()
         with (
             patch(
@@ -181,7 +181,7 @@ class TestDeleteVendorService:
             assert result is not None
 
     @pytest.mark.asyncio
-    async def test_not_found(self):
+    async def test_not_found(self) -> None:
         with patch(
             "features.admin.crud.get_vendor_by_id",
             new_callable=AsyncMock,
@@ -193,7 +193,7 @@ class TestDeleteVendorService:
 
 class TestGetReviewsList:
     @pytest.mark.asyncio
-    async def test_success(self):
+    async def test_success(self) -> None:
         reviews = [MagicMock(), MagicMock()]
         with (
             patch(
@@ -210,7 +210,7 @@ class TestGetReviewsList:
 
 class TestDeleteReviewService:
     @pytest.mark.asyncio
-    async def test_success(self):
+    async def test_success(self) -> None:
         review = _make_mock_review()
         deleted = _make_mock_review(review.id)
 
@@ -230,7 +230,7 @@ class TestDeleteReviewService:
             assert result is not None
 
     @pytest.mark.asyncio
-    async def test_not_found(self):
+    async def test_not_found(self) -> None:
         with patch(
             "features.admin.crud.get_review_by_id", new_callable=AsyncMock, return_value=None
         ):

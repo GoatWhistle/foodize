@@ -3,7 +3,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { adminService } from '../../../services/adminService';
 import { useModalStore } from '@shared/store/useModalStore';
 import { useDebounce } from '@shared/utils/useDebounce';
-import type { AdminVendor, PlatformStats, SuccessListResponse, SuccessResponse } from '@shared/types/models';
+import type { AdminVendor, PlatformStats } from '@shared/types/models';
 import { createDetailLoader } from '../../../utils/createDetailLoader';
 import type { RequestReason } from '../useAdminDashboard';
 
@@ -58,12 +58,12 @@ export const useAdminVendors = ({
         approval_status: vendorFilters.approval_status || undefined,
       })
       .then((res) => {
-        const body = res.data as SuccessListResponse<AdminVendor>;
-        setVendors(body.data || []);
-        setVendorsTotal(body.pagination?.total || 0);
+        const body = res.data;
+        setVendors(body.data);
+        setVendorsTotal(body.pagination.total || 0);
       })
-      .catch(() => setActionError('Не удалось загрузить вендоров'))
-      .finally(() => setVendorsLoading(false));
+      .catch(() => { setActionError('Не удалось загрузить вендоров'); })
+      .finally(() => { setVendorsLoading(false); });
   }, [activeTab, vendorsPage, vendorFilters, vendorSearch, setActionError]);
 
   const loadVendorDetails = createDetailLoader<AdminVendor | null>(
@@ -108,7 +108,7 @@ export const useAdminVendors = ({
         setActionError('');
         try {
           const res = await adminService.approveVendor(vendorId);
-          refreshSelectedVendor((res.data as SuccessResponse<AdminVendor>).data);
+          refreshSelectedVendor(res.data.data);
           setActionSuccess('Вендор одобрен');
         } catch {
           setActionError('Не удалось одобрить вендора');
@@ -125,7 +125,7 @@ export const useAdminVendors = ({
       onConfirm: async (reason) => {
         try {
           const res = await adminService.rejectVendor(vendorId, reason);
-          refreshSelectedVendor((res.data as SuccessResponse<AdminVendor>).data);
+          refreshSelectedVendor(res.data.data);
           setActionSuccess('Вендор отклонён');
         } catch {
           setActionError('Не удалось отклонить вендора');

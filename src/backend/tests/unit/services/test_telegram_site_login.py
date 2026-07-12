@@ -1,4 +1,6 @@
 import uuid
+from http import HTTPStatus
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -24,30 +26,30 @@ def _user(*, telegram_id: int | None = 123456, hashed_password: str | None = Non
 
 
 class _HttpResponse:
-    status_code = 200
+    status_code = HTTPStatus.OK
 
-    def raise_for_status(self):
+    def raise_for_status(self) -> None:
         return None
 
-    def json(self):
+    def json(self) -> dict[str, Any]:
         return {}
 
 
 class _HttpClient:
     post = AsyncMock(return_value=_HttpResponse())
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         pass
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "_HttpClient":
         return self
 
-    async def __aexit__(self, *args):
+    async def __aexit__(self, *args: Any) -> None:
         return None
 
 
 @pytest.mark.asyncio
-async def test_request_site_login_code_saves_code_and_sends_telegram_message():
+async def test_request_site_login_code_saves_code_and_sends_telegram_message() -> None:
     cache = MagicMock()
     cache.set = AsyncMock()
     cache.incr_with_expire = AsyncMock(return_value=1)
@@ -76,7 +78,7 @@ async def test_request_site_login_code_saves_code_and_sends_telegram_message():
 
 
 @pytest.mark.asyncio
-async def test_request_site_login_code_silently_ignores_unknown_phone():
+async def test_request_site_login_code_silently_ignores_unknown_phone() -> None:
     cache = MagicMock()
     cache.incr_with_expire = AsyncMock(return_value=1)
     _HttpClient.post.reset_mock()
@@ -96,11 +98,11 @@ async def test_request_site_login_code_silently_ignores_unknown_phone():
 
 
 @pytest.mark.asyncio
-async def test_verify_site_login_code_deletes_code_and_issues_tokens():
+async def test_verify_site_login_code_deletes_code_and_issues_tokens() -> None:
     user = _user()
     cache = MagicMock()
 
-    async def _cache_get(key):
+    async def _cache_get(key: str) -> str | None:
         if "fail" in key:
             return None
         return "123456"
@@ -130,10 +132,10 @@ async def test_verify_site_login_code_deletes_code_and_issues_tokens():
 
 
 @pytest.mark.asyncio
-async def test_verify_site_login_code_rejects_wrong_code():
+async def test_verify_site_login_code_rejects_wrong_code() -> None:
     cache = MagicMock()
 
-    async def _cache_get(key):
+    async def _cache_get(key: str) -> str | None:
         if "fail" in key:
             return None
         return "123456"
@@ -150,7 +152,7 @@ async def test_verify_site_login_code_rejects_wrong_code():
 
 
 @pytest.mark.asyncio
-async def test_set_site_password_hashes_only_empty_password():
+async def test_set_site_password_hashes_only_empty_password() -> None:
     user = _user(hashed_password=None)
     session = AsyncMock()
 
@@ -165,6 +167,6 @@ async def test_set_site_password_hashes_only_empty_password():
 
 
 @pytest.mark.asyncio
-async def test_set_site_password_rejects_existing_password():
+async def test_set_site_password_rejects_existing_password() -> None:
     with pytest.raises(AuthException, match="Password is already set"):
         await set_site_password(AsyncMock(), _user(hashed_password="hashed"), "newpass")

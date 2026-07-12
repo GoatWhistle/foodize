@@ -2,13 +2,13 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import RestaurantPage from '../../pages/restaurant/RestaurantPage';
-import { useOrderStore } from '../../store/useOrderStore';
+import { useCartStore } from '../../store/useCartStore';
 import type { MenuItem } from '@shared/types/models';
 
 type RestaurantState = {
   fetchMenu: () => void;
   menus: Record<string, MenuItem[]>;
-  loading: boolean;
+  menuLoading: boolean;
 };
 
 type OrderState = {
@@ -18,7 +18,7 @@ type OrderState = {
   cartCount: () => number;
 };
 
-type AuthState = { user: unknown; isAuthenticated: boolean };
+type AuthState = { user: unknown };
 type ModalState = { requestConfirm: () => void };
 type FavoriteState = { favoriteIds: string[]; toggle: () => void };
 
@@ -28,6 +28,7 @@ const menuItems = [
     name: 'Classic Shaurma',
     price: 300,
     category: 'SHAURMA',
+    is_available: true,
     option_groups: [
       {
         id: 'g1',
@@ -43,7 +44,7 @@ const menuItems = [
       },
     ],
   },
-  { id: 'm2', name: 'Veggie Burger', price: 400, category: 'BURGER' },
+  { id: 'm2', name: 'Veggie Burger', price: 400, category: 'BURGER', is_available: true },
 ] as unknown as MenuItem[];
 
 vi.mock('@shared/store/useRestaurantStore.js', () => ({
@@ -51,7 +52,7 @@ vi.mock('@shared/store/useRestaurantStore.js', () => ({
     const state: RestaurantState = {
       fetchMenu: vi.fn(),
       menus: { 'mock-1': menuItems },
-      loading: false,
+      menuLoading: false,
     };
     return sel ? sel(state) : state;
   },
@@ -62,14 +63,14 @@ vi.mock('@shared/store/useRestaurantStore.js', () => ({
     const state: RestaurantState = {
       fetchMenu: vi.fn(),
       menus: { 'mock-1': menuItems },
-      loading: false,
+      menuLoading: false,
     };
     return sel ? sel(state) : state;
   },
 }));
 
-vi.mock('../../store/useOrderStore', () => ({
-  useOrderStore: vi.fn((sel?: (s: OrderState) => unknown) => {
+vi.mock('../../store/useCartStore', () => ({
+  useCartStore: vi.fn((sel?: (s: OrderState) => unknown) => {
     const state: OrderState = {
       cart: [],
       addToCart: vi.fn(),
@@ -82,7 +83,7 @@ vi.mock('../../store/useOrderStore', () => ({
 
 vi.mock('../../store/useAuthStore', () => ({
   useAuthStore: (sel?: (s: AuthState) => unknown) => {
-    const state: AuthState = { user: null, isAuthenticated: false };
+    const state: AuthState = { user: null };
     return sel ? sel(state) : state;
   },
 }));
@@ -131,7 +132,7 @@ describe('RestaurantPage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useOrderStore).mockImplementation(((sel?: (s: OrderState) => unknown) => {
+    vi.mocked(useCartStore).mockImplementation(((sel?: (s: OrderState) => unknown) => {
       const state: OrderState = {
         cart: [],
         addToCart: addToCartMock,
@@ -139,7 +140,7 @@ describe('RestaurantPage', () => {
         cartCount: () => 0,
       };
       return sel ? sel(state) : state;
-    }) as typeof useOrderStore);
+    }) as typeof useCartStore);
   });
 
   const renderWithRouter = () =>
@@ -193,7 +194,9 @@ describe('RestaurantPage', () => {
     expect(screen.getByText('Veggie Burger')).toBeDefined();
 
     await act(async () => {
-      fireEvent.click(screen.getAllByText('Бургеры')[0]);
+      const burgersTab = screen.getAllByText('Бургеры')[0];
+      if (!burgersTab) throw new Error('category tab not found');
+      fireEvent.click(burgersTab);
       await Promise.resolve();
     });
 

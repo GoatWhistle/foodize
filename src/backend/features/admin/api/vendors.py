@@ -1,21 +1,22 @@
-import logging
 import uuid
 
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
-from features.admin.api.schemas import BatchIdsRequest, BatchRejectRequest
+from features.admin.api.schemas import (
+    BatchIdsRequest,
+    BatchModerationResult,
+    BatchRejectRequest,
+)
 from features.admin.audit_log import service as audit_service
 from features.admin.dependencies import require_admin
 from features.admin.schemas import AdminVendorResponse, ModerationDecision
-from features.admin.service import catalog, moderation
+from features.admin.service import batch_moderation, catalog, moderation
 from features.users.models import User
 from shared.enums.moderation_status import ModerationStatus
 from shared.response import build_list_response, build_response
 from shared.schemas.response import SuccessListResponse, SuccessResponse
-
-logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -41,46 +42,36 @@ async def read_vendors(
     return build_list_response(data=data, total=total, page=page, size=size, request=request)
 
 
-@router.post("/vendors/batch-approve")
+@router.post("/vendors/batch-approve", response_model=SuccessResponse[BatchModerationResult])
 async def batch_approve_vendors(
     body: BatchIdsRequest,
     actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-) -> SuccessResponse[dict]:
-    approved, failed = [], []
-    for vid in body.ids:
-        try:
-            async with session.begin_nested():
-                await moderation.moderate_vendor(session, vid, ModerationStatus.APPROVED.value)
-                await audit_service.log_action(session, actor.id, "APPROVE_VENDOR", "vendor", vid)
-            approved.append(str(vid))
-        except Exception:
-            logger.exception("batch_approve_vendors failed for id=%s", vid)
-            failed.append({"id": str(vid), "error": "operation_failed"})
-    return build_response({"approved": approved, "failed": failed})
+) -> SuccessResponse[BatchModerationResult]:
+    async def approve(db: AsyncSession, vendor_id: uuid.UUID) -> object:
+        return await moderation.moderate_vendor(db, vendor_id, ModerationStatus.APPROVED.value)
+
+    result = await batch_moderation.run_batch_moderation(
+        session, body.ids, actor.id, approve, "APPROVE_VENDOR", "vendor"
+    )
+    return build_response(result)
 
 
-@router.post("/vendors/batch-reject")
+@router.post("/vendors/batch-reject", response_model=SuccessResponse[BatchModerationResult])
 async def batch_reject_vendors(
     body: BatchRejectRequest,
     actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-) -> SuccessResponse[dict]:
-    rejected, failed = [], []
-    for vid in body.ids:
-        try:
-            async with session.begin_nested():
-                await moderation.moderate_vendor(
-                    session, vid, ModerationStatus.REJECTED.value, body.reason
-                )
-                await audit_service.log_action(
-                    session, actor.id, "REJECT_VENDOR", "vendor", vid, {"reason": body.reason}
-                )
-            rejected.append(str(vid))
-        except Exception:
-            logger.exception("batch_reject_vendors failed for id=%s", vid)
-            failed.append({"id": str(vid), "error": "operation_failed"})
-    return build_response({"rejected": rejected, "failed": failed})
+) -> SuccessResponse[BatchModerationResult]:
+    async def reject(db: AsyncSession, vendor_id: uuid.UUID) -> object:
+        return await moderation.moderate_vendor(
+            db, vendor_id, ModerationStatus.REJECTED.value, body.reason
+        )
+
+    result = await batch_moderation.run_batch_moderation(
+        session, body.ids, actor.id, reject, "REJECT_VENDOR", "vendor", {"reason": body.reason}
+    )
+    return build_response(result)
 
 
 @router.get("/vendors/{vendor_id}", response_model=SuccessResponse[AdminVendorResponse])

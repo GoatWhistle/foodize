@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import {
-  MagnifyingGlass,
-  Faders,
-  SortAscending,
-  SortDescending,
-  Star,
-  ChartBar,
-  Check,
+  MagnifyingGlassIcon,
+  FadersIcon,
+  SortAscendingIcon,
+  SortDescendingIcon,
+  StarIcon,
+  ChartBarIcon,
+  CheckIcon,
 } from "@phosphor-icons/react";
 import type { Icon, IconWeight } from "@phosphor-icons/react";
 import s from "./SearchFilterBar.module.css";
@@ -21,8 +21,8 @@ interface SortOption {
 
 const SORT_OPTIONS: SortOption[] = [
   { key: "default", label: "По умолчанию", Icon: null },
-  { key: "rating", label: "Оценка", Icon: Star, iconWeight: "fill" },
-  { key: "popularity_7d", label: "Популярность", Icon: ChartBar, iconWeight: "bold" },
+  { key: "rating", label: "Оценка", Icon: StarIcon, iconWeight: "fill" },
+  { key: "popularity_7d", label: "Популярность", Icon: ChartBarIcon, iconWeight: "bold" },
 ];
 
 interface SearchFilterBarProps {
@@ -63,7 +63,7 @@ const SearchFilterBar = ({
       }
     };
     document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    return () => { document.removeEventListener("mousedown", handler); };
   }, [showFilters]);
 
   const handleSortClick = (key: string) => {
@@ -81,12 +81,12 @@ const SearchFilterBar = ({
   return (
     <div className={s.wrap}>
       <div className={s.search}>
-        <MagnifyingGlass className={s.searchIcon} size={18} weight="bold" />
+        <MagnifyingGlassIcon className={s.searchIcon} size={18} weight="bold" />
         <input
           type="search"
           placeholder={placeholder}
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => { setSearch(e.target.value); }}
           aria-label="Поиск заведения"
         />
         {searching && <span className={s.spinner} aria-hidden="true" />}
@@ -96,11 +96,11 @@ const SearchFilterBar = ({
         <button
           type="button"
           className={`${s.filterButton}${showFilters ? ` ${s.filterButtonOpen}` : ""}${filtersActive ? ` ${s.filterButtonActive}` : ""}`}
-          onClick={() => setShowFilters((value) => !value)}
+          onClick={() => { setShowFilters((value) => !value); }}
           aria-expanded={showFilters}
           aria-label="Открыть фильтры"
         >
-          <Faders size={18} weight="bold" />
+          <FadersIcon size={18} weight="bold" />
         </button>
 
         {showFilters && (
@@ -109,7 +109,7 @@ const SearchFilterBar = ({
               <input
                 type="checkbox"
                 checked={onlyOpen}
-                onChange={() => setOnlyOpen((value) => !value)}
+                onChange={() => { setOnlyOpen((value) => !value); }}
               />
               Открыто
             </label>
@@ -120,11 +120,11 @@ const SearchFilterBar = ({
                   key={key}
                   type="button"
                   className={`${s.sortRow}${sort === key ? ` ${s.sortRowActive}` : ""}`}
-                  onClick={() => handleSortClick(key)}
+                  onClick={() => { handleSortClick(key); }}
                 >
                   <span className={s.sortRowLeft}>
                     {Icon ? (
-                      <Icon size={15} weight={iconWeight} />
+                      <Icon size={15} {...(iconWeight ? { weight: iconWeight } : {})} />
                     ) : (
                       <span className={s.sortRowIconSpacer} />
                     )}
@@ -132,11 +132,11 @@ const SearchFilterBar = ({
                   </span>
                   {sort === key &&
                     (key === "default" ? (
-                      <Check size={15} weight="bold" />
+                      <CheckIcon size={15} weight="bold" />
                     ) : direction === "desc" ? (
-                      <SortDescending size={15} weight="bold" />
+                      <SortDescendingIcon size={15} weight="bold" />
                     ) : (
-                      <SortAscending size={15} weight="bold" />
+                      <SortAscendingIcon size={15} weight="bold" />
                     ))}
                 </button>
               ))}
@@ -144,7 +144,7 @@ const SearchFilterBar = ({
             {extraChips && (
               <div className={s.extraPanel}>
                 {typeof extraChips === "function"
-                  ? extraChips(s.sortRow)
+                  ? extraChips(s.sortRow ?? "")
                   : extraChips}
               </div>
             )}

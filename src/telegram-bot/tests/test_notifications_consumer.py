@@ -3,13 +3,14 @@ import json
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from pytest_mock import MockerFixture
 
 from config import bot_config
 from notifications.consumer import _process, start_notification_consumer
 
 
 @pytest.mark.asyncio
-async def test_process_notification_success(mocker):
+async def test_process_notification_success(mocker: MockerFixture) -> None:
     mock_claim = mocker.patch("notifications.consumer._claim_event", return_value=True)
     mock_release = mocker.patch("notifications.consumer._release_event")
     message = AsyncMock()
@@ -26,7 +27,7 @@ async def test_process_notification_success(mocker):
 
 
 @pytest.mark.asyncio
-async def test_process_notification_deduplicates(mocker):
+async def test_process_notification_deduplicates(mocker: MockerFixture) -> None:
     mocker.patch("notifications.consumer._claim_event", return_value=False)
     mock_release = mocker.patch("notifications.consumer._release_event")
     message = AsyncMock()
@@ -42,7 +43,7 @@ async def test_process_notification_deduplicates(mocker):
 
 
 @pytest.mark.asyncio
-async def test_process_notification_releases_claim_on_failure(mocker):
+async def test_process_notification_releases_claim_on_failure(mocker: MockerFixture) -> None:
     mocker.patch("notifications.consumer._claim_event", return_value=True)
     mock_release = mocker.patch("notifications.consumer._release_event")
     mocker.patch("notifications.consumer.asyncio.sleep")
@@ -60,7 +61,7 @@ async def test_process_notification_releases_claim_on_failure(mocker):
 
 
 @pytest.mark.asyncio
-async def test_process_notification_retry(mocker):
+async def test_process_notification_retry(mocker: MockerFixture) -> None:
     mock_sleep = mocker.patch("notifications.consumer.asyncio.sleep")
     message = AsyncMock()
     message.body = json.dumps({"test": "data"}).encode("utf-8")
@@ -81,7 +82,7 @@ async def test_process_notification_retry(mocker):
 
 
 @pytest.mark.asyncio
-async def test_process_notification_dlq(mocker):
+async def test_process_notification_dlq(mocker: MockerFixture) -> None:
     mocker.patch("notifications.consumer.asyncio.sleep")
     message = AsyncMock()
     message.body = json.dumps({"test": "data"}).encode("utf-8")
@@ -98,7 +99,7 @@ async def test_process_notification_dlq(mocker):
 
 
 @pytest.mark.asyncio
-async def test_start_notification_consumer(mocker):
+async def test_start_notification_consumer(mocker: MockerFixture) -> None:
     mock_connect = mocker.patch("aio_pika.connect_robust")
     mock_conn = AsyncMock()
     mock_channel = AsyncMock()

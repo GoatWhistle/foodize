@@ -45,7 +45,7 @@ def _mock_session() -> AsyncMock:
 
 class TestCreatePromo:
     @pytest.mark.asyncio
-    async def test_restaurant_not_in_vendor_list(self):
+    async def test_restaurant_not_in_vendor_list(self) -> None:
         from features.promos.schemas import PromoCreate
         from features.restaurants.exceptions import RestaurantNotFoundException
 
@@ -59,7 +59,7 @@ class TestCreatePromo:
             await create_promo(MagicMock(), data, [])
 
     @pytest.mark.asyncio
-    async def test_promo_already_exists(self):
+    async def test_promo_already_exists(self) -> None:
         from features.promos.exceptions import PromoAlreadyExistsException
         from features.promos.schemas import PromoCreate
 
@@ -80,7 +80,7 @@ class TestCreatePromo:
                 await create_promo(MagicMock(), data, [restaurant_id])
 
     @pytest.mark.asyncio
-    async def test_success(self):
+    async def test_success(self) -> None:
         from features.promos.schemas import PromoCreate
 
         restaurant_id = uuid.uuid4()
@@ -111,7 +111,7 @@ class TestCreatePromo:
 
 class TestGetVendorPromos:
     @pytest.mark.asyncio
-    async def test_success(self):
+    async def test_success(self) -> None:
         promo = _make_promo()
 
         with (
@@ -131,7 +131,7 @@ class TestGetVendorPromos:
             assert total == 1
 
     @pytest.mark.asyncio
-    async def test_empty(self):
+    async def test_empty(self) -> None:
         with (
             patch(
                 "features.promos.crud.get_promos_by_restaurant_ids",
@@ -151,7 +151,7 @@ class TestGetVendorPromos:
 
 class TestDeactivatePromo:
     @pytest.mark.asyncio
-    async def test_not_found(self):
+    async def test_not_found(self) -> None:
         from features.promos.exceptions import PromoNotFoundException
 
         with patch(
@@ -163,7 +163,7 @@ class TestDeactivatePromo:
                 await deactivate_promo(MagicMock(), "NOCODE", [uuid.uuid4()])
 
     @pytest.mark.asyncio
-    async def test_wrong_restaurant(self):
+    async def test_wrong_restaurant(self) -> None:
         from features.promos.exceptions import PromoNotFoundException
 
         promo = _make_promo()
@@ -176,7 +176,7 @@ class TestDeactivatePromo:
                 await deactivate_promo(MagicMock(), "TEST10", [uuid.uuid4()])
 
     @pytest.mark.asyncio
-    async def test_success(self):
+    async def test_success(self) -> None:
         promo = _make_promo()
         updated = _make_promo(is_active=False)
         updated.restaurant_id = promo.restaurant_id
@@ -199,7 +199,7 @@ class TestDeactivatePromo:
 
 class TestApplyPromo:
     @pytest.mark.asyncio
-    async def test_not_found(self):
+    async def test_not_found(self) -> None:
         from features.promos.exceptions import PromoNotFoundException
 
         with patch(
@@ -211,7 +211,7 @@ class TestApplyPromo:
                 await apply_promo(MagicMock(), "NOCODE", uuid.uuid4(), 1000)
 
     @pytest.mark.asyncio
-    async def test_percent_discount(self):
+    async def test_percent_discount(self) -> None:
         promo = _make_promo(discount_type="PERCENT", discount_value=20)
         with (
             patch(
@@ -225,7 +225,7 @@ class TestApplyPromo:
             assert result == 800
 
     @pytest.mark.asyncio
-    async def test_flat_discount(self):
+    async def test_flat_discount(self) -> None:
         promo = _make_promo(discount_type="FIXED", discount_value=300)
         with (
             patch(
@@ -239,7 +239,7 @@ class TestApplyPromo:
             assert result == 700
 
     @pytest.mark.asyncio
-    async def test_discount_cannot_go_below_zero(self):
+    async def test_discount_cannot_go_below_zero(self) -> None:
         promo = _make_promo(discount_type="FIXED", discount_value=9999)
         with (
             patch(

@@ -62,7 +62,7 @@ const StaffDashboardPage = () => {
       <StaffHeader
         profile={profile}
         newOrderAlert={newOrderAlert}
-        onDismissAlert={() => setNewOrderAlert(false)}
+        onDismissAlert={() => { setNewOrderAlert(false); }}
         autoEta={autoEta}
         onToggleAutoEta={(checked) => {
           setAutoEta(checked);
@@ -81,7 +81,7 @@ const StaffDashboardPage = () => {
         {TABS.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => { setActiveTab(tab.id); }}
             style={{
               padding: '10px 4px',
               background: 'none',
@@ -132,7 +132,7 @@ const StaffDashboardPage = () => {
           <EtaModal
             order={etaOrder}
             onConfirm={handleEtaConfirm}
-            onCancel={() => setEtaOrder(null)}
+            onCancel={() => { setEtaOrder(null); }}
             updating={updating === etaOrder.id}
           />,
           document.body

@@ -1,6 +1,7 @@
 import uuid
+from http import HTTPStatus
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
@@ -27,7 +28,7 @@ router = APIRouter(prefix="/menu", tags=["Menu"])
 @router.post(
     "/{restaurant_id}/items/{item_id}/option-groups",
     response_model=SuccessResponse[MenuItemOptionGroupResponse],
-    status_code=status.HTTP_201_CREATED,
+    status_code=HTTPStatus.CREATED,
 )
 async def create_option_group(
     restaurant_id: uuid.UUID,
@@ -73,7 +74,7 @@ async def update_option_group(
 
 @router.delete(
     "/{restaurant_id}/items/{item_id}/option-groups/{group_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=HTTPStatus.NO_CONTENT,
 )
 async def delete_option_group(
     restaurant_id: uuid.UUID,
@@ -95,7 +96,7 @@ async def delete_option_group(
 @router.post(
     "/{restaurant_id}/items/{item_id}/option-groups/{group_id}/options",
     response_model=SuccessResponse[MenuItemOptionResponse],
-    status_code=status.HTTP_201_CREATED,
+    status_code=HTTPStatus.CREATED,
 )
 async def create_option(
     restaurant_id: uuid.UUID,
@@ -145,7 +146,7 @@ async def update_option(
 
 @router.delete(
     "/{restaurant_id}/items/{item_id}/option-groups/{group_id}/options/{option_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=HTTPStatus.NO_CONTENT,
 )
 async def delete_option(
     restaurant_id: uuid.UUID,

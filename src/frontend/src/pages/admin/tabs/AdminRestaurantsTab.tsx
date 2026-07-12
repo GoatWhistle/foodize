@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
-import { DownloadSimple } from '@phosphor-icons/react';
+import { DownloadSimpleIcon } from '@phosphor-icons/react';
 import Pagination from '@shared/components/Pagination/Pagination';
 import EmptyState from '@shared/components/EmptyState/EmptyState';
 import type { adminService as adminServiceType } from '../../../services/adminService';
@@ -110,9 +110,9 @@ export default function AdminRestaurantsTab({
             type="checkbox"
             checked={restaurants.length > 0 && selectedRestaurantIds.size === restaurants.length}
             onChange={(e) =>
-              setSelectedRestaurantIds(
+              { setSelectedRestaurantIds(
                 e.target.checked ? new Set(restaurants.map((r) => r.id)) : new Set()
-              )
+              ); }
             }
           />
           Выбрать все
@@ -121,10 +121,10 @@ export default function AdminRestaurantsTab({
           className="btn btn-secondary btn-sm"
           disabled={exportLoading}
           onClick={() =>
-            handleExport(adminService.exportRestaurantsCSV, `рестораны_${todayStr}.csv`)
+            { handleExport(adminService.exportRestaurantsCSV, `рестораны_${todayStr}.csv`); }
           }
         >
-          {exportLoading ? '...' : <><DownloadSimple size={16} weight="bold" /> CSV</>}
+          {exportLoading ? '...' : <><DownloadSimpleIcon size={16} weight="bold" /> CSV</>}
         </button>
       </div>
 

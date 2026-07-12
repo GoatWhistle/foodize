@@ -6,7 +6,7 @@ import pytest
 from features.orders.crud.order_item import get_menu_items_by_ids, get_options_by_ids
 
 
-def _scalars_result(items):
+def _scalars_result(items: list[MagicMock]) -> MagicMock:
     mock_result = MagicMock()
     mock_scalars = MagicMock()
     mock_scalars.all.return_value = items
@@ -15,7 +15,7 @@ def _scalars_result(items):
 
 
 @pytest.mark.asyncio
-async def test_get_menu_items_by_ids_returns_dict():
+async def test_get_menu_items_by_ids_returns_dict() -> None:
     item = MagicMock()
     item.id = uuid.uuid4()
     session = AsyncMock()
@@ -27,7 +27,7 @@ async def test_get_menu_items_by_ids_returns_dict():
 
 
 @pytest.mark.asyncio
-async def test_get_menu_items_by_ids_empty():
+async def test_get_menu_items_by_ids_empty() -> None:
     session = AsyncMock()
     session.execute = AsyncMock(return_value=_scalars_result([]))
     result = await get_menu_items_by_ids(session, [])
@@ -35,7 +35,7 @@ async def test_get_menu_items_by_ids_empty():
 
 
 @pytest.mark.asyncio
-async def test_get_menu_items_by_ids_filters_soft_deleted():
+async def test_get_menu_items_by_ids_filters_soft_deleted() -> None:
     item_id = uuid.uuid4()
     session = AsyncMock()
     session.execute = AsyncMock(return_value=_scalars_result([]))
@@ -48,7 +48,7 @@ async def test_get_menu_items_by_ids_filters_soft_deleted():
 
 
 @pytest.mark.asyncio
-async def test_get_options_by_ids_empty():
+async def test_get_options_by_ids_empty() -> None:
     session = AsyncMock()
     result = await get_options_by_ids(session, [])
     assert result == {}
@@ -56,7 +56,7 @@ async def test_get_options_by_ids_empty():
 
 
 @pytest.mark.asyncio
-async def test_get_options_by_ids_returns_dict():
+async def test_get_options_by_ids_returns_dict() -> None:
     option = MagicMock()
     option.id = uuid.uuid4()
     session = AsyncMock()

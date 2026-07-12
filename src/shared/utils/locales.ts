@@ -8,6 +8,16 @@ export const ORDER_STATUS_RU = {
   CANCELLED: "Отменён",
 };
 
+export const ORDER_STATUS_CUSTOMER_RU = {
+  PENDING: "Принимается",
+  ACCEPTED: "Готовится",
+  PREPARING: "Готовится",
+  COOKING: "Готовится",
+  READY: "Готов к выдаче",
+  COMPLETED: "Выдан",
+  CANCELLED: "Отменён",
+};
+
 export const APPROVAL_STATUS_RU = {
   PENDING: "На модерации",
   APPROVED: "Одобрен",
@@ -48,5 +58,5 @@ export const translate = (
   fallback = "",
 ): string => {
   if (!key) return fallback;
-  return dict[key] ?? fallback ?? key;
+  return dict[key] ?? fallback;
 };

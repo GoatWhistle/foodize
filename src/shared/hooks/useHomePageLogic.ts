@@ -1,10 +1,15 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect } from "react";
 import type { Dispatch, SetStateAction, RefObject } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useRestaurantStore } from "@shared/store/useRestaurantStore";
 import type { RestaurantStoreState } from "@shared/store/useRestaurantStore";
+import { useInfiniteList } from "@shared/hooks/useInfiniteList";
 import { logError } from "@shared/utils/logError";
 import type { Restaurant } from "@shared/types/models";
+
+const SEARCH_DEBOUNCE_MS = 380;
+
+const getRestaurantId = (restaurant: Restaurant): string => restaurant.id;
 
 export interface UseHomePageLogicOptions {
   pageSize?: number;
@@ -43,47 +48,32 @@ export const useHomePageLogic = ({
   const [sort, setSort] = useState("default");
   const [direction, setDirection] = useState("desc");
   const [page, setPage] = useState(1);
-  const [allRestaurants, setAllRestaurants] = useState<Restaurant[]>([]);
-  const [hasMore, setHasMore] = useState(true);
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
-  const canLoadMoreRef = useRef<{ hasMore: boolean; loading: boolean }>({
-    hasMore: true,
-    loading: false,
-  });
 
   const { publicRestaurants, loading, publicRestaurantsTotal, fetchPublicRestaurants } =
     useRestaurantStore(
       useShallow((s: RestaurantStoreState) => ({
         publicRestaurants: s.publicRestaurants,
-        loading: s.loading,
+        loading: s.publicLoading,
         publicRestaurantsTotal: s.publicRestaurantsTotal,
         fetchPublicRestaurants: s.fetchPublicRestaurants,
       })),
     );
-
-  canLoadMoreRef.current = { hasMore, loading };
 
   useEffect(() => {
     setSearching(true);
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
       setSearching(false);
-    }, 380);
+    }, SEARCH_DEBOUNCE_MS);
     return () => {
       clearTimeout(timer);
       setSearching(false);
     };
   }, [search]);
 
-  const resetAndLoad = useCallback(() => {
-    setAllRestaurants([]);
-    setPage(1);
-    setHasMore(true);
-  }, []);
-
   useEffect(() => {
-    resetAndLoad();
-  }, [debouncedSearch, onlyOpen, sort, direction, resetAndLoad]);
+    setPage(1);
+  }, [debouncedSearch, onlyOpen, sort, direction]);
 
   useEffect(() => {
     fetchPublicRestaurants({
@@ -93,38 +83,24 @@ export const useHomePageLogic = ({
       direction,
       page,
       size: pageSize,
-    }).catch((err) => logError("useHomePageLogic.fetchPublicRestaurants", err));
+    }).catch((err: unknown) => { logError("useHomePageLogic.fetchPublicRestaurants", err); });
   }, [debouncedSearch, onlyOpen, sort, direction, page, pageSize, fetchPublicRestaurants]);
 
-  useEffect(() => {
-    if (page === 1) {
-      setAllRestaurants(publicRestaurants);
-    } else {
-      setAllRestaurants((prev) => {
-        const ids = new Set(prev.map((r) => r.id));
-        return [...prev, ...publicRestaurants.filter((r) => !ids.has(r.id))];
-      });
-    }
-    const total = publicRestaurantsTotal || 0;
-    setHasMore(page * pageSize < total);
-  }, [publicRestaurants, publicRestaurantsTotal, page, pageSize]);
-
-  useEffect(() => {
-    if (!infiniteScroll) return;
-    const el = sentinelRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        const { hasMore: hm, loading: ld } = canLoadMoreRef.current;
-        if (entry.isIntersecting && hm && !ld) {
-          setPage((p) => p + 1);
-        }
-      },
-      { threshold: 0.1 },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [infiniteScroll]);
+  const {
+    accumulated: allRestaurants,
+    hasMore,
+    sentinelRef,
+  } = useInfiniteList<Restaurant>({
+    items: publicRestaurants,
+    total: publicRestaurantsTotal || 0,
+    page,
+    pageSize,
+    resetKey: `${debouncedSearch}:${onlyOpen}:${sort}:${direction}`,
+    loading,
+    infiniteScroll,
+    getId: getRestaurantId,
+    onLoadMore: () => { setPage((p) => p + 1); },
+  });
 
   const resetFilters = () => {
     setSearch("");

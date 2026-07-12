@@ -1,4 +1,7 @@
-from fastapi import Request, status
+from http import HTTPStatus
+from typing import cast
+
+from fastapi import Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
@@ -31,7 +34,7 @@ def _extract_constraint_name(exc: IntegrityError) -> str:
     constraint = getattr(getattr(exc, "orig", None), "diag", None)
     name = getattr(constraint, "constraint_name", None)
     if name:
-        return name
+        return cast("str", name)
     error_msg = str(exc.orig) if getattr(exc, "orig", None) else str(exc)
     for known in _CONSTRAINT_MESSAGES:
         if known in error_msg:
@@ -39,7 +42,9 @@ def _extract_constraint_name(exc: IntegrityError) -> str:
     return "unknown"
 
 
-async def request_validation_error_handler(request: Request, exc: RequestValidationError):
+async def request_validation_error_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
     errors = [
         {"loc": e.get("loc"), "msg": e.get("msg"), "type": e.get("type")} for e in exc.errors()
     ]
@@ -48,12 +53,12 @@ async def request_validation_error_handler(request: Request, exc: RequestValidat
         for e in errors
     )
     return JSONResponse(
-        status_code=status.HTTP_400_BAD_REQUEST,
+        status_code=HTTPStatus.BAD_REQUEST,
         content=ErrorSchema(detail=ErrorDescriptionSchema(error=message)).model_dump(),
     )
 
 
-async def app_exception_handler(request: Request, exc: AppException):
+async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
     request_id = getattr(request.state, "request_id", None)
     logger.warning(
         "AppException",
@@ -68,7 +73,7 @@ async def app_exception_handler(request: Request, exc: AppException):
     )
 
 
-async def unhandled_exception_handler(request: Request, exc: Exception):
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     request_id = getattr(request.state, "request_id", None)
     logger.exception(
         "Unhandled exception",
@@ -77,7 +82,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
         path=str(request.url.path),
     )
     return JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
         content=ErrorSchema(
             detail=ErrorDescriptionSchema(error="Internal server error")
         ).model_dump(),
@@ -85,14 +90,14 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
     )
 
 
-async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
     return JSONResponse(
         status_code=exc.status_code,
         content=ErrorSchema(detail=ErrorDescriptionSchema(error=exc.detail)).model_dump(),
     )
 
 
-async def integrity_error_handler(request: Request, exc: IntegrityError):
+async def integrity_error_handler(request: Request, exc: IntegrityError) -> JSONResponse:
     error_msg = str(exc.orig) if getattr(exc, "orig", None) else str(exc)
     constraint_name = _extract_constraint_name(exc)
     request_id = getattr(request.state, "request_id", None)
@@ -106,6 +111,6 @@ async def integrity_error_handler(request: Request, exc: IntegrityError):
     friendly_msg = _resolve_integrity_message(error_msg)
 
     return JSONResponse(
-        status_code=status.HTTP_400_BAD_REQUEST,
+        status_code=HTTPStatus.BAD_REQUEST,
         content=ErrorSchema(detail=ErrorDescriptionSchema(error=friendly_msg)).model_dump(),
     )

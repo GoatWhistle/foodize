@@ -1,0 +1,28 @@
+.page {
+  padding: 80px 20px 100px;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+}
+
+.errorBanner {
+  margin-bottom: 16px;
+}
+
+.successBanner {
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--color-success-border);
+  background: var(--color-success-bg);
+  color: var(--color-success-dim);
+  font-size: 0.86rem;
+  font-weight: 700;
+}

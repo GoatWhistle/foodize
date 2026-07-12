@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { Storefront, CookingPot, Sparkle } from "@phosphor-icons/react";
+import { StorefrontIcon, CookingPotIcon, SparkleIcon } from "@phosphor-icons/react";
 import SharedProfilePage from "@shared/pages/ProfilePage/ProfilePage";
 import { ROUTES } from "../../constants/routes";
 import { vendorService } from "@shared/services/vendorService";
@@ -17,7 +17,7 @@ type VendorProfile = Schemas["VendorResponse"];
 interface ExtraMenuItem {
   icon?: ReactNode;
   label: ReactNode;
-  onClick?: () => void;
+  onClick?: (() => void) | undefined;
   right?: ReactNode;
 }
 
@@ -39,14 +39,14 @@ const ProfilePage = () => {
 
   useEffect(() => {
     vendorService.getMyProfile()
-      .then((profile) => { setIsVendor(true); setVendorProfile(profile.data?.data ?? null); })
+      .then((profile) => { setIsVendor(true); setVendorProfile(profile.data.data); })
       .catch(() => { setIsVendor(false); setVendorProfile(null); })
-      .finally(() => setCheckingVendor(false));
+      .finally(() => { setCheckingVendor(false); });
 
     staffService.getMyProfile()
-      .then(() => setIsStaff(true))
-      .catch(() => setIsStaff(false))
-      .finally(() => setCheckingStaff(false));
+      .then(() => { setIsStaff(true); })
+      .catch(() => { setIsStaff(false); })
+      .finally(() => { setCheckingStaff(false); });
   }, []);
 
   const handleBecomeVendor = async () => {
@@ -55,7 +55,7 @@ const ProfilePage = () => {
     try {
       const profile = await vendorService.createProfile({});
       setIsVendor(true);
-      setVendorProfile(profile.data?.data ?? null);
+      setVendorProfile(profile.data.data);
     } catch (err) {
       setVendorError(translateApiError(err, "Не удалось стать вендором"));
     } finally {
@@ -67,7 +67,7 @@ const ProfilePage = () => {
 
   if (!checkingStaff && isStaff) {
     extraMenuItems.push({
-      icon: <CookingPot size={20} weight="bold" color="var(--fire)" />,
+      icon: <CookingPotIcon size={20} weight="bold" color="var(--fire)" />,
       label: "Кабинет сотрудника",
       onClick: () => {
         void navigate(ROUTES.STAFF_DASHBOARD);
@@ -79,7 +79,7 @@ const ProfilePage = () => {
     if (isVendor || isAdmin) {
       if (canOpenVendorDashboard) {
         extraMenuItems.push({
-          icon: <Storefront size={20} weight="bold" />,
+          icon: <StorefrontIcon size={20} weight="bold" />,
           label: "Кабинет вендора",
           onClick: () => {
             void navigate(ROUTES.VENDOR_DASHBOARD);
@@ -87,7 +87,7 @@ const ProfilePage = () => {
         });
       } else {
         extraMenuItems.push({
-          icon: <Storefront size={20} weight="bold" />,
+          icon: <StorefrontIcon size={20} weight="bold" />,
           label: (
             <span>
               Кабинет вендора
@@ -102,7 +102,7 @@ const ProfilePage = () => {
       }
     } else {
       extraMenuItems.push({
-        icon: <Sparkle size={20} weight="bold" color="var(--fire)" />,
+        icon: <SparkleIcon size={20} weight="bold" color="var(--fire)" />,
         label: vendorLoading ? "Загрузка..." : "Стать вендором",
         onClick: vendorLoading
           ? undefined

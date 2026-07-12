@@ -3,7 +3,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { adminService } from '../../../services/adminService';
 import { useModalStore } from '@shared/store/useModalStore';
 import { useDebounce } from '@shared/utils/useDebounce';
-import type { AdminRestaurant, PlatformStats, SuccessListResponse, SuccessResponse } from '@shared/types/models';
+import type { AdminRestaurant, PlatformStats } from '@shared/types/models';
 import { createDetailLoader } from '../../../utils/createDetailLoader';
 import type { RequestReason } from '../useAdminDashboard';
 
@@ -70,12 +70,12 @@ export const useAdminRestaurants = ({
         min_rating: restaurantFilters.min_rating || undefined,
       })
       .then((res) => {
-        const body = res.data as SuccessListResponse<AdminRestaurant>;
-        setRestaurants(body.data || []);
-        setRestaurantsTotal(body.pagination?.total || 0);
+        const body = res.data;
+        setRestaurants(body.data);
+        setRestaurantsTotal(body.pagination.total || 0);
       })
-      .catch(() => setActionError('Не удалось загрузить рестораны'))
-      .finally(() => setRestaurantsLoading(false));
+      .catch(() => { setActionError('Не удалось загрузить рестораны'); })
+      .finally(() => { setRestaurantsLoading(false); });
   }, [activeTab, restaurantsPage, restaurantFilters, restaurantSearch, restaurantVendorSearch, setActionError]);
 
   const loadRestaurantDetails = createDetailLoader<AdminRestaurant | null>(
@@ -115,7 +115,7 @@ export const useAdminRestaurants = ({
     setApproveLoading(true);
     try {
       const res = await adminService.approveRestaurant(restaurantId);
-      refreshSelectedRestaurant((res.data as SuccessResponse<AdminRestaurant>).data);
+      refreshSelectedRestaurant(res.data.data);
       setActionSuccess('Ресторан одобрен');
     } catch {
       setActionError('Не удалось одобрить ресторан');
@@ -132,7 +132,7 @@ export const useAdminRestaurants = ({
       onConfirm: async (reason) => {
         try {
           const res = await adminService.rejectRestaurant(restaurantId, reason);
-          refreshSelectedRestaurant((res.data as SuccessResponse<AdminRestaurant>).data);
+          refreshSelectedRestaurant(res.data.data);
           setActionSuccess('Ресторан отклонён');
         } catch {
           setActionError('Не удалось отклонить ресторан');

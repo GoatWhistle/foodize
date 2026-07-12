@@ -1,5 +1,6 @@
 import uuid
 from datetime import UTC, date, datetime
+from typing import Any
 
 from sqlalchemy import and_, case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -34,7 +35,7 @@ async def get_bottom_items(
     end_date: date,
     restaurant_id: uuid.UUID | None = None,
     limit: int = 10,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
 
     start, end = _day_bounds(start_date, end_date)
     sold = case(
@@ -96,7 +97,7 @@ async def get_menu_overview(
     vendor_id: uuid.UUID,
     restaurant_id: uuid.UUID | None = None,
     limit: int = 100,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     filters = [Restaurant.vendor_id == vendor_id, MenuItem.is_deleted.is_(False)]
     if restaurant_id is not None:
         filters.append(MenuItem.restaurant_id == restaurant_id)
@@ -133,7 +134,7 @@ async def get_reviews_summary(
     vendor_id: uuid.UUID,
     restaurant_id: uuid.UUID | None = None,
     recent_limit: int = 5,
-) -> dict:
+) -> dict[str, Any]:
     filters = [Restaurant.vendor_id == vendor_id, Review.deleted_at.is_(None)]
     if restaurant_id is not None:
         filters.append(Review.restaurant_id == restaurant_id)

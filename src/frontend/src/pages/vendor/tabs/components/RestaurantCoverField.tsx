@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Image as ImageIcon } from '@phosphor-icons/react';
+import { ImageIcon } from '@phosphor-icons/react';
 import { restaurantService } from '@shared/services/restaurantService';
 import { translateApiError } from '@shared/utils/translateApiError';
 import type { Restaurant } from '@shared/types/models';
@@ -9,14 +9,14 @@ interface RestaurantCoverFieldProps {
 }
 
 export function RestaurantCoverField({ selectedRestaurant }: RestaurantCoverFieldProps) {
-  const [coverUrl, setCoverUrl] = useState(selectedRestaurant?.photo_url || '');
+  const [coverUrl, setCoverUrl] = useState(selectedRestaurant.photo_url || '');
   const [coverLoading, setCoverLoading] = useState(false);
   const [coverError, setCoverError] = useState('');
 
   useEffect(() => {
-    setCoverUrl(selectedRestaurant?.photo_url || '');
+    setCoverUrl(selectedRestaurant.photo_url || '');
     setCoverError('');
-  }, [selectedRestaurant?.id, selectedRestaurant?.photo_url]);
+  }, [selectedRestaurant.id, selectedRestaurant.photo_url]);
 
   const handleCoverUpload = async (file: File) => {
     setCoverLoading(true);

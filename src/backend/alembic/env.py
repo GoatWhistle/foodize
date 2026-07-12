@@ -1,5 +1,4 @@
 import asyncio
-import os
 from logging.config import fileConfig
 
 from sqlalchemy import pool
@@ -9,6 +8,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 import features  # noqa: F401
 from alembic import context
 from database import Base
+from settings.config.app_config import settings
 
 config = context.config
 
@@ -19,9 +19,7 @@ target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
-    db_url = os.environ.get("DB__URL")
-    if not db_url:
-        raise RuntimeError("DB__URL not set in environment")
+    db_url = str(settings.db.url)
     context.configure(
         url=db_url,
         target_metadata=target_metadata,
@@ -47,9 +45,7 @@ def do_run_migrations(connection: Connection) -> None:
 
 
 async def run_async_migrations() -> None:
-    db_url = os.environ.get("DB__URL")
-    if not db_url:
-        raise RuntimeError("DB__URL not set in environment")
+    db_url = str(settings.db.url)
 
     connectable = create_async_engine(
         db_url,

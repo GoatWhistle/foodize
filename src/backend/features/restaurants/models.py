@@ -31,7 +31,7 @@ class Restaurant(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMix
     display_id: Mapped[str | None] = mapped_column(
         String(12), unique=True, index=True, nullable=True
     )
-    address: Mapped[str] = mapped_column(unique=True)
+    address: Mapped[str] = mapped_column(String(255), unique=True)
     description: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     vendor_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("vendor_profiles.id", ondelete="CASCADE")

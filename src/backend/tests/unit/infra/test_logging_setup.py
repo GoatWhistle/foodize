@@ -3,17 +3,17 @@ from unittest.mock import MagicMock, patch
 from utils.logging_setup import configure_logging, get_logger
 
 
-def test_get_logger_returns_bound_logger():
+def test_get_logger_returns_bound_logger() -> None:
     logger = get_logger()
     assert logger is not None
 
 
-def test_get_logger_with_custom_name():
+def test_get_logger_with_custom_name() -> None:
     logger = get_logger("custom")
     assert logger is not None
 
 
-def test_configure_logging_no_sentry():
+def test_configure_logging_no_sentry() -> None:
     mock_settings = MagicMock()
     mock_settings.logs.level = "INFO"
     mock_settings.logs.sentry_dsn = None
@@ -25,7 +25,7 @@ def test_configure_logging_no_sentry():
         configure_logging()
 
 
-def test_configure_logging_with_sentry():
+def test_configure_logging_with_sentry() -> None:
     mock_settings = MagicMock()
     mock_settings.logs.level = "DEBUG"
     mock_settings.logs.sentry_dsn = "https://fake@sentry.io/123"

@@ -43,7 +43,7 @@ const ThemeSwitcher = () => {
         {OPTIONS.map(({ value, label }) => (
           <button
             key={value}
-            onClick={() => setTheme(value)}
+            onClick={() => { setTheme(value); }}
             style={{
               padding: "5px 10px",
               borderRadius: "calc(var(--r-sm) - 2px)",

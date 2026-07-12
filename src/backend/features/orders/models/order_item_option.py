@@ -15,7 +15,7 @@ class OrderItemOption(Base, IdUuidPkMixin, CreatedAtMixin):
         ForeignKey("order_items.id", ondelete="CASCADE")
     )
     option_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("menu_item_options.id"),
+        ForeignKey("menu_item_options.id", ondelete="SET NULL"),
         nullable=True,
     )
     name_snapshot: Mapped[str] = mapped_column(String(128))

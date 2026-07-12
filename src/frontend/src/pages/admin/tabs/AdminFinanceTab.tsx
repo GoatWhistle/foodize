@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
-import { DownloadSimple } from '@phosphor-icons/react';
+import { DownloadSimpleIcon } from '@phosphor-icons/react';
 import {
   RevenueChart,
   HourlyLoadChart,
@@ -10,6 +10,7 @@ import {
   TopRestaurantsChart,
 } from '../../../components/dashboard/DashboardCharts';
 import { CATEGORY_RU, translate } from '@shared/utils/locales';
+import { presetToDateRange } from '@shared/utils/datetime';
 import type { adminService as adminServiceType } from '../../../services/adminService';
 import type {
   FinanceAnalytics,
@@ -123,7 +124,7 @@ export default function AdminFinanceTab({
           className="form-input"
           value={financeFilters.restaurant_id}
           onChange={(e) =>
-            setFinanceFilters({ ...financeFilters, restaurant_id: e.target.value })
+            { setFinanceFilters({ ...financeFilters, restaurant_id: e.target.value }); }
           }
           style={selectFilterStyle}
         >
@@ -155,18 +156,9 @@ export default function AdminFinanceTab({
               if (preset.days === null) {
                 setFinanceFilters((prev) => ({ ...prev, date_from: '', date_to: '' }));
               } else {
-                const to = new Date();
-                const from = new Date();
-                from.setDate(to.getDate() - preset.days);
-                const fmt = (d: Date) => {
-                  const m = String(d.getMonth() + 1).padStart(2, '0');
-                  const day = String(d.getDate()).padStart(2, '0');
-                  return `${d.getFullYear()}-${m}-${day}`;
-                };
                 setFinanceFilters((prev) => ({
                   ...prev,
-                  date_from: fmt(from),
-                  date_to: fmt(to),
+                  ...presetToDateRange(preset.days),
                 }));
               }
             }}
@@ -189,7 +181,7 @@ export default function AdminFinanceTab({
           className="btn btn-secondary btn-sm"
           disabled={exportLoading}
           onClick={() =>
-            handleExport(
+            { handleExport(
               () =>
                 adminService.exportFinancePDF({
                   date_from: financeFilters.date_from || undefined,
@@ -197,42 +189,42 @@ export default function AdminFinanceTab({
                   restaurant_id: financeFilters.restaurant_id || undefined,
                 }),
               `финансы_${getRestaurantLabel()}_${getDateRangeLabel()}.pdf`
-            )
+            ); }
           }
         >
-          {exportLoading ? '...' : <><DownloadSimple size={16} weight="bold" /> Финансы PDF</>}
+          {exportLoading ? '...' : <><DownloadSimpleIcon size={16} weight="bold" /> Финансы PDF</>}
         </button>
         <button
           className="btn btn-secondary btn-sm"
           disabled={exportLoading}
           onClick={() =>
-            handleExport(
+            { handleExport(
               () =>
                 adminService.exportAnalyticsPDF({
                   date_from: financeFilters.date_from || undefined,
                   date_to: financeFilters.date_to || undefined,
                 }),
               `аналитика_${getRestaurantLabel()}_${getDateRangeLabel()}.pdf`
-            )
+            ); }
           }
         >
-          {exportLoading ? '...' : <><DownloadSimple size={16} weight="bold" /> Аналитика PDF</>}
+          {exportLoading ? '...' : <><DownloadSimpleIcon size={16} weight="bold" /> Аналитика PDF</>}
         </button>
         <button
           className="btn btn-secondary btn-sm"
           disabled={exportLoading}
           onClick={() =>
-            handleExport(
+            { handleExport(
               () =>
                 adminService.exportOverviewPDF({
                   date_from: financeFilters.date_from || undefined,
                   date_to: financeFilters.date_to || undefined,
                 }),
               `обзор_платформы_${todayStr}.pdf`
-            )
+            ); }
           }
         >
-          {exportLoading ? '...' : <><DownloadSimple size={16} weight="bold" /> Обзор платформы PDF</>}
+          {exportLoading ? '...' : <><DownloadSimpleIcon size={16} weight="bold" /> Обзор платформы PDF</>}
         </button>
       </div>
 
@@ -241,21 +233,21 @@ export default function AdminFinanceTab({
         <>
           <KPICards finance={finance} />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-            <RevenueChart data={finance.revenue_by_day || []} />
+            <RevenueChart data={finance.revenue_by_day} />
             {advancedAnalytics && (
-              <AOVDynamicsChart data={advancedAnalytics.aov_dynamics || []} />
+              <AOVDynamicsChart data={advancedAnalytics.aov_dynamics} />
             )}
-            <TopItemsChart data={finance.top_items || []} />
+            <TopItemsChart data={finance.top_items} />
             {advancedAnalytics && (
               <CategoryRevenueChart
-                data={(advancedAnalytics.category_revenue || []).map((item) => ({
+                data={advancedAnalytics.category_revenue.map((item) => ({
                   ...item,
                   label: translate(CATEGORY_RU, item.label),
                 }))}
               />
             )}
             {advancedAnalytics && (
-              <HourlyLoadChart data={advancedAnalytics.hourly_load || []} />
+              <HourlyLoadChart data={advancedAnalytics.hourly_load} />
             )}
             {financeFilters.restaurant_id ? (
               <div
@@ -276,14 +268,14 @@ export default function AdminFinanceTab({
                 <button
                   className="btn btn-secondary btn-sm"
                   onClick={() =>
-                    setFinanceFilters((prev) => ({ ...prev, restaurant_id: '' }))
+                    { setFinanceFilters((prev) => ({ ...prev, restaurant_id: '' })); }
                   }
                 >
                   Сбросить фильтр
                 </button>
               </div>
             ) : (
-              <TopRestaurantsChart data={finance.top_restaurants || []} />
+              <TopRestaurantsChart data={finance.top_restaurants} />
             )}
           </div>
         </>

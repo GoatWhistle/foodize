@@ -1,4 +1,4 @@
-import { PencilSimple, X } from '@phosphor-icons/react';
+import { PencilSimpleIcon, XIcon } from '@phosphor-icons/react';
 import { useRestaurantStore } from '@shared/store/useRestaurantStore';
 import { menuService } from '@shared/services/menuService';
 import EmptyState from '@shared/components/EmptyState/EmptyState';
@@ -93,7 +93,7 @@ export default function MenuItemList({
             <div style={{ fontSize: '0.78rem', color: 'var(--text-3)' }}>
               {item.price} ₽ • {translate(CATEGORY_RU, item.category)}
             </div>
-            {item.option_groups?.length > 0 && (
+            {item.option_groups.length > 0 && (
               <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {item.option_groups.map((group) => (
                   <span
@@ -106,7 +106,7 @@ export default function MenuItemList({
                       border: '1px solid var(--border)',
                     }}
                   >
-                    {group.name}: {group.options?.length || 0}
+                    {group.name}: {group.options.length || 0}
                   </span>
                 ))}
               </div>
@@ -142,7 +142,7 @@ export default function MenuItemList({
                     await menuService.updateItem(restId, item.id, { is_available: newVal });
                   } catch {
                     useRestaurantStore.setState((s) => ({
-                      menus: { ...s.menus, [restId]: currentMenus[restId] },
+                      menus: { ...s.menus, [restId]: currentMenus[restId] ?? [] },
                     }));
                   }
                 })();
@@ -162,20 +162,20 @@ export default function MenuItemList({
                   price: item.price.toString(),
                   category: item.category,
                   prep_time_minutes: item.prep_time_minutes,
-                  option_groups: normalizeOptionGroups(item.option_groups || []),
+                  option_groups: normalizeOptionGroups(item.option_groups),
                   photoFile: null,
                   photoUrl: item.photo_url || '',
                 });
               }}
             >
-              <PencilSimple size={16} />
+              <PencilSimpleIcon size={16} />
             </button>
             <button
               className="btn btn-secondary btn-sm"
               style={{ color: 'var(--error)' }}
-              onClick={() => handleDeleteMenuItem(item.id)}
+              onClick={() => { handleDeleteMenuItem(item.id); }}
             >
-              <X size={16} />
+              <XIcon size={16} />
             </button>
           </div>
         </div>

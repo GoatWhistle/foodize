@@ -1,6 +1,6 @@
 import SharedFavoritesPage from "@shared/pages/FavoritesPage/FavoritesPage";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "@phosphor-icons/react";
+import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { ROUTES } from "../../constants/routes";
 
 const FavoritesPage = () => {
@@ -25,7 +25,7 @@ const FavoritesPage = () => {
             color: "var(--text-2)",
           }}
         >
-          <ArrowLeft size={18} weight="bold" />
+          <ArrowLeftIcon size={18} weight="bold" />
         </button>
       </div>
       <SharedFavoritesPage pageSize={20} showPagination={true} />

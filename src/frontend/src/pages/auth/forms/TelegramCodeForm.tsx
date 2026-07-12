@@ -28,8 +28,8 @@ const TelegramCodeForm = ({
 
   useEffect(() => {
     if (secondsLeft <= 0) return;
-    const timer = setTimeout(() => setSecondsLeft((s) => s - 1), 1000);
-    return () => clearTimeout(timer);
+    const timer = setTimeout(() => { setSecondsLeft((s) => s - 1); }, 1000);
+    return () => { clearTimeout(timer); };
   }, [secondsLeft]);
 
   const handleResend = async () => {
@@ -51,7 +51,7 @@ const TelegramCodeForm = ({
           autoComplete="one-time-code"
           placeholder="000000"
           value={telegramCode}
-          onChange={(e) => setTelegramCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+          onChange={(e) => { setTelegramCode(e.target.value.replace(/\D/g, '').slice(0, 6)); }}
           required
           autoFocus
         />

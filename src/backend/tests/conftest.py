@@ -1,14 +1,16 @@
-import os
 import sys
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Iterator
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import event
+from sqlalchemy.engine import Connection
+from sqlalchemy.orm import Mapper
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from factories import make_user
 
@@ -23,7 +25,9 @@ _order_display_id = 1000
 
 
 @event.listens_for(Order, "before_insert")
-def _set_order_display_id_for_sqlite_tests(mapper, connection, target) -> None:
+def _set_order_display_id_for_sqlite_tests(
+    mapper: Mapper[Order], connection: Connection, target: Order
+) -> None:
     global _order_display_id
     if connection.dialect.name != "sqlite":
         return
@@ -47,8 +51,8 @@ async def mock_db_session() -> AsyncMock:
 
 
 @pytest_asyncio.fixture
-async def client(mock_db_session: AsyncMock) -> AsyncGenerator[AsyncClient, None]:
-    async def _override_session():
+async def client(mock_db_session: AsyncMock) -> AsyncGenerator[AsyncClient]:
+    async def _override_session() -> AsyncGenerator[AsyncMock]:
         yield mock_db_session
 
     app.dependency_overrides[db_helper.dependency_session_getter] = _override_session
@@ -60,35 +64,38 @@ async def client(mock_db_session: AsyncMock) -> AsyncGenerator[AsyncClient, None
 
 @pytest.fixture
 def default_user() -> User:
-    return make_user()
+    user: User = make_user()
+    return user
 
 
 @pytest.fixture
 def vendor_user() -> User:
-    return make_user(user_role=UserRole.VENDOR.value)
+    user: User = make_user(user_role=UserRole.VENDOR.value)
+    return user
 
 
 @pytest.fixture
 def admin_user() -> User:
-    return make_user(user_role=UserRole.ADMIN.value)
+    user: User = make_user(user_role=UserRole.ADMIN.value)
+    return user
 
 
 @pytest.fixture
-def as_user(default_user: User):
+def as_user(default_user: User) -> Iterator[User]:
     app.dependency_overrides[get_current_user] = lambda: default_user
     yield default_user
     app.dependency_overrides.pop(get_current_user, None)
 
 
 @pytest.fixture
-def as_vendor(vendor_user: User):
+def as_vendor(vendor_user: User) -> Iterator[User]:
     app.dependency_overrides[get_current_user] = lambda: vendor_user
     yield vendor_user
     app.dependency_overrides.pop(get_current_user, None)
 
 
 @pytest.fixture
-def as_admin(admin_user: User):
+def as_admin(admin_user: User) -> Iterator[User]:
     app.dependency_overrides[get_current_user] = lambda: admin_user
     yield admin_user
     app.dependency_overrides.pop(get_current_user, None)

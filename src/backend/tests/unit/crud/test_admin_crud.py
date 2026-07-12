@@ -9,7 +9,7 @@ from shared.enums.order_status import OrderStatus
 
 class TestActivateUser:
     @pytest.mark.asyncio
-    async def test_activates_user(self):
+    async def test_activates_user(self) -> None:
         user = MagicMock()
         user.is_active = False
 
@@ -25,7 +25,7 @@ class TestActivateUser:
 
 class TestGetAllOrders:
     @pytest.mark.asyncio
-    async def test_with_all_filters(self):
+    async def test_with_all_filters(self) -> None:
         mock_result = MagicMock()
         mock_result.scalars = MagicMock(return_value=MagicMock(all=MagicMock(return_value=[])))
 
@@ -42,7 +42,7 @@ class TestGetAllOrders:
         session.execute.assert_awaited_once()
 
     @pytest.mark.asyncio
-    async def test_without_filters(self):
+    async def test_without_filters(self) -> None:
         mock_result = MagicMock()
         mock_result.scalars = MagicMock(return_value=MagicMock(all=MagicMock(return_value=[])))
 
@@ -55,7 +55,7 @@ class TestGetAllOrders:
 
 class TestCountAllOrders:
     @pytest.mark.asyncio
-    async def test_with_all_filters(self):
+    async def test_with_all_filters(self) -> None:
         mock_result = MagicMock()
         mock_result.scalar_one = MagicMock(return_value=5)
 
@@ -71,7 +71,7 @@ class TestCountAllOrders:
         assert result == 5
 
     @pytest.mark.asyncio
-    async def test_without_filters(self):
+    async def test_without_filters(self) -> None:
         mock_result = MagicMock()
         mock_result.scalar_one = MagicMock(return_value=10)
 

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { CookingPot } from "@phosphor-icons/react";
+import { CookingPotIcon } from "@phosphor-icons/react";
 
 interface EmptyStateAction {
   label: string;
@@ -23,7 +23,7 @@ const EmptyState = ({
     <div className="empty-state page-enter">
       {icon !== false && (
         <div className="empty-icon" aria-hidden="true">
-          {icon ?? <CookingPot size={32} weight="bold" />}
+          {icon ?? <CookingPotIcon size={32} weight="bold" />}
         </div>
       )}
       <p className="empty-title">{title}</p>

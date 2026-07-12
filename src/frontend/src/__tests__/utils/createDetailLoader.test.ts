@@ -1,9 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
+import type { Dispatch, SetStateAction } from 'react';
 import { createDetailLoader } from '../../utils/createDetailLoader';
 
 describe('createDetailLoader', () => {
   const setup = () => {
-    const setLoading = vi.fn();
+    const setLoading = vi.fn<Dispatch<SetStateAction<boolean>>>();
     const setSelected = vi.fn();
     const setError = vi.fn();
     return { setLoading, setSelected, setError };
@@ -64,6 +65,6 @@ describe('createDetailLoader', () => {
     const loader = createDetailLoader(setLoading, setSelected, fetchFn, '', setError);
     await loader('x');
 
-    expect(setError.mock.calls[0][0]).toBe('');
+    expect(setError.mock.calls[0]?.[0]).toBe('');
   });
 });

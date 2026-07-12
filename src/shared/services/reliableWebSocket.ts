@@ -1,3 +1,5 @@
+import { logError } from "@shared/utils/logError";
+
 export type WebSocketStatus =
   | "connecting"
   | "connected"
@@ -10,12 +12,17 @@ export type CloseHandler = () => void;
 export type StatusHandler = (status: WebSocketStatus) => void;
 export type TokenGetter = () => string | null | undefined;
 
+const PING_INTERVAL_MS = 30_000;
+const PONG_TIMEOUT_MS = 10_000;
+const RECONNECT_BASE_DELAY_MS = 1_000;
+const RECONNECT_MAX_DELAY_MS = 30_000;
+
 export class ReliableWebSocket {
   private urlOrFactory: UrlOrFactory;
   private onMessage: MessageHandler;
-  private onClose?: CloseHandler;
-  private onStatusChange?: StatusHandler;
-  private getToken?: TokenGetter;
+  private onClose?: CloseHandler | undefined;
+  private onStatusChange?: StatusHandler | undefined;
+  private getToken?: TokenGetter | undefined;
   private ws: WebSocket | null;
   private reconnectAttempts: number;
   private maxReconnectAttempts: number;
@@ -91,7 +98,8 @@ export class ReliableWebSocket {
         }
         if (data.error) return;
         this.onMessage(data);
-      } catch {
+      } catch (err) {
+        logError("reliableWebSocket.onmessage", err);
       }
     };
 
@@ -116,14 +124,14 @@ export class ReliableWebSocket {
         this.ws.send(JSON.stringify({ type: "ping" }));
         this.resetPongTimeout();
       }
-    }, 30000);
+    }, PING_INTERVAL_MS);
   }
 
   private resetPongTimeout(): void {
     if (this.pongTimeout) clearTimeout(this.pongTimeout);
     this.pongTimeout = setTimeout(() => {
       this.ws?.close();
-    }, 10000);
+    }, PONG_TIMEOUT_MS);
   }
 
   private reconnect(): void {
@@ -133,9 +141,12 @@ export class ReliableWebSocket {
       return;
     }
     this.updateStatus("reconnecting");
-    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+    const delay = Math.min(
+      RECONNECT_BASE_DELAY_MS * Math.pow(2, this.reconnectAttempts),
+      RECONNECT_MAX_DELAY_MS,
+    );
     this.reconnectAttempts++;
-    setTimeout(() => this.connect(), delay);
+    setTimeout(() => { this.connect(); }, delay);
   }
 
   private cleanup(): void {

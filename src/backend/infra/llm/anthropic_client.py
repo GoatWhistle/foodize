@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
-from typing import Any
+import asyncio
+from typing import TYPE_CHECKING, Any
 
 from infra.llm.base import (
     LLMClient,
@@ -14,6 +14,9 @@ from infra.llm.base import (
     ToolSpec,
     Usage,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 _EMPTY_PLACEHOLDER = "(пустой ответ)"
 
@@ -82,7 +85,6 @@ def _parse_message(response: Any) -> LLMResponse:
             input_tokens=response.usage.input_tokens,
             output_tokens=response.usage.output_tokens,
         ),
-        raw=response,
     )
 
 
@@ -101,6 +103,7 @@ class AnthropicClient(LLMClient):
         self._client = AsyncAnthropic(api_key=api_key, timeout=timeout, max_retries=max_retries)
         self._model = model
         self._max_tokens = max_tokens
+        self._timeout = timeout
 
     @property
     def model(self) -> str:
@@ -147,9 +150,14 @@ class AnthropicClient(LLMClient):
     ) -> AsyncIterator[StreamEvent]:
         kwargs = self._request_kwargs(system, messages, tools, tool_choice)
         async with self._client.messages.stream(**kwargs) as stream:
-            async for text in stream.text_stream:
+            text_iterator = stream.text_stream.__aiter__()
+            while True:
+                try:
+                    text = await asyncio.wait_for(text_iterator.__anext__(), timeout=self._timeout)
+                except StopAsyncIteration:
+                    break
                 yield TextDelta(text)
-            message = await stream.get_final_message()
+            message = await asyncio.wait_for(stream.get_final_message(), timeout=self._timeout)
         yield _parse_message(message)
 
     async def aclose(self) -> None:

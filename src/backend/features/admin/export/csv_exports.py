@@ -3,7 +3,7 @@ import csv
 import io
 from collections.abc import Callable, Iterable
 from datetime import UTC, date, datetime, timedelta
-from typing import TypeVar
+from typing import Any, TypeVar
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,12 +16,12 @@ MAX_EXPORT_DAYS = 31
 _T = TypeVar("_T")
 
 
-def _make_csv(headers: list[str], rows: list[list]) -> bytes:
+def _make_csv(headers: list[str], rows: list[list[Any]]) -> bytes:
     return _render_csv(headers, rows, lambda row: row)
 
 
 def _render_csv(
-    headers: list[str], items: Iterable[_T], row_builder: Callable[[_T], list]
+    headers: list[str], items: Iterable[_T], row_builder: Callable[[_T], list[Any]]
 ) -> bytes:
     buf = io.StringIO()
     writer = csv.writer(buf)
@@ -31,7 +31,7 @@ def _render_csv(
 
 
 async def _make_csv_async(
-    headers: list[str], items: Iterable[_T], row_builder: Callable[[_T], list]
+    headers: list[str], items: Iterable[_T], row_builder: Callable[[_T], list[Any]]
 ) -> bytes:
     return await asyncio.to_thread(_render_csv, headers, items, row_builder)
 

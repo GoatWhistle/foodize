@@ -6,6 +6,7 @@ import hashlib
 from settings.config.app_config import settings
 
 _EMBED_BATCH_SIZE = 96
+_EMBED_MAX_CONCURRENCY = 4
 
 
 class EmbeddingClient:
@@ -19,15 +20,25 @@ class EmbeddingClient:
     def model(self) -> str:
         return self._model
 
+    async def _embed_batch(
+        self, batch: list[str], semaphore: asyncio.Semaphore
+    ) -> list[list[float]]:
+        async with semaphore:
+            response = await self._client.embeddings.create(model=self._model, input=batch)
+            return [item.embedding for item in response.data]
+
     async def embed(self, texts: list[str]) -> list[list[float]]:
         if not texts:
             return []
-        embeddings: list[list[float]] = []
-        for start in range(0, len(texts), _EMBED_BATCH_SIZE):
-            batch = texts[start : start + _EMBED_BATCH_SIZE]
-            response = await self._client.embeddings.create(model=self._model, input=batch)
-            embeddings.extend(item.embedding for item in response.data)
-        return embeddings
+        batches = [
+            texts[start : start + _EMBED_BATCH_SIZE]
+            for start in range(0, len(texts), _EMBED_BATCH_SIZE)
+        ]
+        semaphore = asyncio.Semaphore(_EMBED_MAX_CONCURRENCY)
+        batch_results = await asyncio.gather(
+            *(self._embed_batch(batch, semaphore) for batch in batches)
+        )
+        return [embedding for batch_result in batch_results for embedding in batch_result]
 
     async def aclose(self) -> None:
         await self._client.close()

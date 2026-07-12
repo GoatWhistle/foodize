@@ -38,7 +38,6 @@ vi.mock('@shared/store/useRestaurantStore.js', () => ({
 const makeStore = (overrides: Record<string, unknown> = {}) => ({
   cart: [],
   cartRestaurantId: null,
-  orders: [],
   removeFromCart: vi.fn(),
   addToCart: vi.fn(),
   clearCart: vi.fn(),
@@ -52,8 +51,15 @@ type MockStore = ReturnType<typeof makeStore>;
 
 let mockStore = makeStore();
 
-vi.mock('../../store/useOrderStore', () => ({
-  useOrderStore: (sel?: (s: MockStore) => unknown) => (sel ? sel(mockStore) : mockStore),
+const ordersStore = { orders: [] as unknown[] };
+
+vi.mock('@shared/store/useCartStore.instance', () => ({
+  useCartStore: (sel?: (s: MockStore) => unknown) => (sel ? sel(mockStore) : mockStore),
+}));
+
+vi.mock('@shared/store/useOrdersStore.instance', () => ({
+  useOrdersStore: (sel?: (s: typeof ordersStore) => unknown) =>
+    sel ? sel(ordersStore) : ordersStore,
 }));
 
 describe('CartDrawer', () => {
@@ -76,7 +82,7 @@ describe('CartDrawer', () => {
   it('renders cart items and total', () => {
     const item = { id: '1', name: 'Pizza', price: 100 };
     mockStore = makeStore({
-      cart: [{ menuItem: item, quantity: 2 }],
+      cart: [{ menuItem: item, quantity: 2, selectedOptionIds: [], selectedOptions: [] }],
       cartTotal: () => 200,
     });
 
@@ -89,7 +95,7 @@ describe('CartDrawer', () => {
 
   it('calls placeOrder when checkout button clicked', async () => {
     mockStore = makeStore({
-      cart: [{ menuItem: { id: '1', name: 'P' }, quantity: 1, selectedOptionIds: [] }],
+      cart: [{ menuItem: { id: '1', name: 'P' }, quantity: 1, selectedOptionIds: [], selectedOptions: [] }],
     });
     renderInRouter(<CartDrawer onClose={onClose} />);
 
@@ -102,7 +108,7 @@ describe('CartDrawer', () => {
 
   it('calls clearCart when "Очистить корзину" clicked', () => {
     mockStore = makeStore({
-      cart: [{ menuItem: { id: '1' }, quantity: 1 }],
+      cart: [{ menuItem: { id: '1' }, quantity: 1, selectedOptionIds: [], selectedOptions: [] }],
     });
     renderInRouter(<CartDrawer onClose={onClose} />);
 
@@ -112,7 +118,7 @@ describe('CartDrawer', () => {
 
   it('shows error when placeOrder rejects', async () => {
     mockStore = makeStore({
-      cart: [{ menuItem: { id: '1', name: 'P' }, quantity: 1, selectedOptionIds: [] }],
+      cart: [{ menuItem: { id: '1', name: 'P' }, quantity: 1, selectedOptionIds: [], selectedOptions: [] }],
       placeOrder: vi.fn().mockRejectedValueOnce(new Error('payment failed')),
     });
     renderInRouter(<CartDrawer onClose={onClose} />);
@@ -126,7 +132,7 @@ describe('CartDrawer', () => {
 
   it('renders checkout button with total price', () => {
     mockStore = makeStore({
-      cart: [{ menuItem: { id: '1', name: 'Burger' }, quantity: 1 }],
+      cart: [{ menuItem: { id: '1', name: 'Burger' }, quantity: 1, selectedOptionIds: [], selectedOptions: [] }],
       cartTotal: () => 350,
     });
     renderInRouter(<CartDrawer onClose={onClose} />);

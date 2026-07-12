@@ -1,31 +1,38 @@
+import asyncio
+from http import HTTPStatus
+from typing import Any, NoReturn
+
 import pytest
+from _pytest.logging import LogCaptureFixture
 from aiogram import Router
+from aiogram.webhook.aiohttp_server import SimpleRequestHandler
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
+from pytest_mock import MockerFixture
 
 import main
 from config import bot_config
 
 
 @pytest.fixture(autouse=True)
-def _fresh_start_router(mocker):
+def _fresh_start_router(mocker: MockerFixture) -> None:
     mocker.patch("main.start.router", Router())
 
 
 @pytest.mark.asyncio
-async def test_health_endpoint_returns_ok():
+async def test_health_endpoint_returns_ok() -> None:
     app = web.Application()
     app.router.add_get("/health", main._health)
 
     async with TestClient(TestServer(app)) as client:
         resp = await client.get("/health")
-        assert resp.status == 200
+        assert resp.status == HTTPStatus.OK
         data = await resp.json()
         assert data == {"status": "ok"}
 
 
 @pytest.mark.asyncio
-async def test_on_error_logs_exception_without_raising(caplog):
+async def test_on_error_logs_exception_without_raising(caplog: LogCaptureFixture) -> None:
     event = type(
         "FakeErrorEvent",
         (),
@@ -35,7 +42,7 @@ async def test_on_error_logs_exception_without_raising(caplog):
 
 
 @pytest.mark.asyncio
-async def test_main_raises_without_webhook_secret_in_webhook_mode(mocker):
+async def test_main_raises_without_webhook_secret_in_webhook_mode(mocker: MockerFixture) -> None:
     bot_config.mode = "webhook"
     bot_config.webhook_secret = ""
     bot_config.webhook_url = "https://example.com"
@@ -50,7 +57,7 @@ async def test_main_raises_without_webhook_secret_in_webhook_mode(mocker):
 
 
 @pytest.mark.asyncio
-async def test_webhook_handler_configured_with_secret_token(mocker):
+async def test_webhook_handler_configured_with_secret_token(mocker: MockerFixture) -> None:
     bot_config.mode = "webhook"
     bot_config.webhook_secret = "top-secret"
     bot_config.webhook_url = "https://example.com"
@@ -62,10 +69,10 @@ async def test_webhook_handler_configured_with_secret_token(mocker):
     mock_bot_instance.set_webhook = mocker.AsyncMock()
     mocker.patch("main.Bot", return_value=mock_bot_instance)
 
-    handler_spy = mocker.patch("main.SimpleRequestHandler", wraps=main.SimpleRequestHandler)
+    handler_spy = mocker.patch("main.SimpleRequestHandler", wraps=SimpleRequestHandler)
 
-    async def _stop_after_setup(*args, **kwargs):
-        raise _StopMain()
+    async def _stop_after_setup(*args: Any, **kwargs: Any) -> NoReturn:
+        raise _StopMain
 
     mocker.patch("main.web.TCPSite.start", side_effect=_stop_after_setup)
 
@@ -83,7 +90,5 @@ class _StopMain(Exception):
     pass
 
 
-async def _never_ending():
-    import asyncio
-
+async def _never_ending() -> None:
     await asyncio.Future()

@@ -30,6 +30,8 @@ const KanbanColumn = ({
 
   return (
     <div
+      role="group"
+      aria-label={`Колонка «${column.label}», заказов: ${orders.length}`}
       style={{
         flex: 1,
         minWidth: 0,
@@ -88,6 +90,8 @@ const KanbanColumn = ({
       </div>
 
       <div
+        role="list"
+        aria-label={column.label}
         style={{
           flex: 1,
           minHeight: 120,
@@ -124,7 +128,7 @@ const KanbanColumn = ({
             onCancel={onCancel}
             updating={updating}
             dragging={draggingId === order.id}
-            onDragStart={() => onDragStart(order)}
+            onDragStart={() => { onDragStart(order); }}
             onDragEnd={onDragEnd}
           />
         ))}

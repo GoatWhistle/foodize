@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 
 class ToolInputError(Exception):
@@ -52,7 +54,6 @@ class LLMResponse:
     tool_calls: list[ToolCall]
     stop_reason: str
     usage: Usage
-    raw: Any = None
 
 
 @dataclass
@@ -86,12 +87,7 @@ class LLMClient(ABC):
         messages: list[Message],
         tools: list[ToolSpec] | None = None,
         tool_choice: str | None = None,
-    ) -> AsyncIterator[StreamEvent]:
-        """Yield zero or more TextDelta, then exactly one final LLMResponse.
-
-        The final LLMResponse carries the full accumulated text, tool calls,
-        stop reason and usage for the whole turn.
-        """
+    ) -> AsyncIterator[StreamEvent]: ...
 
     @abstractmethod
     async def aclose(self) -> None: ...

@@ -1,4 +1,4 @@
-import { CookingPot, Bell } from '@phosphor-icons/react';
+import { CookingPotIcon, BellIcon } from '@phosphor-icons/react';
 import { STAFF_ROLE_RU, translate } from '@shared/utils/locales';
 import type { StaffProfile } from '@shared/types/models';
 
@@ -20,7 +20,7 @@ const StaffHeader = ({ profile, newOrderAlert, onDismissAlert, autoEta, onToggle
         marginBottom: 6,
       }}
     >
-      <CookingPot size={28} weight="fill" color="var(--fire)" />
+      <CookingPotIcon size={28} weight="fill" color="var(--fire)" />
       <h1
         style={{
           fontFamily: 'var(--font-sans)',
@@ -49,7 +49,7 @@ const StaffHeader = ({ profile, newOrderAlert, onDismissAlert, autoEta, onToggle
           }}
           onClick={onDismissAlert}
         >
-          <Bell size={12} weight="fill" />
+          <BellIcon size={12} weight="fill" />
           Новый заказ!
         </button>
       )}
@@ -85,7 +85,7 @@ const StaffHeader = ({ profile, newOrderAlert, onDismissAlert, autoEta, onToggle
         <input
           type="checkbox"
           checked={autoEta}
-          onChange={(e) => onToggleAutoEta(e.target.checked)}
+          onChange={(e) => { onToggleAutoEta(e.target.checked); }}
           style={{
             width: 14,
             height: 14,

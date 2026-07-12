@@ -19,7 +19,7 @@ from shared.exceptions.rules import RuleException
 
 
 class TestRegisterUser:
-    async def test_register_success(self, mock_db_session):
+    async def test_register_success(self, mock_db_session: AsyncMock) -> None:
         user_id = uuid.uuid4()
 
         with (
@@ -46,7 +46,7 @@ class TestRegisterUser:
         assert result.id == user_id
         assert result.name == "Ivan"
 
-    async def test_register_fails_if_phone_exists(self, mock_db_session):
+    async def test_register_fails_if_phone_exists(self, mock_db_session: AsyncMock) -> None:
         with patch(
             "features.auth.service.ensure_user_not_exists_by_phone",
             new_callable=AsyncMock,
@@ -63,7 +63,7 @@ class TestRegisterUser:
 
 
 class TestLoginUser:
-    async def test_login_success_returns_tokens(self, mock_db_session):
+    async def test_login_success_returns_tokens(self, mock_db_session: AsyncMock) -> None:
         user = make_user()
         mock_response = MagicMock()
 
@@ -87,7 +87,7 @@ class TestLoginUser:
         assert result.refresh_token == "ref_tok"
         assert mock_response.set_cookie.call_count == 2
 
-    async def test_login_sets_access_cookie(self, mock_db_session):
+    async def test_login_sets_access_cookie(self, mock_db_session: AsyncMock) -> None:
         user = make_user()
         mock_response = MagicMock()
 
@@ -110,7 +110,7 @@ class TestLoginUser:
         assert first_call_kwargs["key"] == "access_token"
         assert first_call_kwargs["httponly"] is True
 
-    async def test_login_invalid_credentials(self, mock_db_session):
+    async def test_login_invalid_credentials(self, mock_db_session: AsyncMock) -> None:
         mock_response = MagicMock()
         with patch(
             "features.auth.service.get_user_by_phone_or_401",
@@ -126,16 +126,16 @@ class TestLoginUser:
 
 
 class TestGetCurrentUser:
-    async def test_no_token_raises_auth_exception(self, mock_db_session):
+    async def test_no_token_raises_auth_exception(self, mock_db_session: AsyncMock) -> None:
         with pytest.raises(AuthException):
-            await get_current_user(token=None, session=mock_db_session)
+            await get_current_user(token=None, session=mock_db_session)  # type: ignore[arg-type]
 
-    async def test_invalid_token_raises_auth_exception(self, mock_db_session):
+    async def test_invalid_token_raises_auth_exception(self, mock_db_session: AsyncMock) -> None:
         with patch("features.auth.service.decode_jwt", side_effect=jwt.InvalidTokenError()):
             with pytest.raises(AuthException):
                 await get_current_user(token="bad.token.here", session=mock_db_session)
 
-    async def test_valid_token_returns_user(self, mock_db_session):
+    async def test_valid_token_returns_user(self, mock_db_session: AsyncMock) -> None:
         user = make_user()
 
         with (
@@ -157,14 +157,16 @@ class TestGetCurrentUser:
 
         assert result is user
 
-    async def test_token_with_missing_sub_raises_auth_exception(self, mock_db_session):
+    async def test_token_with_missing_sub_raises_auth_exception(
+        self, mock_db_session: AsyncMock
+    ) -> None:
         with patch("features.auth.service.decode_jwt", return_value={"phone": "7900"}):
             with pytest.raises(AuthException):
                 await get_current_user(token="tok", session=mock_db_session)
 
 
 class TestRefreshUserToken:
-    async def test_refresh_success(self, mock_db_session):
+    async def test_refresh_success(self, mock_db_session: AsyncMock) -> None:
         user = make_user()
         mock_request = MagicMock()
         mock_request.cookies = {"refresh_token": "valid_refresh"}
@@ -198,7 +200,7 @@ class TestRefreshUserToken:
         assert result.refresh_token == "new_ref"
         assert mock_response.set_cookie.call_count == 2
 
-    async def test_refresh_missing_token_raises(self, mock_db_session):
+    async def test_refresh_missing_token_raises(self, mock_db_session: AsyncMock) -> None:
         mock_request = MagicMock()
         mock_request.cookies = {}
         mock_request.headers = {}
@@ -213,7 +215,7 @@ class TestRefreshUserToken:
                 await refresh_user_token(mock_request, mock_response, mock_db_session)
         assert "Refresh token missing" in str(exc.value.detail)
 
-    async def test_refresh_invalid_token_raises(self, mock_db_session):
+    async def test_refresh_invalid_token_raises(self, mock_db_session: AsyncMock) -> None:
         mock_request = MagicMock()
         mock_request.cookies = {"refresh_token": "invalid"}
         mock_response = MagicMock()
@@ -222,7 +224,7 @@ class TestRefreshUserToken:
             with pytest.raises(AuthException):
                 await refresh_user_token(mock_request, mock_response, mock_db_session)
 
-    async def test_refresh_missing_sub_raises(self, mock_db_session):
+    async def test_refresh_missing_sub_raises(self, mock_db_session: AsyncMock) -> None:
         mock_request = MagicMock()
         mock_request.cookies = {"refresh_token": "no_sub"}
         mock_response = MagicMock()

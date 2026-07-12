@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
-import { Monitor, Star } from '@phosphor-icons/react';
+import { MonitorIcon, StarIcon } from '@phosphor-icons/react';
 import type { AdminRestaurant } from '../hooks/useAdminRestaurants';
 
 const cardStyle = {
@@ -39,7 +39,7 @@ export function AdminRestaurantRow({
       />
       <button
         type="button"
-        onClick={() => loadRestaurantDetails(restaurant.id)}
+        onClick={() => { loadRestaurantDetails(restaurant.id); }}
         style={{
           ...cardStyle,
           padding: 16,
@@ -80,7 +80,7 @@ export function AdminRestaurantRow({
             {restaurant.orders_count || 0} заказов
             <br />
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-              <Star size={14} weight="fill" color="var(--star)" /> {restaurant.average_rating || 0}
+              <StarIcon size={14} weight="fill" color="var(--star)" /> {restaurant.average_rating || 0}
             </span>
           </div>
           <div
@@ -107,7 +107,7 @@ export function AdminRestaurantRow({
               whiteSpace: 'nowrap',
             }}
           >
-            <Monitor size={11} />
+            <MonitorIcon size={11} />
             Табло
           </div>
         </div>

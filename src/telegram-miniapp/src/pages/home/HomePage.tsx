@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ForkKnife, Sparkle, X } from "@phosphor-icons/react";
+import { ForkKnifeIcon, SparkleIcon, XIcon } from "@phosphor-icons/react";
 import { useAuthStore } from "../../store/useAuthStore";
 import RestaurantCard from "@shared/components/RestaurantCard/RestaurantCard";
 import EmptyState from "@shared/components/EmptyState/EmptyState";
@@ -35,7 +35,7 @@ const HomePage = () => {
     sentinelRef,
   } = useHomePageLogic({ pageSize: 20, infiniteScroll: true });
 
-  const firstName = user?.first_name || user?.name?.split(" ")[0] || "";
+  const firstName = user?.first_name || user?.name.split(" ")[0] || "";
 
   const askAiAssistant = async (): Promise<void> => {
     setAiLoading(true);
@@ -66,7 +66,7 @@ const HomePage = () => {
       {firstName && (
         <div className={s.greeting}>
           <div className={s.greetingLabel}>
-            {getGreeting()} <ForkKnife size={12} weight="fill" style={{ display: "inline", verticalAlign: "middle" }} />
+            {getGreeting()} <ForkKnifeIcon size={12} weight="fill" style={{ display: "inline", verticalAlign: "middle" }} />
           </div>
           <div className={s.greetingName}>{firstName}</div>
         </div>
@@ -92,7 +92,7 @@ const HomePage = () => {
             }}
           >
             <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
-              <Sparkle size={15} weight="fill" />
+              <SparkleIcon size={15} weight="fill" />
               AI-помощник
             </span>
           </button>
@@ -103,16 +103,16 @@ const HomePage = () => {
         <div className={s.aiPanel} role="status" aria-live="polite">
           <div className={s.aiPanelHead}>
             <span className={s.aiPanelTitle}>
-              <Sparkle size={15} weight="fill" />
+              <SparkleIcon size={15} weight="fill" />
               AI-помощник
             </span>
             <button
               type="button"
               className={s.aiPanelClose}
               aria-label="Закрыть"
-              onClick={() => setAiReply(null)}
+              onClick={() => { setAiReply(null); }}
             >
-              <X size={16} weight="bold" />
+              <XIcon size={16} weight="bold" />
             </button>
           </div>
           <div

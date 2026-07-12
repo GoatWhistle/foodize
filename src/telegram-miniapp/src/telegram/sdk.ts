@@ -94,11 +94,11 @@ export function clearTelegramInitData(): void {
 }
 
 export function getTelegramUser(): TelegramWebAppUser | null {
-  return tg?.initDataUnsafe?.user ?? null;
+  return tg?.initDataUnsafe.user ?? null;
 }
 
 export function getStartParam(): string {
-  return tg?.initDataUnsafe?.start_param ?? "";
+  return tg?.initDataUnsafe.start_param ?? "";
 }
 
 export function expandApp(): void {
@@ -140,7 +140,7 @@ export function requestTelegramContact(): Promise<boolean> {
     }
 
     tg.requestContact((granted) => {
-      resolve(Boolean(granted));
+      resolve(granted);
     });
   });
 }
@@ -156,3 +156,13 @@ export const getMainButton = (): TelegramMainButton | null =>
   tg?.MainButton ?? null;
 export const getHapticFeedback = (): TelegramHapticFeedback | null =>
   tg?.HapticFeedback ?? null;
+
+export const hapticSelection = (): void => {
+  tg?.HapticFeedback.selectionChanged();
+};
+
+export const hapticImpact = (
+  style: "light" | "medium" | "heavy" | "rigid" | "soft" = "light",
+): void => {
+  tg?.HapticFeedback.impactOccurred(style);
+};

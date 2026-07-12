@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, exists, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -48,6 +48,11 @@ async def get_staff_profile_by_user_id(
 ) -> StaffProfile | None:
     result = await session.execute(select(StaffProfile).where(StaffProfile.user_id == user_id))
     return result.scalar_one_or_none()
+
+
+async def staff_profile_exists(session: AsyncSession, user_id: uuid.UUID) -> bool:
+    result = await session.execute(select(exists().where(StaffProfile.user_id == user_id)))
+    return bool(result.scalar())
 
 
 async def get_request_by_id(session: AsyncSession, request_id: uuid.UUID) -> StaffRequest | None:

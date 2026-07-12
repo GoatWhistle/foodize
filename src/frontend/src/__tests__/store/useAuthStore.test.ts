@@ -19,14 +19,13 @@ describe('useAuthStore', () => {
   beforeEach(() => {
     useAuthStore.setState({
       user: null,
-      isAuthenticated: false,
     });
     vi.clearAllMocks();
   });
 
   it('initial state is correct', () => {
     const state = useAuthStore.getState();
-    expect(state.isAuthenticated).toBe(false);
+    expect(state.user).toBeNull();
     expect(state.user).toBe(null);
   });
 
@@ -38,7 +37,7 @@ describe('useAuthStore', () => {
     await useAuthStore.getState().login({ phone_number: '123', password: 'pw' });
 
     const state = useAuthStore.getState();
-    expect(state.isAuthenticated).toBe(true);
+    expect(state.user).not.toBeNull();
     expect(state.user).toEqual(mockUser);
   });
 
@@ -50,16 +49,16 @@ describe('useAuthStore', () => {
       useAuthStore.getState().login({ phone_number: '123', password: 'pw' })
     ).rejects.toThrow(errorMsg);
 
-    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+    expect(useAuthStore.getState().user).toBeNull();
   });
 
   it('logout clears state', async () => {
-    useAuthStore.setState({ isAuthenticated: true, user: { id: '1' } as unknown as UserRead });
+    useAuthStore.setState({ user: { id: '1' } as unknown as UserRead });
     vi.mocked(authService.logout).mockResolvedValueOnce({});
 
     await useAuthStore.getState().logout();
 
-    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+    expect(useAuthStore.getState().user).toBeNull();
     expect(useAuthStore.getState().user).toBe(null);
   });
 
@@ -76,7 +75,7 @@ describe('useAuthStore', () => {
 
     expect(result).toEqual({ requiresPassword: false });
     expect(useAuthStore.getState().user).toEqual(mockUser);
-    expect(useAuthStore.getState().isAuthenticated).toBe(true);
+    expect(useAuthStore.getState().user).not.toBeNull();
   });
 
   it('setTelegramSitePassword refreshes current user after saving password', async () => {
@@ -88,16 +87,16 @@ describe('useAuthStore', () => {
 
     expect(authService.setTelegramSitePassword).toHaveBeenCalledWith({ password: 'strongpassword' });
     expect(useAuthStore.getState().user).toEqual(mockUser);
-    expect(useAuthStore.getState().isAuthenticated).toBe(true);
+    expect(useAuthStore.getState().user).not.toBeNull();
   });
 
   it('fetchMe clears auth state when current user request fails', async () => {
-    useAuthStore.setState({ isAuthenticated: true, user: { id: '1' } as unknown as UserRead });
+    useAuthStore.setState({ user: { id: '1' } as unknown as UserRead });
     vi.mocked(authService.getMe).mockRejectedValueOnce(new Error('expired'));
 
     await useAuthStore.getState().fetchMe();
 
-    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+    expect(useAuthStore.getState().user).toBeNull();
     expect(useAuthStore.getState().user).toBe(null);
   });
 
@@ -108,7 +107,7 @@ describe('useAuthStore', () => {
       useAuthStore.getState().loginWithTelegramCode({ phone_number: '123', code: 'bad' }),
     ).rejects.toThrow('invalid code');
 
-    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+    expect(useAuthStore.getState().user).toBeNull();
     expect(useAuthStore.getState().user).toBe(null);
   });
 
@@ -125,7 +124,7 @@ describe('useAuthStore', () => {
 
     expect(result).toEqual({ requiresPassword: true });
     expect(useAuthStore.getState().user).toEqual(mockUser);
-    expect(useAuthStore.getState().isAuthenticated).toBe(true);
+    expect(useAuthStore.getState().user).not.toBeNull();
   });
 
   it('loginWithTelegramCodeByUsername clears auth and rethrows on failure', async () => {
@@ -137,7 +136,7 @@ describe('useAuthStore', () => {
         .loginWithTelegramCodeByUsername({ telegram_username: 'x', code: '000000' }),
     ).rejects.toThrow('bad username');
 
-    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+    expect(useAuthStore.getState().user).toBeNull();
   });
 
   it('setTelegramSitePassword clears auth and rethrows on failure', async () => {
@@ -147,17 +146,17 @@ describe('useAuthStore', () => {
       useAuthStore.getState().setTelegramSitePassword('123'),
     ).rejects.toThrow('weak password');
 
-    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+    expect(useAuthStore.getState().user).toBeNull();
     expect(useAuthStore.getState().user).toBe(null);
   });
 
   it('logout clears state even when authService.logout fails', async () => {
-    useAuthStore.setState({ isAuthenticated: true, user: { id: '1' } as unknown as UserRead });
+    useAuthStore.setState({ user: { id: '1' } as unknown as UserRead });
     vi.mocked(authService.logout).mockRejectedValueOnce(new Error('network'));
 
     await useAuthStore.getState().logout();
 
-    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+    expect(useAuthStore.getState().user).toBeNull();
     expect(useAuthStore.getState().user).toBe(null);
   });
 });

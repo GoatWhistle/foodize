@@ -50,4 +50,4 @@ class AppConfig(BaseConfig):
         return self
 
 
-settings = AppConfig()  # type: ignore[call-arg]
+settings = AppConfig()

@@ -24,7 +24,7 @@ from features.restaurants.exceptions import (
 
 
 class TestPlaceOrder:
-    async def test_place_order_success(self, mock_db_session):
+    async def test_place_order_success(self, mock_db_session: AsyncMock) -> None:
         user = make_user()
         item_id = uuid.uuid4()
         restaurant_id = uuid.uuid4()
@@ -64,7 +64,7 @@ class TestPlaceOrder:
                 return_value=0,
             ),
             patch(
-                "features.orders.services.order_queries.estimate_restaurant_load",
+                "features.orders.services.order_placement.estimate_restaurant_load",
                 new_callable=AsyncMock,
                 return_value=make_load_estimate(restaurant_id),
             ),
@@ -92,7 +92,7 @@ class TestPlaceOrder:
         assert isinstance(result, OrderResponse)
         assert result.id == mock_order.id
 
-    async def test_place_order_restaurant_not_found(self, mock_db_session):
+    async def test_place_order_restaurant_not_found(self, mock_db_session: AsyncMock) -> None:
         order_data = OrderCreate(
             restaurant_id=uuid.uuid4(),
             items=[OrderItemCreate(menu_item_id=uuid.uuid4(), quantity=1)],
@@ -105,7 +105,7 @@ class TestPlaceOrder:
             with pytest.raises(RestaurantNotFoundException):
                 await place_order(mock_db_session, order_data, uuid.uuid4())
 
-    async def test_place_order_restaurant_closed(self, mock_db_session):
+    async def test_place_order_restaurant_closed(self, mock_db_session: AsyncMock) -> None:
         restaurant_id = uuid.uuid4()
         order_data = OrderCreate(
             restaurant_id=restaurant_id,
@@ -119,7 +119,7 @@ class TestPlaceOrder:
             with pytest.raises(RestaurantClosedException):
                 await place_order(mock_db_session, order_data, uuid.uuid4())
 
-    async def test_place_order_item_wrong_restaurant(self, mock_db_session):
+    async def test_place_order_item_wrong_restaurant(self, mock_db_session: AsyncMock) -> None:
         restaurant_id = uuid.uuid4()
         item_id = uuid.uuid4()
         order_data = OrderCreate(
@@ -148,7 +148,9 @@ class TestPlaceOrder:
             with pytest.raises(MenuItemRestaurantMismatchException):
                 await place_order(mock_db_session, order_data, uuid.uuid4())
 
-    async def test_place_order_missing_menu_items_raises_422(self, mock_db_session):
+    async def test_place_order_missing_menu_items_raises_422(
+        self, mock_db_session: AsyncMock
+    ) -> None:
         restaurant_id = uuid.uuid4()
         item_id_1 = uuid.uuid4()
         item_id_2 = uuid.uuid4()
@@ -179,7 +181,7 @@ class TestPlaceOrder:
             with pytest.raises(MenuItemsNotFoundException):
                 await place_order(mock_db_session, order_data, uuid.uuid4())
 
-    async def test_place_order_all_items_missing(self, mock_db_session):
+    async def test_place_order_all_items_missing(self, mock_db_session: AsyncMock) -> None:
         restaurant_id = uuid.uuid4()
         order_data = OrderCreate(
             restaurant_id=restaurant_id,
@@ -205,7 +207,7 @@ class TestPlaceOrder:
             with pytest.raises(MenuItemsNotFoundException):
                 await place_order(mock_db_session, order_data, uuid.uuid4())
 
-    async def test_place_order_empty_items(self, mock_db_session):
+    async def test_place_order_empty_items(self, mock_db_session: AsyncMock) -> None:
         restaurant_id = uuid.uuid4()
         with pytest.raises(Exception):
             OrderCreate(restaurant_id=restaurant_id, items=[])

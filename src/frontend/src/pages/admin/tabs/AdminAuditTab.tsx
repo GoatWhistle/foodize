@@ -142,7 +142,7 @@ export default function AdminAuditTab({
           key={log.id}
           style={{ ...cardStyle, padding: '12px 16px', cursor: 'pointer' }}
           onClick={() =>
-            setExpandedAuditId(expandedAuditId === log.id ? null : log.id)
+            { setExpandedAuditId(expandedAuditId === log.id ? null : log.id); }
           }
         >
           <div

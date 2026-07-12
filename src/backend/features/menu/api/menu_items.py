@@ -1,6 +1,7 @@
 import uuid
+from http import HTTPStatus
 
-from fastapi import APIRouter, Depends, File, Query, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
@@ -14,13 +15,12 @@ from features.menu.services import menu_items as service
 from features.users.models import User
 from features.vendors.dependencies import get_current_vendor
 from features.vendors.models import VendorProfile
-from infra.storage import MAX_IMAGE_BYTES
 from shared.dependencies import require_permission
 from shared.enums.permissions import Permission
-from shared.exceptions import BadRequestException
 from shared.response import build_list_response, build_response
 from shared.restaurant_resolver import resolve_restaurant_uuid
 from shared.schemas.response import SuccessListResponse, SuccessResponse
+from shared.uploads import read_image_upload
 
 router = APIRouter(prefix="/menu", tags=["Menu"])
 
@@ -28,7 +28,7 @@ router = APIRouter(prefix="/menu", tags=["Menu"])
 @router.post(
     "/{restaurant_id}/items",
     response_model=SuccessResponse[MenuItemResponse],
-    status_code=status.HTTP_201_CREATED,
+    status_code=HTTPStatus.CREATED,
 )
 async def create_menu_item(
     restaurant_id: uuid.UUID,
@@ -80,20 +80,7 @@ async def upload_menu_item_photo(
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[MenuItemResponse]:
-    content_length = request.headers.get("content-length")
-    if (
-        content_length is not None
-        and content_length.isdigit()
-        and int(content_length) > MAX_IMAGE_BYTES
-    ):
-        raise BadRequestException(detail="Файл слишком большой (максимум 5 МБ)")
-
-    data = await file.read(MAX_IMAGE_BYTES + 1)
-    if not data:
-        raise BadRequestException(detail="Пустой файл")
-    if len(data) > MAX_IMAGE_BYTES:
-        raise BadRequestException(detail="Файл слишком большой (максимум 5 МБ)")
-
+    data = await read_image_upload(file, request)
     result = await service.set_menu_item_photo(
         session=session,
         restaurant_id=restaurant_id,
@@ -127,7 +114,7 @@ async def delete_menu_item_photo(
     return build_response(result)
 
 
-@router.delete("/{restaurant_id}/items/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{restaurant_id}/items/{item_id}", status_code=HTTPStatus.NO_CONTENT)
 async def delete_menu_item(
     restaurant_id: uuid.UUID,
     item_id: uuid.UUID,

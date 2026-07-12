@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { vendorService } from '@shared/services/vendorService';
+import { logError } from '@shared/utils/logError';
 import type { AdvancedAnalytics, FinanceAnalytics, Restaurant } from '@shared/types/models';
 
 export interface FinanceFilters {
@@ -27,7 +28,7 @@ export const useVendorFinance = ({ selectedRestaurant, activeTab }: UseVendorFin
     try {
       const rawParams = { ...financeFilters, restaurant_id: selectedRestaurant.id };
       const params = Object.fromEntries(
-        Object.entries(rawParams).filter(([, v]) => v !== '' && v != null)
+        Object.entries(rawParams).filter(([, v]) => v !== '')
       );
       const [finRes, advRes] = await Promise.all([
         vendorService.getFinance(params),
@@ -35,7 +36,8 @@ export const useVendorFinance = ({ selectedRestaurant, activeTab }: UseVendorFin
       ]);
       setFinance(finRes.data.data);
       setAdvancedAnalytics(advRes.data.data);
-    } catch {
+    } catch (err) {
+      logError('useVendorFinance.load', err);
     } finally {
       setFinanceLoading(false);
       setAnalyticsLoading(false);

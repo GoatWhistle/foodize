@@ -1,6 +1,7 @@
 import asyncio
 import html
 import logging
+from typing import Any
 
 from aiogram import Bot
 from aiogram.exceptions import TelegramForbiddenError, TelegramNetworkError, TelegramRetryAfter
@@ -102,7 +103,7 @@ async def _send_notification(
     raise RateLimitExhaustedError(user_id)
 
 
-async def handle_order_placed(event: dict, bot: Bot) -> None:
+async def handle_order_placed(event: dict[str, Any], bot: Bot) -> None:
     user_id = str(event.get("user_id", ""))
     telegram_id = await _get_telegram_id(user_id)
     if not telegram_id:
@@ -129,7 +130,7 @@ async def handle_order_placed(event: dict, bot: Bot) -> None:
     )
 
 
-async def handle_order_status_changed(event: dict, bot: Bot) -> None:
+async def handle_order_status_changed(event: dict[str, Any], bot: Bot) -> None:
     user_id = str(event.get("user_id", ""))
     telegram_id = await _get_telegram_id(user_id)
     if not telegram_id:

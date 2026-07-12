@@ -1,4 +1,4 @@
-import { Package } from '@phosphor-icons/react';
+import { PackageIcon } from '@phosphor-icons/react';
 import { CATEGORY_RU, translate } from '@shared/utils/locales';
 import type { Order } from '@shared/types/models';
 
@@ -15,11 +15,11 @@ export const OrderItemsList = ({ order }: { order: Order }) => (
         marginBottom: 10,
       }}
     >
-      <Package size={18} color="var(--fire)" />
+      <PackageIcon size={18} color="var(--fire)" />
       Состав заказа
     </div>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {order.items?.map((item) => (
+      {order.items.map((item) => (
         <div
           key={item.id}
           style={{
@@ -38,7 +38,7 @@ export const OrderItemsList = ({ order }: { order: Order }) => (
           >
             <div>
               <div style={{ fontWeight: 800 }}>
-                {item.menu_item_name ?? 'Позиция'}
+                {item.menu_item_name}
               </div>
               <div
                 style={{
@@ -47,9 +47,7 @@ export const OrderItemsList = ({ order }: { order: Order }) => (
                   marginTop: 2,
                 }}
               >
-                {item.menu_item_category
-                  ? translate(CATEGORY_RU, item.menu_item_category)
-                  : '—'}
+                {translate(CATEGORY_RU, item.menu_item_category)}
               </div>
             </div>
             <div style={{ textAlign: 'right', fontWeight: 800 }}>
@@ -65,7 +63,7 @@ export const OrderItemsList = ({ order }: { order: Order }) => (
               </div>
             </div>
           </div>
-          {item.selected_options?.length > 0 && (
+          {item.selected_options.length > 0 && (
             <div
               style={{
                 marginTop: 8,

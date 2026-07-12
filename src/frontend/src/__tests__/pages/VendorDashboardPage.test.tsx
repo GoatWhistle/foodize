@@ -14,7 +14,6 @@ import { vendorService } from '@shared/services/vendorService.js';
 import type { Restaurant } from '@shared/types/models';
 
 type AuthState = {
-  isAuthenticated?: boolean;
   user: { name: string; phone_number: string };
   logout?: () => void;
 };
@@ -25,14 +24,15 @@ type RestaurantState = {
   fetchMenu: () => void;
   createRestaurant: (...args: unknown[]) => void;
   addMenuItem: (...args: unknown[]) => void;
-  loading: boolean;
+  publicLoading: boolean;
+  myLoading: boolean;
+  menuLoading: boolean;
   menus: Record<string, unknown[]>;
 };
 
 vi.mock('../../store/useAuthStore', () => ({
   useAuthStore: vi.fn((sel?: (s: AuthState) => unknown) => {
     const state: AuthState = {
-      isAuthenticated: true,
       user: { name: 'Ivan Ivanov', phone_number: '+7999' },
     };
     return sel ? sel(state) : state;
@@ -47,7 +47,9 @@ vi.mock('@shared/store/useRestaurantStore.js', () => ({
       fetchMenu: vi.fn(),
       createRestaurant: vi.fn(),
       addMenuItem: vi.fn(),
-      loading: false,
+      publicLoading: false,
+      myLoading: false,
+      menuLoading: false,
       menus: { r1: [] },
     };
     return sel ? sel(state) : state;
@@ -97,7 +99,9 @@ describe('VendorDashboardPage', () => {
         fetchMenu: fetchMenuMock,
         createRestaurant: createRestaurantMock,
         addMenuItem: addMenuItemMock,
-        loading: false,
+        publicLoading: false,
+        myLoading: false,
+        menuLoading: false,
         menus: { r1: [] },
       };
       return sel ? sel(state) : state;
@@ -125,7 +129,7 @@ describe('VendorDashboardPage', () => {
     );
 
     const addButton = await screen.findByRole('button', { name: /Добавить/ });
-    await waitFor(() => expect(addButton).not.toBeDisabled());
+    await waitFor(() => { expect(addButton).not.toBeDisabled(); });
     fireEvent.click(addButton);
 
     expect(screen.getByText('Новое заведение')).toBeDefined();
@@ -200,7 +204,7 @@ describe('VendorDashboardPage', () => {
   });
 
   it('shows loading state while fetching', async () => {
-    let resolveProfile: (v?: unknown) => void;
+    let resolveProfile: (v?: unknown) => void = () => undefined;
     vi.mocked(vendorService.getMyProfile).mockReturnValueOnce(
       new Promise((res) => {
         resolveProfile = res as (v?: unknown) => void;
@@ -213,7 +217,9 @@ describe('VendorDashboardPage', () => {
         fetchMenu: fetchMenuMock,
         createRestaurant: createRestaurantMock,
         addMenuItem: addMenuItemMock,
-        loading: true,
+        publicLoading: false,
+        myLoading: true,
+        menuLoading: false,
         menus: {},
       };
       return sel ? sel(state) : state;
@@ -228,7 +234,7 @@ describe('VendorDashboardPage', () => {
     expect(screen.getByText('Дашборд вендора')).toBeDefined();
 
     await act(async () => {
-      resolveProfile!({ data: { data: { approval_status: 'APPROVED' } } });
+      resolveProfile({ data: { data: { approval_status: 'APPROVED' } } });
       await Promise.resolve();
     });
   });

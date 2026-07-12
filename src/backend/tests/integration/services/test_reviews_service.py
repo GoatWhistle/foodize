@@ -1,4 +1,6 @@
 import uuid
+from collections.abc import Iterator
+from datetime import UTC
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -17,7 +19,7 @@ from features.reviews.service import (
 
 
 def _mock_review(user_id: uuid.UUID, restaurant_id: uuid.UUID) -> MagicMock:
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     r = MagicMock()
     r.id = uuid.uuid4()
@@ -27,14 +29,14 @@ def _mock_review(user_id: uuid.UUID, restaurant_id: uuid.UUID) -> MagicMock:
     r.text = "Good food"
     r.user_name = None
     r.is_verified_purchase = False
-    r.created_at = datetime.now(timezone.utc)
+    r.created_at = datetime.now(UTC)
     r.user = None
     return r
 
 
 class TestCreateReviewForUser:
     @pytest.fixture(autouse=True)
-    def setup_mocks(self):
+    def setup_mocks(self) -> Iterator[None]:
         self.user_id = uuid.uuid4()
         self.restaurant_id = uuid.uuid4()
         mock_restaurant = MagicMock()
@@ -48,7 +50,7 @@ class TestCreateReviewForUser:
             return_value=mock_restaurant,
         ).start()
         self.mock_has_order = patch(
-            "features.reviews.service._has_completed_order",
+            "features.reviews.crud.has_completed_order",
             new_callable=AsyncMock,
             return_value=True,
         ).start()
@@ -71,7 +73,7 @@ class TestCreateReviewForUser:
         yield
         patch.stopall()
 
-    async def test_success(self, mock_db_session):
+    async def test_success(self, mock_db_session: AsyncMock) -> None:
         data = ReviewCreate(rating=4, text="Good food")
         result = await create_review_for_user(
             mock_db_session, data, self.user_id, self.restaurant_id
@@ -80,7 +82,7 @@ class TestCreateReviewForUser:
         assert result.rating == 4
         self.mock_create.assert_awaited_once()
 
-    async def test_restaurant_not_found_raises(self, mock_db_session):
+    async def test_restaurant_not_found_raises(self, mock_db_session: AsyncMock) -> None:
         self.mock_get_restaurant.return_value = None
         with pytest.raises(RestaurantNotFoundException):
             await create_review_for_user(
@@ -90,7 +92,7 @@ class TestCreateReviewForUser:
                 self.restaurant_id,
             )
 
-    async def test_no_completed_order_rejected(self, mock_db_session):
+    async def test_no_completed_order_rejected(self, mock_db_session: AsyncMock) -> None:
         self.mock_has_order.return_value = False
         with pytest.raises(ReviewNotAllowedException):
             await create_review_for_user(
@@ -101,7 +103,7 @@ class TestCreateReviewForUser:
             )
         self.mock_create.assert_not_awaited()
 
-    async def test_inactive_restaurant_rejected(self, mock_db_session):
+    async def test_inactive_restaurant_rejected(self, mock_db_session: AsyncMock) -> None:
         self.mock_get_restaurant.return_value.is_active = False
         with pytest.raises(RestaurantNotFoundException):
             await create_review_for_user(
@@ -112,7 +114,7 @@ class TestCreateReviewForUser:
             )
         self.mock_create.assert_not_awaited()
 
-    async def test_completed_order_sets_verified(self, mock_db_session):
+    async def test_completed_order_sets_verified(self, mock_db_session: AsyncMock) -> None:
         result = await create_review_for_user(
             mock_db_session,
             ReviewCreate(rating=5),
@@ -123,7 +125,7 @@ class TestCreateReviewForUser:
         _, kwargs = self.mock_create.call_args
         assert kwargs.get("is_verified_purchase") is True
 
-    async def test_review_limit_raises(self, mock_db_session):
+    async def test_review_limit_raises(self, mock_db_session: AsyncMock) -> None:
         self.mock_count_user_reviews.return_value = 5
         with pytest.raises(ReviewLimitExceededException):
             await create_review_for_user(
@@ -136,7 +138,7 @@ class TestCreateReviewForUser:
 
 
 class TestListReviewsForRestaurant:
-    async def test_returns_paginated_list(self, mock_db_session):
+    async def test_returns_paginated_list(self, mock_db_session: AsyncMock) -> None:
         restaurant_id = uuid.uuid4()
         mock_reviews = [_mock_review(uuid.uuid4(), restaurant_id) for _ in range(3)]
 
@@ -158,7 +160,7 @@ class TestListReviewsForRestaurant:
         assert total == 3
         assert all(isinstance(r, ReviewResponse) for r in data)
 
-    async def test_empty(self, mock_db_session):
+    async def test_empty(self, mock_db_session: AsyncMock) -> None:
         with (
             patch(
                 "features.reviews.crud.get_reviews_by_restaurant",
@@ -178,7 +180,7 @@ class TestListReviewsForRestaurant:
 
 
 class TestGetRatingForRestaurant:
-    async def test_with_reviews(self, mock_db_session):
+    async def test_with_reviews(self, mock_db_session: AsyncMock) -> None:
         restaurant_id = uuid.uuid4()
 
         mock_restaurant = MagicMock()
@@ -196,7 +198,7 @@ class TestGetRatingForRestaurant:
         assert result.review_count == 10
         assert result.restaurant_id == restaurant_id
 
-    async def test_no_reviews(self, mock_db_session):
+    async def test_no_reviews(self, mock_db_session: AsyncMock) -> None:
         restaurant_id = uuid.uuid4()
 
         mock_restaurant = MagicMock()

@@ -56,6 +56,11 @@ class UserUpdate(BaseModel):
     email: EmailStr | None = Field(None, max_length=128)
     phone_number: str | None = Field(None, min_length=7, max_length=16, pattern=r"^\+?[0-9]{7,15}$")
 
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, v: str | None) -> str | None:
+        return v.strip().lower() if v else v
+
 
 class ChangePasswordRequest(BaseModel):
     old_password: str = Field(min_length=1, max_length=128)

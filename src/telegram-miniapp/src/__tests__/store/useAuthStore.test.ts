@@ -21,7 +21,6 @@ describe("useAuthStore", () => {
   beforeEach(() => {
     useAuthStore.setState({
       user: null,
-      isAuthenticated: false,
     });
     vi.clearAllMocks();
     sessionStorage.clear();
@@ -31,7 +30,7 @@ describe("useAuthStore", () => {
   it("should have correct initial state", () => {
     const state = useAuthStore.getState();
     expect(state.user).toBeNull();
-    expect(state.isAuthenticated).toBe(false);
+    expect(state.user).toBeNull();
   });
 
   it("should set authenticated state", () => {
@@ -40,7 +39,7 @@ describe("useAuthStore", () => {
     setAuthenticated(mockUser);
     const state = useAuthStore.getState();
     expect(state.user).toEqual(mockUser);
-    expect(state.isAuthenticated).toBe(true);
+    expect(state.user).not.toBeNull();
   });
 
   it("should login successfully", async () => {
@@ -56,7 +55,7 @@ describe("useAuthStore", () => {
 
     const state = useAuthStore.getState();
     expect(state.user).toEqual(mockUser);
-    expect(state.isAuthenticated).toBe(true);
+    expect(state.user).not.toBeNull();
     expect(authServiceMock.login).toHaveBeenCalledWith({
       phone_number: "user",
       password: "pw",
@@ -74,7 +73,7 @@ describe("useAuthStore", () => {
 
     const state = useAuthStore.getState();
     expect(state.user).toEqual(mockUser);
-    expect(state.isAuthenticated).toBe(true);
+    expect(state.user).not.toBeNull();
   });
 
   it("should handle fetchMe failure", async () => {
@@ -84,19 +83,19 @@ describe("useAuthStore", () => {
 
     const state = useAuthStore.getState();
     expect(state.user).toBeNull();
-    expect(state.isAuthenticated).toBe(false);
+    expect(state.user).toBeNull();
   });
 
   it("should logout successfully", async () => {
     const mockUser = { id: 1, phone_number: "+123456" } as unknown as AuthUser;
-    useAuthStore.setState({ user: mockUser, isAuthenticated: true });
+    useAuthStore.setState({ user: mockUser });
     authServiceMock.logout.mockResolvedValueOnce({});
 
     await useAuthStore.getState().logout();
 
     const state = useAuthStore.getState();
     expect(state.user).toBeNull();
-    expect(state.isAuthenticated).toBe(false);
+    expect(state.user).toBeNull();
     expect(localStorage.getItem("foodize_tg_logged_out")).toBe("1");
     expect(authServiceMock.logout).toHaveBeenCalled();
   });

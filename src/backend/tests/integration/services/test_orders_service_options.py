@@ -17,7 +17,9 @@ from shared.exceptions import BadRequestException
 
 
 class TestPlaceOrderOptions:
-    async def test_selected_options_are_validated_and_passed_to_create_order(self, mock_db_session):
+    async def test_selected_options_are_validated_and_passed_to_create_order(
+        self, mock_db_session: AsyncMock
+    ) -> None:
         user = make_user()
         item_id = uuid.uuid4()
         option_id = uuid.uuid4()
@@ -82,7 +84,7 @@ class TestPlaceOrderOptions:
                 return_value=0,
             ),
             patch(
-                "features.orders.services.order_queries.estimate_restaurant_load",
+                "features.orders.services.order_placement.estimate_restaurant_load",
                 new_callable=AsyncMock,
                 return_value=make_load_estimate(restaurant_id),
             ),
@@ -110,7 +112,9 @@ class TestPlaceOrderOptions:
         selected_options_by_item = create_order_mock.call_args.args[4]
         assert selected_options_by_item[0] == [mock_option]
 
-    async def test_selected_option_from_other_item_rejected(self, mock_db_session):
+    async def test_selected_option_from_other_item_rejected(
+        self, mock_db_session: AsyncMock
+    ) -> None:
         item_id = uuid.uuid4()
         option_id = uuid.uuid4()
         restaurant_id = uuid.uuid4()

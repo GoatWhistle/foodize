@@ -1,4 +1,5 @@
 import logging
+from typing import Any, cast
 
 import httpx
 
@@ -54,27 +55,29 @@ async def link_phone(
     response.raise_for_status()
 
 
-async def get_vendor_status(telegram_id: int) -> dict:
+async def get_vendor_status(telegram_id: int) -> dict[str, Any]:
     response = await get_client().post(
         _url("/telegram/bot/vendor-status"),
         json={"telegram_id": telegram_id},
         headers=_headers(),
     )
     response.raise_for_status()
-    return response.json().get("data", {})
+    return cast("dict[str, Any]", response.json().get("data", {}))
 
 
-async def get_active_orders(telegram_id: int) -> list[dict]:
+async def get_active_orders(telegram_id: int) -> list[dict[str, Any]]:
     response = await get_client().post(
         _url("/telegram/bot/orders"),
         json={"telegram_id": telegram_id},
         headers=_headers(),
     )
     response.raise_for_status()
-    return response.json().get("data", [])
+    return cast("list[dict[str, Any]]", response.json().get("data", []))
 
 
-async def register_by_telegram(telegram_id: int, telegram_username: str | None, name: str) -> dict:
+async def register_by_telegram(
+    telegram_id: int, telegram_username: str | None, name: str
+) -> dict[str, Any]:
     response = await get_client().post(
         _url("/telegram/bot/register"),
         json={
@@ -85,13 +88,13 @@ async def register_by_telegram(telegram_id: int, telegram_username: str | None, 
         headers=_headers(),
     )
     response.raise_for_status()
-    return response.json().get("data", {})
+    return cast("dict[str, Any]", response.json().get("data", {}))
 
 
-async def get_public_restaurant(display_id: str) -> dict:
+async def get_public_restaurant(display_id: str) -> dict[str, Any]:
     response = await get_client().get(_url(f"/restaurants/public/{display_id}"))
     response.raise_for_status()
-    return response.json().get("data", {})
+    return cast("dict[str, Any]", response.json().get("data", {}))
 
 
 async def get_telegram_id_by_user(user_id: str) -> int | None:

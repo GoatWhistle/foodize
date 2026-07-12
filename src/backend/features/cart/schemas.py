@@ -17,7 +17,7 @@ class CartSelectedOption(BaseModel):
 
 
 class CartItemResponse(BaseModel):
-    menuItem: MenuItemShort
+    menuItem: MenuItemShort  # noqa: N815
     quantity: int
     selected_option_ids: list[uuid.UUID] = []
     selected_options: list[CartSelectedOption] = []

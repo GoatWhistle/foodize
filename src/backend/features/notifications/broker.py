@@ -2,11 +2,17 @@ from urllib.parse import urlsplit, urlunsplit
 
 import aio_pika
 import aio_pika.abc
+from prometheus_client import Gauge
 
 from settings.config.app_config import settings
 from utils.logging_setup import get_logger
 
 logger = get_logger(__name__)
+
+dlq_depth = Gauge(
+    "rabbitmq_dlq_depth",
+    "Number of dead-lettered messages waiting in the DLQ",
+)
 
 
 def _sanitize_amqp_url(url: str) -> str:
@@ -96,6 +102,15 @@ class RabbitMQBroker:
         if self._retry_exchange is None:
             raise RuntimeError("RabbitMQ broker is not connected. Call connect() first.")
         return self._retry_exchange
+
+    async def sample_dlq_depth(self) -> None:
+        if self._channel is None:
+            return
+        try:
+            queue = await self._channel.declare_queue(DLQ_NAME, durable=True, passive=True)
+            dlq_depth.set(queue.declaration_result.message_count or 0)
+        except Exception:
+            logger.warning("dlq_depth_sample_failed")
 
 
 broker = RabbitMQBroker(url=str(settings.rabbitmq.url))

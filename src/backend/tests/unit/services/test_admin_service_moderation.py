@@ -8,7 +8,7 @@ from features.admin.service.moderation import moderate_restaurant, moderate_vend
 from shared.exceptions import NotFoundException
 
 
-def _make_mock_user(user_id: uuid.UUID | None = None):
+def _make_mock_user(user_id: uuid.UUID | None = None) -> MagicMock:
     u = MagicMock()
     u.id = user_id or uuid.uuid4()
     u.name = "Test User"
@@ -17,7 +17,7 @@ def _make_mock_user(user_id: uuid.UUID | None = None):
     return u
 
 
-def _make_mock_vendor(vendor_id: uuid.UUID | None = None):
+def _make_mock_vendor(vendor_id: uuid.UUID | None = None) -> MagicMock:
     v = MagicMock()
     v.id = vendor_id or uuid.uuid4()
     v.approval_status = "PENDING"
@@ -30,7 +30,7 @@ def _make_mock_vendor(vendor_id: uuid.UUID | None = None):
     return v
 
 
-def _make_mock_restaurant(rest_id: uuid.UUID | None = None):
+def _make_mock_restaurant(rest_id: uuid.UUID | None = None) -> MagicMock:
     r = MagicMock()
     r.id = rest_id or uuid.uuid4()
     r.name = "Test Restaurant"
@@ -40,7 +40,7 @@ def _make_mock_restaurant(rest_id: uuid.UUID | None = None):
 
 class TestModerateVendor:
     @pytest.mark.asyncio
-    async def test_success_logs_audit(self):
+    async def test_success_logs_audit(self) -> None:
         vendor = _make_mock_vendor()
         updated_vendor = _make_mock_vendor(vendor.id)
         session = AsyncMock()
@@ -66,7 +66,7 @@ class TestModerateVendor:
             assert mock_log.call_args[1]["action"] == "MODERATE_VENDOR"
 
     @pytest.mark.asyncio
-    async def test_not_found(self):
+    async def test_not_found(self) -> None:
         with patch(
             "features.admin.crud.get_vendor_by_id", new_callable=AsyncMock, return_value=None
         ):
@@ -76,7 +76,7 @@ class TestModerateVendor:
 
 class TestModerateRestaurant:
     @pytest.mark.asyncio
-    async def test_success_logs_audit(self):
+    async def test_success_logs_audit(self) -> None:
         restaurant = _make_mock_restaurant()
         updated_restaurant = _make_mock_restaurant(restaurant.id)
         session = AsyncMock()
@@ -103,7 +103,7 @@ class TestModerateRestaurant:
             assert mock_log.call_args[1]["action"] == "MODERATE_RESTAURANT"
 
     @pytest.mark.asyncio
-    async def test_not_found(self):
+    async def test_not_found(self) -> None:
         session = AsyncMock()
         session.get = AsyncMock(return_value=None)
         with pytest.raises(NotFoundException):

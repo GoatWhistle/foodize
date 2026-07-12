@@ -1,0 +1,108 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.chatCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.insightsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.insightsTitle {
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.insightsBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.insightsText {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--text-2);
+  margin-top: 12px;
+}
+
+.chatTitle {
+  font-weight: 700;
+}
+
+.scroll {
+  max-height: 360px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.suggestion {
+  font-size: 0.85rem;
+}
+
+.bubble {
+  max-width: 85%;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.bubbleUser {
+  align-self: flex-end;
+  background: var(--fire);
+  color: var(--fire-text);
+  border: none;
+}
+
+.bubbleAssistant {
+  align-self: flex-start;
+  background: var(--bg-surface);
+  color: var(--text-1);
+  border: 1px solid var(--border);
+}
+
+.form {
+  display: flex;
+  gap: 8px;
+}
+
+.input {
+  flex: 1;
+}
+
+.sendBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}

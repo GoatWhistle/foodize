@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { RouterProvider } from "react-router-dom";
 
 import { useAuthStore } from "./store/useAuthStore";
-import { useOrderStore } from "./store/useOrderStore";
+import { useCartStore } from "./store/useCartStore";
+import { useOrdersStore } from "./store/useOrdersStore";
 import { useFavoriteStore } from "@shared/store/useFavoriteStore";
 import { useNotificationStore } from "./store/useNotificationStore";
-import { useThemeStore } from "@shared/store/useThemeStore";
+import { useThemeEffect } from "@shared/hooks/useThemeEffect";
 import { runBootFlow } from "./telegram/bootFlow";
 import { tg } from "./telegram/sdk";
 import LoginPage from "./pages/auth/LoginPage";
@@ -33,8 +34,7 @@ function applyTelegramTheme(): void {
   if (!tg) return;
   const saved = localStorage.getItem("foodize-theme");
   if (saved && saved !== "system") return;
-  const scheme = tg.colorScheme ?? "light";
-  document.documentElement.setAttribute("data-theme", scheme);
+  document.documentElement.setAttribute("data-theme", tg.colorScheme);
 }
 
 function applyTelegramViewport(): void {
@@ -64,37 +64,36 @@ export default function App() {
   );
 
   const fetchMe = useAuthStore((s) => s.fetchMe);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isAuthenticated = useAuthStore((s) => s.user !== null);
   const user = useAuthStore((s) => s.user);
-  const fetchCart = useOrderStore((s) => s.fetchCart);
-  const fetchActiveOrder = useOrderStore((s) => s.fetchActiveOrder);
+  const fetchCart = useCartStore((s) => s.fetchCart);
+  const fetchActiveOrder = useOrdersStore((s) => s.fetchActiveOrder);
   const loadFavorites = useFavoriteStore((s) => s.loadFavorites);
   const fetchNotifications = useNotificationStore((s) => s.fetchNotifications);
   const connectWs = useNotificationStore((s) => s.connectWs);
   const disconnectWs = useNotificationStore((s) => s.disconnectWs);
-  const initTheme = useThemeStore((s) => s.initTheme);
+  useThemeEffect();
 
   useEffect(() => {
-    initTheme();
     applyTelegramTheme();
     const webApp = tg;
     if (webApp) {
       webApp.onEvent("themeChanged", applyTelegramTheme);
-      return () => webApp.offEvent("themeChanged", applyTelegramTheme);
+      return () => { webApp.offEvent("themeChanged", applyTelegramTheme); };
     }
-  }, [initTheme]);
+  }, []);
 
   useEffect(() => {
     applyTelegramViewport();
 
-    const handleViewportChange = () => applyTelegramViewport();
+    const handleViewportChange = () => { applyTelegramViewport(); };
 
-    tg?.onEvent?.("viewportChanged", handleViewportChange);
+    tg?.onEvent("viewportChanged", handleViewportChange);
     window.visualViewport?.addEventListener("resize", handleViewportChange);
     window.addEventListener("resize", handleViewportChange);
 
     return () => {
-      tg?.offEvent?.("viewportChanged", handleViewportChange);
+      tg?.offEvent("viewportChanged", handleViewportChange);
       window.visualViewport?.removeEventListener(
         "resize",
         handleViewportChange,
@@ -108,7 +107,7 @@ export default function App() {
       try {
         const action = await runBootFlow({
           fetchMe,
-          isAuthenticated: () => useAuthStore.getState().isAuthenticated,
+          isAuthenticated: () => useAuthStore.getState().user !== null,
           isForcedLogout: () =>
             localStorage.getItem("foodize_tg_logged_out") === "1",
         });
@@ -161,7 +160,7 @@ export default function App() {
     if (isAuthenticated && user?.id) {
       void fetchNotifications();
       connectWs(user.id);
-      return () => disconnectWs();
+      return () => { disconnectWs(); };
     }
   }, [isAuthenticated, user?.id, fetchNotifications, connectWs, disconnectWs]);
 
@@ -183,7 +182,7 @@ export default function App() {
     return (
       <RegisterPage
         initData={initData}
-        prefillPhone={prefillPhone ?? undefined}
+        {...(prefillPhone ? { prefillPhone } : {})}
         onSuccess={() => {
           localStorage.removeItem("foodize_tg_logged_out");
           if (pendingStartParam) {

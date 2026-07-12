@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -16,7 +17,9 @@ from shared.enums.moderation_status import ModerationStatus
 from shared.exceptions.rules import AccessDeniedException
 
 
-def _make_row(restaurant_id: uuid.UUID | None = None, vendor_id: uuid.UUID | None = None):
+def _make_row(
+    restaurant_id: uuid.UUID | None = None, vendor_id: uuid.UUID | None = None
+) -> list[Any]:
     restaurant = MagicMock()
     restaurant.id = restaurant_id or uuid.uuid4()
     restaurant.vendor_id = vendor_id or uuid.uuid4()
@@ -32,7 +35,7 @@ def _make_row(restaurant_id: uuid.UUID | None = None, vendor_id: uuid.UUID | Non
     return [restaurant, 10]
 
 
-def _empty_working_hours_result():
+def _empty_working_hours_result() -> MagicMock:
     result = MagicMock()
     result.scalars.return_value.all.return_value = []
     return result
@@ -40,7 +43,7 @@ def _empty_working_hours_result():
 
 class TestGetRestaurantPublic:
     @pytest.mark.asyncio
-    async def test_success(self):
+    async def test_success(self) -> None:
         row = _make_row()
         mock_result = MagicMock()
         mock_result.one_or_none = MagicMock(return_value=row)
@@ -53,7 +56,7 @@ class TestGetRestaurantPublic:
         assert result.orders_count_7d == 10
 
     @pytest.mark.asyncio
-    async def test_success_by_display_id(self):
+    async def test_success_by_display_id(self) -> None:
         row = _make_row()
         mock_result = MagicMock()
         mock_result.one_or_none = MagicMock(return_value=row)
@@ -67,7 +70,7 @@ class TestGetRestaurantPublic:
         assert result.display_id == "test-cafe"
 
     @pytest.mark.asyncio
-    async def test_not_found(self):
+    async def test_not_found(self) -> None:
         mock_result = MagicMock()
         mock_result.one_or_none = MagicMock(return_value=None)
 
@@ -80,7 +83,7 @@ class TestGetRestaurantPublic:
 
 class TestGetAllRestaurantsPublic:
     @pytest.mark.asyncio
-    async def test_success_no_filters(self):
+    async def test_success_no_filters(self) -> None:
         row = _make_row()
         mock_result = MagicMock()
         mock_result.all = MagicMock(return_value=[row])
@@ -98,7 +101,7 @@ class TestGetAllRestaurantsPublic:
         assert total == 1
 
     @pytest.mark.asyncio
-    async def test_with_name_filter(self):
+    async def test_with_name_filter(self) -> None:
         row = _make_row()
         mock_result = MagicMock()
         mock_result.all = MagicMock(return_value=[row])
@@ -116,7 +119,7 @@ class TestGetAllRestaurantsPublic:
         assert total == 1
 
     @pytest.mark.asyncio
-    async def test_with_hiring_filter(self):
+    async def test_with_hiring_filter(self) -> None:
         mock_result = MagicMock()
         mock_result.all = MagicMock(return_value=[])
 
@@ -131,7 +134,7 @@ class TestGetAllRestaurantsPublic:
         assert total == 0
 
     @pytest.mark.asyncio
-    async def test_empty_result(self):
+    async def test_empty_result(self) -> None:
         mock_result = MagicMock()
         mock_result.all = MagicMock(return_value=[])
 
@@ -148,7 +151,7 @@ class TestGetAllRestaurantsPublic:
 
 class TestCreateRestaurantForVendor:
     @pytest.mark.asyncio
-    async def test_vendor_not_found_raises(self):
+    async def test_vendor_not_found_raises(self) -> None:
         session = AsyncMock()
         mock_result = MagicMock()
         mock_result.scalar_one_or_none = MagicMock(return_value=None)
@@ -159,7 +162,7 @@ class TestCreateRestaurantForVendor:
             await create_restaurant_for_vendor(session, data, uuid.uuid4())
 
     @pytest.mark.asyncio
-    async def test_vendor_not_approved_raises(self):
+    async def test_vendor_not_approved_raises(self) -> None:
         vendor = MagicMock()
         vendor.approval_status = ModerationStatus.PENDING.value
 
@@ -173,7 +176,7 @@ class TestCreateRestaurantForVendor:
             await create_restaurant_for_vendor(session, data, uuid.uuid4())
 
     @pytest.mark.asyncio
-    async def test_creates_restaurant_success(self):
+    async def test_creates_restaurant_success(self) -> None:
         vendor = MagicMock()
         vendor.approval_status = ModerationStatus.APPROVED.value
         vendor.user.permissions = []
@@ -207,7 +210,7 @@ class TestCreateRestaurantForVendor:
 
 class TestUpdateRestaurantForVendor:
     @pytest.mark.asyncio
-    async def test_success(self):
+    async def test_success(self) -> None:
         restaurant = MagicMock()
         updated = MagicMock()
 
@@ -238,7 +241,7 @@ class TestUpdateRestaurantForVendor:
 
 class TestGetMyRestaurants:
     @pytest.mark.asyncio
-    async def test_returns_list_and_total(self):
+    async def test_returns_list_and_total(self) -> None:
         restaurant = MagicMock()
 
         with (

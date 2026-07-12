@@ -8,4 +8,5 @@ export {
   type TokenGetter,
 } from "@shared/services/reliableWebSocket";
 export { createApi, type CreateApiOptions } from "@shared/services/createApi";
+export { cookieRefresh } from "@shared/services/cookieRefresh";
 export { createWebSocketFactories } from "@shared/services/wsFactories";

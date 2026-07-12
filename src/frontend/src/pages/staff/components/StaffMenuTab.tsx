@@ -52,7 +52,7 @@ const StaffMenuTab = ({ menuItems, menuLoading, menuError, onToggleAvailability 
               </div>
             </div>
             <button
-              onClick={() => onToggleAvailability(item)}
+              onClick={() => { onToggleAvailability(item); }}
               style={{
                 padding: '6px 12px',
                 borderRadius: '20px',

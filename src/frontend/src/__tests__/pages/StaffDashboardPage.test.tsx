@@ -137,11 +137,9 @@ describe('StaffDashboardPage', () => {
     });
 
     const menuTab = screen.getByRole('button', { name: /стоп-лист|меню/i });
-    if (menuTab) {
-      await act(async () => {
-        fireEvent.click(menuTab);
-        await Promise.resolve();
-      });
-    }
+    await act(async () => {
+      fireEvent.click(menuTab);
+      await Promise.resolve();
+    });
   });
 });

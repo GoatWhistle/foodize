@@ -5,11 +5,10 @@ import { useModalStore } from '@shared/store/useModalStore';
 import { useDebounce } from '@shared/utils/useDebounce';
 import {
   ADMIN_PERMISSIONS,
-  CUSTOMER_PERMISSIONS,
   PERMISSION_PRESET_RU,
   PERMISSION_PRESETS,
 } from '@shared/utils/permissions';
-import type { AdminUser, SuccessListResponse } from '@shared/types/models';
+import type { AdminUser } from '@shared/types/models';
 import { createDetailLoader } from '../../../utils/createDetailLoader';
 
 export type { AdminUser };
@@ -66,9 +65,9 @@ export const useAdminUsers = ({
       })
       .then((res) => {
         if (cancelled) return;
-        const body = res.data as SuccessListResponse<AdminUser>;
-        setUsers(body.data || []);
-        setUsersTotal(body.pagination?.total || 0);
+        const body = res.data;
+        setUsers(body.data);
+        setUsersTotal(body.pagination.total || 0);
       })
       .catch(() => {
         if (!cancelled) setActionError('Не удалось загрузить пользователей');
@@ -147,7 +146,7 @@ export const useAdminUsers = ({
   };
 
   const handleSetPermissionPreset = (userId: string, preset: PresetKey) => {
-    const permissions = (PERMISSION_PRESETS[preset] || CUSTOMER_PERMISSIONS) as AdminUser['permissions'];
+    const permissions = PERMISSION_PRESETS[preset] as AdminUser['permissions'];
     requestConfirm({
       title: `Установить роль: ${PERMISSION_PRESET_RU[preset]}?`,
       message: `Права пользователя будут заменены на пресет «${PERMISSION_PRESET_RU[preset]}».`,

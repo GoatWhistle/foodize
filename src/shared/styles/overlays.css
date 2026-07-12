@@ -19,4 +19,11 @@
   --star-glow:    oklch(74% 0.16 80 / 0.24);
   --star-border:  oklch(72% 0.13 80 / 0.35);
   --star-fill:    oklch(72% 0.13 80 / 0.12);
+
+  --z-sticky:   100;
+  --z-banner:   1000;
+  --z-drawer:   1200;
+  --z-modal:    3000;
+  --z-overlay:  4000;
+  --z-toast:    5000;
 }

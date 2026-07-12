@@ -1,6 +1,7 @@
 import json
+import logging
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from enum import Enum
-from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -11,10 +12,28 @@ from sqlalchemy.ext.asyncio import (
 
 from settings.config.app_config import settings
 
+_logger = logging.getLogger(__name__)
+_AFTER_COMMIT_KEY = "after_commit_callbacks"
+
+AfterCommitCallback = Callable[[], Awaitable[None]]
+
+
+def register_after_commit(session: AsyncSession, callback: AfterCommitCallback) -> None:
+    session.info.setdefault(_AFTER_COMMIT_KEY, []).append(callback)
+
+
+async def run_after_commit_callbacks(session: AsyncSession) -> None:
+    callbacks: list[AfterCommitCallback] = session.info.pop(_AFTER_COMMIT_KEY, [])
+    for callback in callbacks:
+        try:
+            await callback()
+        except Exception:
+            _logger.exception("after_commit_callback_failed")
+
 
 def _json_fallback(obj: object) -> str:
     if isinstance(obj, Enum):
-        return obj.value
+        return str(obj.value)
     return str(obj)
 
 
@@ -52,10 +71,10 @@ class DbHelper:
             expire_on_commit=False,
         )
 
-    async def dispose(self):
+    async def dispose(self) -> None:
         await self.engine.dispose()
 
-    async def dependency_session_getter(self) -> AsyncGenerator[AsyncSession, None]:
+    async def dependency_session_getter(self) -> AsyncGenerator[AsyncSession]:
         async with self.session_factory() as session:
             try:
                 yield session
@@ -63,6 +82,7 @@ class DbHelper:
             except Exception:
                 await session.rollback()
                 raise
+            await run_after_commit_callbacks(session)
 
 
 db_helper = DbHelper(url=str(settings.db.url))

@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import { X } from "@phosphor-icons/react";
+import { XIcon } from "@phosphor-icons/react";
 import { WEEKDAYS_SHORT_RU } from "@shared/utils/datetime";
 import { useFocusTrap } from "@shared/hooks/useFocusTrap";
 import type { Restaurant } from "@shared/types/models";
@@ -43,7 +43,7 @@ const InfoModal = ({ restaurant, workingHours, onClose, usePortal = false, showD
             aria-label="Закрыть"
             style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-2)", display: "flex" }}
           >
-            <X size={20} weight="bold" />
+            <XIcon size={20} weight="bold" />
           </button>
         </div>
 

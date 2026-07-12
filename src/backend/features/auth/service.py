@@ -1,5 +1,6 @@
 import time
 import uuid
+from typing import Literal
 
 import jwt
 from fastapi import Depends, Request, Response
@@ -27,12 +28,14 @@ logger = get_logger()
 _REFRESH_BLACKLIST_PREFIX = "refresh_blacklist:"
 _ACCESS_BLACKLIST_PREFIX = "access_blacklist:"
 
+SameSite = Literal["lax", "strict", "none"]
+
 
 def _set_auth_cookies(
     response: Response,
     access_token: str,
     refresh_token: str,
-    same_site: str = "lax",
+    same_site: SameSite = "lax",
 ) -> None:
     secure = settings.logs.environment != "development" or same_site == "none"
     response.set_cookie(
@@ -95,9 +98,9 @@ async def get_current_user(
         payload = decode_jwt(token)
         user_id = payload.get("sub")
     except jwt.ExpiredSignatureError:
-        raise AuthException(detail="Token has expired")
+        raise AuthException(detail="Token has expired") from None
     except jwt.InvalidTokenError:
-        raise AuthException(detail="Invalid token")
+        raise AuthException(detail="Invalid token") from None
     if payload.get("typ") != "access":
         raise AuthException(detail="Invalid token type")
     if user_id is None:
@@ -105,7 +108,7 @@ async def get_current_user(
     try:
         parsed_user_id = uuid.UUID(user_id)
     except ValueError:
-        raise AuthException(detail="Invalid token")
+        raise AuthException(detail="Invalid token") from None
     jti = payload.get("jti")
     if jti and await cache.exists(f"{_ACCESS_BLACKLIST_PREFIX}{jti}"):
         raise AuthException(detail="Token has been invalidated")
@@ -146,7 +149,7 @@ async def logout_user(
     request: Request,
     response: Response,
     cache: RedisCache | None = None,
-    same_site: str = "lax",
+    same_site: SameSite = "lax",
 ) -> None:
     if cache is None:
         cache = get_redis_cache()
@@ -188,7 +191,7 @@ async def refresh_user_token(
     response: Response,
     session: AsyncSession,
     cache: RedisCache | None = None,
-    same_site: str = "lax",
+    same_site: SameSite = "lax",
 ) -> TokenResponse:
     token = request.cookies.get("refresh_token") or await _get_bearer_token(request)
     if not token:
@@ -197,9 +200,9 @@ async def refresh_user_token(
         payload = decode_jwt(token)
         user_id = payload.get("sub")
     except jwt.ExpiredSignatureError:
-        raise AuthException(detail="Refresh token has expired")
+        raise AuthException(detail="Refresh token has expired") from None
     except jwt.InvalidTokenError:
-        raise AuthException(detail="Invalid refresh token")
+        raise AuthException(detail="Invalid refresh token") from None
     if payload.get("typ") != "refresh":
         raise AuthException(detail="Invalid token type")
     if user_id is None:
@@ -207,7 +210,7 @@ async def refresh_user_token(
     try:
         parsed_user_id = uuid.UUID(user_id)
     except ValueError:
-        raise AuthException(detail="Invalid refresh token")
+        raise AuthException(detail="Invalid refresh token") from None
 
     now = int(time.time())
     session_exp = payload.get("session_exp")

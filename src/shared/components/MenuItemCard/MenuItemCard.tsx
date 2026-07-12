@@ -1,8 +1,8 @@
 import { memo } from "react";
-import type { KeyboardEvent } from "react";
-import { ProhibitInset, Plus } from "@phosphor-icons/react";
+import { ProhibitInsetIcon, PlusIcon } from "@phosphor-icons/react";
 import { getCategoryIcon } from "@shared/utils/categoryIcons";
 import { formatPrice } from "@shared/utils/price";
+import { activateOnKey } from "@shared/utils/a11y";
 import type { MenuItem } from "@shared/types/models";
 import s from "./MenuItemCard.module.css";
 
@@ -15,8 +15,8 @@ interface MenuItemCardProps {
 
 const MenuItemCard = ({ item, onSelect, isRestaurantOpen = true, onHaptic }: MenuItemCardProps) => {
   const icon = getCategoryIcon(item.category, { size: 28, fallback: "cooking" });
-  const isClosed = isRestaurantOpen === false;
-  const unavailable = item.is_available === false || isClosed;
+  const isClosed = !isRestaurantOpen;
+  const unavailable = !item.is_available || isClosed;
 
   const handleClick = () => {
     if (unavailable) return;
@@ -31,7 +31,7 @@ const MenuItemCard = ({ item, onSelect, isRestaurantOpen = true, onHaptic }: Men
       onClick={handleClick}
       role="button"
       tabIndex={unavailable ? -1 : 0}
-      onKeyDown={(e: KeyboardEvent<HTMLDivElement>) => e.key === "Enter" && handleClick()}
+      onKeyDown={activateOnKey(handleClick)}
       aria-label={`Открыть ${item.name}`}
     >
       <div className={s.img}>
@@ -41,13 +41,11 @@ const MenuItemCard = ({ item, onSelect, isRestaurantOpen = true, onHaptic }: Men
           <div className={s.imgPlaceholder}>{icon}</div>
         )}
 
-        {item.category && (
-          <span className={s.categoryTag}>{item.category}</span>
-        )}
+        <span className={s.categoryTag}>{item.category}</span>
 
         {unavailable && (
           <div className={s.unavailableOverlay}>
-            <ProhibitInset size={24} color="var(--on-photo-dim)" weight="bold" />
+            <ProhibitInsetIcon size={24} color="var(--on-photo-dim)" weight="bold" />
           </div>
         )}
       </div>
@@ -64,7 +62,7 @@ const MenuItemCard = ({ item, onSelect, isRestaurantOpen = true, onHaptic }: Men
               onClick={handleClick}
               aria-label={`Добавить ${item.name}`}
             >
-              <Plus size={14} weight="bold" />
+              <PlusIcon size={14} weight="bold" />
             </button>
           )}
         </div>

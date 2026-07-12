@@ -42,7 +42,7 @@ vi.mock('../../services/adminService', () => ({
 
 vi.mock('../../store/useAuthStore', () => ({
   useAuthStore: vi.fn((sel?: (s: unknown) => unknown) => {
-    const state = { user: { id: 'admin-1', name: 'Admin', permissions: ['admin'] }, isAuthenticated: true };
+    const state = { user: { id: 'admin-1', name: 'Admin', permissions: ['admin'] } };
     return sel ? sel(state) : state;
   }),
 }));
@@ -100,6 +100,7 @@ describe('AdminDashboardPage', () => {
   it('switches to users tab on click', async () => {
     render$();
     const usersBtn = screen.getAllByText('Пользователи')[0];
+    if (!usersBtn) throw new Error('tab button not found');
     fireEvent.click(usersBtn);
     await waitFor(() => {
       expect(adminService.getUsers).toHaveBeenCalled();
@@ -109,6 +110,7 @@ describe('AdminDashboardPage', () => {
   it('switches to restaurants tab and loads data', async () => {
     render$();
     const btn = screen.getAllByText('Рестораны')[0];
+    if (!btn) throw new Error('tab button not found');
     fireEvent.click(btn);
     await waitFor(() => {
       expect(adminService.getRestaurants).toHaveBeenCalled();
@@ -118,6 +120,7 @@ describe('AdminDashboardPage', () => {
   it('switches to vendors tab and loads data', async () => {
     render$();
     const btn = screen.getAllByText('Вендоры')[0];
+    if (!btn) throw new Error('tab button not found');
     fireEvent.click(btn);
     await waitFor(() => {
       expect(adminService.getVendors).toHaveBeenCalled();
@@ -127,6 +130,7 @@ describe('AdminDashboardPage', () => {
   it('switches to reviews tab and loads data', async () => {
     render$();
     const btn = screen.getAllByText('Отзывы')[0];
+    if (!btn) throw new Error('tab button not found');
     fireEvent.click(btn);
     await waitFor(() => {
       expect(adminService.getReviews).toHaveBeenCalled();
@@ -136,6 +140,7 @@ describe('AdminDashboardPage', () => {
   it('switches to orders tab and loads data', async () => {
     render$();
     const btn = screen.getAllByText('Заказы')[0];
+    if (!btn) throw new Error('tab button not found');
     fireEvent.click(btn);
     await waitFor(() => {
       expect(adminService.getOrders).toHaveBeenCalled();
@@ -144,9 +149,12 @@ describe('AdminDashboardPage', () => {
 
   it('does not reload stats if already loaded', async () => {
     render$();
-    await waitFor(() => expect(adminService.getPlatformStats).toHaveBeenCalledTimes(1));
-    fireEvent.click(screen.getAllByText('Пользователи')[0]);
-    fireEvent.click(screen.getAllByText('Статистика')[0]);
-    await waitFor(() => expect(adminService.getPlatformStats).toHaveBeenCalledTimes(1));
+    await waitFor(() => { expect(adminService.getPlatformStats).toHaveBeenCalledTimes(1); });
+    const usersTab = screen.getAllByText('Пользователи')[0];
+    const statsTab = screen.getAllByText('Статистика')[0];
+    if (!usersTab || !statsTab) throw new Error('tab button not found');
+    fireEvent.click(usersTab);
+    fireEvent.click(statsTab);
+    await waitFor(() => { expect(adminService.getPlatformStats).toHaveBeenCalledTimes(1); });
   });
 });

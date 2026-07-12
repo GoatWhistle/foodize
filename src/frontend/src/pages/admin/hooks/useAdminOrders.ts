@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { adminService } from '../../../services/adminService';
 import { useDebounce } from '@shared/utils/useDebounce';
-import type { Order, SuccessListResponse } from '@shared/types/models';
+import type { Order } from '@shared/types/models';
 
 const PAGE_SIZE = 20;
 
@@ -41,12 +41,12 @@ export const useAdminOrders = ({ activeTab, setActionError }: UseAdminOrdersArgs
         date_to: orderFilters.date_to || undefined,
       })
       .then((res) => {
-        const body = res.data as SuccessListResponse<Order>;
-        setOrders(body.data || []);
-        setOrdersTotal(body.pagination?.total || 0);
+        const body = res.data;
+        setOrders(body.data);
+        setOrdersTotal(body.pagination.total || 0);
       })
-      .catch(() => setActionError('Не удалось загрузить заказы'))
-      .finally(() => setOrdersLoading(false));
+      .catch(() => { setActionError('Не удалось загрузить заказы'); })
+      .finally(() => { setOrdersLoading(false); });
   }, [activeTab, ordersPage, orderFilters, orderSearch, setActionError]);
 
   return {

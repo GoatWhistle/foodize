@@ -1,4 +1,5 @@
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.menu.crud import create_menu_item
 from features.menu.schemas import MenuItemCreate
@@ -18,7 +19,7 @@ from shared.enums.roles import UserRole
 
 
 @pytest.mark.asyncio
-async def test_full_order_flow_from_signup_to_completion(db_session):
+async def test_full_order_flow_from_signup_to_completion(db_session: AsyncSession) -> None:
     customer = await create_user(
         db_session,
         UserCreate(
@@ -73,6 +74,7 @@ async def test_full_order_flow_from_signup_to_completion(db_session):
         vendor_user,
     )
     db_order = await get_order_by_id(db_session, order.id)
+    assert db_order is not None
     assert db_order.status == OrderStatus.ACCEPTED.value
 
     await change_order_status(
@@ -82,6 +84,7 @@ async def test_full_order_flow_from_signup_to_completion(db_session):
         vendor_user,
     )
     db_order = await get_order_by_id(db_session, order.id)
+    assert db_order is not None
     assert db_order.status == OrderStatus.READY.value
 
     await change_order_status(
@@ -91,4 +94,5 @@ async def test_full_order_flow_from_signup_to_completion(db_session):
         vendor_user,
     )
     db_order = await get_order_by_id(db_session, order.id)
+    assert db_order is not None
     assert db_order.status == OrderStatus.COMPLETED.value

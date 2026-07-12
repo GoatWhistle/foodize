@@ -1,10 +1,13 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { Dispatch, SetStateAction, RefObject } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { useOrderStore } from "@shared/store/useOrderStore.instance";
-import type { OrderStoreState } from "@shared/store/useOrderStore";
+import { useOrdersStore } from "@shared/store/useOrdersStore.instance";
+import type { OrdersStoreState } from "@shared/store/createOrdersStore";
+import { useInfiniteList } from "@shared/hooks/useInfiniteList";
 import { logError } from "@shared/utils/logError";
 import type { Order } from "@shared/types/models";
+
+const getOrderId = (order: Order): string => order.id;
 
 export interface UseOrdersPageLogicOptions {
   pageSize?: number;
@@ -31,8 +34,8 @@ export const useOrdersPageLogic = ({
   pageSize = 20,
   infiniteScroll = false,
 }: UseOrdersPageLogicOptions = {}): UseOrdersPageLogicResult => {
-  const { orders, ordersTotal, fetchMyOrders, ordersLoading, ordersError } = useOrderStore(
-    useShallow((s: OrderStoreState) => ({
+  const { orders, ordersTotal, fetchMyOrders, ordersLoading, ordersError } = useOrdersStore(
+    useShallow((s: OrdersStoreState) => ({
       orders: s.orders,
       ordersTotal: s.ordersTotal,
       fetchMyOrders: s.fetchMyOrders,
@@ -43,22 +46,15 @@ export const useOrdersPageLogic = ({
 
   const [statusFilter, setStatusFilter] = useState("");
   const [page, setPage] = useState(1);
-  const [allOrders, setAllOrders] = useState<Order[]>([]);
-  const [hasMore, setHasMore] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const refresh = useCallback(() => {
-    setAllOrders([]);
     setPage(1);
-    setHasMore(true);
     setRefreshKey((k) => k + 1);
   }, []);
 
   useEffect(() => {
-    setAllOrders([]);
     setPage(1);
-    setHasMore(true);
   }, [statusFilter]);
 
   useEffect(() => {
@@ -66,34 +62,24 @@ export const useOrdersPageLogic = ({
       page,
       size: pageSize,
       status: statusFilter === "DONE" ? "COMPLETED" : undefined,
-    }).catch((err) => logError("useOrdersPageLogic.fetchMyOrders", err));
+    }).catch((err: unknown) => { logError("useOrdersPageLogic.fetchMyOrders", err); });
   }, [page, statusFilter, fetchMyOrders, pageSize, refreshKey]);
 
-  useEffect(() => {
-    if (page === 1) {
-      setAllOrders(orders);
-    } else {
-      setAllOrders((prev) => {
-        const ids = new Set(prev.map((o) => o.id));
-        return [...prev, ...orders.filter((o) => !ids.has(o.id))];
-      });
-    }
-    setHasMore(page * pageSize < (ordersTotal || 0));
-  }, [orders, ordersTotal, page, pageSize, statusFilter]);
-
-  useEffect(() => {
-    if (!infiniteScroll) return;
-    const el = sentinelRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && hasMore && !ordersLoading) setPage((p) => p + 1);
-      },
-      { threshold: 0.1 },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [hasMore, ordersLoading, infiniteScroll]);
+  const {
+    accumulated: allOrders,
+    hasMore,
+    sentinelRef,
+  } = useInfiniteList<Order>({
+    items: orders,
+    total: ordersTotal || 0,
+    page,
+    pageSize,
+    resetKey: `${statusFilter}:${refreshKey}`,
+    loading: ordersLoading,
+    infiniteScroll,
+    getId: getOrderId,
+    onLoadMore: () => { setPage((p) => p + 1); },
+  });
 
   const totalPages = Math.ceil((ordersTotal || 0) / pageSize);
 

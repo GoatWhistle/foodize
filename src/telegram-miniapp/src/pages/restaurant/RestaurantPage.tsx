@@ -1,22 +1,22 @@
 import { useState, useEffect } from "react";
-import type { FormEvent, ReactNode } from "react";
+import type { SyntheticEvent, ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import {
-  Heart,
-  Star,
-  ShoppingCart,
-  ChatCircle,
-  List,
-  MapPin,
-  ForkKnife,
+  HeartIcon,
+  StarIcon,
+  ShoppingCartIcon,
+  ChatCircleIcon,
+  ListIcon,
+  MapPinIcon,
+  ForkKnifeIcon,
 } from "@phosphor-icons/react";
-import { useOrderStore } from "../../store/useOrderStore";
+import { useCartStore } from "../../store/useCartStore";
 import { useFavoriteStore } from "@shared/store/useFavoriteStore";
 import { useModalStore } from "@shared/store/useModalStore";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useShallow } from "zustand/react/shallow";
-import { getBackButton } from "../../telegram/sdk";
+import { getBackButton, hapticSelection, hapticImpact } from "../../telegram/sdk";
 import MenuItemCard from "@shared/components/MenuItemCard/MenuItemCard";
 import ProductSheet from "@shared/components/ProductSheet/ProductSheet";
 import CartDrawer from "@shared/components/CartDrawer/CartDrawer";
@@ -26,10 +26,8 @@ import InfoModal from "@shared/components/InfoModal/InfoModal";
 import s from "./RestaurantPage.module.css";
 import { getCategoryIcon } from "@shared/utils/categoryIcons";
 import { pluralizeRu } from "@shared/utils/pluralize";
-import type { CartLineOption } from "@shared/store/useOrderStore";
+import type { CartLineOption } from "@shared/store/createCartStore";
 import type { MenuItem, Restaurant } from "@shared/types/models";
-
-type HapticStyle = "light" | "medium" | "heavy" | "rigid" | "soft";
 
 interface ProductAddPayload {
   item: MenuItem;
@@ -83,7 +81,7 @@ const RestaurantPage = () => {
 
   const restaurantView = restaurant as Restaurant;
 
-  const { addToCart, count, total } = useOrderStore(
+  const { addToCart, count, total } = useCartStore(
     useShallow((s) => ({
       addToCart: s.addToCart,
       count: s.cartCount(),
@@ -114,12 +112,6 @@ const RestaurantPage = () => {
     closing_time: wh.close_time,
   }));
 
-  const haptic = (type: HapticStyle = "light"): void => {
-    try {
-      window.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.(type);
-    } catch {}
-  };
-
   useEffect(() => {
     const btn = getBackButton();
     if (btn) {
@@ -146,7 +138,7 @@ const RestaurantPage = () => {
   };
 
   const handleReviewSubmitForm = (
-    payload: FormEvent<HTMLFormElement> | { myReview: unknown; onSuccess: () => void },
+    payload: SyntheticEvent<HTMLFormElement> | { myReview: unknown; onSuccess: () => void },
   ): void => {
     if ("preventDefault" in payload) payload.preventDefault();
     void handleReviewSubmit({ myReview: !!myReview });
@@ -172,7 +164,7 @@ const RestaurantPage = () => {
             alt={restaurantView.name}
           />
         ) : (
-          <div className={s.heroPlaceholder}><ForkKnife size={48} color="var(--on-photo-mute)" /></div>
+          <div className={s.heroPlaceholder}><ForkKnifeIcon size={48} color="var(--on-photo-mute)" /></div>
         )}
         <div className={s.heroOverlay} />
         <div className={s.heroInfo}>
@@ -188,31 +180,31 @@ const RestaurantPage = () => {
                 gap: 4,
               }}
             >
-              <MapPin size={12} weight="bold" />
+              <MapPinIcon size={12} weight="bold" />
               {restaurantView.address}
             </div>
           )}
           <div className={s.heroPills}>
             {rating != null && (
               <span className={`${s.pill} ${s.pillRating}`}>
-                <Star size={13} weight="fill" />
-                {Number(rating).toFixed(1)}
+                <StarIcon size={13} weight="fill" />
+                {rating.toFixed(1)}
               </span>
             )}
             <button
               className={s.pill}
               onClick={() => {
-                haptic("light");
+                hapticImpact("light");
                 setShowReviews(true);
               }}
             >
-              <ChatCircle size={13} weight="bold" />
+              <ChatCircleIcon size={13} weight="bold" />
               Отзывы
             </button>
             <button
               className={s.pill}
               onClick={() => {
-                haptic("light");
+                hapticImpact("light");
                 setShowInfo(true);
               }}
             >
@@ -242,7 +234,7 @@ const RestaurantPage = () => {
           }}
           aria-label={isFav ? "Убрать из избранного" : "В избранное"}
         >
-          <Heart
+          <HeartIcon
             size={16}
             weight={isFav ? "fill" : "regular"}
             color={isFav ? "var(--danger)" : "var(--on-photo-dim)"}
@@ -272,10 +264,10 @@ const RestaurantPage = () => {
             <button
               key={cat}
               className={`category-chip${activeCategory === cat ? " active" : ""}`}
-              onClick={() => setActiveCategory(cat)}
+              onClick={() => { setActiveCategory(cat); }}
               style={{ display: "flex", alignItems: "center", gap: 5 }}
             >
-              {cat === "ALL" ? <List size={14} /> : getCategoryIcon(cat, { size: 14 })}
+              {cat === "ALL" ? <ListIcon size={14} /> : getCategoryIcon(cat, { size: 14 })}
               {cat === "ALL" ? "Все" : cat}
             </button>
           ))}
@@ -306,9 +298,7 @@ const RestaurantPage = () => {
                 item={item}
                 onSelect={setSelectedProduct}
                 isRestaurantOpen={isRestaurantOpen}
-                onHaptic={() => {
-                  try { window.Telegram?.WebApp?.HapticFeedback?.selectionChanged?.(); } catch {}
-                }}
+                onHaptic={hapticSelection}
               />
             ))}
           </div>
@@ -320,11 +310,11 @@ const RestaurantPage = () => {
           <button
             className="cart-fab"
             onClick={() => {
-              haptic("medium");
+              hapticImpact("medium");
               setShowCart(true);
             }}
           >
-            <ShoppingCart size={18} weight="bold" />
+            <ShoppingCartIcon size={18} weight="bold" />
             <span className="cart-fab-label">
               {count} {pluralizeRu(count, ["товар", "товара", "товаров"])}
             </span>
@@ -336,7 +326,7 @@ const RestaurantPage = () => {
       {showCart && (
         <Portal>
           <CartDrawer
-            onClose={() => setShowCart(false)}
+            onClose={() => { setShowCart(false); }}
             isRestaurantOpen={isRestaurantOpen}
           />
         </Portal>
@@ -345,7 +335,7 @@ const RestaurantPage = () => {
       {selectedProduct && (
         <ProductSheet
           item={selectedProduct}
-          onClose={() => setSelectedProduct(null)}
+          onClose={() => { setSelectedProduct(null); }}
           onAdd={handleProductAdd}
           isRestaurantOpen={isRestaurantOpen}
         />
@@ -365,7 +355,7 @@ const RestaurantPage = () => {
           reviewsPage={reviewsPage}
           setReviewsPage={setReviewsPage}
           reviewsTotal={reviewsTotal}
-          onClose={() => setShowReviews(false)}
+          onClose={() => { setShowReviews(false); }}
           onSubmit={handleReviewSubmitForm}
           onDeleteWithConfirm={handleDeleteWithConfirm}
           usePortal
@@ -376,7 +366,7 @@ const RestaurantPage = () => {
         <InfoModal
           restaurant={restaurantView}
           workingHours={infoWorkingHours}
-          onClose={() => setShowInfo(false)}
+          onClose={() => { setShowInfo(false); }}
           usePortal
           showDescription
         />

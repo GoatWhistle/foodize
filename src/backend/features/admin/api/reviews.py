@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -36,7 +37,7 @@ async def batch_delete_reviews(
     body: BatchIdsRequest,
     actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-) -> SuccessResponse[dict]:
+) -> SuccessResponse[dict[str, Any]]:
     count = await crud.batch_delete_reviews(session, body.ids)
     for rid in body.ids:
         await audit_service.log_action(session, actor.id, "DELETE_REVIEW", "review", rid)

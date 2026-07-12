@@ -24,7 +24,9 @@ describe('useRestaurantStore', () => {
       restaurants: [],
       menus: {},
       currentRestaurant: null,
-      loading: false,
+      publicLoading: false,
+      myLoading: false,
+      menuLoading: false,
       error: null,
     });
     vi.clearAllMocks();
@@ -40,7 +42,7 @@ describe('useRestaurantStore', () => {
 
     const state = useRestaurantStore.getState();
     expect(state.restaurants).toEqual(mockRestaurants);
-    expect(state.loading).toBe(false);
+    expect(state.myLoading).toBe(false);
   });
 
   it('fetchMenu caches the menu', async () => {

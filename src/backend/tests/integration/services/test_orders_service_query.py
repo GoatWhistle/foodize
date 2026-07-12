@@ -13,7 +13,7 @@ from features.orders.services.order import get_order, get_user_orders
 
 
 class TestGetOrder:
-    async def test_get_order_success(self, mock_db_session):
+    async def test_get_order_success(self, mock_db_session: AsyncMock) -> None:
         user_id = uuid.uuid4()
         order_id = uuid.uuid4()
         mock_order = make_mock_order(order_id, user_id)
@@ -28,7 +28,7 @@ class TestGetOrder:
         assert isinstance(result, OrderResponse)
         assert result.id == order_id
 
-    async def test_get_order_not_found_raises_404(self, mock_db_session):
+    async def test_get_order_not_found_raises_404(self, mock_db_session: AsyncMock) -> None:
         with patch(
             "features.orders.crud.order.get_order_by_id",
             new_callable=AsyncMock,
@@ -37,7 +37,7 @@ class TestGetOrder:
             with pytest.raises(OrderNotFoundException):
                 await get_order(mock_db_session, uuid.uuid4(), uuid.uuid4())
 
-    async def test_get_order_wrong_user_raises_403(self, mock_db_session):
+    async def test_get_order_wrong_user_raises_403(self, mock_db_session: AsyncMock) -> None:
         owner_id = uuid.uuid4()
         other_user_id = uuid.uuid4()
         order_id = uuid.uuid4()
@@ -53,7 +53,7 @@ class TestGetOrder:
 
 
 class TestGetUserOrders:
-    async def test_returns_list(self, mock_db_session):
+    async def test_returns_list(self, mock_db_session: AsyncMock) -> None:
         user_id = uuid.uuid4()
         orders = [make_mock_order(uuid.uuid4(), user_id) for _ in range(3)]
 
@@ -75,7 +75,7 @@ class TestGetUserOrders:
         assert total == 3
         assert all(isinstance(o, OrderResponse) for o in data)
 
-    async def test_returns_empty_list(self, mock_db_session):
+    async def test_returns_empty_list(self, mock_db_session: AsyncMock) -> None:
         with (
             patch(
                 "features.orders.crud.order.get_orders_by_user_id",

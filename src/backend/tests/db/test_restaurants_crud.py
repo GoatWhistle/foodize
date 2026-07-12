@@ -1,6 +1,7 @@
 import uuid
 
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.restaurants.crud import (
     count_restaurants,
@@ -16,10 +17,11 @@ from features.restaurants.schemas import RestaurantCreate, RestaurantUpdate
 from features.users.crud import create_user
 from features.users.schemas import UserCreate
 from features.vendors.crud import create_vendor_profile
+from features.vendors.models import VendorProfile
 from features.vendors.schemas import VendorCreate
 
 
-async def _make_vendor(db_session, phone: str):
+async def _make_vendor(db_session: AsyncSession, phone: str) -> VendorProfile:
     user = await create_user(
         db_session,
         UserCreate(
@@ -32,7 +34,7 @@ async def _make_vendor(db_session, phone: str):
 
 
 @pytest.mark.asyncio
-async def test_create_restaurant_crud(db_session):
+async def test_create_restaurant_crud(db_session: AsyncSession) -> None:
     vendor_profile = await _make_vendor(db_session, "79001234567")
 
     restaurant_data = RestaurantCreate(name="My Rest", address="Main St")
@@ -45,7 +47,7 @@ async def test_create_restaurant_crud(db_session):
 
 
 @pytest.mark.asyncio
-async def test_get_restaurant_by_display_id(db_session):
+async def test_get_restaurant_by_display_id(db_session: AsyncSession) -> None:
     vendor_profile = await _make_vendor(db_session, "79001234572")
     restaurant = await create_restaurant(
         db_session,
@@ -53,6 +55,7 @@ async def test_get_restaurant_by_display_id(db_session):
         vendor_profile.id,
     )
 
+    assert restaurant.display_id is not None
     fetched = await get_restaurant_by_display_id(db_session, restaurant.display_id)
 
     assert fetched is not None
@@ -61,7 +64,9 @@ async def test_get_restaurant_by_display_id(db_session):
 
 
 @pytest.mark.asyncio
-async def test_create_restaurant_retries_display_id_collision(db_session, monkeypatch):
+async def test_create_restaurant_retries_display_id_collision(
+    db_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
+) -> None:
     vendor_profile = await _make_vendor(db_session, "79001234573")
     ids = iter(["taken-id", "taken-id", "free-id"])
     monkeypatch.setattr("features.restaurants.crud.secrets.token_hex", lambda _: next(ids))
@@ -82,7 +87,7 @@ async def test_create_restaurant_retries_display_id_collision(db_session, monkey
 
 
 @pytest.mark.asyncio
-async def test_get_restaurant_by_id(db_session):
+async def test_get_restaurant_by_id(db_session: AsyncSession) -> None:
     vendor_profile = await _make_vendor(db_session, "79001234568")
 
     restaurant = await create_restaurant(
@@ -97,7 +102,7 @@ async def test_get_restaurant_by_id(db_session):
 
 
 @pytest.mark.asyncio
-async def test_update_restaurant(db_session):
+async def test_update_restaurant(db_session: AsyncSession) -> None:
     vendor_profile = await _make_vendor(db_session, "79001234569")
 
     restaurant = await create_restaurant(
@@ -116,7 +121,7 @@ async def test_update_restaurant(db_session):
 
 
 @pytest.mark.asyncio
-async def test_get_vendor_restaurants_and_count(db_session):
+async def test_get_vendor_restaurants_and_count(db_session: AsyncSession) -> None:
     vendor_profile = await _make_vendor(db_session, "79001234570")
 
     r1 = await create_restaurant(
@@ -136,7 +141,7 @@ async def test_get_vendor_restaurants_and_count(db_session):
 
 
 @pytest.mark.asyncio
-async def test_get_all_restaurants_with_filters(db_session):
+async def test_get_all_restaurants_with_filters(db_session: AsyncSession) -> None:
     vendor_profile = await _make_vendor(db_session, "79001234571")
 
     await create_restaurant(

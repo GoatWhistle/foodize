@@ -17,7 +17,7 @@ const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage')
 const StaffDashboardPage = lazy(() => import('./pages/staff/StaffDashboardPage'));
 const DisplayBoardPage = lazy(() => import('./pages/display-board/DisplayBoardPage'));
 
-import { IconContext, MapPin, ArrowLeft } from '@phosphor-icons/react';
+import { IconContext, MapPinIcon, ArrowLeftIcon } from '@phosphor-icons/react';
 
 import MainLayout from './components/layout/MainLayout';
 import ErrorBoundary from '@shared/components/ErrorBoundary/ErrorBoundary';
@@ -37,12 +37,13 @@ import NotificationsPage from './pages/notifications/NotificationsPage';
 
 import { ROUTES } from './constants/routes';
 import { useAuthStore } from './store/useAuthStore';
-import { useThemeStore } from '@shared/store/useThemeStore';
-import { useOrderStore } from './store/useOrderStore';
+import { selectIsAuthenticated } from '@shared/store/createAuthStore';
+import { useThemeEffect } from '@shared/hooks/useThemeEffect';
+import { useCartStore } from './store/useCartStore';
 import { useFavoriteStore } from '@shared/store/useFavoriteStore';
 
 const ProtectedRoute = ({ children }: { children: ReactNode }) => {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isAuthenticated = useAuthStore(selectIsAuthenticated);
   const location = useLocation();
   return isAuthenticated ? children : <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
 };
@@ -54,7 +55,7 @@ const RoleProtectedRoute = ({
   children: ReactNode;
   permission?: Permission;
 }) => {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isAuthenticated = useAuthStore(selectIsAuthenticated);
   const permissions = useAuthStore((s) => s.user?.permissions);
   const location = useLocation();
   if (!isAuthenticated) return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
@@ -191,7 +192,7 @@ const router = createBrowserRouter([
           fontFamily: 'Manrope, sans-serif',
         }}
       >
-        <MapPin
+        <MapPinIcon
           className="not-found-pin"
           size={64}
           weight="bold"
@@ -217,7 +218,7 @@ const router = createBrowserRouter([
             textDecoration: 'none',
           }}
         >
-          <ArrowLeft weight="bold" /> На главную
+          <ArrowLeftIcon weight="bold" /> На главную
         </a>
       </div>
     ),
@@ -225,17 +226,17 @@ const router = createBrowserRouter([
 ]);
 
 function App() {
-  const initTheme = useThemeStore((s) => s.initTheme);
   const fetchMe = useAuthStore((s) => s.fetchMe);
 
-  const fetchCart = useOrderStore((s) => s.fetchCart);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const fetchCart = useCartStore((s) => s.fetchCart);
+  const isAuthenticated = useAuthStore(selectIsAuthenticated);
   const loadFavorites = useFavoriteStore((s) => s.loadFavorites);
 
+  useThemeEffect();
+
   useEffect(() => {
-    initTheme();
     void fetchMe();
-  }, [initTheme, fetchMe]);
+  }, [fetchMe]);
 
   useEffect(() => {
     if (isAuthenticated) {

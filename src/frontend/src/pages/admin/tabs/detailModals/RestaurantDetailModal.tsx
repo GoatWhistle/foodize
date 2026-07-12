@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
-import { UserCircle, Storefront, Monitor, QrCode, Trash, CheckCircle, Prohibit, Star } from '@phosphor-icons/react';
+import { UserCircleIcon, StorefrontIcon, MonitorIcon, QrCodeIcon, TrashIcon, CheckCircleIcon, ProhibitIcon, StarIcon } from '@phosphor-icons/react';
 import type { AdminRestaurant } from '@shared/types/models';
 import { APPROVAL_STATUS_RU, translate } from '@shared/utils/locales';
 import type { QrType } from '../../useAdminDashboard';
@@ -32,11 +32,11 @@ export const RestaurantDetailModal = ({
     title={selectedRestaurant.name}
     subtitle="Детали ресторана"
     loading={restaurantDetailsLoading}
-    onClose={() => setSelectedRestaurant(null)}
+    onClose={() => { setSelectedRestaurant(null); }}
   >
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-        <UserCircle size={18} color="var(--fire)" />
+        <UserCircleIcon size={18} color="var(--fire)" />
         <span style={{ fontWeight: 800 }}>Вендор</span>
       </div>
       <div style={{ marginBottom: 16 }}>
@@ -51,7 +51,7 @@ export const RestaurantDetailModal = ({
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <Storefront size={18} color="var(--fire)" />
+        <StorefrontIcon size={18} color="var(--fire)" />
         <span style={{ fontWeight: 800 }}>Заведение</span>
       </div>
       <div>
@@ -69,7 +69,7 @@ export const RestaurantDetailModal = ({
           <DetailField label="Отзывы">{selectedRestaurant.review_count}</DetailField>
           <DetailField label="Рейтинг">
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-              <Star size={14} weight="fill" color="var(--star)" /> {selectedRestaurant.average_rating || 0}
+              <StarIcon size={14} weight="fill" color="var(--star)" /> {selectedRestaurant.average_rating || 0}
             </span>
           </DetailField>
           <DetailField label="Создан">{formatDateTime(selectedRestaurant.created_at)}</DetailField>
@@ -102,20 +102,20 @@ export const RestaurantDetailModal = ({
       {selectedRestaurant.moderation_status !== 'APPROVED' && (
         <button
           className="btn btn-secondary"
-          onClick={() => handleApproveRestaurant(selectedRestaurant.id)}
+          onClick={() => { handleApproveRestaurant(selectedRestaurant.id); }}
           disabled={approveLoading}
         >
-          <CheckCircle size={16} />
+          <CheckCircleIcon size={16} />
           {approveLoading ? 'Одобрение...' : 'Одобрить'}
         </button>
       )}
       {selectedRestaurant.moderation_status !== 'REJECTED' && (
         <button
           className="btn btn-secondary"
-          onClick={() => handleRejectRestaurant(selectedRestaurant.id)}
+          onClick={() => { handleRejectRestaurant(selectedRestaurant.id); }}
           style={{ color: 'var(--error)' }}
         >
-          <Prohibit size={16} />
+          <ProhibitIcon size={16} />
           Отклонить
         </button>
       )}
@@ -131,7 +131,7 @@ export const RestaurantDetailModal = ({
         )
       }
     >
-      <Monitor size={16} />
+      <MonitorIcon size={16} />
       Открыть табло
     </button>
     <button
@@ -142,7 +142,7 @@ export const RestaurantDetailModal = ({
         setQrRestaurant(selectedRestaurant);
       }}
     >
-      <QrCode size={16} />
+      <QrCodeIcon size={16} />
       QR для сайта
     </button>
     <button
@@ -153,15 +153,15 @@ export const RestaurantDetailModal = ({
         setQrRestaurant(selectedRestaurant);
       }}
     >
-      <QrCode size={16} />
+      <QrCodeIcon size={16} />
       QR для Telegram
     </button>
     <button
       className="btn btn-secondary"
       style={{ marginTop: 8, color: 'var(--error)' }}
-      onClick={() => handleDeleteRestaurant(selectedRestaurant.id)}
+      onClick={() => { handleDeleteRestaurant(selectedRestaurant.id); }}
     >
-      <Trash size={16} />
+      <TrashIcon size={16} />
       Удалить ресторан
     </button>
   </DetailModal>

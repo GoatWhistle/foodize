@@ -1,4 +1,4 @@
-import { Storefront } from '@phosphor-icons/react';
+import { StorefrontIcon } from '@phosphor-icons/react';
 import type { Order } from '@shared/types/models';
 import { ORDER_STATUS_RU } from '@shared/utils/locales';
 import QRCodeModal from '../../components/QRCodeModal/QRCodeModal';
@@ -24,8 +24,7 @@ const toDateInputValue = (date: Date): string => {
   return `${year}-${month}-${day}`;
 };
 
-const getOrderDisplayId = (order: Order): string | number =>
-  order.display_id ?? order.id.slice(0, 8);
+const getOrderDisplayId = (order: Order): string | number => order.display_id;
 
 const formatOrderTime = (value?: string | null): string => {
   if (!value) return '';
@@ -51,7 +50,7 @@ const groupOrdersByDate = (orders: Order[]): OrderGroup[] => {
   };
 
   return (Array.isArray(orders) ? orders : []).reduce<OrderGroup[]>((groups, order) => {
-    const dateKey = order?.created_at
+    const dateKey = order.created_at
       ? toDateInputValue(new Date(order.created_at))
       : 'unknown';
     const group = groups.find((g) => g.dateKey === dateKey);
@@ -103,7 +102,7 @@ const VendorDashboardPage = () => {
           marginBottom: 16,
         }}
       >
-        <Storefront /> Дашборд вендора
+        <StorefrontIcon /> Дашборд вендора
       </h1>
 
       <VendorApprovalBanner vendorProfile={d.vendorProfile} />
@@ -154,7 +153,7 @@ const VendorDashboardPage = () => {
         <QRCodeModal
           restaurant={d.selectedRestaurant}
           initialType={d.qrType}
-          onClose={() => d.setShowQr(false)}
+          onClose={() => { d.setShowQr(false); }}
         />
       )}
     </div>

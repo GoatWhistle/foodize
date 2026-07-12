@@ -1,15 +1,17 @@
 import uuid
 from datetime import datetime
+from http import HTTPStatus
 from unittest.mock import AsyncMock, patch
 
 import pytest
 from httpx import AsyncClient
 
 from features.notifications.models import NotificationType
+from features.users.models import User
 
 
 class _FakeNotification:
-    def __init__(self, user_id=None, is_read=False):
+    def __init__(self, user_id: uuid.UUID | None = None, is_read: bool = False) -> None:
         self.id = uuid.uuid4()
         self.user_id = user_id or uuid.uuid4()
         self.title = "Заказ принят"
@@ -19,20 +21,22 @@ class _FakeNotification:
         self.created_at = datetime(2026, 1, 1, 0, 0, 0)
 
 
-def _make_mock_notification(user_id=None, is_read=False):
+def _make_mock_notification(
+    user_id: uuid.UUID | None = None, is_read: bool = False
+) -> _FakeNotification:
     return _FakeNotification(user_id=user_id, is_read=is_read)
 
 
 class TestNotificationsAPIAccess:
     @pytest.mark.asyncio
-    async def test_requires_auth(self, client: AsyncClient):
+    async def test_requires_auth(self, client: AsyncClient) -> None:
         response = await client.get("/api/v1/notifications")
-        assert response.status_code == 401
+        assert response.status_code == HTTPStatus.UNAUTHORIZED
 
 
 class TestGetNotifications:
     @pytest.mark.asyncio
-    async def test_returns_empty_list(self, client: AsyncClient, as_user):
+    async def test_returns_empty_list(self, client: AsyncClient, as_user: User) -> None:
         with (
             patch(
                 "features.notifications.api.crud.get_user_notifications",
@@ -47,14 +51,16 @@ class TestGetNotifications:
         ):
             response = await client.get("/api/v1/notifications")
 
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK
         data = response.json()
         assert data["items"] == []
         assert data["total"] == 0
         assert data["unread_count"] == 0
 
     @pytest.mark.asyncio
-    async def test_returns_notifications_with_unread_count(self, client: AsyncClient, as_user):
+    async def test_returns_notifications_with_unread_count(
+        self, client: AsyncClient, as_user: User
+    ) -> None:
         n = _make_mock_notification(user_id=as_user.id)
 
         with (
@@ -71,14 +77,14 @@ class TestGetNotifications:
         ):
             response = await client.get("/api/v1/notifications")
 
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK
         data = response.json()
         assert data["total"] == 1
         assert data["unread_count"] == 1
         assert len(data["items"]) == 1
 
     @pytest.mark.asyncio
-    async def test_pagination_params(self, client: AsyncClient, as_user):
+    async def test_pagination_params(self, client: AsyncClient, as_user: User) -> None:
         with (
             patch(
                 "features.notifications.api.crud.get_user_notifications",
@@ -101,7 +107,7 @@ class TestGetNotifications:
 
 class TestMarkAsRead:
     @pytest.mark.asyncio
-    async def test_marks_notification_read(self, client: AsyncClient, as_user):
+    async def test_marks_notification_read(self, client: AsyncClient, as_user: User) -> None:
         n = _make_mock_notification(user_id=as_user.id)
         n.is_read = True
 
@@ -112,10 +118,10 @@ class TestMarkAsRead:
         ):
             response = await client.post(f"/api/v1/notifications/{n.id}/read")
 
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK
 
     @pytest.mark.asyncio
-    async def test_returns_404_when_not_found(self, client: AsyncClient, as_user):
+    async def test_returns_404_when_not_found(self, client: AsyncClient, as_user: User) -> None:
         with patch(
             "features.notifications.api.crud.mark_as_read",
             new_callable=AsyncMock,
@@ -123,26 +129,25 @@ class TestMarkAsRead:
         ):
             response = await client.post(f"/api/v1/notifications/{uuid.uuid4()}/read")
 
-        assert response.status_code == 404
+        assert response.status_code == HTTPStatus.NOT_FOUND
 
 
 class TestMarkAllAsRead:
     @pytest.mark.asyncio
-    async def test_marks_all_read(self, client: AsyncClient, as_user):
+    async def test_marks_all_read(self, client: AsyncClient, as_user: User) -> None:
         with patch(
             "features.notifications.api.crud.mark_all_as_read",
             new_callable=AsyncMock,
         ) as mock_mark:
             response = await client.post("/api/v1/notifications/read-all")
 
-        assert response.status_code == 200
-        assert response.json() == {"success": True}
+        assert response.status_code == HTTPStatus.NO_CONTENT
         mock_mark.assert_awaited_once()
 
 
 class TestDeleteNotification:
     @pytest.mark.asyncio
-    async def test_deletes_notification(self, client: AsyncClient, as_user):
+    async def test_deletes_notification(self, client: AsyncClient, as_user: User) -> None:
         with patch(
             "features.notifications.api.crud.delete_notification",
             new_callable=AsyncMock,
@@ -150,10 +155,10 @@ class TestDeleteNotification:
         ):
             response = await client.delete(f"/api/v1/notifications/{uuid.uuid4()}")
 
-        assert response.status_code == 204
+        assert response.status_code == HTTPStatus.NO_CONTENT
 
     @pytest.mark.asyncio
-    async def test_returns_404_when_not_found(self, client: AsyncClient, as_user):
+    async def test_returns_404_when_not_found(self, client: AsyncClient, as_user: User) -> None:
         with patch(
             "features.notifications.api.crud.delete_notification",
             new_callable=AsyncMock,
@@ -161,17 +166,17 @@ class TestDeleteNotification:
         ):
             response = await client.delete(f"/api/v1/notifications/{uuid.uuid4()}")
 
-        assert response.status_code == 404
+        assert response.status_code == HTTPStatus.NOT_FOUND
 
 
 class TestDeleteAllNotifications:
     @pytest.mark.asyncio
-    async def test_deletes_all(self, client: AsyncClient, as_user):
+    async def test_deletes_all(self, client: AsyncClient, as_user: User) -> None:
         with patch(
             "features.notifications.api.crud.delete_all_notifications",
             new_callable=AsyncMock,
         ) as mock_del:
             response = await client.delete("/api/v1/notifications")
 
-        assert response.status_code == 204
+        assert response.status_code == HTTPStatus.NO_CONTENT
         mock_del.assert_awaited_once()

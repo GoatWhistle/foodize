@@ -1,14 +1,20 @@
-from typing import Any, TypeVar
+from typing import Any, Protocol, TypeVar
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import InstrumentedAttribute
 
 from shared.exceptions.existence import NotFoundException
 
-T = TypeVar("T")
+
+class _HasId(Protocol):
+    id: InstrumentedAttribute[Any]
 
 
-async def get_or_404(
+T = TypeVar("T", bound=_HasId)
+
+
+async def get_or_404[T: _HasId](
     session: AsyncSession, model: type[T], id: Any, detail: str | None = None
 ) -> T:
     result = await session.execute(select(model).where(model.id == id))

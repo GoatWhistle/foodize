@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Heart } from "@phosphor-icons/react";
+import { HeartIcon } from "@phosphor-icons/react";
 import { useFavoritesPage } from "@shared/hooks/useFavoritesPage";
 import EmptyState from "@shared/components/EmptyState/EmptyState";
 import FavoriteRestaurantCard from "@shared/components/FavoriteRestaurantCard/FavoriteRestaurantCard";
@@ -48,7 +48,7 @@ const FavoritesPage = ({ BackButton, pageSize = PAGE_SIZE, showPagination = true
           marginBottom: 20,
         }}
       >
-        <Heart size={22} weight="fill" color="var(--color-error)" />
+        <HeartIcon size={22} weight="fill" color="var(--color-error)" />
         <span style={{ fontWeight: 800, fontSize: "1.1rem", color: "var(--text-1)" }}>
           Избранное
         </span>
@@ -85,7 +85,7 @@ const FavoritesPage = ({ BackButton, pageSize = PAGE_SIZE, showPagination = true
               key={fav.id}
               favorite={fav}
               onNavigate={(restaurant: FavoriteRestaurantInfo) =>
-                handleNavigate(restaurant)
+                { handleNavigate(restaurant); }
               }
               onUnfavorite={(restaurantId: string) => { void handleUnfavorite(restaurantId); }}
             />

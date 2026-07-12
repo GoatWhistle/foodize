@@ -1,7 +1,7 @@
 import hashlib
 import json
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -11,6 +11,9 @@ from features.menu.models import MenuItem, MenuItemOption
 from features.orders.exceptions import InvalidStatusTransitionException
 from features.orders.models import IdempotencyKey
 from features.orders.schemas.order import OrderCreate
+from features.orders.schemas.order_item import OrderItemCreate
+from features.restaurants.models import Restaurant
+from features.restaurants.working_hours import WorkingHours
 from features.restaurants.working_hours_crud import is_open_now
 from infra.cache.redis import get_redis_cache
 from shared.enums.order_status import OrderStatus
@@ -40,15 +43,15 @@ async def safe_publish(channel: str, message: str) -> None:
         logger.warning("redis_publish_failed", channel=channel)
 
 
-def is_ordering_paused(restaurant) -> bool:
+def is_ordering_paused(restaurant: Restaurant) -> bool:
     if getattr(restaurant, "is_ordering_paused", False) is not True:
         return False
     paused_until = restaurant.ordering_paused_until
     if paused_until is None:
         return True
     if paused_until.tzinfo is None:
-        paused_until = paused_until.replace(tzinfo=timezone.utc)
-    return paused_until > datetime.now(timezone.utc)
+        paused_until = paused_until.replace(tzinfo=UTC)
+    return paused_until > datetime.now(UTC)
 
 
 def validate_transition(old: OrderStatus, new: OrderStatus) -> None:
@@ -57,7 +60,7 @@ def validate_transition(old: OrderStatus, new: OrderStatus) -> None:
 
 
 def validate_item_options(
-    item_data,
+    item_data: OrderItemCreate,
     menu_item: MenuItem,
     options_by_id: dict[uuid.UUID, MenuItemOption],
 ) -> list[MenuItemOption]:
@@ -104,8 +107,8 @@ def make_request_hash(order_data: OrderCreate) -> str:
 
 def as_aware_utc(value: datetime) -> datetime:
     if value.tzinfo is None:
-        return value.replace(tzinfo=timezone.utc)
-    return value.astimezone(timezone.utc)
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
 
 
 def validate_requested_pickup_at(
@@ -115,7 +118,7 @@ def validate_requested_pickup_at(
     if requested_pickup_at is None:
         return None
     pickup_at = as_aware_utc(requested_pickup_at)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     latest = now + timedelta(days=_PICKUP_TIME_HORIZON_DAYS)
     if pickup_at < min_ready_at:
         raise BadRequestException(detail="Pickup time is too soon for the current restaurant load")
@@ -126,7 +129,7 @@ def validate_requested_pickup_at(
     return pickup_at
 
 
-def is_open_at(hours, value: datetime) -> bool | None:
+def is_open_at(hours: list[WorkingHours], value: datetime) -> bool | None:
     if not hours:
         return None
     return is_open_now(hours, as_aware_utc(value))

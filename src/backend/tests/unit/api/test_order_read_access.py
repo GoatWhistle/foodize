@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from features.orders.api.order import verify_order_read_access
+from shared.enums.permissions import Permission
 from shared.exceptions import AccessDeniedException
 from shared.permissions import (
     ADMIN_PERMISSIONS,
@@ -14,7 +15,7 @@ from shared.permissions import (
 )
 
 
-def _make_user(permissions: frozenset, user_id: uuid.UUID | None = None) -> MagicMock:
+def _make_user(permissions: frozenset[Permission], user_id: uuid.UUID | None = None) -> MagicMock:
     user = MagicMock()
     user.id = user_id or uuid.uuid4()
     user.permissions = serialize_permissions(permissions)

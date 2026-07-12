@@ -15,7 +15,7 @@ from shared.enums.permissions import Permission
 from shared.exceptions import NotFoundException
 
 
-def _make_mock_user(user_id: uuid.UUID | None = None):
+def _make_mock_user(user_id: uuid.UUID | None = None) -> MagicMock:
     u = MagicMock()
     u.id = user_id or uuid.uuid4()
     u.name = "Test User"
@@ -26,14 +26,14 @@ def _make_mock_user(user_id: uuid.UUID | None = None):
 
 class TestGetUserOrNotFound:
     @pytest.mark.asyncio
-    async def test_found(self):
+    async def test_found(self) -> None:
         user = _make_mock_user()
         with patch("features.admin.crud.get_user_by_id", new_callable=AsyncMock, return_value=user):
             result = await get_user_or_404(MagicMock(), user.id)
             assert result is user
 
     @pytest.mark.asyncio
-    async def test_not_found(self):
+    async def test_not_found(self) -> None:
         with patch("features.admin.crud.get_user_by_id", new_callable=AsyncMock, return_value=None):
             with pytest.raises(NotFoundException):
                 await get_user_or_404(MagicMock(), uuid.uuid4())
@@ -41,7 +41,7 @@ class TestGetUserOrNotFound:
 
 class TestDeactivateActivateUser:
     @pytest.mark.asyncio
-    async def test_deactivate_success(self):
+    async def test_deactivate_success(self) -> None:
         user = _make_mock_user()
         deactivated = _make_mock_user(user.id)
         with (
@@ -56,13 +56,13 @@ class TestDeactivateActivateUser:
             assert result is deactivated
 
     @pytest.mark.asyncio
-    async def test_deactivate_not_found(self):
+    async def test_deactivate_not_found(self) -> None:
         with patch("features.admin.crud.get_user_by_id", new_callable=AsyncMock, return_value=None):
             with pytest.raises(NotFoundException):
                 await deactivate_user_service(MagicMock(), uuid.uuid4())
 
     @pytest.mark.asyncio
-    async def test_activate_success(self):
+    async def test_activate_success(self) -> None:
         user = _make_mock_user()
         activated = _make_mock_user(user.id)
         with (
@@ -77,7 +77,7 @@ class TestDeactivateActivateUser:
             assert result is activated
 
     @pytest.mark.asyncio
-    async def test_activate_not_found(self):
+    async def test_activate_not_found(self) -> None:
         with patch("features.admin.crud.get_user_by_id", new_callable=AsyncMock, return_value=None):
             with pytest.raises(NotFoundException):
                 await activate_user_service(MagicMock(), uuid.uuid4())
@@ -85,7 +85,7 @@ class TestDeactivateActivateUser:
 
 class TestSetUserPermissions:
     @pytest.mark.asyncio
-    async def test_logs_audit_action(self):
+    async def test_logs_audit_action(self) -> None:
         user = _make_mock_user()
         actor = _make_mock_user()
         actor.permissions = [
@@ -108,7 +108,7 @@ class TestSetUserPermissions:
             assert call_kwargs["actor_id"] == actor.id
 
     @pytest.mark.asyncio
-    async def test_rejects_escalation_beyond_actor(self):
+    async def test_rejects_escalation_beyond_actor(self) -> None:
         user = _make_mock_user()
         actor = _make_mock_user()
         actor.permissions = [Permission.USERS_ASSIGN_PERMISSIONS.value]
@@ -120,7 +120,7 @@ class TestSetUserPermissions:
             )
 
     @pytest.mark.asyncio
-    async def test_rejects_actor_without_assign_permission(self):
+    async def test_rejects_actor_without_assign_permission(self) -> None:
         user = _make_mock_user()
         actor = _make_mock_user()
         actor.permissions = [Permission.ADMIN_ACCESS.value]
@@ -130,7 +130,7 @@ class TestSetUserPermissions:
             await set_user_permissions(session, user.id, [Permission.USERS_READ.value], actor=actor)
 
     @pytest.mark.asyncio
-    async def test_rejects_self_change(self):
+    async def test_rejects_self_change(self) -> None:
         actor = _make_mock_user()
         actor.permissions = [
             Permission.USERS_ASSIGN_PERMISSIONS.value,
@@ -146,7 +146,7 @@ class TestSetUserPermissions:
 
 class TestGetUsersList:
     @pytest.mark.asyncio
-    async def test_returns_users_and_total(self):
+    async def test_returns_users_and_total(self) -> None:
         users = [_make_mock_user(), _make_mock_user()]
         with (
             patch(
@@ -165,7 +165,7 @@ class TestGetUsersList:
             assert total == 2
 
     @pytest.mark.asyncio
-    async def test_empty(self):
+    async def test_empty(self) -> None:
         with (
             patch("features.admin.crud.get_all_users", new_callable=AsyncMock, return_value=[]),
             patch("features.admin.crud.count_all_users", new_callable=AsyncMock, return_value=0),

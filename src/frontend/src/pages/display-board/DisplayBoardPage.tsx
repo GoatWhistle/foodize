@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { CookingPot, CheckCircle } from '@phosphor-icons/react';
+import { CookingPotIcon, CheckCircleIcon } from '@phosphor-icons/react';
 import { createDisplayBoardWebSocket } from '../../services/api';
 import { ReliableWebSocket } from '@shared/services/api';
 import { restaurantService } from '@shared/services/restaurantService';
@@ -31,13 +31,13 @@ export default function DisplayBoardPage() {
     if (!restaurantId) return;
     restaurantService
       .getById(restaurantId)
-      .then((res) => setRestaurantName(res.data?.data?.name || ''))
-      .catch((err) => logError('DisplayBoardPage.getRestaurant', err));
+      .then((res) => { setRestaurantName(res.data.data.name || ''); })
+      .catch((err: unknown) => { logError('DisplayBoardPage.getRestaurant', err); });
   }, [restaurantId]);
 
   useEffect(() => {
-    const tick = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(tick);
+    const tick = setInterval(() => { setTime(new Date()); }, 1000);
+    return () => { clearInterval(tick); };
   }, []);
 
   useEffect(() => {
@@ -115,7 +115,7 @@ export default function DisplayBoardPage() {
         <div style={styles.columns}>
           <DisplayBoardColumn
             title="Готовятся"
-            Icon={CookingPot}
+            Icon={CookingPotIcon}
             ids={cooking}
             newIds={newCooking}
             style={COOKING_STYLE}
@@ -123,7 +123,7 @@ export default function DisplayBoardPage() {
           <div style={styles.divider} />
           <DisplayBoardColumn
             title="Готовы к выдаче"
-            Icon={CheckCircle}
+            Icon={CheckCircleIcon}
             ids={ready}
             newIds={newReady}
             style={READY_STYLE}

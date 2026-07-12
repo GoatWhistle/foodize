@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
-import { useOrderStore } from "../../store/useOrderStore";
+import { useCartStore } from "../../store/useCartStore";
 import { cartService } from "@shared/services/cartService";
-import type { CartLine } from "@shared/store/useOrderStore";
+import type { CartLine } from "@shared/store/createCartStore";
 
 vi.mock("@shared/services/cartService", () => ({
   cartService: {
@@ -28,16 +28,13 @@ const cartServiceMock = cartService as unknown as {
 const asCartLines = (lines: Partial<CartLine>[]): CartLine[] =>
   lines as CartLine[];
 
-describe("useOrderStore cart", () => {
+describe("useCartStore cart", () => {
   beforeEach(() => {
-    useOrderStore.setState({
+    useCartStore.setState({
       cart: [],
       cartRestaurantId: null,
-      orders: [],
-      currentOrder: null,
-      ordersLoading: false,
-      ordersTotal: 0,
-      activeOrder: null,
+      cartError: null,
+      orderPlacing: false,
     });
     vi.clearAllMocks();
   });
@@ -47,16 +44,21 @@ describe("useOrderStore cart", () => {
       data: {
         data: {
           items: [
-            { menuItem: { id: "m1", name: "Pizza", price: 100 }, quantity: 2 },
+            {
+              menuItem: { id: "m1", name: "Pizza", price: 100 },
+              quantity: 2,
+              selected_options: [],
+              selected_option_ids: [],
+            },
           ],
           restaurant_id: "rest-1",
         },
       },
     });
 
-    await useOrderStore.getState().fetchCart();
+    await useCartStore.getState().fetchCart();
 
-    const state = useOrderStore.getState();
+    const state = useCartStore.getState();
     expect(state.cart.length).toBe(1);
     expect(state.cartRestaurantId).toBe("rest-1");
   });
@@ -80,27 +82,28 @@ describe("useOrderStore cart", () => {
       },
     });
 
-    await useOrderStore.getState().fetchCart();
+    await useCartStore.getState().fetchCart();
 
-    const line = useOrderStore.getState().cart[0];
+    const line = useCartStore.getState().cart[0];
+    if (!line) throw new Error("cart line not found");
     expect(line.selectedOptionIds).toEqual(["o1"]);
     expect(line.selectedOptions).toEqual([
       { id: "o1", option_id: "o1", name: "Cheese", price_delta: 15 },
     ]);
     expect(line.lineKey).toBe("m1:o1");
-    expect(useOrderStore.getState().cartTotal()).toBe(115);
+    expect(useCartStore.getState().cartTotal()).toBe(115);
   });
 
   it("should add to cart successfully when cart is empty", async () => {
     cartServiceMock.updateCart.mockResolvedValueOnce({});
     const menuItem = { id: "m1", name: "Pizza", price: 100 };
 
-    await useOrderStore.getState().addToCart(menuItem, "rest-1", [], 2);
+    await useCartStore.getState().addToCart(menuItem, "rest-1", [], 2);
 
-    const state = useOrderStore.getState();
+    const state = useCartStore.getState();
     expect(state.cart.length).toBe(1);
-    expect(state.cart[0].menuItem).toEqual(menuItem);
-    expect(state.cart[0].quantity).toBe(2);
+    expect(state.cart[0]?.menuItem).toEqual(menuItem);
+    expect(state.cart[0]?.quantity).toBe(2);
     expect(state.cartRestaurantId).toBe("rest-1");
     expect(cartServiceMock.updateCart).toHaveBeenCalled();
   });
@@ -109,7 +112,7 @@ describe("useOrderStore cart", () => {
     cartServiceMock.updateCart.mockResolvedValue({});
     const menuItem = { id: "m1", name: "Pizza", price: 100 };
 
-    useOrderStore.setState({
+    useCartStore.setState({
       cart: [
         {
           menuItem,
@@ -122,10 +125,10 @@ describe("useOrderStore cart", () => {
       cartRestaurantId: "rest-1",
     });
 
-    await useOrderStore.getState().addToCart(menuItem, "rest-1", [], 3);
+    await useCartStore.getState().addToCart(menuItem, "rest-1", [], 3);
 
-    const state = useOrderStore.getState();
-    expect(state.cart[0].quantity).toBe(5);
+    const state = useCartStore.getState();
+    expect(state.cart[0]?.quantity).toBe(5);
   });
 
   it("should confirm and replace cart if adding item from a different restaurant", async () => {
@@ -134,7 +137,7 @@ describe("useOrderStore cart", () => {
     const oldItem = { id: "m1", name: "Pizza", price: 100 };
     const newItem = { id: "m2", name: "Burger", price: 50 };
 
-    useOrderStore.setState({
+    useCartStore.setState({
       cart: [
         {
           menuItem: oldItem,
@@ -147,12 +150,12 @@ describe("useOrderStore cart", () => {
       cartRestaurantId: "rest-1",
     });
 
-    await useOrderStore.getState().addToCart(newItem, "rest-2", [], 1);
+    await useCartStore.getState().addToCart(newItem, "rest-2", [], 1);
 
-    const state = useOrderStore.getState();
+    const state = useCartStore.getState();
     expect(state.cartRestaurantId).toBe("rest-2");
     expect(state.cart.length).toBe(1);
-    expect(state.cart[0].menuItem).toEqual(newItem);
+    expect(state.cart[0]?.menuItem).toEqual(newItem);
   });
 
   it("should not replace cart if different restaurant confirmation is declined", async () => {
@@ -160,7 +163,7 @@ describe("useOrderStore cart", () => {
     const oldItem = { id: "m1", name: "Pizza", price: 100 };
     const newItem = { id: "m2", name: "Burger", price: 50 };
 
-    useOrderStore.setState({
+    useCartStore.setState({
       cart: [
         {
           menuItem: oldItem,
@@ -173,12 +176,12 @@ describe("useOrderStore cart", () => {
       cartRestaurantId: "rest-1",
     });
 
-    const res = await useOrderStore
+    const res = await useCartStore
       .getState()
       .addToCart(newItem, "rest-2", [], 1);
 
     expect(res).toBe(false);
-    const state = useOrderStore.getState();
+    const state = useCartStore.getState();
     expect(state.cartRestaurantId).toBe("rest-1");
     expect(state.cart.length).toBe(1);
   });
@@ -187,7 +190,7 @@ describe("useOrderStore cart", () => {
     cartServiceMock.clearCart.mockResolvedValueOnce({});
     const menuItem = { id: "m1", name: "Pizza", price: 100 };
 
-    useOrderStore.setState({
+    useCartStore.setState({
       cart: [
         {
           menuItem,
@@ -200,9 +203,9 @@ describe("useOrderStore cart", () => {
       cartRestaurantId: "rest-1",
     });
 
-    await useOrderStore.getState().removeFromCart("m1", []);
+    await useCartStore.getState().removeFromCart("m1", []);
 
-    const state = useOrderStore.getState();
+    const state = useCartStore.getState();
     expect(state.cart.length).toBe(0);
     expect(state.cartRestaurantId).toBeNull();
     expect(cartServiceMock.clearCart).toHaveBeenCalled();
@@ -212,7 +215,7 @@ describe("useOrderStore cart", () => {
     cartServiceMock.updateCart.mockResolvedValueOnce({});
     const menuItem = { id: "m1", name: "Pizza", price: 100 };
 
-    useOrderStore.setState({
+    useCartStore.setState({
       cart: [
         {
           menuItem,
@@ -225,24 +228,24 @@ describe("useOrderStore cart", () => {
       cartRestaurantId: "rest-1",
     });
 
-    await useOrderStore.getState().removeFromCart("m1", []);
+    await useCartStore.getState().removeFromCart("m1", []);
 
-    const state = useOrderStore.getState();
+    const state = useCartStore.getState();
     expect(state.cart.length).toBe(1);
-    expect(state.cart[0].quantity).toBe(1);
+    expect(state.cart[0]?.quantity).toBe(1);
     expect(cartServiceMock.updateCart).toHaveBeenCalled();
   });
 
   it("should clear cart successfully", async () => {
     cartServiceMock.clearCart.mockResolvedValueOnce({});
-    useOrderStore.setState({
+    useCartStore.setState({
       cart: asCartLines([{ menuItem: { id: "m1" } as CartLine["menuItem"], quantity: 1 }]),
       cartRestaurantId: "rest-1",
     });
 
-    await useOrderStore.getState().clearCart();
+    await useCartStore.getState().clearCart();
 
-    const state = useOrderStore.getState();
+    const state = useCartStore.getState();
     expect(state.cart.length).toBe(0);
     expect(state.cartRestaurantId).toBeNull();
   });

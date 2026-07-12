@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CheckCircle, HourglassMedium, XCircle } from '@phosphor-icons/react';
+import { CheckCircleIcon, HourglassMediumIcon, XCircleIcon } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import { staffService } from '@shared/services/staffService';
 import EmptyState from '@shared/components/EmptyState/EmptyState';
@@ -16,7 +16,7 @@ interface ApplicationStatusConfigEntry {
 
 const APPLICATION_STATUS_CONFIG: Record<StaffRequestStatus, ApplicationStatusConfigEntry> = {
   PENDING: {
-    Icon: HourglassMedium,
+    Icon: HourglassMediumIcon,
     iconColor: 'var(--color-warning)',
     title: 'Заявка на рассмотрении',
     description:
@@ -25,7 +25,7 @@ const APPLICATION_STATUS_CONFIG: Record<StaffRequestStatus, ApplicationStatusCon
     bg: 'var(--color-warning-bg)',
   },
   ACCEPTED: {
-    Icon: CheckCircle,
+    Icon: CheckCircleIcon,
     iconColor: 'var(--color-success)',
     title: 'Заявка одобрена',
     description:
@@ -34,7 +34,7 @@ const APPLICATION_STATUS_CONFIG: Record<StaffRequestStatus, ApplicationStatusCon
     bg: 'var(--color-success-bg)',
   },
   REJECTED: {
-    Icon: XCircle,
+    Icon: XCircleIcon,
     iconColor: 'var(--color-error)',
     title: 'Заявка отклонена',
     description:
@@ -51,9 +51,9 @@ const ApplicationStatus = () => {
   useEffect(() => {
     staffService
       .getMyApplication()
-      .then((res) => setApplication(res.data.data))
+      .then((res) => { setApplication(res.data.data); })
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => { setLoading(false); });
   }, []);
 
   if (loading) {
@@ -75,9 +75,7 @@ const ApplicationStatus = () => {
     );
   }
 
-  const config =
-    APPLICATION_STATUS_CONFIG[application.status] ||
-    APPLICATION_STATUS_CONFIG.PENDING;
+  const config = APPLICATION_STATUS_CONFIG[application.status];
 
   return (
     <div style={{ padding: '40px 20px', maxWidth: 480, margin: '0 auto' }}>

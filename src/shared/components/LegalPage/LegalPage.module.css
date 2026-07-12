@@ -86,6 +86,12 @@
   margin: 6px 0;
 }
 
+.body ul {
+  margin: 6px 0;
+  padding: 0;
+  list-style: none;
+}
+
 .body li {
   font-size: var(--text-base);
   color: var(--text-2);
@@ -106,9 +112,4 @@
 .body strong {
   color: var(--text-1);
   font-weight: 700;
-}
-
-.body br {
-  display: block;
-  height: 4px;
 }

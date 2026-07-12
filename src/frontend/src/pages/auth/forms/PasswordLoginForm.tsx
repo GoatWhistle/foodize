@@ -32,7 +32,7 @@ const PasswordLoginForm = ({
         type="tel"
         placeholder="+7 (999) 000-00-00"
         value={phoneNumber}
-        onChange={(e) => setPhoneNumber(formatPhoneNumber(e.target.value))}
+        onChange={(e) => { setPhoneNumber(formatPhoneNumber(e.target.value)); }}
         required
         autoComplete="tel"
         autoFocus
@@ -49,7 +49,7 @@ const PasswordLoginForm = ({
         type="password"
         placeholder="Минимум 8 символов"
         value={password}
-        onChange={(e) => setPassword(e.target.value)}
+        onChange={(e) => { setPassword(e.target.value); }}
         required
         minLength={8}
         autoComplete="current-password"

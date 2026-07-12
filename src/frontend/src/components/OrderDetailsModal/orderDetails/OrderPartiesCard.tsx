@@ -1,4 +1,4 @@
-import { UserCircle, Storefront } from '@phosphor-icons/react';
+import { UserCircleIcon, StorefrontIcon } from '@phosphor-icons/react';
 import type { Order } from '@shared/types/models';
 
 import { formatDateTime } from './orderDetails.helpers';
@@ -16,7 +16,7 @@ export const OrderPartiesCard = ({ order }: { order: Order }) => (
     }}
   >
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <UserCircle size={18} color="var(--fire)" />
+      <UserCircleIcon size={18} color="var(--fire)" />
       <span style={{ fontWeight: 800 }}>Клиент</span>
     </div>
     {order.customer_name && (
@@ -26,7 +26,7 @@ export const OrderPartiesCard = ({ order }: { order: Order }) => (
     )}
 
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <Storefront size={18} color="var(--fire)" />
+      <StorefrontIcon size={18} color="var(--fire)" />
       <span style={{ fontWeight: 800 }}>Заведение</span>
     </div>
     {order.restaurant_name && (

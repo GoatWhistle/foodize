@@ -19,7 +19,7 @@ from shared.exceptions.existence import NotFoundException
 
 def make_mock_restaurant(
     restaurant_id: uuid.UUID | None = None, vendor_id: uuid.UUID | None = None
-):
+) -> MagicMock:
     r = MagicMock()
     r.id = restaurant_id or uuid.uuid4()
     r.vendor_id = vendor_id or uuid.uuid4()
@@ -36,7 +36,7 @@ def make_mock_restaurant(
 
 
 class TestCreateRestaurantForVendor:
-    async def test_creates_restaurant(self, mock_db_session):
+    async def test_creates_restaurant(self, mock_db_session: AsyncMock) -> None:
         vendor_id = uuid.uuid4()
         mock_restaurant = make_mock_restaurant(vendor_id=vendor_id)
         restaurant_data = RestaurantCreate(name="Sushi Bar", address="Lenin St 1")
@@ -62,7 +62,7 @@ class TestCreateRestaurantForVendor:
 
 
 class TestUpdateRestaurantForVendor:
-    async def test_update_success(self, mock_db_session):
+    async def test_update_success(self, mock_db_session: AsyncMock) -> None:
         vendor_id = uuid.uuid4()
         restaurant_id = uuid.uuid4()
         mock_restaurant = make_mock_restaurant(restaurant_id, vendor_id)
@@ -88,7 +88,7 @@ class TestUpdateRestaurantForVendor:
         assert result.id == mock_restaurant.id
         mock_update.assert_awaited_once_with(mock_db_session, mock_restaurant, update_data)
 
-    async def test_update_wrong_vendor_raises(self, mock_db_session):
+    async def test_update_wrong_vendor_raises(self, mock_db_session: AsyncMock) -> None:
         with patch(
             "features.restaurants.service.get_restaurant_and_check_ownership",
             new_callable=AsyncMock,
@@ -104,7 +104,7 @@ class TestUpdateRestaurantForVendor:
 
 
 class TestGetMyRestaurants:
-    async def test_returns_vendor_restaurants(self, mock_db_session):
+    async def test_returns_vendor_restaurants(self, mock_db_session: AsyncMock) -> None:
         vendor_id = uuid.uuid4()
         restaurants = [make_mock_restaurant(vendor_id=vendor_id) for _ in range(2)]
 
@@ -125,7 +125,7 @@ class TestGetMyRestaurants:
         assert len(data) == 2
         assert total == 2
 
-    async def test_returns_empty_when_no_restaurants(self, mock_db_session):
+    async def test_returns_empty_when_no_restaurants(self, mock_db_session: AsyncMock) -> None:
         with (
             patch(
                 "features.restaurants.crud.get_vendor_restaurants",

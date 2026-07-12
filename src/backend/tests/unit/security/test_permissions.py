@@ -1,3 +1,5 @@
+from http import HTTPStatus
+
 import pytest
 from factories import make_user
 
@@ -19,23 +21,23 @@ from shared.permissions import (
 
 
 class TestRolePermissions:
-    def test_admin_has_every_permission(self):
-        assert ADMIN_PERMISSIONS == frozenset(Permission)
+    def test_admin_has_every_permission(self) -> None:
+        assert frozenset(Permission) == ADMIN_PERMISSIONS
 
-    def test_admin_access_grants_every_permission(self):
+    def test_admin_access_grants_every_permission(self) -> None:
         assert has_permission([Permission.ADMIN_ACCESS.value], Permission.MENU_MANAGE)
 
-    def test_vendor_can_manage_menu_but_customer_cannot(self):
+    def test_vendor_can_manage_menu_but_customer_cannot(self) -> None:
         assert has_permission(VENDOR_PERMISSIONS, Permission.MENU_MANAGE)
         assert not has_permission(CUSTOMER_PERMISSIONS, Permission.MENU_MANAGE)
 
-    def test_staff_can_manage_order_status_but_cannot_manage_menu(self):
+    def test_staff_can_manage_order_status_but_cannot_manage_menu(self) -> None:
         assert has_permission(STAFF_PERMISSIONS, Permission.ORDERS_MANAGE_STATUS)
         assert not has_permission(STAFF_PERMISSIONS, Permission.MENU_MANAGE)
 
 
 class TestPermissionChecker:
-    def test_all_required_permissions_returns_user(self):
+    def test_all_required_permissions_returns_user(self) -> None:
         checker = PermissionChecker(
             required_permissions=[
                 Permission.RESTAURANTS_READ,
@@ -46,58 +48,58 @@ class TestPermissionChecker:
 
         assert checker(user=user) is user
 
-    def test_missing_permission_raises_rule_exception(self):
+    def test_missing_permission_raises_rule_exception(self) -> None:
         checker = PermissionChecker(required_permissions=[Permission.MENU_MANAGE])
         user = make_user(user_role=UserRole.CUSTOMER)
 
         with pytest.raises(RuleException):
             checker(user=user)
 
-    def test_rule_exception_has_403_status(self):
+    def test_rule_exception_has_403_status(self) -> None:
         checker = PermissionChecker(required_permissions=[Permission.ADMIN_ACCESS])
         user = make_user(user_role=UserRole.CUSTOMER)
 
         with pytest.raises(RuleException) as exc_info:
             checker(user=user)
 
-        assert exc_info.value.status_code == 403
+        assert exc_info.value.status_code == HTTPStatus.FORBIDDEN
 
 
 class TestPermissionHelpers:
-    def test_normalize_permissions_none(self):
+    def test_normalize_permissions_none(self) -> None:
         assert normalize_permissions(None) == frozenset()
 
-    def test_normalize_permissions_invalid_string(self):
+    def test_normalize_permissions_invalid_string(self) -> None:
         result = normalize_permissions(["NOT_A_REAL_PERMISSION"])
         assert result == frozenset()
 
-    def test_normalize_permissions_mixed(self):
+    def test_normalize_permissions_mixed(self) -> None:
         result = normalize_permissions([Permission.MENU_READ, "NOT_REAL"])
         assert Permission.MENU_READ in result
 
-    def test_serialize_permissions(self):
+    def test_serialize_permissions(self) -> None:
         result = serialize_permissions([Permission.MENU_READ, Permission.CART_MANAGE])
         assert isinstance(result, list)
         assert result == sorted(result)
 
-    def test_serialize_permissions_none(self):
+    def test_serialize_permissions_none(self) -> None:
         result = serialize_permissions(None)
         assert result == []
 
-    def test_permissions_with_adds(self):
+    def test_permissions_with_adds(self) -> None:
         base = [Permission.MENU_READ]
         result = permissions_with(base, [Permission.CART_MANAGE])
         assert Permission.CART_MANAGE.value in result
         assert Permission.MENU_READ.value in result
 
-    def test_permissions_without_removes(self):
+    def test_permissions_without_removes(self) -> None:
         base = [Permission.MENU_READ, Permission.CART_MANAGE]
         result = permissions_without(base, [Permission.CART_MANAGE])
         assert Permission.CART_MANAGE.value not in result
         assert Permission.MENU_READ.value in result
 
-    def test_has_permission_false(self):
+    def test_has_permission_false(self) -> None:
         assert not has_permission([Permission.MENU_READ], Permission.ADMIN_ACCESS)
 
-    def test_has_permission_none(self):
+    def test_has_permission_none(self) -> None:
         assert not has_permission(None, Permission.MENU_READ)

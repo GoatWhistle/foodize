@@ -1,6 +1,7 @@
 import uuid
+from typing import Any, cast
 
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import CursorResult, delete, func, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -75,8 +76,8 @@ async def increment_used_count(session: AsyncSession, promo: Promo) -> bool:
         .where((Promo.max_uses == None) | (Promo.used_count < Promo.max_uses))  # noqa: E711
         .values(used_count=Promo.used_count + 1)
     )
-    result = await session.execute(stmt)
-    return result.rowcount == 1  # type: ignore[attr-defined]
+    result = cast("CursorResult[Any]", await session.execute(stmt))
+    return result.rowcount == 1
 
 
 async def has_used_promo(session: AsyncSession, promo_id: uuid.UUID, user_id: uuid.UUID) -> bool:

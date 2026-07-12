@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
-import { Check } from "@phosphor-icons/react";
+import { CheckIcon } from "@phosphor-icons/react";
 
 interface OrderButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   isLoading?: boolean;
@@ -34,7 +34,7 @@ const OrderButton = ({
         </span>
       ) : isSuccess ? (
         <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <Check size={20} weight="bold" />
+          <CheckIcon size={20} weight="bold" />
           Готово!
         </span>
       ) : (

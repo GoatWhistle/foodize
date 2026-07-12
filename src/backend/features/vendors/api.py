@@ -1,7 +1,8 @@
 import uuid
 from datetime import date
+from http import HTTPStatus
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,16 +20,37 @@ from features.vendors.schemas import (
 from shared.dependencies import ensure_restaurant_belongs_to_vendor, require_permission
 from shared.enums.order_status import OrderStatus
 from shared.enums.permissions import Permission
+from shared.exceptions import BadRequestException
 from shared.response import build_response
 from shared.schemas.response import SuccessResponse
 
 router = APIRouter(prefix="/vendors", tags=["Vendors"])
 
+_CSV_MEDIA_TYPE = "text/csv"
+_PDF_MEDIA_TYPE = "application/pdf"
+
+
+def _file_response(data: bytes | str, media_type: str, filename: str) -> Response:
+    return Response(
+        content=data,
+        media_type=media_type,
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+def _parse_order_status(status: str | None) -> OrderStatus | None:
+    if not status:
+        return None
+    try:
+        return OrderStatus(status)
+    except ValueError as exc:
+        raise BadRequestException(detail=f"Unknown order status: {status}") from exc
+
 
 @router.post(
     "/",
     response_model=SuccessResponse[VendorResponse],
-    status_code=status.HTTP_201_CREATED,
+    status_code=HTTPStatus.CREATED,
 )
 async def create_vendor(
     vendor_in: VendorCreate,
@@ -96,25 +118,15 @@ async def export_orders_csv(
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> Response:
-    order_status = None
-    if status:
-        try:
-            order_status = OrderStatus(status)
-        except ValueError:
-            pass
     data = await vendor_export.export_orders_csv(
         session,
         vendor=current_vendor,
         date_from=date_from,
         date_to=date_to,
-        status=order_status,
+        status=_parse_order_status(status),
         restaurant_id=restaurant_id,
     )
-    return Response(
-        content=data,
-        media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=orders.csv"},
-    )
+    return _file_response(data, _CSV_MEDIA_TYPE, "orders.csv")
 
 
 @router.get("/export/menu.csv")
@@ -127,11 +139,7 @@ async def export_menu_csv(
     data = await vendor_export.export_menu_csv(
         session, vendor=current_vendor, restaurant_id=restaurant_id
     )
-    return Response(
-        content=data,
-        media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=menu.csv"},
-    )
+    return _file_response(data, _CSV_MEDIA_TYPE, "menu.csv")
 
 
 @router.get("/export/promos.csv")
@@ -144,11 +152,7 @@ async def export_promos_csv(
     data = await vendor_export.export_promos_csv(
         session, vendor=current_vendor, restaurant_id=restaurant_id
     )
-    return Response(
-        content=data,
-        media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=promos.csv"},
-    )
+    return _file_response(data, _CSV_MEDIA_TYPE, "promos.csv")
 
 
 @router.get("/export/finance.pdf")
@@ -167,11 +171,7 @@ async def export_finance_pdf(
         date_to=date_to,
         restaurant_id=restaurant_id,
     )
-    return Response(
-        content=data,
-        media_type="application/pdf",
-        headers={"Content-Disposition": "attachment; filename=finance.pdf"},
-    )
+    return _file_response(data, _PDF_MEDIA_TYPE, "finance.pdf")
 
 
 @router.get("/export/analytics.pdf")
@@ -190,8 +190,4 @@ async def export_analytics_pdf(
         date_to=date_to,
         restaurant_id=restaurant_id,
     )
-    return Response(
-        content=data,
-        media_type="application/pdf",
-        headers={"Content-Disposition": "attachment; filename=analytics.pdf"},
-    )
+    return _file_response(data, _PDF_MEDIA_TYPE, "analytics.pdf")

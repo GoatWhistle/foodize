@@ -1,4 +1,8 @@
-import { ORDER_STATUS_RU } from "./locales";
+import {
+  ORDER_STATUS_RU,
+  ORDER_STATUS_CUSTOMER_RU,
+  translate,
+} from "./locales";
 
 const STATUS_STYLE = {
   PENDING: {
@@ -52,19 +56,9 @@ export function getOrderStatusStyle(status: string | null | undefined): StatusSt
 }
 
 export function getOrderStatusLabel(status: string | null | undefined): string {
-  return (ORDER_STATUS_RU as Record<string, string>)[status ?? ""] ?? String(status ?? "");
+  return translate(ORDER_STATUS_RU, status, status ?? "");
 }
 
-const ORDER_STATUS_CUSTOMER_RU: Record<string, string> = {
-  PENDING: "Принимается",
-  ACCEPTED: "Готовится",
-  PREPARING: "Готовится",
-  COOKING: "Готовится",
-  READY: "Готов к выдаче",
-  COMPLETED: "Выдан",
-  CANCELLED: "Отменён",
-};
-
 export function getCustomerOrderStatusLabel(status: string | null | undefined): string {
-  return ORDER_STATUS_CUSTOMER_RU[status ?? ""] ?? String(status ?? "");
+  return translate(ORDER_STATUS_CUSTOMER_RU, status, status ?? "");
 }

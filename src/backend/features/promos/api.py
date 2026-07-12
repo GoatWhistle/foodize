@@ -1,3 +1,5 @@
+from http import HTTPStatus
+
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,7 +23,7 @@ from shared.schemas.response import SuccessListResponse, SuccessResponse
 router = APIRouter(prefix="/promos", tags=["Promos"])
 
 
-@router.post("", response_model=SuccessResponse[PromoResponse], status_code=201)
+@router.post("", response_model=SuccessResponse[PromoResponse], status_code=HTTPStatus.CREATED)
 async def create_promo(
     data: PromoCreate,
     _user: User = Depends(require_permission(Permission.PROMOS_MANAGE)),
@@ -47,7 +49,7 @@ async def list_promos(
     return build_list_response(data=data, total=total, page=page, size=size, request=request)
 
 
-@router.delete("/{code}", status_code=204)
+@router.delete("/{code}", status_code=HTTPStatus.NO_CONTENT)
 async def deactivate_promo(
     code: str,
     _user: User = Depends(require_permission(Permission.PROMOS_MANAGE)),

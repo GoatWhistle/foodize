@@ -5,6 +5,9 @@ import type { StaffMember, StaffRequest, StaffRequestStatus } from '@shared/type
 
 export type StaffSubTab = 'members' | 'requests';
 
+const readTotal = (body: { pagination?: { total?: number } }, fallback: number): number =>
+  body.pagination?.total ?? fallback;
+
 export const useVendorStaff = () => {
   const [staffRequests, setStaffRequests] = useState<StaffRequest[]>([]);
   const [staffPage, setStaffPage] = useState(1);
@@ -20,22 +23,22 @@ export const useVendorStaff = () => {
     vendorService
       .getStaffRequests({ page: staffPage, size: 20 })
       .then((res) => {
-        const list = Array.isArray(res.data?.data) ? res.data.data : [];
+        const list = Array.isArray(res.data.data) ? res.data.data : [];
         setStaffRequests(list);
-        setStaffTotal(res.data?.pagination?.total || list.length);
+        setStaffTotal(readTotal(res.data, list.length));
       })
-      .catch((err) => logError('useVendorStaff.getStaffRequests', err));
+      .catch((err: unknown) => { logError('useVendorStaff.getStaffRequests', err); });
   }, [staffPage]);
 
   useEffect(() => {
     vendorService
       .getStaffMembers({ page: staffMembersPage, size: 20 })
       .then((res) => {
-        const list = Array.isArray(res.data?.data) ? res.data.data : [];
+        const list = Array.isArray(res.data.data) ? res.data.data : [];
         setStaffMembers(list);
-        setStaffMembersTotal(res.data?.pagination?.total || list.length);
+        setStaffMembersTotal(readTotal(res.data, list.length));
       })
-      .catch((err) => logError('useVendorStaff.getStaffMembers', err));
+      .catch((err: unknown) => { logError('useVendorStaff.getStaffMembers', err); });
   }, [staffMembersPage]);
 
   const handleStaffDecision = async (requestId: string, status: StaffRequestStatus) => {
@@ -49,11 +52,11 @@ export const useVendorStaff = () => {
         vendorService
           .getStaffMembers({ page: 1, size: 20 })
           .then((res) => {
-            const list = Array.isArray(res.data?.data) ? res.data.data : [];
+            const list = Array.isArray(res.data.data) ? res.data.data : [];
             setStaffMembers(list);
-            setStaffMembersTotal(res.data?.pagination?.total || list.length);
+            setStaffMembersTotal(readTotal(res.data, list.length));
           })
-          .catch((err) => logError('useVendorStaff.refreshMembers', err));
+          .catch((err: unknown) => { logError('useVendorStaff.refreshMembers', err); });
       }
     } catch (err) {
       logError('useVendorStaff.handleStaffDecision', err);

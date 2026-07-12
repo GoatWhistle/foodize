@@ -3,6 +3,7 @@ import uuid
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from sqlalchemy.orm.interfaces import LoaderOption
 
 from features.menu.models import MenuItem, MenuItemOption, MenuItemOptionGroup
 from features.menu.schemas import (
@@ -16,7 +17,7 @@ from features.menu.schemas import (
 from shared.enums.selection_type import SelectionType
 
 
-def _option_groups_options():
+def _option_groups_options() -> LoaderOption:
     return selectinload(MenuItem.option_groups).selectinload(MenuItemOptionGroup.options)
 
 
@@ -80,9 +81,12 @@ async def update_menu_item(
     session: AsyncSession, item: MenuItem, item_data: MenuItemUpdate
 ) -> MenuItem:
     update_data = item_data.model_dump(exclude_unset=True)
-    if "category" in update_data and update_data["category"] is not None:
-        if hasattr(update_data["category"], "value"):
-            update_data["category"] = update_data["category"].value
+    if (
+        "category" in update_data
+        and update_data["category"] is not None
+        and hasattr(update_data["category"], "value")
+    ):
+        update_data["category"] = update_data["category"].value
 
     for key, value in update_data.items():
         setattr(item, key, value)

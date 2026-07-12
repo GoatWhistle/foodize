@@ -50,14 +50,14 @@ describe('orderService', () => {
 
     const result = await orderService.cancelOrder('123', 'Changed mind');
     expect(result.data).toEqual({ id: '123', status: 'CANCELLED' });
-    expect(mock.history.post[0].data).toBe(JSON.stringify({ reason: 'Changed mind' }));
+    expect(mock.history.post[0]?.data).toBe(JSON.stringify({ reason: 'Changed mind' }));
   });
 
   it('cancelOrder sends null reason when not provided', async () => {
     mock.onPost('/orders/456/cancel').reply(200, { id: '456' });
 
     await orderService.cancelOrder('456');
-    expect(mock.history.post[0].data).toBe(JSON.stringify({ reason: null }));
+    expect(mock.history.post[0]?.data).toBe(JSON.stringify({ reason: null }));
   });
 
   it('completeOrder sends POST to /orders/{id}/complete', async () => {

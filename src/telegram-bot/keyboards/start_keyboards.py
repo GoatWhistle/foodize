@@ -1,3 +1,5 @@
+from typing import Any
+
 from aiogram.types import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
@@ -68,7 +70,7 @@ def order_deep_link_keyboard(order_display_id: str) -> InlineKeyboardMarkup | No
     )
 
 
-def orders_keyboard(orders: list[dict]) -> InlineKeyboardMarkup | None:
+def orders_keyboard(orders: list[dict[str, Any]]) -> InlineKeyboardMarkup | None:
     if not bot_config.mini_app_url:
         return None
     buttons = []

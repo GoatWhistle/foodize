@@ -11,7 +11,7 @@ from features.auth.service import (
 
 class TestOAuth2PasswordBearerWithCookie:
     @pytest.mark.asyncio
-    async def test_returns_cookie_token(self):
+    async def test_returns_cookie_token(self) -> None:
         scheme = OAuth2PasswordBearerWithCookie(tokenUrl="/token", auto_error=False)
         request = MagicMock()
         request.cookies = {"access_token": "cookie_token"}
@@ -20,7 +20,7 @@ class TestOAuth2PasswordBearerWithCookie:
         assert result == "cookie_token"
 
     @pytest.mark.asyncio
-    async def test_returns_bearer_header_when_no_cookie(self):
+    async def test_returns_bearer_header_when_no_cookie(self) -> None:
         scheme = OAuth2PasswordBearerWithCookie(tokenUrl="/token", auto_error=False)
         request = MagicMock()
         request.cookies = {}
@@ -36,7 +36,7 @@ class TestOAuth2PasswordBearerWithCookie:
             assert result == "header_token"
 
     @pytest.mark.asyncio
-    async def test_returns_none_when_no_token(self):
+    async def test_returns_none_when_no_token(self) -> None:
         scheme = OAuth2PasswordBearerWithCookie(tokenUrl="/token", auto_error=False)
         request = MagicMock()
         request.cookies = {}
@@ -54,32 +54,32 @@ class TestOAuth2PasswordBearerWithCookie:
 
 class TestGetBearerToken:
     @pytest.mark.asyncio
-    async def test_valid_bearer(self):
+    async def test_valid_bearer(self) -> None:
         request = MagicMock()
         request.headers = {"Authorization": "Bearer mytoken"}
         assert await _get_bearer_token(request) == "mytoken"
 
     @pytest.mark.asyncio
-    async def test_no_header(self):
+    async def test_no_header(self) -> None:
         request = MagicMock()
         request.headers = {}
         assert await _get_bearer_token(request) is None
 
     @pytest.mark.asyncio
-    async def test_non_bearer_scheme(self):
+    async def test_non_bearer_scheme(self) -> None:
         request = MagicMock()
         request.headers = {"Authorization": "Basic abc123"}
         assert await _get_bearer_token(request) is None
 
     @pytest.mark.asyncio
-    async def test_bearer_empty_token(self):
+    async def test_bearer_empty_token(self) -> None:
         request = MagicMock()
         request.headers = {"Authorization": "Bearer "}
         assert await _get_bearer_token(request) is None
 
 
 class TestIssueUserTokens:
-    def test_returns_token_response(self):
+    def test_returns_token_response(self) -> None:
         user = MagicMock()
         user.id = __import__("uuid").uuid4()
         response = MagicMock()

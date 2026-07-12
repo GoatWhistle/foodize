@@ -9,7 +9,7 @@ const useElapsedSeconds = (startIso?: string | null): number => {
     const id = setInterval(() => {
       setSeconds(Math.floor((Date.now() - new Date(startIso).getTime()) / 1000));
     }, 1000);
-    return () => clearInterval(id);
+    return () => { clearInterval(id); };
   }, [startIso]);
   return seconds;
 };

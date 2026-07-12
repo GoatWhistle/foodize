@@ -13,15 +13,13 @@ import AdminVendorsTab from './tabs/AdminVendorsTab';
 import AdminReviewsTab from './tabs/AdminReviewsTab';
 import AdminDetailModals, { ReasonDialog } from './tabs/AdminDetailModals';
 import { useAdminDashboard, PAGE_SIZE } from './useAdminDashboard';
+import styles from './AdminDashboardPage.module.css';
 
 const AdminDashboardPage = () => {
   const d = useAdminDashboard();
 
   return (
-    <div
-      className="page-enter"
-      style={{ padding: '80px 20px 100px', maxWidth: 1200, margin: '0 auto', display: 'flex', gap: 24, alignItems: 'flex-start' }}
-    >
+    <div className={`page-enter ${styles.page}`}>
       <AdminSidebar
         activeTab={d.activeTab}
         setActiveTab={d.setActiveTab}
@@ -29,16 +27,12 @@ const AdminDashboardPage = () => {
         setEntitiesOpen={d.setEntitiesOpen}
       />
 
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className={styles.main}>
         {d.actionError && (
-          <div className="form-error" style={{ marginBottom: 16 }}>{d.actionError}</div>
+          <div className={`form-error ${styles.errorBanner}`}>{d.actionError}</div>
         )}
         {d.actionSuccess && (
-          <div style={{
-            marginBottom: 16, padding: '10px 12px', borderRadius: 'var(--r-sm)',
-            border: '1px solid var(--color-success-border)', background: 'var(--color-success-bg)',
-            color: 'var(--color-success-dim)', fontSize: '0.86rem', fontWeight: 700,
-          }}>
+          <div className={styles.successBanner}>
             {d.actionSuccess}
           </div>
         )}
@@ -247,7 +241,7 @@ const AdminDashboardPage = () => {
         <ReasonDialog
           dialog={d.reasonDialog}
           loading={d.reasonLoading}
-          onCancel={() => d.setReasonDialog(null)}
+          onCancel={() => { d.setReasonDialog(null); }}
           onConfirm={(reason) => { void d.runReasonAction(reason); }}
         />
 
@@ -257,7 +251,7 @@ const AdminDashboardPage = () => {
           <QRCodeModal
             restaurant={d.qrRestaurant}
             initialType={d.qrType}
-            onClose={() => d.setQrRestaurant(null)}
+            onClose={() => { d.setQrRestaurant(null); }}
           />
         )}
       </div>

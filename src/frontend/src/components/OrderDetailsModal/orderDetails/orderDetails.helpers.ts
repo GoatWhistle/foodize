@@ -25,6 +25,8 @@ export const buildReadyAtIso = (timeValue: string | null | undefined): string | 
 
   const [hours, minutes] = timeValue.split(':').map(Number);
   if (
+    hours === undefined ||
+    minutes === undefined ||
     Number.isNaN(hours) ||
     Number.isNaN(minutes) ||
     hours < 0 ||
@@ -45,13 +47,13 @@ export const buildReadyAtIso = (timeValue: string | null | undefined): string | 
 };
 
 export const getOrderDisplayId = (order: Order): string | number =>
-  order.display_id ?? order.id.slice(0, 8);
+  order.display_id;
 
 export const extractEvents = (response: unknown): OrderEvent[] => {
   const res = response as { data?: unknown };
-  const nested = (res?.data as { data?: unknown })?.data;
+  const nested = (res.data as { data?: unknown } | undefined)?.data;
   if (Array.isArray(nested)) return nested as OrderEvent[];
-  if (Array.isArray(res?.data)) return res.data as OrderEvent[];
+  if (Array.isArray(res.data)) return res.data as OrderEvent[];
   return [];
 };
 

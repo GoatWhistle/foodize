@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X } from '@phosphor-icons/react';
+import { XIcon } from '@phosphor-icons/react';
 import { useFocusTrap } from '@shared/hooks/useFocusTrap';
 import type { Order, OrderStatus } from '@shared/types/models';
 
@@ -27,14 +27,14 @@ export interface OrderStatusChangeData {
 export interface OrderDetailsModalProps {
   order: Order | null;
   onClose: () => void;
-  nextStatus?: Partial<Record<OrderStatus, OrderStatus>>;
-  nextLabel?: Partial<Record<OrderStatus, string>>;
+  nextStatus?: Partial<Record<OrderStatus, OrderStatus>> | undefined;
+  nextLabel?: Partial<Record<OrderStatus, string>> | undefined;
   onStatusChange: (
     orderId: string,
     status: OrderStatus,
     data?: OrderStatusChangeData,
   ) => Promise<void>;
-  onCancel?: (orderId: string, reason: string | null) => Promise<void>;
+  onCancel?: ((orderId: string, reason: string | null) => Promise<void>) | undefined;
   updating: string | null;
 }
 
@@ -157,7 +157,7 @@ const OrderDetailsModal = ({
             onClick={onClose}
             aria-label="Закрыть"
           >
-            <X size={16} />
+            <XIcon size={16} />
           </button>
         </div>
 
@@ -210,8 +210,8 @@ const OrderDetailsModal = ({
             showCancelForm={showCancelForm}
             cancelReason={cancelReason}
             cancelling={cancelling}
-            onShowCancelForm={() => setShowCancelForm(true)}
-            onHideCancelForm={() => setShowCancelForm(false)}
+            onShowCancelForm={() => { setShowCancelForm(true); }}
+            onHideCancelForm={() => { setShowCancelForm(false); }}
             onCancelReasonChange={setCancelReason}
             onCancel={() => {
               void handleCancel();

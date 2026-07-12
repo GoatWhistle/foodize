@@ -1,4 +1,6 @@
 import uuid
+from collections.abc import AsyncIterator
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -9,22 +11,22 @@ from infra.llm import Role
 
 
 class TestToMessages:
-    def test_empty(self):
+    def test_empty(self) -> None:
         assert _to_messages([]) == []
 
-    def test_user_message(self):
+    def test_user_message(self) -> None:
         msg = ChatMessageIn(role="user", content="Привет")
         result = _to_messages([msg])
         assert len(result) == 1
         assert result[0].role == Role.USER
         assert result[0].content == "Привет"
 
-    def test_assistant_message(self):
+    def test_assistant_message(self) -> None:
         msg = ChatMessageIn(role="assistant", content="Добрый день")
         result = _to_messages([msg])
         assert result[0].role == Role.ASSISTANT
 
-    def test_multiple_messages(self):
+    def test_multiple_messages(self) -> None:
         msgs = [
             ChatMessageIn(role="user", content="Привет"),
             ChatMessageIn(role="assistant", content="Ответ"),
@@ -36,7 +38,7 @@ class TestToMessages:
         assert result[1].role == Role.ASSISTANT
 
 
-def _make_vendor():
+def _make_vendor() -> MagicMock:
     vendor = MagicMock()
     vendor.id = uuid.uuid4()
     return vendor
@@ -44,11 +46,11 @@ def _make_vendor():
 
 class TestStreamChat:
     @pytest.mark.asyncio
-    async def test_yields_chunks(self):
+    async def test_yields_chunks(self) -> None:
         vendor = _make_vendor()
         history = [ChatMessageIn(role="user", content="Анализ")]
 
-        async def _fake_stream(*args, **kwargs):
+        async def _fake_stream(*args: Any, **kwargs: Any) -> AsyncIterator[str]:
             yield "chunk1"
             yield "chunk2"
 
@@ -57,14 +59,14 @@ class TestStreamChat:
             patch("features.ai_advisor.service.build_advisor_executor", return_value=AsyncMock()),
             patch("features.ai_advisor.service.stream_agent", side_effect=_fake_stream),
         ):
-            chunks = []
+            chunks: list[str] = []
             async for chunk in stream_chat(vendor, history):
                 chunks.append(chunk)
 
         assert chunks == ["chunk1", "chunk2"]
 
     @pytest.mark.asyncio
-    async def test_yields_error_message_on_exception(self):
+    async def test_yields_error_message_on_exception(self) -> None:
         vendor = _make_vendor()
         history = [ChatMessageIn(role="user", content="Анализ")]
 
@@ -73,7 +75,7 @@ class TestStreamChat:
             patch("features.ai_advisor.service.build_advisor_executor", return_value=AsyncMock()),
             patch("features.ai_advisor.service.stream_agent", side_effect=RuntimeError("fail")),
         ):
-            chunks = []
+            chunks: list[str] = []
             async for chunk in stream_chat(vendor, history):
                 chunks.append(chunk)
 
@@ -81,17 +83,19 @@ class TestStreamChat:
         assert "ошибка" in chunks[0].lower() or "Извините" in chunks[0]
 
     @pytest.mark.asyncio
-    async def test_passes_restaurant_id(self):
+    async def test_passes_restaurant_id(self) -> None:
         vendor = _make_vendor()
         history = [ChatMessageIn(role="user", content="Что")]
         rid = uuid.uuid4()
 
-        async def _fake_stream(*args, **kwargs):
+        async def _fake_stream(*args: Any, **kwargs: Any) -> AsyncIterator[str]:
             yield "ok"
 
-        captured = {}
+        captured: dict[str, Any] = {}
 
-        def _fake_executor(vendor, default_restaurant_id=None):
+        def _fake_executor(
+            vendor: MagicMock, default_restaurant_id: uuid.UUID | None = None
+        ) -> AsyncMock:
             captured["rid"] = default_restaurant_id
             return AsyncMock()
 
@@ -108,7 +112,7 @@ class TestStreamChat:
 
 class TestGenerateInsights:
     @pytest.mark.asyncio
-    async def test_returns_text(self):
+    async def test_returns_text(self) -> None:
         vendor = _make_vendor()
 
         with (
@@ -125,7 +129,7 @@ class TestGenerateInsights:
         assert result == "Отчёт готов"
 
     @pytest.mark.asyncio
-    async def test_reraises_exception(self):
+    async def test_reraises_exception(self) -> None:
         vendor = _make_vendor()
 
         with (

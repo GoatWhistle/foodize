@@ -29,7 +29,9 @@ describe("useRestaurantStore", () => {
       publicRestaurants: [],
       publicRestaurantsTotal: 0,
       menus: {},
-      loading: false,
+      publicLoading: false,
+      myLoading: false,
+      menuLoading: false,
     });
     vi.clearAllMocks();
   });
@@ -45,7 +47,7 @@ describe("useRestaurantStore", () => {
     await useRestaurantStore.getState().fetchPublicRestaurants({ page: 1 });
 
     const state = useRestaurantStore.getState();
-    expect(state.loading).toBe(false);
+    expect(state.publicLoading).toBe(false);
     expect(state.publicRestaurants).toEqual([
       { id: "r1", name: "Restaurant 1" },
     ]);
@@ -58,7 +60,7 @@ describe("useRestaurantStore", () => {
     await useRestaurantStore.getState().fetchPublicRestaurants();
 
     const state = useRestaurantStore.getState();
-    expect(state.loading).toBe(false);
+    expect(state.publicLoading).toBe(false);
     expect(state.publicRestaurants).toEqual([]);
     expect(state.publicRestaurantsTotal).toBe(0);
   });
@@ -73,7 +75,7 @@ describe("useRestaurantStore", () => {
     await useRestaurantStore.getState().fetchMenu("r1");
 
     let state = useRestaurantStore.getState();
-    expect(state.loading).toBe(false);
+    expect(state.menuLoading).toBe(false);
     expect(state.menus["r1"]).toEqual([{ id: "m1", name: "Item 1" }]);
 
     await useRestaurantStore.getState().fetchMenu("r1");
@@ -89,7 +91,7 @@ describe("useRestaurantStore", () => {
     });
     await useRestaurantStore.getState().fetchMenu("r1", { force: true });
     state = useRestaurantStore.getState();
-    expect(state.menus["r1"].length).toBe(2);
+    expect(state.menus["r1"]?.length).toBe(2);
     expect(menuServiceMock.getMenu).toHaveBeenCalledTimes(2);
   });
 
@@ -99,7 +101,7 @@ describe("useRestaurantStore", () => {
     await useRestaurantStore.getState().fetchMenu("r2");
 
     const state = useRestaurantStore.getState();
-    expect(state.loading).toBe(false);
+    expect(state.menuLoading).toBe(false);
     expect(state.menus["r2"]).toBeUndefined();
   });
 });

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Bell, Trash } from "@phosphor-icons/react";
+import { BellIcon, TrashIcon } from "@phosphor-icons/react";
 import type { Notification } from "@shared/types/models";
 import { useNotificationStore } from "../../store/useNotificationStore";
 import { useAuthStore } from "../../store/useAuthStore";
@@ -43,7 +43,7 @@ const groupByDay = (items: Notification[]): NotificationGroup[] => {
 
 const NotificationBell = () => {
   const { user, isAuthenticated } = useAuthStore(
-    useShallow((s) => ({ user: s.user, isAuthenticated: s.isAuthenticated }))
+    useShallow((s) => ({ user: s.user, isAuthenticated: s.user !== null }))
   );
   const {
     notifications, unreadCount, total,
@@ -59,7 +59,7 @@ const NotificationBell = () => {
     if (!isAuthenticated || !user?.id) return;
     void fetchNotifications(1);
     connectWs(user.id);
-    return () => disconnectWs();
+    return () => { disconnectWs(); };
   }, [isAuthenticated, user?.id, fetchNotifications, connectWs, disconnectWs]);
 
   useEffect(() => {
@@ -67,7 +67,7 @@ const NotificationBell = () => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setIsOpen(false);
     };
     document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    return () => { document.removeEventListener("mousedown", handler); };
   }, []);
 
   const handleLoadMore = async () => {
@@ -85,10 +85,10 @@ const NotificationBell = () => {
     <div style={{ position: "relative" }} ref={dropdownRef}>
       <button
         style={{ background: "none", border: "none", cursor: "pointer", position: "relative", padding: 8, color: "var(--text-1)", display: "flex", alignItems: "center", justifyContent: "center" }}
-        onClick={() => setIsOpen((v) => !v)}
+        onClick={() => { setIsOpen((v) => !v); }}
         aria-label="Уведомления"
       >
-        <Bell size={20} weight={unreadCount > 0 ? "fill" : "bold"} />
+        <BellIcon size={20} weight={unreadCount > 0 ? "fill" : "bold"} />
         {unreadCount > 0 && (
           <span style={{ position: "absolute", top: 4, right: 4, background: "var(--fire)", color: "var(--fire-text)", fontSize: "var(--text-xs)", fontWeight: "var(--weight-display)", padding: "2px 5px", borderRadius: 10, lineHeight: 1 }}>
             {unreadCount > 9 ? "9+" : unreadCount}
@@ -108,7 +108,7 @@ const NotificationBell = () => {
                   </button>
                 )}
                 <button onClick={() => { void deleteAll(); }} aria-label="Удалить все" style={{ width: 28, height: 28, borderRadius: "var(--r-xs)", border: "1px solid var(--border)", background: "var(--bg-card)", color: "var(--text-3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                  <Trash size={14} weight="bold" />
+                  <TrashIcon size={14} weight="bold" />
                 </button>
               </div>
             )}
@@ -143,7 +143,7 @@ const NotificationBell = () => {
                               aria-label="Удалить"
                               style={{ width: 24, height: 24, borderRadius: "var(--r-xs)", border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text-3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                             >
-                              <Trash size={12} weight="bold" />
+                              <TrashIcon size={12} weight="bold" />
                             </button>
                           </div>
                         </div>

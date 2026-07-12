@@ -1,6 +1,8 @@
 import html
 import logging
-from typing import Any, Awaitable, Callable
+from collections.abc import Awaitable, Callable
+from http import HTTPStatus
+from typing import Any
 
 import httpx
 from aiogram import F, Router
@@ -37,7 +39,7 @@ async def _call_backend_api(
     try:
         return await call()
     except httpx.HTTPStatusError as exc:
-        if exc.response.status_code == 403:
+        if exc.response.status_code == HTTPStatus.FORBIDDEN:
             await message.answer(msg.BOT_ACCESS_DENIED)
         else:
             logger.warning("%s HTTP error status=%s", log_context, exc.response.status_code)
@@ -56,7 +58,8 @@ def _display_name(message: Message) -> str:
 
 
 async def _link_phone(message: Message, phone_number: str) -> bool:
-    if not message.from_user:
+    from_user = message.from_user
+    if not from_user:
         return False
 
     if not bot_config.bot_api_secret:
@@ -66,8 +69,8 @@ async def _link_phone(message: Message, phone_number: str) -> bool:
     result = await _call_backend_api(
         message,
         lambda: backend_client.link_phone(
-            telegram_id=message.from_user.id,
-            telegram_username=message.from_user.username,
+            telegram_id=from_user.id,
+            telegram_username=from_user.username,
             phone_number=phone_number,
             name=_display_name(message),
         ),
@@ -86,7 +89,7 @@ async def _link_phone(message: Message, phone_number: str) -> bool:
     return True
 
 
-def _vendor_status_text(data: dict) -> str:
+def _vendor_status_text(data: dict[str, Any]) -> str:
     if not data.get("is_vendor"):
         return (
             "Вендор-профиль не найден.\n\n"
@@ -105,7 +108,8 @@ def _vendor_status_text(data: dict) -> str:
 
 @router.message(Command("vendor_status"))
 async def cmd_vendor_status(message: Message) -> None:
-    if not message.from_user:
+    from_user = message.from_user
+    if not from_user:
         return
 
     if not bot_config.bot_api_secret:
@@ -114,7 +118,7 @@ async def cmd_vendor_status(message: Message) -> None:
 
     data = await _call_backend_api(
         message,
-        lambda: backend_client.get_vendor_status(message.from_user.id),
+        lambda: backend_client.get_vendor_status(from_user.id),
         error_message=msg.VENDOR_STATUS_ERROR,
         log_context="get_vendor_status",
     )
@@ -126,7 +130,8 @@ async def cmd_vendor_status(message: Message) -> None:
 
 @router.message(Command("orders"))
 async def cmd_orders(message: Message) -> None:
-    if not message.from_user:
+    from_user = message.from_user
+    if not from_user:
         return
 
     if not bot_config.bot_api_secret:
@@ -135,7 +140,7 @@ async def cmd_orders(message: Message) -> None:
 
     orders = await _call_backend_api(
         message,
-        lambda: backend_client.get_active_orders(message.from_user.id),
+        lambda: backend_client.get_active_orders(from_user.id),
         error_message=msg.ORDERS_ERROR,
         log_context="get_active_orders",
     )

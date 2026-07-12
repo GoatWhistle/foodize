@@ -19,5 +19,5 @@ class TestCamelToSnake:
             ("getHTTPSUrl", "get_https_url"),
         ],
     )
-    def test_conversion(self, input_str: str, expected: str):
+    def test_conversion(self, input_str: str, expected: str) -> None:
         assert camel_case_to_snake_case(input_str) == expected

@@ -21,7 +21,7 @@ export const KPICards = memo(({ finance }: { finance: FinanceAnalytics }) => {
   const cards = [
     {
       label: 'Выручка',
-      value: `${(finance.total_revenue ?? 0).toLocaleString('ru-RU')} ₽`,
+      value: `${finance.total_revenue.toLocaleString('ru-RU')} ₽`,
       color: 'var(--fire)',
       large: true,
     },

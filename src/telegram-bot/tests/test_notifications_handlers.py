@@ -1,12 +1,14 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from _pytest.logging import LogCaptureFixture
 from aiogram.exceptions import (
     TelegramForbiddenError,
     TelegramNetworkError,
     TelegramRetryAfter,
 )
 from aiogram.types import InlineKeyboardMarkup
+from pytest_mock import MockerFixture
 
 from config import bot_config
 from notifications.handlers import (
@@ -21,7 +23,7 @@ from notifications.handlers import (
 
 
 @pytest.mark.asyncio
-async def test_get_telegram_id_from_cache(mocker):
+async def test_get_telegram_id_from_cache(mocker: MockerFixture) -> None:
     mock_client = AsyncMock()
     mocker.patch("notifications.handlers.redis_client.get_client", return_value=mock_client)
     mock_fallback = mocker.patch("notifications.handlers.backend_client.get_telegram_id_by_user")
@@ -34,7 +36,7 @@ async def test_get_telegram_id_from_cache(mocker):
 
 
 @pytest.mark.asyncio
-async def test_get_telegram_id_fallback_and_recache(mocker):
+async def test_get_telegram_id_fallback_and_recache(mocker: MockerFixture) -> None:
     mock_client = AsyncMock()
     mocker.patch("notifications.handlers.redis_client.get_client", return_value=mock_client)
     mock_client.get.return_value = None
@@ -47,13 +49,15 @@ async def test_get_telegram_id_fallback_and_recache(mocker):
     assert res == 98765
     mock_fallback.assert_awaited_once_with("user_2")
     mock_client.set.assert_awaited_once()
-    args, kwargs = mock_client.set.call_args
+    args, _kwargs = mock_client.set.call_args
     assert args[0] == "user_tg:user_2"
     assert args[1] == "98765"
 
 
 @pytest.mark.asyncio
-async def test_get_telegram_id_missing_logs_warning(mocker, caplog):
+async def test_get_telegram_id_missing_logs_warning(
+    mocker: MockerFixture, caplog: LogCaptureFixture
+) -> None:
     mock_client = AsyncMock()
     mocker.patch("notifications.handlers.redis_client.get_client", return_value=mock_client)
     mock_client.get.return_value = None
@@ -69,7 +73,7 @@ async def test_get_telegram_id_missing_logs_warning(mocker, caplog):
 
 
 @pytest.mark.asyncio
-async def test_deactivate_telegram_id(mocker):
+async def test_deactivate_telegram_id(mocker: MockerFixture) -> None:
     mock_client = AsyncMock()
     mocker.patch("notifications.handlers.redis_client.get_client", return_value=mock_client)
 
@@ -77,7 +81,7 @@ async def test_deactivate_telegram_id(mocker):
     mock_client.delete.assert_called_with("user_tg:user_1")
 
 
-def test_order_keyboard():
+def test_order_keyboard() -> None:
     bot_config.mini_app_url = ""
     assert _order_keyboard("123") is None
 
@@ -85,17 +89,21 @@ def test_order_keyboard():
 
     kb = _order_keyboard("123")
     assert isinstance(kb, InlineKeyboardMarkup)
-    assert kb.inline_keyboard[0][0].text == "Открыть заказ"
-    assert kb.inline_keyboard[0][0].web_app.url == "https://t.me/bot/app?startapp=order_123"
+    button = kb.inline_keyboard[0][0]
+    assert button.text == "Открыть заказ"
+    assert button.web_app is not None
+    assert button.web_app.url == "https://t.me/bot/app?startapp=order_123"
 
     kb2 = _order_keyboard(None)
     assert isinstance(kb2, InlineKeyboardMarkup)
-    assert kb2.inline_keyboard[0][0].text == "Открыть Foodize"
-    assert kb2.inline_keyboard[0][0].web_app.url == "https://t.me/bot/app"
+    button2 = kb2.inline_keyboard[0][0]
+    assert button2.text == "Открыть Foodize"
+    assert button2.web_app is not None
+    assert button2.web_app.url == "https://t.me/bot/app"
 
 
 @pytest.mark.asyncio
-async def test_send_notification_retries_after_rate_limit(mocker):
+async def test_send_notification_retries_after_rate_limit(mocker: MockerFixture) -> None:
     mocker.patch("notifications.handlers.asyncio.sleep")
     bot = AsyncMock()
     bot_config.mini_app_url = "https://t.me/bot/app"
@@ -109,7 +117,7 @@ async def test_send_notification_retries_after_rate_limit(mocker):
 
 
 @pytest.mark.asyncio
-async def test_send_notification_raises_when_rate_limit_exhausted(mocker):
+async def test_send_notification_raises_when_rate_limit_exhausted(mocker: MockerFixture) -> None:
     mocker.patch("notifications.handlers.asyncio.sleep")
     bot = AsyncMock()
     bot_config.mini_app_url = "https://t.me/bot/app"
@@ -124,7 +132,7 @@ async def test_send_notification_raises_when_rate_limit_exhausted(mocker):
 
 
 @pytest.mark.asyncio
-async def test_send_notification_forbidden_during_retry(mocker):
+async def test_send_notification_forbidden_during_retry(mocker: MockerFixture) -> None:
     mocker.patch("notifications.handlers.asyncio.sleep")
     mock_deactivate = mocker.patch("notifications.handlers._deactivate_telegram_id")
     bot = AsyncMock()
@@ -139,7 +147,7 @@ async def test_send_notification_forbidden_during_retry(mocker):
 
 
 @pytest.mark.asyncio
-async def test_handle_order_placed(mocker):
+async def test_handle_order_placed(mocker: MockerFixture) -> None:
     mock_get_tg = mocker.patch("notifications.handlers._get_telegram_id")
     mock_deactivate = mocker.patch("notifications.handlers._deactivate_telegram_id")
     bot = AsyncMock()
@@ -159,7 +167,7 @@ async def test_handle_order_placed(mocker):
     mock_get_tg.return_value = 12345
     await handle_order_placed(event, bot)
     bot.send_message.assert_called_once()
-    args, kwargs = bot.send_message.call_args
+    _args, kwargs = bot.send_message.call_args
     assert kwargs["chat_id"] == 12345
     assert "Cafe" in kwargs["text"]
     assert "500,00 ₽" in kwargs["text"]
@@ -178,7 +186,7 @@ async def test_handle_order_placed(mocker):
 
 
 @pytest.mark.asyncio
-async def test_handle_order_status_changed(mocker):
+async def test_handle_order_status_changed(mocker: MockerFixture) -> None:
     mock_get_tg = mocker.patch("notifications.handlers._get_telegram_id")
     mock_deactivate = mocker.patch("notifications.handlers._deactivate_telegram_id")
     bot = AsyncMock()
@@ -198,7 +206,7 @@ async def test_handle_order_status_changed(mocker):
     mock_get_tg.return_value = 12345
     await handle_order_status_changed(event, bot)
     bot.send_message.assert_called_once()
-    args, kwargs = bot.send_message.call_args
+    _args, kwargs = bot.send_message.call_args
     assert kwargs["chat_id"] == 12345
     assert "Caf" in kwargs["text"]
     assert "Готов к выдаче" in kwargs["text"]
@@ -215,7 +223,7 @@ async def test_handle_order_status_changed(mocker):
 
 
 @pytest.mark.asyncio
-async def test_handle_order_placed_escapes_html(mocker):
+async def test_handle_order_placed_escapes_html(mocker: MockerFixture) -> None:
     mock_get_tg = mocker.patch("notifications.handlers._get_telegram_id")
     mock_get_tg.return_value = 12345
     bot = AsyncMock()
@@ -236,7 +244,7 @@ async def test_handle_order_placed_escapes_html(mocker):
 
 
 @pytest.mark.asyncio
-async def test_handle_order_status_changed_escapes_html(mocker):
+async def test_handle_order_status_changed_escapes_html(mocker: MockerFixture) -> None:
     mock_get_tg = mocker.patch("notifications.handlers._get_telegram_id")
     mock_get_tg.return_value = 12345
     bot = AsyncMock()

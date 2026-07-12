@@ -1,16 +1,13 @@
 import uuid
 
-from sqlalchemy import exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from features.orders.models.order import Order
 from features.restaurants.crud import get_restaurant_by_id
 from features.restaurants.exceptions import RestaurantNotFoundException
 from features.reviews import crud
 from features.reviews.exceptions import ReviewLimitExceededException, ReviewNotAllowedException
 from features.reviews.models import Review
 from features.reviews.schemas import RatingResponse, ReviewCreate, ReviewResponse
-from shared.enums.order_status import OrderStatus
 from shared.exceptions import NotFoundException
 
 MAX_REVIEWS_PER_USER_RESTAURANT = 1
@@ -27,21 +24,6 @@ def _review_to_response(review: Review) -> ReviewResponse:
     return data
 
 
-async def _has_completed_order(
-    session: AsyncSession, user_id: uuid.UUID, restaurant_id: uuid.UUID
-) -> bool:
-    result = await session.execute(
-        select(
-            exists().where(
-                Order.user_id == user_id,
-                Order.restaurant_id == restaurant_id,
-                Order.status == OrderStatus.COMPLETED.value,
-            )
-        )
-    )
-    return bool(result.scalar_one())
-
-
 async def create_review_for_user(
     session: AsyncSession,
     review_data: ReviewCreate,
@@ -52,7 +34,7 @@ async def create_review_for_user(
     if not restaurant or not restaurant.is_active:
         raise RestaurantNotFoundException()
 
-    is_verified = await _has_completed_order(session, user_id, restaurant_id)
+    is_verified = await crud.has_completed_order(session, user_id, restaurant_id)
     if not is_verified:
         raise ReviewNotAllowedException()
 
@@ -141,6 +123,8 @@ async def get_rating_for_restaurant(
         raise RestaurantNotFoundException()
     return RatingResponse(
         restaurant_id=restaurant_id,
-        average_rating=restaurant.average_rating,
+        average_rating=(
+            float(restaurant.average_rating) if restaurant.average_rating is not None else None
+        ),
         review_count=restaurant.review_count,
     )

@@ -8,9 +8,9 @@ import {
   useLocation,
   NavigationType,
 } from "react-router-dom";
-import { ShoppingCart } from "@phosphor-icons/react";
+import { ShoppingCartIcon } from "@phosphor-icons/react";
 
-import { useOrderStore } from "./store/useOrderStore";
+import { useCartStore } from "./store/useCartStore";
 import BottomNav from "./components/BottomNav/BottomNav";
 import ActiveOrderBanner from "./components/ActiveOrderBanner/ActiveOrderBanner";
 
@@ -27,7 +27,7 @@ const LazyNotifications = lazy(
 const LazyLegal = lazy(() => import("@shared/components/LegalPage/LegalPage"));
 
 const GlobalCartFab = () => {
-  const count = useOrderStore((s) => s.cartCount());
+  const count = useCartStore((s) => s.cartCount());
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -40,11 +40,11 @@ const GlobalCartFab = () => {
       className="cart-fab"
       onClick={() => {
         void navigate(
-          "/restaurant/" + useOrderStore.getState().cartRestaurantId,
+          `/restaurant/${useCartStore.getState().cartRestaurantId ?? ""}`,
         );
       }}
     >
-      <ShoppingCart size={22} weight="bold" />
+      <ShoppingCartIcon size={22} weight="bold" />
       <span className="cart-fab-label">Корзина</span>
       <span className="cart-badge">{count}</span>
     </button>

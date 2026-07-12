@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, status
+from http import HTTPStatus
+
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
@@ -42,7 +44,7 @@ async def update_cart(
     return build_response(result)
 
 
-@router.delete("", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("", status_code=HTTPStatus.NO_CONTENT)
 async def clear_cart(
     current_user: User = Depends(require_permission(Permission.CART_MANAGE)),
     cart_service: CartService = Depends(get_cart_service),

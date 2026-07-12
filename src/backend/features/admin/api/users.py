@@ -1,11 +1,15 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
 from features.admin import crud
-from features.admin.api.schemas import BatchIdsRequest, SetPermissionsRequest
+from features.admin.api.schemas import (
+    BatchAffectedResult,
+    BatchIdsRequest,
+    SetPermissionsRequest,
+)
 from features.admin.audit_log import service as audit_service
 from features.admin.dependencies import require_admin
 from features.admin.schemas import AdminUserResponse
@@ -33,26 +37,26 @@ async def read_users(
     return build_list_response(data=data, total=total, page=page, size=size, request=request)
 
 
-@router.post("/users/batch-deactivate")
+@router.post("/users/batch-deactivate", response_model=SuccessResponse[BatchAffectedResult])
 async def batch_deactivate_users(
     body: BatchIdsRequest,
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-) -> SuccessResponse[dict]:
+) -> SuccessResponse[BatchAffectedResult]:
     count = await crud.batch_deactivate_users(session, body.ids)
     await session.flush()
-    return build_response({"affected": count})
+    return build_response(BatchAffectedResult(affected=count))
 
 
-@router.post("/users/batch-activate")
+@router.post("/users/batch-activate", response_model=SuccessResponse[BatchAffectedResult])
 async def batch_activate_users(
     body: BatchIdsRequest,
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-) -> SuccessResponse[dict]:
+) -> SuccessResponse[BatchAffectedResult]:
     count = await crud.batch_activate_users(session, body.ids)
     await session.flush()
-    return build_response({"affected": count})
+    return build_response(BatchAffectedResult(affected=count))
 
 
 @router.get("/users/{user_id}", response_model=SuccessResponse[AdminUserResponse])
@@ -95,8 +99,6 @@ async def grant_admin_permissions(
     actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminUserResponse]:
-    if user_id == actor.id:
-        raise HTTPException(status_code=403, detail="Cannot grant admin rights to yourself")
     result = await users_service.set_user_permissions(
         session, user_id, serialize_permissions(ADMIN_PERMISSIONS), actor=actor
     )

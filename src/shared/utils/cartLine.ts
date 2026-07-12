@@ -6,13 +6,14 @@ import type {
   CartItemIn,
   CartSelectedOption,
 } from "@shared/types/models";
+import { makeId } from "@shared/utils/id";
 
-export interface CartLineOption {
+export type CartLineOption = Partial<
+  Pick<CartSelectedOption, "option_id" | "name">
+> & {
   id?: string;
-  option_id?: string;
-  name?: string;
   price_delta?: number | null;
-}
+};
 
 export type CartMenuItem = (MenuItem | MenuItemShort) & {
   image_url?: string | null;
@@ -27,12 +28,12 @@ export interface CartLine {
 }
 
 export const getOptionIds = (item: CartLine): string[] =>
-  [...new Set(item.selectedOptionIds ?? [])].filter((id): id is string =>
+  [...new Set(item.selectedOptionIds)].filter((id): id is string =>
     Boolean(id),
   );
 
 export const getSelectedOptions = (item: CartLine): CartLineOption[] =>
-  item.selectedOptions ?? [];
+  item.selectedOptions;
 
 export const getOptionsTotal = (item: CartLine): number =>
   getSelectedOptions(item).reduce(
@@ -41,7 +42,7 @@ export const getOptionsTotal = (item: CartLine): number =>
   );
 
 export const getLinePrice = (item: CartLine): number =>
-  (Number(item.menuItem.price) || 0) + getOptionsTotal(item);
+  (item.menuItem.price || 0) + getOptionsTotal(item);
 
 export const getLineKey = (
   menuItemId: string,
@@ -49,17 +50,13 @@ export const getLineKey = (
 ): string => `${menuItemId}:${[...selectedOptionIds].sort().join(",")}`;
 
 export const normalizeCartLine = (item: CartItem): CartLine => {
-  const options: CartLineOption[] = (item.selected_options ?? []).map((o) => ({
+  const options: CartLineOption[] = item.selected_options.map((o) => ({
     id: o.option_id,
     option_id: o.option_id,
     name: o.name,
     price_delta: o.price_delta,
   }));
-  const optionIds =
-    item.selected_option_ids ??
-    options
-      .map((o) => o.option_id ?? o.id)
-      .filter((id): id is string => Boolean(id));
+  const optionIds = item.selected_option_ids;
   return {
     menuItem: item.menuItem,
     quantity: item.quantity,
@@ -70,17 +67,17 @@ export const normalizeCartLine = (item: CartItem): CartLine => {
 };
 
 export const normalizeOrderItemForCart = (orderItem: OrderItem): CartItemIn => {
-  const options = orderItem.selected_options ?? [];
+  const options = orderItem.selected_options;
   const optionIds = options
     .map((o) => o.option_id)
     .filter((id): id is string => Boolean(id));
   const optionsTotal = options.reduce(
-    (sum, o) => sum + (Number(o.price_delta) || 0),
+    (sum, o) => sum + (o.price_delta || 0),
     0,
   );
   const basePrice = Math.max(
     0,
-    (Number(orderItem.price_at_purchase) || 0) - optionsTotal,
+    (orderItem.price_at_purchase || 0) - optionsTotal,
   );
   return {
     menu_item_id: orderItem.menu_item_id,
@@ -92,7 +89,7 @@ export const normalizeOrderItemForCart = (orderItem: OrderItem): CartItemIn => {
     selected_options: options.map((o) => ({
       option_id: o.option_id ?? "",
       name: o.name,
-      price_delta: Number(o.price_delta) || 0,
+      price_delta: o.price_delta || 0,
     })),
   };
 };
@@ -128,6 +125,4 @@ export const buildCartItemIn = (i: CartLine): CartItemIn => ({
   selected_options: toCartSelectedOptions(uniqueOptions(getSelectedOptions(i))),
 });
 
-export const makeIdempotencyKey = (): string =>
-  globalThis.crypto?.randomUUID?.() ??
-  `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+export const makeIdempotencyKey = (): string => makeId();

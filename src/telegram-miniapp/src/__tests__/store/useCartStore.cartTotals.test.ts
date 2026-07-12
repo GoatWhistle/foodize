@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
-import { useOrderStore } from "../../store/useOrderStore";
+import { useCartStore } from "../../store/useCartStore";
 import { cartService } from "@shared/services/cartService";
-import type { CartLine } from "@shared/store/useOrderStore";
+import type { CartLine } from "@shared/store/createCartStore";
 
 vi.mock("@shared/services/cartService", () => ({
   cartService: {
@@ -28,22 +28,19 @@ const cartServiceMock = cartService as unknown as {
 const asCartLines = (lines: Partial<CartLine>[]): CartLine[] =>
   lines as CartLine[];
 
-describe("useOrderStore cart totals", () => {
+describe("useCartStore cart totals", () => {
   beforeEach(() => {
-    useOrderStore.setState({
+    useCartStore.setState({
       cart: [],
       cartRestaurantId: null,
-      orders: [],
-      currentOrder: null,
-      ordersLoading: false,
-      ordersTotal: 0,
-      activeOrder: null,
+      cartError: null,
+      orderPlacing: false,
     });
     vi.clearAllMocks();
   });
 
   it("should calculate cartTotal and cartCount correctly", () => {
-    useOrderStore.setState({
+    useCartStore.setState({
       cart: asCartLines([
         {
           menuItem: { id: "m1", price: 100 } as CartLine["menuItem"],
@@ -58,8 +55,8 @@ describe("useOrderStore cart totals", () => {
       ]),
     });
 
-    expect(useOrderStore.getState().cartCount()).toBe(3);
-    expect(useOrderStore.getState().cartTotal()).toBe(280);
+    expect(useCartStore.getState().cartCount()).toBe(3);
+    expect(useCartStore.getState().cartTotal()).toBe(280);
   });
 
   it("keeps syncing after a failed updateCart (chain not poisoned)", async () => {
@@ -69,13 +66,13 @@ describe("useOrderStore cart totals", () => {
 
     const menuItem = { id: "m1", name: "Pizza", price: 100 } as CartLine["menuItem"];
 
-    await useOrderStore.getState().addToCart(menuItem, "rest-1");
-    expect(useOrderStore.getState().cartError).not.toBeNull();
+    await useCartStore.getState().addToCart(menuItem, "rest-1");
+    expect(useCartStore.getState().cartError).not.toBeNull();
 
-    await useOrderStore.getState().addToCart(menuItem, "rest-1");
+    await useCartStore.getState().addToCart(menuItem, "rest-1");
 
     expect(cartServiceMock.updateCart).toHaveBeenCalledTimes(2);
-    expect(useOrderStore.getState().cartError).toBeNull();
+    expect(useCartStore.getState().cartError).toBeNull();
   });
 
   it("re-renders selectors of cartCount when cart changes", async () => {
@@ -83,20 +80,20 @@ describe("useOrderStore cart totals", () => {
     cartServiceMock.clearCart.mockResolvedValue({});
 
     const seen: number[] = [];
-    const unsub = useOrderStore.subscribe((s) => {
+    const unsub = useCartStore.subscribe((s) => {
       seen.push(s.cartCount());
     });
 
     const menuItem = { id: "m1", name: "Pizza", price: 100 } as CartLine["menuItem"];
 
-    await useOrderStore.getState().addToCart(menuItem, "rest-1");
-    expect(useOrderStore.getState().cartCount()).toBe(1);
+    await useCartStore.getState().addToCart(menuItem, "rest-1");
+    expect(useCartStore.getState().cartCount()).toBe(1);
 
-    await useOrderStore.getState().addToCart(menuItem, "rest-1");
-    expect(useOrderStore.getState().cartCount()).toBe(2);
+    await useCartStore.getState().addToCart(menuItem, "rest-1");
+    expect(useCartStore.getState().cartCount()).toBe(2);
 
-    await useOrderStore.getState().removeFromCart("m1", []);
-    expect(useOrderStore.getState().cartCount()).toBe(1);
+    await useCartStore.getState().removeFromCart("m1", []);
+    expect(useCartStore.getState().cartCount()).toBe(1);
 
     unsub();
 

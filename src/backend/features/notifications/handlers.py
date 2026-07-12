@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -95,7 +95,7 @@ async def handle_order_status_changed(
         message = f"Ваш заказ из {event.restaurant_name} готов к выдаче. Приятного аппетита!"
 
     if event.new_status == OrderStatus.COMPLETED:
-        run_at = datetime.now(timezone.utc) + timedelta(seconds=_FEEDBACK_DELAY_SECONDS)
+        run_at = datetime.now(UTC) + timedelta(seconds=_FEEDBACK_DELAY_SECONDS)
         await enqueue_event(
             session,
             FeedbackRequestedEvent(

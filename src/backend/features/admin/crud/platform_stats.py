@@ -1,9 +1,11 @@
 from datetime import UTC, date, datetime, timedelta
+from typing import cast
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, true, type_coerce
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import InstrumentedAttribute
 
-from database import json_array_contains_string
+from database import JSONB, json_array_contains_string
 from features.admin.schemas import PlatformStats, StatsGrowthPoint
 from features.orders.models import Order
 from features.restaurants.models import Restaurant
@@ -17,7 +19,7 @@ from shared.permissions import serialize_permissions
 
 async def _count_by_day(
     session: AsyncSession,
-    created_at_column,
+    created_at_column: InstrumentedAttribute[datetime],
     start_date: date,
 ) -> dict[date, int]:
     result = await session.execute(
@@ -44,6 +46,28 @@ def _growth_points(counts: dict[date, int], start_date: date, days: int) -> list
     ]
 
 
+async def _count_users_by_permission(session: AsyncSession) -> dict[str, int]:
+    if session.bind is not None and session.bind.dialect.name == "postgresql":
+        permission_element = func.jsonb_array_elements_text(
+            type_coerce(User.permissions, JSONB)
+        ).table_valued("value")
+        rows = await session.execute(
+            select(permission_element.c.value, func.count())
+            .select_from(User)
+            .join(permission_element, true())
+            .where(User.permissions.isnot(None))
+            .group_by(permission_element.c.value)
+        )
+        return dict(cast("list[tuple[str, int]]", rows.all()))
+
+    result = await session.execute(select(User.permissions).where(User.permissions.isnot(None)))
+    counts: dict[str, int] = {}
+    for permissions in result.scalars().all():
+        for permission in set(serialize_permissions(permissions)):
+            counts[permission] = counts.get(permission, 0) + 1
+    return counts
+
+
 async def get_platform_stats(session: AsyncSession) -> PlatformStats:
     is_admin = json_array_contains_string(User.permissions, Permission.ADMIN_ACCESS.value)
     is_vendor = json_array_contains_string(User.permissions, Permission.RESTAURANTS_CREATE.value)
@@ -54,7 +78,7 @@ async def get_platform_stats(session: AsyncSession) -> PlatformStats:
             func.count().filter(~is_admin & is_vendor),
             func.count().filter(~is_admin & ~is_vendor & is_staff),
             func.count().filter(~is_admin & ~is_vendor & ~is_staff),
-        )
+        ).select_from(User)
     )
     admins, vendors, staff, customers = roles_row.one()
     users_by_role: dict[str, int] = {
@@ -64,13 +88,7 @@ async def get_platform_stats(session: AsyncSession) -> PlatformStats:
         UserRole.ADMIN.value: admins,
     }
 
-    permission_counts = await session.execute(
-        select(User.permissions).where(User.permissions.isnot(None))
-    )
-    users_by_permission: dict[str, int] = {}
-    for permissions in permission_counts.scalars().all():
-        for permission in set(serialize_permissions(permissions)):
-            users_by_permission[permission] = users_by_permission.get(permission, 0) + 1
+    users_by_permission = await _count_users_by_permission(session)
 
     orders_by_status_rows = await session.execute(
         select(Order.status, func.count()).group_by(Order.status)

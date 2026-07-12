@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { restaurantService } from "@shared/services/restaurantService";
 import { menuService } from "@shared/services/menuService";
 import { translateApiError } from "@shared/utils/translateApiError";
+import { createTtlCache } from "@shared/utils/ttlCache";
 import type {
   Restaurant,
   MenuItem,
@@ -11,13 +12,14 @@ import type {
 
 const PUBLIC_RESTAURANTS_TTL_MS = 60_000;
 
-interface CacheEntry {
+interface PublicRestaurantsResult {
   list: Restaurant[];
   total: number;
-  ts: number;
 }
 
-const publicRestaurantsCache = new Map<string, CacheEntry>();
+const publicRestaurantsCache = createTtlCache<PublicRestaurantsResult>(
+  PUBLIC_RESTAURANTS_TTL_MS,
+);
 
 export interface RestaurantStoreState {
   publicRestaurants: Restaurant[];
@@ -25,7 +27,9 @@ export interface RestaurantStoreState {
   restaurants: Restaurant[];
   menus: Record<string, MenuItem[]>;
   currentRestaurant: Restaurant | null;
-  loading: boolean;
+  publicLoading: boolean;
+  myLoading: boolean;
+  menuLoading: boolean;
   error: string | null;
   fetchPublicRestaurants: (params?: Record<string, unknown>) => Promise<void>;
   fetchMyRestaurants: () => Promise<void>;
@@ -44,52 +48,58 @@ export const useRestaurantStore = create<RestaurantStoreState>((set, get) => ({
   restaurants: [],
   menus: {},
   currentRestaurant: null,
-  loading: false,
+  publicLoading: false,
+  myLoading: false,
+  menuLoading: false,
   error: null,
 
   fetchPublicRestaurants: async (params = {}) => {
     const cacheKey = JSON.stringify(params);
     const cached = publicRestaurantsCache.get(cacheKey);
-    if (cached && Date.now() - cached.ts < PUBLIC_RESTAURANTS_TTL_MS) {
-      set({ publicRestaurants: cached.list, publicRestaurantsTotal: cached.total, loading: false });
+    if (cached) {
+      set({
+        publicRestaurants: cached.list,
+        publicRestaurantsTotal: cached.total,
+        publicLoading: false,
+      });
       return;
     }
-    set({ loading: true, error: null });
+    set({ publicLoading: true, error: null });
     try {
       const res = await restaurantService.getAll(params);
-      const list = Array.isArray(res.data?.data) ? res.data.data : [];
-      const total = res.data?.pagination?.total || list.length;
-      publicRestaurantsCache.set(cacheKey, { list, total, ts: Date.now() });
-      set({ publicRestaurants: list, publicRestaurantsTotal: total, loading: false });
+      const list = Array.isArray(res.data.data) ? res.data.data : [];
+      const total = res.data.pagination.total || list.length;
+      publicRestaurantsCache.set(cacheKey, { list, total });
+      set({ publicRestaurants: list, publicRestaurantsTotal: total, publicLoading: false });
     } catch (e) {
-      set({ error: translateApiError(e), loading: false });
+      set({ error: translateApiError(e), publicLoading: false });
     }
   },
 
   fetchMyRestaurants: async () => {
-    set({ loading: true, error: null });
+    set({ myLoading: true, error: null });
     try {
       const res = await restaurantService.getMy();
-      const list = Array.isArray(res.data?.data) ? res.data.data : [];
-      set({ restaurants: list, loading: false });
+      const list = Array.isArray(res.data.data) ? res.data.data : [];
+      set({ restaurants: list, myLoading: false });
     } catch (e) {
-      set({ error: translateApiError(e), loading: false });
+      set({ error: translateApiError(e), myLoading: false });
     }
   },
 
   fetchMenu: async (restaurantId, { force = false } = {}) => {
     if (!force && get().menus[restaurantId]) return;
-    set({ loading: true });
+    set({ menuLoading: true });
     try {
       const res = await menuService.getMenu(restaurantId);
-      const list = Array.isArray(res.data?.data) ? res.data.data : [];
-      set((s) => ({ menus: { ...s.menus, [restaurantId]: list }, loading: false }));
+      const list = Array.isArray(res.data.data) ? res.data.data : [];
+      set((s) => ({ menus: { ...s.menus, [restaurantId]: list }, menuLoading: false }));
     } catch (e) {
-      set({ error: translateApiError(e), loading: false });
+      set({ error: translateApiError(e), menuLoading: false });
     }
   },
 
-  setCurrentRestaurant: (restaurant) => set({ currentRestaurant: restaurant }),
+  setCurrentRestaurant: (restaurant) => { set({ currentRestaurant: restaurant }); },
 
   createRestaurant: async (data) => {
     set({ error: null });

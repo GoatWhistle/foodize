@@ -1,15 +1,15 @@
 import { memo, useCallback } from 'react';
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
 import {
-  ChartLineUp,
-  UsersThree,
-  Package,
-  Storefront,
-  Star,
-  Clock,
-  CaretDown,
-  Rows,
-  ShieldWarning,
+  ChartLineUpIcon,
+  UsersThreeIcon,
+  PackageIcon,
+  StorefrontIcon,
+  StarIcon,
+  ClockIcon,
+  CaretDownIcon,
+  RowsIcon,
+  ShieldWarningIcon,
 } from '@phosphor-icons/react';
 
 const ENTITY_TAB_IDS = new Set(['users', 'orders', 'restaurants', 'vendors', 'reviews']);
@@ -30,7 +30,7 @@ interface TabButtonProps {
 const TabButton = memo(({ tab, activeTab, indented, onClick }: TabButtonProps) => (
   <button
     className={`btn ${activeTab === tab.id ? 'btn-primary' : 'btn-secondary'}`}
-    onClick={() => onClick(tab.id)}
+    onClick={() => { onClick(tab.id); }}
     style={{
       justifyContent: 'flex-start',
       border: 'none',
@@ -46,15 +46,15 @@ const TabButton = memo(({ tab, activeTab, indented, onClick }: TabButtonProps) =
 ));
 
 const tabs: TabDef[] = [
-  { id: 'stats', label: 'Статистика', icon: <ChartLineUp size={18} /> },
-  { id: 'users', label: 'Пользователи', icon: <UsersThree size={18} /> },
-  { id: 'orders', label: 'Заказы', icon: <Package size={18} /> },
-  { id: 'resolution', label: 'Модерация', icon: <ShieldWarning size={18} /> },
-  { id: 'restaurants', label: 'Рестораны', icon: <Storefront size={18} /> },
-  { id: 'vendors', label: 'Вендоры', icon: <UsersThree size={18} /> },
-  { id: 'reviews', label: 'Отзывы', icon: <Star size={18} /> },
-  { id: 'finance', label: 'Аналитика', icon: <ChartLineUp size={18} /> },
-  { id: 'audit', label: 'Логи', icon: <Clock size={18} /> },
+  { id: 'stats', label: 'Статистика', icon: <ChartLineUpIcon size={18} /> },
+  { id: 'users', label: 'Пользователи', icon: <UsersThreeIcon size={18} /> },
+  { id: 'orders', label: 'Заказы', icon: <PackageIcon size={18} /> },
+  { id: 'resolution', label: 'Модерация', icon: <ShieldWarningIcon size={18} /> },
+  { id: 'restaurants', label: 'Рестораны', icon: <StorefrontIcon size={18} /> },
+  { id: 'vendors', label: 'Вендоры', icon: <UsersThreeIcon size={18} /> },
+  { id: 'reviews', label: 'Отзывы', icon: <StarIcon size={18} /> },
+  { id: 'finance', label: 'Аналитика', icon: <ChartLineUpIcon size={18} /> },
+  { id: 'audit', label: 'Логи', icon: <ClockIcon size={18} /> },
 ];
 
 interface AdminSidebarProps {
@@ -70,7 +70,7 @@ export function AdminSidebar({
   entitiesOpen,
   setEntitiesOpen,
 }: AdminSidebarProps) {
-  const handleTabClick = useCallback((id: string) => setActiveTab(id), [setActiveTab]);
+  const handleTabClick = useCallback((id: string) => { setActiveTab(id); }, [setActiveTab]);
 
   return (
     <div
@@ -88,7 +88,7 @@ export function AdminSidebar({
         .map((tab) => <TabButton key={tab.id} tab={tab} activeTab={activeTab} onClick={handleTabClick} />)}
       <div>
         <button
-          onClick={() => setEntitiesOpen((o) => !o)}
+          onClick={() => { setEntitiesOpen((o) => !o); }}
           style={{
             display: 'flex', alignItems: 'center', gap: 8, width: '100%',
             padding: '10px 14px',
@@ -100,9 +100,9 @@ export function AdminSidebar({
             transition: 'background 0.15s, border-color 0.15s',
           }}
         >
-          <Rows size={16} weight="bold" />
+          <RowsIcon size={16} weight="bold" />
           Сущности
-          <CaretDown
+          <CaretDownIcon
             size={14} weight="bold"
             style={{
               marginLeft: 'auto',

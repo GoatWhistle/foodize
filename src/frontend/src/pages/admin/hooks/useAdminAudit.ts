@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { adminService } from '../../../services/adminService';
-import type { SuccessListResponse } from '@shared/types/models';
 
 const PAGE_SIZE = 20;
 
@@ -51,14 +50,14 @@ export const useAdminAudit = ({ activeTab, setActionError }: UseAdminAuditArgs) 
       ...(auditFilters.date_to && { date_to: auditFilters.date_to }),
     };
     adminService
-      .getAuditLogs(params)
+      .getAuditLogs<AuditLog>(params)
       .then((res) => {
-        const body = res.data as SuccessListResponse<AuditLog>;
-        setAuditLogs(body.data || []);
-        setAuditTotal(body.pagination?.total || 0);
+        const body = res.data;
+        setAuditLogs(body.data);
+        setAuditTotal(body.pagination.total || 0);
       })
-      .catch(() => setActionError('Не удалось загрузить логи'))
-      .finally(() => setAuditLoading(false));
+      .catch(() => { setActionError('Не удалось загрузить логи'); })
+      .finally(() => { setAuditLoading(false); });
   }, [activeTab, auditPage, auditFilters, setActionError]);
 
   return {

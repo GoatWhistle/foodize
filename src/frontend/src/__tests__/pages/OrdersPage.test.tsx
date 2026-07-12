@@ -73,7 +73,9 @@ describe('OrdersPage', () => {
     const orderCards = screen.getAllByRole('button').filter(
       (el) => el.textContent?.includes('₽')
     );
-    fireEvent.click(orderCards[0]);
+    const firstCard = orderCards[0];
+    if (!firstCard) throw new Error('order card not found');
+    fireEvent.click(firstCard);
     expect(mockNavigate).toHaveBeenCalledWith(
       expect.stringMatching(/\/orders\/order-[12]/)
     );

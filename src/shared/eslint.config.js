@@ -10,7 +10,7 @@ export default tseslint.config(
     ignores: ["dist/**", "node_modules/**", "types/api.ts", "*.config.js"],
   },
   js.configs.recommended,
-  ...tseslint.configs.recommendedTypeChecked,
+  ...tseslint.configs.strictTypeChecked,
   prettierConfig,
   {
     files: ["**/*.{ts,tsx}"],
@@ -39,13 +39,16 @@ export default tseslint.config(
       "react/prop-types": "off",
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "error",
-      "no-empty": ["error", { allowEmptyCatch: true }],
+      "no-empty": "error",
       "no-console": ["error", { allow: ["warn", "error"] }],
       "@typescript-eslint/no-unused-vars": ["error", { caughtErrorsIgnorePattern: "^_", argsIgnorePattern: "^_" }],
       "@typescript-eslint/no-floating-promises": "error",
       "@typescript-eslint/no-misused-promises": "error",
       "@typescript-eslint/await-thenable": "error",
       "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/no-deprecated": "error",
+      "@typescript-eslint/no-non-null-assertion": "error",
+      "@typescript-eslint/restrict-template-expressions": ["error", { allowNumber: true }],
     },
     settings: {
       react: {

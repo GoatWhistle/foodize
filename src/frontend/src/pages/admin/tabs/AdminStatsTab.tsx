@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { UsersThree, Package, Storefront } from '@phosphor-icons/react';
+import { UsersThreeIcon, PackageIcon, StorefrontIcon } from '@phosphor-icons/react';
 import type { PlatformStats, Schemas } from '@shared/types/models';
 import {
   UsersByRoleChart,
@@ -7,6 +7,12 @@ import {
 } from '../../../components/dashboard/DashboardCharts';
 
 type GrowthPoint = Schemas['StatsGrowthPoint'];
+
+type PartialStats = Omit<PlatformStats, 'growth' | 'users_by_role' | 'orders_by_status'> & {
+  growth?: Record<string, GrowthPoint[]>;
+  users_by_role?: Record<string, number>;
+  orders_by_status?: Record<string, number>;
+};
 
 const cardStyle = {
   background: 'var(--bg-card)',
@@ -19,7 +25,7 @@ const sumValues = (valueMap: Record<string, number> = {}): number =>
   Object.values(valueMap).reduce((a, b) => a + b, 0);
 
 interface SparklineProps {
-  points?: GrowthPoint[];
+  points?: GrowthPoint[] | undefined;
   color?: string;
 }
 
@@ -69,7 +75,7 @@ interface StatCardProps {
   label: string;
   value: ReactNode;
   icon: ReactNode;
-  growth?: GrowthPoint[];
+  growth?: GrowthPoint[] | undefined;
   onClick: () => void;
 }
 
@@ -155,6 +161,7 @@ export interface AdminStatsTabProps {
 
 export default function AdminStatsTab({ stats, ordersByStatusChartData, setActiveTab }: AdminStatsTabProps) {
   if (!stats) return null;
+  const s: PartialStats = stats;
 
   return (
     <>
@@ -167,51 +174,47 @@ export default function AdminStatsTab({ stats, ordersByStatusChartData, setActiv
       >
         <StatCard
           label="Пользователи"
-          value={stats.total_users ?? sumValues(stats.users_by_permission)}
-          icon={<UsersThree size={22} />}
-          growth={stats.growth?.users}
-          onClick={() => setActiveTab('users')}
+          value={s.total_users}
+          icon={<UsersThreeIcon size={22} />}
+          growth={s.growth?.users}
+          onClick={() => { setActiveTab('users'); }}
         />
         <StatCard
           label="Рестораны"
-          value={stats.total_restaurants || 0}
-          icon={<Storefront size={22} />}
-          growth={stats.growth?.restaurants}
-          onClick={() => setActiveTab('restaurants')}
+          value={s.total_restaurants || 0}
+          icon={<StorefrontIcon size={22} />}
+          growth={s.growth?.restaurants}
+          onClick={() => { setActiveTab('restaurants'); }}
         />
         <StatCard
           label="Заказы"
-          value={sumValues(stats.orders_by_status)}
-          icon={<Package size={22} />}
-          growth={stats.growth?.orders}
-          onClick={() => setActiveTab('orders')}
+          value={sumValues(s.orders_by_status)}
+          icon={<PackageIcon size={22} />}
+          growth={s.growth?.orders}
+          onClick={() => { setActiveTab('orders'); }}
         />
         <StatCard
           label="Вендоры"
-          value={stats.total_vendors || 0}
-          icon={<UsersThree size={22} />}
-          growth={stats.growth?.vendors}
-          onClick={() => setActiveTab('vendors')}
+          value={s.total_vendors || 0}
+          icon={<UsersThreeIcon size={22} />}
+          growth={s.growth?.vendors}
+          onClick={() => { setActiveTab('vendors'); }}
         />
       </div>
 
-      {stats.users_by_role && (
-        <div style={{ marginTop: 16 }}>
-          <UsersByRoleChart data={stats.users_by_role} />
-          {stats.orders_by_status && (
-            <div
-              style={{
-                marginTop: 20,
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                gap: 20,
-              }}
-            >
-              <OrderStatusPieChart data={ordersByStatusChartData ?? undefined} />
-            </div>
-          )}
+      <div style={{ marginTop: 16 }}>
+        <UsersByRoleChart data={s.users_by_role ?? {}} />
+        <div
+          style={{
+            marginTop: 20,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: 20,
+          }}
+        >
+          <OrderStatusPieChart {...(ordersByStatusChartData ? { data: ordersByStatusChartData } : {})} />
         </div>
-      )}
+      </div>
     </>
   );
 }

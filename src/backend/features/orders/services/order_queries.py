@@ -5,11 +5,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.orders.crud import order as order_crud
 from features.orders.exceptions import OrderAccessDeniedException, OrderNotFoundException
+from features.orders.models import Order
 from features.orders.schemas.order import OrderLoadEstimate, OrderResponse
 from features.orders.schemas.order_event import OrderEventResponse
 from features.orders.services.order_utils import is_ordering_paused
 from features.restaurants import crud as restaurant_crud
 from features.restaurants.exceptions import RestaurantNotFoundException
+from features.restaurants.models import Restaurant
 from features.restaurants.working_hours_crud import get_working_hours, is_open_now
 from shared.enums.order_status import OrderStatus
 
@@ -17,7 +19,7 @@ from shared.enums.order_status import OrderStatus
 async def estimate_restaurant_load(
     session: AsyncSession,
     restaurant_id: uuid.UUID,
-    restaurant=None,
+    restaurant: Restaurant | None = None,
 ) -> OrderLoadEstimate:
     if restaurant is None:
         restaurant = await restaurant_crud.get_restaurant_by_id(session, restaurant_id)
@@ -123,5 +125,5 @@ async def get_order_events(
     return [OrderEventResponse.model_validate(e) for e in events]
 
 
-async def get_order_by_identifier(session: AsyncSession, identifier: str):
+async def get_order_by_identifier(session: AsyncSession, identifier: str) -> Order | None:
     return await order_crud.get_order_by_identifier(session, identifier)

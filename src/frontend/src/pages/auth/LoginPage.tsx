@@ -95,7 +95,7 @@ const LoginPage = () => {
       const axiosErr = err as {
         response?: { status?: number };
       };
-      if (axiosErr?.response?.status === 404) {
+      if (axiosErr.response?.status === 404) {
         setShowBotLink(true);
         setError('Аккаунт не найден. Запустите бота — он зарегистрирует вас автоматически:');
       } else {

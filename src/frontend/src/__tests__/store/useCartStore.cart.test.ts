@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { useOrderStore } from '../../store/useOrderStore';
+import { useCartStore } from '../../store/useCartStore';
+import { useOrdersStore } from '../../store/useOrdersStore';
 import { orderService } from '@shared/services/orderService.js';
 import { cartService } from '@shared/services/cartService.js';
-import type { CartMenuItem } from '@shared/store/useOrderStore';
+import type { CartMenuItem } from '@shared/store/createCartStore';
 
 vi.mock('@shared/services/orderService.js', () => ({
   orderService: {
@@ -20,13 +21,18 @@ vi.mock('@shared/services/cartService.js', () => ({
   },
 }));
 
-describe('useOrderStore', () => {
+describe('useCartStore', () => {
   beforeEach(() => {
-    useOrderStore.setState({
+    useCartStore.setState({
       cart: [],
       cartRestaurantId: null,
+      cartError: null,
+      orderPlacing: false,
+    });
+    useOrdersStore.setState({
       orders: [],
       currentOrder: null,
+      activeOrder: null,
       ordersLoading: false,
     });
     vi.clearAllMocks();
@@ -38,47 +44,47 @@ describe('useOrderStore', () => {
     const item = { id: '1', name: 'Pizza', price: 100 };
     const restaurantId = 'rest-1';
 
-    void useOrderStore.getState().addToCart(item, restaurantId);
+    void useCartStore.getState().addToCart(item, restaurantId);
 
-    const state = useOrderStore.getState();
+    const state = useCartStore.getState();
     expect(state.cart).toHaveLength(1);
-    expect(state.cart[0].quantity).toBe(1);
+    expect(state.cart[0]?.quantity).toBe(1);
     expect(state.cartRestaurantId).toBe(restaurantId);
   });
 
   it('addToCart clears previous cart if restaurant changes', async () => {
-    useOrderStore.setState({
+    useCartStore.setState({
       cart: [{ menuItem: { id: '1' } as CartMenuItem, quantity: 1, selectedOptionIds: [], selectedOptions: [] }],
       cartRestaurantId: 'old-rest',
     });
 
     const newItem = { id: '2', name: 'Burger', price: 200 };
-    await useOrderStore.getState().addToCart(newItem, 'new-rest');
+    await useCartStore.getState().addToCart(newItem, 'new-rest');
 
-    const state = useOrderStore.getState();
+    const state = useCartStore.getState();
     expect(state.cart).toHaveLength(1);
-    expect(state.cart[0].menuItem.id).toBe('2');
+    expect(state.cart[0]?.menuItem.id).toBe('2');
     expect(state.cartRestaurantId).toBe('new-rest');
   });
 
   it('removeFromCart decreases quantity or removes item', () => {
     const item = { id: '1', name: 'Pizza', price: 100 };
-    useOrderStore.setState({
+    useCartStore.setState({
       cart: [{ menuItem: item, quantity: 2, selectedOptionIds: [], selectedOptions: [] }],
       cartRestaurantId: 'rest-1',
     });
 
-    void useOrderStore.getState().removeFromCart('1');
-    expect(useOrderStore.getState().cart[0].quantity).toBe(1);
+    void useCartStore.getState().removeFromCart('1');
+    expect(useCartStore.getState().cart[0]?.quantity).toBe(1);
 
-    void useOrderStore.getState().removeFromCart('1');
-    expect(useOrderStore.getState().cart).toHaveLength(0);
-    expect(useOrderStore.getState().cartRestaurantId).toBe(null);
+    void useCartStore.getState().removeFromCart('1');
+    expect(useCartStore.getState().cart).toHaveLength(0);
+    expect(useCartStore.getState().cartRestaurantId).toBe(null);
   });
 
-  it('placeOrder calls service and clears cart', async () => {
+  it('placeOrder calls service, clears cart and pushes order to orders store', async () => {
     const item = { id: '1', name: 'Pizza', price: 100 };
-    useOrderStore.setState({
+    useCartStore.setState({
       cart: [{ menuItem: item, quantity: 2, selectedOptionIds: [], selectedOptions: [] }],
       cartRestaurantId: 'rest-1',
     });
@@ -86,7 +92,7 @@ describe('useOrderStore', () => {
     const mockOrder = { id: 'order-1', total_price: 200 };
     vi.mocked(orderService.create).mockResolvedValueOnce({ data: { data: mockOrder } } as never);
 
-    await useOrderStore.getState().placeOrder();
+    await useCartStore.getState().placeOrder();
 
     expect(orderService.create).toHaveBeenCalledWith(
       {
@@ -94,17 +100,17 @@ describe('useOrderStore', () => {
         items: [{ menu_item_id: '1', quantity: 2, selected_option_ids: [] }],
       },
       {
-        headers: { 'Idempotency-Key': expect.any(String) },
+        headers: { 'Idempotency-Key': expect.any(String) as unknown },
       }
     );
-    const state = useOrderStore.getState();
-    expect(state.cart).toHaveLength(0);
-    expect(state.orders[0]).toEqual(mockOrder);
+    expect(useCartStore.getState().cart).toHaveLength(0);
+    expect(useOrdersStore.getState().orders[0]).toEqual(mockOrder);
+    expect(useOrdersStore.getState().activeOrder).toEqual(mockOrder);
   });
 
   it('placeOrder includes promo, trimmed comment and requested pickup time', async () => {
     const item = { id: '1', name: 'Pizza', price: 100 };
-    useOrderStore.setState({
+    useCartStore.setState({
       cart: [{ menuItem: item, quantity: 2, selectedOptionIds: ['opt-1'], selectedOptions: [] }],
       cartRestaurantId: 'rest-1',
     });
@@ -112,7 +118,7 @@ describe('useOrderStore', () => {
     const mockOrder = { id: 'order-1', total_price: 200 };
     vi.mocked(orderService.create).mockResolvedValueOnce({ data: { data: mockOrder } } as never);
 
-    await useOrderStore
+    await useCartStore
       .getState()
       .placeOrder('SAVE10', '  no onion  ', '2026-05-21T15:30:00.000Z');
 
@@ -124,7 +130,7 @@ describe('useOrderStore', () => {
         requested_pickup_at: '2026-05-21T15:30:00.000Z',
         items: [{ menu_item_id: '1', quantity: 2, selected_option_ids: ['opt-1'] }],
       }),
-      { headers: { 'Idempotency-Key': expect.any(String) } }
+      { headers: { 'Idempotency-Key': expect.any(String) as unknown } }
     );
     expect(cartService.clearCart).toHaveBeenCalled();
   });
@@ -133,14 +139,14 @@ describe('useOrderStore', () => {
     const item = { id: '1', name: 'Shaurma', price: 300 };
     const meatOption = { id: 'opt-meat', name: 'Extra meat', price_delta: 80 };
 
-    await useOrderStore.getState().addToCart(item, 'rest-1', []);
-    await useOrderStore.getState().addToCart(item, 'rest-1', [meatOption]);
-    await useOrderStore.getState().addToCart(item, 'rest-1', [meatOption]);
+    await useCartStore.getState().addToCart(item, 'rest-1', []);
+    await useCartStore.getState().addToCart(item, 'rest-1', [meatOption]);
+    await useCartStore.getState().addToCart(item, 'rest-1', [meatOption]);
 
-    const state = useOrderStore.getState();
+    const state = useCartStore.getState();
     expect(state.cart).toHaveLength(2);
-    expect(state.cart[0].quantity).toBe(1);
-    expect(state.cart[1].quantity).toBe(2);
+    expect(state.cart[0]?.quantity).toBe(1);
+    expect(state.cart[1]?.quantity).toBe(2);
     expect(state.cartTotal()).toBe(1060);
     expect(cartService.updateCart).toHaveBeenCalled();
   });
@@ -152,28 +158,28 @@ describe('useOrderStore', () => {
 
     const item = { id: '1', name: 'Pizza', price: 100 };
 
-    await useOrderStore.getState().addToCart(item, 'rest-1');
-    expect(useOrderStore.getState().cartError).not.toBeNull();
+    await useCartStore.getState().addToCart(item, 'rest-1');
+    expect(useCartStore.getState().cartError).not.toBeNull();
 
-    await useOrderStore.getState().addToCart(item, 'rest-1');
+    await useCartStore.getState().addToCart(item, 'rest-1');
 
     expect(cartService.updateCart).toHaveBeenCalledTimes(2);
-    expect(useOrderStore.getState().cartError).toBeNull();
+    expect(useCartStore.getState().cartError).toBeNull();
   });
 
   it('notifies subscribers with an updated cartCount when cart changes', async () => {
     const seen: number[] = [];
-    const unsub = useOrderStore.subscribe((s) => {
+    const unsub = useCartStore.subscribe((s) => {
       seen.push(s.cartCount());
     });
 
     const item = { id: '1', name: 'Pizza', price: 100 };
 
-    await useOrderStore.getState().addToCart(item, 'rest-1');
-    expect(useOrderStore.getState().cartCount()).toBe(1);
+    await useCartStore.getState().addToCart(item, 'rest-1');
+    expect(useCartStore.getState().cartCount()).toBe(1);
 
-    await useOrderStore.getState().addToCart(item, 'rest-1');
-    expect(useOrderStore.getState().cartCount()).toBe(2);
+    await useCartStore.getState().addToCart(item, 'rest-1');
+    expect(useCartStore.getState().cartCount()).toBe(2);
 
     unsub();
 

@@ -4,6 +4,7 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from "axios";
 import { API_BASE_URL as SHARED_API_BASE_URL } from "@shared/config";
+import { makeId } from "@shared/utils/id";
 import type { TokenGetter } from "@shared/services/reliableWebSocket";
 
 export interface CreateApiOptions {
@@ -21,10 +22,6 @@ interface QueueItem {
   reject: (error: unknown) => void;
 }
 
-const generateRequestId = (): string =>
-  globalThis.crypto?.randomUUID?.() ??
-  `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-
 interface ErrorDetailObject {
   error?: string;
 }
@@ -34,7 +31,7 @@ const normalizeErrorDetail = (
 ): void => {
   const response = error.response;
   if (!response) return;
-  const detail = response.data?.detail;
+  const detail = response.data.detail;
   if (
     detail &&
     typeof detail === "object" &&
@@ -64,7 +61,10 @@ export function createApi({
   let failedQueue: QueueItem[] = [];
 
   const processQueue = (error: unknown): void => {
-    failedQueue.forEach((p) => (error ? p.reject(error) : p.resolve()));
+    failedQueue.forEach((p) => {
+      if (error) p.reject(error);
+      else p.resolve();
+    });
     failedQueue = [];
   };
 
@@ -73,7 +73,7 @@ export function createApi({
       const token = getToken();
       if (token) config.headers.Authorization = `Bearer ${token}`;
     }
-    config.headers["X-Request-Id"] = generateRequestId();
+    config.headers["X-Request-Id"] = makeId();
     return config;
   });
 
@@ -107,11 +107,11 @@ export function createApi({
         try {
           await refreshToken();
           processQueue(null);
-          return api(originalRequest);
+          return await api(originalRequest);
         } catch (refreshError) {
           processQueue(refreshError);
           onUnauthorized?.();
-          return Promise.reject(
+          return await Promise.reject(
             refreshError instanceof Error
               ? refreshError
               : new Error(String(refreshError)),

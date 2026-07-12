@@ -14,7 +14,7 @@ from shared.exceptions import AccessDeniedException, NotFoundException
 
 class TestGetValidStaffRequest:
     @pytest.mark.asyncio
-    async def test_not_found(self):
+    async def test_not_found(self) -> None:
         with patch(
             "features.staff.dependencies.crud.get_request_by_id",
             new_callable=AsyncMock,
@@ -24,7 +24,7 @@ class TestGetValidStaffRequest:
                 await get_valid_staff_request(uuid.uuid4(), MagicMock(), MagicMock())
 
     @pytest.mark.asyncio
-    async def test_forbidden(self):
+    async def test_forbidden(self) -> None:
         req = MagicMock(restaurant_id=uuid.uuid4())
         mock_vendor = MagicMock(id=uuid.uuid4())
         mock_rest = MagicMock(vendor_id=uuid.uuid4())
@@ -47,7 +47,7 @@ class TestGetValidStaffRequest:
                 await get_valid_staff_request(uuid.uuid4(), mock_session, mock_vendor)
 
     @pytest.mark.asyncio
-    async def test_success(self):
+    async def test_success(self) -> None:
         req = MagicMock(restaurant_id=uuid.uuid4())
         mock_vendor = MagicMock(id=uuid.uuid4())
         mock_rest = MagicMock(vendor_id=mock_vendor.id)
@@ -72,7 +72,7 @@ class TestGetValidStaffRequest:
 
 class TestGetRestaurantOr404:
     @pytest.mark.asyncio
-    async def test_not_found(self):
+    async def test_not_found(self) -> None:
         mock_session = AsyncMock()
         result = MagicMock()
         result.scalar_one_or_none.return_value = None
@@ -83,7 +83,7 @@ class TestGetRestaurantOr404:
 
 class TestIsNeedStaff:
     @pytest.mark.asyncio
-    async def test_is_need_staff(self):
+    async def test_is_need_staff(self) -> None:
         mock_rest = MagicMock(is_hiring=True)
         with patch(
             "features.staff.dependencies.get_restaurant_or_404",

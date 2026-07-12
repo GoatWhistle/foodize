@@ -1,5 +1,6 @@
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -39,7 +40,7 @@ def _make_completed_event() -> OrderStatusChangedEvent:
 
 class TestOutboxService:
     @pytest.mark.asyncio
-    async def test_enqueue_event_adds_outbox_record(self):
+    async def test_enqueue_event_adds_outbox_record(self) -> None:
         session = MagicMock()
         event = _make_placed_event()
 
@@ -52,30 +53,32 @@ class TestOutboxService:
         session.add.assert_called_once_with(outbox)
 
     @pytest.mark.asyncio
-    async def test_enqueue_event_with_run_at_sets_run_at(self):
+    async def test_enqueue_event_with_run_at_sets_run_at(self) -> None:
         session = MagicMock()
         event = _make_placed_event()
-        run_at = datetime.now(timezone.utc) + timedelta(seconds=1800)
+        run_at = datetime.now(UTC) + timedelta(seconds=1800)
 
         outbox = await enqueue_event(session, event, run_at=run_at)
 
         assert outbox.run_at == run_at
 
     @pytest.mark.asyncio
-    async def test_completed_status_enqueues_future_feedback_run_at(self):
+    async def test_completed_status_enqueues_future_feedback_run_at(self) -> None:
         from features.notifications.handlers import handle_order_status_changed
 
         event = _make_completed_event()
-        captured: dict = {}
+        captured: dict[str, Any] = {}
 
-        async def _fake_enqueue(session, evt, run_at=None):
+        async def _fake_enqueue(
+            session: AsyncMock, evt: Any, run_at: datetime | None = None
+        ) -> None:
             captured["event"] = evt
             captured["run_at"] = run_at
 
         session = AsyncMock()
         session.info = {}
 
-        before = datetime.now(timezone.utc)
+        before = datetime.now(UTC)
         with (
             patch(
                 "features.notifications.handlers._create_user_notification",
@@ -91,7 +94,7 @@ class TestOutboxService:
         assert captured["run_at"] >= before + timedelta(seconds=1799)
 
     @pytest.mark.asyncio
-    async def test_publish_pending_events_marks_successful_events_published(self):
+    async def test_publish_pending_events_marks_successful_events_published(self) -> None:
         event = MagicMock()
         event.routing_key = "order.placed"
         event.payload = {"order_id": "1"}
@@ -115,7 +118,7 @@ class TestOutboxService:
         session.commit.assert_awaited_once()
 
     @pytest.mark.asyncio
-    async def test_publish_pending_events_records_failure_and_backoff(self):
+    async def test_publish_pending_events_records_failure_and_backoff(self) -> None:
         event = MagicMock()
         event.routing_key = "order.placed"
         event.payload = {"order_id": "1"}

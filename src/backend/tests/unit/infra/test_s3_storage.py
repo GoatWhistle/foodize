@@ -1,9 +1,11 @@
 from io import BytesIO
+from typing import Any
 
 import pytest
 from PIL import Image
 
 from infra.storage import s3
+from settings.config.app_config import settings
 
 
 def _png_bytes() -> bytes:
@@ -18,28 +20,30 @@ def _jpeg_bytes() -> bytes:
     return buffer.getvalue()
 
 
-def test_detect_image_ext_png():
+def test_detect_image_ext_png() -> None:
     assert s3._detect_image_ext(_png_bytes()) == "png"
 
 
-def test_detect_image_ext_jpeg():
+def test_detect_image_ext_jpeg() -> None:
     assert s3._detect_image_ext(_jpeg_bytes()) == "jpg"
 
 
-def test_detect_image_ext_rejects_non_image():
+def test_detect_image_ext_rejects_non_image() -> None:
     with pytest.raises(s3.UnsupportedImageType):
         s3._detect_image_ext(b"<html><script>alert(1)</script></html>")
 
 
-def test_upload_uses_detected_ext_not_client_type(monkeypatch):
-    captured: dict = {}
+def test_upload_uses_detected_ext_not_client_type(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, Any] = {}
 
     class _FakeClient:
-        def put_object(self, **kwargs):
+        def put_object(self, **kwargs: Any) -> None:
             captured.update(kwargs)
 
     monkeypatch.setattr(s3, "_client", lambda: _FakeClient())
-    monkeypatch.setattr(s3.settings.s3, "bucket", "test-bucket", raising=False)
+    monkeypatch.setattr(settings.s3, "bucket", "test-bucket", raising=False)
 
     url = s3._upload_image_sync(_png_bytes(), "image/jpeg", "menu")
 
@@ -48,16 +52,16 @@ def test_upload_uses_detected_ext_not_client_type(monkeypatch):
     assert url.endswith(captured["Key"])
 
 
-def test_upload_rejects_disallowed_client_type():
+def test_upload_rejects_disallowed_client_type() -> None:
     with pytest.raises(s3.UnsupportedImageType):
         s3._upload_image_sync(_png_bytes(), "application/octet-stream", "menu")
 
 
-def test_delete_ignores_untrusted_key(monkeypatch):
-    deleted: list = []
+def test_delete_ignores_untrusted_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    deleted: list[Any] = []
 
     class _FakeClient:
-        def delete_object(self, **kwargs):
+        def delete_object(self, **kwargs: Any) -> None:
             deleted.append(kwargs)
 
     monkeypatch.setattr(s3, "_client", lambda: _FakeClient())

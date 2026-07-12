@@ -23,7 +23,7 @@ def _make_favorite() -> MagicMock:
 
 class TestAddFavorite:
     @pytest.mark.asyncio
-    async def test_restaurant_not_found(self):
+    async def test_restaurant_not_found(self) -> None:
         from features.restaurants.exceptions import RestaurantNotFoundException
 
         with (
@@ -37,7 +37,7 @@ class TestAddFavorite:
                 await add_favorite(MagicMock(), uuid.uuid4(), uuid.uuid4())
 
     @pytest.mark.asyncio
-    async def test_already_favorited(self):
+    async def test_already_favorited(self) -> None:
         from features.favorites.exceptions import AlreadyFavoritedException
 
         with (
@@ -56,7 +56,7 @@ class TestAddFavorite:
                 await add_favorite(MagicMock(), uuid.uuid4(), uuid.uuid4())
 
     @pytest.mark.asyncio
-    async def test_success(self):
+    async def test_success(self) -> None:
         fav = _make_favorite()
 
         with (
@@ -82,7 +82,7 @@ class TestAddFavorite:
 
 class TestRemoveFavorite:
     @pytest.mark.asyncio
-    async def test_not_found(self):
+    async def test_not_found(self) -> None:
         from features.favorites.exceptions import FavoriteNotFoundException
 
         with patch(
@@ -94,7 +94,7 @@ class TestRemoveFavorite:
                 await remove_favorite(MagicMock(), uuid.uuid4(), uuid.uuid4())
 
     @pytest.mark.asyncio
-    async def test_success(self):
+    async def test_success(self) -> None:
         fav = MagicMock()
         delete_mock = AsyncMock()
 
@@ -112,7 +112,7 @@ class TestRemoveFavorite:
 
 class TestGetMyFavorites:
     @pytest.mark.asyncio
-    async def test_success(self):
+    async def test_success(self) -> None:
         fav = _make_favorite()
 
         with (
@@ -132,7 +132,7 @@ class TestGetMyFavorites:
             assert total == 1
 
     @pytest.mark.asyncio
-    async def test_empty(self):
+    async def test_empty(self) -> None:
         with (
             patch(
                 "features.favorites.service.favorites_crud.get_favorites_by_user",

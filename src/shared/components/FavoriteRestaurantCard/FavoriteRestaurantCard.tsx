@@ -1,5 +1,6 @@
-import { Heart, MapPin, Briefcase } from "@phosphor-icons/react";
+import { HeartIcon, MapPinIcon, BriefcaseIcon } from "@phosphor-icons/react";
 import type { Favorite, FavoriteRestaurantInfo } from "@shared/types/models";
+import { activateOnKey } from "@shared/utils/a11y";
 import s from "./FavoriteRestaurantCard.module.css";
 
 interface FavoriteRestaurantCardProps {
@@ -12,7 +13,7 @@ const FavoriteRestaurantCard = ({ favorite, onNavigate, onUnfavorite }: Favorite
   const { restaurant } = favorite;
 
   return (
-    <div className={s.card} onClick={() => onNavigate(restaurant)} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onNavigate(restaurant)}>
+    <div className={s.card} onClick={() => { onNavigate(restaurant); }} role="button" tabIndex={0} onKeyDown={activateOnKey(() => { onNavigate(restaurant); })}>
       <div
         style={{
           width: 10, height: 10, borderRadius: "50%", flexShrink: 0,
@@ -26,7 +27,7 @@ const FavoriteRestaurantCard = ({ favorite, onNavigate, onUnfavorite }: Favorite
           {restaurant.name}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "0.75rem", color: "var(--text-3)" }}>
-          <MapPin size={11} weight="bold" />
+          <MapPinIcon size={11} weight="bold" />
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{restaurant.address}</span>
         </div>
       </div>
@@ -37,7 +38,7 @@ const FavoriteRestaurantCard = ({ favorite, onNavigate, onUnfavorite }: Favorite
         </span>
         {restaurant.is_hiring && (
           <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: "0.65rem", fontWeight: 700, color: "var(--amber)" }}>
-            <Briefcase size={10} weight="fill" />
+            <BriefcaseIcon size={10} weight="fill" />
             Вакансии
           </span>
         )}
@@ -48,7 +49,7 @@ const FavoriteRestaurantCard = ({ favorite, onNavigate, onUnfavorite }: Favorite
         onClick={(e) => { e.stopPropagation(); onUnfavorite(restaurant.id); }}
         aria-label="Убрать из избранного"
       >
-        <Heart size={16} weight="fill" color="var(--color-error)" />
+        <HeartIcon size={16} weight="fill" color="var(--color-error)" />
       </button>
     </div>
   );

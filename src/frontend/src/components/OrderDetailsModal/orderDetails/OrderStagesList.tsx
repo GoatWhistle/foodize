@@ -1,4 +1,4 @@
-import { Clock } from '@phosphor-icons/react';
+import { ClockIcon } from '@phosphor-icons/react';
 
 import { STATUS_LABEL_RU, formatDateTime } from './orderDetails.helpers';
 import type { OrderStage } from './orderDetails.helpers';
@@ -14,7 +14,7 @@ export const OrderStagesList = ({ stages }: { stages: OrderStage[] }) => (
         marginBottom: 10,
       }}
     >
-      <Clock size={18} color="var(--fire)" />
+      <ClockIcon size={18} color="var(--fire)" />
       Этапы заказа
     </div>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -38,7 +38,7 @@ export const OrderStagesList = ({ stages }: { stages: OrderStage[] }) => (
           }}
         >
           <div style={{ fontSize: '0.82rem', fontWeight: 800 }}>
-            {STATUS_LABEL_RU[stage.status] ?? stage.status}
+            {STATUS_LABEL_RU[stage.status]}
             {stage.state === 'current' && (
               <span
                 style={{

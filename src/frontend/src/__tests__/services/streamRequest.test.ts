@@ -41,15 +41,20 @@ describe('streamSseRequest', () => {
     const onChunk = vi.fn();
     await streamSseRequest('http://localhost:8000/api/v1/ai/chat', { q: 1 }, { onChunk });
 
+    const headersMatcher: unknown = expect.objectContaining({ 'Content-Type': 'application/json' });
     expect(mockFetch).toHaveBeenCalledWith(
       'http://localhost:8000/api/v1/ai/chat',
       expect.objectContaining({
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: headersMatcher,
         credentials: 'include',
         body: JSON.stringify({ q: 1 }),
       })
     );
+    const chatCall = mockFetch.mock.calls[0];
+    if (!chatCall) throw new Error('fetch was not called');
+    const chatInit = chatCall[1] as RequestInit;
+    expect((chatInit.headers as Record<string, string>)['X-Request-Id']).toBeTruthy();
     expect(onChunk).toHaveBeenCalledWith('hello');
     expect(onChunk).toHaveBeenCalledWith(' world');
     expect(onChunk).toHaveBeenCalledTimes(2);
@@ -87,9 +92,7 @@ describe('streamSseRequest', () => {
     const { streamSseRequest: sseReq } = await import(
       '@shared/services/streamRequest'
     );
-    if (sseReq) {
-      await sseReq('http://localhost:8000/api/v1/ai/chat', {}, { onChunk });
-    }
+    await sseReq('http://localhost:8000/api/v1/ai/chat', {}, { onChunk });
   });
 
   it('retries on 401 with real axios mock', async () => {
@@ -133,13 +136,14 @@ describe('streamSseRequest', () => {
       { getToken: () => 'tok-123' }
     );
 
+    const authHeadersMatcher: unknown = expect.objectContaining({
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer tok-123',
+    });
     expect(mockFetch).toHaveBeenCalledWith(
       'http://localhost:8000/api/v1/ai/order/chat',
       expect.objectContaining({
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer tok-123',
-        },
+        headers: authHeadersMatcher,
       })
     );
   });
@@ -153,7 +157,9 @@ describe('streamSseRequest', () => {
       { getToken: () => 'tok', withCredentials: false }
     );
 
-    const init = mockFetch.mock.calls[0][1] as RequestInit;
+    const initCall = mockFetch.mock.calls[0];
+    if (!initCall) throw new Error('fetch was not called');
+    const init = initCall[1] as RequestInit;
     expect(init.credentials).toBeUndefined();
   });
 
@@ -166,8 +172,13 @@ describe('streamSseRequest', () => {
       { getToken: () => null }
     );
 
-    const init = mockFetch.mock.calls[0][1] as RequestInit;
-    expect(init.headers).toEqual({ 'Content-Type': 'application/json' });
+    const initCall = mockFetch.mock.calls[0];
+    if (!initCall) throw new Error('fetch was not called');
+    const init = initCall[1] as RequestInit;
+    expect(init.headers).toEqual(
+      expect.objectContaining({ 'Content-Type': 'application/json' })
+    );
+    expect((init.headers as Record<string, string>).Authorization).toBeUndefined();
     expect(init.credentials).toBe('include');
   });
 
@@ -196,8 +207,11 @@ describe('streamSseRequest', () => {
 
     expect(refreshToken).toHaveBeenCalledTimes(1);
     expect(mockFetch).toHaveBeenCalledTimes(2);
-    const firstInit = mockFetch.mock.calls[0][1] as RequestInit;
-    const secondInit = mockFetch.mock.calls[1][1] as RequestInit;
+    const firstCall = mockFetch.mock.calls[0];
+    const secondCall = mockFetch.mock.calls[1];
+    if (!firstCall || !secondCall) throw new Error('fetch was not called twice');
+    const firstInit = firstCall[1] as RequestInit;
+    const secondInit = secondCall[1] as RequestInit;
     expect((firstInit.headers as Record<string, string>).Authorization).toBe(
       'Bearer stale'
     );

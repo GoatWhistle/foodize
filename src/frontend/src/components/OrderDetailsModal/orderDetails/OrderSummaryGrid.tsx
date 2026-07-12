@@ -22,7 +22,7 @@ export const OrderSummaryGrid = ({ order }: { order: Order }) => (
         Статус
       </div>
       <div style={{ fontWeight: 800 }}>
-        {STATUS_LABEL_RU[order.status] ?? order.status}
+        {STATUS_LABEL_RU[order.status]}
       </div>
     </div>
     <div

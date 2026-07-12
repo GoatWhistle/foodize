@@ -1,4 +1,4 @@
-import { CaretLeft, CaretRight } from "@phosphor-icons/react";
+import { CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react";
 
 interface PaginationProps {
   page: number;
@@ -23,11 +23,11 @@ const Pagination = ({ page, totalPages, onPageChange }: PaginationProps) => {
       <button
         className="btn btn-secondary btn-sm"
         disabled={page <= 1}
-        onClick={() => onPageChange(page - 1)}
+        onClick={() => { onPageChange(page - 1); }}
         aria-label={`Перейти на страницу ${page - 1}`}
         style={{ borderRadius: "100px", padding: "8px 20px", display: "inline-flex", alignItems: "center", gap: 4 }}
       >
-        <CaretLeft size={14} weight="bold" /> Назад
+        <CaretLeftIcon size={14} weight="bold" /> Назад
       </button>
 
       <span
@@ -48,11 +48,11 @@ const Pagination = ({ page, totalPages, onPageChange }: PaginationProps) => {
       <button
         className="btn btn-secondary btn-sm"
         disabled={page >= totalPages}
-        onClick={() => onPageChange(page + 1)}
+        onClick={() => { onPageChange(page + 1); }}
         aria-label={`Перейти на страницу ${page + 1}`}
         style={{ borderRadius: "100px", padding: "8px 20px", display: "inline-flex", alignItems: "center", gap: 4 }}
       >
-        Вперед <CaretRight size={14} weight="bold" />
+        Вперед <CaretRightIcon size={14} weight="bold" />
       </button>
     </div>
   );

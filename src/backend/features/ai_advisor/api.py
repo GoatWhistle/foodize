@@ -16,9 +16,6 @@ from shared.schemas.response import SuccessResponse
 
 router = APIRouter(prefix="/ai/advisor", tags=["AI Advisor"])
 
-_INSIGHTS_TTL_SECONDS = 86_400
-_INSIGHTS_COOLDOWN_SECONDS = 300
-
 
 def _user_rate_limit() -> str:
     return f"{settings.llm.user_requests_per_minute}/minute"
@@ -36,7 +33,6 @@ async def advisor_chat(
     return StreamingResponse(
         service.stream_chat(current_vendor, body.messages, body.restaurant_id),
         media_type="text/plain; charset=utf-8",
-        # без этого nginx буферизует поток и стриминг превращается в один кусок
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
 
@@ -49,20 +45,5 @@ async def advisor_insights(
     _user: User = Depends(require_permission(Permission.VENDORS_ANALYTICS_READ)),
     current_vendor: VendorProfile = Depends(get_current_vendor),
 ) -> SuccessResponse[AdvisorInsightsResponse]:
-    cache = get_redis_cache()
-    key = f"ai:advisor:insights:{current_vendor.id}"
-    cooldown_key = f"ai:advisor:insights:cooldown:{current_vendor.id}"
-
-    if not refresh:
-        cached = await cache.get(key)
-        if cached:
-            return build_response(AdvisorInsightsResponse(insights=cached, cached=True))
-    elif await cache.get(cooldown_key):
-        cached = await cache.get(key)
-        if cached:
-            return build_response(AdvisorInsightsResponse(insights=cached, cached=True))
-
-    text = await service.generate_insights(current_vendor)
-    await cache.set(key, text, ttl=_INSIGHTS_TTL_SECONDS)
-    await cache.set(cooldown_key, "1", ttl=_INSIGHTS_COOLDOWN_SECONDS)
-    return build_response(AdvisorInsightsResponse(insights=text, cached=False))
+    result = await service.get_insights(current_vendor, get_redis_cache(), refresh=refresh)
+    return build_response(result)

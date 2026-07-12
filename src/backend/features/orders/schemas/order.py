@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -61,7 +62,7 @@ class OrderResponse(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def flatten_relations(cls, data):
+    def flatten_relations(cls, data: Any) -> Any:
         if isinstance(data, dict):
             return data
 

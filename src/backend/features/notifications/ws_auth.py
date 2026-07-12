@@ -20,12 +20,7 @@ async def extract_ws_token(websocket: WebSocket, token: str | None) -> str | Non
             raw = await asyncio.wait_for(websocket.receive_text(), timeout=3.0)
             data = json.loads(raw)
             token = data.get("token") if isinstance(data, dict) else None
-        except (
-            asyncio.TimeoutError,
-            json.JSONDecodeError,
-            WebSocketDisconnect,
-            ClientDisconnected,
-        ):
+        except (TimeoutError, json.JSONDecodeError, WebSocketDisconnect, ClientDisconnected):
             token = None
     return token
 

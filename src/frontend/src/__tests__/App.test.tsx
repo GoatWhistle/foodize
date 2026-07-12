@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useEffect } from 'react';
 import type { UserRead } from '@shared/types/models';
 
-const initTheme = vi.fn();
+const themeEffect = vi.fn();
 const fetchMe = vi.fn().mockResolvedValue(undefined);
 const fetchCart = vi.fn().mockResolvedValue(undefined);
 const loadFavorites = vi.fn().mockResolvedValue(undefined);
@@ -12,9 +12,8 @@ let mockIsAuthenticated = false;
 let mockPermissions: string[] = [];
 
 vi.mock('../store/useAuthStore', () => ({
-  useAuthStore: vi.fn((sel) => {
+  useAuthStore: vi.fn((sel?: (s: { user: UserRead | null; fetchMe: typeof fetchMe }) => unknown) => {
     const state = {
-      isAuthenticated: mockIsAuthenticated,
       user: mockIsAuthenticated ? ({ id: 'u1', permissions: mockPermissions } as unknown as UserRead) : null,
       fetchMe,
     };
@@ -22,40 +21,43 @@ vi.mock('../store/useAuthStore', () => ({
   }),
 }));
 
-vi.mock('@shared/store/useThemeStore.js', () => ({
-  useThemeStore: vi.fn((sel) => {
-    const state = { initTheme, theme: 'dark' };
-    return sel ? sel(state) : state;
-  }),
+vi.mock('@shared/hooks/useThemeEffect.js', () => ({
+  useThemeEffect: (): void => {
+    themeEffect();
+  },
 }));
 
-vi.mock('../store/useOrderStore', () => ({
-  useOrderStore: vi.fn((sel) => {
-    const state = { fetchCart, cart: [], restaurantId: null };
-    return sel ? sel(state) : state;
-  }),
+vi.mock('../store/useCartStore', () => ({
+  useCartStore: vi.fn(
+    (sel?: (s: { fetchCart: typeof fetchCart; cart: never[]; cartRestaurantId: null }) => unknown) => {
+      const state = { fetchCart, cart: [], cartRestaurantId: null };
+      return sel ? sel(state) : state;
+    }
+  ),
 }));
 
 vi.mock('@shared/store/useFavoriteStore.js', () => ({
-  useFavoriteStore: vi.fn((sel) => {
-    const state = { loadFavorites, favoriteIds: new Set() };
-    return sel ? sel(state) : state;
-  }),
+  useFavoriteStore: vi.fn(
+    (sel?: (s: { loadFavorites: typeof loadFavorites; favoriteIds: Set<string> }) => unknown) => {
+      const state = { loadFavorites, favoriteIds: new Set<string>() };
+      return sel ? sel(state) : state;
+    }
+  ),
 }));
 
 import { useAuthStore } from '../store/useAuthStore';
-import { useThemeStore } from '@shared/store/useThemeStore';
-import { useOrderStore } from '../store/useOrderStore';
+import { useThemeEffect } from '@shared/hooks/useThemeEffect';
+import { useCartStore } from '../store/useCartStore';
 import { useFavoriteStore } from '@shared/store/useFavoriteStore';
 
 const ProtectedRouteSimulator = () => {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isAuthenticated = useAuthStore((s) => s.user !== null);
   if (!isAuthenticated) return <div>Redirect to login</div>;
   return <div>Protected content</div>;
 };
 
 const RoleProtectedSimulator = ({ permission }: { permission: string | null }) => {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isAuthenticated = useAuthStore((s) => s.user !== null);
   const permissions = useAuthStore((s) => s.user?.permissions);
   if (!isAuthenticated) return <div>Redirect to login</div>;
   if (permission && !permissions?.includes(permission as never)) return <div>Access denied</div>;
@@ -63,16 +65,16 @@ const RoleProtectedSimulator = ({ permission }: { permission: string | null }) =
 };
 
 const AppBootstrapSimulator = () => {
-  const _initTheme = useThemeStore((s) => s.initTheme);
   const _fetchMe = useAuthStore((s) => s.fetchMe);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const _fetchCart = useOrderStore((s) => s.fetchCart);
+  const isAuthenticated = useAuthStore((s) => s.user !== null);
+  const _fetchCart = useCartStore((s) => s.fetchCart);
   const _loadFavs = useFavoriteStore((s) => s.loadFavorites);
 
+  useThemeEffect();
+
   useEffect(() => {
-    _initTheme();
     void _fetchMe();
-  }, [_initTheme, _fetchMe]);
+  }, [_fetchMe]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -138,11 +140,11 @@ describe('RoleProtectedRoute', () => {
 });
 
 describe('App bootstrap effects', () => {
-  it('calls initTheme and fetchMe on mount when not authenticated', async () => {
+  it('applies theme and calls fetchMe on mount when not authenticated', async () => {
     mockIsAuthenticated = false;
     render(<AppBootstrapSimulator />);
     await waitFor(() => {
-      expect(initTheme).toHaveBeenCalledTimes(1);
+      expect(themeEffect).toHaveBeenCalled();
       expect(fetchMe).toHaveBeenCalledTimes(1);
     });
     expect(fetchCart).not.toHaveBeenCalled();
@@ -161,7 +163,7 @@ describe('App bootstrap effects', () => {
   it('does not call fetchCart when not authenticated', async () => {
     mockIsAuthenticated = false;
     render(<AppBootstrapSimulator />);
-    await waitFor(() => expect(initTheme).toHaveBeenCalled());
+    await waitFor(() => { expect(themeEffect).toHaveBeenCalled(); });
     expect(fetchCart).not.toHaveBeenCalled();
   });
 });

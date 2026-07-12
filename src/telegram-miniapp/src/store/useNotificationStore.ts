@@ -1,4 +1,5 @@
 import { createNotificationStore } from "@shared/store/createNotificationStore";
+import { logError } from "@shared/utils/logError";
 import { createNotificationWebSocket } from "../services/api";
 
 export const useNotificationStore = createNotificationStore({
@@ -6,6 +7,8 @@ export const useNotificationStore = createNotificationStore({
   onNewNotification: () => {
     try {
       window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.("success");
-    } catch {}
+    } catch (err) {
+      logError("notificationStore.haptic", err);
+    }
   },
 });

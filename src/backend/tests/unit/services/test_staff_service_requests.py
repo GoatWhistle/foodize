@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -26,7 +26,7 @@ def _make_staff_request(
 
 class TestCreateStaffRequest:
     @pytest.mark.asyncio
-    async def test_success(self):
+    async def test_success(self) -> None:
         from features.staff.schemas import StaffRequestCreate
 
         user_id = uuid.uuid4()
@@ -42,9 +42,9 @@ class TestCreateStaffRequest:
                 return_value=True,
             ),
             patch(
-                "features.staff.crud.get_staff_profile_by_user_id",
+                "features.staff.crud.staff_profile_exists",
                 new_callable=AsyncMock,
-                return_value=None,
+                return_value=False,
             ),
             patch(
                 "features.staff.crud.get_last_request",
@@ -61,7 +61,7 @@ class TestCreateStaffRequest:
             assert result.user_id == mock_request.user_id
 
     @pytest.mark.asyncio
-    async def test_not_hiring(self):
+    async def test_not_hiring(self) -> None:
         from features.staff.exceptions import RestaurantNotHiringException
         from features.staff.schemas import StaffRequestCreate
 
@@ -76,7 +76,7 @@ class TestCreateStaffRequest:
                 )
 
     @pytest.mark.asyncio
-    async def test_already_staff(self):
+    async def test_already_staff(self) -> None:
         from features.staff.exceptions import AlreadyStaffException
         from features.staff.schemas import StaffRequestCreate
 
@@ -87,9 +87,9 @@ class TestCreateStaffRequest:
                 return_value=True,
             ),
             patch(
-                "features.staff.crud.get_staff_profile_by_user_id",
+                "features.staff.crud.staff_profile_exists",
                 new_callable=AsyncMock,
-                return_value=MagicMock(),
+                return_value=True,
             ),
         ):
             with pytest.raises(AlreadyStaffException):
@@ -98,7 +98,7 @@ class TestCreateStaffRequest:
                 )
 
     @pytest.mark.asyncio
-    async def test_active_request_exists(self):
+    async def test_active_request_exists(self) -> None:
         from features.staff.exceptions import StaffRequestActiveExistsException
         from features.staff.schemas import StaffRequestCreate
 
@@ -112,9 +112,9 @@ class TestCreateStaffRequest:
                 return_value=True,
             ),
             patch(
-                "features.staff.crud.get_staff_profile_by_user_id",
+                "features.staff.crud.staff_profile_exists",
                 new_callable=AsyncMock,
-                return_value=None,
+                return_value=False,
             ),
             patch(
                 "features.staff.crud.get_last_request",
@@ -128,13 +128,13 @@ class TestCreateStaffRequest:
                 )
 
     @pytest.mark.asyncio
-    async def test_cooldown_after_rejection(self):
+    async def test_cooldown_after_rejection(self) -> None:
         from features.staff.exceptions import StaffRequestCooldownException
         from features.staff.schemas import StaffRequestCreate
 
         last = MagicMock()
         last.status = StaffRequestStatus.REJECTED.value
-        last.updated_at = datetime.now(timezone.utc) - timedelta(hours=1)
+        last.updated_at = datetime.now(UTC) - timedelta(hours=1)
 
         with (
             patch(
@@ -143,9 +143,9 @@ class TestCreateStaffRequest:
                 return_value=True,
             ),
             patch(
-                "features.staff.crud.get_staff_profile_by_user_id",
+                "features.staff.crud.staff_profile_exists",
                 new_callable=AsyncMock,
-                return_value=None,
+                return_value=False,
             ),
             patch(
                 "features.staff.crud.get_last_request",
@@ -159,12 +159,12 @@ class TestCreateStaffRequest:
                 )
 
     @pytest.mark.asyncio
-    async def test_after_cooldown_passes(self):
+    async def test_after_cooldown_passes(self) -> None:
         from features.staff.schemas import StaffRequestCreate
 
         last = MagicMock()
         last.status = StaffRequestStatus.REJECTED.value
-        last.updated_at = datetime.now(timezone.utc) - timedelta(hours=25)
+        last.updated_at = datetime.now(UTC) - timedelta(hours=25)
 
         mock_request = _make_staff_request(StaffRequestStatus.PENDING)
 
@@ -175,9 +175,9 @@ class TestCreateStaffRequest:
                 return_value=True,
             ),
             patch(
-                "features.staff.crud.get_staff_profile_by_user_id",
+                "features.staff.crud.staff_profile_exists",
                 new_callable=AsyncMock,
-                return_value=None,
+                return_value=False,
             ),
             patch(
                 "features.staff.crud.get_last_request",
@@ -198,7 +198,7 @@ class TestCreateStaffRequest:
 
 class TestProcessStaffRequest:
     @pytest.mark.asyncio
-    async def test_accept_success(self):
+    async def test_accept_success(self) -> None:
         request = MagicMock()
         request.user_id = uuid.uuid4()
         request.restaurant_id = uuid.uuid4()
@@ -207,9 +207,9 @@ class TestProcessStaffRequest:
 
         with (
             patch(
-                "features.staff.crud.get_staff_profile_by_user_id",
+                "features.staff.crud.staff_profile_exists",
                 new_callable=AsyncMock,
-                return_value=None,
+                return_value=False,
             ),
             patch("features.staff.crud.create_staff_profile", new_callable=AsyncMock),
             patch(
@@ -222,7 +222,7 @@ class TestProcessStaffRequest:
             assert result.status == StaffRequestStatus.ACCEPTED
 
     @pytest.mark.asyncio
-    async def test_accept_already_staff(self):
+    async def test_accept_already_staff(self) -> None:
         from features.staff.exceptions import AlreadyStaffException
 
         request = MagicMock()
@@ -230,9 +230,9 @@ class TestProcessStaffRequest:
 
         with (
             patch(
-                "features.staff.crud.get_staff_profile_by_user_id",
+                "features.staff.crud.staff_profile_exists",
                 new_callable=AsyncMock,
-                return_value=MagicMock(),
+                return_value=True,
             ),
             patch("features.staff.crud.update_request_status", new_callable=AsyncMock),
         ):
@@ -240,7 +240,7 @@ class TestProcessStaffRequest:
                 await process_staff_request(MagicMock(), request, StaffRequestStatus.ACCEPTED)
 
     @pytest.mark.asyncio
-    async def test_reject_success(self):
+    async def test_reject_success(self) -> None:
         request = MagicMock()
         updated = _make_staff_request(StaffRequestStatus.REJECTED)
 
@@ -255,7 +255,7 @@ class TestProcessStaffRequest:
 
 class TestGetVendorStaffRequests:
     @pytest.mark.asyncio
-    async def test_success(self):
+    async def test_success(self) -> None:
         vendor_id = uuid.uuid4()
         r = _make_staff_request()
 
@@ -276,7 +276,7 @@ class TestGetVendorStaffRequests:
             assert total == 1
 
     @pytest.mark.asyncio
-    async def test_empty(self):
+    async def test_empty(self) -> None:
         with (
             patch(
                 "features.staff.crud.get_requests_by_vendor_id",

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { XCircle } from '@phosphor-icons/react';
+import { XCircleIcon } from '@phosphor-icons/react';
 import type { StaffOrder } from '../types';
 
 interface KanbanCardActionsProps {
@@ -29,7 +29,7 @@ export function KanbanCardActions({
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <textarea
           value={cancelReason}
-          onChange={(e) => setCancelReason(e.target.value)}
+          onChange={(e) => { setCancelReason(e.target.value); }}
           placeholder="Причина отмены (необязательно)"
           style={{
             width: '100%',
@@ -122,7 +122,7 @@ export function KanbanCardActions({
             setShowCancelForm(true);
           }}
         >
-          <XCircle size={18} weight="fill" />
+          <XCircleIcon size={18} weight="fill" />
         </button>
       )}
     </div>

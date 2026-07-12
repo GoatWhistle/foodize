@@ -1,4 +1,4 @@
-import { MapPin, CheckCircle, Smiley, XCircle } from "@phosphor-icons/react";
+import { MapPinIcon, CheckCircleIcon, SmileyIcon, XCircleIcon } from "@phosphor-icons/react";
 import type { OrderStatus } from "@shared/types/models";
 import s from "./OrderStatusBadge.module.css";
 
@@ -19,7 +19,7 @@ const OrderStatusBadge = ({ status, cancellationReason }: OrderStatusBadgeProps)
           />
         ))}
         <div aria-hidden="true" style={{ position: "relative", zIndex: 1, color: "var(--accent)" }}>
-          <MapPin size={64} weight="fill" />
+          <MapPinIcon size={64} weight="fill" />
         </div>
         <p style={{ marginTop: 20, fontWeight: 800, fontSize: "1.4rem", letterSpacing: "-0.03em" }}>
           {status === "ACCEPTED" ? "Принят" : "Ожидается"}
@@ -36,9 +36,9 @@ const OrderStatusBadge = ({ status, cancellationReason }: OrderStatusBadgeProps)
       <div className={`${s.iconWrap} ${s.readyFlash}`}>
         <div aria-hidden="true" style={{ marginBottom: 12, color: "var(--color-success)" }}>
           {status === "COMPLETED" ? (
-            <Smiley size={80} weight="fill" />
+            <SmileyIcon size={80} weight="fill" />
           ) : (
-            <CheckCircle size={80} weight="fill" />
+            <CheckCircleIcon size={80} weight="fill" />
           )}
         </div>
         <p
@@ -54,23 +54,19 @@ const OrderStatusBadge = ({ status, cancellationReason }: OrderStatusBadgeProps)
     );
   }
 
-  if (status === "CANCELLED") {
-    return (
-      <div className={s.iconWrap}>
-        <div aria-hidden="true" style={{ marginBottom: 12, color: "var(--color-error)" }}>
-          <XCircle size={80} weight="fill" />
-        </div>
-        <p style={{ fontWeight: 800, fontSize: "1.6rem", letterSpacing: "-0.03em", color: "var(--color-error)" }}>
-          Отменён
-        </p>
-        <p style={{ color: "var(--text-3)", marginTop: 8 }}>
-          {cancellationReason || "Заказ был отменён"}
-        </p>
+  return (
+    <div className={s.iconWrap}>
+      <div aria-hidden="true" style={{ marginBottom: 12, color: "var(--color-error)" }}>
+        <XCircleIcon size={80} weight="fill" />
       </div>
-    );
-  }
-
-  return null;
+      <p style={{ fontWeight: 800, fontSize: "1.6rem", letterSpacing: "-0.03em", color: "var(--color-error)" }}>
+        Отменён
+      </p>
+      <p style={{ color: "var(--text-3)", marginTop: 8 }}>
+        {cancellationReason || "Заказ был отменён"}
+      </p>
+    </div>
+  );
 };
 
 export default OrderStatusBadge;

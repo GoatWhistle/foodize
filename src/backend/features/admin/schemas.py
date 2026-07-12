@@ -1,5 +1,6 @@
 import uuid
 from datetime import date, datetime
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
@@ -126,7 +127,7 @@ class AdminVendorResponse(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def flatten_user(cls, data):
+    def flatten_user(cls, data: Any) -> Any:
         if isinstance(data, dict):
             return data
 

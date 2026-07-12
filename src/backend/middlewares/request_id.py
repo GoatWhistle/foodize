@@ -1,8 +1,9 @@
+import re
 import time
 import uuid
 
 import structlog
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -10,10 +11,17 @@ from utils.logging_setup import get_logger
 
 logger = get_logger("foodize.access")
 
+_REQUEST_ID_RE = re.compile(r"^[A-Za-z0-9._-]{1,128}$")
+
+
+def _is_valid_request_id(value: str) -> bool:
+    return bool(_REQUEST_ID_RE.match(value))
+
 
 class RequestIDMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next) -> Response:
-        request_id = str(uuid.uuid4())
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        incoming = request.headers.get("X-Request-ID")
+        request_id = incoming if incoming and _is_valid_request_id(incoming) else str(uuid.uuid4())
         request.state.request_id = request_id
 
         structlog.contextvars.clear_contextvars()

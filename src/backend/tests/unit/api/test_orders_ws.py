@@ -1,6 +1,8 @@
 import json
 import uuid
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -15,9 +17,10 @@ from features.orders.api.ws import (
 from shared.enums.order_status import OrderStatus
 from shared.enums.permissions import Permission
 from shared.enums.roles import UserRole
+from shared.exceptions import AccessDeniedException
 
 
-def _order(user_id: uuid.UUID | None = None, restaurant_id: uuid.UUID | None = None):
+def _order(user_id: uuid.UUID | None = None, restaurant_id: uuid.UUID | None = None) -> MagicMock:
     order = MagicMock()
     order.user_id = user_id or uuid.uuid4()
     order.restaurant_id = restaurant_id or uuid.uuid4()
@@ -26,26 +29,26 @@ def _order(user_id: uuid.UUID | None = None, restaurant_id: uuid.UUID | None = N
 
 class TestCanReadOrder:
     @pytest.mark.asyncio
-    async def test_customer_can_read_own_order(self):
+    async def test_customer_can_read_own_order(self) -> None:
         user = make_user()
         order = _order(user_id=user.id)
 
         assert await _can_read_order(AsyncMock(), order, user) is True
 
     @pytest.mark.asyncio
-    async def test_customer_cannot_read_another_user_order(self):
+    async def test_customer_cannot_read_another_user_order(self) -> None:
         user = make_user()
         order = _order(user_id=uuid.uuid4())
 
         assert await _can_read_order(AsyncMock(), order, user) is False
 
     @pytest.mark.asyncio
-    async def test_admin_can_read_any_order_without_restaurant_check(self):
+    async def test_admin_can_read_any_order_without_restaurant_check(self) -> None:
         user = make_user(user_role=UserRole.ADMIN.value)
         order = _order(user_id=uuid.uuid4())
 
         with patch(
-            "features.orders.api.ws.verify_restaurant_access",
+            "features.orders.api.order.verify_restaurant_access",
             new_callable=AsyncMock,
         ) as verify_access:
             assert await _can_read_order(AsyncMock(), order, user) is True
@@ -53,12 +56,12 @@ class TestCanReadOrder:
         verify_access.assert_not_awaited()
 
     @pytest.mark.asyncio
-    async def test_restaurant_reader_must_have_restaurant_access(self):
+    async def test_restaurant_reader_must_have_restaurant_access(self) -> None:
         user = make_user(user_role=UserRole.STAFF.value)
         order = _order(user_id=uuid.uuid4())
 
         with patch(
-            "features.orders.api.ws.verify_restaurant_access",
+            "features.orders.api.order.verify_restaurant_access",
             new_callable=AsyncMock,
         ) as verify_access:
             assert await _can_read_order(AsyncMock(), order, user) is True
@@ -66,19 +69,19 @@ class TestCanReadOrder:
         verify_access.assert_awaited_once()
 
     @pytest.mark.asyncio
-    async def test_restaurant_reader_denied_when_access_check_fails(self):
+    async def test_restaurant_reader_denied_when_access_check_fails(self) -> None:
         user = make_user(user_role=UserRole.STAFF.value)
         order = _order(user_id=uuid.uuid4())
 
         with patch(
-            "features.orders.api.ws.verify_restaurant_access",
+            "features.orders.api.order.verify_restaurant_access",
             new_callable=AsyncMock,
-            side_effect=Exception("forbidden"),
+            side_effect=AccessDeniedException(),
         ):
             assert await _can_read_order(AsyncMock(), order, user) is False
 
     @pytest.mark.asyncio
-    async def test_user_without_order_permissions_is_denied(self):
+    async def test_user_without_order_permissions_is_denied(self) -> None:
         user = make_user()
         user.permissions = [Permission.MENU_READ.value]
         order = _order(user_id=user.id)
@@ -86,7 +89,7 @@ class TestCanReadOrder:
         assert await _can_read_order(AsyncMock(), order, user) is False
 
 
-def test_build_display_board_splits_cooking_and_ready_orders():
+def test_build_display_board_splits_cooking_and_ready_orders() -> None:
     rows = [
         (1001, OrderStatus.PENDING.value),
         (1002, OrderStatus.ACCEPTED.value),
@@ -101,10 +104,10 @@ def test_build_display_board_splits_cooking_and_ready_orders():
     }
 
 
-def _pubsub_from(messages):
+def _pubsub_from(messages: list[dict[str, Any]]) -> MagicMock:
     pubsub = MagicMock()
 
-    async def _listen():
+    async def _listen() -> AsyncGenerator[dict[str, Any]]:
         for message in messages:
             yield message
 
@@ -112,13 +115,13 @@ def _pubsub_from(messages):
     return pubsub
 
 
-def _sent_texts(websocket):
+def _sent_texts(websocket: AsyncMock) -> list[str]:
     return [call.args[0] for call in websocket.send_text.await_args_list]
 
 
 class TestOrderStatusPubsubLoop:
     @pytest.mark.asyncio
-    async def test_sends_order_payload_on_status_change(self):
+    async def test_sends_order_payload_on_status_change(self) -> None:
         order_id = uuid.uuid4()
         websocket = AsyncMock()
         pubsub = _pubsub_from(
@@ -137,7 +140,7 @@ class TestOrderStatusPubsubLoop:
         session = MagicMock()
 
         @asynccontextmanager
-        async def _session_factory():
+        async def _session_factory() -> AsyncGenerator[MagicMock]:
             yield session
 
         with (
@@ -164,7 +167,7 @@ class TestOrderStatusPubsubLoop:
         assert payload["display_id"] == 1001
 
     @pytest.mark.asyncio
-    async def test_skips_query_when_status_unchanged(self):
+    async def test_skips_query_when_status_unchanged(self) -> None:
         order_id = uuid.uuid4()
         websocket = AsyncMock()
         pubsub = _pubsub_from([{"type": "message", "data": OrderStatus.PENDING.value}])
@@ -177,7 +180,7 @@ class TestOrderStatusPubsubLoop:
         assert _sent_texts(websocket) == []
 
     @pytest.mark.asyncio
-    async def test_stops_on_terminal_status(self):
+    async def test_stops_on_terminal_status(self) -> None:
         order_id = uuid.uuid4()
         websocket = AsyncMock()
         pubsub = _pubsub_from(
@@ -199,7 +202,7 @@ class TestOrderStatusPubsubLoop:
         session = MagicMock()
 
         @asynccontextmanager
-        async def _session_factory():
+        async def _session_factory() -> AsyncGenerator[MagicMock]:
             yield session
 
         get_order = AsyncMock(return_value=order)
@@ -222,7 +225,7 @@ class TestOrderStatusPubsubLoop:
 
 class TestRestaurantOrdersPubsubLoop:
     @pytest.mark.asyncio
-    async def test_wraps_payload_in_event_field(self):
+    async def test_wraps_payload_in_event_field(self) -> None:
         websocket = AsyncMock()
         pubsub = _pubsub_from(
             [

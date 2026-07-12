@@ -1,5 +1,6 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from http import HTTPStatus
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -93,15 +94,18 @@ def _validate_promo_active(
         raise PromoRestaurantMismatchException()
     if not promo.is_active:
         raise PromoNotActiveException()
-    if promo.expires_at and promo.expires_at < datetime.now(timezone.utc):
+    if promo.expires_at and promo.expires_at < datetime.now(UTC):
         raise PromoNotActiveException()
     if promo.max_uses is not None and promo.used_count >= promo.max_uses:
         raise PromoUsageLimitException()
     if promo.first_order_only and not is_first_order:
-        raise AppException(status_code=400, detail="promo_first_order_only")
-    if promo.min_order_amount is not None and order_total is not None:
-        if order_total < promo.min_order_amount:
-            raise AppException(status_code=400, detail="promo_min_order_amount")
+        raise AppException(status_code=HTTPStatus.BAD_REQUEST, detail="promo_first_order_only")
+    if (
+        promo.min_order_amount is not None
+        and order_total is not None
+        and order_total < promo.min_order_amount
+    ):
+        raise AppException(status_code=HTTPStatus.BAD_REQUEST, detail="promo_min_order_amount")
 
 
 def _compute_discounted_total(promo: Promo, order_total: int, discount_base: int) -> int:

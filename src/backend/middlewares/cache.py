@@ -1,13 +1,18 @@
 import hashlib
 import json
+from http import HTTPStatus
+from typing import TYPE_CHECKING, cast
 
 from fastapi import Request, Response
 from redis.exceptions import RedisError
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.types import ASGIApp
 
 from infra.cache.redis import get_redis_cache
 from utils.logging_setup import get_logger
+
+if TYPE_CHECKING:
+    from starlette.responses import StreamingResponse
 
 logger = get_logger(__name__)
 
@@ -89,7 +94,7 @@ class AutoCacheMiddleware(BaseHTTPMiddleware):
         envelope = json.loads(raw)
         return Response(
             content=envelope["body"],
-            status_code=envelope.get("status", 200),
+            status_code=envelope.get("status", HTTPStatus.OK),
             headers=envelope.get("headers"),
             media_type=envelope.get("media_type") or "application/json",
         )
@@ -103,13 +108,13 @@ class AutoCacheMiddleware(BaseHTTPMiddleware):
         except RedisError:
             logger.warning("cache_invalidate_failed", tag=tag_key, exc_info=True)
 
-    async def dispatch(self, request: Request, call_next) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         path = request.url.path
         method = request.method.upper()
 
         if method in _MUTATING_METHODS:
             response = await call_next(request)
-            if 200 <= response.status_code < 300:
+            if HTTPStatus.OK <= response.status_code < HTTPStatus.MULTIPLE_CHOICES:
                 await self._invalidate(path)
             return response
 
@@ -134,10 +139,10 @@ class AutoCacheMiddleware(BaseHTTPMiddleware):
 
         response = await call_next(request)
 
-        if response.status_code == 200:
-            chunks = []
-            async for chunk in response.body_iterator:
-                chunks.append(chunk if isinstance(chunk, bytes) else chunk.encode())
+        if response.status_code == HTTPStatus.OK:
+            chunks: list[bytes] = []
+            async for chunk in cast("StreamingResponse", response).body_iterator:
+                chunks.append(chunk.encode() if isinstance(chunk, str) else bytes(chunk))
             body = b"".join(chunks)
             response.headers["Vary"] = "Cookie, Authorization"
             try:

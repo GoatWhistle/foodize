@@ -49,6 +49,8 @@ sync:
 
 lint:
 	cd "$(BACKEND_DIR)" && uv run pre-commit run --all-files
+	cd "$(BACKEND_DIR)" && uv run mypy .
+	cd "$(BOT_DIR)" && uv run mypy .
 	cd "$(SHARED_DIR)" && npm run lint && npm run typecheck
 	cd "$(FRONTEND_DIR)" && npm run lint && npm run typecheck
 	cd "$(MINIAPP_DIR)" && npm run lint && npm run typecheck

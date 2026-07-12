@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
-import { DownloadSimple } from '@phosphor-icons/react';
+import { DownloadSimpleIcon } from '@phosphor-icons/react';
 import Pagination from '@shared/components/Pagination/Pagination';
 import EmptyState from '@shared/components/EmptyState/EmptyState';
 import type { adminService as adminServiceType } from '../../../services/adminService';
@@ -150,9 +150,9 @@ export default function AdminVendorsTab({
             type="checkbox"
             checked={vendors.length > 0 && selectedVendorIds.size === vendors.length}
             onChange={(e) =>
-              setSelectedVendorIds(
+              { setSelectedVendorIds(
                 e.target.checked ? new Set(vendors.map((v) => v.id)) : new Set()
-              )
+              ); }
             }
           />
           Выбрать все
@@ -161,10 +161,10 @@ export default function AdminVendorsTab({
           className="btn btn-secondary btn-sm"
           disabled={exportLoading}
           onClick={() =>
-            handleExport(adminService.exportVendorsCSV, `вендоры_${todayStr}.csv`)
+            { handleExport(adminService.exportVendorsCSV, `вендоры_${todayStr}.csv`); }
           }
         >
-          {exportLoading ? '...' : <><DownloadSimple size={16} weight="bold" /> CSV</>}
+          {exportLoading ? '...' : <><DownloadSimpleIcon size={16} weight="bold" /> CSV</>}
         </button>
       </div>
 
@@ -185,7 +185,7 @@ export default function AdminVendorsTab({
           />
           <button
             type="button"
-            onClick={() => loadVendorDetails(vendor.id)}
+            onClick={() => { loadVendorDetails(vendor.id); }}
             style={{
               ...cardStyle,
               padding: 16,

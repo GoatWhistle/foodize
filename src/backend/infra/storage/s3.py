@@ -56,7 +56,7 @@ def _detect_image_ext(data: bytes) -> str:
 
 
 @lru_cache(maxsize=1)
-def _client():
+def _client() -> Any:
     cfg = settings.s3
     return boto3.client(
         "s3",

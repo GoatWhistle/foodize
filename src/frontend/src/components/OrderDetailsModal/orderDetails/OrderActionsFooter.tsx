@@ -1,10 +1,10 @@
-import { XCircle } from '@phosphor-icons/react';
+import { XCircleIcon } from '@phosphor-icons/react';
 import type { Order, OrderStatus } from '@shared/types/models';
 
 interface OrderActionsFooterProps {
   order: Order;
   next: OrderStatus | undefined;
-  nextLabel?: Partial<Record<OrderStatus, string>>;
+  nextLabel?: Partial<Record<OrderStatus, string>> | undefined;
   updating: string | null;
   canCancel: boolean;
   canSubmitNext: boolean;
@@ -49,7 +49,7 @@ export const OrderActionsFooter = ({
           className="form-input"
           placeholder="Причина отмены (необязательно)"
           value={cancelReason}
-          onChange={(e) => onCancelReasonChange(e.target.value)}
+          onChange={(e) => { onCancelReasonChange(e.target.value); }}
           rows={2}
           style={{ resize: 'none', fontSize: '0.85rem' }}
         />
@@ -85,7 +85,7 @@ export const OrderActionsFooter = ({
             onClick={onShowCancelForm}
             style={{ display: 'flex', alignItems: 'center', gap: 6 }}
           >
-            <XCircle size={16} />
+            <XCircleIcon size={16} />
             Отменить
           </button>
         )}

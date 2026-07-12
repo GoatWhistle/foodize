@@ -9,12 +9,18 @@ interface EtaModalProps {
 }
 
 const getOrderDisplayId = (order: StaffOrder): string | number =>
-  order.display_id ?? order.id.slice(0, 8);
+  order.display_id;
 
 const buildReadyAtIso = (timeValue: string): string | null => {
   if (!timeValue) return null;
   const [hours, minutes] = timeValue.split(':').map(Number);
-  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+  if (
+    hours === undefined ||
+    minutes === undefined ||
+    Number.isNaN(hours) ||
+    Number.isNaN(minutes)
+  )
+    return null;
   const readyAt = new Date();
   readyAt.setHours(hours, minutes, 0, 0);
   if (readyAt.getTime() <= Date.now()) readyAt.setDate(readyAt.getDate() + 1);
@@ -22,8 +28,7 @@ const buildReadyAtIso = (timeValue: string): string | null => {
 };
 
 const getOrderDefaultEta = (order: StaffOrder): number => {
-  const times =
-    order.items?.map((i) => i.menu_item_prep_time).filter(Boolean) ?? [];
+  const times = order.items.map((i) => i.menu_item_prep_time).filter(Boolean);
   return times.length > 0 ? Math.max(...times) : 15;
 };
 

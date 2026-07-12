@@ -24,7 +24,7 @@ def _restaurant(
     ordering_paused_until: datetime | None = None,
     avg_prep_time_minutes: int = 15,
     max_active_orders: int | None = None,
-):
+) -> MagicMock:
     r = MagicMock()
     r.id = id or uuid.uuid4()
     r.is_open = is_open
@@ -35,7 +35,7 @@ def _restaurant(
     return r
 
 
-def _order_response():
+def _order_response() -> MagicMock:
     o = MagicMock()
     o.id = uuid.uuid4()
     o.user_id = uuid.uuid4()
@@ -47,7 +47,7 @@ def _order_response():
 
 
 @pytest.mark.asyncio
-async def test_estimate_load_raises_if_restaurant_not_found():
+async def test_estimate_load_raises_if_restaurant_not_found() -> None:
     with patch(
         "features.restaurants.crud.get_restaurant_by_id",
         new_callable=AsyncMock,
@@ -58,7 +58,7 @@ async def test_estimate_load_raises_if_restaurant_not_found():
 
 
 @pytest.mark.asyncio
-async def test_estimate_load_restaurant_closed():
+async def test_estimate_load_restaurant_closed() -> None:
     restaurant = _restaurant(is_open=False)
 
     with (
@@ -85,7 +85,7 @@ async def test_estimate_load_restaurant_closed():
 
 
 @pytest.mark.asyncio
-async def test_estimate_load_uses_provided_restaurant():
+async def test_estimate_load_uses_provided_restaurant() -> None:
     restaurant = _restaurant()
 
     with (
@@ -107,7 +107,7 @@ async def test_estimate_load_uses_provided_restaurant():
 
 
 @pytest.mark.asyncio
-async def test_estimate_load_queue_multiplier():
+async def test_estimate_load_queue_multiplier() -> None:
     restaurant = _restaurant(avg_prep_time_minutes=10, max_active_orders=5)
 
     with (
@@ -133,7 +133,7 @@ async def test_estimate_load_queue_multiplier():
 
 
 @pytest.mark.asyncio
-async def test_get_user_orders_returns_list():
+async def test_get_user_orders_returns_list() -> None:
     order = _order_response()
 
     with (
@@ -158,7 +158,7 @@ async def test_get_user_orders_returns_list():
 
 
 @pytest.mark.asyncio
-async def test_get_order_raises_if_not_found():
+async def test_get_order_raises_if_not_found() -> None:
     with patch(
         "features.orders.crud.order.get_order_by_id", new_callable=AsyncMock, return_value=None
     ):
@@ -167,7 +167,7 @@ async def test_get_order_raises_if_not_found():
 
 
 @pytest.mark.asyncio
-async def test_get_order_raises_if_not_owner():
+async def test_get_order_raises_if_not_owner() -> None:
     order = MagicMock()
     order.user_id = uuid.uuid4()
 
@@ -179,7 +179,7 @@ async def test_get_order_raises_if_not_owner():
 
 
 @pytest.mark.asyncio
-async def test_get_order_returns_response():
+async def test_get_order_returns_response() -> None:
     user_id = uuid.uuid4()
     order = MagicMock()
     order.user_id = user_id
@@ -199,7 +199,7 @@ async def test_get_order_returns_response():
 
 
 @pytest.mark.asyncio
-async def test_get_restaurant_orders_returns_list():
+async def test_get_restaurant_orders_returns_list() -> None:
     order = _order_response()
 
     with (
@@ -217,13 +217,13 @@ async def test_get_restaurant_orders_returns_list():
             "features.orders.schemas.order.OrderResponse.model_validate", return_value=MagicMock()
         ),
     ):
-        results, total = await get_restaurant_orders(AsyncMock(), uuid.uuid4())
+        _results, total = await get_restaurant_orders(AsyncMock(), uuid.uuid4())
 
     assert total == 1
 
 
 @pytest.mark.asyncio
-async def test_get_order_events_returns_list():
+async def test_get_order_events_returns_list() -> None:
     event = MagicMock()
 
     with (

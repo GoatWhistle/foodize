@@ -14,7 +14,7 @@ from features.users.exceptions import UserAlreadyExistsException
 from shared.exceptions.existence import InvalidCredentialsException, NotFoundException
 
 
-def _mock_session(scalar_result=None):
+def _mock_session(scalar_result: object = None) -> AsyncMock:
     session = AsyncMock()
     mock_result = MagicMock()
     mock_result.scalar_one_or_none = MagicMock(return_value=scalar_result)
@@ -23,7 +23,7 @@ def _mock_session(scalar_result=None):
 
 
 @pytest.mark.asyncio
-async def test_get_user_by_phone_found():
+async def test_get_user_by_phone_found() -> None:
     user = MagicMock()
     session = _mock_session(user)
     result = await get_user_by_phone(session, "+79001234567")
@@ -31,14 +31,14 @@ async def test_get_user_by_phone_found():
 
 
 @pytest.mark.asyncio
-async def test_get_user_by_phone_not_found():
+async def test_get_user_by_phone_not_found() -> None:
     session = _mock_session(None)
     result = await get_user_by_phone(session, "+79001234567")
     assert result is None
 
 
 @pytest.mark.asyncio
-async def test_get_user_by_id_found():
+async def test_get_user_by_id_found() -> None:
     user = MagicMock()
     session = _mock_session(user)
     result = await get_user_by_id(session, uuid.uuid4())
@@ -46,14 +46,14 @@ async def test_get_user_by_id_found():
 
 
 @pytest.mark.asyncio
-async def test_get_user_by_id_not_found():
+async def test_get_user_by_id_not_found() -> None:
     session = _mock_session(None)
     result = await get_user_by_id(session, uuid.uuid4())
     assert result is None
 
 
 @pytest.mark.asyncio
-async def test_get_user_by_id_or_404_found():
+async def test_get_user_by_id_or_404_found() -> None:
     user = MagicMock()
     with patch(
         "features.users.dependencies.get_user_by_id", new_callable=AsyncMock, return_value=user
@@ -63,7 +63,7 @@ async def test_get_user_by_id_or_404_found():
 
 
 @pytest.mark.asyncio
-async def test_get_user_by_id_or_404_not_found():
+async def test_get_user_by_id_or_404_not_found() -> None:
     with patch(
         "features.users.dependencies.get_user_by_id", new_callable=AsyncMock, return_value=None
     ):
@@ -72,7 +72,7 @@ async def test_get_user_by_id_or_404_not_found():
 
 
 @pytest.mark.asyncio
-async def test_get_user_by_phone_or_401_success():
+async def test_get_user_by_phone_or_401_success() -> None:
     from features.auth.schemas import UserLogin
 
     user = MagicMock()
@@ -96,7 +96,7 @@ async def test_get_user_by_phone_or_401_success():
 
 
 @pytest.mark.asyncio
-async def test_get_user_by_phone_or_401_user_not_found():
+async def test_get_user_by_phone_or_401_user_not_found() -> None:
     from features.auth.schemas import UserLogin
 
     user_data = UserLogin(phone_number="+79001234567", password="password123")
@@ -109,7 +109,7 @@ async def test_get_user_by_phone_or_401_user_not_found():
 
 
 @pytest.mark.asyncio
-async def test_get_user_by_phone_or_401_no_password():
+async def test_get_user_by_phone_or_401_no_password() -> None:
     from features.auth.schemas import UserLogin
 
     user = MagicMock()
@@ -124,7 +124,7 @@ async def test_get_user_by_phone_or_401_no_password():
 
 
 @pytest.mark.asyncio
-async def test_get_user_by_phone_or_401_wrong_password():
+async def test_get_user_by_phone_or_401_wrong_password() -> None:
     from features.auth.schemas import UserLogin
 
     user = MagicMock()
@@ -148,7 +148,7 @@ async def test_get_user_by_phone_or_401_wrong_password():
 
 
 @pytest.mark.asyncio
-async def test_ensure_user_not_exists_by_phone_ok():
+async def test_ensure_user_not_exists_by_phone_ok() -> None:
     with patch(
         "features.users.dependencies.get_user_by_phone", new_callable=AsyncMock, return_value=None
     ):
@@ -156,7 +156,7 @@ async def test_ensure_user_not_exists_by_phone_ok():
 
 
 @pytest.mark.asyncio
-async def test_ensure_user_not_exists_by_phone_raises():
+async def test_ensure_user_not_exists_by_phone_raises() -> None:
     user = MagicMock()
     with patch(
         "features.users.dependencies.get_user_by_phone", new_callable=AsyncMock, return_value=user

@@ -1,5 +1,6 @@
 import uuid
 from datetime import date, datetime
+from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -29,30 +30,30 @@ from shared.enums.order_status import OrderStatus
 
 
 class DummyPDF:
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.page = 1
 
-    def section(self, *args, **kwargs):
+    def section(self, *args: Any, **kwargs: Any) -> None:
         pass
 
-    def row(self, *args, **kwargs):
+    def row(self, *args: Any, **kwargs: Any) -> None:
         pass
 
-    def info_row(self, *args, **kwargs):
+    def info_row(self, *args: Any, **kwargs: Any) -> None:
         pass
 
-    def ln(self, *args, **kwargs):
+    def ln(self, *args: Any, **kwargs: Any) -> None:
         pass
 
-    def set_font(self, *args, **kwargs):
+    def set_font(self, *args: Any, **kwargs: Any) -> None:
         pass
 
-    def output(self, *args, **kwargs):
+    def output(self, *args: Any, **kwargs: Any) -> bytes:
         return b"mock_pdf_bytes"
 
 
 class MockUser:
-    def __init__(self):
+    def __init__(self) -> None:
         self.id = uuid.uuid4()
         self.name = "Test User"
         self.phone_number = "12345"
@@ -64,7 +65,7 @@ class MockUser:
 
 
 class MockRestaurant:
-    def __init__(self):
+    def __init__(self) -> None:
         self.id = uuid.uuid4()
         self.name = "Rest 1"
         self.address = "Addr 1"
@@ -78,7 +79,7 @@ class MockRestaurant:
 
 
 class MockOrder:
-    def __init__(self):
+    def __init__(self) -> None:
         self.id = uuid.uuid4()
         self.display_id = 1001
         self.user = MockUser()
@@ -90,7 +91,7 @@ class MockOrder:
 
 
 class MockVendor:
-    def __init__(self):
+    def __init__(self) -> None:
         self.id = uuid.uuid4()
         self.user = MockUser()
         self.approval_status = "APPROVED"
@@ -99,7 +100,7 @@ class MockVendor:
 
 
 class MockReview:
-    def __init__(self):
+    def __init__(self) -> None:
         self.id = uuid.uuid4()
         self.restaurant_name = "Rest 1"
         self.user_name = "User 1"
@@ -110,7 +111,7 @@ class MockReview:
 
 
 @pytest.mark.asyncio
-async def test_export_users_csv():
+async def test_export_users_csv() -> None:
     mock_session = AsyncMock(spec=AsyncSession)
     mock_users = [MockUser()]
     with patch(
@@ -122,7 +123,7 @@ async def test_export_users_csv():
 
 
 @pytest.mark.asyncio
-async def test_export_orders_csv():
+async def test_export_orders_csv() -> None:
     mock_session = AsyncMock(spec=AsyncSession)
     mock_orders = [MockOrder()]
     with patch(
@@ -134,7 +135,7 @@ async def test_export_orders_csv():
 
 
 @pytest.mark.asyncio
-async def test_export_restaurants_csv():
+async def test_export_restaurants_csv() -> None:
     mock_session = AsyncMock(spec=AsyncSession)
     mock_rests = [MockRestaurant()]
     with patch(
@@ -146,7 +147,7 @@ async def test_export_restaurants_csv():
 
 
 @pytest.mark.asyncio
-async def test_export_vendors_csv():
+async def test_export_vendors_csv() -> None:
     mock_session = AsyncMock(spec=AsyncSession)
     mock_vendors = [MockVendor()]
     with patch(
@@ -157,7 +158,7 @@ async def test_export_vendors_csv():
 
 
 @pytest.mark.asyncio
-async def test_export_reviews_csv():
+async def test_export_reviews_csv() -> None:
     mock_session = AsyncMock(spec=AsyncSession)
     mock_reviews = [MockReview()]
     with patch(
@@ -169,7 +170,7 @@ async def test_export_reviews_csv():
 
 
 @pytest.mark.asyncio
-async def test_export_finance_pdf():
+async def test_export_finance_pdf() -> None:
     mock_session = AsyncMock(spec=AsyncSession)
     mock_analytics = FinanceAnalytics(
         revenue_by_day=[FinanceSeriesPoint(date=date.today(), value=1000)],
@@ -202,7 +203,7 @@ async def test_export_finance_pdf():
 
 
 @pytest.mark.asyncio
-async def test_export_analytics_pdf():
+async def test_export_analytics_pdf() -> None:
     mock_session = AsyncMock(spec=AsyncSession)
     mock_analytics = AdvancedAnalytics(
         hourly_load=[AnalyticsPoint(label="12", value=5)],
@@ -223,7 +224,7 @@ async def test_export_analytics_pdf():
 
 
 @pytest.mark.asyncio
-async def test_export_overview_pdf():
+async def test_export_overview_pdf() -> None:
     mock_session = AsyncMock(spec=AsyncSession)
     mock_stats = PlatformStats(
         users_by_permission={"customers:read": 10},

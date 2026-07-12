@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,7 +12,7 @@ async def log_action(
     action: str,
     entity_type: str,
     entity_id: uuid.UUID | None = None,
-    details: dict | None = None,
+    details: dict[str, Any] | None = None,
 ) -> None:
     entry = AuditLog(
         actor_id=actor_id,

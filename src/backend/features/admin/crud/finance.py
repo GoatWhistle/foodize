@@ -1,7 +1,8 @@
 import uuid
 from datetime import UTC, date, datetime, timedelta
+from typing import Any, cast
 
-from sqlalchemy import func, select
+from sqlalchemy import ColumnElement, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.admin.crud.analytics_shared import finance_points, parse_day
@@ -15,14 +16,16 @@ from features.orders.models import Order, OrderItem
 from features.restaurants.models import Restaurant
 from shared.enums.order_status import OrderStatus
 
+_DEFAULT_FINANCE_WINDOW_DAYS = 14
+
 
 def _build_order_filters(
     start_date: date,
     end_date: date,
     vendor_id: uuid.UUID | None,
     restaurant_id: uuid.UUID | None,
-) -> list:
-    filters = [
+) -> list[ColumnElement[bool]]:
+    filters: list[ColumnElement[bool]] = [
         Order.created_at >= datetime.combine(start_date, datetime.min.time(), tzinfo=UTC),
         Order.created_at
         < datetime.combine(end_date + timedelta(days=1), datetime.min.time(), tzinfo=UTC),
@@ -34,7 +37,9 @@ def _build_order_filters(
     return filters
 
 
-async def _fetch_revenue_by_day(session: AsyncSession, order_filters: list) -> dict[date, int]:
+async def _fetch_revenue_by_day(
+    session: AsyncSession, order_filters: list[ColumnElement[bool]]
+) -> dict[date, int]:
     rows = await session.execute(
         select(func.date(Order.created_at), func.coalesce(func.sum(Order.total_price), 0))
         .join(Restaurant, Restaurant.id == Order.restaurant_id)
@@ -48,7 +53,9 @@ async def _fetch_revenue_by_day(session: AsyncSession, order_filters: list) -> d
     return counts
 
 
-async def _fetch_order_totals(session: AsyncSession, order_filters: list) -> tuple:
+async def _fetch_order_totals(
+    session: AsyncSession, order_filters: list[ColumnElement[bool]]
+) -> tuple[Any, ...]:
     result = await session.execute(
         select(
             func.count(Order.id),
@@ -63,10 +70,12 @@ async def _fetch_order_totals(session: AsyncSession, order_filters: list) -> tup
         .join(Restaurant, Restaurant.id == Order.restaurant_id)
         .where(*order_filters)
     )
-    return result.one()
+    return cast("tuple[Any, ...]", result.one())
 
 
-async def _fetch_top_restaurants(session: AsyncSession, order_filters: list) -> list:
+async def _fetch_top_restaurants(
+    session: AsyncSession, order_filters: list[ColumnElement[bool]]
+) -> list[FinanceTopRestaurant]:
     rows = await session.execute(
         select(
             Restaurant.id,
@@ -91,7 +100,9 @@ async def _fetch_top_restaurants(session: AsyncSession, order_filters: list) -> 
     ]
 
 
-async def _fetch_top_items(session: AsyncSession, order_filters: list) -> list:
+async def _fetch_top_items(
+    session: AsyncSession, order_filters: list[ColumnElement[bool]]
+) -> list[FinanceTopItem]:
     rows = await session.execute(
         select(
             MenuItem.id,
@@ -145,7 +156,7 @@ async def get_finance_analytics(
     restaurant_id: uuid.UUID | None = None,
 ) -> FinanceAnalytics:
     end_date = date_to or datetime.now(UTC).date()
-    start_date = date_from or (end_date - timedelta(days=13))
+    start_date = date_from or (end_date - timedelta(days=_DEFAULT_FINANCE_WINDOW_DAYS - 1))
     days = (end_date - start_date).days + 1
 
     order_filters = _build_order_filters(start_date, end_date, vendor_id, restaurant_id)

@@ -1,6 +1,8 @@
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.menu.crud import create_menu_item
+from features.menu.models import MenuItem
 from features.menu.schemas import MenuItemCreate
 from features.orders.crud.order import get_order_by_id
 from features.orders.exceptions import InvalidStatusTransitionException
@@ -9,8 +11,10 @@ from features.orders.schemas.order_item import OrderItemCreate
 from features.orders.services.order import change_order_status, place_order
 from features.restaurants.crud import create_restaurant
 from features.restaurants.exceptions import RestaurantClosedException
+from features.restaurants.models import Restaurant
 from features.restaurants.schemas import RestaurantCreate
 from features.users.crud import create_user
+from features.users.models import User
 from features.users.schemas import UserCreate
 from features.vendors.crud import create_vendor_profile
 from features.vendors.schemas import VendorCreate
@@ -19,7 +23,9 @@ from shared.enums.order_status import OrderStatus
 from shared.enums.roles import UserRole
 
 
-async def _seed_restaurant(db_session, *, is_open: bool):
+async def _seed_restaurant(
+    db_session: AsyncSession, *, is_open: bool
+) -> tuple[User, Restaurant, MenuItem]:
     vendor_user = await create_user(
         db_session,
         UserCreate(
@@ -44,7 +50,7 @@ async def _seed_restaurant(db_session, *, is_open: bool):
 
 
 @pytest.mark.asyncio
-async def test_place_order_in_closed_restaurant_raises(db_session):
+async def test_place_order_in_closed_restaurant_raises(db_session: AsyncSession) -> None:
     customer = await create_user(
         db_session,
         UserCreate(
@@ -67,7 +73,7 @@ async def test_place_order_in_closed_restaurant_raises(db_session):
 
 
 @pytest.mark.asyncio
-async def test_invalid_status_transition_raises(db_session):
+async def test_invalid_status_transition_raises(db_session: AsyncSession) -> None:
     customer = await create_user(
         db_session,
         UserCreate(
@@ -89,6 +95,7 @@ async def test_invalid_status_transition_raises(db_session):
     assert order.status == OrderStatus.PENDING
 
     db_order = await get_order_by_id(db_session, order.id)
+    assert db_order is not None
 
     with pytest.raises(InvalidStatusTransitionException):
         await change_order_status(

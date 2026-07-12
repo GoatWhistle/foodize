@@ -78,7 +78,7 @@ const HorizontalSteps = ({ order }: HorizontalStepsProps) => {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {ORDER_STATUS_RU[status] ?? status}
+                  {ORDER_STATUS_RU[status]}
                 </div>
               </div>
             </Fragment>

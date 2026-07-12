@@ -12,7 +12,7 @@ export const formatPhoneNumber = (value: string | null | undefined): string => {
 
   let formatted = '';
   if (cleanValue.length > 0) {
-    formatted += '+' + cleanValue[0];
+    formatted += '+' + cleanValue.charAt(0);
   }
   if (cleanValue.length > 1) {
     formatted += ' (' + cleanValue.slice(1, 4);

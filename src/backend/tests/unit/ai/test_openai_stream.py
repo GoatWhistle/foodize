@@ -1,4 +1,6 @@
+from collections.abc import AsyncIterator
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 
@@ -6,13 +8,24 @@ from infra.llm.base import LLMResponse, TextDelta
 from infra.llm.openai_compatible import OpenAICompatibleClient
 
 
-def _chunk(content=None, tool_calls=None, finish_reason=None, usage=None, with_choice=True):
+def _chunk(
+    content: str | None = None,
+    tool_calls: list[SimpleNamespace] | None = None,
+    finish_reason: str | None = None,
+    usage: SimpleNamespace | None = None,
+    with_choice: bool = True,
+) -> SimpleNamespace:
     delta = SimpleNamespace(content=content, tool_calls=tool_calls)
     choice = SimpleNamespace(delta=delta, finish_reason=finish_reason)
     return SimpleNamespace(choices=[choice] if with_choice else [], usage=usage)
 
 
-def _fragment(index, id=None, name=None, arguments=None):
+def _fragment(
+    index: int,
+    id: str | None = None,
+    name: str | None = None,
+    arguments: str | None = None,
+) -> SimpleNamespace:
     return SimpleNamespace(
         index=index,
         id=id,
@@ -21,29 +34,29 @@ def _fragment(index, id=None, name=None, arguments=None):
 
 
 class _FakeCompletions:
-    def __init__(self, chunks):
+    def __init__(self, chunks: list[SimpleNamespace]) -> None:
         self._chunks = chunks
-        self.kwargs = None
+        self.kwargs: dict[str, Any] | None = None
 
-    async def create(self, **kwargs):
+    async def create(self, **kwargs: Any) -> AsyncIterator[SimpleNamespace]:
         self.kwargs = kwargs
 
-        async def _iter():
+        async def _iter() -> AsyncIterator[SimpleNamespace]:
             for chunk in self._chunks:
                 yield chunk
 
         return _iter()
 
 
-def _client(chunks) -> tuple[OpenAICompatibleClient, _FakeCompletions]:
+def _client(chunks: list[SimpleNamespace]) -> tuple[OpenAICompatibleClient, _FakeCompletions]:
     client = OpenAICompatibleClient(api_key="k", model="m")
     fake = _FakeCompletions(chunks)
-    client._client = SimpleNamespace(chat=SimpleNamespace(completions=fake))
+    client._client = SimpleNamespace(chat=SimpleNamespace(completions=fake))  # type: ignore[assignment]
     return client, fake
 
 
 @pytest.mark.asyncio
-async def test_openai_stream_accumulates_text_tool_calls_and_usage():
+async def test_openai_stream_accumulates_text_tool_calls_and_usage() -> None:
     chunks = [
         _chunk(content="Ищу"),
         _chunk(content=" пиццу"),
@@ -69,12 +82,13 @@ async def test_openai_stream_accumulates_text_tool_calls_and_usage():
     assert call.id == "call-1"
     assert call.name == "search"
     assert call.arguments == {"q": "pizza"}
+    assert fake.kwargs is not None
     assert fake.kwargs["stream"] is True
     assert fake.kwargs["stream_options"] == {"include_usage": True}
 
 
 @pytest.mark.asyncio
-async def test_openai_stream_orders_parallel_tool_calls_by_index():
+async def test_openai_stream_orders_parallel_tool_calls_by_index() -> None:
     chunks = [
         _chunk(
             tool_calls=[
@@ -89,11 +103,12 @@ async def test_openai_stream_orders_parallel_tool_calls_by_index():
     events = [event async for event in client.stream(system="s", messages=[])]
 
     final = events[-1]
+    assert isinstance(final, LLMResponse)
     assert [call.name for call in final.tool_calls] == ["add", "remove"]
 
 
 @pytest.mark.asyncio
-async def test_openai_stream_malformed_arguments_become_empty_dict():
+async def test_openai_stream_malformed_arguments_become_empty_dict() -> None:
     chunks = [
         _chunk(tool_calls=[_fragment(0, id="c", name="search", arguments="{oops")]),
         _chunk(finish_reason="tool_calls"),
@@ -103,4 +118,5 @@ async def test_openai_stream_malformed_arguments_become_empty_dict():
     events = [event async for event in client.stream(system="s", messages=[])]
 
     final = events[-1]
+    assert isinstance(final, LLMResponse)
     assert final.tool_calls[0].arguments == {}

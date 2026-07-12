@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
-import { Trash, Star, DownloadSimple } from '@phosphor-icons/react';
+import { TrashIcon, StarIcon, DownloadSimpleIcon } from '@phosphor-icons/react';
 import Pagination from '@shared/components/Pagination/Pagination';
 import EmptyState from '@shared/components/EmptyState/EmptyState';
 import type { adminService as adminServiceType } from '../../../services/adminService';
@@ -107,7 +107,7 @@ export default function AdminReviewsTab({
               setReviewFilters({ rating: rating.toString() });
             }}
           >
-            <Star size={14} weight="fill" color="var(--star)" /> {rating}
+            <StarIcon size={14} weight="fill" color="var(--star)" /> {rating}
           </button>
         ))}
       </div>
@@ -134,9 +134,9 @@ export default function AdminReviewsTab({
             type="checkbox"
             checked={reviews.length > 0 && selectedReviewIds.size === reviews.length}
             onChange={(e) =>
-              setSelectedReviewIds(
+              { setSelectedReviewIds(
                 e.target.checked ? new Set(reviews.map((r) => r.id)) : new Set()
-              )
+              ); }
             }
           />
           Выбрать все
@@ -145,17 +145,17 @@ export default function AdminReviewsTab({
           className="btn btn-secondary btn-sm"
           disabled={exportLoading}
           onClick={() =>
-            handleExport(
+            { handleExport(
               () =>
                 adminService.exportReviewsCSV({
                   min_rating: reviewFilters.rating || undefined,
                   max_rating: reviewFilters.rating || undefined,
                 }),
               `отзывы_${todayStr}.csv`
-            )
+            ); }
           }
         >
-          {exportLoading ? '...' : <><DownloadSimple size={16} weight="bold" /> CSV</>}
+          {exportLoading ? '...' : <><DownloadSimpleIcon size={16} weight="bold" /> CSV</>}
         </button>
       </div>
 
@@ -200,7 +200,7 @@ export default function AdminReviewsTab({
                 <span style={{ color: 'var(--text-1)', fontWeight: 900 }}>
                   {review.restaurant_name || shortId(review.restaurant_id)}
                 </span>
-                <span className="order-status-badge pending"><Star size={14} weight="fill" color="var(--star)" /> {review.rating}</span>
+                <span className="order-status-badge pending"><StarIcon size={14} weight="fill" color="var(--star)" /> {review.rating}</span>
                 {review.is_verified_purchase && (
                   <span className="order-status-badge ready">Покупка подтверждена</span>
                 )}
@@ -226,11 +226,11 @@ export default function AdminReviewsTab({
             </div>
             <button
               className="btn btn-secondary btn-sm"
-              onClick={() => handleDeleteReview(review.id)}
+              onClick={() => { handleDeleteReview(review.id); }}
               title="Удалить отзыв"
               style={{ color: 'var(--error)', flexShrink: 0 }}
             >
-              <Trash size={16} />
+              <TrashIcon size={16} />
             </button>
           </div>
         </div>

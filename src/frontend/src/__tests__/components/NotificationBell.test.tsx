@@ -41,8 +41,8 @@ vi.mock('../../store/useNotificationStore', () => ({
 }));
 
 vi.mock('../../store/useAuthStore', () => ({
-  useAuthStore: vi.fn((sel?: (s: { user: { id: string }; isAuthenticated: boolean }) => unknown) => {
-    const state = { user: { id: 'user-1' }, isAuthenticated: true };
+  useAuthStore: vi.fn((sel?: (s: { user: { id: string } | null }) => unknown) => {
+    const state = { user: { id: 'user-1' } };
     return sel ? sel(state) : state;
   }),
 }));

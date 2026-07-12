@@ -55,7 +55,7 @@ export const ReasonDialog = ({ dialog, loading, onCancel, onConfirm }: ReasonDia
         <textarea
           className="form-input"
           value={reason}
-          onChange={(event) => setReason(event.target.value)}
+          onChange={(event) => { setReason(event.target.value); }}
           placeholder="Напишите причину отклонения"
           rows={4}
           style={{ minHeight: 112, resize: 'vertical' }}
@@ -75,7 +75,7 @@ export const ReasonDialog = ({ dialog, loading, onCancel, onConfirm }: ReasonDia
           <button
             className="btn btn-primary"
             disabled={loading || !trimmedReason}
-            onClick={() => onConfirm(trimmedReason)}
+            onClick={() => { onConfirm(trimmedReason); }}
             style={{ background: 'var(--error)' }}
           >
             {loading ? 'Выполняю...' : dialog.confirmLabel}

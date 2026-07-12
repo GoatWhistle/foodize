@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -42,7 +42,7 @@ async def change_order_status(
         else:
             minutes = status_data.estimated_ready_in_minutes
             if minutes:
-                order.estimated_ready_at = datetime.now(timezone.utc) + timedelta(minutes=minutes)
+                order.estimated_ready_at = datetime.now(UTC) + timedelta(minutes=minutes)
             else:
                 raise OrderReadyTimeRequiredException()
     return await _finalize_order(session, order, status_data.status, actor.id, actor.permissions)
@@ -133,24 +133,13 @@ async def cancel_order(
     )
 
 
-async def force_cancel_order(
+async def _record_forced_cancellation(
     session: AsyncSession,
-    order_id: uuid.UUID,
+    order: Order,
     actor: User,
+    old_status: OrderStatus,
     reason: str,
-) -> OrderResponse:
-    order = await order_crud.get_order_by_id_for_update(session, order_id)
-    if not order:
-        raise OrderNotFoundException()
-
-    old_status = OrderStatus(order.status)
-    if old_status in TERMINAL_STATUSES:
-        raise OrderNotCancellableException()
-    order.cancellation_reason = reason
-    if order.promo_id is not None:
-        await promo_crud.release_promo_usage(session, order.promo_id, order.user_id)
-    updated = await order_crud.update_order_status(session, order, OrderStatus.CANCELLED)
-
+) -> None:
     await order_crud.create_order_event(
         session,
         order_id=order.id,
@@ -180,10 +169,35 @@ async def force_cancel_order(
             total_price=order.total_price,
         ),
     )
-    await session.commit()
+
+
+async def _publish_cancellation(order: Order) -> None:
     await safe_publish(f"order_status:{order.id}", OrderStatus.CANCELLED.value)
     await safe_publish(
         f"restaurant_orders:{order.restaurant_id}",
         f"status_changed:{OrderStatus.CANCELLED.value}",
     )
+
+
+async def force_cancel_order(
+    session: AsyncSession,
+    order_id: uuid.UUID,
+    actor: User,
+    reason: str,
+) -> OrderResponse:
+    order = await order_crud.get_order_by_id_for_update(session, order_id)
+    if not order:
+        raise OrderNotFoundException()
+
+    old_status = OrderStatus(order.status)
+    if old_status in TERMINAL_STATUSES:
+        raise OrderNotCancellableException()
+    order.cancellation_reason = reason
+    if order.promo_id is not None:
+        await promo_crud.release_promo_usage(session, order.promo_id, order.user_id)
+    updated = await order_crud.update_order_status(session, order, OrderStatus.CANCELLED)
+
+    await _record_forced_cancellation(session, order, actor, old_status, reason)
+    await session.commit()
+    await _publish_cancellation(order)
     return OrderResponse.model_validate(updated)

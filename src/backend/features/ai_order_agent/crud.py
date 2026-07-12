@@ -1,6 +1,8 @@
 import uuid
+import zlib
+from typing import Any
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import ColumnElement, bindparam, func, or_, select, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,8 +12,10 @@ from features.restaurants.models import Restaurant
 from shared.enums.moderation_status import ModerationStatus
 
 
-def _orderable_filters(max_price: int | None, restaurant_id: uuid.UUID | None) -> list:
-    filters = [
+def _orderable_filters(
+    max_price: int | None, restaurant_id: uuid.UUID | None
+) -> list[ColumnElement[bool]]:
+    filters: list[ColumnElement[bool]] = [
         MenuItem.is_available.is_(True),
         MenuItem.is_deleted.is_(False),
         Restaurant.is_active.is_(True),
@@ -28,7 +32,7 @@ def _escape_like(value: str) -> str:
     return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
-def _row_to_dict(row) -> dict:
+def _row_to_dict(row: Any) -> dict[str, Any]:
     return {
         "menu_item_id": str(row.id),
         "name": row.name,
@@ -59,7 +63,7 @@ async def list_orderable_items(
     max_price: int | None = None,
     restaurant_id: uuid.UUID | None = None,
     limit: int = 300,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     stmt = (
         select(*_SELECT_COLUMNS)
         .join(Restaurant, Restaurant.id == MenuItem.restaurant_id)
@@ -78,7 +82,7 @@ async def search_menu_items(
     max_price: int | None = None,
     restaurant_id: uuid.UUID | None = None,
     limit: int = 15,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     filters = _orderable_filters(max_price, restaurant_id)
     if query:
         pattern = f"%{_escape_like(query.strip())}%"
@@ -100,6 +104,30 @@ async def search_menu_items(
     return [_row_to_dict(row) for row in rows.all()]
 
 
+_EMBED_SYNC_LOCK_NAMESPACE = 0x656D6265
+
+
+async def get_embedding_column_dim(session: AsyncSession) -> int | None:
+    stmt = text(
+        "SELECT atttypmod FROM pg_attribute "
+        "WHERE attrelid = 'menu_item_embeddings'::regclass "
+        "AND attname = 'embedding' AND NOT attisdropped"
+    )
+    result = await session.execute(stmt)
+    row = result.first()
+    if row is None or row[0] is None or row[0] < 0:
+        return None
+    return int(row[0])
+
+
+async def acquire_embedding_sync_lock(session: AsyncSession, model: str) -> None:
+    key = zlib.crc32(model.encode("utf-8")) & 0xFFFFFFFF
+    stmt = text("SELECT pg_advisory_xact_lock(:ns, :key)").bindparams(
+        bindparam("ns", _EMBED_SYNC_LOCK_NAMESPACE), bindparam("key", key)
+    )
+    await session.execute(stmt)
+
+
 async def get_embedding_meta(
     session: AsyncSession,
     item_ids: list[uuid.UUID],
@@ -115,7 +143,7 @@ async def get_embedding_meta(
     return {row.menu_item_id: row.text_hash for row in rows.all()}
 
 
-async def upsert_embeddings(session: AsyncSession, rows: list[dict]) -> None:
+async def upsert_embeddings(session: AsyncSession, rows: list[dict[str, Any]]) -> None:
     if not rows:
         return
     stmt = pg_insert(MenuItemEmbedding).values(rows)
@@ -129,7 +157,6 @@ async def upsert_embeddings(session: AsyncSession, rows: list[dict]) -> None:
         },
     )
     await session.execute(stmt)
-    await session.commit()
 
 
 async def semantic_rank_items(
@@ -140,7 +167,7 @@ async def semantic_rank_items(
     max_price: int | None = None,
     restaurant_id: uuid.UUID | None = None,
     limit: int = 50,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     distance = MenuItemEmbedding.embedding.cosine_distance(query_embedding).label("distance")
     stmt = (
         select(*_SELECT_COLUMNS, distance)

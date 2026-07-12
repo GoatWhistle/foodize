@@ -2,6 +2,7 @@ import { create, type StoreApi, type UseBoundStore } from "zustand";
 import { cartService } from "@shared/services/cartService";
 import { orderService } from "@shared/services/orderService";
 import { translateApiError } from "@shared/utils/translateApiError";
+import { logError } from "@shared/utils/logError";
 import {
   getOptionIds,
   getLinePrice,
@@ -23,21 +24,15 @@ export type {
   CartMenuItem,
 } from "@shared/utils/cartLine";
 
-export interface CreateOrderStoreOptions {
+export interface CreateCartStoreOptions {
   onRestaurantChange?: (() => Promise<boolean>) | null;
+  onOrderPlaced?: ((order: Order) => void) | null;
 }
 
-export interface OrderStoreState {
+export interface CartStoreState {
   cart: CartLine[];
   cartRestaurantId: string | null;
-  orders: Order[];
-  currentOrder: Order | null;
-  ordersLoading: boolean;
-  ordersError: string | null;
-  ordersTotal: number;
-  activeOrder: Order | null;
   cartError: string | null;
-  activeOrderError: string | null;
   orderPlacing: boolean;
   fetchCart: () => Promise<void>;
   _syncCart: () => Promise<void>;
@@ -46,7 +41,7 @@ export interface OrderStoreState {
     restaurantId: string,
     selectedOptions?: CartLineOption[],
     quantity?: number,
-  ) => Promise<boolean | void>;
+  ) => Promise<boolean | undefined>;
   removeFromCart: (
     menuItemId: string,
     selectedOptionIds?: string[],
@@ -55,41 +50,30 @@ export interface OrderStoreState {
   repeatOrder: (order: Order) => Promise<void>;
   cartTotal: () => number;
   cartCount: () => number;
-  setActiveOrder: (order: Order | null) => void;
-  clearActiveOrder: () => void;
-  fetchActiveOrder: () => Promise<void>;
   placeOrder: (
     promoCode?: string | null,
     comment?: string,
     requestedPickupAt?: string | null,
   ) => Promise<Order | undefined>;
-  fetchMyOrders: (params?: Record<string, unknown>) => Promise<void>;
-  fetchOrder: (id: string) => Promise<Order>;
 }
 
-export function createOrderStore({
+export function createCartStore({
   onRestaurantChange = null,
-}: CreateOrderStoreOptions = {}): UseBoundStore<StoreApi<OrderStoreState>> {
-  let syncChain: Promise<void> = Promise.resolve();
+  onOrderPlaced = null,
+}: CreateCartStoreOptions = {}): UseBoundStore<StoreApi<CartStoreState>> {
+  let syncQueue: Promise<void> = Promise.resolve();
 
-  return create<OrderStoreState>((set, get) => ({
+  return create<CartStoreState>((set, get) => ({
     cart: [],
     cartRestaurantId: null,
-    orders: [],
-    currentOrder: null,
-    ordersLoading: false,
-    ordersError: null,
-    ordersTotal: 0,
-    activeOrder: null,
     cartError: null,
-    activeOrderError: null,
     orderPlacing: false,
 
     fetchCart: async () => {
       try {
         const res = await cartService.getCart();
         set({
-          cart: (res.data.data.items ?? []).map(normalizeCartLine),
+          cart: res.data.data.items.map(normalizeCartLine),
           cartRestaurantId: res.data.data.restaurant_id ?? null,
           cartError: null,
         });
@@ -99,29 +83,35 @@ export function createOrderStore({
     },
 
     _syncCart: () => {
-      const run = syncChain
-        .catch(() => {})
-        .then(async () => {
-          const { cart, cartRestaurantId } = get();
-          if (!cartRestaurantId) return;
+      const run = (async () => {
+        try {
+          await syncQueue;
+        } catch (err) {
+          logError("useCartStore._syncCart.previous", err);
+        }
+        const { cart, cartRestaurantId } = get();
+        if (!cartRestaurantId) return;
+        try {
           await cartService.updateCart({
             restaurant_id: cartRestaurantId,
             items: cart.map(buildCartItemIn),
           });
           set({ cartError: null });
-        });
-      syncChain = run.catch(() => {});
-      return run.catch((err) => {
-        set({
-          cartError: translateApiError(err, "Не удалось синхронизировать корзину"),
-        });
-      });
+        } catch (err) {
+          set({
+            cartError: translateApiError(err, "Не удалось синхронизировать корзину"),
+          });
+          throw err;
+        }
+      })();
+      syncQueue = run.catch(() => {});
+      return run.catch(() => {});
     },
 
     addToCart: async (menuItem, restaurantId, selectedOptions = [], quantity = 1) => {
       const { cart, cartRestaurantId } = get();
       const normalizedOptions = uniqueOptions(selectedOptions);
-      const safeQuantity = Math.max(1, Number(quantity) || 1);
+      const safeQuantity = Math.max(1, quantity || 1);
       const selectedOptionIds = normalizedOptions
         .map((o) => o.id ?? o.option_id)
         .filter((id): id is string => Boolean(id));
@@ -130,12 +120,14 @@ export function createOrderStore({
         menuItem,
         quantity: safeQuantity,
         selectedOptionIds,
-        selectedOptions: normalizedOptions.map((o) => ({
-          option_id: o.id ?? o.option_id,
-          id: o.id ?? o.option_id,
-          name: o.name,
-          price_delta: o.price_delta,
-        })),
+        selectedOptions: normalizedOptions.map((o) => {
+          const optionId = o.id ?? o.option_id;
+          return {
+            ...(optionId !== undefined ? { option_id: optionId, id: optionId } : {}),
+            ...(o.name !== undefined ? { name: o.name } : {}),
+            ...(o.price_delta !== undefined ? { price_delta: o.price_delta } : {}),
+          };
+        }),
         lineKey,
       };
 
@@ -203,22 +195,6 @@ export function createOrderStore({
       get().cart.reduce((sum, i) => sum + getLinePrice(i) * i.quantity, 0),
     cartCount: () => get().cart.reduce((sum, i) => sum + i.quantity, 0),
 
-    setActiveOrder: (order) => set({ activeOrder: order }),
-    clearActiveOrder: () => set({ activeOrder: null }),
-
-    fetchActiveOrder: async () => {
-      try {
-        const res = await orderService.getMyOrders({ page: 1, size: 5 });
-        const orders = Array.isArray(res.data?.data) ? res.data.data : [];
-        const active = orders.find((o) =>
-          ["PENDING", "ACCEPTED", "READY"].includes(o.status),
-        );
-        set({ activeOrder: active ?? null, activeOrderError: null });
-      } catch (err) {
-        set({ activeOrderError: translateApiError(err, "Не удалось загрузить активный заказ") });
-      }
-    },
-
     placeOrder: async (promoCode = null, comment = "", requestedPickupAt = null) => {
       if (get().orderPlacing) return;
       set({ orderPlacing: true });
@@ -243,47 +219,12 @@ export function createOrderStore({
         const res = await orderService.create(payload, {
           headers: { "Idempotency-Key": makeIdempotencyKey() },
         });
-        set((s) => ({
-          orders: [res.data.data, ...s.orders],
-          currentOrder: res.data.data,
-          activeOrder: res.data.data,
-          cart: [],
-          cartRestaurantId: null,
-          orderPlacing: false,
-        }));
+        set({ cart: [], cartRestaurantId: null, orderPlacing: false });
+        onOrderPlaced?.(res.data.data);
         await cartService.clearCart();
         return res.data.data;
       } catch (err) {
         set({ orderPlacing: false });
-        throw err;
-      }
-    },
-
-    fetchMyOrders: async (params = {}) => {
-      set({ ordersLoading: true, ordersError: null });
-      try {
-        const res = await orderService.getMyOrders(params);
-        const orders = Array.isArray(res.data?.data) ? res.data.data : [];
-        set({
-          orders,
-          ordersTotal: res.data?.pagination?.total ?? orders.length,
-          ordersLoading: false,
-        });
-      } catch (err) {
-        set({
-          ordersLoading: false,
-          ordersError: translateApiError(err, "Не удалось загрузить заказы"),
-        });
-      }
-    },
-
-    fetchOrder: async (id) => {
-      try {
-        const res = await orderService.getById(id);
-        set({ currentOrder: res.data.data });
-        return res.data.data;
-      } catch (err) {
-        set({ currentOrder: null });
         throw err;
       }
     },

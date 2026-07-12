@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import type { Dispatch, FormEvent, SetStateAction } from "react";
+import type { Dispatch, SyntheticEvent, SetStateAction } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useAuthStore } from "@shared/store/useAuthStore.instance";
 import type { AuthStoreState, AuthUser } from "@shared/store/createAuthStore";
@@ -37,7 +37,7 @@ export interface UseProfilePageResult {
   pwLoading: boolean;
   pwError: string;
   pwSuccess: boolean;
-  handlePasswordChange: (e?: FormEvent) => Promise<void>;
+  handlePasswordChange: (e?: SyntheticEvent) => Promise<void>;
 }
 
 const asString = (value: unknown): string =>
@@ -78,7 +78,7 @@ export const useProfilePage = (): UseProfilePageResult => {
     setEditSuccess(false);
   }, [user]);
 
-  const cancelEdit = () => setEditMode(false);
+  const cancelEdit = () => { setEditMode(false); };
 
   const handleSave = async (): Promise<void> => {
     setEditLoading(true);
@@ -96,7 +96,7 @@ export const useProfilePage = (): UseProfilePageResult => {
     }
   };
 
-  const handlePasswordChange = async (e?: FormEvent): Promise<void> => {
+  const handlePasswordChange = async (e?: SyntheticEvent): Promise<void> => {
     e?.preventDefault();
     setPwLoading(true);
     setPwError("");
@@ -113,7 +113,7 @@ export const useProfilePage = (): UseProfilePageResult => {
   };
 
   const displayName =
-    user?.first_name && asString(user?.last_name)
+    user?.first_name && asString(user.last_name)
       ? `${user.first_name} ${asString(user.last_name)}`
       : user?.name || "Пользователь";
 

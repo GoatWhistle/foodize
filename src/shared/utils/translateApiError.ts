@@ -90,7 +90,8 @@ export function translateApiError(err: unknown, fallback?: string): string {
     const exact = errorMap[detail];
     if (exact) return exact;
     const prefix = Object.keys(errorMap).find((key) => detail.startsWith(key));
-    if (prefix) return errorMap[prefix];
+    const prefixValue = prefix != null ? errorMap[prefix] : undefined;
+    if (prefixValue) return prefixValue;
     if (fallback) return fallback;
     return (status != null ? statusFallbacks[status] : undefined) ?? detail;
   }

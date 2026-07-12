@@ -13,10 +13,13 @@ const RESTAURANT = {
 const render$ = (props: Partial<ComponentProps<typeof ShareModal>> = {}) =>
   render(<ShareModal restaurant={RESTAURANT} onClose={vi.fn()} {...props} />);
 
+let writeTextMock = vi.fn<(data: string) => Promise<void>>();
+
 beforeEach(() => {
   vi.clearAllMocks();
+  writeTextMock = vi.fn<(data: string) => Promise<void>>().mockResolvedValue(undefined);
   Object.assign(navigator, {
-    clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
+    clipboard: { writeText: writeTextMock },
   });
   vi.spyOn(window, 'open').mockImplementation(() => null);
 });
@@ -64,7 +67,9 @@ describe('ShareModal', () => {
   it('Telegram URL contains restaurant display_id', () => {
     render$();
     fireEvent.click(screen.getByText('Отправить в Telegram'));
-    const call = vi.mocked(window.open).mock.calls[0][0] as string;
+    const firstCall = vi.mocked(window.open).mock.calls[0];
+    if (!firstCall) throw new Error('window.open was not called');
+    const call = firstCall[0] as string;
     expect(call).toContain('cafe-central');
   });
 
@@ -77,7 +82,7 @@ describe('ShareModal', () => {
     await waitFor(() => {
       expect(screen.getByText('Ссылка скопирована!')).toBeInTheDocument();
     });
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+    expect(writeTextMock).toHaveBeenCalledWith(
       expect.stringContaining('cafe-central')
     );
   });
@@ -97,7 +102,9 @@ describe('ShareModal', () => {
   it('uses restaurant name in Telegram message text', () => {
     render$();
     fireEvent.click(screen.getByText('Отправить в Telegram'));
-    const call = vi.mocked(window.open).mock.calls[0][0] as string;
+    const firstCall = vi.mocked(window.open).mock.calls[0];
+    if (!firstCall) throw new Error('window.open was not called');
+    const call = firstCall[0] as string;
     expect(decodeURIComponent(call)).toContain('Центральное Кафе');
   });
 });

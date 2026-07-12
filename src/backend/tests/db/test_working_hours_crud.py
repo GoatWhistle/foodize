@@ -1,8 +1,10 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime, tzinfo
 
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.restaurants.crud import create_restaurant
+from features.restaurants.models import Restaurant
 from features.restaurants.schemas import RestaurantCreate
 from features.restaurants.working_hours_crud import (
     get_working_hours,
@@ -17,7 +19,7 @@ from features.vendors.schemas import VendorCreate
 from shared.enums.roles import UserRole
 
 
-async def _make_restaurant(db_session):
+async def _make_restaurant(db_session: AsyncSession) -> Restaurant:
     user = await create_user(
         db_session,
         UserCreate(
@@ -36,7 +38,7 @@ async def _make_restaurant(db_session):
 
 
 @pytest.mark.asyncio
-async def test_set_working_hours_replaces_existing_rows(db_session):
+async def test_set_working_hours_replaces_existing_rows(db_session: AsyncSession) -> None:
     restaurant = await _make_restaurant(db_session)
 
     first = [
@@ -62,15 +64,17 @@ async def test_set_working_hours_replaces_existing_rows(db_session):
     assert fetched[0].is_closed is True
 
 
-def test_is_open_now_returns_none_without_hours():
+def test_is_open_now_returns_none_without_hours() -> None:
     assert is_open_now([]) is None
 
 
-def test_is_open_now_handles_open_closed_and_missing_days(monkeypatch):
+def test_is_open_now_handles_open_closed_and_missing_days(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     class FixedDateTime(datetime):
         @classmethod
-        def now(cls, tz=None):
-            return datetime(2026, 5, 21, 12, 0, tzinfo=timezone.utc)
+        def now(cls, tz: tzinfo | None = None) -> datetime:  # type: ignore[override]
+            return datetime(2026, 5, 21, 12, 0, tzinfo=UTC)
 
     monkeypatch.setattr(
         "features.restaurants.working_hours_crud.datetime",
@@ -78,13 +82,19 @@ def test_is_open_now_handles_open_closed_and_missing_days(monkeypatch):
     )
 
     class Hours:
-        def __init__(self, day_of_week, open_time, close_time, is_closed=False):
+        def __init__(
+            self,
+            day_of_week: int,
+            open_time: str,
+            close_time: str,
+            is_closed: bool = False,
+        ) -> None:
             self.day_of_week = day_of_week
             self.open_time = open_time
             self.close_time = close_time
             self.is_closed = is_closed
 
-    assert is_open_now([Hours(3, "09:00", "18:00")]) is True
-    assert is_open_now([Hours(3, "13:00", "18:00")]) is False
-    assert is_open_now([Hours(3, "09:00", "18:00", is_closed=True)]) is False
-    assert is_open_now([Hours(4, "09:00", "18:00")]) is None
+    assert is_open_now([Hours(3, "09:00", "18:00")]) is True  # type: ignore[list-item]
+    assert is_open_now([Hours(3, "13:00", "18:00")]) is False  # type: ignore[list-item]
+    assert is_open_now([Hours(3, "09:00", "18:00", is_closed=True)]) is False  # type: ignore[list-item]
+    assert is_open_now([Hours(4, "09:00", "18:00")]) is None  # type: ignore[list-item]

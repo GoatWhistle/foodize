@@ -1,6 +1,6 @@
-import type { FormEvent, ReactNode } from "react";
+import type { SyntheticEvent, ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Star, X, ChatCircleText, PencilSimple } from "@phosphor-icons/react";
+import { StarIcon, XIcon, ChatCircleTextIcon, PencilSimpleIcon } from "@phosphor-icons/react";
 import Pagination from "@shared/components/Pagination/Pagination";
 import ReviewCard from "@shared/components/ReviewCard/ReviewCard";
 import StarRatingInput from "@shared/components/StarRatingInput/StarRatingInput";
@@ -32,7 +32,7 @@ interface ReviewsModalProps {
   reviewSuccess?: boolean;
   currentUser?: ReviewsUser | null;
   onClose?: () => void;
-  onSubmit: (payload: SubmitPayload | FormEvent<HTMLFormElement>) => void;
+  onSubmit: (payload: SubmitPayload | SyntheticEvent<HTMLFormElement>) => void;
   onDeleteWithConfirm: (id: string) => void;
   reviewsPage: number;
   setReviewsPage: (page: number) => void;
@@ -102,7 +102,7 @@ const ReviewsModal = ({
         showAvatar
         showVerifiedBadge
         canDelete={isOwn}
-        onDelete={() => onDeleteWithConfirm(review.id)}
+        onDelete={() => { onDeleteWithConfirm(review.id); }}
         className={isOwn ? "review-card--own" : undefined}
         headerExtra={isOwn ? <span className={s.ownBadge}>Вы</span> : null}
         actionsExtra={
@@ -113,7 +113,7 @@ const ReviewsModal = ({
               onClick={openReviewForm}
               className={s.editBtn}
             >
-              <PencilSimple size={13} weight="bold" />
+              <PencilSimpleIcon size={13} weight="bold" />
             </button>
           ) : null
         }
@@ -121,7 +121,7 @@ const ReviewsModal = ({
     );
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (editableForm) {
       onSubmit({ myReview, onSuccess: () => setReviewFormOpen?.(false) });
@@ -131,7 +131,7 @@ const ReviewsModal = ({
   };
 
   const modal: ReactNode = (
-    <div className={s.overlay} style={{ zIndex: 3000 }}>
+    <div className={s.overlay} style={{ zIndex: "var(--z-modal)" }}>
       <div
         ref={contentRef}
         className={s.content}
@@ -144,8 +144,8 @@ const ReviewsModal = ({
             <h2 id="reviews-modal-title" className={s.title}>Отзывы</h2>
             {showRatingInHeader && rating != null && (
               <span className={s.headerRating}>
-                <Star size={14} weight="fill" color="var(--star)" />
-                {Number(rating).toFixed(1)}
+                <StarIcon size={14} weight="fill" color="var(--star)" />
+                {rating.toFixed(1)}
               </span>
             )}
           </div>
@@ -157,14 +157,14 @@ const ReviewsModal = ({
                 style={{ display: "flex", alignItems: "center", gap: 5 }}
               >
                 {myReview ? (
-                  <><PencilSimple size={13} weight="bold" /> Редактировать</>
+                  <><PencilSimpleIcon size={13} weight="bold" /> Редактировать</>
                 ) : (
-                  <><Star size={13} weight="bold" /> Оставить отзыв</>
+                  <><StarIcon size={13} weight="bold" /> Оставить отзыв</>
                 )}
               </button>
             )}
             <button onClick={onClose} className={s.closeBtn} aria-label="Закрыть">
-              <X size={24} weight="bold" />
+              <XIcon size={24} weight="bold" />
             </button>
           </div>
         </div>
@@ -182,7 +182,7 @@ const ReviewsModal = ({
                     onClick={() => setReviewFormOpen?.(false)}
                     className={s.closeBtn}
                   >
-                    <X size={18} weight="bold" />
+                    <XIcon size={18} weight="bold" />
                   </button>
                 </div>
               )}
@@ -190,7 +190,7 @@ const ReviewsModal = ({
                 <div className={s.formRating}>
                   <StarRatingInput
                     value={reviewForm.rating}
-                    onChange={(r) => setReviewForm({ ...reviewForm, rating: r })}
+                    onChange={(r) => { setReviewForm({ ...reviewForm, rating: r }); }}
                     size={28}
                     activeColor="var(--amber)"
                   />
@@ -199,7 +199,7 @@ const ReviewsModal = ({
                   className="form-input"
                   placeholder="Ваш отзыв..."
                   value={reviewForm.text}
-                  onChange={(e) => setReviewForm({ ...reviewForm, text: e.target.value })}
+                  onChange={(e) => { setReviewForm({ ...reviewForm, text: e.target.value }); }}
                   style={{ minHeight: 72 }}
                 />
                 {reviewError && <div className="form-error">{reviewError}</div>}
@@ -216,7 +216,7 @@ const ReviewsModal = ({
             <div className="loading-center"><div className="spinner" /></div>
           ) : reviewsList.length === 0 ? (
             <div className={s.empty}>
-              <ChatCircleText size={36} style={{ opacity: 0.4 }} />
+              <ChatCircleTextIcon size={36} style={{ opacity: 0.4 }} />
               <div className={s.emptyTitle}>Отзывов пока нет</div>
               <div className={s.emptyHint}>Будьте первым, кто оставит отзыв!</div>
             </div>

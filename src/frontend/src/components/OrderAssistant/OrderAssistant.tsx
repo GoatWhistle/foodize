@@ -1,9 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { X, CaretRight, Sparkle } from '@phosphor-icons/react';
+import { XIcon, CaretRightIcon, SparkleIcon } from '@phosphor-icons/react';
 import { aiOrderService } from '@shared/services/aiOrderService';
-import { useOrderStore } from '../../store/useOrderStore';
+import { useDialogKeyboard } from '@shared/hooks/useDialogKeyboard';
+import { makeId } from '@shared/utils/id';
+import { useCartStore } from '../../store/useCartStore';
 
 interface AssistantMessage {
+  id: string;
   role: 'user' | 'assistant';
   content: string;
 }
@@ -23,7 +26,12 @@ export default function OrderAssistant() {
 
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const fetchCart = useOrderStore((s) => s.fetchCart);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const fetchCart = useCartStore((s) => s.fetchCart);
+
+  const close = useCallback(() => { setOpen(false); }, []);
+  useDialogKeyboard({ active: open, onEscape: close });
 
   useEffect(() => {
     return () => abortRef.current?.abort();
@@ -33,10 +41,22 @@ export default function OrderAssistant() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages, open]);
 
+  const wasOpenRef = useRef(false);
+  useEffect(() => {
+    if (open) {
+      inputRef.current?.focus();
+      wasOpenRef.current = true;
+    } else if (wasOpenRef.current) {
+      wasOpenRef.current = false;
+      triggerRef.current?.focus();
+    }
+  }, [open]);
+
   const appendToLastAssistant = useCallback((text: string) => {
     setMessages((prev) => {
       const next = [...prev];
       const last = next[next.length - 1];
+      if (!last) return prev;
       next[next.length - 1] = { ...last, content: last.content + text };
       return next;
     });
@@ -49,8 +69,11 @@ export default function OrderAssistant() {
 
       setError(null);
       setInput('');
-      const history: AssistantMessage[] = [...messages, { role: 'user', content }];
-      setMessages([...history, { role: 'assistant', content: '' }]);
+      const history: AssistantMessage[] = [
+        ...messages,
+        { id: makeId(), role: 'user', content },
+      ];
+      setMessages([...history, { id: makeId(), role: 'assistant', content: '' }]);
       setStreaming(true);
 
       const controller = new AbortController();
@@ -68,7 +91,7 @@ export default function OrderAssistant() {
       } finally {
         setStreaming(false);
         abortRef.current = null;
-        void fetchCart?.();
+        void fetchCart();
       }
     },
     [input, streaming, messages, appendToLastAssistant, fetchCart]
@@ -77,13 +100,14 @@ export default function OrderAssistant() {
   if (!open) {
     return (
       <button
-        onClick={() => setOpen(true)}
+        ref={triggerRef}
+        onClick={() => { setOpen(true); }}
         aria-label="Помощник заказа"
         style={{
           position: 'fixed',
           right: 16,
           bottom: 80,
-          zIndex: 1000,
+          zIndex: 'var(--z-banner)',
           display: 'flex',
           alignItems: 'center',
           gap: 8,
@@ -97,7 +121,7 @@ export default function OrderAssistant() {
           cursor: 'pointer',
         }}
       >
-        <Sparkle size={18} weight="fill" />
+        <SparkleIcon size={18} weight="fill" />
         Помощник
       </button>
     );
@@ -105,11 +129,13 @@ export default function OrderAssistant() {
 
   return (
     <div
+      role="dialog"
+      aria-label="Помощник заказа"
       style={{
         position: 'fixed',
         right: 16,
         bottom: 80,
-        zIndex: 1000,
+        zIndex: 'var(--z-banner)',
         width: 'min(380px, calc(100vw - 32px))',
         maxHeight: '70vh',
         display: 'flex',
@@ -131,11 +157,11 @@ export default function OrderAssistant() {
         }}
       >
         <strong style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Sparkle size={16} weight="fill" color="var(--fire)" />
+          <SparkleIcon size={16} weight="fill" color="var(--fire)" />
           Помощник заказа
         </strong>
         <button
-          onClick={() => setOpen(false)}
+          onClick={close}
           aria-label="Закрыть"
           style={{
             background: 'none',
@@ -145,7 +171,7 @@ export default function OrderAssistant() {
             display: 'flex',
           }}
         >
-          <X size={18} />
+          <XIcon size={18} />
         </button>
       </div>
 
@@ -181,7 +207,7 @@ export default function OrderAssistant() {
 
         {messages.map((m, i) => (
           <div
-            key={i}
+            key={m.id}
             style={{
               alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
               maxWidth: '85%',
@@ -221,11 +247,12 @@ export default function OrderAssistant() {
         }}
       >
         <input
+          ref={inputRef}
           className="form-input"
           placeholder="Что хотите заказать?"
           value={input}
           disabled={streaming}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => { setInput(e.target.value); }}
           style={{ flex: 1 }}
         />
         <button
@@ -235,7 +262,7 @@ export default function OrderAssistant() {
           disabled={streaming || !input.trim()}
           style={{ display: 'flex', alignItems: 'center' }}
         >
-          <CaretRight size={16} aria-hidden="true" />
+          <CaretRightIcon size={16} aria-hidden="true" />
         </button>
       </form>
     </div>

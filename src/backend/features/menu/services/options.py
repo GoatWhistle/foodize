@@ -40,9 +40,12 @@ async def update_option_group_for_vendor(
     vendor_id: uuid.UUID,
 ) -> MenuItemOptionGroupResponse:
     group = await get_owned_option_group(session, restaurant_id, item_id, group_id, vendor_id)
-    if data.max_selected is not None and data.min_selected is not None:
-        if data.min_selected > data.max_selected:
-            raise BadRequestException(detail="min_selected cannot be greater than max_selected")
+    if (
+        data.max_selected is not None
+        and data.min_selected is not None
+        and data.min_selected > data.max_selected
+    ):
+        raise BadRequestException(detail="min_selected cannot be greater than max_selected")
     updated = await crud.update_option_group(session, group, data)
     return MenuItemOptionGroupResponse.model_validate(updated)
 

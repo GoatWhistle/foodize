@@ -2,6 +2,7 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from database.db_helper import register_after_commit
 from features.admin.audit_log import service as audit_service
 from features.menu import crud
 from features.menu.exceptions import MenuItemNotFoundException
@@ -114,8 +115,10 @@ async def set_menu_item_photo(
     old_url = item.photo_url
     try:
         url = await upload_image(data, content_type, prefix="menu")
-    except UnsupportedImageType:
-        raise BadRequestException(detail="Поддерживаются только изображения JPEG, PNG или WebP")
+    except UnsupportedImageType as exc:
+        raise BadRequestException(
+            detail="Поддерживаются только изображения JPEG, PNG или WebP"
+        ) from exc
 
     item.photo_url = url
     await audit_service.log_action(
@@ -129,10 +132,7 @@ async def set_menu_item_photo(
     await session.flush()
 
     if old_url and old_url != url:
-        try:
-            await delete_image(old_url)
-        except Exception:  # noqa: BLE001 - best-effort cleanup, never fail the request
-            pass
+        register_after_commit(session, lambda: delete_image(old_url))
 
     loaded = await crud.get_menu_item_by_id(session, item.id)
     if loaded is None:
@@ -163,10 +163,7 @@ async def remove_menu_item_photo(
     )
     await session.flush()
 
-    try:
-        await delete_image(old_url)
-    except Exception:  # noqa: BLE001 - best-effort cleanup
-        pass
+    register_after_commit(session, lambda: delete_image(old_url))
 
     loaded = await crud.get_menu_item_by_id(session, item.id)
     if loaded is None:

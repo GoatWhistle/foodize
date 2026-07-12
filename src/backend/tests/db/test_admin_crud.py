@@ -1,4 +1,7 @@
+from typing import Any
+
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.admin.crud import (
     count_all_orders,
@@ -24,7 +27,7 @@ from shared.permissions import VENDOR_PERMISSIONS, serialize_permissions
 
 
 @pytest.fixture
-async def seeded_db(db_session):
+async def seeded_db(db_session: AsyncSession) -> dict[str, Any]:
     vendor_user = await create_user(
         db_session,
         UserCreate(
@@ -87,13 +90,17 @@ async def seeded_db(db_session):
 
 
 @pytest.mark.asyncio
-async def test_get_all_users_returns_all(db_session, seeded_db):
+async def test_get_all_users_returns_all(
+    db_session: AsyncSession, seeded_db: dict[str, Any]
+) -> None:
     users = await get_all_users(db_session)
     assert len(users) == 2
 
 
 @pytest.mark.asyncio
-async def test_get_all_users_filter_by_role(db_session, seeded_db):
+async def test_get_all_users_filter_by_role(
+    db_session: AsyncSession, seeded_db: dict[str, Any]
+) -> None:
     vendors = await get_all_users(db_session, role=UserRole.VENDOR)
     assert len(vendors) == 1
     assert vendors[0].id == seeded_db["vendor_user"].id
@@ -104,13 +111,13 @@ async def test_get_all_users_filter_by_role(db_session, seeded_db):
 
 
 @pytest.mark.asyncio
-async def test_count_all_users(db_session, seeded_db):
+async def test_count_all_users(db_session: AsyncSession, seeded_db: dict[str, Any]) -> None:
     assert await count_all_users(db_session) == 2
     assert await count_all_users(db_session, role=UserRole.CUSTOMER) == 1
 
 
 @pytest.mark.asyncio
-async def test_get_user_by_id(db_session, seeded_db):
+async def test_get_user_by_id(db_session: AsyncSession, seeded_db: dict[str, Any]) -> None:
     customer = seeded_db["customer"]
     fetched = await get_user_by_id(db_session, customer.id)
     assert fetched is not None
@@ -118,24 +125,27 @@ async def test_get_user_by_id(db_session, seeded_db):
 
 
 @pytest.mark.asyncio
-async def test_deactivate_user(db_session, seeded_db):
+async def test_deactivate_user(db_session: AsyncSession, seeded_db: dict[str, Any]) -> None:
     customer = seeded_db["customer"]
     deactivated = await deactivate_user(db_session, customer)
     assert deactivated.is_active is False
 
     fetched = await get_user_by_id(db_session, customer.id)
+    assert fetched is not None
     assert fetched.is_active is False
 
 
 @pytest.mark.asyncio
-async def test_get_all_orders(db_session, seeded_db):
+async def test_get_all_orders(db_session: AsyncSession, seeded_db: dict[str, Any]) -> None:
     orders = await get_all_orders(db_session)
     assert len(orders) == 1
     assert orders[0].id == seeded_db["order"].id
 
 
 @pytest.mark.asyncio
-async def test_get_all_orders_filter_by_status(db_session, seeded_db):
+async def test_get_all_orders_filter_by_status(
+    db_session: AsyncSession, seeded_db: dict[str, Any]
+) -> None:
     pending = await get_all_orders(db_session, status=OrderStatus.PENDING)
     assert len(pending) == 1
 
@@ -144,13 +154,13 @@ async def test_get_all_orders_filter_by_status(db_session, seeded_db):
 
 
 @pytest.mark.asyncio
-async def test_count_all_orders(db_session, seeded_db):
+async def test_count_all_orders(db_session: AsyncSession, seeded_db: dict[str, Any]) -> None:
     assert await count_all_orders(db_session) == 1
     assert await count_all_orders(db_session, status=OrderStatus.ACCEPTED) == 0
 
 
 @pytest.mark.asyncio
-async def test_get_platform_stats(db_session, seeded_db):
+async def test_get_platform_stats(db_session: AsyncSession, seeded_db: dict[str, Any]) -> None:
     stats = await get_platform_stats(db_session)
 
     assert stats.total_restaurants == 1

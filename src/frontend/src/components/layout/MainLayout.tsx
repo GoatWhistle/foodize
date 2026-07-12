@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Outlet } from 'react-router-dom';
-import { User, SignIn, ShoppingCart } from '@phosphor-icons/react';
+import { UserIcon, SignInIcon, ShoppingCartIcon } from '@phosphor-icons/react';
 
 import FoodizeLogo from '@shared/components/FoodizeLogo/FoodizeLogo';
 import CartDrawer from '@shared/components/CartDrawer/CartDrawer';
@@ -9,7 +9,7 @@ import NotificationBell from '../NotificationBell/NotificationBell';
 import OrderAssistant from '../OrderAssistant/OrderAssistant';
 
 import { useAuthStore } from '../../store/useAuthStore';
-import { useOrderStore } from '../../store/useOrderStore';
+import { useCartStore } from '../../store/useCartStore';
 import { ROUTES } from '../../constants/routes';
 
 const DEEP_LINK_ID_RE = /^[a-zA-Z0-9-]{1,64}$/;
@@ -18,8 +18,8 @@ const MainLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const cart = useOrderStore((s) => s.cart);
+  const isAuthenticated = useAuthStore((s) => s.user !== null);
+  const cart = useCartStore((s) => s.cart);
   const total = useMemo(
     () =>
       cart.reduce((sum, line) => {
@@ -27,7 +27,7 @@ const MainLayout = () => {
           (acc, option) => acc + (Number(option.price_delta) || 0),
           0
         );
-        const linePrice = (Number(line.menuItem.price) || 0) + optionsTotal;
+        const linePrice = (line.menuItem.price || 0) + optionsTotal;
         return sum + linePrice * line.quantity;
       }, 0),
     [cart]
@@ -41,8 +41,8 @@ const MainLayout = () => {
   useEffect(() => {
     if (cartItemsCount > previousCartItemsCount.current) {
       setBadgePop(false);
-      const frame = window.requestAnimationFrame(() => setBadgePop(true));
-      const timer = window.setTimeout(() => setBadgePop(false), 520);
+      const frame = window.requestAnimationFrame(() => { setBadgePop(true); });
+      const timer = window.setTimeout(() => { setBadgePop(false); }, 520);
       previousCartItemsCount.current = cartItemsCount;
       return () => {
         window.cancelAnimationFrame(frame);
@@ -82,7 +82,7 @@ const MainLayout = () => {
               className={`nav-link${location.pathname.startsWith(ROUTES.PROFILE) ? ' active' : ''}`}
               aria-label="Профиль"
             >
-              <User size={18} weight="bold" />
+              <UserIcon size={18} weight="bold" />
               Профиль
             </Link>
           )}
@@ -94,7 +94,7 @@ const MainLayout = () => {
               id="header-login-btn"
               style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
             >
-              <SignIn size={16} weight="bold" />
+              <SignInIcon size={16} weight="bold" />
               Войти
             </Link>
           )}
@@ -108,11 +108,11 @@ const MainLayout = () => {
       {cartItemsCount > 0 && (
         <button
           className="cart-fab"
-          onClick={() => setIsCartOpen(true)}
+          onClick={() => { setIsCartOpen(true); }}
           aria-label="Открыть корзину"
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <ShoppingCart size={20} weight="fill" />
+            <ShoppingCartIcon size={20} weight="fill" />
             <span>Корзина</span>
             <span className={`cart-badge${badgePop ? ' cart-badge-pop' : ''}`}>
               {cartItemsCount}
@@ -122,7 +122,7 @@ const MainLayout = () => {
         </button>
       )}
 
-      {isCartOpen && <CartDrawer onClose={() => setIsCartOpen(false)} />}
+      {isCartOpen && <CartDrawer onClose={() => { setIsCartOpen(false); }} />}
 
       {isAuthenticated && <OrderAssistant />}
     </div>

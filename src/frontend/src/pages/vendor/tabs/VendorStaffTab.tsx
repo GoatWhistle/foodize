@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
-import { Check, Trash, X } from '@phosphor-icons/react';
+import { CheckIcon, TrashIcon, XIcon } from '@phosphor-icons/react';
 import EmptyState from '@shared/components/EmptyState/EmptyState';
 import Pagination from '@shared/components/Pagination/Pagination';
 import { STAFF_STATUS_RU, translate } from '@shared/utils/locales';
@@ -44,13 +44,13 @@ export default function VendorStaffTab({
       <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
         <button
           className={`btn btn-sm ${staffSubTab === 'members' ? 'btn-primary' : 'btn-secondary'}`}
-          onClick={() => setStaffSubTab('members')}
+          onClick={() => { setStaffSubTab('members'); }}
         >
           Сотрудники
         </button>
         <button
           className={`btn btn-sm ${staffSubTab === 'requests' ? 'btn-primary' : 'btn-secondary'}`}
-          onClick={() => setStaffSubTab('requests')}
+          onClick={() => { setStaffSubTab('requests'); }}
         >
           Заявки
         </button>
@@ -78,9 +78,9 @@ export default function VendorStaffTab({
                       className="btn btn-secondary btn-sm"
                       style={{ color: 'var(--error)' }}
                       disabled={staffMemberRemoving === m.id}
-                      onClick={() => handleRemoveStaffMember(m.id)}
+                      onClick={() => { handleRemoveStaffMember(m.id); }}
                     >
-                      {staffMemberRemoving === m.id ? '...' : <Trash size={16} />}
+                      {staffMemberRemoving === m.id ? '...' : <TrashIcon size={16} />}
                     </button>
                   </div>
                 </div>
@@ -118,16 +118,16 @@ export default function VendorStaffTab({
                       <button
                         className="btn btn-primary btn-sm"
                         disabled={staffDecisionLoading === req.id}
-                        onClick={() => handleStaffDecision(req.id, 'ACCEPTED')}
+                        onClick={() => { handleStaffDecision(req.id, 'ACCEPTED'); }}
                       >
-                        <Check size={16} />
+                        <CheckIcon size={16} />
                       </button>
                       <button
                         className="btn btn-secondary btn-sm"
                         disabled={staffDecisionLoading === req.id}
-                        onClick={() => handleStaffDecision(req.id, 'REJECTED')}
+                        onClick={() => { handleStaffDecision(req.id, 'REJECTED'); }}
                       >
-                        <X size={16} />
+                        <XIcon size={16} />
                       </button>
                     </div>
                   )}

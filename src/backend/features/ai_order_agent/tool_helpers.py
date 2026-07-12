@@ -2,6 +2,7 @@ import hashlib
 import json
 import re
 import uuid
+from typing import Any
 
 from features.cart.schemas import CartItemIn, CartResponse, CartSelectedOption
 from features.orders.exceptions import (
@@ -93,7 +94,7 @@ def cart_state_hash(cart: CartResponse) -> str:
     return hashlib.sha256("|".join(parts).encode()).hexdigest()[:16]
 
 
-def cart_summary(cart: CartResponse) -> dict:
+def cart_summary(cart: CartResponse) -> dict[str, Any]:
     items = []
     total = 0
     for it in cart.items:

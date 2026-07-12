@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import type { CSSProperties, TouchEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { Package, ArrowClockwise } from "@phosphor-icons/react";
+import { PackageIcon, ArrowClockwiseIcon } from "@phosphor-icons/react";
 import EmptyState from "@shared/components/EmptyState/EmptyState";
 import OrderCard from "@shared/components/OrderCard/OrderCard";
 import Pagination from "@shared/components/Pagination/Pagination";
@@ -24,7 +24,7 @@ interface OrdersPageProps {
   pullToRefresh?: boolean;
   expandableCards?: boolean;
   statusFilters?: StatusFilter[];
-  pageClassName?: string;
+  pageClassName?: string | undefined;
   style?: CSSProperties;
 }
 
@@ -71,11 +71,14 @@ const OrdersPage = ({
   }, [refresh]);
 
   const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
-    if (containerRef.current?.scrollTop === 0) touchStartY.current = e.touches[0].clientY;
+    const touch = e.touches[0];
+    if (touch && containerRef.current?.scrollTop === 0) touchStartY.current = touch.clientY;
   };
   const handleTouchMove = (e: TouchEvent<HTMLDivElement>) => {
     if (!touchStartY.current) return;
-    const delta = e.touches[0].clientY - touchStartY.current;
+    const touch = e.touches[0];
+    if (!touch) return;
+    const delta = touch.clientY - touchStartY.current;
     if (delta > 0 && containerRef.current?.scrollTop === 0) setPullY(Math.min(delta * 0.45, 64));
   };
   const handleTouchEnd = () => {
@@ -119,7 +122,7 @@ const OrdersPage = ({
           transition: pullY > 0 ? "none" : "height 0.3s var(--ease-out)",
           marginTop: -8, marginBottom: 8,
         }}>
-          <ArrowClockwise
+          <ArrowClockwiseIcon
             size={22} color="var(--accent)" weight="bold"
             style={{
               transform: refreshing ? "none" : `rotate(${(pullY / 52) * 180}deg)`,
@@ -130,7 +133,7 @@ const OrdersPage = ({
       )}
 
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-        <Package size={22} weight="bold" color="var(--accent)" />
+        <PackageIcon size={22} weight="bold" color="var(--accent)" />
         <h1 style={{ fontFamily: "var(--font-sans)", fontSize: "1.4rem", fontWeight: 800, letterSpacing: "-0.03em", margin: 0 }}>
           Мои заказы
         </h1>
@@ -159,7 +162,7 @@ const OrdersPage = ({
         <EmptyState
           title={emptyTitle}
           subtitle={emptySubtitle}
-          action={routes.home ? { label: "Выбрать заведение", onClick: () => { void navigate(routes.home as string); } } : undefined}
+          {...(routes.home ? { action: { label: "Выбрать заведение", onClick: () => { void navigate(routes.home as string); } } } : {})}
         />
       ) : (
         <div className={ordersLoading ? "loading-dim" : undefined}>

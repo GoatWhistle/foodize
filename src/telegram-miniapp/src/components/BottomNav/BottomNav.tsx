@@ -1,7 +1,8 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Storefront, Package, User, type Icon } from "@phosphor-icons/react";
+import { StorefrontIcon, PackageIcon, UserIcon, type Icon } from "@phosphor-icons/react";
 import { useNotificationStore } from "../../store/useNotificationStore";
 import { getHapticFeedback } from "../../telegram/sdk";
+import { logError } from "@shared/utils/logError";
 import s from "./BottomNav.module.css";
 
 interface Tab {
@@ -11,15 +12,17 @@ interface Tab {
 }
 
 const TABS: Tab[] = [
-  { path: "/", icon: Storefront, label: "Рестораны" },
-  { path: "/orders", icon: Package, label: "Заказы" },
-  { path: "/profile", icon: User, label: "Профиль" },
+  { path: "/", icon: StorefrontIcon, label: "Рестораны" },
+  { path: "/orders", icon: PackageIcon, label: "Заказы" },
+  { path: "/profile", icon: UserIcon, label: "Профиль" },
 ];
 
 const haptic = (): void => {
   try {
-    getHapticFeedback()?.selectionChanged?.();
-  } catch {}
+    getHapticFeedback()?.selectionChanged();
+  } catch (err) {
+    logError("BottomNav.haptic", err);
+  }
 };
 
 const BottomNav = () => {

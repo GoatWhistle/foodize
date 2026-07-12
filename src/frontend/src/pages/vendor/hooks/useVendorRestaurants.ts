@@ -15,6 +15,8 @@ import type {
 
 export type VendorProfile = Schemas['VendorResponse'];
 
+const DEFAULT_PREP_MINUTES = 15;
+
 export interface WorkingHoursRow {
   day_of_week: number;
   open_time: string;
@@ -70,7 +72,7 @@ export const useVendorRestaurants = ({ activeTab, setFormLoading, setFormError }
       restaurants: s.restaurants,
       fetchMyRestaurants: s.fetchMyRestaurants,
       fetchMenu: s.fetchMenu,
-      loading: s.loading,
+      loading: s.myLoading,
       addMenuItem: s.addMenuItem,
       menus: s.menus,
     }))
@@ -87,7 +89,7 @@ export const useVendorRestaurants = ({ activeTab, setFormLoading, setFormError }
   const [newRestaurant, setNewRestaurant] = useState<NewRestaurantForm>({
     name: '',
     address: '',
-    avg_prep_time_minutes: 15,
+    avg_prep_time_minutes: DEFAULT_PREP_MINUTES,
     max_active_orders: '',
   });
   const [editRestaurant, setEditRestaurant] = useState<Restaurant | null>(null);
@@ -101,8 +103,8 @@ export const useVendorRestaurants = ({ activeTab, setFormLoading, setFormError }
     void fetchMyRestaurants();
     vendorService
       .getMyProfile()
-      .then((res) => setVendorProfile(res.data?.data || null))
-      .catch((err) => logError('useVendorRestaurants.getMyProfile', err));
+      .then((res) => { setVendorProfile(res.data.data); })
+      .catch((err: unknown) => { logError('useVendorRestaurants.getMyProfile', err); });
   }, [fetchMyRestaurants]);
 
   useEffect(() => {
@@ -119,7 +121,7 @@ export const useVendorRestaurants = ({ activeTab, setFormLoading, setFormError }
       restaurantService
         .getWorkingHours(selectedRestaurant.id)
         .then((res) => {
-          const data = Array.isArray(res.data?.data) ? res.data.data : [];
+          const data = Array.isArray(res.data.data) ? res.data.data : [];
           setWorkingHours(
             data.length === 0
               ? buildDefaultHours()
@@ -132,7 +134,7 @@ export const useVendorRestaurants = ({ activeTab, setFormLoading, setFormError }
           }
           setWorkingHours(buildDefaultHours());
         })
-        .finally(() => setWorkingHoursLoading(false));
+        .finally(() => { setWorkingHoursLoading(false); });
     }
   }, [activeTab, selectedRestaurant]);
 
@@ -146,7 +148,7 @@ export const useVendorRestaurants = ({ activeTab, setFormLoading, setFormError }
         address: newRestaurant.address,
         is_hiring: true,
         is_open: true,
-        avg_prep_time_minutes: Number(newRestaurant.avg_prep_time_minutes) || 15,
+        avg_prep_time_minutes: Number(newRestaurant.avg_prep_time_minutes) || DEFAULT_PREP_MINUTES,
         max_active_orders: newRestaurant.max_active_orders
           ? Number(newRestaurant.max_active_orders)
           : null,
@@ -154,7 +156,7 @@ export const useVendorRestaurants = ({ activeTab, setFormLoading, setFormError }
       const r = await createRestaurant(payload);
       setSelectedRestaurant(r);
       setShowAddRestaurant(false);
-      setNewRestaurant({ name: '', address: '', avg_prep_time_minutes: 15, max_active_orders: '' });
+      setNewRestaurant({ name: '', address: '', avg_prep_time_minutes: DEFAULT_PREP_MINUTES, max_active_orders: '' });
     } catch (err) {
       setFormError(translateApiError(err, 'Ошибка создания'));
     } finally {
@@ -171,12 +173,12 @@ export const useVendorRestaurants = ({ activeTab, setFormLoading, setFormError }
       setFormLoading(false);
       return;
     }
-    if (!patch.name?.trim()) {
+    if (!patch.name.trim()) {
       setFormError('Укажите название заведения');
       setFormLoading(false);
       return;
     }
-    if (!patch.address?.trim()) {
+    if (!patch.address.trim()) {
       setFormError('Укажите адрес заведения');
       setFormLoading(false);
       return;
@@ -185,14 +187,14 @@ export const useVendorRestaurants = ({ activeTab, setFormLoading, setFormError }
       name: patch.name.trim(),
       address: patch.address.trim(),
       description: patch.description?.trim() || null,
-      is_open: patch.is_open ?? false,
-      is_hiring: patch.is_hiring ?? false,
-      is_ordering_paused: patch.is_ordering_paused ?? false,
+      is_open: patch.is_open,
+      is_hiring: patch.is_hiring,
+      is_ordering_paused: patch.is_ordering_paused,
       ordering_paused_until: patch.ordering_paused_until
         ? fromDateTimeLocalValue(patch.ordering_paused_until)
         : null,
-      avg_prep_time_minutes: Number(patch.avg_prep_time_minutes) || 15,
-      max_active_orders: patch.max_active_orders ? Number(patch.max_active_orders) : null,
+      avg_prep_time_minutes: patch.avg_prep_time_minutes || DEFAULT_PREP_MINUTES,
+      max_active_orders: patch.max_active_orders ? patch.max_active_orders : null,
       ...(patch.photo_url != null ? { photo_url: patch.photo_url } : {}),
     };
     if (!selectedRestaurant) {
@@ -225,12 +227,12 @@ export const useVendorRestaurants = ({ activeTab, setFormLoading, setFormError }
     }));
     try {
       const res = await restaurantService.setWorkingHours(selectedRestaurant.id, payload);
-      const data = Array.isArray(res.data?.data) ? res.data.data : [];
+      const data = Array.isArray(res.data.data) ? res.data.data : [];
       if (data.length > 0) {
         setWorkingHours([...data].sort((a, b) => a.day_of_week - b.day_of_week));
       }
       setWorkingHoursSaved(true);
-      setTimeout(() => setWorkingHoursSaved(false), 2000);
+      setTimeout(() => { setWorkingHoursSaved(false); }, 2000);
     } catch (err) {
       setWorkingHoursError(translateApiError(err, 'Не удалось сохранить расписание'));
     } finally {

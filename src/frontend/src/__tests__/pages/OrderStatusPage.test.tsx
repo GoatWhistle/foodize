@@ -3,17 +3,22 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { Order } from '@shared/types/models';
 import OrderStatusPage from '../../pages/orders/OrderStatusPage';
-import { useOrderStore } from '../../store/useOrderStore';
+import { useOrdersStore } from '../../store/useOrdersStore';
 
 type StoreState = {
   fetchOrder: ReturnType<typeof vi.fn>;
   currentOrder: Order | null;
-  repeatOrder?: ReturnType<typeof vi.fn>;
 };
 type StoreSelector = (s: StoreState) => unknown;
 
-vi.mock('../../store/useOrderStore', () => ({
-  useOrderStore: vi.fn(),
+vi.mock('../../store/useOrdersStore', () => ({
+  useOrdersStore: vi.fn(),
+}));
+
+vi.mock('../../store/useCartStore', () => ({
+  useCartStore: Object.assign(vi.fn(), {
+    getState: vi.fn(() => ({ repeatOrder: vi.fn().mockResolvedValue(undefined) })),
+  }),
 }));
 
 vi.mock('@shared/services/orderService.js', () => ({
@@ -49,15 +54,16 @@ describe('OrderStatusPage', () => {
             menu_item_name: 'Бургер',
             menu_item_category: 'BURGER',
             price_at_purchase: 500,
+            selected_options: [],
           },
         ],
       } as unknown as Order,
     };
 
-    vi.mocked(useOrderStore).mockImplementation(((sel?: StoreSelector) => {
+    vi.mocked(useOrdersStore).mockImplementation(((sel?: StoreSelector) => {
       return sel ? sel(state) : state;
-    }) as typeof useOrderStore);
-    (useOrderStore as unknown as { getState: unknown }).getState = vi.fn(() => state);
+    }) as typeof useOrdersStore);
+    (useOrdersStore as unknown as { getState: unknown }).getState = vi.fn(() => state);
   });
 
   afterEach(() => {
@@ -89,11 +95,11 @@ describe('OrderStatusPage', () => {
   });
 
   it('renders skeleton when currentOrder is null', () => {
-    vi.mocked(useOrderStore).mockImplementation(((sel?: StoreSelector) => {
+    vi.mocked(useOrdersStore).mockImplementation(((sel?: StoreSelector) => {
       const state: StoreState = { fetchOrder: fetchOrderMock, currentOrder: null };
       return sel ? sel(state) : state;
-    }) as typeof useOrderStore);
-    (useOrderStore as unknown as { getState: unknown }).getState = vi.fn(() => ({ currentOrder: null }));
+    }) as typeof useOrdersStore);
+    (useOrdersStore as unknown as { getState: unknown }).getState = vi.fn(() => ({ currentOrder: null }));
 
     renderWithRouter();
 
@@ -114,10 +120,10 @@ describe('OrderStatusPage', () => {
         items: [],
       } as unknown as Order,
     };
-    vi.mocked(useOrderStore).mockImplementation(((sel?: StoreSelector) => {
+    vi.mocked(useOrdersStore).mockImplementation(((sel?: StoreSelector) => {
       return sel ? sel(cancelledState) : cancelledState;
-    }) as typeof useOrderStore);
-    (useOrderStore as unknown as { getState: unknown }).getState = vi.fn(() => cancelledState);
+    }) as typeof useOrdersStore);
+    (useOrdersStore as unknown as { getState: unknown }).getState = vi.fn(() => cancelledState);
 
     renderWithRouter();
 
@@ -134,16 +140,13 @@ describe('OrderStatusPage', () => {
         status: 'COMPLETED',
         display_id: '43',
         total_price: 300,
-        items: [{ id: 'i1', quantity: 1, menu_item_name: 'Пицца', price_at_purchase: 300 }],
+        items: [{ id: 'i1', quantity: 1, menu_item_name: 'Пицца', price_at_purchase: 300, selected_options: [] }],
       } as unknown as Order,
     };
-    vi.mocked(useOrderStore).mockImplementation(((sel?: StoreSelector) => {
+    vi.mocked(useOrdersStore).mockImplementation(((sel?: StoreSelector) => {
       return sel ? sel(completedState) : completedState;
-    }) as typeof useOrderStore);
-    (useOrderStore as unknown as { getState: unknown }).getState = vi.fn(() => ({
-      ...completedState,
-      repeatOrder: vi.fn().mockResolvedValue(undefined),
-    }));
+    }) as typeof useOrdersStore);
+    (useOrdersStore as unknown as { getState: unknown }).getState = vi.fn(() => completedState);
 
     renderWithRouter();
 

@@ -1,5 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
-import { Trash, CheckCircle, Prohibit } from '@phosphor-icons/react';
+import { TrashIcon, CheckCircleIcon, ProhibitIcon } from '@phosphor-icons/react';
 import type { AdminVendor } from '@shared/types/models';
 import { APPROVAL_STATUS_RU, translate } from '@shared/utils/locales';
 import { DetailField, DetailModal, formatDateTime } from './adminModal.shared';
@@ -27,7 +27,7 @@ export const VendorDetailModal = ({
     title={selectedVendor.name || 'Вендор'}
     subtitle="Детали вендора"
     loading={vendorDetailsLoading}
-    onClose={() => setSelectedVendor(null)}
+    onClose={() => { setSelectedVendor(null); }}
   >
     <div
       style={{
@@ -60,9 +60,9 @@ export const VendorDetailModal = ({
         <button
           className="btn btn-secondary"
           disabled={approveLoading}
-          onClick={() => handleApproveVendor(selectedVendor.id)}
+          onClick={() => { handleApproveVendor(selectedVendor.id); }}
         >
-          <CheckCircle size={16} />
+          <CheckCircleIcon size={16} />
           {approveLoading ? 'Одобрение...' : 'Одобрить'}
         </button>
       )}
@@ -70,10 +70,10 @@ export const VendorDetailModal = ({
         <button
           className="btn btn-secondary"
           disabled={approveLoading}
-          onClick={() => handleRejectVendor(selectedVendor.id)}
+          onClick={() => { handleRejectVendor(selectedVendor.id); }}
           style={{ color: 'var(--error)' }}
         >
-          <Prohibit size={16} />
+          <ProhibitIcon size={16} />
           Отклонить
         </button>
       )}
@@ -81,9 +81,9 @@ export const VendorDetailModal = ({
     <button
       className="btn btn-secondary"
       style={{ marginTop: 16, color: 'var(--error)' }}
-      onClick={() => handleDeleteVendor(selectedVendor.id)}
+      onClick={() => { handleDeleteVendor(selectedVendor.id); }}
     >
-      <Trash size={16} />
+      <TrashIcon size={16} />
       Удалить вендора
     </button>
   </DetailModal>

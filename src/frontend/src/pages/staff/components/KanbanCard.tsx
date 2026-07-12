@@ -1,6 +1,6 @@
 import type { DragEvent } from 'react';
-import { Fire, Timer, ChatText } from '@phosphor-icons/react';
-import { getOrderStatusStyle } from '@shared/utils/orderStatus';
+import { FireIcon, TimerIcon, ChatTextIcon } from '@phosphor-icons/react';
+import { getOrderStatusStyle, getOrderStatusLabel } from '@shared/utils/orderStatus';
 import useElapsedSeconds from '../../../hooks/useElapsedSeconds';
 import type { OrderItemOption } from '@shared/types/models';
 import type { StaffOrder } from '../types';
@@ -19,10 +19,10 @@ const NEXT_LABEL: Record<string, string | undefined> = {
 };
 
 const getOrderDisplayId = (order: StaffOrder): string | number =>
-  order.display_id ?? order.id.slice(0, 8);
+  order.display_id;
 
 const isRemovalOption = (option: OrderItemOption): boolean => {
-  const name = option.name?.toLowerCase() ?? '';
+  const name = option.name.toLowerCase();
   return (
     option.price_delta === 0 &&
     (name.startsWith('без') ||
@@ -75,7 +75,10 @@ const KanbanCard = ({
 
   return (
     <div
+      role="listitem"
       draggable
+      aria-roledescription="Перетаскиваемая карточка заказа"
+      aria-label={`Заказ №${getOrderDisplayId(order)}, статус: ${getOrderStatusLabel(order.status)}`}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       style={{
@@ -130,8 +133,8 @@ const KanbanCard = ({
               }}
             >
               {delayUrgency === 'critical'
-                ? <Fire size={12} weight="fill" />
-                : <Timer size={12} weight="bold" />}
+                ? <FireIcon size={12} weight="fill" />
+                : <TimerIcon size={12} weight="bold" />}
               {elapsedMins}м
             </span>
           )}
@@ -148,7 +151,7 @@ const KanbanCard = ({
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-        {order.items?.map((item) => (
+        {order.items.map((item) => (
           <div key={item.id}>
             <div
               style={{
@@ -158,7 +161,7 @@ const KanbanCard = ({
                 color: 'var(--text-2)',
               }}
             >
-              <span>{item.menu_item_name ?? item.name ?? 'Позиция'}</span>
+              <span>{item.menu_item_name}</span>
               <span
                 style={{
                   fontWeight: 700,
@@ -169,7 +172,7 @@ const KanbanCard = ({
                 ×{item.quantity}
               </span>
             </div>
-            {item.selected_options?.length > 0 && (
+            {item.selected_options && item.selected_options.length > 0 && (
               <div style={{ paddingLeft: 4, marginTop: 1 }}>
                 {item.selected_options.map((opt) => (
                   <span
@@ -203,13 +206,13 @@ const KanbanCard = ({
             gap: 6,
           }}
         >
-          <ChatText size={13} weight="bold" /> {order.comment}
+          <ChatTextIcon size={13} weight="bold" /> {order.comment}
         </div>
       )}
 
       {order.status === 'ACCEPTED' && order.estimated_ready_at && (
         <div style={{ fontSize: '0.75rem', color: 'var(--fire)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Timer size={13} weight="bold" /> {formatEta(order.estimated_ready_at)}
+          <TimerIcon size={13} weight="bold" /> {formatEta(order.estimated_ready_at)}
         </div>
       )}
 

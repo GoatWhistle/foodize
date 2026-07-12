@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
-import { X, DownloadSimple, QrCode } from '@phosphor-icons/react';
+import { XIcon, DownloadSimpleIcon, QrCodeIcon } from '@phosphor-icons/react';
 import { useFocusTrap } from '@shared/hooks/useFocusTrap';
 import { logError } from '@shared/utils/logError';
 import type { Restaurant } from '@shared/types/models';
@@ -52,7 +52,7 @@ const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCodeModalP
         dark: '#2E2418',
         light: '#F5F0E8',
       },
-    }).catch((error) => logError('QRCodeModal.toCanvas', error));
+    }).catch((error: unknown) => { logError('QRCodeModal.toCanvas', error); });
   }, [deepLink]);
 
   const handleDownload = async () => {
@@ -98,7 +98,7 @@ const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCodeModalP
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <QrCode size={20} color="var(--fire)" weight="fill" />
+            <QrCodeIcon size={20} color="var(--fire)" weight="fill" />
             <span
               id="qr-modal-title"
               style={{
@@ -112,6 +112,7 @@ const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCodeModalP
           </div>
           <button
             onClick={onClose}
+            aria-label="Закрыть"
             style={{
               background: 'none',
               border: 'none',
@@ -120,7 +121,7 @@ const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCodeModalP
               display: 'flex',
             }}
           >
-            <X size={22} weight="bold" />
+            <XIcon size={22} weight="bold" />
           </button>
         </div>
 
@@ -154,7 +155,7 @@ const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCodeModalP
               className={
                 type === value ? 'btn btn-primary' : 'btn btn-secondary'
               }
-              onClick={() => setType(value)}
+              onClick={() => { setType(value); }}
               style={{ height: 36, fontSize: '0.78rem' }}
             >
               {label}
@@ -214,7 +215,7 @@ const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCodeModalP
           }}
           disabled={!deepLink}
         >
-          <DownloadSimple size={16} weight="bold" />
+          <DownloadSimpleIcon size={16} weight="bold" />
           Скачать PNG
         </button>
       </div>

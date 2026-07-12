@@ -21,7 +21,7 @@ export const useModalStore = create<ModalStoreState>((set, get) => ({
   confirmDialog: null,
   confirmLoading: false,
 
-  requestConfirm: (dialog) => set({ confirmDialog: dialog }),
+  requestConfirm: (dialog) => { set({ confirmDialog: dialog }); },
 
   runConfirmAction: async () => {
     const { confirmDialog } = get();
@@ -34,5 +34,5 @@ export const useModalStore = create<ModalStoreState>((set, get) => ({
     }
   },
 
-  cancelConfirm: () => set({ confirmDialog: null, confirmLoading: false }),
+  cancelConfirm: () => { set({ confirmDialog: null, confirmLoading: false }); },
 }));

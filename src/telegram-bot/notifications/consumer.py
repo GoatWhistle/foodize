@@ -2,8 +2,11 @@ import asyncio
 import functools
 import json
 import logging
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 import aio_pika
+from aio_pika.abc import AbstractExchange
 from aiogram import Bot
 
 from config import bot_config
@@ -16,6 +19,8 @@ logger = logging.getLogger(__name__)
 _MAX_RETRIES = 3
 _RETRY_BASE_DELAY = 2.0
 _DEDUP_TTL_SECONDS = 86400
+
+_EventHandler = Callable[[dict[str, Any], Bot], Awaitable[None]]
 
 
 def _dedup_key(event_id: str) -> str:
@@ -45,9 +50,9 @@ _BINDINGS = [
 
 async def _process(
     message: aio_pika.IncomingMessage,
-    handler,
+    handler: _EventHandler,
     bot: Bot,
-    exchange: aio_pika.Exchange,
+    exchange: AbstractExchange,
     routing_key: str,
 ) -> None:
     event_id: str | None = None
@@ -66,7 +71,8 @@ async def _process(
         if event_id:
             await _release_event(event_id)
         headers = message.headers or {}
-        retry_count = headers.get("x-retry-count", 0)
+        raw_retry_count = headers.get("x-retry-count", 0)
+        retry_count = raw_retry_count if isinstance(raw_retry_count, int) else 0
 
         if retry_count < _MAX_RETRIES:
             backoff = _RETRY_BASE_DELAY * (2**retry_count)

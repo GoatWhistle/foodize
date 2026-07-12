@@ -1,5 +1,5 @@
 import type { ChangeEvent, Dispatch, ReactNode, SetStateAction } from 'react';
-import { Package, Clock, CheckCircle, HandPalm, ShieldWarning } from '@phosphor-icons/react';
+import { PackageIcon, ClockIcon, CheckCircleIcon, HandPalmIcon, ShieldWarningIcon } from '@phosphor-icons/react';
 import Pagination from '@shared/components/Pagination/Pagination';
 import EmptyState from '@shared/components/EmptyState/EmptyState';
 import { ORDER_STATUS_RU } from '@shared/utils/locales';
@@ -43,14 +43,13 @@ interface StatusConfig {
 }
 
 const STATUS_MAP: Record<string, StatusConfig> = {
-  PENDING: { label: ORDER_STATUS_RU.PENDING, className: 'pending', icon: <Clock /> },
-  ACCEPTED: { label: ORDER_STATUS_RU.ACCEPTED, className: 'pending', icon: <CheckCircle /> },
-  READY: { label: ORDER_STATUS_RU.READY, className: 'ready', icon: <HandPalm /> },
-  COMPLETED: { label: ORDER_STATUS_RU.COMPLETED, className: 'ready', icon: <CheckCircle weight="fill" /> },
+  PENDING: { label: ORDER_STATUS_RU.PENDING, className: 'pending', icon: <ClockIcon /> },
+  ACCEPTED: { label: ORDER_STATUS_RU.ACCEPTED, className: 'pending', icon: <CheckCircleIcon /> },
+  READY: { label: ORDER_STATUS_RU.READY, className: 'ready', icon: <HandPalmIcon /> },
+  COMPLETED: { label: ORDER_STATUS_RU.COMPLETED, className: 'ready', icon: <CheckCircleIcon weight="fill" /> },
 };
 
-const shortId = (value?: string | null): string => (value ? value.slice(0, 8) : '—');
-const orderTitle = (order: Order): string | number => order.display_id ?? shortId(order.id);
+const orderTitle = (order: Order): number => order.display_id;
 
 export interface AdminResolutionTabProps {
   orders: Order[];
@@ -121,7 +120,7 @@ export default function AdminResolutionTab({
           alignItems: 'center',
         }}
       >
-        <ShieldWarning size={32} color="var(--error)" />
+        <ShieldWarningIcon size={32} color="var(--error)" />
         <div>
           <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Центр Модерации</h3>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-3)' }}>
@@ -162,7 +161,7 @@ export default function AdminResolutionTab({
         const cfg = STATUS_MAP[o.status] || {
           label: o.status,
           className: 'pending',
-          icon: <Package />,
+          icon: <PackageIcon />,
         };
         return (
           <div
@@ -228,7 +227,7 @@ export default function AdminResolutionTab({
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               <button
                 className="btn btn-secondary btn-sm"
-                onClick={() => setSelectedOrder(o)}
+                onClick={() => { setSelectedOrder(o); }}
               >
                 Подробности
               </button>

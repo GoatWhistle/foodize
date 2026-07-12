@@ -30,7 +30,7 @@ export const OrderEtaPicker = ({
           className={`category-chip${
             !manualEtaTime && etaMinutes === minutes ? ' active' : ''
           }`}
-          onClick={() => onSelectMinutes(minutes)}
+          onClick={() => { onSelectMinutes(minutes); }}
         >
           {minutes} мин
         </button>
@@ -50,7 +50,7 @@ export const OrderEtaPicker = ({
       <input
         type="time"
         value={manualEtaTime}
-        onChange={(event) => onManualTimeChange(event.target.value)}
+        onChange={(event) => { onManualTimeChange(event.target.value); }}
         style={{
           width: '100%',
           border: '1px solid var(--border)',

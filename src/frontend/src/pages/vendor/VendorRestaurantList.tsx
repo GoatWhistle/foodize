@@ -1,5 +1,5 @@
 import type { Dispatch, FormEvent, SetStateAction } from 'react';
-import { House, Plus, CaretRight } from '@phosphor-icons/react';
+import { HouseIcon, PlusIcon, CaretRightIcon } from '@phosphor-icons/react';
 import EmptyState from '@shared/components/EmptyState/EmptyState';
 import type { Restaurant } from '@shared/types/models';
 import type { NewRestaurantForm, VendorProfile } from './hooks/useVendorRestaurants';
@@ -47,11 +47,11 @@ export default function VendorRestaurantList({
           className="vendor-section-title"
           style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
         >
-          <House /> Мои заведения
+          <HouseIcon /> Мои заведения
         </span>
         <button
           className="btn btn-primary btn-sm"
-          onClick={() => setShowAddRestaurant(!showAddRestaurant)}
+          onClick={() => { setShowAddRestaurant(!showAddRestaurant); }}
           disabled={vendorProfile?.approval_status !== 'APPROVED'}
           title={
             vendorProfile?.approval_status !== 'APPROVED'
@@ -59,7 +59,7 @@ export default function VendorRestaurantList({
               : ''
           }
         >
-          <Plus size={16} /> Добавить
+          <PlusIcon size={16} /> Добавить
         </button>
       </div>
 
@@ -83,14 +83,14 @@ export default function VendorRestaurantList({
             className="form-input"
             placeholder="Название"
             value={newRestaurant.name}
-            onChange={(e) => setNewRestaurant({ ...newRestaurant, name: e.target.value })}
+            onChange={(e) => { setNewRestaurant({ ...newRestaurant, name: e.target.value }); }}
             required
           />
           <input
             className="form-input"
             placeholder="Адрес"
             value={newRestaurant.address}
-            onChange={(e) => setNewRestaurant({ ...newRestaurant, address: e.target.value })}
+            onChange={(e) => { setNewRestaurant({ ...newRestaurant, address: e.target.value }); }}
             required
           />
           <input
@@ -101,7 +101,7 @@ export default function VendorRestaurantList({
             placeholder="Среднее время приготовления, минут"
             value={newRestaurant.avg_prep_time_minutes}
             onChange={(e) =>
-              setNewRestaurant({ ...newRestaurant, avg_prep_time_minutes: e.target.value })
+              { setNewRestaurant({ ...newRestaurant, avg_prep_time_minutes: e.target.value }); }
             }
           />
           <input
@@ -112,7 +112,7 @@ export default function VendorRestaurantList({
             placeholder="Мягкий лимит активных заказов"
             value={newRestaurant.max_active_orders}
             onChange={(e) =>
-              setNewRestaurant({ ...newRestaurant, max_active_orders: e.target.value })
+              { setNewRestaurant({ ...newRestaurant, max_active_orders: e.target.value }); }
             }
           />
           <button type="submit" className="btn btn-primary" disabled={formLoading}>
@@ -143,7 +143,7 @@ export default function VendorRestaurantList({
             <div
               key={r.id}
               className={`restaurant-row${selectedRestaurant?.id === r.id ? ' active' : ''}`}
-              onClick={() => setSelectedRestaurant(r)}
+              onClick={() => { setSelectedRestaurant(r); }}
             >
               <div>
                 <div
@@ -187,7 +187,7 @@ export default function VendorRestaurantList({
                 <div className="restaurant-row-addr">{r.address}</div>
               </div>
               <span style={{ marginLeft: 'auto', color: 'var(--text-3)' }}>
-                <CaretRight />
+                <CaretRightIcon />
               </span>
             </div>
           ))}

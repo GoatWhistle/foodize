@@ -1,8 +1,11 @@
+import asyncio
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from http import HTTPStatus
 from secrets import compare_digest
 
 import uvicorn
-from fastapi import FastAPI, Header, status
+from fastapi import FastAPI, Header
 from fastapi import Response as FastAPIResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,6 +28,7 @@ from api.exception_handlers import (
     unhandled_exception_handler,
 )
 from database import db_helper
+from features.ai_order_agent.crud import get_embedding_column_dim
 from features.notifications.broker import broker
 from infra.cache.redis import close_redis_pool, get_redis_cache
 from middlewares.cache import AutoCacheMiddleware
@@ -40,8 +44,27 @@ configure_logging()
 logger = get_logger(__name__)
 
 
+async def _verify_embedding_dim() -> None:
+    try:
+        async with db_helper.session_factory() as session:
+            column_dim = await get_embedding_column_dim(session)
+    except Exception as exc:
+        logger.warning("embedding_dim_check_skipped", error=repr(exc))
+        return
+    if column_dim is None:
+        logger.warning("embedding_dim_check_skipped reason=column_missing")
+        return
+    configured_dim = settings.llm.embedding_dim
+    if column_dim != configured_dim:
+        raise RuntimeError(
+            "LLM__EMBEDDING_DIM mismatch: menu_item_embeddings.embedding column has "
+            f"dim={column_dim} but settings.llm.embedding_dim={configured_dim}. "
+            "Run the matching migration or align the config before starting."
+        )
+
+
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     if settings.debug:
         logger.warning(
             "Application is running with debug=True: production security guards "
@@ -74,6 +97,8 @@ async def lifespan(app: FastAPI):
             "so a wildcard origin silently breaks all cross-origin requests. "
             "List explicit allowed origins instead."
         )
+    if settings.llm.embeddings_enabled:
+        await _verify_embedding_dim()
     await broker.connect()
     yield
     logger.info("application_shutdown_started")
@@ -116,17 +141,17 @@ instrumentator = Instrumentator().instrument(app)
 
 
 @app.get("/metrics", include_in_schema=False)
-async def metrics(authorization: str | None = Header(default=None)):
+async def metrics(authorization: str | None = Header(default=None)) -> FastAPIResponse:
     token = settings.run.metrics_token
     if token:
         expected = f"Bearer {token}"
         if not authorization or not compare_digest(authorization, expected):
-            return FastAPIResponse(status_code=status.HTTP_401_UNAUTHORIZED)
+            return FastAPIResponse(status_code=HTTPStatus.UNAUTHORIZED)
     return FastAPIResponse(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 @app.get("/api/ping")
-async def ping():
+async def ping() -> dict[str, str]:
     return {"status": "pong"}
 
 
@@ -135,46 +160,53 @@ async def live() -> dict[str, str]:
     return {"status": "alive"}
 
 
-async def _dependency_checks() -> tuple[str, dict[str, str]]:
-    checks: dict[str, str] = {}
-
+async def _check_database() -> str:
     try:
         async with db_helper.session_factory() as session:
             await session.execute(text("SELECT 1"))
-        checks["db"] = "ok"
+        return "ok"
     except Exception as exc:
         logger.warning("health_check_failed", component="db", error=repr(exc))
-        checks["db"] = "error"
+        return "error"
 
+
+async def _check_redis() -> str:
     try:
-        cache = get_redis_cache()
-        await cache.exists("health")
-        checks["redis"] = "ok"
+        await get_redis_cache().exists("health")
+        return "ok"
     except Exception as exc:
         logger.warning("health_check_failed", component="redis", error=repr(exc))
-        checks["redis"] = "error"
+        return "error"
 
+
+async def _check_rabbitmq() -> str:
     try:
-        checks["rabbitmq"] = "ok" if broker.is_connected else "error"
+        return "ok" if broker.is_connected else "error"
     except Exception as exc:
         logger.warning("health_check_failed", component="rabbitmq", error=repr(exc))
-        checks["rabbitmq"] = "error"
+        return "error"
 
+
+async def _dependency_checks() -> tuple[str, dict[str, str]]:
+    db_status, redis_status, rabbitmq_status = await asyncio.gather(
+        _check_database(), _check_redis(), _check_rabbitmq()
+    )
+    checks = {"db": db_status, "redis": redis_status, "rabbitmq": rabbitmq_status}
     overall = "ok" if all(v == "ok" for v in checks.values()) else "degraded"
     return overall, checks
 
 
 @app.get("/api/health")
-async def health():
+async def health() -> JSONResponse:
     overall, checks = await _dependency_checks()
-    status_code = 200 if overall == "ok" else 503
+    status_code = HTTPStatus.OK if overall == "ok" else HTTPStatus.SERVICE_UNAVAILABLE
     return JSONResponse(status_code=status_code, content={"status": overall, "checks": checks})
 
 
 @app.get("/api/ready")
-async def ready():
+async def ready() -> JSONResponse:
     overall, checks = await _dependency_checks()
-    status_code = 200 if overall == "ok" else 503
+    status_code = HTTPStatus.OK if overall == "ok" else HTTPStatus.SERVICE_UNAVAILABLE
     return JSONResponse(status_code=status_code, content={"status": overall, "checks": checks})
 
 

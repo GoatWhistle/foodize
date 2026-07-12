@@ -8,7 +8,7 @@ from features.users.schemas import UserCreate, UserUpdate
 
 class TestCreateUser:
     @pytest.mark.asyncio
-    async def test_create_user(self):
+    async def test_create_user(self) -> None:
         data = UserCreate(
             name="Test User",
             phone_number="+79001234567",
@@ -36,7 +36,7 @@ class TestCreateUser:
 
 class TestUsersCrud:
     @pytest.mark.asyncio
-    async def test_update_user(self):
+    async def test_update_user(self) -> None:
         user = MagicMock()
         user.name = "old"
         update_data = UserUpdate(name="new name")
@@ -50,7 +50,7 @@ class TestUsersCrud:
         session.flush.assert_awaited_once()
 
     @pytest.mark.asyncio
-    async def test_update_user_password(self):
+    async def test_update_user_password(self) -> None:
         user = MagicMock()
         user.hashed_password = "old_hash"
 

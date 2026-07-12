@@ -14,18 +14,18 @@ import api from '../../services/api';
 describe('userService', () => {
   it('getById calls GET /users/:id', async () => {
     await userService.getById('user-1');
-    expect(api.get).toHaveBeenCalledWith('/users/user-1');
+    expect(vi.mocked(api).get).toHaveBeenCalledWith('/users/user-1');
   });
 
   it('updateMe calls PATCH /users/me', async () => {
     const data = { name: 'Ivan' };
     await userService.updateMe(data);
-    expect(api.patch).toHaveBeenCalledWith('/users/me', data);
+    expect(vi.mocked(api).patch).toHaveBeenCalledWith('/users/me', data);
   });
 
   it('changePassword calls POST /users/me/change-password', async () => {
     const data = { old_password: 'old', new_password: 'new' };
     await userService.changePassword(data);
-    expect(api.post).toHaveBeenCalledWith('/users/me/change-password', data);
+    expect(vi.mocked(api).post).toHaveBeenCalledWith('/users/me/change-password', data);
   });
 });

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
-import { useOrderStore } from "@shared/store/useOrderStore.instance";
+import { useOrdersStore } from "@shared/store/useOrdersStore.instance";
 import { parseOrderMessage } from "@shared/utils/wsMessages";
 import type { ReliableWebSocket } from "@shared/services/api";
 import type { Order, OrderStatus } from "@shared/types/models";
@@ -27,7 +27,7 @@ export const useOrderWebSocket = (
   { onStatusChange }: UseOrderWebSocketOptions = {},
 ): UseOrderWebSocketResult => {
   const wsRef = useRef<ReliableWebSocket | null>(null);
-  const fetchOrder = useOrderStore((s) => s.fetchOrder);
+  const fetchOrder = useOrdersStore((s) => s.fetchOrder);
 
   const loadOrder = useCallback(() => fetchOrder(orderId), [orderId, fetchOrder]);
 
@@ -41,14 +41,14 @@ export const useOrderWebSocket = (
         if (data.error) return;
         const order = parseOrderMessage(data);
         if (!order) return;
-        const prev = useOrderStore.getState().currentOrder?.status;
-        useOrderStore.setState({ currentOrder: order });
+        const prev = useOrdersStore.getState().currentOrder?.status;
+        useOrdersStore.setState({ currentOrder: order });
         if (prev && prev !== order.status) {
           onStatusChange?.(order.status, prev);
         }
       },
       () => {
-        const status = useOrderStore.getState().currentOrder?.status;
+        const status = useOrdersStore.getState().currentOrder?.status;
         if (!status || !TERMINAL_STATUSES.has(status)) {
           void loadOrder();
         }

@@ -1,5 +1,6 @@
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -9,12 +10,13 @@ from features.orders.exceptions import (
     MenuItemsNotFoundException,
     MenuItemUnavailableException,
 )
-from features.orders.schemas.order import OrderCreate, OrderItemCreate
+from features.orders.schemas.order import OrderCreate
+from features.orders.schemas.order_item import OrderItemCreate
 from features.orders.services.order_placement import place_order
 from features.restaurants.exceptions import RestaurantClosedException, RestaurantNotFoundException
 
 
-def _make_order_data(restaurant_id=None, **kwargs):
+def _make_order_data(restaurant_id: uuid.UUID | None = None, **kwargs: Any) -> OrderCreate:
     rid = restaurant_id or uuid.uuid4()
     item_id = uuid.uuid4()
     return OrderCreate(
@@ -24,7 +26,7 @@ def _make_order_data(restaurant_id=None, **kwargs):
     )
 
 
-def _make_restaurant(is_open=True, is_ordering_paused=False):
+def _make_restaurant(is_open: bool = True, is_ordering_paused: bool = False) -> MagicMock:
     r = MagicMock()
     r.id = uuid.uuid4()
     r.name = "Test"
@@ -36,7 +38,7 @@ def _make_restaurant(is_open=True, is_ordering_paused=False):
     return r
 
 
-def _menu_item(restaurant_id, available=True):
+def _menu_item(restaurant_id: uuid.UUID, available: bool = True) -> MagicMock:
     mi = MagicMock()
     mi.id = uuid.uuid4()
     mi.restaurant_id = restaurant_id
@@ -46,7 +48,7 @@ def _menu_item(restaurant_id, available=True):
 
 
 @pytest.mark.asyncio
-async def test_place_order_restaurant_not_found():
+async def test_place_order_restaurant_not_found() -> None:
     data = _make_order_data()
 
     with patch(
@@ -62,7 +64,7 @@ async def test_place_order_restaurant_not_found():
 
 
 @pytest.mark.asyncio
-async def test_place_order_restaurant_closed():
+async def test_place_order_restaurant_closed() -> None:
     restaurant = _make_restaurant(is_open=False)
     data = _make_order_data(restaurant_id=restaurant.id)
 
@@ -83,9 +85,9 @@ async def test_place_order_restaurant_closed():
 
 
 @pytest.mark.asyncio
-async def test_place_order_ordering_paused():
+async def test_place_order_ordering_paused() -> None:
     restaurant = _make_restaurant(is_open=True, is_ordering_paused=True)
-    restaurant.ordering_paused_until = datetime.now(timezone.utc) + timedelta(hours=1)
+    restaurant.ordering_paused_until = datetime.now(UTC) + timedelta(hours=1)
     data = _make_order_data(restaurant_id=restaurant.id)
 
     with (
@@ -105,7 +107,7 @@ async def test_place_order_ordering_paused():
 
 
 @pytest.mark.asyncio
-async def test_place_order_menu_items_not_found():
+async def test_place_order_menu_items_not_found() -> None:
     restaurant = _make_restaurant()
     data = _make_order_data(restaurant_id=restaurant.id)
 
@@ -136,7 +138,7 @@ async def test_place_order_menu_items_not_found():
 
 
 @pytest.mark.asyncio
-async def test_place_order_menu_item_restaurant_mismatch():
+async def test_place_order_menu_item_restaurant_mismatch() -> None:
     restaurant = _make_restaurant()
     data = _make_order_data(restaurant_id=restaurant.id)
     item_id = data.items[0].menu_item_id
@@ -171,7 +173,7 @@ async def test_place_order_menu_item_restaurant_mismatch():
 
 
 @pytest.mark.asyncio
-async def test_place_order_menu_item_unavailable():
+async def test_place_order_menu_item_unavailable() -> None:
     restaurant = _make_restaurant()
     data = _make_order_data(restaurant_id=restaurant.id)
     item_id = data.items[0].menu_item_id
@@ -206,7 +208,7 @@ async def test_place_order_menu_item_unavailable():
 
 
 @pytest.mark.asyncio
-async def test_place_order_soft_deleted_menu_item_rejected():
+async def test_place_order_soft_deleted_menu_item_rejected() -> None:
     restaurant = _make_restaurant()
     data = _make_order_data(restaurant_id=restaurant.id)
 
@@ -237,7 +239,7 @@ async def test_place_order_soft_deleted_menu_item_rejected():
 
 
 @pytest.mark.asyncio
-async def test_place_order_idempotency_hit():
+async def test_place_order_idempotency_hit() -> None:
     restaurant = _make_restaurant()
     data = _make_order_data(restaurant_id=restaurant.id)
     mock_response = MagicMock()
@@ -262,7 +264,7 @@ async def test_place_order_idempotency_hit():
 
 
 @pytest.mark.asyncio
-async def test_place_order_success():
+async def test_place_order_success() -> None:
     restaurant = _make_restaurant()
     data = _make_order_data(restaurant_id=restaurant.id)
     item_id = data.items[0].menu_item_id
@@ -338,8 +340,11 @@ async def test_place_order_success():
         patch(
             "features.orders.schemas.order.OrderResponse.model_validate", return_value=mock_response
         ),
-        patch("features.orders.services.order_placement.Order", return_value=mock_order),
-        patch("features.orders.services.order_placement.OrderItem", return_value=MagicMock()),
+        patch(
+            "features.orders.crud.order_placement.insert_order_with_items",
+            new_callable=AsyncMock,
+            return_value=mock_order,
+        ),
     ):
         result = await place_order(session, data, uuid.uuid4())
 

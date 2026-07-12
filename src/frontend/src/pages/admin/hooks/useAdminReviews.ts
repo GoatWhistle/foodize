@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { adminService } from '../../../services/adminService';
 import { useModalStore } from '@shared/store/useModalStore';
-import type { AdminReview, SuccessListResponse } from '@shared/types/models';
+import type { AdminReview } from '@shared/types/models';
 
 export type { AdminReview };
 
@@ -35,12 +35,12 @@ export const useAdminReviews = ({ activeTab, setActionError, setActionSuccess }:
     adminService
       .getReviews({ page: reviewsPage, size: PAGE_SIZE, rating: reviewFilters.rating || undefined })
       .then((res) => {
-        const body = res.data as SuccessListResponse<AdminReview>;
-        setReviews(body.data || []);
-        setReviewsTotal(body.pagination?.total || 0);
+        const body = res.data;
+        setReviews(body.data);
+        setReviewsTotal(body.pagination.total || 0);
       })
-      .catch(() => setActionError('Не удалось загрузить отзывы'))
-      .finally(() => setReviewsLoading(false));
+      .catch(() => { setActionError('Не удалось загрузить отзывы'); })
+      .finally(() => { setReviewsLoading(false); });
   }, [activeTab, reviewsPage, reviewFilters, setActionError]);
 
   const handleDeleteReview = (reviewId: string) => {

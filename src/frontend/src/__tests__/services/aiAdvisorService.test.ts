@@ -20,12 +20,12 @@ describe('aiAdvisorService', () => {
 
   it('getInsights calls GET /ai/advisor/insights without refresh by default', async () => {
     await aiAdvisorService.getInsights();
-    expect(api.get).toHaveBeenCalledWith('/ai/advisor/insights', { params: {} });
+    expect(vi.mocked(api).get).toHaveBeenCalledWith('/ai/advisor/insights', { params: {} });
   });
 
   it('getInsights with refresh=true adds param', async () => {
     await aiAdvisorService.getInsights(true);
-    expect(api.get).toHaveBeenCalledWith('/ai/advisor/insights', { params: { refresh: true } });
+    expect(vi.mocked(api).get).toHaveBeenCalledWith('/ai/advisor/insights', { params: { refresh: true } });
   });
 
   it('streamChat calls streamSseRequest with messages and restaurantId', async () => {

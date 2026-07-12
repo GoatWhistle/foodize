@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { X } from '@phosphor-icons/react';
+import { XIcon } from '@phosphor-icons/react';
 
 interface DetailFieldProps {
   label: ReactNode;
@@ -103,7 +103,7 @@ export const DetailModal = ({ title, subtitle, onClose, loading, children }: Det
           onClick={onClose}
           aria-label="Закрыть"
         >
-          <X size={16} />
+          <XIcon size={16} />
         </button>
       </div>
       <div style={{ padding: 22, overflowY: 'auto' }}>

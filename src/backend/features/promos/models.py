@@ -21,7 +21,7 @@ class Promo(Base, IdUuidPkMixin, CreatedAtMixin):
     discount_type: Mapped[str] = mapped_column(String(16))
     discount_value: Mapped[int]
     restaurant_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("restaurants.id", ondelete="CASCADE")
+        ForeignKey("restaurants.id", ondelete="CASCADE"), index=True
     )
     max_uses: Mapped[int | None] = mapped_column(default=None)
     used_count: Mapped[int] = mapped_column(default=0, server_default="0")

@@ -24,7 +24,6 @@ export interface AuthStoreState<
   TService extends AuthServiceContract = AuthServiceContract,
 > {
   user: AuthUser | null;
-  isAuthenticated: boolean;
   register: (data: RegisterData<TService>) => Promise<void>;
   login: (credentials: LoginCredentials<TService>) => Promise<void>;
   logout: () => Promise<void>;
@@ -44,6 +43,7 @@ export interface CreateAuthStoreOptions<
 > {
   authService: TService;
   persistKey?: string | null;
+  onLogout?: () => void;
   extraActions?: (
     set: SetAuthState<TService>,
     get: GetAuthState<TService, TExtra>,
@@ -56,6 +56,7 @@ export function createAuthStore<
 >({
   authService,
   persistKey = null,
+  onLogout,
   extraActions = () => ({}) as TExtra,
 }: CreateAuthStoreOptions<TService, TExtra>): UseBoundStore<
   StoreApi<AuthStoreState<TService> & TExtra>
@@ -63,11 +64,10 @@ export function createAuthStore<
   type State = AuthStoreState<TService> & TExtra;
 
   const storeFactory: StateCreator<State> = (set, get) => {
-    const setAuth: SetAuthState<TService> = (partial) => set(partial as Partial<State>);
+    const setAuth: SetAuthState<TService> = (partial) => { set(partial as Partial<State>); };
 
     const base: AuthStoreState<TService> = {
       user: null,
-      isAuthenticated: false,
 
       register: async (data) => {
         await authService.register(data);
@@ -77,9 +77,9 @@ export function createAuthStore<
         try {
           await authService.login(credentials);
           const me = await authService.getMe();
-          setAuth({ user: me.data.data, isAuthenticated: true });
+          setAuth({ user: me.data.data });
         } catch (err) {
-          setAuth({ user: null, isAuthenticated: false });
+          setAuth({ user: null });
           throw err;
         }
       },
@@ -90,15 +90,16 @@ export function createAuthStore<
         } catch (err) {
           logError("authStore.logout", err);
         }
-        setAuth({ user: null, isAuthenticated: false });
+        setAuth({ user: null });
+        onLogout?.();
       },
 
       fetchMe: async () => {
         try {
           const me = await authService.getMe();
-          setAuth({ user: me.data.data, isAuthenticated: true });
+          setAuth({ user: me.data.data });
         } catch {
-          setAuth({ user: null, isAuthenticated: false });
+          setAuth({ user: null });
         }
       },
     };
@@ -113,13 +114,14 @@ export function createAuthStore<
     return create<State>()(
       persist(storeFactory, {
         name: persistKey,
-        partialize: (state) => ({
-          user: state.user,
-          isAuthenticated: state.isAuthenticated,
-        }),
+        partialize: (state) => ({ user: state.user }),
       }),
     );
   }
 
   return create<State>()(storeFactory);
 }
+
+export const selectIsAuthenticated = <TService extends AuthServiceContract>(
+  state: AuthStoreState<TService>,
+): boolean => state.user !== null;

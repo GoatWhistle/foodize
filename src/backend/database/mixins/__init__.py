@@ -1,9 +1,9 @@
 __all__ = [
+    "CreatedAtMixin",
+    "DeletedAtMixin",
     "IdIntPkMixin",
     "IdUuidPkMixin",
-    "CreatedAtMixin",
     "UpdatedAtMixin",
-    "DeletedAtMixin",
 ]
 from database.mixins.created_at import CreatedAtMixin
 from database.mixins.deleted_at import DeletedAtMixin

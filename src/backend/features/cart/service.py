@@ -50,7 +50,7 @@ class CartService:
         ]
         return CartResponse(
             restaurant_id=cart_dict.get("restaurant_id"),
-            items=enriched,  # type: ignore[arg-type]
+            items=enriched,
         )
 
     async def update_cart(

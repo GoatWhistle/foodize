@@ -26,7 +26,7 @@ describe('ConfirmDialog', () => {
     render(<ConfirmDialog />);
     fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
 
-    await waitFor(() => expect(onConfirm).toHaveBeenCalled());
+    await waitFor(() => { expect(onConfirm).toHaveBeenCalled(); });
     expect(useModalStore.getState().confirmDialog).toBe(null);
   });
 

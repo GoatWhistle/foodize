@@ -7,7 +7,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 type AuthState = {
   register: (...args: unknown[]) => unknown;
   login: (...args: unknown[]) => unknown;
-  isAuthenticated?: boolean;
+  user?: { id: string } | null;
 };
 
 vi.mock('../../store/useAuthStore', () => ({
@@ -30,7 +30,7 @@ describe('RegisterPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useAuthStore).mockImplementation(((sel?: (s: AuthState) => unknown) => {
-      const state: AuthState = { register: registerMock, login: loginMock, isAuthenticated: false };
+      const state: AuthState = { register: registerMock, login: loginMock, user: null };
       return sel ? sel(state) : state;
     }) as typeof useAuthStore);
   });
@@ -77,8 +77,10 @@ describe('RegisterPage', () => {
           password: 'password123',
         })
       );
-      expect(registerMock.mock.calls[0][0]).not.toHaveProperty('user_role');
-      expect(registerMock.mock.calls[0][0]).not.toHaveProperty('email');
+      const firstCallArgs = registerMock.mock.calls[0];
+      if (!firstCallArgs) throw new Error('register was not called');
+      expect(firstCallArgs[0]).not.toHaveProperty('user_role');
+      expect(firstCallArgs[0]).not.toHaveProperty('email');
     });
   });
 
@@ -89,15 +91,18 @@ describe('RegisterPage', () => {
     fillAndSubmit({ name: 'Ivan', phone: '79991234567', password: 'pw123456' });
 
     await waitFor(() => {
+      const phoneMatcher: unknown = expect.stringContaining('79991234567');
       expect(registerMock).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'Ivan',
-          phone_number: expect.stringContaining('79991234567'),
+          phone_number: phoneMatcher,
           password: 'pw123456',
         })
       );
-      expect(registerMock.mock.calls[0][0]).not.toHaveProperty('user_role');
-      expect(registerMock.mock.calls[0][0]).not.toHaveProperty('email');
+      const firstCallArgs = registerMock.mock.calls[0];
+      if (!firstCallArgs) throw new Error('register was not called');
+      expect(firstCallArgs[0]).not.toHaveProperty('user_role');
+      expect(firstCallArgs[0]).not.toHaveProperty('email');
       expect(loginMock).toHaveBeenCalled();
       expect(mockNavigate).toHaveBeenCalledWith('/');
     });
@@ -144,7 +149,7 @@ describe('RegisterPage', () => {
 
   it('redirects when already authenticated', () => {
     vi.mocked(useAuthStore).mockImplementation(((sel?: (s: AuthState) => unknown) => {
-      const state: AuthState = { register: registerMock, login: loginMock, isAuthenticated: true };
+      const state: AuthState = { register: registerMock, login: loginMock, user: { id: 'u1' } };
       return sel ? sel(state) : state;
     }) as typeof useAuthStore);
     renderPage();

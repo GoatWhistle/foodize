@@ -1,4 +1,5 @@
 import uuid
+from http import HTTPStatus
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -11,7 +12,7 @@ from shared.enums.permissions import Permission
 
 class TestAuthAPI:
     @pytest.mark.asyncio
-    async def test_create_registration(self, client: AsyncClient):
+    async def test_create_registration(self, client: AsyncClient) -> None:
         user_id = uuid.uuid4()
         mock_user_read = UserRead(
             id=user_id,
@@ -34,14 +35,14 @@ class TestAuthAPI:
                 },
             )
 
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK
         data = response.json()["data"]
         assert data["id"] == str(user_id)
         assert data["name"] == "Test Ivan"
         mock_register.assert_awaited_once()
 
     @pytest.mark.asyncio
-    async def test_create_login(self, client: AsyncClient):
+    async def test_create_login(self, client: AsyncClient) -> None:
         mock_token_resp = TokenResponse(
             access_token="mock_access",
             refresh_token="mock_refresh",
@@ -58,14 +59,14 @@ class TestAuthAPI:
                 json={"phone_number": "79001234567", "password": "strongpassword123"},
             )
 
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK
         data = response.json()["data"]
         assert data["access_token"] == "mock_access"
         assert data["refresh_token"] == "mock_refresh"
         mock_login.assert_awaited_once()
 
     @pytest.mark.asyncio
-    async def test_create_refresh(self, client: AsyncClient):
+    async def test_create_refresh(self, client: AsyncClient) -> None:
         mock_token_resp = TokenResponse(
             access_token="new_access",
             refresh_token="new_refresh",
@@ -79,20 +80,20 @@ class TestAuthAPI:
         ) as mock_refresh:
             response = await client.post("/api/v1/refresh")
 
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK
         data = response.json()["data"]
         assert data["access_token"] == "new_access"
         assert data["refresh_token"] == "new_refresh"
         mock_refresh.assert_awaited_once()
 
     @pytest.mark.asyncio
-    async def test_create_logout(self, client: AsyncClient):
+    async def test_create_logout(self, client: AsyncClient) -> None:
         with patch(
             "features.auth.service.logout_user",
             new_callable=AsyncMock,
         ) as mock_logout:
             response = await client.post("/api/v1/logout")
 
-        assert response.status_code == 204
+        assert response.status_code == HTTPStatus.NO_CONTENT
         assert response.content == b""
         mock_logout.assert_awaited_once()

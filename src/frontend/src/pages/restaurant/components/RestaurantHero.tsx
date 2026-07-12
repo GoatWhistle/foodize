@@ -1,4 +1,4 @@
-import { Star, ForkKnife, Heart, ShareNetwork, Info } from '@phosphor-icons/react';
+import { StarIcon, ForkKnifeIcon, HeartIcon, ShareNetworkIcon, InfoIcon } from '@phosphor-icons/react';
 import type { Restaurant } from '@shared/types/models';
 
 interface RestaurantHeroProps {
@@ -35,7 +35,7 @@ export function RestaurantHero({
         />
       ) : (
         <div className="restaurant-hero-placeholder">
-          <ForkKnife size={48} color="var(--on-photo-mute)" />
+          <ForkKnifeIcon size={48} color="var(--on-photo-mute)" />
         </div>
       )}
       <div className="restaurant-hero-overlay" />
@@ -52,7 +52,7 @@ export function RestaurantHero({
             onClick={onOpenReviews}
             style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--on-photo-fill)', backdropFilter: 'blur(8px)', border: '1px solid var(--on-photo-line)', color: 'var(--on-photo)' }}
           >
-            <Star size={14} weight="fill" color="var(--color-warning)" />
+            <StarIcon size={14} weight="fill" color="var(--color-warning)" />
             {reviewsButtonLabel}
           </button>
           <button
@@ -60,7 +60,7 @@ export function RestaurantHero({
             onClick={onOpenInfo}
             style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--on-photo-fill)', backdropFilter: 'blur(8px)', border: '1px solid var(--on-photo-line)', color: 'var(--on-photo)' }}
           >
-            <Info size={14} weight="bold" />
+            <InfoIcon size={14} weight="bold" />
             Инфо
           </button>
           <button
@@ -68,7 +68,7 @@ export function RestaurantHero({
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: '50%', background: 'var(--on-photo-fill)', backdropFilter: 'blur(8px)', border: '1px solid var(--on-photo-line)', color: 'var(--on-photo)', cursor: 'pointer', transition: 'all 0.15s', flexShrink: 0 }}
             aria-label="Поделиться рестораном"
           >
-            <ShareNetwork size={16} weight="bold" />
+            <ShareNetworkIcon size={16} weight="bold" />
           </button>
           {showFavorite && (
             <button
@@ -77,7 +77,7 @@ export function RestaurantHero({
               aria-label={isFav ? 'Убрать из избранного' : 'В избранное'}
               aria-pressed={isFav}
             >
-              <Heart size={16} weight={isFav ? 'fill' : 'regular'} />
+              <HeartIcon size={16} weight={isFav ? 'fill' : 'regular'} />
             </button>
           )}
         </div>

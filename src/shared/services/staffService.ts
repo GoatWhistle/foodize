@@ -1,8 +1,8 @@
 import api from "@shared/services/api.instance";
+import { orderService } from "@shared/services/orderService";
 import type { components } from "@shared/types/api";
 import type {
   MenuItem,
-  Order,
   OrderStatus,
   OrderStatusUpdate,
   StaffProfile,
@@ -25,19 +25,12 @@ export const staffService = {
   getRestaurantOrders: (
     restaurantId: string,
     params: Record<string, unknown> = {},
-  ) =>
-    api.get<SuccessListResponse<Order>>(`/orders/restaurant/${restaurantId}`, {
-      params,
-    }),
+  ) => orderService.getByRestaurant(restaurantId, params),
   updateOrderStatus: (
     orderId: string,
     status: OrderStatus,
     data: Omit<OrderStatusUpdate, "status"> = {},
-  ) =>
-    api.patch<SuccessResponse<Order>>(`/orders/${orderId}/status`, {
-      status,
-      ...data,
-    }),
+  ) => orderService.updateStatus(orderId, status, data),
   getMenu: (restaurantId: string) =>
     api.get<SuccessListResponse<MenuItem>>(`/menu/${restaurantId}`),
   toggleMenuItemAvailability: (
@@ -52,5 +45,5 @@ export const staffService = {
       },
     ),
   cancelOrder: (orderId: string, reason: string | null) =>
-    api.post<SuccessResponse<Order>>(`/orders/${orderId}/cancel`, { reason }),
+    orderService.cancelOrder(orderId, reason),
 };

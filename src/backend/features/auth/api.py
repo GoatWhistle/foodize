@@ -1,3 +1,5 @@
+from http import HTTPStatus
+
 from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -51,7 +53,7 @@ async def create_refresh(
     return build_response(result)
 
 
-@router.post("/logout", status_code=204)
+@router.post("/logout", status_code=HTTPStatus.NO_CONTENT)
 @limiter.limit("20/minute")
 async def create_logout(
     request: Request,

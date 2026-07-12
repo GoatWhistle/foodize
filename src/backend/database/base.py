@@ -8,6 +8,6 @@ class Base(DeclarativeBase):
     __abstract__ = True
     metadata = metadata
 
-    @declared_attr
-    def __tablename__(self):
+    @declared_attr.directive
+    def __tablename__(self) -> str:
         return f"{pluralize_snake_case(self.__name__)}"

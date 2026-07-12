@@ -49,11 +49,11 @@ export const useVendorPromos = ({ selectedRestaurant, activeTab }: UseVendorProm
       promoService
         .list()
         .then((res) => {
-          const list = Array.isArray(res.data?.data) ? res.data.data : [];
+          const list = Array.isArray(res.data.data) ? res.data.data : [];
           setPromosList(list);
         })
-        .catch(() => setPromosError('Не удалось загрузить промокоды'))
-        .finally(() => setPromosLoading(false));
+        .catch(() => { setPromosError('Не удалось загрузить промокоды'); })
+        .finally(() => { setPromosLoading(false); });
     }
   }, [activeTab]);
 
@@ -82,9 +82,9 @@ export const useVendorPromos = ({ selectedRestaurant, activeTab }: UseVendorProm
       setPromoForm(EMPTY_PROMO_FORM);
       setShowPromoForm(false);
       setPromosSuccess('Промокод создан');
-      setTimeout(() => setPromosSuccess(''), 2000);
+      setTimeout(() => { setPromosSuccess(''); }, 2000);
       const res = await promoService.list();
-      const list = Array.isArray(res.data?.data) ? res.data.data : [];
+      const list = Array.isArray(res.data.data) ? res.data.data : [];
       setPromosList(list);
     } catch (err) {
       setPromosError(translateApiError(err, 'Ошибка создания промокода'));

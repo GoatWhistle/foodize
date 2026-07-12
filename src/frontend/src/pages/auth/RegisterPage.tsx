@@ -44,7 +44,7 @@ const RegisterPage = () => {
     useShallow((s) => ({
       register: s.register,
       login: s.login,
-      isAuthenticated: s.isAuthenticated,
+      isAuthenticated: s.user !== null,
     }))
   );
   const navigate = useNavigate();
@@ -114,7 +114,7 @@ const RegisterPage = () => {
                 type="text"
                 placeholder="Ваше имя"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => { setName(e.target.value); }}
                 required
                 autoFocus
                 autoComplete="name"
@@ -131,7 +131,7 @@ const RegisterPage = () => {
                 type="tel"
                 placeholder="+7 (999) 000-00-00"
                 value={phone}
-                onChange={(e) => setPhone(formatPhoneNumber(e.target.value))}
+                onChange={(e) => { setPhone(formatPhoneNumber(e.target.value)); }}
                 required
                 autoComplete="tel"
               />
@@ -147,7 +147,7 @@ const RegisterPage = () => {
                 type="email"
                 placeholder="mail@foodize.ru"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); }}
                 autoComplete="email"
               />
             </div>
@@ -162,7 +162,7 @@ const RegisterPage = () => {
                 type="password"
                 placeholder="Мин. 8 символов, латинская буква и цифра"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => { setPassword(e.target.value); }}
                 required
                 minLength={8}
                 autoComplete="new-password"
@@ -174,7 +174,7 @@ const RegisterPage = () => {
                 type="checkbox"
                 className="auth-tos-checkbox"
                 checked={agreed}
-                onChange={(e) => setAgreed(e.target.checked)}
+                onChange={(e) => { setAgreed(e.target.checked); }}
               />
               <span>
                 Я принимаю{' '}

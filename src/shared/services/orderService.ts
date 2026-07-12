@@ -1,4 +1,6 @@
 import api from "@shared/services/api.instance";
+import type { AxiosRequestConfig } from "axios";
+import { makeId } from "@shared/utils/id";
 import type {
   Order,
   OrderCreate,
@@ -10,16 +12,11 @@ import type {
   SuccessResponse,
 } from "@shared/types/models";
 
-interface RequestConfig {
-  headers?: Record<string, string>;
-  [key: string]: unknown;
-}
-
 export const orderService = {
-  create: (data: OrderCreate, config: RequestConfig = {}) =>
+  create: (data: OrderCreate, config: AxiosRequestConfig = {}) =>
     api.post<SuccessResponse<Order>>("/orders/", data, {
       ...config,
-      headers: { "Idempotency-Key": crypto.randomUUID(), ...config.headers },
+      headers: Object.assign({ "Idempotency-Key": makeId() }, config.headers),
     }),
   getEstimate: (restaurantId: string) =>
     api.get<SuccessResponse<OrderLoadEstimate>>(

@@ -1,5 +1,6 @@
 import uuid
 from datetime import date
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -20,7 +21,7 @@ from features.orders.crud.order import (
 from shared.enums.order_status import OrderStatus
 
 
-def _scalar_result(value):
+def _scalar_result(value: Any) -> MagicMock:
     m = MagicMock()
     m.scalars.return_value.all.return_value = value
     m.scalar_one_or_none.return_value = value if not isinstance(value, list) else None
@@ -28,7 +29,9 @@ def _scalar_result(value):
     return m
 
 
-def _make_session(scalar_result=None, scalar_one=None, scalars_list=None):
+def _make_session(
+    scalar_result: Any = None, scalar_one: Any = None, scalars_list: Any = None
+) -> AsyncMock:
     session = AsyncMock()
     result = MagicMock()
     if scalars_list is not None:
@@ -43,7 +46,7 @@ def _make_session(scalar_result=None, scalar_one=None, scalars_list=None):
 
 class TestGetOrdersByUserId:
     @pytest.mark.asyncio
-    async def test_returns_list(self):
+    async def test_returns_list(self) -> None:
         order = MagicMock()
         session = _make_session(scalars_list=[order])
         result = await get_orders_by_user_id(session, uuid.uuid4())
@@ -51,14 +54,14 @@ class TestGetOrdersByUserId:
         session.execute.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_with_status_filter(self):
+    async def test_with_status_filter(self) -> None:
         session = _make_session(scalars_list=[])
         await get_orders_by_user_id(session, uuid.uuid4(), status=OrderStatus.PENDING)
         call_args = session.execute.call_args[0][0]
         assert "status" in str(call_args).lower() or session.execute.called
 
     @pytest.mark.asyncio
-    async def test_returns_empty_list(self):
+    async def test_returns_empty_list(self) -> None:
         session = _make_session(scalars_list=[])
         result = await get_orders_by_user_id(session, uuid.uuid4())
         assert result == []
@@ -66,14 +69,14 @@ class TestGetOrdersByUserId:
 
 class TestGetOrderById:
     @pytest.mark.asyncio
-    async def test_returns_order_when_found(self):
+    async def test_returns_order_when_found(self) -> None:
         order = MagicMock()
         session = _make_session(scalar_result=order)
         result = await get_order_by_id(session, uuid.uuid4())
         assert result == order
 
     @pytest.mark.asyncio
-    async def test_returns_none_when_not_found(self):
+    async def test_returns_none_when_not_found(self) -> None:
         session = _make_session(scalar_result=None)
         result = await get_order_by_id(session, uuid.uuid4())
         assert result is None
@@ -81,7 +84,7 @@ class TestGetOrderById:
 
 class TestGetOrderByIdentifier:
     @pytest.mark.asyncio
-    async def test_resolves_uuid_string(self):
+    async def test_resolves_uuid_string(self) -> None:
         order = MagicMock()
         session = _make_session(scalar_result=order)
         order_id = uuid.uuid4()
@@ -89,20 +92,20 @@ class TestGetOrderByIdentifier:
         assert result == order
 
     @pytest.mark.asyncio
-    async def test_resolves_display_id_int(self):
+    async def test_resolves_display_id_int(self) -> None:
         order = MagicMock()
         session = _make_session(scalar_result=order)
         result = await get_order_by_identifier(session, "1001")
         assert result == order
 
     @pytest.mark.asyncio
-    async def test_returns_none_for_invalid_identifier(self):
+    async def test_returns_none_for_invalid_identifier(self) -> None:
         session = _make_session(scalar_result=None)
         result = await get_order_by_identifier(session, "not-a-uuid-or-int")
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_returns_none_when_not_found_by_uuid(self):
+    async def test_returns_none_when_not_found_by_uuid(self) -> None:
         session = _make_session(scalar_result=None)
         result = await get_order_by_identifier(session, str(uuid.uuid4()))
         assert result is None
@@ -110,14 +113,14 @@ class TestGetOrderByIdentifier:
 
 class TestGetOrderByIdentifierForUpdate:
     @pytest.mark.asyncio
-    async def test_resolves_uuid_with_for_update(self):
+    async def test_resolves_uuid_with_for_update(self) -> None:
         order = MagicMock()
         session = _make_session(scalar_result=order)
         result = await get_order_by_identifier_for_update(session, str(uuid.uuid4()))
         assert result == order
 
     @pytest.mark.asyncio
-    async def test_resolves_display_id_with_for_update(self):
+    async def test_resolves_display_id_with_for_update(self) -> None:
         order = MagicMock()
         session = _make_session(scalar_result=order)
         result = await get_order_by_identifier_for_update(session, "1002")
@@ -125,7 +128,7 @@ class TestGetOrderByIdentifierForUpdate:
         session.execute.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_returns_none_for_invalid(self):
+    async def test_returns_none_for_invalid(self) -> None:
         session = _make_session(scalar_result=None)
         result = await get_order_by_identifier_for_update(session, "invalid-key")
         assert result is None
@@ -133,20 +136,20 @@ class TestGetOrderByIdentifierForUpdate:
 
 class TestGetOrdersByRestaurantId:
     @pytest.mark.asyncio
-    async def test_returns_orders(self):
+    async def test_returns_orders(self) -> None:
         orders = [MagicMock(), MagicMock()]
         session = _make_session(scalars_list=orders)
         result = await get_orders_by_restaurant_id(session, uuid.uuid4())
         assert result == orders
 
     @pytest.mark.asyncio
-    async def test_with_status_filter(self):
+    async def test_with_status_filter(self) -> None:
         session = _make_session(scalars_list=[])
         await get_orders_by_restaurant_id(session, uuid.uuid4(), status=OrderStatus.COMPLETED)
         assert session.execute.called
 
     @pytest.mark.asyncio
-    async def test_with_date_range_filter(self):
+    async def test_with_date_range_filter(self) -> None:
         session = _make_session(scalars_list=[])
         await get_orders_by_restaurant_id(
             session,
@@ -159,19 +162,19 @@ class TestGetOrdersByRestaurantId:
 
 class TestCountOrdersByUserId:
     @pytest.mark.asyncio
-    async def test_returns_count(self):
+    async def test_returns_count(self) -> None:
         session = _make_session(scalar_one=5)
         result = await count_orders_by_user_id(session, uuid.uuid4())
         assert result == 5
 
     @pytest.mark.asyncio
-    async def test_with_status_filter(self):
+    async def test_with_status_filter(self) -> None:
         session = _make_session(scalar_one=3)
         result = await count_orders_by_user_id(session, uuid.uuid4(), status=OrderStatus.PENDING)
         assert result == 3
 
     @pytest.mark.asyncio
-    async def test_with_exclude_status(self):
+    async def test_with_exclude_status(self) -> None:
         session = _make_session(scalar_one=10)
         result = await count_orders_by_user_id(
             session, uuid.uuid4(), exclude_status=OrderStatus.CANCELLED
@@ -181,13 +184,13 @@ class TestCountOrdersByUserId:
 
 class TestCountOrdersByRestaurantId:
     @pytest.mark.asyncio
-    async def test_returns_count(self):
+    async def test_returns_count(self) -> None:
         session = _make_session(scalar_one=12)
         result = await count_orders_by_restaurant_id(session, uuid.uuid4())
         assert result == 12
 
     @pytest.mark.asyncio
-    async def test_with_date_filters(self):
+    async def test_with_date_filters(self) -> None:
         session = _make_session(scalar_one=7)
         result = await count_orders_by_restaurant_id(
             session,
@@ -200,7 +203,7 @@ class TestCountOrdersByRestaurantId:
 
 class TestCountActiveOrdersByRestaurantId:
     @pytest.mark.asyncio
-    async def test_returns_active_count(self):
+    async def test_returns_active_count(self) -> None:
         session = _make_session(scalar_one=4)
         result = await count_active_orders_by_restaurant_id(session, uuid.uuid4())
         assert result == 4
@@ -208,7 +211,7 @@ class TestCountActiveOrdersByRestaurantId:
 
 class TestUpdateOrderStatus:
     @pytest.mark.asyncio
-    async def test_updates_status(self):
+    async def test_updates_status(self) -> None:
         order = MagicMock()
         order.status = OrderStatus.PENDING.value
         order.ready_at = None
@@ -219,7 +222,7 @@ class TestUpdateOrderStatus:
         session.flush.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_sets_ready_at_when_status_is_ready(self):
+    async def test_sets_ready_at_when_status_is_ready(self) -> None:
         order = MagicMock()
         order.status = OrderStatus.ACCEPTED.value
         order.ready_at = None
@@ -230,7 +233,7 @@ class TestUpdateOrderStatus:
         assert order.status == OrderStatus.READY.value
 
     @pytest.mark.asyncio
-    async def test_does_not_set_ready_at_for_other_statuses(self):
+    async def test_does_not_set_ready_at_for_other_statuses(self) -> None:
         order = MagicMock()
         order.status = OrderStatus.PENDING.value
         order.ready_at = None
@@ -242,7 +245,7 @@ class TestUpdateOrderStatus:
 
 class TestCreateOrderEvent:
     @pytest.mark.asyncio
-    async def test_creates_event_and_flushes(self):
+    async def test_creates_event_and_flushes(self) -> None:
         session = AsyncMock()
         session.add = MagicMock()
         session.flush = AsyncMock()
@@ -266,7 +269,7 @@ class TestCreateOrderEvent:
 
 class TestGetEventsByOrderId:
     @pytest.mark.asyncio
-    async def test_returns_events(self):
+    async def test_returns_events(self) -> None:
         event1 = MagicMock()
         event2 = MagicMock()
         session = _make_session(scalars_list=[event1, event2])
@@ -274,7 +277,7 @@ class TestGetEventsByOrderId:
         assert result == [event1, event2]
 
     @pytest.mark.asyncio
-    async def test_returns_empty_list(self):
+    async def test_returns_empty_list(self) -> None:
         session = _make_session(scalars_list=[])
         result = await get_events_by_order_id(session, uuid.uuid4())
         assert result == []

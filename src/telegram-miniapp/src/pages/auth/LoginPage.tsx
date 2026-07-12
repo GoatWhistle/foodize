@@ -23,7 +23,7 @@ export default function LoginPage({ initData, onSuccess }: LoginPageProps) {
   const [loading, setLoading] = useState(false);
 
   const fetchMe = useAuthStore((s) => s.fetchMe);
-  const cancelledRef = useRef(false);
+  const cancelledRef = useRef<boolean>(false);
 
   const getCurrentInitData = (): string =>
     getTelegramInitData() || initData || "";
@@ -35,13 +35,15 @@ export default function LoginPage({ initData, onSuccess }: LoginPageProps) {
     onSuccess();
   };
 
+  const isCancelled = (): boolean => cancelledRef.current;
+
   const waitForContactLink = async (): Promise<boolean> => {
     cancelledRef.current = false;
     for (let attempt = 0; attempt < 15; attempt += 1) {
       await sleep(1000);
-      if (cancelledRef.current) return false;
+      if (isCancelled()) return false;
       const result = await initTelegramApp();
-      if (cancelledRef.current) return false;
+      if (isCancelled()) return false;
 
       if (result.status === "registered") {
         const nextInitData =
@@ -76,8 +78,8 @@ export default function LoginPage({ initData, onSuccess }: LoginPageProps) {
         const e = err as { response?: { status?: number }; message?: string };
         console.warn(
           "[handleTelegramLogin] finishTelegramAuth failed:",
-          e?.response?.status,
-          e?.message,
+          e.response?.status,
+          e.message,
         );
       }
 

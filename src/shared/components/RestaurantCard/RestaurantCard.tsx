@@ -1,7 +1,8 @@
 import { memo, useRef, useEffect } from "react";
-import type { KeyboardEvent, MouseEvent } from "react";
-import { MapPin, Star, Circle, Heart } from "@phosphor-icons/react";
+import type { MouseEvent } from "react";
+import { MapPinIcon, StarIcon, CircleIcon, HeartIcon } from "@phosphor-icons/react";
 import { getCategoryIcon } from "@shared/utils/categoryIcons";
+import { activateOnKey } from "@shared/utils/a11y";
 import type { Restaurant } from "@shared/types/models";
 import s from "./RestaurantCard.module.css";
 
@@ -29,15 +30,15 @@ const RestaurantCard = ({
     if (!el) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          el.classList.add(s.visible);
+        if (entry?.isIntersecting) {
+          if (s.visible) el.classList.add(s.visible);
           observer.unobserve(el);
         }
       },
       { threshold: 0.1 },
     );
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => { observer.disconnect(); };
   }, []);
 
   const icon = getCategoryIcon(undefined, { size: 40, weight: "fill", fallback: "venue" });
@@ -50,7 +51,7 @@ const RestaurantCard = ({
       aria-label={isFavorite ? "Убрать из избранного" : "В избранное"}
       aria-pressed={isFavorite}
     >
-      <Heart size={14} weight={isFavorite ? "fill" : "regular"} color={isFavorite ? "var(--color-error)" : "var(--on-photo)"} />
+      <HeartIcon size={14} weight={isFavorite ? "fill" : "regular"} color={isFavorite ? "var(--color-error)" : "var(--on-photo)"} />
     </button>
   ) : null;
 
@@ -61,7 +62,7 @@ const RestaurantCard = ({
       onClick={onClick}
       role="button"
       tabIndex={0}
-      onKeyDown={(e: KeyboardEvent<HTMLDivElement>) => e.key === "Enter" && onClick?.()}
+      onKeyDown={activateOnKey(() => onClick?.())}
       aria-label={`Ресторан ${restaurant.name}`}
     >
       <div className={s.photoWrap}>
@@ -78,15 +79,13 @@ const RestaurantCard = ({
         )}
 
         <div className={s.topRow}>
-          {restaurant.is_open != null && (
-            <div className={`${s.openBadge}${restaurant.is_open ? ` ${s.open}` : ""}`}>
-              <Circle size={7} weight="fill" color={restaurant.is_open ? "var(--color-success)" : "var(--on-photo-dim)"} />
-              {restaurant.is_open ? "Открыто" : "Закрыто"}
-            </div>
-          )}
+          <div className={`${s.openBadge}${restaurant.is_open ? ` ${s.open}` : ""}`}>
+            <CircleIcon size={7} weight="fill" color={restaurant.is_open ? "var(--color-success)" : "var(--on-photo-dim)"} />
+            {restaurant.is_open ? "Открыто" : "Закрыто"}
+          </div>
           <div className={s.rightBadges}>
             <div className={s.ratingBadge}>
-              <Star size={12} weight="fill" color="var(--star)" />
+              <StarIcon size={12} weight="fill" color="var(--star)" />
               <span>{rating ? rating.toFixed(1) : "0.0"}</span>
             </div>
             {favPosition !== "bottom" && favButton}
@@ -100,7 +99,7 @@ const RestaurantCard = ({
         <div className={s.tags}>
           {restaurant.address && (
             <span className={s.tag}>
-              <MapPin size={11} weight="bold" />
+              <MapPinIcon size={11} weight="bold" />
               {restaurant.address}
             </span>
           )}

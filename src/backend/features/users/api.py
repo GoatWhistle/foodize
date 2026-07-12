@@ -1,23 +1,18 @@
 import uuid
-from typing import Union
+from http import HTTPStatus
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
 from features.auth.service import get_current_user
 from features.users import crud
-from features.users.dependencies import get_user_by_id_or_404
+from features.users import service as users_service
 from features.users.models import User
 from features.users.schemas import ChangePasswordRequest, UserPublicRead, UserRead, UserUpdate
 from middlewares.limiter import limiter
-from shared.enums.permissions import Permission
-from shared.exceptions.existence import AuthException
-from shared.exceptions.rules import AccessDeniedException
-from shared.permissions import has_permission
 from shared.response import build_response
 from shared.schemas.response import SuccessResponse
-from utils.jwt_tokens import validate_password
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -39,7 +34,7 @@ async def update_my_profile(
     return build_response(UserRead.model_validate(updated))
 
 
-@router.post("/me/change-password", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/me/change-password", status_code=HTTPStatus.NO_CONTENT)
 @limiter.limit("5/minute")
 async def change_my_password(
     request: Request,
@@ -47,27 +42,19 @@ async def change_my_password(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> None:
-    if not current_user.hashed_password or not await validate_password(
-        data.old_password, current_user.hashed_password
-    ):
-        raise AuthException(detail="Wrong password")
-    await crud.update_user_password(session, current_user, data.new_password)
+    await users_service.change_user_password(
+        session, current_user, data.old_password, data.new_password
+    )
 
 
 @router.get(
     "/{user_id}",
-    response_model=Union[SuccessResponse[UserRead], SuccessResponse[UserPublicRead]],
+    response_model=SuccessResponse[UserRead] | SuccessResponse[UserPublicRead],
 )
 async def read_user(
     user_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-):
-    if current_user.id != user_id and not has_permission(
-        current_user.permissions, Permission.USERS_READ
-    ):
-        raise AccessDeniedException()
-    user = await get_user_by_id_or_404(session=session, user_id=user_id)
-    if current_user.id == user_id:
-        return build_response(UserRead.model_validate(user))
-    return build_response(UserPublicRead.model_validate(user))
+) -> SuccessResponse[UserRead] | SuccessResponse[UserPublicRead]:
+    profile = await users_service.read_user_profile(session, current_user, user_id)
+    return build_response(profile)

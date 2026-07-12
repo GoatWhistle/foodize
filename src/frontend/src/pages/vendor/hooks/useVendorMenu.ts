@@ -41,7 +41,7 @@ export const useVendorMenu = ({
 
   const syncOptionGroups = async (item: MenuItem | null, groups: OptionGroupDraft[]) => {
     if (!item?.id || !selectedRestaurant) return;
-    if (editingItem?.option_groups?.length) {
+    if (editingItem?.option_groups.length) {
       await Promise.all(
         editingItem.option_groups.map((group) =>
           menuService.deleteOptionGroup(selectedRestaurant.id, item.id, group.id)
@@ -50,7 +50,7 @@ export const useVendorMenu = ({
     }
     const cleanGroups = groups
       .map((group, groupIndex): MenuItemOptionGroupCreate | null => {
-        const cleanOptions = (group.options || [])
+        const cleanOptions = group.options
           .filter((option) => option.name.trim())
           .map((option, optionIndex) => ({
             name: option.name.trim(),
@@ -67,7 +67,7 @@ export const useVendorMenu = ({
         return {
           name: group.name.trim(),
           selection_type: group.selection_type,
-          is_required: Boolean(group.is_required),
+          is_required: group.is_required,
           min_selected: group.is_required
             ? Math.max(1, parseInt(String(group.min_selected), 10) || 1)
             : parseInt(String(group.min_selected), 10) || 0,
@@ -110,7 +110,7 @@ export const useVendorMenu = ({
       }
       await syncOptionGroups(savedItem, optionGroups);
 
-      if (savedItem?.id) {
+      if (savedItem.id) {
         if (photoFile) {
           await menuService.uploadItemPhoto(selectedRestaurant.id, savedItem.id, photoFile);
         } else if (previousPhotoUrl && !photoUrl) {
@@ -121,7 +121,7 @@ export const useVendorMenu = ({
       await fetchMenu(selectedRestaurant.id, { force: true });
       setMenuItemForm(EMPTY_MENU_ITEM_FORM);
       setMenuSuccess(editingItem ? 'Позиция обновлена' : 'Позиция добавлена');
-      setTimeout(() => setMenuSuccess(''), 2000);
+      setTimeout(() => { setMenuSuccess(''); }, 2000);
     } catch (err) {
       setFormError(translateApiError(err, 'Ошибка сохранения'));
     } finally {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
-import { Trash, BellSlash } from "@phosphor-icons/react";
+import { TrashIcon, BellSlashIcon } from "@phosphor-icons/react";
 import type { Notification } from "@shared/types/models";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -24,7 +24,7 @@ interface NotificationGroup {
 
 interface NotificationsPageProps {
   useNotificationStore: () => NotificationStore;
-  pageClassName?: string;
+  pageClassName?: string | undefined;
   stickyHeader?: boolean;
   markAllReadOnOpen?: boolean;
   style?: CSSProperties;
@@ -95,8 +95,8 @@ const NotificationsPage = ({
 
   useEffect(() => {
     void fetchNotifications(1)
-      .then(() => { if (markAllReadOnOpen) void markAllAsRead(); })
-      .finally(() => setLoading(false));
+      .then(() => { if (markAllReadOnOpen) markAllAsRead(); })
+      .finally(() => { setLoading(false); });
   }, [fetchNotifications, markAllReadOnOpen, markAllAsRead]);
 
   const handleLoadMore = async () => {
@@ -125,7 +125,7 @@ const NotificationsPage = ({
           )}
           {notifications.length > 0 && (
             <button className="btn btn-ghost btn-icon" aria-label="Удалить все" onClick={deleteAll}>
-              <Trash size={18} />
+              <TrashIcon size={18} />
             </button>
           )}
         </div>
@@ -135,7 +135,7 @@ const NotificationsPage = ({
         <NotificationSkeleton />
       ) : notifications.length === 0 ? (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "40vh", gap: 12, color: "var(--text-3)" }}>
-          <BellSlash size={48} weight="thin" />
+          <BellSlashIcon size={48} weight="thin" />
           <span style={{ fontSize: "0.9rem" }}>Нет уведомлений</span>
         </div>
       ) : (
@@ -148,7 +148,7 @@ const NotificationsPage = ({
               {items.map((n) => (
                 <div
                   key={n.id}
-                  onClick={() => !n.is_read && markAsRead(n.id)}
+                  onClick={() => { if (!n.is_read) markAsRead(n.id); }}
                   style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 16px", background: n.is_read ? "transparent" : "var(--accent-subtle)", borderBottom: "1px solid var(--border)", cursor: n.is_read ? "default" : "pointer" }}
                 >
                   {!n.is_read && (
@@ -167,7 +167,7 @@ const NotificationsPage = ({
                     aria-label="Удалить"
                     onClick={(e) => { e.stopPropagation(); deleteNotification(n.id); }}
                   >
-                    <Trash size={16} />
+                    <TrashIcon size={16} />
                   </button>
                 </div>
               ))}

@@ -1,4 +1,5 @@
 from datetime import date, datetime, timedelta
+from typing import Any, cast
 
 from features.admin.schemas import FinanceSeriesPoint
 from shared.enums.category import Category
@@ -37,9 +38,9 @@ def finance_points(
     ]
 
 
-def parse_day(value) -> date:
+def parse_day(value: Any) -> date:
     if isinstance(value, str):
         return date.fromisoformat(value)
     if isinstance(value, datetime):
         return value.date()
-    return value
+    return cast("date", value)

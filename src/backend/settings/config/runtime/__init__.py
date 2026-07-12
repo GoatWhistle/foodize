@@ -6,12 +6,12 @@ from settings.config.runtime.logs import LogsConfig
 from settings.config.runtime.telegram import TelegramConfig
 
 __all__ = [
-    "RunConfig",
     "ApiPrefix",
     "AuthConfig",
     "CorsConfig",
     "LLMConfig",
     "LLMProvider",
     "LogsConfig",
+    "RunConfig",
     "TelegramConfig",
 ]

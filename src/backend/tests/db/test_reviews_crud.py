@@ -1,4 +1,7 @@
+from typing import Any
+
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.restaurants.crud import create_restaurant
 from features.restaurants.schemas import RestaurantCreate
@@ -18,7 +21,7 @@ from shared.enums.roles import UserRole
 
 
 @pytest.fixture
-async def seeded(db_session):
+async def seeded(db_session: AsyncSession) -> dict[str, Any]:
     vendor_user = await create_user(
         db_session,
         UserCreate(
@@ -57,7 +60,7 @@ async def seeded(db_session):
 
 
 @pytest.mark.asyncio
-async def test_create_and_get_review(db_session, seeded):
+async def test_create_and_get_review(db_session: AsyncSession, seeded: dict[str, Any]) -> None:
     restaurant = seeded["restaurant"]
     user = seeded["user1"]
 
@@ -73,7 +76,7 @@ async def test_create_and_get_review(db_session, seeded):
 
 
 @pytest.mark.asyncio
-async def test_get_reviews_by_restaurant(db_session, seeded):
+async def test_get_reviews_by_restaurant(db_session: AsyncSession, seeded: dict[str, Any]) -> None:
     restaurant = seeded["restaurant"]
 
     await create_review(db_session, ReviewCreate(rating=4), seeded["user1"].id, restaurant.id)
@@ -84,7 +87,9 @@ async def test_get_reviews_by_restaurant(db_session, seeded):
 
 
 @pytest.mark.asyncio
-async def test_count_reviews_by_restaurant(db_session, seeded):
+async def test_count_reviews_by_restaurant(
+    db_session: AsyncSession, seeded: dict[str, Any]
+) -> None:
     restaurant = seeded["restaurant"]
 
     assert await count_reviews_by_restaurant(db_session, restaurant.id) == 0
@@ -94,7 +99,9 @@ async def test_count_reviews_by_restaurant(db_session, seeded):
 
 
 @pytest.mark.asyncio
-async def test_get_user_review_for_restaurant(db_session, seeded):
+async def test_get_user_review_for_restaurant(
+    db_session: AsyncSession, seeded: dict[str, Any]
+) -> None:
     restaurant = seeded["restaurant"]
     user = seeded["user1"]
 
@@ -108,7 +115,7 @@ async def test_get_user_review_for_restaurant(db_session, seeded):
 
 
 @pytest.mark.asyncio
-async def test_get_restaurant_avg_rating(db_session, seeded):
+async def test_get_restaurant_avg_rating(db_session: AsyncSession, seeded: dict[str, Any]) -> None:
     restaurant = seeded["restaurant"]
 
     avg, count = await get_restaurant_avg_rating(db_session, restaurant.id)

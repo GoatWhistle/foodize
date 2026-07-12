@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Copy, Check } from '@phosphor-icons/react';
+import { XIcon, CopyIcon, CheckIcon } from '@phosphor-icons/react';
 import TelegramLogo from '@shared/components/BrandIcons/TelegramLogo';
 import { useFocusTrap } from '@shared/hooks/useFocusTrap';
 import type { Restaurant } from '@shared/types/models';
@@ -30,10 +30,10 @@ const ShareModal = ({ restaurant, onClose }: ShareModalProps) => {
       await navigator.clipboard.writeText(deepLink);
       setCopied(true);
       setCopyError(false);
-      setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => { setCopied(false); }, 2000);
     } catch {
       setCopyError(true);
-      setTimeout(() => setCopyError(false), 3000);
+      setTimeout(() => { setCopyError(false); }, 3000);
     }
   };
 
@@ -95,7 +95,7 @@ const ShareModal = ({ restaurant, onClose }: ShareModalProps) => {
               display: 'flex',
             }}
           >
-            <X size={22} weight="bold" aria-hidden="true" />
+            <XIcon size={22} weight="bold" aria-hidden="true" />
           </button>
         </div>
 
@@ -133,7 +133,7 @@ const ShareModal = ({ restaurant, onClose }: ShareModalProps) => {
           >
             {copied ? (
               <>
-                <Check size={20} color="var(--color-success)" weight="bold" />
+                <CheckIcon size={20} color="var(--color-success)" weight="bold" />
                 <span style={{ color: 'var(--color-success)' }}>
                   Ссылка скопирована!
                 </span>
@@ -144,7 +144,7 @@ const ShareModal = ({ restaurant, onClose }: ShareModalProps) => {
               </span>
             ) : (
               <>
-                <Copy size={20} />
+                <CopyIcon size={20} />
                 Скопировать ссылку
               </>
             )}

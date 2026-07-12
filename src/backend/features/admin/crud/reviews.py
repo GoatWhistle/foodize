@@ -1,7 +1,8 @@
 import uuid
 from datetime import UTC, datetime
+from typing import Any, cast
 
-from sqlalchemy import func, select, update
+from sqlalchemy import CursorResult, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.admin.schemas import AdminReviewResponse
@@ -72,9 +73,12 @@ async def delete_review(session: AsyncSession, review: Review) -> Review:
 
 
 async def batch_delete_reviews(session: AsyncSession, ids: list[uuid.UUID]) -> int:
-    result = await session.execute(
-        update(Review)
-        .where(Review.id.in_(ids), Review.deleted_at.is_(None))
-        .values(deleted_at=datetime.now(UTC))
+    result = cast(
+        "CursorResult[Any]",
+        await session.execute(
+            update(Review)
+            .where(Review.id.in_(ids), Review.deleted_at.is_(None))
+            .values(deleted_at=datetime.now(UTC))
+        ),
     )
-    return result.rowcount  # type: ignore[attr-defined]
+    return result.rowcount

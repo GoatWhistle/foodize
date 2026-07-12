@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from datetime import time as dt_time
 
 from sqlalchemy import delete, select
@@ -32,12 +32,10 @@ async def set_working_hours(
     entries: list[WorkingHoursEntry],
 ) -> list[WorkingHours]:
     incoming_days = [e.day_of_week for e in entries]
-    await session.execute(
-        delete(WorkingHours).where(
-            WorkingHours.restaurant_id == restaurant_id,
-            WorkingHours.day_of_week.notin_(incoming_days) if incoming_days else True,
-        )
-    )
+    delete_stmt = delete(WorkingHours).where(WorkingHours.restaurant_id == restaurant_id)
+    if incoming_days:
+        delete_stmt = delete_stmt.where(WorkingHours.day_of_week.notin_(incoming_days))
+    await session.execute(delete_stmt)
     for e in entries:
         stmt = (
             pg_insert(WorkingHours)
@@ -66,7 +64,7 @@ def is_open_now(hours: list[WorkingHours], now: datetime | None = None) -> bool 
     if not hours:
         return None
     if now is None:
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
     dow = now.weekday()
     current_time = now.time().replace(tzinfo=None)
     for h in hours:

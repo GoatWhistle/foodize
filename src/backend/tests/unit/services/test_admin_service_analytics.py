@@ -7,7 +7,7 @@ from features.admin.service.analytics import get_advanced_analytics, get_finance
 
 class TestGetStats:
     @pytest.mark.asyncio
-    async def test_delegates_to_crud(self):
+    async def test_delegates_to_crud(self) -> None:
         stats = MagicMock()
         with patch(
             "features.admin.crud.get_platform_stats", new_callable=AsyncMock, return_value=stats
@@ -18,7 +18,7 @@ class TestGetStats:
 
 class TestGetFinance:
     @pytest.mark.asyncio
-    async def test_delegates_to_crud(self):
+    async def test_delegates_to_crud(self) -> None:
         analytics = MagicMock()
         with patch(
             "features.admin.crud.get_finance_analytics",
@@ -31,7 +31,7 @@ class TestGetFinance:
 
 class TestGetAdvancedAnalytics:
     @pytest.mark.asyncio
-    async def test_delegates_to_crud(self):
+    async def test_delegates_to_crud(self) -> None:
         analytics = MagicMock()
         with patch(
             "features.admin.crud.get_advanced_analytics",

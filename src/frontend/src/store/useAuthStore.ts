@@ -1,6 +1,7 @@
 import { createAuthStore } from '@shared/store/createAuthStore';
 import { authService } from '@shared/services/authService';
-import { useOrderStore } from './useOrderStore';
+import { useCartStore } from './useCartStore';
+import { useOrdersStore } from './useOrdersStore';
 import { useFavoriteStore } from '@shared/store/useFavoriteStore';
 import { useNotificationStore } from './useNotificationStore';
 
@@ -12,26 +13,29 @@ type VerifyCodeByUsernameData = Parameters<
 export const useAuthStore = createAuthStore({
   authService,
   persistKey: 'auth-storage',
+  onLogout: () => {
+    useNotificationStore.getState().disconnectWs();
+    useNotificationStore.setState({
+      notifications: [],
+      unreadCount: 0,
+      total: 0,
+      page: 1,
+      connectionStatus: 'closed',
+      wasEverConnected: false,
+    });
+    useCartStore.setState({ cart: [], cartRestaurantId: null });
+    useOrdersStore.setState({ activeOrder: null, currentOrder: null, orders: [] });
+    useFavoriteStore.setState({ favoriteIds: [], loaded: false });
+  },
   extraActions: (set) => ({
-    logout: async () => {
-      try {
-        await authService.logout();
-      } catch {}
-      set({ user: null, isAuthenticated: false });
-      useNotificationStore.getState().disconnectWs();
-      useNotificationStore.setState({ notifications: [], unreadCount: 0, total: 0, page: 1, connectionStatus: 'closed', wasEverConnected: false });
-      useOrderStore.setState({ cart: [], cartRestaurantId: null, activeOrder: null, currentOrder: null, orders: [] });
-      useFavoriteStore.setState({ favoriteIds: [], loaded: false });
-    },
-
     loginWithTelegramCode: async (data: VerifyCodeData) => {
       try {
         await authService.verifyTelegramLoginCode(data);
         const me = await authService.getMe();
-        set({ user: me.data.data, isAuthenticated: true });
+        set({ user: me.data.data });
         return { requiresPassword: false };
       } catch (err) {
-        set({ user: null, isAuthenticated: false });
+        set({ user: null });
         throw err;
       }
     },
@@ -39,12 +43,12 @@ export const useAuthStore = createAuthStore({
     loginWithTelegramCodeByUsername: async (data: VerifyCodeByUsernameData) => {
       try {
         const res = await authService.verifyTelegramLoginCodeByUsername(data);
-        const requiresPassword = res?.data?.data?.requires_password ?? false;
+        const requiresPassword = res.data.data.requires_password;
         const me = await authService.getMe();
-        set({ user: me.data.data, isAuthenticated: true });
+        set({ user: me.data.data });
         return { requiresPassword };
       } catch (err) {
-        set({ user: null, isAuthenticated: false });
+        set({ user: null });
         throw err;
       }
     },
@@ -53,9 +57,9 @@ export const useAuthStore = createAuthStore({
       try {
         await authService.setTelegramSitePassword({ password });
         const me = await authService.getMe();
-        set({ user: me.data.data, isAuthenticated: true });
+        set({ user: me.data.data });
       } catch (err) {
-        set({ user: null, isAuthenticated: false });
+        set({ user: null });
         throw err;
       }
     },

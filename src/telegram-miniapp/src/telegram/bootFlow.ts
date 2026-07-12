@@ -43,7 +43,7 @@ export async function runBootFlow(deps: BootFlowDeps): Promise<BootAction> {
       type: "register",
       initData: result.initData ?? "",
       phoneNumber: result.phone_number ?? null,
-      startParam: result.start_param ?? null,
+      startParam: result.start_param,
     };
   }
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { staffService } from '@shared/services/staffService';
 import { translateApiError } from '@shared/utils/translateApiError';
+import { logError } from '@shared/utils/logError';
 import { createRestaurantOrdersWebSocket } from '../../../services/api';
 import type { ReliableWebSocket } from '@shared/services/api';
 import { COLUMN_DEFS } from '../staffColumns';
@@ -37,7 +38,7 @@ export const useStaffDashboard = () => {
     if (!silent) setOrdersLoading(true);
     try {
       const res = await staffService.getRestaurantOrders(restaurantId);
-      const newOrders = (res.data.data ?? []) as StaffOrder[];
+      const newOrders = res.data.data as StaffOrder[];
       const newIds = new Set(newOrders.map((o) => o.id));
       const hasNew = [...newIds].some((id) => !prevOrderIds.current.has(id));
       if (hasNew && prevOrderIds.current.size > 0) setNewOrderAlert(true);
@@ -53,7 +54,7 @@ export const useStaffDashboard = () => {
     setMenuError('');
     try {
       const res = await staffService.getMenu(restaurantId);
-      setMenuItems(res.data.data ?? []);
+      setMenuItems(res.data.data);
     } catch {
       setMenuError('Не удалось загрузить меню');
     } finally {
@@ -67,14 +68,17 @@ export const useStaffDashboard = () => {
       .then((res) => {
         setProfile(res.data.data);
       })
-      .catch(() => setProfileError('error'))
-      .finally(() => setProfileLoading(false));
+      .catch(() => { setProfileError('error'); })
+      .finally(() => { setProfileLoading(false); });
   }, []);
 
   useEffect(() => {
     if (!profile) return;
-    void fetchOrders(profile.restaurant_id);
-    void fetchMenu(profile.restaurant_id);
+    const restaurantId = profile.restaurant_id;
+    Promise.all([
+      fetchOrders(restaurantId),
+      fetchMenu(restaurantId),
+    ]).catch((err: unknown) => { logError('useStaffDashboard.initialLoad', err); });
   }, [profile, fetchOrders, fetchMenu]);
 
   useEffect(() => {
@@ -83,7 +87,7 @@ export const useStaffDashboard = () => {
       void fetchOrders(profile.restaurant_id, true);
     });
     wsRef.current = ws;
-    return () => ws?.close();
+    return () => { ws.close(); };
   }, [profile?.restaurant_id, fetchOrders]);
 
   const doStatusChange = async (orderId: string, status: OrderStatus) => {
@@ -114,7 +118,7 @@ export const useStaffDashboard = () => {
 
   const triggerCooking = (order: StaffOrder) => {
     if (autoEta) {
-      const times = order.items?.map((i) => i.menu_item_prep_time).filter(Boolean) ?? [];
+      const times = order.items.map((i) => i.menu_item_prep_time).filter(Boolean);
       const minutes = times.length > 0 ? Math.max(...times) : 15;
       void acceptOrder(order.id, { estimated_ready_in_minutes: minutes });
     } else {

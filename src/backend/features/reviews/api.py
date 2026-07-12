@@ -1,6 +1,7 @@
 import uuid
+from http import HTTPStatus
 
-from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
@@ -19,7 +20,7 @@ router = APIRouter(prefix="/restaurants", tags=["Reviews"])
 @router.post(
     "/{restaurant_id}/reviews",
     response_model=SuccessResponse[ReviewResponse],
-    status_code=status.HTTP_201_CREATED,
+    status_code=HTTPStatus.CREATED,
 )
 async def create_review(
     restaurant_id: str,

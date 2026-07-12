@@ -43,9 +43,9 @@ export const useVendorOrders = ({ selectedRestaurant, activeTab }: UseVendorOrde
           date_to: ordersDateToFilter || undefined,
         });
         if (requestId !== requestSeqRef.current) return;
-        const list = Array.isArray(res.data?.data) ? res.data.data : [];
+        const list = Array.isArray(res.data.data) ? res.data.data : [];
         setRestaurantOrders(list);
-        setOrdersTotal(res.data?.pagination?.total || list.length);
+        setOrdersTotal(res.data.pagination.total || list.length);
       } catch (err) {
         if (requestId !== requestSeqRef.current) return;
         setRestaurantOrders([]);

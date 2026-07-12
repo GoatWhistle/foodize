@@ -1,5 +1,6 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -16,30 +17,30 @@ from utils.jwt_tokens import (
 
 class TestPasswordHashing:
     @pytest.mark.asyncio
-    async def test_hash_differs_from_plain(self):
+    async def test_hash_differs_from_plain(self) -> None:
         plain = "supersecret123"
         hashed = await hash_password(plain)
         assert hashed != plain
 
     @pytest.mark.asyncio
-    async def test_correct_password_validates(self):
+    async def test_correct_password_validates(self) -> None:
         plain = "supersecret123"
         hashed = await hash_password(plain)
         assert await validate_password(plain, hashed) is True
 
     @pytest.mark.asyncio
-    async def test_wrong_password_rejected(self):
+    async def test_wrong_password_rejected(self) -> None:
         hashed = await hash_password("supersecret123")
         assert await validate_password("wrongpassword1", hashed) is False
 
     @pytest.mark.asyncio
-    async def test_empty_password_hashed(self):
+    async def test_empty_password_hashed(self) -> None:
         hashed = await hash_password("")
         assert isinstance(hashed, str)
         assert await validate_password("", hashed) is True
 
     @pytest.mark.asyncio
-    async def test_two_hashes_of_same_password_differ(self):
+    async def test_two_hashes_of_same_password_differ(self) -> None:
         plain = "samepassword1"
         h1 = await hash_password(plain)
         h2 = await hash_password(plain)
@@ -47,7 +48,7 @@ class TestPasswordHashing:
 
 
 class TestEncodeDecodeJwt:
-    def test_encode_calls_jwt_encode(self):
+    def test_encode_calls_jwt_encode(self) -> None:
         payload = {"sub": "abc", "exp": 9999999999}
         with patch("utils.jwt_tokens.jwt.encode", return_value="tok") as mock_enc:
             with patch("utils.jwt_tokens.settings.auth.private_key_path") as mock_path:
@@ -56,7 +57,7 @@ class TestEncodeDecodeJwt:
         assert result == "tok"
         mock_enc.assert_called_once()
 
-    def test_decode_calls_jwt_decode(self):
+    def test_decode_calls_jwt_decode(self) -> None:
         expected = {"sub": str(uuid.uuid4())}
         with patch("utils.jwt_tokens.jwt.decode", return_value=expected) as mock_dec:
             with patch("utils.jwt_tokens.settings.auth.public_key_path") as mock_path:
@@ -65,7 +66,7 @@ class TestEncodeDecodeJwt:
         assert result == expected
         mock_dec.assert_called_once()
 
-    def test_decode_accepts_explicit_public_key(self):
+    def test_decode_accepts_explicit_public_key(self) -> None:
         expected = {"sub": "user-123"}
         with patch("utils.jwt_tokens.jwt.decode", return_value=expected):
             result = decode_jwt("some.jwt.token", public_key="explicit-key")
@@ -73,11 +74,15 @@ class TestEncodeDecodeJwt:
 
 
 class TestCreateJwtToken:
-    def test_payload_contains_required_fields(self):
+    def test_payload_contains_required_fields(self) -> None:
         user_id = uuid.uuid4()
-        captured: dict = {}
+        captured: dict[str, Any] = {}
 
-        def fake_encode(payload, private_key=None, algorithm=None):
+        def fake_encode(
+            payload: dict[str, Any],
+            private_key: str | None = None,
+            algorithm: str | None = None,
+        ) -> str:
             captured.update(payload)
             return "mocked-token"
 
@@ -91,23 +96,27 @@ class TestCreateJwtToken:
         assert "iat" in captured
         assert captured["typ"] == "access"
 
-    def test_expiry_is_in_future(self):
+    def test_expiry_is_in_future(self) -> None:
         user_id = uuid.uuid4()
-        captured: dict = {}
+        captured: dict[str, Any] = {}
 
-        def fake_encode(payload, private_key=None, algorithm=None):
+        def fake_encode(
+            payload: dict[str, Any],
+            private_key: str | None = None,
+            algorithm: str | None = None,
+        ) -> str:
             captured.update(payload)
             return "tok"
 
         with patch("utils.jwt_tokens.encode_jwt", side_effect=fake_encode):
             create_access_token(user_id=user_id)
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         assert captured["exp"] > now
 
 
 class TestAccessRefreshTokens:
-    def test_access_token_delegates_to_create_jwt_token(self):
+    def test_access_token_delegates_to_create_jwt_token(self) -> None:
         user_id = uuid.uuid4()
         with patch("utils.jwt_tokens._create_jwt_token", return_value="access") as mock_create:
             result = create_access_token(user_id=user_id)
@@ -116,18 +125,22 @@ class TestAccessRefreshTokens:
         assert args.kwargs["user_id"] == user_id
         assert "lifetime_seconds" in args.kwargs
 
-    def test_refresh_token_delegates_to_create_jwt_token(self):
+    def test_refresh_token_delegates_to_create_jwt_token(self) -> None:
         user_id = uuid.uuid4()
         with patch("utils.jwt_tokens._create_jwt_token", return_value="refresh") as mock_create:
             result = create_refresh_token(user_id=user_id)
         assert result == "refresh"
         mock_create.assert_called_once()
 
-    def test_refresh_token_includes_session_exp_in_payload(self):
+    def test_refresh_token_includes_session_exp_in_payload(self) -> None:
         user_id = uuid.uuid4()
-        captured: dict = {}
+        captured: dict[str, Any] = {}
 
-        def fake_encode(payload, private_key=None, algorithm=None):
+        def fake_encode(
+            payload: dict[str, Any],
+            private_key: str | None = None,
+            algorithm: str | None = None,
+        ) -> str:
             captured.update(payload)
             return "mocked-refresh"
 
@@ -137,11 +150,15 @@ class TestAccessRefreshTokens:
         assert "session_exp" in captured
         assert isinstance(captured["session_exp"], int)
 
-    def test_refresh_token_uses_explicit_session_exp(self):
+    def test_refresh_token_uses_explicit_session_exp(self) -> None:
         user_id = uuid.uuid4()
-        captured: dict = {}
+        captured: dict[str, Any] = {}
 
-        def fake_encode(payload, private_key=None, algorithm=None):
+        def fake_encode(
+            payload: dict[str, Any],
+            private_key: str | None = None,
+            algorithm: str | None = None,
+        ) -> str:
             captured.update(payload)
             return "mocked-refresh"
 
@@ -150,16 +167,16 @@ class TestAccessRefreshTokens:
 
         assert captured["session_exp"] == 9999999999
 
-    def test_access_and_refresh_use_different_lifetimes(self):
+    def test_access_and_refresh_use_different_lifetimes(self) -> None:
         user_id = uuid.uuid4()
         access_lifetime: list[int] = []
         refresh_lifetime: list[int] = []
 
-        def capture_access(**kwargs):
+        def capture_access(**kwargs: Any) -> str:
             access_lifetime.append(kwargs["lifetime_seconds"])
             return "access"
 
-        def capture_refresh(**kwargs):
+        def capture_refresh(**kwargs: Any) -> str:
             refresh_lifetime.append(kwargs["lifetime_seconds"])
             return "refresh"
 

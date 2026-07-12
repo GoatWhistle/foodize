@@ -20,6 +20,6 @@ class Favorite(Base, IdUuidPkMixin, CreatedAtMixin):
     user: Mapped["User"] = relationship(back_populates="favorites")
     restaurant: Mapped["Restaurant"] = relationship(back_populates="favorited_by")
 
-    __table_args__ = (  # type: ignore[assignment]
+    __table_args__ = (
         UniqueConstraint("user_id", "restaurant_id", name="uq_favorites_user_restaurant"),
     )

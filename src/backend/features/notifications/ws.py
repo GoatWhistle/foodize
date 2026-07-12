@@ -1,37 +1,24 @@
-import asyncio
+import contextlib
 import json
 import uuid
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from uvicorn.protocols.utils import ClientDisconnected
+from fastapi import APIRouter, WebSocket
+from redis.asyncio.client import PubSub
 
-from database import db_helper
-from features.notifications.ws_auth import extract_ws_token, resolve_ws_token_user_id
-from features.users.dependencies import get_user_by_id
-from infra.cache.redis import get_redis_cache
-from utils.logging_setup import get_logger
-
-_logger = get_logger(__name__)
+from shared.ws import authenticate_ws_user, run_channel_ws, safe_send_json, safe_send_text
 
 router = APIRouter(prefix="/ws", tags=["WebSockets"])
 
-_MAX_WS_MESSAGE_BYTES = 4096
-_WS_MAX_MESSAGES_PER_WINDOW = 30
-_WS_WINDOW_SECONDS = 10.0
 
-
-async def _safe_send_text(websocket: WebSocket, payload: str) -> None:
-    try:
-        await websocket.send_text(payload)
-    except (WebSocketDisconnect, ClientDisconnected):
-        raise WebSocketDisconnect
-
-
-async def _safe_send_json(websocket: WebSocket, payload: dict) -> None:
-    try:
-        await websocket.send_json(payload)
-    except (WebSocketDisconnect, ClientDisconnected):
-        raise WebSocketDisconnect
+async def _forward_notifications(websocket: WebSocket, pubsub: PubSub) -> None:
+    async for message in pubsub.listen():
+        if message["type"] != "message":
+            continue
+        data_str = message["data"]
+        if isinstance(data_str, bytes):
+            data_str = data_str.decode("utf-8")
+        with contextlib.suppress(json.JSONDecodeError):
+            await safe_send_json(websocket, json.loads(data_str))
 
 
 @router.websocket("/notifications/{user_id}")
@@ -41,96 +28,17 @@ async def user_notifications_ws(
     token: str | None = None,
 ) -> None:
     await websocket.accept()
-
-    token = await extract_ws_token(websocket, token)
-    if not token:
-        await _safe_send_text(websocket, json.dumps({"error": "not_authenticated"}))
+    user = await authenticate_ws_user(websocket, token)
+    if user is None:
+        return
+    if user.id != user_id:
+        await safe_send_text(websocket, json.dumps({"error": "forbidden"}))
         await websocket.close()
         return
 
-    try:
-        token_user_id = await resolve_ws_token_user_id(token)
-    except PermissionError:
-        await _safe_send_text(websocket, json.dumps({"error": "token_revoked"}))
-        await websocket.close()
-        return
-    if token_user_id is None:
-        await _safe_send_text(websocket, json.dumps({"error": "invalid_token"}))
-        await websocket.close()
-        return
-
-    if token_user_id != user_id:
-        await _safe_send_text(websocket, json.dumps({"error": "forbidden"}))
-        await websocket.close()
-        return
-
-    async with db_helper.session_factory() as session:
-        user = await get_user_by_id(session, token_user_id)
-        if user is None or not user.is_active:
-            await _safe_send_text(websocket, json.dumps({"error": "not_authenticated"}))
-            await websocket.close()
-            return
-
-    redis_client = get_redis_cache().get_raw_client()
-    pubsub = redis_client.pubsub()
-    channel = f"user_notifications:{user_id}"
-    await pubsub.subscribe(channel)
-    await _safe_send_text(websocket, json.dumps({"type": "connected"}))
-
-    try:
-
-        async def listen_redis():
-            async for message in pubsub.listen():
-                if message["type"] == "message":
-                    data_str = message["data"]
-                    if isinstance(data_str, bytes):
-                        data_str = data_str.decode("utf-8")
-                    try:
-                        await _safe_send_json(websocket, json.loads(data_str))
-                    except json.JSONDecodeError:
-                        pass
-
-        async def listen_ws():
-            window_start = asyncio.get_running_loop().time()
-            message_count = 0
-            try:
-                while True:
-                    client_message = await websocket.receive_text()
-
-                    now = asyncio.get_running_loop().time()
-                    if now - window_start >= _WS_WINDOW_SECONDS:
-                        window_start = now
-                        message_count = 0
-                    message_count += 1
-                    if message_count > _WS_MAX_MESSAGES_PER_WINDOW:
-                        await _safe_send_text(websocket, json.dumps({"error": "rate_limited"}))
-                        await websocket.close(code=1008)
-                        return
-
-                    if len(client_message.encode("utf-8")) > _MAX_WS_MESSAGE_BYTES:
-                        await _safe_send_text(websocket, json.dumps({"error": "message_too_large"}))
-                        continue
-
-                    try:
-                        client_data = json.loads(client_message)
-                        if client_data.get("type") == "ping":
-                            await _safe_send_text(websocket, json.dumps({"type": "pong"}))
-                    except json.JSONDecodeError:
-                        pass
-            except WebSocketDisconnect:
-                pass
-
-        t1 = asyncio.create_task(listen_redis())
-        t2 = asyncio.create_task(listen_ws())
-
-        done, pending = await asyncio.wait([t1, t2], return_when=asyncio.FIRST_COMPLETED)
-        for task in pending:
-            task.cancel()
-        for task in done:
-            if not task.cancelled() and task.exception() is not None:
-                _logger.exception("ws_task_failed", exc_info=task.exception())
-    except WebSocketDisconnect:
-        pass
-    finally:
-        await pubsub.unsubscribe(channel)
-        await pubsub.aclose()
+    await safe_send_text(websocket, json.dumps({"type": "connected"}))
+    await run_channel_ws(
+        websocket,
+        f"user_notifications:{user_id}",
+        lambda pubsub: _forward_notifications(websocket, pubsub),
+    )

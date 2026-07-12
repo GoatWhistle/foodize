@@ -2,13 +2,17 @@ import logging
 import uuid
 from collections.abc import AsyncIterator, Iterable
 
-from features.ai_advisor.schemas import ChatMessageIn
+from features.ai_advisor.schemas import AdvisorInsightsResponse, ChatMessageIn
 from features.ai_advisor.tools import ADVISOR_TOOLS, build_advisor_executor
 from features.vendors.models import VendorProfile
+from infra.cache.base import CacheRepository
 from infra.llm import AgentRole, Message, Role, get_llm_client, run_agent, stream_agent
 from settings.config.app_config import settings
 
 logger = logging.getLogger("ai.advisor")
+
+_INSIGHTS_TTL_SECONDS = 86_400
+_INSIGHTS_COOLDOWN_SECONDS = 300
 
 SYSTEM_PROMPT = (
     "Ты — ИИ-аналитик бизнеса для владельца точки фастфуда в сервисе предзаказа еды QUICK. "
@@ -77,3 +81,30 @@ async def generate_insights(vendor: VendorProfile) -> str:
     except Exception:
         logger.exception("advisor insights generation failed")
         raise
+
+
+def _insights_cache_key(vendor_id: uuid.UUID) -> str:
+    return f"ai:advisor:insights:{vendor_id}"
+
+
+def _insights_cooldown_key(vendor_id: uuid.UUID) -> str:
+    return f"ai:advisor:insights:cooldown:{vendor_id}"
+
+
+async def get_insights(
+    vendor: VendorProfile,
+    cache: CacheRepository,
+    *,
+    refresh: bool,
+) -> AdvisorInsightsResponse:
+    key = _insights_cache_key(vendor.id)
+    serve_cached = not refresh or bool(await cache.get(_insights_cooldown_key(vendor.id)))
+    if serve_cached:
+        cached = await cache.get(key)
+        if cached:
+            return AdvisorInsightsResponse(insights=cached, cached=True)
+
+    text = await generate_insights(vendor)
+    await cache.set(key, text, ttl=_INSIGHTS_TTL_SECONDS)
+    await cache.set(_insights_cooldown_key(vendor.id), "1", ttl=_INSIGHTS_COOLDOWN_SECONDS)
+    return AdvisorInsightsResponse(insights=text, cached=False)

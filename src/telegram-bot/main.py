@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import logging
 import signal
 
@@ -28,7 +29,7 @@ async def _on_error(event: ErrorEvent) -> None:
     )
 
 
-async def _health(request: web.Request) -> web.Response:
+async def _health(_request: web.Request) -> web.Response:
     return web.json_response({"status": "ok"})
 
 
@@ -60,7 +61,7 @@ async def main() -> None:
                 "Without it the /webhook endpoint accepts unauthenticated requests."
             )
 
-        async def on_startup(dispatcher: Dispatcher) -> None:
+        async def on_startup(dispatcher: Dispatcher) -> None:  # noqa: ARG001
             await bot.set_webhook(
                 url=f"{bot_config.webhook_url}/webhook",
                 secret_token=bot_config.webhook_secret or None,
@@ -88,10 +89,8 @@ async def main() -> None:
         stop_event = asyncio.Event()
         loop = asyncio.get_running_loop()
         for sig in (signal.SIGINT, signal.SIGTERM):
-            try:
+            with contextlib.suppress(NotImplementedError):
                 loop.add_signal_handler(sig, stop_event.set)
-            except NotImplementedError:
-                pass
 
         try:
             await stop_event.wait()
@@ -123,10 +122,8 @@ async def _shutdown(
     bot: Bot,
 ) -> None:
     consumer_task.cancel()
-    try:
+    with contextlib.suppress(asyncio.CancelledError):
         await consumer_task
-    except asyncio.CancelledError:
-        pass
     await runner.cleanup()
     await backend_client.close_client()
     await redis_client.close_client()
