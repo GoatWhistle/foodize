@@ -1,8 +1,10 @@
 import uuid
 
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from features.ai_order_agent.models import MenuItemEmbedding
 from features.menu.models import MenuItem
 from features.restaurants.models import Restaurant
 from shared.enums.moderation_status import ModerationStatus
@@ -96,3 +98,62 @@ async def search_menu_items(
     )
     rows = await session.execute(stmt)
     return [_row_to_dict(row) for row in rows.all()]
+
+
+async def get_embedding_meta(
+    session: AsyncSession,
+    item_ids: list[uuid.UUID],
+    model: str,
+) -> dict[uuid.UUID, str]:
+    if not item_ids:
+        return {}
+    stmt = select(MenuItemEmbedding.menu_item_id, MenuItemEmbedding.text_hash).where(
+        MenuItemEmbedding.menu_item_id.in_(item_ids),
+        MenuItemEmbedding.model == model,
+    )
+    rows = await session.execute(stmt)
+    return {row.menu_item_id: row.text_hash for row in rows.all()}
+
+
+async def upsert_embeddings(session: AsyncSession, rows: list[dict]) -> None:
+    if not rows:
+        return
+    stmt = pg_insert(MenuItemEmbedding).values(rows)
+    stmt = stmt.on_conflict_do_update(
+        index_elements=[MenuItemEmbedding.menu_item_id],
+        set_={
+            "model": stmt.excluded.model,
+            "text_hash": stmt.excluded.text_hash,
+            "embedding": stmt.excluded.embedding,
+            "updated_at": func.now(),
+        },
+    )
+    await session.execute(stmt)
+    await session.commit()
+
+
+async def semantic_rank_items(
+    session: AsyncSession,
+    *,
+    query_embedding: list[float],
+    model: str,
+    max_price: int | None = None,
+    restaurant_id: uuid.UUID | None = None,
+    limit: int = 50,
+) -> list[dict]:
+    distance = MenuItemEmbedding.embedding.cosine_distance(query_embedding).label("distance")
+    stmt = (
+        select(*_SELECT_COLUMNS, distance)
+        .join(Restaurant, Restaurant.id == MenuItem.restaurant_id)
+        .join(MenuItemEmbedding, MenuItemEmbedding.menu_item_id == MenuItem.id)
+        .where(*_orderable_filters(max_price, restaurant_id), MenuItemEmbedding.model == model)
+        .order_by(distance.asc())
+        .limit(limit)
+    )
+    rows = await session.execute(stmt)
+    results = []
+    for row in rows.all():
+        item = _row_to_dict(row)
+        item["_distance"] = float(row.distance)
+        results.append(item)
+    return results

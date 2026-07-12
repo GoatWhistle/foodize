@@ -370,6 +370,24 @@ docker compose -f docker-compose.prod.yaml up -d --build \
 
 Обновления фронта требуют пересборки (`--build frontend`), т.к. URL зашиты на этапе сборки.
 
+### ⚠️ Переход на pgvector (при следующем деплое)
+
+Основная БД переехала с `postgres:17-alpine` на `pgvector/pgvector:pg17` (Debian). Мажорная
+версия PostgreSQL та же, данные в volume совместимы, но alpine (musl) и Debian (glibc)
+по-разному реализуют collation — текстовые индексы (в т.ч. trgm) могут стать некорректными.
+Порядок при деплое:
+
+```bash
+# 1. добавить в .env: PGVECTOR_IMAGE_TAG=pg17
+# 2. перезапустить БД на новом образе
+docker compose -f docker-compose.prod.yaml up -d pg
+# 3. пересобрать текстовые индексы (однократно)
+docker compose -f docker-compose.prod.yaml exec pg \
+  psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c 'REINDEX DATABASE;'
+# 4. накатить миграции (создаст extension vector и menu_item_embeddings)
+docker compose -f docker-compose.prod.yaml up -d --build backend worker
+```
+
 ### Мониторинг (опционально)
 
 ```bash

@@ -9,6 +9,8 @@ from infra.llm.base import (
     LLMResponse,
     Message,
     Role,
+    StreamEvent,
+    TextDelta,
     ToolCall,
     ToolInputError,
     ToolSpec,
@@ -111,7 +113,6 @@ async def run_agent(
     max_tokens: int = _DEFAULT_MAX_TOKENS,
     deadline_seconds: float = _DEFAULT_DEADLINE_SECONDS,
 ) -> tuple[str, list[Message]]:
-
     history = list(messages)
     output_spent = 0
     deadline = asyncio.get_running_loop().time() + deadline_seconds
@@ -149,6 +150,26 @@ async def run_agent(
     return text, history
 
 
+async def _stream_step(
+    client: LLMClient,
+    *,
+    system: str,
+    messages: list[Message],
+    tools: list[ToolSpec],
+    tool_choice: str | None,
+    deadline: float,
+) -> AsyncIterator[StreamEvent]:
+    iterator = client.stream(
+        system=system, messages=messages, tools=tools, tool_choice=tool_choice
+    ).__aiter__()
+    while True:
+        try:
+            event = await asyncio.wait_for(iterator.__anext__(), timeout=_remaining(deadline))
+        except StopAsyncIteration:
+            return
+        yield event
+
+
 async def stream_agent(
     client: LLMClient,
     *,
@@ -165,20 +186,29 @@ async def stream_agent(
         output_spent = 0
         deadline = asyncio.get_running_loop().time() + deadline_seconds
         for _ in range(max_steps):
-            response = await asyncio.wait_for(
-                client.complete(system=system, messages=history, tools=tools),
-                timeout=_remaining(deadline),
-            )
+            response: LLMResponse | None = None
+            async for event in _stream_step(
+                client,
+                system=system,
+                messages=history,
+                tools=tools,
+                tool_choice=None,
+                deadline=deadline,
+            ):
+                if isinstance(event, TextDelta):
+                    if event.text:
+                        yield event.text
+                else:
+                    response = event
+            if response is None:
+                raise RuntimeError(f"LLM stream ended without a final response ({client.model})")
             _log_usage(client.model, response)
             truncated = _check_truncation(client.model, response)
             output_spent = _account(output_spent, response, max_tokens)
             if not response.tool_calls:
-                yield response.text
                 if truncated:
                     yield _TRUNCATED_NOTICE
                 return
-            if response.text:
-                yield response.text
             history.append(
                 Message(role=Role.ASSISTANT, content=response.text, tool_calls=response.tool_calls)
             )
@@ -190,11 +220,21 @@ async def stream_agent(
             max_steps,
         )
         emitted = False
-        async for chunk in client.stream_text(
-            system=system, messages=history, tools=tools, tool_choice="none"
+        async for event in _stream_step(
+            client,
+            system=system,
+            messages=history,
+            tools=tools,
+            tool_choice="none",
+            deadline=deadline,
         ):
-            emitted = True
-            yield chunk
+            if isinstance(event, TextDelta):
+                if event.text:
+                    emitted = True
+                    yield event.text
+            elif isinstance(event, LLMResponse):
+                _log_usage(client.model, event)
+                _check_truncation(client.model, event)
         if not emitted:
             yield _STEPS_EXHAUSTED_NOTICE
     except Exception:

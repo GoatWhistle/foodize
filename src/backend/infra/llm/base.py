@@ -19,7 +19,6 @@ class Role(str, Enum):
 
 @dataclass
 class ToolSpec:
-
     name: str
     description: str
     input_schema: dict[str, Any]
@@ -27,7 +26,6 @@ class ToolSpec:
 
 @dataclass
 class ToolCall:
-
     id: str
     name: str
     arguments: dict[str, Any]
@@ -57,8 +55,15 @@ class LLMResponse:
     raw: Any = None
 
 
-class LLMClient(ABC):
+@dataclass
+class TextDelta:
+    text: str
 
+
+StreamEvent = TextDelta | LLMResponse
+
+
+class LLMClient(ABC):
     @property
     @abstractmethod
     def model(self) -> str: ...
@@ -74,14 +79,19 @@ class LLMClient(ABC):
     ) -> LLMResponse: ...
 
     @abstractmethod
-    def stream_text(
+    def stream(
         self,
         *,
         system: str,
         messages: list[Message],
         tools: list[ToolSpec] | None = None,
         tool_choice: str | None = None,
-    ) -> AsyncIterator[str]: ...
+    ) -> AsyncIterator[StreamEvent]:
+        """Yield zero or more TextDelta, then exactly one final LLMResponse.
+
+        The final LLMResponse carries the full accumulated text, tool calls,
+        stop reason and usage for the whole turn.
+        """
 
     @abstractmethod
     async def aclose(self) -> None: ...

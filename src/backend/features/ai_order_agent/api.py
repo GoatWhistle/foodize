@@ -26,4 +26,6 @@ async def order_chat(
     return StreamingResponse(
         service.stream_chat(current_user, body.messages),
         media_type="text/plain; charset=utf-8",
+        # без этого nginx буферизует поток и стриминг превращается в один кусок
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )

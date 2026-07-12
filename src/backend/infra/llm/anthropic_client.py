@@ -3,7 +3,17 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from typing import Any
 
-from infra.llm.base import LLMClient, LLMResponse, Message, Role, ToolCall, ToolSpec, Usage
+from infra.llm.base import (
+    LLMClient,
+    LLMResponse,
+    Message,
+    Role,
+    StreamEvent,
+    TextDelta,
+    ToolCall,
+    ToolSpec,
+    Usage,
+)
 
 _EMPTY_PLACEHOLDER = "(пустой ответ)"
 
@@ -16,7 +26,6 @@ def _to_tools(tools: list[ToolSpec]) -> list[dict[str, Any]]:
 
 
 def _to_messages(messages: list[Message]) -> list[dict[str, Any]]:
-
     out: list[dict[str, Any]] = []
     pending_results: list[dict[str, Any]] = []
 
@@ -56,6 +65,27 @@ def _to_messages(messages: list[Message]) -> list[dict[str, Any]]:
     return out
 
 
+def _parse_message(response: Any) -> LLMResponse:
+    text_parts: list[str] = []
+    calls: list[ToolCall] = []
+    for block in response.content:
+        if block.type == "text":
+            text_parts.append(block.text)
+        elif block.type == "tool_use":
+            calls.append(ToolCall(id=block.id, name=block.name, arguments=dict(block.input or {})))
+
+    return LLMResponse(
+        text="".join(text_parts),
+        tool_calls=calls,
+        stop_reason=response.stop_reason or "",
+        usage=Usage(
+            input_tokens=response.usage.input_tokens,
+            output_tokens=response.usage.output_tokens,
+        ),
+        raw=response,
+    )
+
+
 class AnthropicClient(LLMClient):
     def __init__(
         self,
@@ -76,6 +106,25 @@ class AnthropicClient(LLMClient):
     def model(self) -> str:
         return self._model
 
+    def _request_kwargs(
+        self,
+        system: str,
+        messages: list[Message],
+        tools: list[ToolSpec] | None,
+        tool_choice: str | None,
+    ) -> dict[str, Any]:
+        kwargs: dict[str, Any] = {
+            "model": self._model,
+            "max_tokens": self._max_tokens,
+            "system": system,
+            "messages": _to_messages(messages),
+        }
+        if tools:
+            kwargs["tools"] = _to_tools(tools)
+        if tool_choice is not None:
+            kwargs["tool_choice"] = {"type": tool_choice}
+        return kwargs
+
     async def complete(
         self,
         *,
@@ -84,62 +133,24 @@ class AnthropicClient(LLMClient):
         tools: list[ToolSpec] | None = None,
         tool_choice: str | None = None,
     ) -> LLMResponse:
-        kwargs: dict[str, Any] = {
-            "model": self._model,
-            "max_tokens": self._max_tokens,
-            "system": system,
-            "messages": _to_messages(messages),
-        }
-        if tools:
-            kwargs["tools"] = _to_tools(tools)
-        if tool_choice is not None:
-            kwargs["tool_choice"] = {"type": tool_choice}
-
+        kwargs = self._request_kwargs(system, messages, tools, tool_choice)
         response = await self._client.messages.create(**kwargs)
+        return _parse_message(response)
 
-        text_parts: list[str] = []
-        calls: list[ToolCall] = []
-        for block in response.content:
-            if block.type == "text":
-                text_parts.append(block.text)
-            elif block.type == "tool_use":
-                calls.append(
-                    ToolCall(id=block.id, name=block.name, arguments=dict(block.input or {}))
-                )
-
-        return LLMResponse(
-            text="".join(text_parts),
-            tool_calls=calls,
-            stop_reason=response.stop_reason or "",
-            usage=Usage(
-                input_tokens=response.usage.input_tokens,
-                output_tokens=response.usage.output_tokens,
-            ),
-            raw=response,
-        )
-
-    async def stream_text(
+    async def stream(
         self,
         *,
         system: str,
         messages: list[Message],
         tools: list[ToolSpec] | None = None,
         tool_choice: str | None = None,
-    ) -> AsyncIterator[str]:
-        kwargs: dict[str, Any] = {
-            "model": self._model,
-            "max_tokens": self._max_tokens,
-            "system": system,
-            "messages": _to_messages(messages),
-        }
-        if tools:
-            kwargs["tools"] = _to_tools(tools)
-        if tool_choice is not None:
-            kwargs["tool_choice"] = {"type": tool_choice}
-
+    ) -> AsyncIterator[StreamEvent]:
+        kwargs = self._request_kwargs(system, messages, tools, tool_choice)
         async with self._client.messages.stream(**kwargs) as stream:
             async for text in stream.text_stream:
-                yield text
+                yield TextDelta(text)
+            message = await stream.get_final_message()
+        yield _parse_message(message)
 
     async def aclose(self) -> None:
         await self._client.close()

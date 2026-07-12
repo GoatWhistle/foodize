@@ -1,16 +1,16 @@
 from collections.abc import AsyncIterator
 
-from infra.llm.base import LLMClient, LLMResponse, Message, ToolSpec
+from infra.llm.base import LLMClient, LLMResponse, Message, StreamEvent, TextDelta, ToolSpec
 
 
 class FakeLLMClient(LLMClient):
     def __init__(
         self,
         responses: list[LLMResponse],
-        stream_chunks: list[str] | None = None,
+        delta_size: int = 2,
     ) -> None:
         self._responses = list(responses)
-        self._stream_chunks = stream_chunks or ["ok"]
+        self._delta_size = delta_size
         self.complete_calls: list[dict] = []
         self.stream_calls: list[dict] = []
 
@@ -36,14 +36,14 @@ class FakeLLMClient(LLMClient):
         )
         return self._responses.pop(0)
 
-    async def stream_text(
+    async def stream(
         self,
         *,
         system: str,
         messages: list[Message],
         tools: list[ToolSpec] | None = None,
         tool_choice: str | None = None,
-    ) -> AsyncIterator[str]:
+    ) -> AsyncIterator[StreamEvent]:
         self.stream_calls.append(
             {
                 "system": system,
@@ -52,8 +52,11 @@ class FakeLLMClient(LLMClient):
                 "tool_choice": tool_choice,
             }
         )
-        for chunk in self._stream_chunks:
-            yield chunk
+        response = self._responses.pop(0)
+        text = response.text
+        for start in range(0, len(text), self._delta_size):
+            yield TextDelta(text[start : start + self._delta_size])
+        yield response
 
     async def aclose(self) -> None:
         return None

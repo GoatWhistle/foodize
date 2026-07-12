@@ -36,6 +36,8 @@ async def advisor_chat(
     return StreamingResponse(
         service.stream_chat(current_vendor, body.messages, body.restaurant_id),
         media_type="text/plain; charset=utf-8",
+        # без этого nginx буферизует поток и стриминг превращается в один кусок
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
 
 

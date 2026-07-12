@@ -204,11 +204,8 @@ async def test_run_agent_raises_when_token_budget_exceeded():
 
 
 @pytest.mark.asyncio
-async def test_stream_agent_resolves_tools_then_yields_final_text_once():
-    client = FakeLLMClient(
-        [_tool_response("search", {"q": "x"}), _text_response("Привет")],
-        stream_chunks=["should", "-not-run"],
-    )
+async def test_stream_agent_streams_deltas_with_single_generation_per_step():
+    client = FakeLLMClient([_tool_response("search", {"q": "x"}), _text_response("Привет")])
     executed: list[str] = []
 
     async def execute(call: ToolCall) -> str:
@@ -227,16 +224,67 @@ async def test_stream_agent_resolves_tools_then_yields_final_text_once():
     ]
 
     assert "".join(chunks) == "Привет"
+    assert len(chunks) > 1  # настоящие дельты, а не один целый кусок
     assert executed == ["search"]
-    assert len(client.stream_calls) == 0
-    assert len(client.complete_calls) == 2
+    assert len(client.stream_calls) == 2  # ровно одна генерация на шаг
+    assert len(client.complete_calls) == 0
 
 
 @pytest.mark.asyncio
-async def test_stream_agent_streams_only_when_step_budget_exhausted():
+async def test_stream_agent_streams_interstitial_text_before_tools():
+    thinking = LLMResponse(
+        text="Сейчас поищу. ",
+        tool_calls=[ToolCall(id="call-1", name="search", arguments={})],
+        stop_reason="tool_use",
+        usage=Usage(input_tokens=1, output_tokens=1),
+    )
+    client = FakeLLMClient([thinking, _text_response("Готово")])
+
+    async def execute(call: ToolCall) -> str:
+        return "{}"
+
+    chunks = [
+        chunk
+        async for chunk in stream_agent(
+            client,
+            system="s",
+            messages=[Message(role=Role.USER, content="hi")],
+            tools=_TOOLS,
+            execute=execute,
+        )
+    ]
+
+    assert "".join(chunks) == "Сейчас поищу. Готово"
+
+
+@pytest.mark.asyncio
+async def test_stream_agent_appends_truncated_notice():
+    truncated = LLMResponse(text="обрыв", tool_calls=[], stop_reason="max_tokens", usage=Usage())
+    client = FakeLLMClient([truncated])
+
+    async def execute(call: ToolCall) -> str:  # pragma: no cover - must never run
+        raise AssertionError("execute should not be called")
+
+    chunks = [
+        chunk
+        async for chunk in stream_agent(
+            client,
+            system="s",
+            messages=[Message(role=Role.USER, content="hi")],
+            tools=[],
+            execute=execute,
+        )
+    ]
+
+    joined = "".join(chunks)
+    assert joined.startswith("обрыв")
+    assert "обрезан" in joined
+
+
+@pytest.mark.asyncio
+async def test_stream_agent_forces_final_answer_when_step_budget_exhausted():
     client = FakeLLMClient(
-        [_tool_response("loop", {}) for _ in range(2)],
-        stream_chunks=["Пр", "ивет"],
+        [*(_tool_response("loop", {}) for _ in range(2)), _text_response("Привет")]
     )
 
     async def execute(call: ToolCall) -> str:
@@ -255,7 +303,55 @@ async def test_stream_agent_streams_only_when_step_budget_exhausted():
     ]
 
     assert "".join(chunks) == "Привет"
-    assert len(client.complete_calls) == 2
-    assert len(client.stream_calls) == 1
+    assert len(client.stream_calls) == 3
     assert client.stream_calls[-1]["tools"] == _TOOLS
     assert client.stream_calls[-1]["tool_choice"] == "none"
+
+
+@pytest.mark.asyncio
+async def test_stream_agent_notices_when_exhausted_final_answer_is_empty():
+    client = FakeLLMClient([*(_tool_response("loop", {}) for _ in range(2)), _text_response("")])
+
+    async def execute(call: ToolCall) -> str:
+        return "{}"
+
+    chunks = [
+        chunk
+        async for chunk in stream_agent(
+            client,
+            system="s",
+            messages=[Message(role=Role.USER, content="hi")],
+            tools=_TOOLS,
+            execute=execute,
+            max_steps=2,
+        )
+    ]
+
+    assert len(chunks) == 1
+    assert "число шагов" in chunks[0]
+
+
+@pytest.mark.asyncio
+async def test_stream_agent_raises_when_token_budget_exceeded():
+    heavy = LLMResponse(
+        text="",
+        tool_calls=[ToolCall(id="c", name="loop", arguments={})],
+        stop_reason="tool_use",
+        usage=Usage(input_tokens=60, output_tokens=60),
+    )
+    client = FakeLLMClient([heavy, heavy, heavy])
+
+    async def execute(call: ToolCall) -> str:
+        return "again"
+
+    with pytest.raises(LLMBudgetExceededError):
+        async for _ in stream_agent(
+            client,
+            system="s",
+            messages=[Message(role=Role.USER, content="hi")],
+            tools=_TOOLS,
+            execute=execute,
+            max_steps=8,
+            max_tokens=100,
+        ):
+            pass

@@ -1,4 +1,5 @@
 from features.admin.audit_log.models import AuditLog
+from features.ai_order_agent.models import MenuItemEmbedding
 from features.favorites.models import Favorite
 from features.menu.models import MenuItem, MenuItemOption, MenuItemOptionGroup
 from features.notifications.models import Notification
@@ -20,6 +21,7 @@ __all__ = [
     "Restaurant",
     "WorkingHours",
     "MenuItem",
+    "MenuItemEmbedding",
     "MenuItemOptionGroup",
     "MenuItemOption",
     "Order",
