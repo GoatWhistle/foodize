@@ -3,6 +3,10 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "contributors": [
+    { "name": "Mikhail Khorokhorin", "email": "mikhailkhorokhorin@gmail.com" },
+    { "name": "Ivan Gerasimov", "email": "ivan.gerasimou@yandex.ru" }
+  ],
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc --noEmit",
