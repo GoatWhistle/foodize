@@ -34,7 +34,6 @@ def test_resolve_model_rejects_unknown_provider() -> None:
         _resolve_model(AgentRole.ORDER, "telepathy", _CFG)  # type: ignore[arg-type]
 
 
-@pytest.mark.asyncio
 async def test_get_llm_client_is_cached_per_role_and_provider() -> None:
     factory._clients.clear()
 
@@ -75,7 +74,6 @@ def test_build_requires_anthropic_key_only_for_anthropic() -> None:
         factory._build(LLMProvider.ANTHROPIC, "some-model", cfg)
 
 
-@pytest.mark.asyncio
 async def test_non_anthropic_provider_builds_without_anthropic_key() -> None:
     factory._clients.clear()
     from infra.llm.openai_compatible import OpenAICompatibleClient

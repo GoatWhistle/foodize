@@ -1,8 +1,6 @@
 import uuid
 from unittest.mock import AsyncMock, MagicMock
 
-import pytest
-
 from features.orders.crud.order_item import get_menu_items_by_ids, get_options_by_ids
 
 
@@ -14,7 +12,6 @@ def _scalars_result(items: list[MagicMock]) -> MagicMock:
     return mock_result
 
 
-@pytest.mark.asyncio
 async def test_get_menu_items_by_ids_returns_dict() -> None:
     item = MagicMock()
     item.id = uuid.uuid4()
@@ -26,7 +23,6 @@ async def test_get_menu_items_by_ids_returns_dict() -> None:
     assert result[item.id] == item
 
 
-@pytest.mark.asyncio
 async def test_get_menu_items_by_ids_empty() -> None:
     session = AsyncMock()
     session.execute = AsyncMock(return_value=_scalars_result([]))
@@ -34,7 +30,6 @@ async def test_get_menu_items_by_ids_empty() -> None:
     assert result == {}
 
 
-@pytest.mark.asyncio
 async def test_get_menu_items_by_ids_filters_soft_deleted() -> None:
     item_id = uuid.uuid4()
     session = AsyncMock()
@@ -47,7 +42,6 @@ async def test_get_menu_items_by_ids_filters_soft_deleted() -> None:
     assert "is_deleted" in compiled
 
 
-@pytest.mark.asyncio
 async def test_get_options_by_ids_empty() -> None:
     session = AsyncMock()
     result = await get_options_by_ids(session, [])
@@ -55,7 +49,6 @@ async def test_get_options_by_ids_empty() -> None:
     session.execute.assert_not_called()
 
 
-@pytest.mark.asyncio
 async def test_get_options_by_ids_returns_dict() -> None:
     option = MagicMock()
     option.id = uuid.uuid4()

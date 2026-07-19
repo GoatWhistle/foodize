@@ -107,7 +107,7 @@ const StatCard = ({ label, value, icon, growth, onClick }: StatCardProps) => {
           <div
             style={{
               color: 'var(--text-3)',
-              fontSize: '0.72rem',
+              fontSize: "var(--text-sm)",
               fontWeight: 900,
               letterSpacing: '0.08em',
               textTransform: 'uppercase',
@@ -118,7 +118,7 @@ const StatCard = ({ label, value, icon, growth, onClick }: StatCardProps) => {
           <div
             style={{
               color: 'var(--text-1)',
-              fontSize: '2rem',
+              fontSize: "var(--text-2xl)",
               fontWeight: 950,
               lineHeight: 1.1,
               marginTop: 8,
@@ -145,7 +145,7 @@ const StatCard = ({ label, value, icon, growth, onClick }: StatCardProps) => {
       </div>
       <Sparkline points={growth} />
       <div
-        style={{ color: 'var(--text-3)', fontSize: '0.78rem', fontWeight: 700 }}
+        style={{ color: 'var(--text-3)', fontSize: "var(--text-sm)", fontWeight: 700 }}
       >
         +{totalGrowth} за последние 14 дней
       </div>
@@ -159,7 +159,7 @@ export interface AdminStatsTabProps {
   setActiveTab: (tab: string) => void;
 }
 
-export default function AdminStatsTab({ stats, ordersByStatusChartData, setActiveTab }: AdminStatsTabProps) {
+export function AdminStatsTab({ stats, ordersByStatusChartData, setActiveTab }: AdminStatsTabProps) {
   if (!stats) return null;
   const s: PartialStats = stats;
 
@@ -176,28 +176,28 @@ export default function AdminStatsTab({ stats, ordersByStatusChartData, setActiv
           label="Пользователи"
           value={s.total_users}
           icon={<UsersThreeIcon size={22} />}
-          growth={s.growth?.users}
+          growth={s.growth?.['users']}
           onClick={() => { setActiveTab('users'); }}
         />
         <StatCard
           label="Рестораны"
           value={s.total_restaurants || 0}
           icon={<StorefrontIcon size={22} />}
-          growth={s.growth?.restaurants}
+          growth={s.growth?.['restaurants']}
           onClick={() => { setActiveTab('restaurants'); }}
         />
         <StatCard
           label="Заказы"
           value={sumValues(s.orders_by_status)}
           icon={<PackageIcon size={22} />}
-          growth={s.growth?.orders}
+          growth={s.growth?.['orders']}
           onClick={() => { setActiveTab('orders'); }}
         />
         <StatCard
           label="Вендоры"
           value={s.total_vendors || 0}
           icon={<UsersThreeIcon size={22} />}
-          growth={s.growth?.vendors}
+          growth={s.growth?.['vendors']}
           onClick={() => { setActiveTab('vendors'); }}
         />
       </div>

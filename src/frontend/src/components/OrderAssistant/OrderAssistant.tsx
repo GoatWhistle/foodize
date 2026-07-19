@@ -4,20 +4,10 @@ import { aiOrderService } from '@shared/services/aiOrderService';
 import { useDialogKeyboard } from '@shared/hooks/useDialogKeyboard';
 import { makeId } from '@shared/utils/id';
 import { useCartStore } from '../../store/useCartStore';
+import { AssistantLauncher, AssistantMessages } from './OrderAssistantParts';
+import type { AssistantMessage } from './OrderAssistantParts';
 
-interface AssistantMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-}
-
-const SUGGESTIONS = [
-  'Где острая шаурма дешевле 350?',
-  'Хочу два бургера и колу',
-  'Что есть на десерт?',
-];
-
-export default function OrderAssistant() {
+export function OrderAssistant() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [input, setInput] = useState('');
@@ -98,33 +88,7 @@ export default function OrderAssistant() {
   );
 
   if (!open) {
-    return (
-      <button
-        ref={triggerRef}
-        onClick={() => { setOpen(true); }}
-        aria-label="Помощник заказа"
-        style={{
-          position: 'fixed',
-          right: 16,
-          bottom: 80,
-          zIndex: 'var(--z-banner)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          padding: '12px 16px',
-          borderRadius: 999,
-          border: 'none',
-          background: 'var(--fire)',
-          color: 'var(--fire-text)',
-          fontWeight: 700,
-          boxShadow: '0 6px 16px var(--fire-glow)',
-          cursor: 'pointer',
-        }}
-      >
-        <SparkleIcon size={18} weight="fill" />
-        Помощник
-      </button>
-    );
+    return <AssistantLauncher triggerRef={triggerRef} onOpen={() => { setOpen(true); }} />;
   }
 
   return (
@@ -175,58 +139,12 @@ export default function OrderAssistant() {
         </button>
       </div>
 
-      <div
-        ref={scrollRef}
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: 14,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 10,
-        }}
-      >
-        {messages.length === 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-2)' }}>
-              Спросите, что хотите заказать — найду и помогу оформить.
-            </div>
-            {SUGGESTIONS.map((s) => (
-              <button
-                key={s}
-                className="btn btn-secondary"
-                disabled={streaming}
-                onClick={() => { void send(s); }}
-                style={{ fontSize: '0.85rem', textAlign: 'left' }}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {messages.map((m, i) => (
-          <div
-            key={m.id}
-            style={{
-              alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
-              maxWidth: '85%',
-              padding: '8px 12px',
-              borderRadius: 'var(--radius-md)',
-              background:
-                m.role === 'user' ? 'var(--fire)' : 'var(--bg-surface)',
-              color: m.role === 'user' ? 'var(--fire-text)' : 'var(--text-1)',
-              border: m.role === 'user' ? 'none' : '1px solid var(--border)',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-              fontSize: '0.9rem',
-              lineHeight: 1.5,
-            }}
-          >
-            {m.content || (streaming && i === messages.length - 1 ? '…' : '')}
-          </div>
-        ))}
-      </div>
+      <AssistantMessages
+        messages={messages}
+        streaming={streaming}
+        scrollRef={scrollRef}
+        onSuggestion={(suggestion) => { void send(suggestion); }}
+      />
 
       {error && (
         <div className="form-error" style={{ margin: '0 14px' }}>

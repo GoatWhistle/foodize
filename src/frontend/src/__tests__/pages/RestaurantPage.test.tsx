@@ -1,7 +1,8 @@
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import RestaurantPage from '../../pages/restaurant/RestaurantPage';
+import { RestaurantPage } from '../../pages/restaurant/RestaurantPage';
 import { useCartStore } from '../../store/useCartStore';
 import type { MenuItem } from '@shared/types/models';
 
@@ -46,17 +47,6 @@ const menuItems = [
   },
   { id: 'm2', name: 'Veggie Burger', price: 400, category: 'BURGER', is_available: true },
 ] as unknown as MenuItem[];
-
-vi.mock('@shared/store/useRestaurantStore.js', () => ({
-  useRestaurantStore: (sel?: (s: RestaurantState) => unknown) => {
-    const state: RestaurantState = {
-      fetchMenu: vi.fn(),
-      menus: { 'mock-1': menuItems },
-      menuLoading: false,
-    };
-    return sel ? sel(state) : state;
-  },
-}));
 
 vi.mock('@shared/store/useRestaurantStore.js', () => ({
   useRestaurantStore: (sel?: (s: RestaurantState) => unknown) => {
@@ -155,29 +145,21 @@ describe('RestaurantPage', () => {
   it('renders restaurant info and menu items', async () => {
     renderWithRouter();
 
-    expect(await screen.findByText('Test Restaurant')).toBeDefined();
-    expect(await screen.findByText('Classic Shaurma')).toBeDefined();
-    expect(screen.getByText('300 ₽')).toBeDefined();
+    expect(await screen.findByText('Test Restaurant')).toBeInTheDocument();
+    expect(await screen.findByText('Classic Shaurma')).toBeInTheDocument();
+    expect(screen.getByText('300 ₽')).toBeInTheDocument();
   });
 
   it('opens product sheet and adds configured item to cart', async () => {
+    const user = userEvent.setup();
     renderWithRouter();
 
-    expect(await screen.findByText('Classic Shaurma')).toBeDefined();
-    await act(async () => {
-      fireEvent.click(
-        screen.getByRole('button', { name: /Открыть Classic Shaurma/ })
-      );
-      await Promise.resolve();
-    });
-    await act(async () => {
-      fireEvent.click(screen.getByText('Добавить мясо'));
-      await Promise.resolve();
-    });
-    await act(async () => {
-      fireEvent.click(screen.getByText(/Добавить · 380 ₽/));
-      await Promise.resolve();
-    });
+    expect(await screen.findByText('Classic Shaurma')).toBeInTheDocument();
+    await user.click(
+      screen.getByRole('button', { name: /Открыть Classic Shaurma/ })
+    );
+    await user.click(screen.getByText('Добавить мясо'));
+    await user.click(screen.getByText(/Добавить · 380 ₽/));
 
     expect(addToCartMock).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'm1' }),
@@ -188,19 +170,17 @@ describe('RestaurantPage', () => {
   });
 
   it('filters menu items by category', async () => {
+    const user = userEvent.setup();
     renderWithRouter();
 
-    expect(await screen.findByText('Classic Shaurma')).toBeDefined();
-    expect(screen.getByText('Veggie Burger')).toBeDefined();
+    expect(await screen.findByText('Classic Shaurma')).toBeInTheDocument();
+    expect(screen.getByText('Veggie Burger')).toBeInTheDocument();
 
-    await act(async () => {
-      const burgersTab = screen.getAllByText('Бургеры')[0];
-      if (!burgersTab) throw new Error('category tab not found');
-      fireEvent.click(burgersTab);
-      await Promise.resolve();
-    });
+    const burgersTab = screen.getAllByText('Бургеры')[0];
+    if (!burgersTab) throw new Error('category tab not found');
+    await user.click(burgersTab);
 
     expect(screen.queryByText('Classic Shaurma')).toBeNull();
-    expect(screen.getByText('Veggie Burger')).toBeDefined();
+    expect(screen.getByText('Veggie Burger')).toBeInTheDocument();
   });
 });

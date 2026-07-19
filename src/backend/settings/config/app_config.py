@@ -9,6 +9,7 @@ from settings.config.runtime import (
     ApiPrefix,
     AuthConfig,
     CorsConfig,
+    DocsConfig,
     LLMConfig,
     LogsConfig,
     RunConfig,
@@ -24,6 +25,7 @@ class AppConfig(BaseConfig):
     run: RunConfig = RunConfig()
     db: DbConfig
     api: ApiPrefix = ApiPrefix()
+    docs: DocsConfig = DocsConfig()
     auth: AuthConfig = AuthConfig()
     redis: RedisConfig = RedisConfig()
     rabbitmq: RabbitMQConfig = RabbitMQConfig()

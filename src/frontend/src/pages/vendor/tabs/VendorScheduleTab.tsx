@@ -27,7 +27,7 @@ const ListSkeleton = ({ rows = 3 }: ListSkeletonProps) => (
   </div>
 );
 
-export default function VendorScheduleTab({
+export function VendorScheduleTab({
   workingHours,
   setWorkingHours,
   workingHoursLoading,
@@ -44,7 +44,7 @@ export default function VendorScheduleTab({
           alignItems: 'center',
         }}
       >
-        <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Расписание работы</span>
+        <span style={{ fontWeight: 700, fontSize: "var(--text-base)" }}>Расписание работы</span>
         <button
           className="btn btn-primary btn-sm"
           onClick={handleSaveWorkingHours}
@@ -86,7 +86,7 @@ export default function VendorScheduleTab({
               }}
             >
               <span
-                style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-2)' }}
+                style={{ fontWeight: 700, fontSize: "var(--text-base)", color: 'var(--text-2)' }}
               >
                 {WEEKDAYS_SHORT_RU[row.day_of_week]}
               </span>
@@ -100,7 +100,7 @@ export default function VendorScheduleTab({
                     prev.map((r, i) => (i === idx ? { ...r, open_time: e.target.value } : r))
                   ); }
                 }
-                style={{ padding: '6px 8px', fontSize: '0.85rem' }}
+                style={{ padding: '6px 8px', fontSize: "var(--text-base)" }}
               />
               <input
                 className="form-input"
@@ -112,7 +112,7 @@ export default function VendorScheduleTab({
                     prev.map((r, i) => (i === idx ? { ...r, close_time: e.target.value } : r))
                   ); }
                 }
-                style={{ padding: '6px 8px', fontSize: '0.85rem' }}
+                style={{ padding: '6px 8px', fontSize: "var(--text-base)" }}
               />
               <label className="form-check" style={{ margin: 0, whiteSpace: 'nowrap' }} title="Выходной">
                 <input
@@ -126,7 +126,7 @@ export default function VendorScheduleTab({
                     ); }
                   }
                 />
-                <span className="form-check-label" style={{ fontSize: '0.75rem' }}>
+                <span className="form-check-label" style={{ fontSize: "var(--text-sm)" }}>
                   Вых.
                 </span>
               </label>

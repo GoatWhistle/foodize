@@ -36,7 +36,7 @@ export function AdminUserCard({
       <div
         role="button"
         tabIndex={0}
-        className={styles.card}
+        className={styles['card']}
         onClick={() => { onOpen(user.id); }}
         onKeyDown={(event) => {
           if (event.key === 'Enter' || event.key === ' ') {
@@ -59,7 +59,7 @@ export function AdminUserCard({
             <div style={{ fontWeight: 800, color: 'var(--text-1)' }}>
               {user.name || 'Без имени'}
             </div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-3)' }}>
+            <div style={{ fontSize: "var(--text-base)", color: 'var(--text-3)' }}>
               {user.phone_number || 'Нет телефона'}
             </div>
             <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>

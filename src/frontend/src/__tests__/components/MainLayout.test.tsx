@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
-import MainLayout from '../../components/layout/MainLayout';
+import { MainLayout } from '../../components/layout/MainLayout';
 import { useAuthStore } from '../../store/useAuthStore';
 
 type AuthState = { user: { id: string } | null };
@@ -33,9 +33,9 @@ describe('MainLayout', () => {
       </BrowserRouter>
     );
 
-    expect(screen.getByLabelText('На главную')).toBeDefined();
-    expect(screen.getByLabelText('Профиль')).toBeDefined();
-    expect(screen.getByLabelText('Уведомления')).toBeDefined();
+    expect(screen.getByLabelText('На главную')).toBeInTheDocument();
+    expect(screen.getByLabelText('Профиль')).toBeInTheDocument();
+    expect(screen.getByLabelText('Уведомления')).toBeInTheDocument();
   });
 
   it('shows login button when not authenticated', () => {
@@ -50,7 +50,7 @@ describe('MainLayout', () => {
       </BrowserRouter>
     );
 
-    expect(screen.getByText('Войти')).toBeDefined();
+    expect(screen.getByText('Войти')).toBeInTheDocument();
     expect(screen.queryByLabelText('Профиль')).toBeNull();
   });
 });

@@ -1,4 +1,4 @@
-import api from "@shared/services/api.instance";
+import { api } from "@shared/services/api.instance";
 import type { components } from "@shared/types/api";
 import type {
   StaffMember,
@@ -36,26 +36,25 @@ export const vendorService = {
     api.get<SuccessListResponse<StaffMember>>("/staff/my-members", { params }),
   removeStaffMember: (profileId: string) =>
     api.delete<SuccessResponse<void>>(`/staff/members/${profileId}`),
-  exportOrdersCSV: (params?: Record<string, unknown>) =>
-    api.get<Blob>("/vendors/export/orders.csv", {
-      params,
-      responseType: "blob",
-    }),
-  exportMenuCSV: (params?: Record<string, unknown>) =>
-    api.get<Blob>("/vendors/export/menu.csv", { params, responseType: "blob" }),
-  exportPromosCSV: (params?: Record<string, unknown>) =>
-    api.get<Blob>("/vendors/export/promos.csv", {
-      params,
-      responseType: "blob",
-    }),
-  exportFinancePDF: (params?: Record<string, unknown>) =>
-    api.get<Blob>("/vendors/export/finance.pdf", {
-      params,
-      responseType: "blob",
-    }),
-  exportAnalyticsPDF: (params?: Record<string, unknown>) =>
-    api.get<Blob>("/vendors/export/analytics.pdf", {
-      params,
-      responseType: "blob",
-    }),
+  exportOrdersCSV: (params?: Record<string, unknown>): Promise<Blob> =>
+    unwrapBlob(
+      api.get<Blob>("/vendors/export/orders.csv", { params, responseType: "blob" }),
+    ),
+  exportMenuCSV: (params?: Record<string, unknown>): Promise<Blob> =>
+    unwrapBlob(api.get<Blob>("/vendors/export/menu.csv", { params, responseType: "blob" })),
+  exportPromosCSV: (params?: Record<string, unknown>): Promise<Blob> =>
+    unwrapBlob(
+      api.get<Blob>("/vendors/export/promos.csv", { params, responseType: "blob" }),
+    ),
+  exportFinancePDF: (params?: Record<string, unknown>): Promise<Blob> =>
+    unwrapBlob(
+      api.get<Blob>("/vendors/export/finance.pdf", { params, responseType: "blob" }),
+    ),
+  exportAnalyticsPDF: (params?: Record<string, unknown>): Promise<Blob> =>
+    unwrapBlob(
+      api.get<Blob>("/vendors/export/analytics.pdf", { params, responseType: "blob" }),
+    ),
 };
+
+const unwrapBlob = async (request: Promise<{ data: Blob }>): Promise<Blob> =>
+  (await request).data;

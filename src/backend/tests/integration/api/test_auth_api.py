@@ -2,7 +2,6 @@ import uuid
 from http import HTTPStatus
 from unittest.mock import AsyncMock, patch
 
-import pytest
 from httpx import AsyncClient
 
 from features.auth.schemas import TokenResponse
@@ -11,7 +10,6 @@ from shared.enums.permissions import Permission
 
 
 class TestAuthAPI:
-    @pytest.mark.asyncio
     async def test_create_registration(self, client: AsyncClient) -> None:
         user_id = uuid.uuid4()
         mock_user_read = UserRead(
@@ -41,7 +39,6 @@ class TestAuthAPI:
         assert data["name"] == "Test Ivan"
         mock_register.assert_awaited_once()
 
-    @pytest.mark.asyncio
     async def test_create_login(self, client: AsyncClient) -> None:
         mock_token_resp = TokenResponse(
             access_token="mock_access",
@@ -65,7 +62,6 @@ class TestAuthAPI:
         assert data["refresh_token"] == "mock_refresh"
         mock_login.assert_awaited_once()
 
-    @pytest.mark.asyncio
     async def test_create_refresh(self, client: AsyncClient) -> None:
         mock_token_resp = TokenResponse(
             access_token="new_access",
@@ -86,7 +82,6 @@ class TestAuthAPI:
         assert data["refresh_token"] == "new_refresh"
         mock_refresh.assert_awaited_once()
 
-    @pytest.mark.asyncio
     async def test_create_logout(self, client: AsyncClient) -> None:
         with patch(
             "features.auth.service.logout_user",

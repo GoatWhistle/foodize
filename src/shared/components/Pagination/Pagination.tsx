@@ -6,7 +6,7 @@ interface PaginationProps {
   onPageChange: (page: number) => void;
 }
 
-const Pagination = ({ page, totalPages, onPageChange }: PaginationProps) => {
+export const Pagination = ({ page, totalPages, onPageChange }: PaginationProps) => {
   if (totalPages <= 1) return null;
 
   return (
@@ -33,7 +33,7 @@ const Pagination = ({ page, totalPages, onPageChange }: PaginationProps) => {
       <span
         aria-live="polite"
         style={{
-          fontSize: "0.85rem",
+          fontSize: "var(--text-base)",
           fontWeight: 800,
           color: "var(--text-3)",
           textTransform: "uppercase",
@@ -57,5 +57,3 @@ const Pagination = ({ page, totalPages, onPageChange }: PaginationProps) => {
     </div>
   );
 };
-
-export default Pagination;

@@ -1,8 +1,8 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import type { Restaurant } from '@shared/types/models';
-import RestaurantCard from '@shared/components/RestaurantCard/RestaurantCard';
-
+import { RestaurantCard } from '@shared/components/RestaurantCard/RestaurantCard';
 const mockIntersectionObserver = vi.fn();
 mockIntersectionObserver.mockReturnValue({
   observe: vi.fn(),
@@ -24,25 +24,27 @@ describe('RestaurantCard', () => {
   it('renders restaurant details correctly', () => {
     render(<RestaurantCard restaurant={restaurant} />);
 
-    expect(screen.getByText('Burger King')).toBeDefined();
-    expect(screen.getByText('Street 1')).toBeDefined();
+    expect(screen.getByText('Burger King')).toBeInTheDocument();
+    expect(screen.getByText('Street 1')).toBeInTheDocument();
 
     const img = screen.getByAltText('Burger King');
     expect(img.getAttribute('src')).toBe('burger.jpg');
   });
 
-  it('calls onClick when clicked', () => {
+  it('calls onClick when clicked', async () => {
+    const user = userEvent.setup();
     const onClick = vi.fn();
     render(<RestaurantCard restaurant={restaurant} onClick={onClick} />);
 
-    fireEvent.click(screen.getByRole('button'));
+    await user.click(screen.getByRole('button'));
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
   it('renders emoji placeholder if no photo_url', () => {
     const noPhotoRest = { ...restaurant, photo_url: null };
-    const { container } = render(<RestaurantCard restaurant={noPhotoRest} />);
+    render(<RestaurantCard restaurant={noPhotoRest} />);
 
-    expect(container.querySelector('.card-photo-placeholder')).toBeDefined();
+    expect(screen.getByTestId('restaurant-photo-placeholder')).toBeInTheDocument();
+    expect(screen.queryByAltText('Burger King')).not.toBeInTheDocument();
   });
 });

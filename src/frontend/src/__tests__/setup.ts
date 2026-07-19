@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import { vi } from 'vitest';
+import { vi, beforeEach } from 'vitest';
 
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
@@ -16,4 +16,6 @@ Object.defineProperty(window, 'matchMedia', {
     }),
 });
 
-window.confirm = vi.fn(() => true);
+beforeEach(() => {
+  window.confirm = vi.fn(() => true);
+});

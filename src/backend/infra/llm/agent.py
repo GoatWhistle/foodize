@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections.abc import AsyncIterator, Awaitable, Callable
+from dataclasses import dataclass, field
 
 from infra.llm.base import (
     LLMClient,
@@ -14,6 +15,7 @@ from infra.llm.base import (
     ToolCall,
     ToolInputError,
     ToolSpec,
+    ToolUseStart,
 )
 
 logger = logging.getLogger("ai.agent")
@@ -67,15 +69,7 @@ def _check_truncation(model: str, response: LLMResponse) -> bool:
     return False
 
 
-def _account(output_spent: int, response: LLMResponse, max_tokens: int) -> int:
-    output_spent += response.usage.output_tokens
-    total = response.usage.input_tokens + output_spent
-    if total > max_tokens:
-        raise LLMBudgetExceededError(f"token budget exceeded: total={total} max={max_tokens}")
-    return output_spent
-
-
-async def _run_tools(call: ToolCall, execute: ToolExecutor, deadline: float) -> Message:
+async def _run_tool(call: ToolCall, execute: ToolExecutor, deadline: float) -> Message:
     try:
         result = await asyncio.wait_for(execute(call), timeout=_remaining(deadline))
     except ToolInputError as exc:
@@ -97,8 +91,87 @@ async def _run_all_tools(
     calls: list[ToolCall], execute: ToolExecutor, deadline: float
 ) -> list[Message]:
     if len(calls) == 1:
-        return [await _run_tools(calls[0], execute, deadline)]
-    return list(await asyncio.gather(*(_run_tools(call, execute, deadline) for call in calls)))
+        return [await _run_tool(calls[0], execute, deadline)]
+    return list(await asyncio.gather(*(_run_tool(call, execute, deadline) for call in calls)))
+
+
+@dataclass
+class _AgentRun:
+    client: LLMClient
+    system: str
+    history: list[Message]
+    tools: list[ToolSpec]
+    execute: ToolExecutor
+    max_tokens: int
+    deadline: float
+    output_spent: int = field(default=0)
+
+    def absorb(self, response: LLMResponse) -> bool:
+        _log_usage(self.client.model, response)
+        self.output_spent += response.usage.output_tokens
+        total = response.usage.input_tokens + self.output_spent
+        if total > self.max_tokens:
+            raise LLMBudgetExceededError(
+                f"token budget exceeded: total={total} max={self.max_tokens}"
+            )
+        return _check_truncation(self.client.model, response)
+
+    async def complete(self, tool_choice: str | None = None) -> LLMResponse:
+        return await asyncio.wait_for(
+            self.client.complete(
+                system=self.system,
+                messages=self.history,
+                tools=self.tools,
+                tool_choice=tool_choice,
+            ),
+            timeout=_remaining(self.deadline),
+        )
+
+    async def append_tool_round(self, response: LLMResponse) -> None:
+        self.history.append(
+            Message(role=Role.ASSISTANT, content=response.text, tool_calls=response.tool_calls)
+        )
+        tool_results = await _run_all_tools(response.tool_calls, self.execute, self.deadline)
+        self.history.extend(tool_results)
+
+    async def forced_final_answer(self) -> str:
+        response = await self.complete(tool_choice="none")
+        truncated = self.absorb(response)
+        text = response.text + (_TRUNCATED_NOTICE if truncated else _STEPS_EXHAUSTED_NOTICE)
+        self.history.append(Message(role=Role.ASSISTANT, content=text))
+        return text
+
+    async def stream_round(self, tool_choice: str | None) -> AsyncIterator[StreamEvent]:
+        iterator = self.client.stream(
+            system=self.system, messages=self.history, tools=self.tools, tool_choice=tool_choice
+        ).__aiter__()
+        while True:
+            try:
+                event = await asyncio.wait_for(
+                    iterator.__anext__(), timeout=_remaining(self.deadline)
+                )
+            except StopAsyncIteration:
+                return
+            yield event
+
+    def missing_final_response_error(self) -> RuntimeError:
+        return RuntimeError(
+            "LLM stream ended without a final response "
+            f"(model={self.client.model}); connection likely dropped mid-stream"
+        )
+
+
+def _start_run(
+    client: LLMClient,
+    system: str,
+    messages: list[Message],
+    tools: list[ToolSpec],
+    execute: ToolExecutor,
+    max_tokens: int,
+    deadline_seconds: float,
+) -> _AgentRun:
+    deadline = asyncio.get_running_loop().time() + deadline_seconds
+    return _AgentRun(client, system, list(messages), tools, execute, max_tokens, deadline)
 
 
 async def run_agent(
@@ -112,62 +185,70 @@ async def run_agent(
     max_tokens: int = _DEFAULT_MAX_TOKENS,
     deadline_seconds: float = _DEFAULT_DEADLINE_SECONDS,
 ) -> tuple[str, list[Message]]:
-    history = list(messages)
-    output_spent = 0
-    deadline = asyncio.get_running_loop().time() + deadline_seconds
+    run = _start_run(client, system, messages, tools, execute, max_tokens, deadline_seconds)
     for _ in range(max_steps):
-        response = await asyncio.wait_for(
-            client.complete(system=system, messages=history, tools=tools),
-            timeout=_remaining(deadline),
-        )
-        _log_usage(client.model, response)
-        truncated = _check_truncation(client.model, response)
-        output_spent = _account(output_spent, response, max_tokens)
+        response = await run.complete()
+        truncated = run.absorb(response)
         if not response.tool_calls:
             text = response.text + (_TRUNCATED_NOTICE if truncated else "")
-            history.append(Message(role=Role.ASSISTANT, content=text))
-            return text, history
-
-        history.append(
-            Message(role=Role.ASSISTANT, content=response.text, tool_calls=response.tool_calls)
-        )
-        tool_results = await _run_all_tools(response.tool_calls, execute, deadline)
-        history.extend(tool_results)
+            run.history.append(Message(role=Role.ASSISTANT, content=text))
+            return text, run.history
+        await run.append_tool_round(response)
 
     logger.warning(
         "run_agent exhausted max_steps=%s, forcing final answer with tool_choice=none",
         max_steps,
     )
-    response = await asyncio.wait_for(
-        client.complete(system=system, messages=history, tools=tools, tool_choice="none"),
-        timeout=_remaining(deadline),
-    )
-    _log_usage(client.model, response)
-    truncated = _check_truncation(client.model, response)
-    _account(output_spent, response, max_tokens)
-    text = response.text + (_TRUNCATED_NOTICE if truncated else _STEPS_EXHAUSTED_NOTICE)
-    history.append(Message(role=Role.ASSISTANT, content=text))
-    return text, history
+    return await run.forced_final_answer(), run.history
 
 
-async def _stream_step(
-    client: LLMClient,
-    *,
-    system: str,
-    messages: list[Message],
-    tools: list[ToolSpec],
-    tool_choice: str | None,
-    deadline: float,
-) -> AsyncIterator[StreamEvent]:
-    iterator = client.stream(
-        system=system, messages=messages, tools=tools, tool_choice=tool_choice
-    ).__aiter__()
-    while True:
-        try:
-            event = await asyncio.wait_for(iterator.__anext__(), timeout=_remaining(deadline))
-        except StopAsyncIteration:
+async def _stream_forced_final(run: _AgentRun) -> AsyncIterator[str]:
+    emitted = False
+    async for event in run.stream_round(tool_choice="none"):
+        if isinstance(event, TextDelta):
+            if event.text:
+                emitted = True
+                yield event.text
+        elif isinstance(event, LLMResponse):
+            run.absorb(event)
+    if not emitted:
+        yield _STEPS_EXHAUSTED_NOTICE
+
+
+async def _stream_agent_loop(run: _AgentRun, max_steps: int) -> AsyncIterator[str]:
+    for _ in range(max_steps):
+        response: LLMResponse | None = None
+        buffering = False
+        buffered: list[str] = []
+        async for event in run.stream_round(tool_choice=None):
+            if isinstance(event, TextDelta):
+                if not event.text:
+                    continue
+                if buffering:
+                    buffered.append(event.text)
+                else:
+                    yield event.text
+            elif isinstance(event, ToolUseStart):
+                buffering = True
+            elif isinstance(event, LLMResponse):
+                response = event
+        if response is None:
+            raise run.missing_final_response_error()
+        if buffered:
+            yield "".join(buffered)
+        truncated = run.absorb(response)
+        if not response.tool_calls:
+            if truncated:
+                yield _TRUNCATED_NOTICE
             return
-        yield event
+        await run.append_tool_round(response)
+
+    logger.warning(
+        "stream_agent exhausted max_steps=%s, forcing final answer with tool_choice=none",
+        max_steps,
+    )
+    async for text in _stream_forced_final(run):
+        yield text
 
 
 async def stream_agent(
@@ -181,66 +262,10 @@ async def stream_agent(
     max_tokens: int = _DEFAULT_MAX_TOKENS,
     deadline_seconds: float = _DEFAULT_DEADLINE_SECONDS,
 ) -> AsyncIterator[str]:
+    run = _start_run(client, system, messages, tools, execute, max_tokens, deadline_seconds)
     try:
-        history = list(messages)
-        output_spent = 0
-        deadline = asyncio.get_running_loop().time() + deadline_seconds
-        for _ in range(max_steps):
-            response: LLMResponse | None = None
-            async for event in _stream_step(
-                client,
-                system=system,
-                messages=history,
-                tools=tools,
-                tool_choice=None,
-                deadline=deadline,
-            ):
-                if isinstance(event, TextDelta):
-                    if event.text:
-                        yield event.text
-                else:
-                    response = event
-            if response is None:
-                raise RuntimeError(
-                    "LLM stream ended without a final response "
-                    f"(model={client.model}); connection likely dropped mid-stream"
-                )
-            _log_usage(client.model, response)
-            truncated = _check_truncation(client.model, response)
-            output_spent = _account(output_spent, response, max_tokens)
-            if not response.tool_calls:
-                if truncated:
-                    yield _TRUNCATED_NOTICE
-                return
-            history.append(
-                Message(role=Role.ASSISTANT, content=response.text, tool_calls=response.tool_calls)
-            )
-            tool_results = await _run_all_tools(response.tool_calls, execute, deadline)
-            history.extend(tool_results)
-
-        logger.warning(
-            "stream_agent exhausted max_steps=%s, forcing final answer with tool_choice=none",
-            max_steps,
-        )
-        emitted = False
-        async for event in _stream_step(
-            client,
-            system=system,
-            messages=history,
-            tools=tools,
-            tool_choice="none",
-            deadline=deadline,
-        ):
-            if isinstance(event, TextDelta):
-                if event.text:
-                    emitted = True
-                    yield event.text
-            elif isinstance(event, LLMResponse):
-                _log_usage(client.model, event)
-                _check_truncation(client.model, event)
-                output_spent = _account(output_spent, event, max_tokens)
-        if not emitted:
-            yield _STEPS_EXHAUSTED_NOTICE
+        async for text in _stream_agent_loop(run, max_steps):
+            yield text
     except Exception:
         logger.exception("stream_agent failed")
         raise

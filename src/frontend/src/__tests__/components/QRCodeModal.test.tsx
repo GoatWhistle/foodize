@@ -1,7 +1,8 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { Restaurant } from '@shared/types/models';
-import QRCodeModal from '../../components/QRCodeModal/QRCodeModal';
+import { QRCodeModal } from '../../components/QRCodeModal/QRCodeModal';
 import QRCode from 'qrcode';
 
 vi.mock('qrcode', () => ({
@@ -43,9 +44,10 @@ describe('QRCodeModal', () => {
   });
 
   it('switches Telegram QR to bot start payload with the same display_id', async () => {
+    const user = userEvent.setup();
     render(<QRCodeModal restaurant={restaurant} onClose={vi.fn()} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Telegram' }));
+    await user.click(screen.getByRole('button', { name: 'Telegram' }));
 
     const link = 'https://t.me/FoodizeBot?start=restaurant_food-court-7';
     expect(screen.getByText(link)).toBeInTheDocument();

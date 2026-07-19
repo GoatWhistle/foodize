@@ -59,7 +59,6 @@ async def seeded(db_session: AsyncSession) -> dict[str, Any]:
     return {"restaurant": restaurant, "user1": user1, "user2": user2}
 
 
-@pytest.mark.asyncio
 async def test_create_and_get_review(db_session: AsyncSession, seeded: dict[str, Any]) -> None:
     restaurant = seeded["restaurant"]
     user = seeded["user1"]
@@ -75,7 +74,6 @@ async def test_create_and_get_review(db_session: AsyncSession, seeded: dict[str,
     assert review.restaurant_id == restaurant.id
 
 
-@pytest.mark.asyncio
 async def test_get_reviews_by_restaurant(db_session: AsyncSession, seeded: dict[str, Any]) -> None:
     restaurant = seeded["restaurant"]
 
@@ -86,7 +84,6 @@ async def test_get_reviews_by_restaurant(db_session: AsyncSession, seeded: dict[
     assert len(reviews) == 2
 
 
-@pytest.mark.asyncio
 async def test_count_reviews_by_restaurant(
     db_session: AsyncSession, seeded: dict[str, Any]
 ) -> None:
@@ -98,7 +95,6 @@ async def test_count_reviews_by_restaurant(
     assert await count_reviews_by_restaurant(db_session, restaurant.id) == 1
 
 
-@pytest.mark.asyncio
 async def test_get_user_review_for_restaurant(
     db_session: AsyncSession, seeded: dict[str, Any]
 ) -> None:
@@ -114,7 +110,6 @@ async def test_get_user_review_for_restaurant(
     assert found.user_id == user.id
 
 
-@pytest.mark.asyncio
 async def test_get_restaurant_avg_rating(db_session: AsyncSession, seeded: dict[str, Any]) -> None:
     restaurant = seeded["restaurant"]
 

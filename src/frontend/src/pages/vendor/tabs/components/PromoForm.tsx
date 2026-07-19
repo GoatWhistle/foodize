@@ -20,8 +20,8 @@ export function PromoForm({
   onCancel,
 }: PromoFormProps) {
   return (
-    <form onSubmit={onSubmit} className={styles.form}>
-      <div className={styles.formTitle}>Новый промокод</div>
+    <form onSubmit={onSubmit} className={styles['form']}>
+      <div className={styles['formTitle']}>Новый промокод</div>
       <input
         className="form-input"
         placeholder="Код (напр. SAVE20)"
@@ -29,7 +29,7 @@ export function PromoForm({
         onChange={(e) => { setPromoForm((f) => ({ ...f, code: e.target.value.toUpperCase() })); }}
         required
       />
-      <div className={styles.grid2}>
+      <div className={styles['grid2']}>
         <select
           className="form-input"
           value={promoForm.discount_type}
@@ -53,7 +53,7 @@ export function PromoForm({
           required
         />
       </div>
-      <div className={styles.grid2}>
+      <div className={styles['grid2']}>
         <input
           className="form-input"
           type="number"
@@ -70,7 +70,7 @@ export function PromoForm({
           onChange={(e) => { setPromoForm((f) => ({ ...f, expires_at: e.target.value })); }}
         />
       </div>
-      <div className={styles.grid2}>
+      <div className={styles['grid2']}>
         <input
           className="form-input"
           type="number"
@@ -92,7 +92,7 @@ export function PromoForm({
           ))}
         </select>
       </div>
-      <label className={styles.checkboxRow}>
+      <label className={styles['checkboxRow']}>
         <input
           type="checkbox"
           checked={promoForm.first_order_only}
@@ -100,9 +100,9 @@ export function PromoForm({
         />
         Только для первого заказа
       </label>
-      <div className={styles.formActions}>
+      <div className={styles['formActions']}>
         <button
-          className={`btn btn-primary btn-sm ${styles.submitBtn}`}
+          className={`btn btn-primary btn-sm ${styles['submitBtn']}`}
           type="submit"
           disabled={promoFormLoading}
         >

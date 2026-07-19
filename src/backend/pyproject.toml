@@ -4,7 +4,6 @@ version = "0.1.0"
 description = ""
 authors = [
     { name = "Mikhail Khorokhorin", email = "mikhailkhorokhorin@gmail.com" },
-    { name = "Timofey Pupykin", email = "pupykint@gmail.com" },
     { name = "Ivan Gerasimov", email = "ivan.gerasimou@yandex.ru" }
 ]
 license = { text = "MIT" }
@@ -50,6 +49,7 @@ dev = [
     "mypy>=1.18.2,<2.0.0",
     "httpx>=0.28.1",
     "pytest-mock>=3.15.1",
+    "pytest-timeout>=2.3.0,<3.0.0",
     "factory-boy>=3.3.0,<4.0.0",
     "aiosqlite>=0.21.0,<0.22.0",
     "faker>=37.0.0,<38.0.0",
@@ -63,6 +63,7 @@ package = false
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+timeout = 120
 testpaths = [
     "tests",
 ]
@@ -78,39 +79,12 @@ omit = [
     "alembic/**",
     ".venv/**",
     "**/__pycache__/**",
-    "**/features/admin/export.py",
-    "**/features/admin/crud/audit.py",
-    "**/features/admin/crud/finance.py",
-    "**/features/admin/crud/restaurants.py",
-    "**/features/admin/crud/reviews.py",
-    "**/features/admin/api/export.py",
-    "**/features/admin/api/restaurants.py",
-    "**/features/admin/api/vendors.py",
-    "**/features/telegram/_shared.py",
-    "**/features/telegram/bot_api.py",
-    "**/features/telegram/crud.py",
-    "**/features/orders/api/ws.py",
-    "**/features/notifications/ws.py",
-    "**/features/notifications/ws_auth.py",
-    "**/features/notifications/broker.py",
-    "**/features/notifications/consumer.py",
-    "**/features/notifications/handlers.py",
-    "**/features/notifications/outbox_service.py",
-    "**/features/vendors/api.py",
-    "**/features/vendors/export.py",
-    "**/features/menu/api.py",
-    "**/features/orders/crud/order.py",
-    "**/features/promos/api.py",
-    "**/features/restaurants/api.py",
-    "**/features/favorites/api.py",
-    "**/features/favorites/crud.py",
-    "**/features/cart/api.py",
-    "**/worker/**",
-    "**/main.py"
+    "**/main.py",
+    "**/worker/main.py"
 ]
 
 [tool.coverage.report]
-fail_under = 80
+fail_under = 85
 exclude_lines = [
     "pragma: no cover",
     "if TYPE_CHECKING:",

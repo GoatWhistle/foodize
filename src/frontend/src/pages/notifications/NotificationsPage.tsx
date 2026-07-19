@@ -1,7 +1,6 @@
 import { useNotificationStore } from "../../store/useNotificationStore";
-import SharedNotificationsPage from "@shared/pages/NotificationsPage/NotificationsPage";
-
-const NotificationsPage = () => (
+import { NotificationsPage as SharedNotificationsPage } from "@shared/pages/NotificationsPage/NotificationsPage";
+export const NotificationsPage = () => (
   <SharedNotificationsPage
     useNotificationStore={useNotificationStore}
     stickyHeader={false}
@@ -10,5 +9,3 @@ const NotificationsPage = () => (
     style={{ maxWidth: 640, margin: "0 auto", padding: "28px var(--gutter, 20px)" }}
   />
 );
-
-export default NotificationsPage;

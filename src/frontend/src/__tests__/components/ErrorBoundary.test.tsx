@@ -1,7 +1,7 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import ErrorBoundary from '@shared/components/ErrorBoundary/ErrorBoundary';
-
+import { ErrorBoundary } from '@shared/components/ErrorBoundary/ErrorBoundary';
 let shouldThrow = false;
 
 const ConditionalBroken = () => {
@@ -28,7 +28,8 @@ describe('ErrorBoundary', () => {
     expect(screen.getByText('Healthy child')).toBeInTheDocument();
   });
 
-  it('shows fallback and can retry after an error', () => {
+  it('shows fallback and can retry after an error', async () => {
+    const user = userEvent.setup();
     shouldThrow = true;
     render(
       <ErrorBoundary>
@@ -38,7 +39,7 @@ describe('ErrorBoundary', () => {
 
     expect(screen.getByText('Boom')).toBeInTheDocument();
     shouldThrow = false;
-    fireEvent.click(screen.getByRole('button', { name: 'Попробовать снова' }));
+    await user.click(screen.getByRole('button', { name: 'Попробовать снова' }));
 
     expect(screen.getByText('Recovered')).toBeInTheDocument();
   });

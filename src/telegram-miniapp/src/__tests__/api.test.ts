@@ -1,29 +1,24 @@
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from "vitest";
-import { createWebSocketFactories } from "@shared/services/api";
+import { WS_BASE_URL } from "@shared/config";
 import type { UserRead } from "@shared/types/models";
 
-type TokenGetter = () => string | null;
-
-interface MockWebSocket {
-  orderId?: string;
-  userId?: string;
-  token: string | null;
-  close: () => void;
+class FakeWebSocket {
+  static instances: FakeWebSocket[] = [];
+  url: string;
+  onopen: (() => void) | null = null;
+  onmessage: (() => void) | null = null;
+  onclose: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+  readyState = 0;
+  send = vi.fn();
+  close = vi.fn();
+  constructor(url: string) {
+    this.url = url;
+    FakeWebSocket.instances.push(this);
+  }
 }
 
-vi.mock("@shared/services/api", () => ({
-  createApi: vi.fn(() => ({})),
-  createWebSocketFactories: vi.fn((getToken?: TokenGetter) => ({
-    createOrderWebSocket: (orderId: string): MockWebSocket => {
-      const token = getToken?.() ?? null;
-      return { orderId, token, close: vi.fn() };
-    },
-    createNotificationWebSocket: (userId: string): MockWebSocket => {
-      const token = getToken?.() ?? null;
-      return { userId, token, close: vi.fn() };
-    },
-  })),
-}));
+const originalWebSocket = globalThis.WebSocket;
 
 vi.mock("axios", () => ({
   default: {
@@ -37,19 +32,6 @@ vi.mock("axios", () => ({
   },
 }));
 
-vi.mock("../services/api", () => {
-  const factories = createWebSocketFactories();
-  return {
-    default: {},
-    createOrderWebSocket: (orderId: string, onMsg: (data: unknown) => void) =>
-      factories.createOrderWebSocket(orderId, onMsg),
-    createNotificationWebSocket: (
-      userId: string,
-      onMsg: (data: unknown) => void,
-    ) => factories.createNotificationWebSocket(userId, onMsg),
-  };
-});
-
 vi.mock("../services/authService", () => ({
   authService: {
     login: vi.fn(),
@@ -58,19 +40,11 @@ vi.mock("../services/authService", () => ({
   },
 }));
 
-type ApiModuleMock = {
-  createOrderWebSocket: (orderId: string, onMsg: () => void) => MockWebSocket;
-  createNotificationWebSocket: (userId: string, onMsg: () => void) => MockWebSocket;
-};
-
 type AuthServiceMock = {
   login: Mock;
   getMe: Mock;
   logout: Mock;
 };
-
-const importApi = async (): Promise<ApiModuleMock> =>
-  (await import("../services/api")) as unknown as ApiModuleMock;
 
 const importAuthService = async (): Promise<AuthServiceMock> =>
   (
@@ -83,30 +57,48 @@ describe("miniapp api WebSocket factories", () => {
   beforeEach(() => {
     sessionStorage.clear();
     vi.clearAllMocks();
+    FakeWebSocket.instances = [];
+    globalThis.WebSocket = FakeWebSocket as unknown as typeof WebSocket;
   });
 
   afterEach(() => {
     sessionStorage.clear();
+    globalThis.WebSocket = originalWebSocket;
   });
 
-  it("createOrderWebSocket relies on cookie auth without a token", async () => {
-    const { createOrderWebSocket } = await importApi();
+  it("createOrderWebSocket builds the versioned order WS url", async () => {
+    const { createOrderWebSocket } = await import("../services/api");
     const ws = createOrderWebSocket("order-123", vi.fn());
-    expect(ws.token).toBeNull();
-    expect(ws.orderId).toBe("order-123");
-  });
 
-  it("createNotificationWebSocket relies on cookie auth without a token", async () => {
-    const { createNotificationWebSocket } = await importApi();
-    const ws = createNotificationWebSocket("user-456", vi.fn());
-    expect(ws.token).toBeNull();
-    expect(ws.userId).toBe("user-456");
-  });
-
-  it("ws close method is callable", async () => {
-    const { createOrderWebSocket } = await importApi();
-    const ws = createOrderWebSocket("order-1", vi.fn());
+    expect(FakeWebSocket.instances).toHaveLength(1);
+    expect(FakeWebSocket.instances[0]?.url).toBe(
+      `${WS_BASE_URL}/api/v1/ws/orders/order-123`,
+    );
+    expect(WS_BASE_URL.startsWith("ws")).toBe(true);
     expect(() => { ws.close(); }).not.toThrow();
+  });
+
+  it("createNotificationWebSocket builds the versioned notification WS url", async () => {
+    const { createNotificationWebSocket } = await import("../services/api");
+    const ws = createNotificationWebSocket("user-456", vi.fn());
+
+    expect(FakeWebSocket.instances).toHaveLength(1);
+    expect(FakeWebSocket.instances[0]?.url).toBe(
+      `${WS_BASE_URL}/api/v1/ws/notifications/user-456`,
+    );
+    expect(() => { ws.close(); }).not.toThrow();
+  });
+
+  it("does not attach a bearer token frame (cookie auth) on open", async () => {
+    const { createOrderWebSocket } = await import("../services/api");
+    createOrderWebSocket("order-1", vi.fn());
+
+    const socket = FakeWebSocket.instances[0];
+    if (!socket) throw new Error("WebSocket was not constructed");
+    socket.readyState = 1;
+    socket.onopen?.();
+
+    expect(socket.send).not.toHaveBeenCalled();
   });
 });
 

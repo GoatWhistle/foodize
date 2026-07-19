@@ -2,9 +2,8 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { tg } from "../../telegram/sdk";
 import { useNotificationStore } from "../../store/useNotificationStore";
-import SharedNotificationsPage from "@shared/pages/NotificationsPage/NotificationsPage";
-
-export default function NotificationsPage() {
+import { NotificationsPage as SharedNotificationsPage } from "@shared/pages/NotificationsPage/NotificationsPage";
+export function NotificationsPage() {
   const navigate = useNavigate();
 
   useEffect(() => {

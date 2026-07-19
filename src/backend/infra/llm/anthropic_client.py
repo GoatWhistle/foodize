@@ -12,6 +12,7 @@ from infra.llm.base import (
     TextDelta,
     ToolCall,
     ToolSpec,
+    ToolUseStart,
     Usage,
 )
 
@@ -150,13 +151,18 @@ class AnthropicClient(LLMClient):
     ) -> AsyncIterator[StreamEvent]:
         kwargs = self._request_kwargs(system, messages, tools, tool_choice)
         async with self._client.messages.stream(**kwargs) as stream:
-            text_iterator = stream.text_stream.__aiter__()
+            event_iterator = stream.__aiter__()
             while True:
                 try:
-                    text = await asyncio.wait_for(text_iterator.__anext__(), timeout=self._timeout)
+                    event = await asyncio.wait_for(
+                        event_iterator.__anext__(), timeout=self._timeout
+                    )
                 except StopAsyncIteration:
                     break
-                yield TextDelta(text)
+                if event.type == "text":
+                    yield TextDelta(event.text)
+                elif event.type == "content_block_start" and event.content_block.type == "tool_use":
+                    yield ToolUseStart(name=event.content_block.name)
             message = await asyncio.wait_for(stream.get_final_message(), timeout=self._timeout)
         yield _parse_message(message)
 

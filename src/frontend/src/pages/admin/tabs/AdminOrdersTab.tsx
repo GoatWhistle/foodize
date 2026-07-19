@@ -1,7 +1,7 @@
 import type { ChangeEvent, Dispatch, SetStateAction } from 'react';
 import { DownloadSimpleIcon } from '@phosphor-icons/react';
-import Pagination from '@shared/components/Pagination/Pagination';
-import EmptyState from '@shared/components/EmptyState/EmptyState';
+import { Pagination } from '@shared/components/Pagination/Pagination';
+import { EmptyState } from '@shared/components/EmptyState/EmptyState';
 import type { Order } from '@shared/types/models';
 import type { adminService as AdminService } from '../../../services/adminService';
 import type { OrderFilters } from '../hooks/useAdminOrders';
@@ -27,14 +27,14 @@ export interface AdminOrdersTabProps {
   orderFilters: OrderFilters;
   setOrderFilters: Dispatch<SetStateAction<OrderFilters>>;
   exportLoading: boolean;
-  handleExport: (exportFn: () => Promise<{ data: Blob }>, filename: string) => void;
+  handleExport: (exportFn: () => Promise<Blob>, filename: string) => void;
   setSelectedOrder: Dispatch<SetStateAction<Order | null>>;
   todayStr: string;
   adminService: typeof AdminService;
   PAGE_SIZE: number;
 }
 
-export default function AdminOrdersTab({
+export function AdminOrdersTab({
   orders,
   ordersLoading,
   ordersTotal,
@@ -55,11 +55,11 @@ export default function AdminOrdersTab({
 
   if (ordersLoading && isEmpty) {
     return (
-      <div className={styles.list}>
+      <div className={styles['list']}>
         {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className={styles.skeletonCard}>
-            <div className={`skeleton ${styles.skeletonLine}`} style={{ width: '30%' }} />
-            <div className={`skeleton ${styles.skeletonLineSub}`} style={{ width: '70%' }} />
+          <div key={i} className={styles['skeletonCard']}>
+            <div className={`skeleton ${styles['skeletonLine']}`} style={{ width: '30%' }} />
+            <div className={`skeleton ${styles['skeletonLineSub']}`} style={{ width: '70%' }} />
           </div>
         ))}
       </div>
@@ -67,10 +67,10 @@ export default function AdminOrdersTab({
   }
 
   return (
-    <div className={`${styles.list} ${ordersLoading ? 'loading-dim' : ''}`}>
-      <div className={styles.wideFilterGrid}>
+    <div className={`${styles['list']} ${ordersLoading ? 'loading-dim' : ''}`}>
+      <div className={styles['wideFilterGrid']}>
         <input
-          className={`form-input ${styles.filterControl}`}
+          className={`form-input ${styles['filterControl']}`}
           placeholder="Клиент, телефон или ресторан"
           value={orderSearchRaw}
           onChange={(event: ChangeEvent<HTMLInputElement>) => {
@@ -79,7 +79,7 @@ export default function AdminOrdersTab({
           }}
         />
         <input
-          className={`form-input ${styles.filterControl}`}
+          className={`form-input ${styles['filterControl']}`}
           type="date"
           value={orderFilters.date_from}
           onChange={(event: ChangeEvent<HTMLInputElement>) => {
@@ -88,7 +88,7 @@ export default function AdminOrdersTab({
           }}
         />
         <input
-          className={`form-input ${styles.filterControl}`}
+          className={`form-input ${styles['filterControl']}`}
           type="date"
           value={orderFilters.date_to}
           onChange={(event: ChangeEvent<HTMLInputElement>) => {
@@ -103,7 +103,7 @@ export default function AdminOrdersTab({
           <button
             key={key}
             className={`category-chip${orderFilters.status === key ? ' active' : ''}`}
-            style={{ fontSize: '0.78rem', padding: '6px 12px' }}
+            style={{ fontSize: "var(--text-sm)", padding: '6px 12px' }}
             onClick={() => {
               setOrderFilters((prev) => ({ ...prev, status: key }));
               setOrdersPage(1);

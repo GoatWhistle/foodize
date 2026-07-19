@@ -79,19 +79,77 @@ async def _sync_item_embeddings(
         return
 
     vectors = await client.embed([item_text for _, item_text, _ in stale])
-    dim = settings.llm.embedding_dim
-    rows = []
+    embedding_rows = _build_embedding_rows(model, stale, vectors)
+    await crud.upsert_embeddings(session, embedding_rows)
+    await session.commit()
+    logger.info("menu_item_embeddings upserted model=%s count=%s", model, len(embedding_rows))
+
+
+def _build_embedding_rows(
+    model: str,
+    stale: list[tuple[uuid.UUID, str, str]],
+    vectors: list[list[float]],
+) -> list[dict[str, Any]]:
+    expected_dim = settings.llm.embedding_dim
+    embedding_rows = []
     for (item_id, _, digest), vector in zip(stale, vectors, strict=True):
-        if len(vector) != dim:
+        if len(vector) != expected_dim:
             raise ValueError(
-                f"embedding dimension mismatch: model={model} got={len(vector)} expected={dim}"
+                f"embedding dimension mismatch: model={model} "
+                f"got={len(vector)} expected={expected_dim}"
             )
-        rows.append(
+        embedding_rows.append(
             {"menu_item_id": item_id, "model": model, "text_hash": digest, "embedding": vector}
         )
-    await crud.upsert_embeddings(session, rows)
-    await session.commit()
-    logger.info("menu_item_embeddings upserted model=%s count=%s", model, len(rows))
+    return embedding_rows
+
+
+def _rerank_by_score(ranked: list[dict[str, Any]], query: str, limit: int) -> list[dict[str, Any]]:
+    query_lower = query.lower()
+    scored: list[tuple[float, dict[str, Any]]] = []
+    for menu_item in ranked:
+        score = 1.0 - menu_item.pop("_distance")
+        if query_lower in (menu_item["name"] or "").lower():
+            score += _NAME_MATCH_BONUS
+        scored.append((score, menu_item))
+    scored.sort(key=lambda pair: pair[0], reverse=True)
+    return [menu_item for _, menu_item in scored[:limit]]
+
+
+async def _semantic_ranked_search(
+    session: AsyncSession,
+    cache: CacheRepository,
+    *,
+    query: str,
+    max_price: int | None,
+    restaurant_id: uuid.UUID | None,
+    limit: int,
+) -> list[dict[str, Any]]:
+    client = await get_embedding_client()
+    model = client.model
+
+    await _sync_item_embeddings(
+        session, client, model, max_price=max_price, restaurant_id=restaurant_id
+    )
+    query_embedding = await _get_query_embedding(client, cache, model, query)
+    expected_dim = settings.llm.embedding_dim
+    if len(query_embedding) != expected_dim:
+        raise ValueError(
+            f"query embedding dimension mismatch: model={model} "
+            f"got={len(query_embedding)} expected={expected_dim}"
+        )
+
+    ranked = await crud.semantic_rank_items(
+        session,
+        query_embedding=query_embedding,
+        model=model,
+        max_price=max_price,
+        restaurant_id=restaurant_id,
+        limit=_RERANK_POOL,
+    )
+    if not ranked:
+        return []
+    return _rerank_by_score(ranked, query, limit)
 
 
 async def semantic_search(
@@ -110,39 +168,14 @@ async def semantic_search(
         )
 
     try:
-        client = await get_embedding_client()
-        model = client.model
-
-        await _sync_item_embeddings(
-            session, client, model, max_price=max_price, restaurant_id=restaurant_id
-        )
-        query_embedding = await _get_query_embedding(client, cache, model, query.strip())
-        if len(query_embedding) != cfg.embedding_dim:
-            raise ValueError(
-                f"query embedding dimension mismatch: model={model} "
-                f"got={len(query_embedding)} expected={cfg.embedding_dim}"
-            )
-
-        ranked = await crud.semantic_rank_items(
+        return await _semantic_ranked_search(
             session,
-            query_embedding=query_embedding,
-            model=model,
+            cache,
+            query=query.strip(),
             max_price=max_price,
             restaurant_id=restaurant_id,
-            limit=_RERANK_POOL,
+            limit=limit,
         )
-        if not ranked:
-            return []
-
-        query_lower = query.strip().lower()
-        scored: list[tuple[float, dict[str, Any]]] = []
-        for item in ranked:
-            score = 1.0 - item.pop("_distance")
-            if query_lower in (item["name"] or "").lower():
-                score += _NAME_MATCH_BONUS
-            scored.append((score, item))
-        scored.sort(key=lambda pair: pair[0], reverse=True)
-        return [item for _, item in scored[:limit]]
     except Exception:
         logger.error(
             "embedding_degraded reason=exception — semantic search failed, "

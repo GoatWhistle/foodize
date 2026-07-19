@@ -53,7 +53,21 @@ if [[ ! -s "$TMP" ]]; then
   die "pg_dump produced an empty file; discarded"
 fi
 
-if [[ -n "${BACKUP_ENCRYPTION_PASSPHRASE:-}" ]]; then
+if [[ -n "${BACKUP_GPG_RECIPIENT:-}" ]]; then
+  command -v gpg >/dev/null 2>&1 || die "gpg not found but BACKUP_GPG_RECIPIENT is set"
+  log "Encrypting dump with gpg for recipient '$BACKUP_GPG_RECIPIENT'..."
+  ENC_TMP="${TMP}.gpg"
+  if ! gpg --batch --yes --trust-model always \
+        --recipient "$BACKUP_GPG_RECIPIENT" \
+        --output "$ENC_TMP" --encrypt "$TMP"; then
+    rm -f "$ENC_TMP" 2>/dev/null || true
+    die "gpg encryption failed"
+  fi
+  rm -f "$TMP"
+  TMP="$ENC_TMP"
+  FINAL="${FINAL}.gpg"
+  BASENAME="${BASENAME}.gpg"
+elif [[ -n "${BACKUP_ENCRYPTION_PASSPHRASE:-}" ]]; then
   command -v openssl >/dev/null 2>&1 || die "openssl not found but BACKUP_ENCRYPTION_PASSPHRASE is set"
   log "Encrypting dump with AES-256-CBC (pbkdf2)..."
   ENC_TMP="${TMP}.enc"
@@ -68,7 +82,7 @@ if [[ -n "${BACKUP_ENCRYPTION_PASSPHRASE:-}" ]]; then
   FINAL="${FINAL}.enc"
   BASENAME="${BASENAME}.enc"
 else
-  warn "BACKUP_ENCRYPTION_PASSPHRASE is not set; backup will be stored UNENCRYPTED"
+  warn "no encryption key set (BACKUP_GPG_RECIPIENT / BACKUP_ENCRYPTION_PASSPHRASE); backup will be stored UNENCRYPTED"
 fi
 
 mv -f "$TMP" "$FINAL"
@@ -93,7 +107,8 @@ else
 fi
 
 log "Applying retention: keeping last $KEEP backups (incl. encrypted)..."
-ls -t "$BACKUP_DIR"/foodize_*.dump "$BACKUP_DIR"/foodize_*.dump.enc 2>/dev/null \
+ls -t "$BACKUP_DIR"/foodize_*.dump "$BACKUP_DIR"/foodize_*.dump.enc \
+      "$BACKUP_DIR"/foodize_*.dump.gpg 2>/dev/null \
   | tail -n +"$((KEEP + 1))" \
   | xargs -r rm -f --
 

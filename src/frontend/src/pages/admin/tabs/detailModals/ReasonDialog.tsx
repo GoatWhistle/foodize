@@ -38,13 +38,13 @@ export const ReasonDialog = ({ dialog, loading, onCancel, onConfirm }: ReasonDia
         }}
       >
         <div>
-          <h3 style={{ color: 'var(--text-1)', fontSize: '1.05rem', margin: 0 }}>
+          <h3 style={{ color: 'var(--text-1)', fontSize: "var(--text-md)", margin: 0 }}>
             {dialog.title}
           </h3>
           <p
             style={{
               color: 'var(--text-3)',
-              fontSize: '0.88rem',
+              fontSize: "var(--text-base)",
               lineHeight: 1.55,
               margin: '8px 0 0',
             }}

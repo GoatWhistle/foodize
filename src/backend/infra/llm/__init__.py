@@ -8,6 +8,7 @@ from infra.llm.base import (
     TextDelta,
     ToolCall,
     ToolSpec,
+    ToolUseStart,
     Usage,
 )
 from infra.llm.embeddings import EmbeddingClient, get_embedding_client
@@ -26,6 +27,7 @@ __all__ = [
     "ToolCall",
     "ToolExecutor",
     "ToolSpec",
+    "ToolUseStart",
     "Usage",
     "get_embedding_client",
     "get_llm_client",

@@ -9,11 +9,11 @@ interface FavoriteRestaurantCardProps {
   onUnfavorite: (restaurantId: string) => void;
 }
 
-const FavoriteRestaurantCard = ({ favorite, onNavigate, onUnfavorite }: FavoriteRestaurantCardProps) => {
+export const FavoriteRestaurantCard = ({ favorite, onNavigate, onUnfavorite }: FavoriteRestaurantCardProps) => {
   const { restaurant } = favorite;
 
   return (
-    <div className={s.card} onClick={() => { onNavigate(restaurant); }} role="button" tabIndex={0} onKeyDown={activateOnKey(() => { onNavigate(restaurant); })}>
+    <div className={s['card']} onClick={() => { onNavigate(restaurant); }} role="button" tabIndex={0} onKeyDown={activateOnKey(() => { onNavigate(restaurant); })}>
       <div
         style={{
           width: 10, height: 10, borderRadius: "50%", flexShrink: 0,
@@ -23,21 +23,21 @@ const FavoriteRestaurantCard = ({ favorite, onNavigate, onUnfavorite }: Favorite
       />
 
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 700, fontSize: "0.92rem", color: "var(--text-1)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: 3 }}>
+        <div style={{ fontWeight: 700, fontSize: "var(--text-base)", color: "var(--text-1)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: 3 }}>
           {restaurant.name}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "0.75rem", color: "var(--text-3)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "var(--text-sm)", color: "var(--text-3)" }}>
           <MapPinIcon size={11} weight="bold" />
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{restaurant.address}</span>
         </div>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
-        <span style={{ fontSize: "0.68rem", fontWeight: 800, color: restaurant.is_open ? "var(--color-success)" : "var(--color-neutral)" }}>
+        <span style={{ fontSize: "var(--text-xs)", fontWeight: 800, color: restaurant.is_open ? "var(--color-success)" : "var(--color-neutral)" }}>
           {restaurant.is_open ? "Открыто" : "Закрыто"}
         </span>
         {restaurant.is_hiring && (
-          <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: "0.65rem", fontWeight: 700, color: "var(--amber)" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--amber)" }}>
             <BriefcaseIcon size={10} weight="fill" />
             Вакансии
           </span>
@@ -45,7 +45,7 @@ const FavoriteRestaurantCard = ({ favorite, onNavigate, onUnfavorite }: Favorite
       </div>
 
       <button
-        className={s.unfavBtn}
+        className={s['unfavBtn']}
         onClick={(e) => { e.stopPropagation(); onUnfavorite(restaurant.id); }}
         aria-label="Убрать из избранного"
       >
@@ -54,5 +54,3 @@ const FavoriteRestaurantCard = ({ favorite, onNavigate, onUnfavorite }: Favorite
     </div>
   );
 };
-
-export default FavoriteRestaurantCard;

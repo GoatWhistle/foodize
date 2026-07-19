@@ -11,7 +11,7 @@ from features.ai_order_agent.tool_helpers import (
     cart_state_hash,
 )
 from features.cart.schemas import CartResponse
-from features.orders.schemas.order import OrderCreate
+from features.orders.schemas.order import OrderCreate, OrderResponse
 from features.orders.schemas.order_item import OrderItemCreate
 from features.orders.services.order_placement import place_order
 from features.users.models import User
@@ -88,30 +88,61 @@ def _order_fingerprint(
     return hashlib.sha256(fingerprint_source.encode()).hexdigest()[:_FINGERPRINT_LENGTH]
 
 
-async def place_order_tool(ctx: OrderToolContext, args: dict[str, Any]) -> str:
+async def _validate_confirmed_cart(
+    ctx: OrderToolContext,
+) -> tuple[str, None, None] | tuple[None, CartResponse, str]:
     stored = await ctx.cache.get(ctx.confirm_key)
     confirmation_error = _confirmation_error(ctx, stored)
     if confirmation_error is not None:
-        return confirmation_error
+        return confirmation_error, None, None
     _, confirm_token, confirmed_hash = _parse_confirm(stored)
     if confirm_token is None:
-        return confirmation_error or _dumps({"error": "cart_not_confirmed"})
+        return _dumps({"error": "cart_not_confirmed"}), None, None
 
     cart = await ctx.cart_service.get_cart(ctx.identifier)
     if not cart.items or not cart.restaurant_id:
-        return _dumps({"error": "cart_empty", "message": "Корзина пуста."})
+        return _dumps({"error": "cart_empty", "message": "Корзина пуста."}), None, None
 
     if confirmed_hash is not None and confirmed_hash != cart_state_hash(cart):
         await ctx.invalidate_confirm()
-        return _dumps(
-            {
-                "error": "cart_changed",
-                "message": (
-                    "Состав корзины изменился после подтверждения. Покажи актуальный "
-                    "состав через view_cart и дождись нового подтверждения."
-                ),
-            }
+        return (
+            _dumps(
+                {
+                    "error": "cart_changed",
+                    "message": (
+                        "Состав корзины изменился после подтверждения. Покажи актуальный "
+                        "состав через view_cart и дождись нового подтверждения."
+                    ),
+                }
+            ),
+            None,
+            None,
         )
+    return None, cart, confirm_token
+
+
+async def _submit_order(
+    ctx: OrderToolContext, order_in: OrderCreate, fingerprint: str
+) -> str | OrderResponse:
+    try:
+        async with db_helper.session_factory() as session:
+            return await place_order(
+                session=session,
+                order_data=order_in,
+                user_id=ctx.user.id,
+                idempotency_key=fingerprint,
+            )
+    except AppException as exc:
+        error_code = PLACE_ORDER_ERRORS.get(type(exc))
+        if error_code is None:
+            raise
+        return _dumps({"error": error_code, "message": exc.detail})
+
+
+async def place_order_tool(ctx: OrderToolContext, args: dict[str, Any]) -> str:
+    validation_error, cart, confirm_token = await _validate_confirmed_cart(ctx)
+    if validation_error is not None or cart is None or confirm_token is None:
+        return validation_error or _dumps({"error": "cart_not_confirmed"})
 
     raw_promo = args.get("promo_code")
     promo_code = raw_promo if raw_promo and PROMO_RE.match(raw_promo) else None
@@ -128,30 +159,20 @@ async def place_order_tool(ctx: OrderToolContext, args: dict[str, Any]) -> str:
         comment=comment,
     )
     fingerprint = _order_fingerprint(ctx.user, cart, comment, promo_code, confirm_token)
-    try:
-        async with db_helper.session_factory() as session:
-            result = await place_order(
-                session=session,
-                order_data=order_in,
-                user_id=ctx.user.id,
-                idempotency_key=fingerprint,
-            )
-    except AppException as exc:
-        error_code = PLACE_ORDER_ERRORS.get(type(exc))
-        if error_code is None:
-            raise
-        return _dumps({"error": error_code, "message": exc.detail})
+    placed = await _submit_order(ctx, order_in, fingerprint)
+    if isinstance(placed, str):
+        return placed
 
     await ctx.cart_service.clear_cart(ctx.identifier)
     await ctx.invalidate_confirm()
-    data = result.model_dump()
+    order_payload = placed.model_dump()
     return _dumps(
         {
             "ok": True,
             "order": {
-                "number": data.get("display_id"),
-                "status": data.get("status"),
-                "total_price": data.get("total_price"),
+                "number": order_payload.get("display_id"),
+                "status": order_payload.get("status"),
+                "total_price": order_payload.get("total_price"),
             },
         }
     )

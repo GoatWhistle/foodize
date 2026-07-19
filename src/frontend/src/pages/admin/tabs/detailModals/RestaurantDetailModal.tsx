@@ -46,7 +46,7 @@ export const RestaurantDetailModal = ({
         <DetailField label="Телефон">
           {selectedRestaurant.vendor_phone || 'Не указан'}
         </DetailField>
-        <div style={{ color: 'var(--text-3)', fontSize: '0.8rem', marginTop: 4 }}>
+        <div style={{ color: 'var(--text-3)', fontSize: "var(--text-base)", marginTop: 4 }}>
           ID: {selectedRestaurant.vendor_id}
         </div>
       </div>
@@ -86,7 +86,7 @@ export const RestaurantDetailModal = ({
             </span>
           </DetailField>
         </div>
-        <div style={{ color: 'var(--text-3)', fontSize: '0.8rem', marginTop: 12 }}>
+        <div style={{ color: 'var(--text-3)', fontSize: "var(--text-base)", marginTop: 12 }}>
           ID: {selectedRestaurant.id}
         </div>
       </div>

@@ -9,6 +9,7 @@ from orders_service_helpers import (
     make_mock_order,
     make_mock_restaurant,
 )
+from pydantic import ValidationError
 
 from features.orders.exceptions import (
     MenuItemRestaurantMismatchException,
@@ -209,5 +210,5 @@ class TestPlaceOrder:
 
     async def test_place_order_empty_items(self, mock_db_session: AsyncMock) -> None:
         restaurant_id = uuid.uuid4()
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             OrderCreate(restaurant_id=restaurant_id, items=[])

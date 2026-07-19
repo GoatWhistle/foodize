@@ -32,4 +32,9 @@ describe('aiOrderService', () => {
       { onChunk: undefined, signal: undefined }
     );
   });
+
+  it('streamChat rejects when streamSseRequest fails', async () => {
+    vi.mocked(streamSseRequest).mockRejectedValueOnce(new Error('Ошибка 500'));
+    await expect(aiOrderService.streamChat([])).rejects.toThrow('Ошибка 500');
+  });
 });

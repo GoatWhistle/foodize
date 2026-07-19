@@ -44,7 +44,7 @@ interface SetPasswordFormProps {
   onSubmit: (e: FormEvent<HTMLFormElement>) => void;
 }
 
-const SetPasswordForm = ({
+export const SetPasswordForm = ({
   profileForm,
   setProfileForm,
   newPassword,
@@ -133,4 +133,3 @@ const SetPasswordForm = ({
 );
 
 export { getPasswordStrength };
-export default SetPasswordForm;

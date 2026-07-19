@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getBackButton } from "../../telegram/sdk";
-import SharedOrdersPage from "@shared/pages/OrdersPage/OrdersPage";
+import { OrdersPage as SharedOrdersPage } from "@shared/pages/OrdersPage/OrdersPage";
 import s from "./OrdersPage.module.css";
 
 const STATUS_FILTERS = [
@@ -10,7 +10,7 @@ const STATUS_FILTERS = [
   { key: "COMPLETED", label: "Выданные" },
 ];
 
-const OrdersPage = () => {
+export const OrdersPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -32,9 +32,7 @@ const OrdersPage = () => {
       showPagination={false}
       pullToRefresh
       expandableCards
-      pageClassName={s.page}
+      pageClassName={s['page']}
     />
   );
 };
-
-export default OrdersPage;

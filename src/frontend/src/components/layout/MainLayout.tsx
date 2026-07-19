@@ -3,18 +3,18 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Outlet } from 'react-router-dom';
 import { UserIcon, SignInIcon, ShoppingCartIcon } from '@phosphor-icons/react';
 
-import FoodizeLogo from '@shared/components/FoodizeLogo/FoodizeLogo';
-import CartDrawer from '@shared/components/CartDrawer/CartDrawer';
-import NotificationBell from '../NotificationBell/NotificationBell';
-import OrderAssistant from '../OrderAssistant/OrderAssistant';
-
+import { FoodizeLogo } from '@shared/components/FoodizeLogo/FoodizeLogo';
+import { CartDrawer } from '@shared/components/CartDrawer/CartDrawer';
+import { NotificationBell } from '../NotificationBell/NotificationBell';
+import { OrderAssistant } from '../OrderAssistant/OrderAssistant';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useCartStore } from '../../store/useCartStore';
 import { ROUTES } from '../../constants/routes';
+import { formatPrice } from '@shared/utils/price';
 
 const DEEP_LINK_ID_RE = /^[a-zA-Z0-9-]{1,64}$/;
 
-const MainLayout = () => {
+export const MainLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -118,7 +118,7 @@ const MainLayout = () => {
               {cartItemsCount}
             </span>
           </div>
-          <span style={{ fontWeight: 800 }}>{total} ₽</span>
+          <span style={{ fontWeight: 800 }}>{formatPrice(total)}</span>
         </button>
       )}
 
@@ -128,5 +128,3 @@ const MainLayout = () => {
     </div>
   );
 };
-
-export default MainLayout;

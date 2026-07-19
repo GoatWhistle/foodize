@@ -4,7 +4,6 @@ from http import HTTPStatus
 from typing import Any
 
 import httpx
-from fastapi import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.auth.service import issue_user_tokens
@@ -32,6 +31,7 @@ def _normalize_phone(phone: str) -> str:
 
 
 _TELEGRAM_SEND_RETRIES = 3
+_RETRY_SLEEP_CAP_SECONDS = 10.0
 
 
 async def _send_telegram_message(payload: dict[str, Any]) -> None:
@@ -45,14 +45,13 @@ async def _send_telegram_message(payload: dict[str, Any]) -> None:
             ):
                 if attempt == _TELEGRAM_SEND_RETRIES - 1:
                     response.raise_for_status()
-                retry_after = 1.0
                 try:
                     retry_after = float(
                         response.json().get("parameters", {}).get("retry_after", 2**attempt)
                     )
-                except Exception:
-                    retry_after = 2**attempt
-                await asyncio.sleep(min(retry_after, 10))
+                except (ValueError, TypeError, AttributeError):
+                    retry_after = float(2**attempt)
+                await asyncio.sleep(min(retry_after, _RETRY_SLEEP_CAP_SECONDS))
                 continue
             response.raise_for_status()
             return
@@ -86,7 +85,6 @@ async def verify_site_login_code(
     session: AsyncSession,
     phone_number: str,
     code: str,
-    response: Response,
 ) -> TelegramSiteLoginResponse:
     phone_number = _normalize_phone(phone_number)
     cache = get_redis_cache()
@@ -109,7 +107,7 @@ async def verify_site_login_code(
 
     await cache.delete(key)
     await cache.delete(fail_key)
-    tokens = issue_user_tokens(user=user, response=response)
+    tokens = issue_user_tokens(user=user)
     return TelegramSiteLoginResponse(
         access_token=tokens.access_token,
         refresh_token=tokens.refresh_token,
@@ -160,7 +158,6 @@ async def verify_site_login_code_by_username(
     session: AsyncSession,
     telegram_username: str,
     code: str,
-    response: Response,
 ) -> TelegramSiteLoginResponse:
     username = normalize_username(telegram_username)
     cache = get_redis_cache()
@@ -183,7 +180,7 @@ async def verify_site_login_code_by_username(
 
     await cache.delete(key)
     await cache.delete(fail_key)
-    tokens = issue_user_tokens(user=user, response=response)
+    tokens = issue_user_tokens(user=user)
     return TelegramSiteLoginResponse(
         access_token=tokens.access_token,
         refresh_token=tokens.refresh_token,

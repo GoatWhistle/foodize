@@ -7,14 +7,12 @@ import { STATUS_LABEL_RU, formatDateTime } from './orderDetails.helpers';
 interface OrderEventLogProps {
   events: OrderEvent[];
   eventsLoading: boolean;
-  eventsError: string;
   eventsUnavailable: boolean;
 }
 
 export const OrderEventLog = ({
   events,
   eventsLoading,
-  eventsError,
   eventsUnavailable,
 }: OrderEventLogProps) => (
   <div>
@@ -32,21 +30,19 @@ export const OrderEventLog = ({
     </div>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {eventsLoading && (
-        <div style={{ color: 'var(--text-3)', fontSize: '0.84rem' }}>
+        <div style={{ color: 'var(--text-3)', fontSize: "var(--text-base)" }}>
           Загружаю историю...
         </div>
       )}
-      {eventsError && <div className="form-error">{eventsError}</div>}
-      {!eventsLoading && !eventsError && eventsUnavailable && (
-        <div style={{ color: 'var(--text-3)', fontSize: '0.84rem' }}>
+      {!eventsLoading && eventsUnavailable && (
+        <div style={{ color: 'var(--text-3)', fontSize: "var(--text-base)" }}>
           История изменений пока недоступна
         </div>
       )}
       {!eventsLoading &&
-        !eventsError &&
         !eventsUnavailable &&
         events.length === 0 && (
-          <div style={{ color: 'var(--text-3)', fontSize: '0.84rem' }}>
+          <div style={{ color: 'var(--text-3)', fontSize: "var(--text-base)" }}>
             История появится после первого изменения статуса
           </div>
         )}
@@ -63,14 +59,14 @@ export const OrderEventLog = ({
             gap: 12,
           }}
         >
-          <div style={{ fontSize: '0.82rem' }}>
+          <div style={{ fontSize: "var(--text-base)" }}>
             {STATUS_LABEL_RU[event.old_status]}{' '}
             <ArrowRightIcon size={12} weight="bold" style={{ verticalAlign: 'middle' }} />{' '}
             {STATUS_LABEL_RU[event.new_status]}
             <div
               style={{
                 color: 'var(--text-3)',
-                fontSize: '0.72rem',
+                fontSize: "var(--text-sm)",
                 marginTop: 2,
               }}
             >
@@ -80,7 +76,7 @@ export const OrderEventLog = ({
           <div
             style={{
               color: 'var(--text-3)',
-              fontSize: '0.72rem',
+              fontSize: "var(--text-sm)",
               whiteSpace: 'nowrap',
             }}
           >

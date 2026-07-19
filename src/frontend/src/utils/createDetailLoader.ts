@@ -3,7 +3,7 @@ import type { Dispatch, SetStateAction } from 'react';
 export function createDetailLoader<T>(
   setLoading: Dispatch<SetStateAction<boolean>>,
   setSelected: Dispatch<SetStateAction<T>>,
-  fetchFn: (id: string) => Promise<{ data: { data: T } }>,
+  fetchFn: (id: string) => Promise<T>,
   errorMsg: string,
   setError: Dispatch<SetStateAction<string>>,
 ): (id: string) => Promise<void> {
@@ -11,8 +11,8 @@ export function createDetailLoader<T>(
     setLoading(true);
     setError('');
     try {
-      const res = await fetchFn(id);
-      setSelected(res.data.data);
+      const data = await fetchFn(id);
+      setSelected(data);
     } catch {
       setError(errorMsg);
     } finally {

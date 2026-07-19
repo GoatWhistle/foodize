@@ -1,9 +1,9 @@
 import type { SyntheticEvent, ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { StarIcon, XIcon, ChatCircleTextIcon, PencilSimpleIcon } from "@phosphor-icons/react";
-import Pagination from "@shared/components/Pagination/Pagination";
-import ReviewCard from "@shared/components/ReviewCard/ReviewCard";
-import StarRatingInput from "@shared/components/StarRatingInput/StarRatingInput";
+import { Pagination } from "@shared/components/Pagination/Pagination";
+import { ReviewCard } from "@shared/components/ReviewCard/ReviewCard";
+import { StarRatingInput } from "@shared/components/StarRatingInput/StarRatingInput";
 import { useFocusTrap } from "@shared/hooks/useFocusTrap";
 import type { Review } from "@shared/types/models";
 import s from "./ReviewsModal.module.css";
@@ -52,7 +52,7 @@ interface ReviewsModalProps {
   submitLabel?: string;
 }
 
-const ReviewsModal = ({
+export const ReviewsModal = ({
   rating = null,
   reviewsList,
   reviewsLoading,
@@ -104,14 +104,14 @@ const ReviewsModal = ({
         canDelete={isOwn}
         onDelete={() => { onDeleteWithConfirm(review.id); }}
         className={isOwn ? "review-card--own" : undefined}
-        headerExtra={isOwn ? <span className={s.ownBadge}>Вы</span> : null}
+        headerExtra={isOwn ? <span className={s['ownBadge']}>Вы</span> : null}
         actionsExtra={
           ownActions && isOwn ? (
             <button
               type="button"
               aria-label="Редактировать отзыв"
               onClick={openReviewForm}
-              className={s.editBtn}
+              className={s['editBtn']}
             >
               <PencilSimpleIcon size={13} weight="bold" />
             </button>
@@ -131,25 +131,25 @@ const ReviewsModal = ({
   };
 
   const modal: ReactNode = (
-    <div className={s.overlay} style={{ zIndex: "var(--z-modal)" }}>
+    <div className={s['overlay']} style={{ zIndex: "var(--z-modal)" }}>
       <div
         ref={contentRef}
-        className={s.content}
+        className={s['content']}
         role="dialog"
         aria-modal="true"
         aria-labelledby="reviews-modal-title"
       >
-        <div className={s.header}>
-          <div className={s.headerTitle}>
-            <h2 id="reviews-modal-title" className={s.title}>Отзывы</h2>
+        <div className={s['header']}>
+          <div className={s['headerTitle']}>
+            <h2 id="reviews-modal-title" className={s['title']}>Отзывы</h2>
             {showRatingInHeader && rating != null && (
-              <span className={s.headerRating}>
+              <span className={s['headerRating']}>
                 <StarIcon size={14} weight="fill" color="var(--star)" />
                 {rating.toFixed(1)}
               </span>
             )}
           </div>
-          <div className={s.headerActions}>
+          <div className={s['headerActions']}>
             {editableForm && canReview && !reviewFormOpen && (
               <button
                 className="btn btn-secondary btn-sm"
@@ -163,31 +163,31 @@ const ReviewsModal = ({
                 )}
               </button>
             )}
-            <button onClick={onClose} className={s.closeBtn} aria-label="Закрыть">
+            <button onClick={onClose} className={s['closeBtn']} aria-label="Закрыть">
               <XIcon size={24} weight="bold" />
             </button>
           </div>
         </div>
 
-        <div className={s.scroll}>
+        <div className={s['scroll']}>
           {formOpen && (
-            <div className={s.formCard}>
+            <div className={s['formCard']}>
               {editableForm && (
-                <div className={s.formHead}>
-                  <span className={s.formHeadTitle}>
+                <div className={s['formHead']}>
+                  <span className={s['formHeadTitle']}>
                     {myReview ? "Редактировать отзыв" : "Оставить отзыв"}
                   </span>
                   <button
                     type="button"
                     onClick={() => setReviewFormOpen?.(false)}
-                    className={s.closeBtn}
+                    className={s['closeBtn']}
                   >
                     <XIcon size={18} weight="bold" />
                   </button>
                 </div>
               )}
-              <form onSubmit={handleSubmit} className={s.form}>
-                <div className={s.formRating}>
+              <form onSubmit={handleSubmit} className={s['form']}>
+                <div className={s['formRating']}>
                   <StarRatingInput
                     value={reviewForm.rating}
                     onChange={(r) => { setReviewForm({ ...reviewForm, rating: r }); }}
@@ -210,18 +210,18 @@ const ReviewsModal = ({
             </div>
           )}
 
-          {reviewSuccess && <div className={s.success}>{successText}</div>}
+          {reviewSuccess && <div className={s['success']}>{successText}</div>}
 
           {reviewsLoading && reviewsList.length === 0 ? (
             <div className="loading-center"><div className="spinner" /></div>
           ) : reviewsList.length === 0 ? (
-            <div className={s.empty}>
+            <div className={s['empty']}>
               <ChatCircleTextIcon size={36} style={{ opacity: 0.4 }} />
-              <div className={s.emptyTitle}>Отзывов пока нет</div>
-              <div className={s.emptyHint}>Будьте первым, кто оставит отзыв!</div>
+              <div className={s['emptyTitle']}>Отзывов пока нет</div>
+              <div className={s['emptyHint']}>Будьте первым, кто оставит отзыв!</div>
             </div>
           ) : (
-            <div className={s.list}>
+            <div className={s['list']}>
               {splitOwnReviews ? (
                 <>
                   {myReview && renderReviewCard(myReview, editableForm)}
@@ -246,5 +246,3 @@ const ReviewsModal = ({
 
   return usePortal ? createPortal(modal, document.body) : modal;
 };
-
-export default ReviewsModal;

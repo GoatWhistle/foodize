@@ -31,11 +31,11 @@ export function createOrdersStore(): UseBoundStore<StoreApi<OrdersStoreState>> {
     fetchMyOrders: async (params = {}) => {
       set({ ordersLoading: true, ordersError: null });
       try {
-        const res = await orderService.getMyOrders(params);
-        const orders = Array.isArray(res.data.data) ? res.data.data : [];
+        const response = await orderService.getMyOrders(params);
+        const orders = Array.isArray(response.data.data) ? response.data.data : [];
         set({
           orders,
-          ordersTotal: res.data.pagination.total,
+          ordersTotal: response.data.pagination.total,
           ordersLoading: false,
         });
       } catch (err) {
@@ -48,9 +48,9 @@ export function createOrdersStore(): UseBoundStore<StoreApi<OrdersStoreState>> {
 
     fetchOrder: async (id) => {
       try {
-        const res = await orderService.getById(id);
-        set({ currentOrder: res.data.data });
-        return res.data.data;
+        const response = await orderService.getById(id);
+        set({ currentOrder: response.data.data });
+        return response.data.data;
       } catch (err) {
         set({ currentOrder: null });
         throw err;
@@ -62,8 +62,8 @@ export function createOrdersStore(): UseBoundStore<StoreApi<OrdersStoreState>> {
 
     fetchActiveOrder: async () => {
       try {
-        const res = await orderService.getMyOrders({ page: 1, size: 5 });
-        const orders = Array.isArray(res.data.data) ? res.data.data : [];
+        const response = await orderService.getMyOrders({ page: 1, size: 5 });
+        const orders = Array.isArray(response.data.data) ? response.data.data : [];
         const active = orders.find((o) =>
           ["PENDING", "ACCEPTED", "READY"].includes(o.status),
         );

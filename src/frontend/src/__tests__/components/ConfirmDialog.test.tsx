@@ -1,6 +1,7 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import ConfirmDialog from '@shared/components/ConfirmDialog/ConfirmDialog';
+import { ConfirmDialog } from '@shared/components/ConfirmDialog/ConfirmDialog';
 import { useModalStore } from '@shared/store/useModalStore';
 
 describe('ConfirmDialog', () => {
@@ -23,14 +24,16 @@ describe('ConfirmDialog', () => {
       onConfirm,
     });
 
+    const user = userEvent.setup();
     render(<ConfirmDialog />);
-    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
 
     await waitFor(() => { expect(onConfirm).toHaveBeenCalled(); });
     expect(useModalStore.getState().confirmDialog).toBe(null);
   });
 
-  it('cancels on secondary button', () => {
+  it('cancels on secondary button', async () => {
+    const user = userEvent.setup();
     useModalStore.getState().requestConfirm({
       title: 'Delete order?',
       message: 'This cannot be undone',
@@ -38,7 +41,7 @@ describe('ConfirmDialog', () => {
     });
 
     render(<ConfirmDialog />);
-    fireEvent.click(screen.getByRole('button', { name: 'Отмена' }));
+    await user.click(screen.getByRole('button', { name: 'Отмена' }));
 
     expect(useModalStore.getState().confirmDialog).toBe(null);
   });

@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -5,10 +7,11 @@ from features.notifications.crud import create_notification
 from features.notifications.models import Notification, NotificationType
 from features.users.models import User
 from seed.common import get_or_load_user
-from seed.data import NOTIFICATIONS, SEED_USERS
+from seed.fixtures.engagement import NOTIFICATIONS
+from seed.fixtures.users import SEED_USERS
 
 
-async def _count_notifications(session: AsyncSession, user_id) -> int:
+async def _count_notifications(session: AsyncSession, user_id: uuid.UUID) -> int:
     result = await session.execute(
         select(func.count())
         .select_from(Notification)
@@ -21,15 +24,15 @@ async def _seed_for_user(session: AsyncSession, user: User) -> int:
     if await _count_notifications(session, user.id) > 0:
         return 0
     created = 0
-    for data in NOTIFICATIONS:
+    for notification_spec in NOTIFICATIONS:
         notification = await create_notification(
             session,
             user.id,
-            title=data["title"],
-            message=data["message"],
-            type=NotificationType(data["type"]),
+            title=notification_spec["title"],
+            message=notification_spec["message"],
+            type=NotificationType(notification_spec["type"]),
         )
-        notification.is_read = data["is_read"]
+        notification.is_read = notification_spec["is_read"]
         created += 1
     await session.commit()
     return created

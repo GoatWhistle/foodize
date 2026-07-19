@@ -41,14 +41,14 @@ export const useAdminFinance = ({ activeTab, setActionError, todayStr }: UseAdmi
     setAnalyticsLoading(true);
     try {
       const params = Object.fromEntries(
-        Object.entries(financeFilters).filter(([, v]) => v !== '' && v != null)
+        Object.entries(financeFilters).filter(([, value]) => value !== '' && value != null)
       );
-      const [finRes, advRes] = await Promise.all([
+      const [financeData, analyticsData] = await Promise.all([
         adminService.getFinance(params),
         adminService.getAdvancedAnalytics(params),
       ]);
-      setFinance(finRes.data.data);
-      setAdvancedAnalytics(advRes.data.data);
+      setFinance(financeData);
+      setAdvancedAnalytics(analyticsData);
     } catch {
       setActionError('Не удалось загрузить аналитику');
     } finally {
@@ -63,18 +63,17 @@ export const useAdminFinance = ({ activeTab, setActionError, todayStr }: UseAdmi
 
   useEffect(() => {
     if (activeTab === 'finance' && allRestaurants.length === 0) {
-      void adminService
-        .getRestaurants({ size: RESTAURANT_DROPDOWN_LIMIT })
-        .then((res) => {
-          setAllRestaurants(res.data.data);
-        });
+      void (async () => {
+        const { items } = await adminService.getRestaurants({ size: RESTAURANT_DROPDOWN_LIMIT });
+        setAllRestaurants(items);
+      })();
     }
   }, [activeTab, allRestaurants.length]);
 
   const getRestaurantLabel = () => {
     if (!financeFilters.restaurant_id) return 'все';
     return (
-      allRestaurants.find((r) => r.id === financeFilters.restaurant_id)?.name || 'все'
+      allRestaurants.find((restaurant) => restaurant.id === financeFilters.restaurant_id)?.name || 'все'
     ).replace(/\s+/g, '_');
   };
 

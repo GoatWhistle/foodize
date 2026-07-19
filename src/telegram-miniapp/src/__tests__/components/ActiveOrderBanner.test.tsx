@@ -3,8 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from "vitest";
 import type { Order } from "@shared/types/models";
-import ActiveOrderBanner from "../../components/ActiveOrderBanner/ActiveOrderBanner";
-
+import { ActiveOrderBanner } from "../../components/ActiveOrderBanner/ActiveOrderBanner";
 const navigateMock = vi.fn();
 
 vi.mock("react-router-dom", async () => {
@@ -108,5 +107,75 @@ describe("ActiveOrderBanner", () => {
     storeState = makeStore({ id: "ws-order", display_id: 5, status: "PENDING" });
     renderAt();
     expect(createOrderWebSocket).toHaveBeenCalledWith("ws-order", expect.any(Function));
+  });
+
+  it("clears the active order when the socket reports a terminal status", async () => {
+    const { createOrderWebSocket } = await import("../../services/api");
+    const closeMock = vi.fn();
+    (createOrderWebSocket as unknown as Mock).mockReturnValueOnce({
+      close: closeMock,
+    });
+    storeState = makeStore({ id: "ws-order", display_id: 5, status: "PENDING" });
+    renderAt();
+    const onMessage = (createOrderWebSocket as unknown as Mock).mock
+      .calls[0]?.[1] as (d: Record<string, unknown>) => void;
+
+    onMessage({ status: "COMPLETED" });
+
+    expect(storeState.clearActiveOrder).toHaveBeenCalledTimes(1);
+    expect(storeState.setActiveOrder).not.toHaveBeenCalled();
+  });
+
+  it("updates the active order status from a socket status message", async () => {
+    const { createOrderWebSocket } = await import("../../services/api");
+    (createOrderWebSocket as unknown as Mock).mockReturnValueOnce({
+      close: vi.fn(),
+    });
+    storeState = makeStore({ id: "ws-order", display_id: 5, status: "PENDING" });
+    renderAt();
+    const onMessage = (createOrderWebSocket as unknown as Mock).mock
+      .calls[0]?.[1] as (d: Record<string, unknown>) => void;
+
+    onMessage({ status: "READY" });
+
+    expect(storeState.setActiveOrder).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "ws-order", status: "READY" }),
+    );
+    expect(storeState.clearActiveOrder).not.toHaveBeenCalled();
+  });
+
+  it("ignores a socket message without a string status", async () => {
+    const { createOrderWebSocket } = await import("../../services/api");
+    (createOrderWebSocket as unknown as Mock).mockReturnValueOnce({
+      close: vi.fn(),
+    });
+    storeState = makeStore({ id: "ws-order", display_id: 5, status: "PENDING" });
+    renderAt();
+    const onMessage = (createOrderWebSocket as unknown as Mock).mock
+      .calls[0]?.[1] as (d: Record<string, unknown>) => void;
+
+    onMessage({ status: 42 });
+
+    expect(storeState.setActiveOrder).not.toHaveBeenCalled();
+    expect(storeState.clearActiveOrder).not.toHaveBeenCalled();
+  });
+
+  it("closes and drops the socket when the active order disappears", async () => {
+    const { createOrderWebSocket } = await import("../../services/api");
+    const closeMock = vi.fn();
+    (createOrderWebSocket as unknown as Mock).mockReturnValueOnce({
+      close: closeMock,
+    });
+    storeState = makeStore({ id: "ws-order", display_id: 5, status: "PENDING" });
+    const { rerender } = renderAt();
+
+    storeState = makeStore(null);
+    rerender(
+      <MemoryRouter initialEntries={["/"]}>
+        <ActiveOrderBanner />
+      </MemoryRouter>,
+    );
+
+    expect(closeMock).toHaveBeenCalled();
   });
 });

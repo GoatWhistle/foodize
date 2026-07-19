@@ -15,6 +15,30 @@ from features.restaurants.models import Restaurant
 from features.restaurants.working_hours_crud import get_working_hours, is_open_now
 from shared.enums.order_status import OrderStatus
 
+_DEFAULT_PREP_TIME_MINUTES = 15
+_MIN_WAIT_SPREAD_MINUTES = 10
+
+
+def _coerced_capacity(restaurant: Restaurant) -> tuple[int, int | None]:
+    avg_prep_time = getattr(restaurant, "avg_prep_time_minutes", _DEFAULT_PREP_TIME_MINUTES)
+    if not isinstance(avg_prep_time, int):
+        avg_prep_time = _DEFAULT_PREP_TIME_MINUTES
+    max_active_orders = getattr(restaurant, "max_active_orders", None)
+    if not isinstance(max_active_orders, int):
+        max_active_orders = None
+    return avg_prep_time, max_active_orders
+
+
+def _wait_estimates(
+    active_orders: int, avg_prep_time: int, max_active_orders: int | None
+) -> tuple[int, int]:
+    queue_multiplier = 1
+    if max_active_orders:
+        queue_multiplier = max(1, active_orders // max_active_orders + 1)
+    wait_min = max(avg_prep_time, avg_prep_time * queue_multiplier)
+    wait_max = wait_min + max(_MIN_WAIT_SPREAD_MINUTES, avg_prep_time)
+    return wait_min, wait_max
+
 
 async def estimate_restaurant_load(
     session: AsyncSession,
@@ -29,22 +53,12 @@ async def estimate_restaurant_load(
     active_orders = await order_crud.count_active_orders_by_restaurant_id(session, restaurant.id)
     if not isinstance(active_orders, int):
         active_orders = 0
-    avg_prep_time = getattr(restaurant, "avg_prep_time_minutes", 15)
-    if not isinstance(avg_prep_time, int):
-        avg_prep_time = 15
-    max_active_orders = getattr(restaurant, "max_active_orders", None)
-    if not isinstance(max_active_orders, int):
-        max_active_orders = None
+    avg_prep_time, max_active_orders = _coerced_capacity(restaurant)
     hours = await get_working_hours(session, restaurant.id)
     is_open = restaurant.is_open
     if hours and is_open_now(hours) is False:
         is_open = False
-    queue_multiplier = 1
-    if max_active_orders:
-        queue_multiplier = max(1, active_orders // max_active_orders + 1)
-
-    wait_min = max(avg_prep_time, avg_prep_time * queue_multiplier)
-    wait_max = wait_min + max(10, avg_prep_time)
+    wait_min, wait_max = _wait_estimates(active_orders, avg_prep_time, max_active_orders)
     paused = is_ordering_paused(restaurant)
 
     return OrderLoadEstimate(
@@ -68,11 +82,11 @@ async def get_user_orders(
     size: int = 20,
 ) -> tuple[list[OrderResponse], int]:
     offset = (page - 1) * size
-    data = await order_crud.get_orders_by_user_id(
+    orders = await order_crud.get_orders_by_user_id(
         session, user_id, status=status, offset=offset, limit=size
     )
     total = await order_crud.count_orders_by_user_id(session, user_id, status=status)
-    return [OrderResponse.model_validate(o) for o in data], total
+    return [OrderResponse.model_validate(order) for order in orders], total
 
 
 async def get_order(
@@ -98,7 +112,7 @@ async def get_restaurant_orders(
     size: int = 20,
 ) -> tuple[list[OrderResponse], int]:
     offset = (page - 1) * size
-    data = await order_crud.get_orders_by_restaurant_id(
+    orders = await order_crud.get_orders_by_restaurant_id(
         session,
         restaurant_id,
         status=status,
@@ -114,7 +128,7 @@ async def get_restaurant_orders(
         date_from=date_from,
         date_to=date_to,
     )
-    return [OrderResponse.model_validate(o) for o in data], total
+    return [OrderResponse.model_validate(order) for order in orders], total
 
 
 async def get_order_events(

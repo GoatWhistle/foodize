@@ -30,12 +30,22 @@ interface AdminFinanceTabProps {
   setActivePreset: Dispatch<SetStateAction<number | null>>;
   allRestaurants: AdminRestaurant[];
   exportLoading: boolean;
-  handleExport: (exportFn: () => Promise<{ data: Blob }>, filename: string) => void;
+  handleExport: (exportFn: () => Promise<Blob>, filename: string) => void;
   todayStr: string;
   adminService: typeof adminServiceType;
   getRestaurantLabel: () => string;
   getDateRangeLabel: () => string;
 }
+
+const DATE_PRESETS: readonly { label: string; days: number | null }[] = [
+  { label: 'Сегодня', days: 0 },
+  { label: '3 дня', days: 3 },
+  { label: '7 дней', days: 7 },
+  { label: '30 дней', days: 30 },
+  { label: 'Полгода', days: 180 },
+  { label: 'Год', days: 365 },
+  { label: 'Сбросить', days: null },
+];
 
 const filterGridStyle = {
   display: 'grid',
@@ -49,7 +59,7 @@ const selectFilterStyle = {
   height: 48,
   paddingTop: 11,
   paddingBottom: 11,
-  fontSize: '0.86rem',
+  fontSize: "var(--text-base)",
   lineHeight: 1.2,
   paddingRight: 34,
   backgroundPosition: 'right 10px center',
@@ -79,7 +89,7 @@ const AnalyticsSkeleton = () => (
   </div>
 );
 
-export default function AdminFinanceTab({
+export function AdminFinanceTab({
   finance,
   financeLoading,
   advancedAnalytics,
@@ -96,6 +106,36 @@ export default function AdminFinanceTab({
   getRestaurantLabel,
   getDateRangeLabel,
 }: AdminFinanceTabProps) {
+  const dateRange = {
+    date_from: financeFilters.date_from || undefined,
+    date_to: financeFilters.date_to || undefined,
+  };
+  const exportActions: readonly {
+    label: string;
+    filename: string;
+    exportFn: () => Promise<Blob>;
+  }[] = [
+    {
+      label: 'Финансы PDF',
+      filename: `финансы_${getRestaurantLabel()}_${getDateRangeLabel()}.pdf`,
+      exportFn: () =>
+        adminService.exportFinancePDF({
+          ...dateRange,
+          restaurant_id: financeFilters.restaurant_id || undefined,
+        }),
+    },
+    {
+      label: 'Аналитика PDF',
+      filename: `аналитика_${getRestaurantLabel()}_${getDateRangeLabel()}.pdf`,
+      exportFn: () => adminService.exportAnalyticsPDF(dateRange),
+    },
+    {
+      label: 'Обзор платформы PDF',
+      filename: `обзор_платформы_${todayStr}.pdf`,
+      exportFn: () => adminService.exportOverviewPDF(dateRange),
+    },
+  ];
+
   return (
     <div
       className={financeLoading || analyticsLoading ? 'loading-dim' : undefined}
@@ -138,27 +178,20 @@ export default function AdminFinanceTab({
       </div>
 
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 20 }}>
-        {[
-          { label: 'Сегодня', days: 0 },
-          { label: '3 дня', days: 3 },
-          { label: '7 дней', days: 7 },
-          { label: '30 дней', days: 30 },
-          { label: 'Полгода', days: 180 },
-          { label: 'Год', days: 365 },
-          { label: 'Сбросить', days: null },
-        ].map((preset) => (
+        {DATE_PRESETS.map((preset) => (
           <button
             key={preset.label}
             className={`btn btn-sm ${activePreset === preset.days ? 'btn-primary' : 'btn-secondary'}`}
             style={{ whiteSpace: 'nowrap' }}
             onClick={() => {
-              setActivePreset(preset.days);
-              if (preset.days === null) {
+              const presetDays = preset.days;
+              setActivePreset(presetDays);
+              if (presetDays === null) {
                 setFinanceFilters((prev) => ({ ...prev, date_from: '', date_to: '' }));
               } else {
                 setFinanceFilters((prev) => ({
                   ...prev,
-                  ...presetToDateRange(preset.days),
+                  ...presetToDateRange(presetDays),
                 }));
               }
             }}
@@ -177,55 +210,16 @@ export default function AdminFinanceTab({
           flexWrap: 'wrap',
         }}
       >
-        <button
-          className="btn btn-secondary btn-sm"
-          disabled={exportLoading}
-          onClick={() =>
-            { handleExport(
-              () =>
-                adminService.exportFinancePDF({
-                  date_from: financeFilters.date_from || undefined,
-                  date_to: financeFilters.date_to || undefined,
-                  restaurant_id: financeFilters.restaurant_id || undefined,
-                }),
-              `финансы_${getRestaurantLabel()}_${getDateRangeLabel()}.pdf`
-            ); }
-          }
-        >
-          {exportLoading ? '...' : <><DownloadSimpleIcon size={16} weight="bold" /> Финансы PDF</>}
-        </button>
-        <button
-          className="btn btn-secondary btn-sm"
-          disabled={exportLoading}
-          onClick={() =>
-            { handleExport(
-              () =>
-                adminService.exportAnalyticsPDF({
-                  date_from: financeFilters.date_from || undefined,
-                  date_to: financeFilters.date_to || undefined,
-                }),
-              `аналитика_${getRestaurantLabel()}_${getDateRangeLabel()}.pdf`
-            ); }
-          }
-        >
-          {exportLoading ? '...' : <><DownloadSimpleIcon size={16} weight="bold" /> Аналитика PDF</>}
-        </button>
-        <button
-          className="btn btn-secondary btn-sm"
-          disabled={exportLoading}
-          onClick={() =>
-            { handleExport(
-              () =>
-                adminService.exportOverviewPDF({
-                  date_from: financeFilters.date_from || undefined,
-                  date_to: financeFilters.date_to || undefined,
-                }),
-              `обзор_платформы_${todayStr}.pdf`
-            ); }
-          }
-        >
-          {exportLoading ? '...' : <><DownloadSimpleIcon size={16} weight="bold" /> Обзор платформы PDF</>}
-        </button>
+        {exportActions.map((action) => (
+          <button
+            key={action.label}
+            className="btn btn-secondary btn-sm"
+            disabled={exportLoading}
+            onClick={() => { handleExport(action.exportFn, action.filename); }}
+          >
+            {exportLoading ? '...' : <><DownloadSimpleIcon size={16} weight="bold" /> {action.label}</>}
+          </button>
+        ))}
       </div>
 
       {financeLoading && !finance && <AnalyticsSkeleton />}
@@ -260,7 +254,7 @@ export default function AdminFinanceTab({
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   gap: 12,
-                  fontSize: '0.85rem',
+                  fontSize: "var(--text-base)",
                   color: 'var(--text-2)',
                 }}
               >

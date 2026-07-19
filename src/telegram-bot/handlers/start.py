@@ -1,8 +1,8 @@
 import html
 import logging
 from collections.abc import Awaitable, Callable
+from enum import Enum, auto
 from http import HTTPStatus
-from typing import Any
 
 import httpx
 from aiogram import F, Router
@@ -20,22 +20,24 @@ from handlers.deep_links import (
 from keyboards import start_keyboards as kb
 from services import backend_client
 from utils import messages as msg
-from utils.formatting import format_price, format_status
+from utils.formatting import format_order_line, vendor_status_text
 from utils.phone import normalize_phone
 
 router = Router()
 logger = logging.getLogger(__name__)
 
-_UNSET = object()
+
+class _BackendCallFailed(Enum):
+    TOKEN = auto()
 
 
-async def _call_backend_api(
+async def _call_backend_api[T](
     message: Message,
-    call: Callable[[], Awaitable[Any]],
+    call: Callable[[], Awaitable[T]],
     *,
     error_message: str,
     log_context: str,
-) -> Any:
+) -> T | _BackendCallFailed:
     try:
         return await call()
     except httpx.HTTPStatusError as exc:
@@ -47,7 +49,14 @@ async def _call_backend_api(
     except httpx.HTTPError as exc:
         logger.warning("%s network error: %s", log_context, exc)
         await message.answer(msg.API_UNAVAILABLE)
-    return _UNSET
+    return _BackendCallFailed.TOKEN
+
+
+async def _ensure_bot_configured(message: Message, not_configured_message: str) -> bool:
+    if bot_config.bot_api_secret:
+        return True
+    await message.answer(not_configured_message)
+    return False
 
 
 def _display_name(message: Message) -> str:
@@ -62,8 +71,7 @@ async def _link_phone(message: Message, phone_number: str) -> bool:
     if not from_user:
         return False
 
-    if not bot_config.bot_api_secret:
-        await message.answer(msg.BOT_NOT_CONFIGURED)
+    if not await _ensure_bot_configured(message, msg.BOT_NOT_CONFIGURED):
         return False
 
     result = await _call_backend_api(
@@ -77,7 +85,7 @@ async def _link_phone(message: Message, phone_number: str) -> bool:
         error_message=msg.PHONE_LINK_FAILED,
         log_context="link_phone",
     )
-    if result is _UNSET:
+    if result is _BackendCallFailed.TOKEN:
         return False
 
     await message.answer(msg.PHONE_LINKED, reply_markup=kb.phone_keyboard())
@@ -89,43 +97,25 @@ async def _link_phone(message: Message, phone_number: str) -> bool:
     return True
 
 
-def _vendor_status_text(data: dict[str, Any]) -> str:
-    if not data.get("is_vendor"):
-        return (
-            "Вендор-профиль не найден.\n\n"
-            "Подайте заявку на сайте Foodize, затем проверьте статус здесь."
-        )
-
-    status = data.get("approval_status")
-    if status == "APPROVED":
-        return "Ваша заявка вендора одобрена. Кабинет доступен на сайте Foodize."
-    if status == "REJECTED":
-        reason = data.get("rejection_reason")
-        suffix = f"\n\nПричина: {html.escape(reason)}" if reason else ""
-        return f"Заявка вендора отклонена.{suffix}"
-    return "Заявка вендора на рассмотрении. Мы сообщим, когда администратор примет решение."
-
-
 @router.message(Command("vendor_status"))
 async def cmd_vendor_status(message: Message) -> None:
     from_user = message.from_user
     if not from_user:
         return
 
-    if not bot_config.bot_api_secret:
-        await message.answer(msg.VENDOR_STATUS_NOT_CONFIGURED)
+    if not await _ensure_bot_configured(message, msg.VENDOR_STATUS_NOT_CONFIGURED):
         return
 
-    data = await _call_backend_api(
+    vendor_status = await _call_backend_api(
         message,
         lambda: backend_client.get_vendor_status(from_user.id),
         error_message=msg.VENDOR_STATUS_ERROR,
         log_context="get_vendor_status",
     )
-    if data is _UNSET:
+    if vendor_status is _BackendCallFailed.TOKEN:
         return
 
-    await message.answer(_vendor_status_text(data))
+    await message.answer(vendor_status_text(vendor_status))
 
 
 @router.message(Command("orders"))
@@ -134,8 +124,7 @@ async def cmd_orders(message: Message) -> None:
     if not from_user:
         return
 
-    if not bot_config.bot_api_secret:
-        await message.answer(msg.ORDERS_NOT_CONFIGURED)
+    if not await _ensure_bot_configured(message, msg.ORDERS_NOT_CONFIGURED):
         return
 
     orders = await _call_backend_api(
@@ -144,22 +133,14 @@ async def cmd_orders(message: Message) -> None:
         error_message=msg.ORDERS_ERROR,
         log_context="get_active_orders",
     )
-    if orders is _UNSET:
+    if orders is _BackendCallFailed.TOKEN:
         return
 
     if not orders:
         await message.answer(msg.NO_ACTIVE_ORDERS)
         return
 
-    lines = [msg.ACTIVE_ORDERS_HEADER]
-    for order in orders:
-        restaurant = html.escape(order.get("restaurant_name") or "ресторан")
-        display_id = html.escape(str(order.get("display_id", "")))
-        lines.append(
-            f"• #{display_id} — {restaurant}, "
-            f"{html.escape(format_status(order.get('status', '')))}, "
-            f"{format_price(order.get('total_price', 0))}"
-        )
+    lines = [msg.ACTIVE_ORDERS_HEADER, *(format_order_line(order) for order in orders)]
     await message.answer("\n".join(lines), reply_markup=kb.orders_keyboard(orders))
 
 
@@ -190,8 +171,8 @@ async def _handle_restaurant_link(message: Message, display_id: str) -> None:
     restaurant_name = ""
     if bot_config.backend_url:
         try:
-            data = await backend_client.get_public_restaurant(display_id)
-            restaurant_name = data.get("name", "")
+            restaurant = await backend_client.get_public_restaurant(display_id)
+            restaurant_name = restaurant.get("name", "")
         except httpx.HTTPError as exc:
             logger.warning(
                 "Failed to fetch restaurant name for display_id=%s: %s",
@@ -214,7 +195,7 @@ async def _handle_order_link(message: Message, order_display_id: str) -> None:
         await message.answer(msg.WELCOME)
         return
     await message.answer(
-        f"Открыть заказ <b>#{order_display_id}</b>:",
+        msg.OPEN_ORDER.format(display_id=order_display_id),
         reply_markup=keyboard,
     )
 
@@ -223,13 +204,10 @@ async def _handle_default_start(message: Message) -> None:
     username = message.from_user.username if message.from_user else None
     username_hint = f"@{html.escape(username)}" if username else "без username"
     await message.answer(
-        msg.WELCOME + "\n\n"
-        f"Ваш аккаунт зарегистрирован как <b>{username_hint}</b>.\n"
-        "Теперь вы можете войти на сайте через Telegram — просто введите свой @username.\n\n"
-        "Также можно привязать номер телефона для обычного входа:",
+        msg.WELCOME + msg.WELCOME_REGISTERED.format(username_hint=username_hint),
         reply_markup=kb.phone_keyboard(),
     )
-    await message.answer("Открыть Foodize:", reply_markup=kb.mini_app_keyboard())
+    await message.answer(msg.OPEN_FOODIZE, reply_markup=kb.mini_app_keyboard())
 
 
 async def _dispatch_deep_link(message: Message, link: DeepLink) -> None:
@@ -261,6 +239,6 @@ async def handle_contact(message: Message) -> None:
     if not contact:
         return
     if message.from_user and contact.user_id and contact.user_id != message.from_user.id:
-        await message.answer("Пожалуйста, отправьте свой номер телефона.")
+        await message.answer(msg.SEND_OWN_PHONE)
         return
     await _link_phone(message, normalize_phone(contact.phone_number))

@@ -169,6 +169,39 @@ async def _finalize_order(
     return response
 
 
+async def _create_priced_order(
+    session: AsyncSession,
+    order_data: OrderCreate,
+    user_id: uuid.UUID,
+    menu_items: dict[uuid.UUID, MenuItem],
+    selected_options_by_item: dict[int, list[MenuItemOption]],
+    requested_pickup_at: datetime | None,
+    fallback_ready_at: datetime,
+) -> Order:
+    total_orders = await order_crud.count_orders_by_user_id(
+        session, user_id, exclude_status=OrderStatus.CANCELLED
+    )
+    order = await _create_order(
+        session,
+        order_data,
+        user_id,
+        menu_items,
+        selected_options_by_item,
+        estimated_ready_at=requested_pickup_at or fallback_ready_at,
+        requested_pickup_at=requested_pickup_at,
+    )
+    await _apply_promo_if_any(
+        session,
+        order,
+        order_data,
+        menu_items,
+        selected_options_by_item,
+        user_id,
+        is_first_order=total_orders == 0,
+    )
+    return order
+
+
 async def place_order(
     session: AsyncSession,
     order_data: OrderCreate,
@@ -184,36 +217,18 @@ async def place_order(
 
     restaurant, working_hours = await _validate_restaurant_open(session, order_data.restaurant_id)
     menu_items, selected_options_by_item = await _load_and_validate_items(session, order_data)
-
-    total_orders = await order_crud.count_orders_by_user_id(
-        session, user_id, exclude_status=OrderStatus.CANCELLED
-    )
-    is_first_order = total_orders == 0
-
     requested_pickup_at, fallback_ready_at = await _resolve_pickup_timing(
         session, restaurant, working_hours, order_data
     )
-
-    order = await _create_order(
+    order = await _create_priced_order(
         session,
         order_data,
         user_id,
         menu_items,
         selected_options_by_item,
-        estimated_ready_at=requested_pickup_at or fallback_ready_at,
-        requested_pickup_at=requested_pickup_at,
+        requested_pickup_at,
+        fallback_ready_at,
     )
-
-    await _apply_promo_if_any(
-        session,
-        order,
-        order_data,
-        menu_items,
-        selected_options_by_item,
-        user_id,
-        is_first_order,
-    )
-
     return await _finalize_order(session, order, restaurant, order_data, idempotency_record)
 
 

@@ -19,7 +19,6 @@ def _fresh_start_router(mocker: MockerFixture) -> None:
     mocker.patch("main.start.router", Router())
 
 
-@pytest.mark.asyncio
 async def test_health_endpoint_returns_ok() -> None:
     app = web.Application()
     app.router.add_get("/health", main._health)
@@ -31,21 +30,26 @@ async def test_health_endpoint_returns_ok() -> None:
         assert data == {"status": "ok"}
 
 
-@pytest.mark.asyncio
 async def test_on_error_logs_exception_without_raising(caplog: LogCaptureFixture) -> None:
     event = type(
         "FakeErrorEvent",
         (),
         {"update": type("U", (), {"update_id": 42})(), "exception": ValueError("boom")},
     )()
-    await main._on_error(event)
+
+    with caplog.at_level("ERROR"):
+        await main._on_error(event)
+
+    assert any("42" in record.message for record in caplog.records)
+    assert any(record.exc_info for record in caplog.records)
 
 
-@pytest.mark.asyncio
-async def test_main_raises_without_webhook_secret_in_webhook_mode(mocker: MockerFixture) -> None:
-    bot_config.mode = "webhook"
-    bot_config.webhook_secret = ""
-    bot_config.webhook_url = "https://example.com"
+async def test_main_raises_without_webhook_secret_in_webhook_mode(
+    mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(bot_config, "mode", "webhook")
+    monkeypatch.setattr(bot_config, "webhook_secret", "")
+    monkeypatch.setattr(bot_config, "webhook_url", "https://example.com")
 
     mocker.patch("main.Bot")
     mocker.patch("main.build_throttling_middleware")
@@ -53,14 +57,13 @@ async def test_main_raises_without_webhook_secret_in_webhook_mode(mocker: Mocker
     with pytest.raises(RuntimeError, match="BOT_WEBHOOK_SECRET must be set"):
         await main.main()
 
-    bot_config.mode = "polling"
 
-
-@pytest.mark.asyncio
-async def test_webhook_handler_configured_with_secret_token(mocker: MockerFixture) -> None:
-    bot_config.mode = "webhook"
-    bot_config.webhook_secret = "top-secret"
-    bot_config.webhook_url = "https://example.com"
+async def test_webhook_handler_configured_with_secret_token(
+    mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(bot_config, "mode", "webhook")
+    monkeypatch.setattr(bot_config, "webhook_secret", "top-secret")
+    monkeypatch.setattr(bot_config, "webhook_url", "https://example.com")
 
     mocker.patch("main.build_throttling_middleware")
     mocker.patch("main.start_notification_consumer", new=lambda bot: _never_ending())
@@ -82,8 +85,6 @@ async def test_webhook_handler_configured_with_secret_token(mocker: MockerFixtur
     assert handler_spy.call_args.kwargs["secret_token"] == "top-secret"
     mock_bot_instance.set_webhook.assert_awaited_once()
     assert mock_bot_instance.set_webhook.call_args.kwargs["secret_token"] == "top-secret"
-
-    bot_config.mode = "polling"
 
 
 class _StopMain(Exception):

@@ -33,10 +33,12 @@ def mock_staff_request(
 class TestCreateStaffRequest:
     @pytest.fixture(autouse=True)
     def setup_mocks(self) -> Iterator[None]:
-        self.mock_is_hiring = patch(
-            "features.staff.service.is_need_staff_for_restaurant",
+        self.restaurant = MagicMock()
+        self.restaurant.is_hiring = True
+        self.mock_get_restaurant = patch(
+            "features.staff.dependencies.get_restaurant_by_id",
             new_callable=AsyncMock,
-            return_value=True,
+            return_value=self.restaurant,
         ).start()
         self.mock_get_profile = patch(
             "features.staff.crud.staff_profile_exists",
@@ -65,7 +67,7 @@ class TestCreateStaffRequest:
         self.mock_create.assert_awaited_once()
 
     async def test_not_hiring(self, mock_db_session: AsyncMock) -> None:
-        self.mock_is_hiring.return_value = False
+        self.restaurant.is_hiring = False
         with pytest.raises(RestaurantNotHiringException):
             await create_staff_request(
                 mock_db_session, uuid.uuid4(), uuid.uuid4(), StaffRequestCreate()

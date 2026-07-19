@@ -17,6 +17,12 @@ def _parse_time(value: str) -> dt_time:
     return dt_time(int(hour), int(minute))
 
 
+def _to_time(value: str | dt_time) -> dt_time:
+    if isinstance(value, dt_time):
+        return value
+    return _parse_time(value)
+
+
 async def get_working_hours(session: AsyncSession, restaurant_id: uuid.UUID) -> list[WorkingHours]:
     result = await session.execute(
         select(WorkingHours)
@@ -37,20 +43,22 @@ async def set_working_hours(
         delete_stmt = delete_stmt.where(WorkingHours.day_of_week.notin_(incoming_days))
     await session.execute(delete_stmt)
     for e in entries:
+        open_time = _to_time(e.open_time)
+        close_time = _to_time(e.close_time)
         stmt = (
             pg_insert(WorkingHours)
             .values(
                 restaurant_id=restaurant_id,
                 day_of_week=e.day_of_week,
-                open_time=e.open_time,
-                close_time=e.close_time,
+                open_time=open_time,
+                close_time=close_time,
                 is_closed=e.is_closed,
             )
             .on_conflict_do_update(
                 constraint="uq_working_hours_restaurant_day",
                 set_={
-                    "open_time": e.open_time,
-                    "close_time": e.close_time,
+                    "open_time": open_time,
+                    "close_time": close_time,
                     "is_closed": e.is_closed,
                 },
             )
@@ -71,8 +79,8 @@ def is_open_now(hours: list[WorkingHours], now: datetime | None = None) -> bool 
         if h.day_of_week == dow:
             if h.is_closed:
                 return False
-            open_t = _parse_time(h.open_time)
-            close_t = _parse_time(h.close_time)
+            open_t = h.open_time
+            close_t = h.close_time
             if close_t == _MIDNIGHT:
                 return current_time >= open_t
             if open_t < close_t:

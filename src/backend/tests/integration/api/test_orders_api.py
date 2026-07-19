@@ -3,7 +3,6 @@ from http import HTTPStatus
 from typing import Any
 from unittest.mock import AsyncMock, patch
 
-import pytest
 from httpx import AsyncClient
 
 from features.orders.dependencies import (
@@ -43,7 +42,6 @@ def _make_mock_order_dict(
 
 
 class TestOrdersAPI:
-    @pytest.mark.asyncio
     async def test_create_order(self, client: AsyncClient, as_user: User) -> None:
         order_id = uuid.uuid4()
         restaurant_id = uuid.uuid4()
@@ -86,7 +84,6 @@ class TestOrdersAPI:
         assert data["id"] == str(order_id)
         mock_place.assert_awaited_once()
 
-    @pytest.mark.asyncio
     async def test_read_my_orders(self, client: AsyncClient, as_user: User) -> None:
         with patch(
             "features.orders.api.order.service.get_user_orders",
@@ -101,7 +98,6 @@ class TestOrdersAPI:
         assert body["pagination"]["total"] == 0
         mock_get_all.assert_awaited_once()
 
-    @pytest.mark.asyncio
     async def test_read_order_by_id(self, client: AsyncClient, as_user: User) -> None:
         order_id = uuid.uuid4()
         mock_order = _make_mock_order_dict(order_id, as_user.id, uuid.uuid4())
@@ -124,7 +120,6 @@ class TestOrdersAPI:
         assert data["id"] == str(order_id)
         mock_get.assert_awaited_once()
 
-    @pytest.mark.asyncio
     async def test_create_order_requires_auth(self, client: AsyncClient) -> None:
         response = await client.post(
             "/api/v1/orders/",
@@ -147,7 +142,6 @@ class TestRestaurantOrdersAPI:
         r.is_hiring = True
         return r
 
-    @pytest.mark.asyncio
     async def test_read_restaurant_orders(self, client: AsyncClient, as_vendor: User) -> None:
         restaurant_id = uuid.uuid4()
         mock_restaurant = self._make_mock_restaurant(restaurant_id)
@@ -155,15 +149,15 @@ class TestRestaurantOrdersAPI:
         mock_orders = [_make_mock_order_dict(uuid.uuid4(), uuid.uuid4(), restaurant_id)]
 
         app.dependency_overrides[get_restaurant_staff_or_vendor] = lambda: mock_restaurant
-
-        with patch(
-            "features.orders.api.order.service.get_restaurant_orders",
-            new_callable=AsyncMock,
-            return_value=(mock_orders, 1),
-        ) as mock_get:
-            response = await client.get(f"/api/v1/orders/restaurant/{restaurant_id}")
-
-        app.dependency_overrides.pop(get_restaurant_staff_or_vendor, None)
+        try:
+            with patch(
+                "features.orders.api.order.service.get_restaurant_orders",
+                new_callable=AsyncMock,
+                return_value=(mock_orders, 1),
+            ) as mock_get:
+                response = await client.get(f"/api/v1/orders/restaurant/{restaurant_id}")
+        finally:
+            app.dependency_overrides.pop(get_restaurant_staff_or_vendor, None)
 
         assert response.status_code == HTTPStatus.OK
         body = response.json()
@@ -172,7 +166,6 @@ class TestRestaurantOrdersAPI:
         assert body["pagination"]["total"] == 1
         mock_get.assert_awaited_once()
 
-    @pytest.mark.asyncio
     async def test_update_order_status(self, client: AsyncClient, as_vendor: User) -> None:
         order_id = uuid.uuid4()
         restaurant_id = uuid.uuid4()
@@ -204,7 +197,6 @@ class TestRestaurantOrdersAPI:
 
 
 class TestCancelOrderAPI:
-    @pytest.mark.asyncio
     async def test_update_order_cancel_success(self, client: AsyncClient, as_user: User) -> None:
         order_id = uuid.uuid4()
         mock_order = _make_mock_order_dict(
@@ -222,7 +214,6 @@ class TestCancelOrderAPI:
         assert response.json()["data"]["status"] == OrderStatus.CANCELLED.value
         mock_cancel.assert_awaited_once()
 
-    @pytest.mark.asyncio
     async def test_update_order_cancel_not_found(self, client: AsyncClient, as_user: User) -> None:
         order_id = uuid.uuid4()
 
@@ -235,7 +226,6 @@ class TestCancelOrderAPI:
 
         assert response.status_code == HTTPStatus.NOT_FOUND
 
-    @pytest.mark.asyncio
     async def test_update_order_cancel_non_pending(
         self, client: AsyncClient, as_user: User
     ) -> None:

@@ -20,6 +20,11 @@ from utils.logging_setup import setup_logging
 
 logger = logging.getLogger(__name__)
 
+_LISTEN_HOST = "0.0.0.0"
+_LISTEN_PORT = 8080
+_HEALTH_PATH = "/health"
+_WEBHOOK_PATH = "/webhook"
+
 
 async def _on_error(event: ErrorEvent) -> None:
     logger.exception(
@@ -36,6 +41,79 @@ async def _health(_request: web.Request) -> web.Response:
 def _log_consumer_stopped(task: asyncio.Task[None]) -> None:
     if not task.cancelled() and task.exception():
         logger.error("Notification consumer stopped: %s", task.exception())
+
+
+def _start_consumer(bot: Bot) -> asyncio.Task[None]:
+    consumer_task = asyncio.create_task(start_notification_consumer(bot))
+    consumer_task.add_done_callback(_log_consumer_stopped)
+    return consumer_task
+
+
+def _health_app() -> web.Application:
+    app = web.Application()
+    app.router.add_get(_HEALTH_PATH, _health)
+    return app
+
+
+async def _start_site(app: web.Application) -> web.AppRunner:
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, _LISTEN_HOST, _LISTEN_PORT)
+    await site.start()
+    return runner
+
+
+def _install_stop_signal_handlers() -> asyncio.Event:
+    stop_event = asyncio.Event()
+    loop = asyncio.get_running_loop()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        with contextlib.suppress(NotImplementedError):
+            loop.add_signal_handler(sig, stop_event.set)
+    return stop_event
+
+
+async def _run_webhook(bot: Bot, dp: Dispatcher) -> None:
+    if not bot_config.webhook_secret:
+        raise RuntimeError(
+            "BOT_WEBHOOK_SECRET must be set when BOT_MODE=webhook. "
+            "Without it the /webhook endpoint accepts unauthenticated requests."
+        )
+
+    async def on_startup() -> None:
+        await bot.set_webhook(
+            url=f"{bot_config.webhook_url}{_WEBHOOK_PATH}",
+            secret_token=bot_config.webhook_secret or None,
+        )
+
+    dp.startup.register(on_startup)
+    app = _health_app()
+    handler = SimpleRequestHandler(
+        dispatcher=dp,
+        bot=bot,
+        secret_token=bot_config.webhook_secret or None,
+    )
+    handler.register(app, path=_WEBHOOK_PATH)
+    setup_application(app, dp, bot=bot)
+
+    runner = await _start_site(app)
+    consumer_task = _start_consumer(bot)
+    stop_event = _install_stop_signal_handlers()
+    try:
+        await stop_event.wait()
+    finally:
+        logger.info("Shutting down telegram bot (webhook mode)")
+        await _shutdown(consumer_task, runner=runner, bot=bot)
+
+
+async def _run_polling(bot: Bot, dp: Dispatcher) -> None:
+    runner = await _start_site(_health_app())
+    consumer_task = _start_consumer(bot)
+    await bot.delete_webhook(drop_pending_updates=False)
+    try:
+        await dp.start_polling(bot)
+    finally:
+        logger.info("Shutting down telegram bot (polling mode)")
+        await _shutdown(consumer_task, runner=runner, bot=bot)
 
 
 async def main() -> None:
@@ -55,64 +133,9 @@ async def main() -> None:
     dp.include_router(start.router)
 
     if bot_config.mode == "webhook":
-        if not bot_config.webhook_secret:
-            raise RuntimeError(
-                "BOT_WEBHOOK_SECRET must be set when BOT_MODE=webhook. "
-                "Without it the /webhook endpoint accepts unauthenticated requests."
-            )
-
-        async def on_startup(dispatcher: Dispatcher) -> None:  # noqa: ARG001
-            await bot.set_webhook(
-                url=f"{bot_config.webhook_url}/webhook",
-                secret_token=bot_config.webhook_secret or None,
-            )
-
-        dp.startup.register(on_startup)
-        app = web.Application()
-        app.router.add_get("/health", _health)
-        handler = SimpleRequestHandler(
-            dispatcher=dp,
-            bot=bot,
-            secret_token=bot_config.webhook_secret or None,
-        )
-        handler.register(app, path="/webhook")
-        setup_application(app, dp, bot=bot)
-
-        runner = web.AppRunner(app)
-        await runner.setup()
-        site = web.TCPSite(runner, "0.0.0.0", 8080)
-        await site.start()
-
-        consumer_task = asyncio.create_task(start_notification_consumer(bot))
-        consumer_task.add_done_callback(_log_consumer_stopped)
-
-        stop_event = asyncio.Event()
-        loop = asyncio.get_running_loop()
-        for sig in (signal.SIGINT, signal.SIGTERM):
-            with contextlib.suppress(NotImplementedError):
-                loop.add_signal_handler(sig, stop_event.set)
-
-        try:
-            await stop_event.wait()
-        finally:
-            logger.info("Shutting down telegram bot (webhook mode)")
-            await _shutdown(consumer_task, runner=runner, bot=bot)
-    else:
-        health_app = web.Application()
-        health_app.router.add_get("/health", _health)
-        health_runner = web.AppRunner(health_app)
-        await health_runner.setup()
-        health_site = web.TCPSite(health_runner, "0.0.0.0", 8080)
-        await health_site.start()
-
-        consumer_task = asyncio.create_task(start_notification_consumer(bot))
-        consumer_task.add_done_callback(_log_consumer_stopped)
-        await bot.delete_webhook(drop_pending_updates=False)
-        try:
-            await dp.start_polling(bot)
-        finally:
-            logger.info("Shutting down telegram bot (polling mode)")
-            await _shutdown(consumer_task, runner=health_runner, bot=bot)
+        await _run_webhook(bot, dp)
+        return
+    await _run_polling(bot, dp)
 
 
 async def _shutdown(

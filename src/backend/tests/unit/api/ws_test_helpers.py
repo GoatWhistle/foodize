@@ -13,6 +13,9 @@ class FakeWebSocket:
         self.accepted = False
         self.closed = False
         self.close_code: int | None = None
+        self.cookies: dict[str, str] = {}
+        self.query_params: dict[str, str] = {}
+        self.headers: dict[str, str] = {}
 
     async def accept(self) -> None:
         self.accepted = True

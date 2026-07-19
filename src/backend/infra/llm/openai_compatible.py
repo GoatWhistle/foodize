@@ -5,6 +5,7 @@ import json
 from typing import TYPE_CHECKING, Any, cast
 
 from openai import AsyncOpenAI, BadRequestError
+from openai.types.chat import ChatCompletionMessageFunctionToolCall
 
 from infra.llm.base import (
     LLMClient,
@@ -21,6 +22,8 @@ from utils.logging_setup import get_logger
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
+
+    from openai.types.chat import ChatCompletion
 
 logger = get_logger("ai.openai_compatible")
 
@@ -117,6 +120,9 @@ class OpenAICompatibleClient(LLMClient):
             kwargs["tool_choice"] = tool_choice or "auto"
 
         response = await self._client.chat.completions.create(**kwargs)
+        return self._to_llm_response(response)
+
+    def _to_llm_response(self, response: ChatCompletion) -> LLMResponse:
         if not response.choices:
             raise RuntimeError(f"LLM returned empty choices (model={self._model})")
         choice = response.choices[0]
@@ -131,6 +137,7 @@ class OpenAICompatibleClient(LLMClient):
                 ),
             )
             for tool_call in message.tool_calls or []
+            if isinstance(tool_call, ChatCompletionMessageFunctionToolCall)
         ]
 
         usage = response.usage
@@ -201,9 +208,8 @@ class OpenAICompatibleClient(LLMClient):
                 chunk = await asyncio.wait_for(iterator.__anext__(), timeout=self._timeout)
             except StopAsyncIteration:
                 break
-            text_delta = accumulator.absorb(chunk)
-            if text_delta is not None:
-                yield text_delta
+            for event in accumulator.absorb(chunk):
+                yield event
 
         usage = accumulator.usage
         if usage.input_tokens == 0 and usage.output_tokens == 0:

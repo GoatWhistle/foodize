@@ -63,22 +63,28 @@ export const useStaffDashboard = () => {
   }, []);
 
   useEffect(() => {
-    staffService
-      .getMyProfile()
-      .then((res) => {
-        setProfile(res.data.data);
-      })
-      .catch(() => { setProfileError('error'); })
-      .finally(() => { setProfileLoading(false); });
+    void (async () => {
+      try {
+        const response = await staffService.getMyProfile();
+        setProfile(response.data.data);
+      } catch {
+        setProfileError('error');
+      } finally {
+        setProfileLoading(false);
+      }
+    })();
   }, []);
 
   useEffect(() => {
     if (!profile) return;
     const restaurantId = profile.restaurant_id;
-    Promise.all([
-      fetchOrders(restaurantId),
-      fetchMenu(restaurantId),
-    ]).catch((err: unknown) => { logError('useStaffDashboard.initialLoad', err); });
+    void (async () => {
+      try {
+        await Promise.all([fetchOrders(restaurantId), fetchMenu(restaurantId)]);
+      } catch (error) {
+        logError('useStaffDashboard.initialLoad', error);
+      }
+    })();
   }, [profile, fetchOrders, fetchMenu]);
 
   useEffect(() => {

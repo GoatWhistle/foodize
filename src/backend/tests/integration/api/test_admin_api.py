@@ -3,7 +3,6 @@ from http import HTTPStatus
 from typing import Any
 from unittest.mock import AsyncMock, patch
 
-import pytest
 from httpx import AsyncClient
 
 from features.users.models import User
@@ -38,24 +37,20 @@ def _make_admin_order_dict() -> dict[str, Any]:
 
 
 class TestAdminAccess:
-    @pytest.mark.asyncio
     async def test_requires_auth(self, client: AsyncClient) -> None:
         response = await client.get("/api/v1/admin/users")
         assert response.status_code == HTTPStatus.UNAUTHORIZED
 
-    @pytest.mark.asyncio
     async def test_requires_admin_role(self, client: AsyncClient, as_user: User) -> None:
         response = await client.get("/api/v1/admin/users")
         assert response.status_code == HTTPStatus.FORBIDDEN
 
-    @pytest.mark.asyncio
     async def test_vendor_denied(self, client: AsyncClient, as_vendor: User) -> None:
         response = await client.get("/api/v1/admin/users")
         assert response.status_code == HTTPStatus.FORBIDDEN
 
 
 class TestAdminUsers:
-    @pytest.mark.asyncio
     async def test_read_users(self, client: AsyncClient, as_admin: User) -> None:
         mock_users = [_make_admin_user_dict() for _ in range(3)]
 
@@ -78,7 +73,6 @@ class TestAdminUsers:
         assert len(body["data"]) == 3
         assert body["pagination"]["total"] == 3
 
-    @pytest.mark.asyncio
     async def test_read_users_filter_by_role(self, client: AsyncClient, as_admin: User) -> None:
         with (
             patch(
@@ -97,7 +91,6 @@ class TestAdminUsers:
         assert response.status_code == HTTPStatus.OK
         assert response.json()["pagination"]["total"] == 0
 
-    @pytest.mark.asyncio
     async def test_read_user_by_id(self, client: AsyncClient, as_admin: User) -> None:
         user_id = uuid.uuid4()
         mock_user = _make_admin_user_dict(user_id)
@@ -112,7 +105,6 @@ class TestAdminUsers:
         assert response.status_code == HTTPStatus.OK
         assert response.json()["data"]["id"] == str(user_id)
 
-    @pytest.mark.asyncio
     async def test_read_user_not_found(self, client: AsyncClient, as_admin: User) -> None:
         with patch(
             "features.admin.crud.get_user_by_id",
@@ -123,7 +115,6 @@ class TestAdminUsers:
 
         assert response.status_code == HTTPStatus.NOT_FOUND
 
-    @pytest.mark.asyncio
     async def test_delete_user(self, client: AsyncClient, as_admin: User) -> None:
         user_id = uuid.uuid4()
         mock_user = _make_admin_user_dict(user_id)
@@ -146,7 +137,6 @@ class TestAdminUsers:
         assert response.status_code == HTTPStatus.OK
         assert response.json()["data"]["is_active"] is False
 
-    @pytest.mark.asyncio
     async def test_delete_user_not_found(self, client: AsyncClient, as_admin: User) -> None:
         with patch(
             "features.admin.crud.get_user_by_id",
@@ -157,7 +147,6 @@ class TestAdminUsers:
 
         assert response.status_code == HTTPStatus.NOT_FOUND
 
-    @pytest.mark.asyncio
     async def test_activate_user(self, client: AsyncClient, as_admin: User) -> None:
         user_id = uuid.uuid4()
         mock_user = _make_admin_user_dict(user_id)
@@ -180,7 +169,6 @@ class TestAdminUsers:
         assert response.status_code == HTTPStatus.OK
         assert response.json()["data"]["is_active"] is True
 
-    @pytest.mark.asyncio
     async def test_grant_admin_permissions(self, client: AsyncClient, as_admin: User) -> None:
         user_id = uuid.uuid4()
         mock_user = _make_admin_user_dict(user_id)
@@ -198,7 +186,6 @@ class TestAdminUsers:
 
 
 class TestAdminOrders:
-    @pytest.mark.asyncio
     async def test_read_orders(self, client: AsyncClient, as_admin: User) -> None:
         mock_orders = [_make_admin_order_dict()]
 
@@ -221,7 +208,6 @@ class TestAdminOrders:
         assert len(body["data"]) == 1
         assert body["pagination"]["total"] == 1
 
-    @pytest.mark.asyncio
     async def test_read_orders_with_filters(self, client: AsyncClient, as_admin: User) -> None:
         with (
             patch(
@@ -242,7 +228,6 @@ class TestAdminOrders:
 
 
 class TestAdminStats:
-    @pytest.mark.asyncio
     async def test_read_stats(self, client: AsyncClient, as_admin: User) -> None:
         mock_stats = {
             "users_by_permission": {Permission.ORDERS_CREATE.value: 10},

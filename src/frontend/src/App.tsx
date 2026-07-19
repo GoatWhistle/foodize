@@ -10,31 +10,37 @@ import {
 } from 'react-router-dom';
 
 const LazyLegal = lazy(() =>
-  import('@shared/components/LegalPage/LegalPage')
+  import('@shared/components/LegalPage/LegalPage').then((m) => ({ default: m.LegalPage }))
 );
-const VendorDashboardPage = lazy(() => import('./pages/vendor/VendorDashboardPage'));
-const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
-const StaffDashboardPage = lazy(() => import('./pages/staff/StaffDashboardPage'));
-const DisplayBoardPage = lazy(() => import('./pages/display-board/DisplayBoardPage'));
+const VendorDashboardPage = lazy(() =>
+  import('./pages/vendor/VendorDashboardPage').then((m) => ({ default: m.VendorDashboardPage }))
+);
+const AdminDashboardPage = lazy(() =>
+  import('./pages/admin/AdminDashboardPage').then((m) => ({ default: m.AdminDashboardPage }))
+);
+const StaffDashboardPage = lazy(() =>
+  import('./pages/staff/StaffDashboardPage').then((m) => ({ default: m.StaffDashboardPage }))
+);
+const DisplayBoardPage = lazy(() =>
+  import('./pages/display-board/DisplayBoardPage').then((m) => ({ default: m.DisplayBoardPage }))
+);
 
 import { IconContext, MapPinIcon, ArrowLeftIcon } from '@phosphor-icons/react';
 
-import MainLayout from './components/layout/MainLayout';
-import ErrorBoundary from '@shared/components/ErrorBoundary/ErrorBoundary';
-import ConfirmDialog from '@shared/components/ConfirmDialog/ConfirmDialog';
-import RouteErrorPage from './components/RouteErrorPage/RouteErrorPage';
-
-import LoginPage from './pages/auth/LoginPage';
-import RegisterPage from './pages/auth/RegisterPage';
-import HomePage from './pages/home/HomePage';
-import RestaurantPage from './pages/restaurant/RestaurantPage';
-import OrdersPage from './pages/orders/OrdersPage';
-import OrderStatusPage from './pages/orders/OrderStatusPage';
-import ProfilePage from './pages/profile/ProfilePage';
-import SettingsPage from './pages/profile/SettingsPage';
-import FavoritesPage from './pages/profile/FavoritesPage';
-import NotificationsPage from './pages/notifications/NotificationsPage';
-
+import { MainLayout } from './components/layout/MainLayout';
+import { ErrorBoundary } from '@shared/components/ErrorBoundary/ErrorBoundary';
+import { ConfirmDialog } from '@shared/components/ConfirmDialog/ConfirmDialog';
+import { RouteErrorPage } from './components/RouteErrorPage/RouteErrorPage';
+import { LoginPage } from './pages/auth/LoginPage';
+import { RegisterPage } from './pages/auth/RegisterPage';
+import { HomePage } from './pages/home/HomePage';
+import { RestaurantPage } from './pages/restaurant/RestaurantPage';
+import { OrdersPage } from './pages/orders/OrdersPage';
+import { OrderStatusPage } from './pages/orders/OrderStatusPage';
+import { ProfilePage } from './pages/profile/ProfilePage';
+import { SettingsPage } from './pages/profile/SettingsPage';
+import { FavoritesPage } from './pages/profile/FavoritesPage';
+import { NotificationsPage } from './pages/notifications/NotificationsPage';
 import { ROUTES } from './constants/routes';
 import { useAuthStore } from './store/useAuthStore';
 import { selectIsAuthenticated } from '@shared/store/createAuthStore';
@@ -42,13 +48,13 @@ import { useThemeEffect } from '@shared/hooks/useThemeEffect';
 import { useCartStore } from './store/useCartStore';
 import { useFavoriteStore } from '@shared/store/useFavoriteStore';
 
-const ProtectedRoute = ({ children }: { children: ReactNode }) => {
+export const ProtectedRoute = ({ children }: { children: ReactNode }) => {
   const isAuthenticated = useAuthStore(selectIsAuthenticated);
   const location = useLocation();
   return isAuthenticated ? children : <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
 };
 
-const RoleProtectedRoute = ({
+export const RoleProtectedRoute = ({
   children,
   permission,
 }: {
@@ -201,7 +207,7 @@ const router = createBrowserRouter([
         <h1
           style={{
             fontWeight: 800,
-            fontSize: '1.5rem',
+            fontSize: "var(--text-xl)",
             letterSpacing: '-0.03em',
           }}
         >
@@ -225,7 +231,7 @@ const router = createBrowserRouter([
   },
 ]);
 
-function App() {
+export function App() {
   const fetchMe = useAuthStore((s) => s.fetchMe);
 
   const fetchCart = useCartStore((s) => s.fetchCart);
@@ -261,5 +267,3 @@ function App() {
     </ErrorBoundary>
   );
 }
-
-export default App;

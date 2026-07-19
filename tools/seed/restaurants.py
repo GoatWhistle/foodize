@@ -17,15 +17,15 @@ from features.vendors.crud import create_vendor_profile, get_vendor_by_user_id
 from features.vendors.models import VendorProfile
 from features.vendors.schemas import VendorCreate
 from seed.common import get_or_load_user
-from seed.data import (
-    DELETED_ITEM,
-    PAUSED_RESTAURANT_ADDRESS,
-    SEED_RESTAURANTS,
-    SEED_USERS,
-    UNAVAILABLE_ITEM_NAMES,
-)
+from seed.fixtures.menu_options import DELETED_ITEM, UNAVAILABLE_ITEM_NAMES
+from seed.fixtures.restaurants import PAUSED_RESTAURANT_ADDRESS, SEED_RESTAURANTS
+from seed.fixtures.users import SEED_USERS
 from seed.menu import create_sample_option_groups
+from shared.enums.moderation_status import ModerationStatus
 from shared.permissions import CUSTOMER_PERMISSIONS, VENDOR_PERMISSIONS, permissions_with
+
+APPROVED = ModerationStatus.APPROVED.value
+DEFAULT_AVG_PREP_TIME_MINUTES = 15
 
 
 async def _ensure_vendor(session: AsyncSession, user: User, name: str) -> VendorProfile:
@@ -37,14 +37,14 @@ async def _ensure_vendor(session: AsyncSession, user: User, name: str) -> Vendor
     vendor = await get_vendor_by_user_id(session, user.id)
     if vendor is None:
         vendor = await create_vendor_profile(session, user, VendorCreate())
-        vendor.approval_status = "APPROVED"
+        vendor.approval_status = APPROVED
         await session.commit()
         print(f"  vendor profile → {name}")
 
     if vendor is not None and (
-        vendor.approval_status != "APPROVED" or vendor.rejection_reason is not None
+        vendor.approval_status != APPROVED or vendor.rejection_reason is not None
     ):
-        vendor.approval_status = "APPROVED"
+        vendor.approval_status = APPROVED
         vendor.rejection_reason = None
         await session.commit()
     return vendor
@@ -135,13 +135,15 @@ async def _apply_menu_flags(
 async def _apply_restaurant_state(
     session: AsyncSession, restaurant: Restaurant, rd: dict[str, Any]
 ) -> None:
-    restaurant.moderation_status = "APPROVED"
+    restaurant.moderation_status = APPROVED
     restaurant.rejection_reason = None
     restaurant.description = rd["description"]
     restaurant.is_hiring = rd.get("is_hiring", True)
     restaurant.is_ordering_paused = restaurant.address == PAUSED_RESTAURANT_ADDRESS
     restaurant.ordering_paused_until = None
-    restaurant.avg_prep_time_minutes = rd.get("avg_prep_time_minutes", 15)
+    restaurant.avg_prep_time_minutes = rd.get(
+        "avg_prep_time_minutes", DEFAULT_AVG_PREP_TIME_MINUTES
+    )
     restaurant.max_active_orders = rd.get("max_active_orders")
     await session.commit()
     await _apply_menu_flags(session, restaurant, rd)
@@ -164,12 +166,14 @@ async def _seed_restaurant(
             RestaurantCreate(
                 name=rd["name"],
                 address=rd["address"],
-                avg_prep_time_minutes=rd.get("avg_prep_time_minutes", 15),
+                avg_prep_time_minutes=rd.get(
+                    "avg_prep_time_minutes", DEFAULT_AVG_PREP_TIME_MINUTES
+                ),
                 max_active_orders=rd.get("max_active_orders"),
             ),
             vendor.id,
         )
-        restaurant.moderation_status = "APPROVED"
+        restaurant.moderation_status = APPROVED
         restaurant.description = rd["description"]
         restaurant.is_hiring = rd.get("is_hiring", True)
         await session.commit()
@@ -255,7 +259,7 @@ async def seed_superuser(
     vendor = await get_vendor_by_user_id(session, su.id)
     if vendor is None:
         vendor = await create_vendor_profile(session, su, VendorCreate())
-        vendor.approval_status = "APPROVED"
+        vendor.approval_status = APPROVED
         await session.commit()
         print("  superuser vendor profile created")
 

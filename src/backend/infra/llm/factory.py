@@ -5,6 +5,8 @@ import hashlib
 from enum import Enum
 from typing import TYPE_CHECKING
 
+from infra.llm.anthropic_client import AnthropicClient
+from infra.llm.openai_compatible import OpenAICompatibleClient
 from settings.config.app_config import settings
 from settings.config.runtime.llm import LLMConfig, LLMProvider
 
@@ -62,12 +64,24 @@ def _resolve_model(role: AgentRole, provider: LLMProvider, cfg: LLMConfig) -> st
     raise ValueError(f"Unsupported LLM provider: {provider}")
 
 
+def _openai_compatible_credentials(provider: LLMProvider, cfg: LLMConfig) -> tuple[str, str | None]:
+    if provider == LLMProvider.OPENAI:
+        if not cfg.openai_api_key:
+            raise ValueError("LLM__OPENAI_API_KEY is not set")
+        return cfg.openai_api_key, cfg.openai_base_url
+    if provider == LLMProvider.OLLAMA:
+        return "ollama", cfg.ollama_base_url
+    if provider == LLMProvider.GIGACHAT:
+        if not cfg.gigachat_api_key:
+            raise ValueError("LLM__GIGACHAT_API_KEY is not set")
+        return cfg.gigachat_api_key, cfg.gigachat_base_url
+    raise ValueError(f"Unsupported LLM provider: {provider}")
+
+
 def _build(provider: LLMProvider, model: str, cfg: LLMConfig) -> LLMClient:
     if provider == LLMProvider.ANTHROPIC:
         if not cfg.anthropic_api_key:
             raise ValueError("LLM__ANTHROPIC_API_KEY is not set")
-        from infra.llm.anthropic_client import AnthropicClient
-
         return AnthropicClient(
             api_key=cfg.anthropic_api_key,
             model=model,
@@ -75,41 +89,15 @@ def _build(provider: LLMProvider, model: str, cfg: LLMConfig) -> LLMClient:
             timeout=cfg.request_timeout_seconds,
             max_retries=cfg.max_retries,
         )
-
-    from infra.llm.openai_compatible import OpenAICompatibleClient
-
-    if provider == LLMProvider.OPENAI:
-        if not cfg.openai_api_key:
-            raise ValueError("LLM__OPENAI_API_KEY is not set")
-        return OpenAICompatibleClient(
-            api_key=cfg.openai_api_key,
-            model=model,
-            base_url=cfg.openai_base_url,
-            max_tokens=cfg.max_output_tokens,
-            timeout=cfg.request_timeout_seconds,
-            max_retries=cfg.max_retries,
-        )
-    if provider == LLMProvider.OLLAMA:
-        return OpenAICompatibleClient(
-            api_key="ollama",
-            model=model,
-            base_url=cfg.ollama_base_url,
-            max_tokens=cfg.max_output_tokens,
-            timeout=cfg.request_timeout_seconds,
-            max_retries=cfg.max_retries,
-        )
-    if provider == LLMProvider.GIGACHAT:
-        if not cfg.gigachat_api_key:
-            raise ValueError("LLM__GIGACHAT_API_KEY is not set")
-        return OpenAICompatibleClient(
-            api_key=cfg.gigachat_api_key,
-            model=model,
-            base_url=cfg.gigachat_base_url,
-            max_tokens=cfg.max_output_tokens,
-            timeout=cfg.request_timeout_seconds,
-            max_retries=cfg.max_retries,
-        )
-    raise ValueError(f"Unsupported LLM provider: {provider}")
+    api_key, base_url = _openai_compatible_credentials(provider, cfg)
+    return OpenAICompatibleClient(
+        api_key=api_key,
+        model=model,
+        base_url=base_url,
+        max_tokens=cfg.max_output_tokens,
+        timeout=cfg.request_timeout_seconds,
+        max_retries=cfg.max_retries,
+    )
 
 
 async def get_llm_client(role: AgentRole, *, provider: LLMProvider | None = None) -> LLMClient:

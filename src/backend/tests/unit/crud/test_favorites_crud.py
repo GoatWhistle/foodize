@@ -1,8 +1,6 @@
 import uuid
 from unittest.mock import AsyncMock, MagicMock
 
-import pytest
-
 from features.favorites.crud import (
     count_favorites_by_user,
     delete_favorite,
@@ -12,7 +10,6 @@ from features.favorites.crud import (
 
 
 class TestGetFavorite:
-    @pytest.mark.asyncio
     async def test_found(self) -> None:
         fav = MagicMock()
         mock_result = MagicMock()
@@ -24,7 +21,6 @@ class TestGetFavorite:
         result = await get_favorite(session, uuid.uuid4(), uuid.uuid4())
         assert result == fav
 
-    @pytest.mark.asyncio
     async def test_not_found(self) -> None:
         mock_result = MagicMock()
         mock_result.scalar_one_or_none = MagicMock(return_value=None)
@@ -37,7 +33,6 @@ class TestGetFavorite:
 
 
 class TestGetFavoritesByUser:
-    @pytest.mark.asyncio
     async def test_success(self) -> None:
         fav = MagicMock()
         mock_result = MagicMock()
@@ -49,7 +44,6 @@ class TestGetFavoritesByUser:
         result = await get_favorites_by_user(session, uuid.uuid4())
         assert result == [fav]
 
-    @pytest.mark.asyncio
     async def test_empty(self) -> None:
         mock_result = MagicMock()
         mock_result.scalars = MagicMock(return_value=MagicMock(all=MagicMock(return_value=[])))
@@ -62,7 +56,6 @@ class TestGetFavoritesByUser:
 
 
 class TestCountFavoritesByUser:
-    @pytest.mark.asyncio
     async def test_count(self) -> None:
         mock_result = MagicMock()
         mock_result.scalar_one = MagicMock(return_value=3)
@@ -75,7 +68,6 @@ class TestCountFavoritesByUser:
 
 
 class TestDeleteFavorite:
-    @pytest.mark.asyncio
     async def test_deletes_and_commits(self) -> None:
         fav = MagicMock()
 

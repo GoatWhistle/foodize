@@ -3,36 +3,51 @@ import type { FormEvent } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
 import { ROUTES } from '../../constants/routes';
-import FoodizeLogo from '@shared/components/FoodizeLogo/FoodizeLogo';
+import { FoodizeLogo } from '@shared/components/FoodizeLogo/FoodizeLogo';
 import { translateApiError } from '@shared/utils/translateApiError';
 import { useShallow } from 'zustand/react/shallow';
 import { formatPhoneNumber, extractPhoneNumber } from '@shared/utils/phone';
+import { AuthVisual } from './AuthVisual';
 
-const AuthVisual = () => (
-  <div className="auth-visual">
-    <div className="auth-visual-pattern" />
-    <div className="auth-visual-orbs">
-      <div className="auth-visual-orb auth-visual-orb--1" />
-      <div className="auth-visual-orb auth-visual-orb--2" />
-    </div>
-    <div className="auth-visual-content">
-      <span className="auth-visual-eyebrow">Предзаказ · Самовывоз</span>
-      <div className="auth-visual-title">
-        Начни
-        <br />
-        своё <em>вкусное</em>
-        <br />
-        путешествие
-      </div>
-      <p className="auth-visual-sub">
-        Зарегистрируйтесь за 30 секунд и откройте доступ к лучшим заведениям
-        города.
-      </p>
-    </div>
-  </div>
+const REGISTER_VISUAL_TITLE = (
+  <>
+    Начни
+    <br />
+    своё <em>вкусное</em>
+    <br />
+    путешествие
+  </>
 );
 
-const RegisterPage = () => {
+const REGISTER_VISUAL_SUBTITLE =
+  'Зарегистрируйтесь за 30 секунд и откройте доступ к лучшим заведениям города.';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PASSWORD_LETTER_RE = /[A-Za-z]/;
+const PASSWORD_DIGIT_OR_SYMBOL_RE = /[0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/;
+const MIN_PASSWORD_LENGTH = 8;
+const MIN_PHONE_DIGITS = 7;
+
+interface RegistrationInput {
+  name: string;
+  cleanPhone: string;
+  email: string;
+  password: string;
+  agreed: boolean;
+}
+
+const validateRegistration = ({ name, cleanPhone, email, password, agreed }: RegistrationInput): string => {
+  if (!name.trim()) return 'Введите имя';
+  if (cleanPhone.length < MIN_PHONE_DIGITS) return 'Введите корректный номер телефона';
+  if (email && !EMAIL_RE.test(email)) return 'Введите корректный email';
+  if (password.length < MIN_PASSWORD_LENGTH) return 'Пароль должен быть не менее 8 символов';
+  if (!PASSWORD_LETTER_RE.test(password)) return 'Пароль должен содержать хотя бы одну латинскую букву';
+  if (!PASSWORD_DIGIT_OR_SYMBOL_RE.test(password)) return 'Пароль должен содержать хотя бы одну цифру или спецсимвол';
+  if (!agreed) return 'Примите условия использования и политику конфиденциальности';
+  return '';
+};
+
+export const RegisterPage = () => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -53,14 +68,9 @@ const RegisterPage = () => {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
-    if (!name.trim()) { setError('Введите имя'); return; }
     const cleanPhone = extractPhoneNumber(phone);
-    if (cleanPhone.length < 7) { setError('Введите корректный номер телефона'); return; }
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError('Введите корректный email'); return; }
-    if (password.length < 8) { setError('Пароль должен быть не менее 8 символов'); return; }
-    if (!/[A-Za-z]/.test(password)) { setError('Пароль должен содержать хотя бы одну латинскую букву'); return; }
-    if (!/[0-9!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) { setError('Пароль должен содержать хотя бы одну цифру или спецсимвол'); return; }
-    if (!agreed) { setError('Примите условия использования и политику конфиденциальности'); return; }
+    const validationError = validateRegistration({ name, cleanPhone, email, password, agreed });
+    if (validationError) { setError(validationError); return; }
     setIsLoading(true);
     try {
       await register({
@@ -80,7 +90,7 @@ const RegisterPage = () => {
 
   return (
     <div className="auth-page">
-      <AuthVisual />
+      <AuthVisual title={REGISTER_VISUAL_TITLE} subtitle={REGISTER_VISUAL_SUBTITLE} />
 
       <div className="auth-form-side">
         <div className="auth-card">
@@ -173,6 +183,7 @@ const RegisterPage = () => {
               <input
                 type="checkbox"
                 className="auth-tos-checkbox"
+                aria-label="Принять условия использования и политику конфиденциальности"
                 checked={agreed}
                 onChange={(e) => { setAgreed(e.target.checked); }}
               />
@@ -220,5 +231,3 @@ const RegisterPage = () => {
     </div>
   );
 };
-
-export default RegisterPage;

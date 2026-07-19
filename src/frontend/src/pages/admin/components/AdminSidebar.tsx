@@ -29,6 +29,9 @@ interface TabButtonProps {
 
 const TabButton = memo(({ tab, activeTab, indented, onClick }: TabButtonProps) => (
   <button
+    role="tab"
+    aria-selected={activeTab === tab.id}
+    aria-controls={`admin-panel-${tab.id}`}
     className={`btn ${activeTab === tab.id ? 'btn-primary' : 'btn-secondary'}`}
     onClick={() => { onClick(tab.id); }}
     style={{
@@ -36,7 +39,7 @@ const TabButton = memo(({ tab, activeTab, indented, onClick }: TabButtonProps) =
       border: 'none',
       padding: indented ? '8px 16px' : '10px 16px',
       gap: 10,
-      fontSize: indented ? '0.88rem' : '0.95rem',
+      fontSize: 'var(--text-base)',
       fontWeight: activeTab === tab.id ? 700 : 500,
     }}
   >
@@ -75,6 +78,9 @@ export function AdminSidebar({
   return (
     <div
       className="admin-sidebar"
+      role="tablist"
+      aria-label="Разделы админ-панели"
+      aria-orientation="vertical"
       style={{
         width: 240, flexShrink: 0, position: 'sticky', top: 80,
         display: 'flex', flexDirection: 'column', gap: 6,
@@ -82,20 +88,21 @@ export function AdminSidebar({
         borderRadius: 'var(--r-md)', border: '1px solid var(--border)',
       }}
     >
-      <h1 style={{ fontSize: '1.2rem', fontWeight: 900, marginBottom: 16 }}>Админ-панель</h1>
+      <h1 style={{ fontSize: "var(--text-md)", fontWeight: 900, marginBottom: 16 }}>Админ-панель</h1>
       {tabs
         .filter((t) => t.id === 'stats')
         .map((tab) => <TabButton key={tab.id} tab={tab} activeTab={activeTab} onClick={handleTabClick} />)}
       <div>
         <button
           onClick={() => { setEntitiesOpen((o) => !o); }}
+          aria-expanded={entitiesOpen}
           style={{
             display: 'flex', alignItems: 'center', gap: 8, width: '100%',
             padding: '10px 14px',
             background: entitiesOpen ? 'var(--bg-surface)' : 'none',
             border: '1px solid',
             borderColor: entitiesOpen ? 'var(--border)' : 'transparent',
-            cursor: 'pointer', color: 'var(--text-2)', fontSize: '0.9rem',
+            cursor: 'pointer', color: 'var(--text-2)', fontSize: "var(--text-base)",
             fontWeight: 700, borderRadius: 'var(--r-sm)', marginTop: 4,
             transition: 'background 0.15s, border-color 0.15s',
           }}

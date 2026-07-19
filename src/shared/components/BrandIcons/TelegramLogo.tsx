@@ -7,7 +7,7 @@ interface TelegramLogoProps {
   style?: CSSProperties;
 }
 
-const TelegramLogo = ({ size = 24, variant = "color", className, style }: TelegramLogoProps) => {
+export const TelegramLogo = ({ size = 24, variant = "color", className, style }: TelegramLogoProps) => {
   if (variant === "mono") {
     return (
       <svg
@@ -52,5 +52,3 @@ const TelegramLogo = ({ size = 24, variant = "color", className, style }: Telegr
     </svg>
   );
 };
-
-export default TelegramLogo;

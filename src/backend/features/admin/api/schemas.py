@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from shared.enums.permissions import Permission
 
@@ -25,3 +25,7 @@ class BatchModerationResult(BaseModel):
 
 class BatchAffectedResult(BaseModel):
     affected: int
+
+
+class ForceCancelOrderRequest(BaseModel):
+    reason: str = Field(..., min_length=1, max_length=500)

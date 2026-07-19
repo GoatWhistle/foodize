@@ -51,6 +51,32 @@ const getErrorStatus = (err: unknown): number | undefined => {
   return undefined;
 };
 
+const toHHMM = (time: string | null | undefined): string => (time ? time.slice(0, 5) : '00:00');
+
+const sortByWeekday = <T extends { day_of_week: number }>(rows: readonly T[]): T[] =>
+  [...rows].sort((a, b) => a.day_of_week - b.day_of_week);
+
+const validateRestaurantPatch = (patch: Restaurant): string => {
+  if (!patch.name.trim()) return 'Укажите название заведения';
+  if (!patch.address.trim()) return 'Укажите адрес заведения';
+  return '';
+};
+
+const buildRestaurantUpdatePayload = (patch: Restaurant): RestaurantUpdate => ({
+  name: patch.name.trim(),
+  address: patch.address.trim(),
+  description: patch.description?.trim() || null,
+  is_open: patch.is_open,
+  is_hiring: patch.is_hiring,
+  is_ordering_paused: patch.is_ordering_paused,
+  ordering_paused_until: patch.ordering_paused_until
+    ? fromDateTimeLocalValue(patch.ordering_paused_until)
+    : null,
+  avg_prep_time_minutes: patch.avg_prep_time_minutes || DEFAULT_PREP_MINUTES,
+  max_active_orders: patch.max_active_orders ? patch.max_active_orders : null,
+  ...(patch.photo_url != null ? { photo_url: patch.photo_url } : {}),
+});
+
 const buildDefaultHours = (): WorkingHoursRow[] =>
   WEEKDAYS_SHORT_RU.map((_, i) => ({
     day_of_week: i,
@@ -101,10 +127,14 @@ export const useVendorRestaurants = ({ activeTab, setFormLoading, setFormError }
 
   useEffect(() => {
     void fetchMyRestaurants();
-    vendorService
-      .getMyProfile()
-      .then((res) => { setVendorProfile(res.data.data); })
-      .catch((err: unknown) => { logError('useVendorRestaurants.getMyProfile', err); });
+    void (async () => {
+      try {
+        const response = await vendorService.getMyProfile();
+        setVendorProfile(response.data.data);
+      } catch (error) {
+        logError('useVendorRestaurants.getMyProfile', error);
+      }
+    })();
   }, [fetchMyRestaurants]);
 
   useEffect(() => {
@@ -118,28 +148,25 @@ export const useVendorRestaurants = ({ activeTab, setFormLoading, setFormError }
     if (activeTab === 'schedule' && selectedRestaurant) {
       setWorkingHoursLoading(true);
       setWorkingHoursError('');
-      restaurantService
-        .getWorkingHours(selectedRestaurant.id)
-        .then((res) => {
-          const data = Array.isArray(res.data.data) ? res.data.data : [];
-          setWorkingHours(
-            data.length === 0
-              ? buildDefaultHours()
-              : [...data].sort((a, b) => a.day_of_week - b.day_of_week)
-          );
-        })
-        .catch((err: unknown) => {
-          if (getErrorStatus(err) !== 404) {
+      void (async () => {
+        try {
+          const response = await restaurantService.getWorkingHours(selectedRestaurant.id);
+          const savedHours = Array.isArray(response.data.data) ? response.data.data : [];
+          setWorkingHours(savedHours.length === 0 ? buildDefaultHours() : sortByWeekday(savedHours));
+        } catch (error) {
+          if (getErrorStatus(error) !== 404) {
             setWorkingHoursError('Не удалось загрузить расписание');
           }
           setWorkingHours(buildDefaultHours());
-        })
-        .finally(() => { setWorkingHoursLoading(false); });
+        } finally {
+          setWorkingHoursLoading(false);
+        }
+      })();
     }
   }, [activeTab, selectedRestaurant]);
 
-  const handleCreateRestaurant = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleCreateRestaurant = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setFormLoading(true);
     setFormError('');
     try {
@@ -153,54 +180,33 @@ export const useVendorRestaurants = ({ activeTab, setFormLoading, setFormError }
           ? Number(newRestaurant.max_active_orders)
           : null,
       };
-      const r = await createRestaurant(payload);
-      setSelectedRestaurant(r);
+      const created = await createRestaurant(payload);
+      setSelectedRestaurant(created);
       setShowAddRestaurant(false);
       setNewRestaurant({ name: '', address: '', avg_prep_time_minutes: DEFAULT_PREP_MINUTES, max_active_orders: '' });
-    } catch (err) {
-      setFormError(translateApiError(err, 'Ошибка создания'));
+    } catch (error) {
+      setFormError(translateApiError(error, 'Ошибка создания'));
     } finally {
       setFormLoading(false);
     }
   };
 
-  const handleUpdateRestaurant = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleUpdateRestaurant = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setFormLoading(true);
     setFormError('');
     const patch = editRestaurant ?? selectedRestaurant;
-    if (!patch) {
+    if (!patch || !selectedRestaurant) {
       setFormLoading(false);
       return;
     }
-    if (!patch.name.trim()) {
-      setFormError('Укажите название заведения');
+    const validationError = validateRestaurantPatch(patch);
+    if (validationError) {
+      setFormError(validationError);
       setFormLoading(false);
       return;
     }
-    if (!patch.address.trim()) {
-      setFormError('Укажите адрес заведения');
-      setFormLoading(false);
-      return;
-    }
-    const payload: RestaurantUpdate = {
-      name: patch.name.trim(),
-      address: patch.address.trim(),
-      description: patch.description?.trim() || null,
-      is_open: patch.is_open,
-      is_hiring: patch.is_hiring,
-      is_ordering_paused: patch.is_ordering_paused,
-      ordering_paused_until: patch.ordering_paused_until
-        ? fromDateTimeLocalValue(patch.ordering_paused_until)
-        : null,
-      avg_prep_time_minutes: patch.avg_prep_time_minutes || DEFAULT_PREP_MINUTES,
-      max_active_orders: patch.max_active_orders ? patch.max_active_orders : null,
-      ...(patch.photo_url != null ? { photo_url: patch.photo_url } : {}),
-    };
-    if (!selectedRestaurant) {
-      setFormLoading(false);
-      return;
-    }
+    const payload = buildRestaurantUpdatePayload(patch);
     try {
       await restaurantService.update(selectedRestaurant.id, payload);
       await fetchMyRestaurants();
@@ -218,18 +224,17 @@ export const useVendorRestaurants = ({ activeTab, setFormLoading, setFormError }
     setWorkingHoursLoading(true);
     setWorkingHoursError('');
     setWorkingHoursSaved(false);
-    const toHHMM = (t: string | null | undefined) => (t ? t.slice(0, 5) : '00:00');
-    const payload = workingHours.map((r) => ({
-      day_of_week: r.day_of_week,
-      open_time: toHHMM(r.open_time),
-      close_time: toHHMM(r.close_time),
-      is_closed: r.is_closed,
+    const payload = workingHours.map((row) => ({
+      day_of_week: row.day_of_week,
+      open_time: toHHMM(row.open_time),
+      close_time: toHHMM(row.close_time),
+      is_closed: row.is_closed,
     }));
     try {
-      const res = await restaurantService.setWorkingHours(selectedRestaurant.id, payload);
-      const data = Array.isArray(res.data.data) ? res.data.data : [];
-      if (data.length > 0) {
-        setWorkingHours([...data].sort((a, b) => a.day_of_week - b.day_of_week));
+      const response = await restaurantService.setWorkingHours(selectedRestaurant.id, payload);
+      const savedHours = Array.isArray(response.data.data) ? response.data.data : [];
+      if (savedHours.length > 0) {
+        setWorkingHours(sortByWeekday(savedHours));
       }
       setWorkingHoursSaved(true);
       setTimeout(() => { setWorkingHoursSaved(false); }, 2000);

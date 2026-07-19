@@ -4,8 +4,6 @@ import path from "path";
 
 const coverageGlob = (rel: string): string =>
   path.resolve(__dirname, rel).replace(/\\/g, "/");
-const sharedGlob = (sub: string): string =>
-  coverageGlob(`../shared/${sub}/**/*.{ts,tsx}`);
 
 export default defineConfig({
   plugins: [react()],
@@ -60,6 +58,9 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: "./src/__tests__/setup.ts",
+    include: [
+      "src/**/*.{test,spec}.{ts,tsx}",
+    ],
     coverage: {
       provider: "v8",
       allowExternal: true,
@@ -67,20 +68,20 @@ export default defineConfig({
         coverageGlob("src/store/**/*.{ts,tsx}"),
         coverageGlob("src/telegram/**/*.{ts,tsx}"),
         coverageGlob("src/utils/**/*.{ts,tsx}"),
+        coverageGlob("src/services/**/*.{ts,tsx}"),
         coverageGlob("src/components/**/*.{ts,tsx}"),
         coverageGlob("src/pages/**/*.{ts,tsx}"),
         coverageGlob("src/hooks/**/*.{ts,tsx}"),
-        sharedGlob("store"),
-        sharedGlob("services"),
-        sharedGlob("utils"),
-        sharedGlob("hooks"),
+        coverageGlob("src/App.tsx"),
+        coverageGlob("src/routes.tsx"),
       ],
-      exclude: ["**/node_modules/**"],
+      exclude: ["**/node_modules/**", "**/*.test.{ts,tsx}", "src/main.tsx"],
       thresholds: {
-        statements: 78,
-        branches: 60,
-        functions: 70,
-        lines: 78,
+        perFile: true,
+        statements: 85,
+        branches: 85,
+        functions: 85,
+        lines: 85,
       },
     },
   },

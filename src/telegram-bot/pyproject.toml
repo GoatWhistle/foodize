@@ -81,6 +81,7 @@ dev = [
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+addopts = "--cov=. --cov-report=term-missing"
 testpaths = [
     "tests",
 ]
@@ -92,6 +93,9 @@ pythonpath = [
 [tool.coverage.run]
 source = ["."]
 omit = ["tests/*", ".venv/*", "*/__pycache__/*", "main.py"]
+
+[tool.coverage.report]
+fail_under = 85
 
 [build-system]
 requires = ["hatchling"]

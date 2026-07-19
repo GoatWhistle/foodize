@@ -39,55 +39,47 @@ def _url(path: str) -> str:
     return f"{bot_config.backend_url.rstrip('/')}/api/v1{path}"
 
 
+async def _post_bot_api(path: str, payload: dict[str, Any]) -> httpx.Response:
+    response = await get_client().post(_url(path), json=payload, headers=_headers())
+    response.raise_for_status()
+    return response
+
+
 async def link_phone(
     telegram_id: int, telegram_username: str | None, phone_number: str, name: str
 ) -> None:
-    response = await get_client().post(
-        _url("/telegram/bot/link-phone"),
-        json={
+    await _post_bot_api(
+        "/telegram/bot/link-phone",
+        {
             "telegram_id": telegram_id,
             "telegram_username": telegram_username,
             "phone_number": phone_number,
             "name": name,
         },
-        headers=_headers(),
     )
-    response.raise_for_status()
 
 
 async def get_vendor_status(telegram_id: int) -> dict[str, Any]:
-    response = await get_client().post(
-        _url("/telegram/bot/vendor-status"),
-        json={"telegram_id": telegram_id},
-        headers=_headers(),
-    )
-    response.raise_for_status()
+    response = await _post_bot_api("/telegram/bot/vendor-status", {"telegram_id": telegram_id})
     return cast("dict[str, Any]", response.json().get("data", {}))
 
 
 async def get_active_orders(telegram_id: int) -> list[dict[str, Any]]:
-    response = await get_client().post(
-        _url("/telegram/bot/orders"),
-        json={"telegram_id": telegram_id},
-        headers=_headers(),
-    )
-    response.raise_for_status()
+    response = await _post_bot_api("/telegram/bot/orders", {"telegram_id": telegram_id})
     return cast("list[dict[str, Any]]", response.json().get("data", []))
 
 
 async def register_by_telegram(
     telegram_id: int, telegram_username: str | None, name: str
 ) -> dict[str, Any]:
-    response = await get_client().post(
-        _url("/telegram/bot/register"),
-        json={
+    response = await _post_bot_api(
+        "/telegram/bot/register",
+        {
             "telegram_id": telegram_id,
             "telegram_username": telegram_username,
             "name": name,
         },
-        headers=_headers(),
     )
-    response.raise_for_status()
     return cast("dict[str, Any]", response.json().get("data", {}))
 
 
@@ -99,12 +91,7 @@ async def get_public_restaurant(display_id: str) -> dict[str, Any]:
 
 async def get_telegram_id_by_user(user_id: str) -> int | None:
     try:
-        response = await get_client().post(
-            _url("/telegram/bot/telegram-id"),
-            json={"user_id": user_id},
-            headers=_headers(),
-        )
-        response.raise_for_status()
+        response = await _post_bot_api("/telegram/bot/telegram-id", {"user_id": user_id})
     except httpx.HTTPError as exc:
         logger.warning("Failed to resolve telegram_id for user_id=%s: %s", user_id, exc)
         return None

@@ -2,7 +2,6 @@ import uuid
 from http import HTTPStatus
 from unittest.mock import AsyncMock, patch
 
-import pytest
 from httpx import AsyncClient
 
 from features.users.models import User
@@ -11,7 +10,6 @@ from shared.enums.moderation_status import ModerationStatus
 
 
 class TestVendorsAPI:
-    @pytest.mark.asyncio
     async def test_create_vendor(self, client: AsyncClient, as_vendor: User) -> None:
         mock_vendor = {
             "id": str(uuid.uuid4()),
@@ -31,7 +29,6 @@ class TestVendorsAPI:
         assert response.json()["data"]["approval_status"] == ModerationStatus.PENDING.value
         mock_add.assert_awaited_once()
 
-    @pytest.mark.asyncio
     async def test_read_my_vendor_profile(
         self, vendor_client: tuple[AsyncClient, VendorProfile]
     ) -> None:
@@ -43,19 +40,16 @@ class TestVendorsAPI:
         data = response.json()["data"]
         assert data["approval_status"] == ModerationStatus.APPROVED.value
 
-    @pytest.mark.asyncio
     async def test_create_vendor_requires_permission(
         self, client: AsyncClient, as_user: User
     ) -> None:
         response = await client.post("/api/v1/vendors/", json={})
         assert response.status_code == HTTPStatus.FORBIDDEN
 
-    @pytest.mark.asyncio
     async def test_create_vendor_requires_auth(self, client: AsyncClient) -> None:
         response = await client.post("/api/v1/vendors/", json={"description": "x"})
         assert response.status_code == HTTPStatus.UNAUTHORIZED
 
-    @pytest.mark.asyncio
     async def test_read_my_vendor_requires_auth(self, client: AsyncClient) -> None:
         response = await client.get("/api/v1/vendors/")
         assert response.status_code == HTTPStatus.UNAUTHORIZED

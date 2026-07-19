@@ -2,7 +2,6 @@ import uuid
 from http import HTTPStatus
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from httpx import AsyncClient
 
 from features.telegram.schemas import (
@@ -41,7 +40,6 @@ def _make_user_read() -> _FakeUser:
 
 
 class TestTelegramCheck:
-    @pytest.mark.asyncio
     async def test_check_unregistered_user(self, client: AsyncClient) -> None:
         check_result = TelegramCheckResponse(status="not_registered")
         with patch(
@@ -57,7 +55,6 @@ class TestTelegramCheck:
         data = response.json()["data"]
         assert data["status"] == "not_registered"
 
-    @pytest.mark.asyncio
     async def test_check_registered_user(self, client: AsyncClient) -> None:
         check_result = TelegramCheckResponse(status="registered", phone_number="79001234567")
         with patch(
@@ -74,7 +71,6 @@ class TestTelegramCheck:
 
 
 class TestTelegramSiteLoginRequestCode:
-    @pytest.mark.asyncio
     async def test_request_code_success(self, client: AsyncClient) -> None:
         with patch(
             "features.telegram.api.webapp.site_login.request_site_login_code",
@@ -88,7 +84,6 @@ class TestTelegramSiteLoginRequestCode:
         assert response.status_code == HTTPStatus.OK
         assert "message" in response.json()["data"]
 
-    @pytest.mark.asyncio
     async def test_request_code_by_username_success(self, client: AsyncClient) -> None:
         with patch(
             "features.telegram.api.webapp.site_login.request_site_login_code_by_username",
@@ -103,7 +98,6 @@ class TestTelegramSiteLoginRequestCode:
 
 
 class TestTelegramSiteLoginVerify:
-    @pytest.mark.asyncio
     async def test_verify_success(self, client: AsyncClient) -> None:
         tokens = _make_tokens()
         with patch(
@@ -119,7 +113,6 @@ class TestTelegramSiteLoginVerify:
         data = response.json()["data"]
         assert data["access_token"] == "access-tok"
 
-    @pytest.mark.asyncio
     async def test_verify_by_username_success(self, client: AsyncClient) -> None:
         tokens = _make_tokens()
         with patch(
@@ -137,7 +130,6 @@ class TestTelegramSiteLoginVerify:
 
 
 class TestTelegramRegister:
-    @pytest.mark.asyncio
     async def test_register_new_user(self, client: AsyncClient) -> None:
         tokens = _make_tokens()
         with patch(
@@ -159,7 +151,6 @@ class TestTelegramRegister:
 
 
 class TestTelegramAuth:
-    @pytest.mark.asyncio
     async def test_auth_existing_user(self, client: AsyncClient) -> None:
         tokens = _make_tokens()
         with patch(
@@ -176,7 +167,6 @@ class TestTelegramAuth:
 
 
 class TestTelegramSetPassword:
-    @pytest.mark.asyncio
     async def test_set_password_requires_auth(self, client: AsyncClient) -> None:
         response = await client.post(
             "/api/v1/telegram/site-login/password",
@@ -184,7 +174,6 @@ class TestTelegramSetPassword:
         )
         assert response.status_code == HTTPStatus.UNAUTHORIZED
 
-    @pytest.mark.asyncio
     async def test_set_password_as_user(self, client: AsyncClient, as_user: User) -> None:
         user = _make_user_read()
         with patch(
@@ -200,12 +189,10 @@ class TestTelegramSetPassword:
 
 
 class TestTelegramLogout:
-    @pytest.mark.asyncio
     async def test_logout_requires_auth(self, client: AsyncClient) -> None:
         response = await client.post("/api/v1/telegram/logout")
         assert response.status_code == HTTPStatus.UNAUTHORIZED
 
-    @pytest.mark.asyncio
     async def test_logout_as_user(self, client: AsyncClient, as_user: User) -> None:
         user = _make_user_read()
         with patch(

@@ -1,4 +1,4 @@
-import api from "./api";
+import { api } from "./api";
 import { createAuthService } from "@shared/services/authService";
 
 export const authService = createAuthService({

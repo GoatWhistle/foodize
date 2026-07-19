@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { CheckCircleIcon, HourglassMediumIcon, XCircleIcon } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 import { staffService } from '@shared/services/staffService';
-import EmptyState from '@shared/components/EmptyState/EmptyState';
+import { EmptyState } from '@shared/components/EmptyState/EmptyState';
 import type { StaffRequest, StaffRequestStatus } from '@shared/types/models';
 
 interface ApplicationStatusConfigEntry {
@@ -44,16 +44,21 @@ const APPLICATION_STATUS_CONFIG: Record<StaffRequestStatus, ApplicationStatusCon
   },
 };
 
-const ApplicationStatus = () => {
+export const ApplicationStatus = () => {
   const [application, setApplication] = useState<StaffRequest | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    staffService
-      .getMyApplication()
-      .then((res) => { setApplication(res.data.data); })
-      .catch(() => {})
-      .finally(() => { setLoading(false); });
+    void (async () => {
+      try {
+        const response = await staffService.getMyApplication();
+        setApplication(response.data.data);
+      } catch {
+        setApplication(null);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
   if (loading) {
@@ -97,7 +102,7 @@ const ApplicationStatus = () => {
           <h2
             style={{
               fontWeight: 800,
-              fontSize: '1.2rem',
+              fontSize: "var(--text-md)",
               color: 'var(--text-1)',
               marginBottom: 8,
             }}
@@ -107,7 +112,7 @@ const ApplicationStatus = () => {
           <p
             style={{
               color: 'var(--text-3)',
-              fontSize: '0.875rem',
+              fontSize: "var(--text-base)",
               lineHeight: 1.5,
               margin: 0,
             }}
@@ -121,7 +126,7 @@ const ApplicationStatus = () => {
             border: '1px solid var(--border)',
             borderRadius: 'var(--r-sm)',
             padding: '10px 16px',
-            fontSize: '0.78rem',
+            fontSize: "var(--text-sm)",
             color: 'var(--text-3)',
             fontFamily: 'monospace',
           }}
@@ -132,5 +137,3 @@ const ApplicationStatus = () => {
     </div>
   );
 };
-
-export default ApplicationStatus;

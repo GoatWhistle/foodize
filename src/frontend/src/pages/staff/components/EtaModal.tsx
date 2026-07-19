@@ -32,7 +32,7 @@ const getOrderDefaultEta = (order: StaffOrder): number => {
   return times.length > 0 ? Math.max(...times) : 15;
 };
 
-const EtaModal = ({ order, onConfirm, onCancel, updating }: EtaModalProps) => {
+export const EtaModal = ({ order, onConfirm, onCancel, updating }: EtaModalProps) => {
   const defaultMinutes = getOrderDefaultEta(order);
   const [etaMinutes, setEtaMinutes] = useState<number | null>(defaultMinutes);
   const [manualTime, setManualTime] = useState('');
@@ -57,13 +57,13 @@ const EtaModal = ({ order, onConfirm, onCancel, updating }: EtaModalProps) => {
       }}
     >
       <div className="modal-content" style={{ maxWidth: 360, padding: '24px' }}>
-        <h3 style={{ fontWeight: 900, fontSize: '1.1rem', marginBottom: 4 }}>
+        <h3 style={{ fontWeight: 900, fontSize: "var(--text-md)", marginBottom: 4 }}>
           Заказ #{getOrderDisplayId(order)}
         </h3>
         <p
           style={{
             color: 'var(--text-3)',
-            fontSize: '0.8rem',
+            fontSize: "var(--text-base)",
             marginBottom: 16,
           }}
         >
@@ -99,7 +99,7 @@ const EtaModal = ({ order, onConfirm, onCancel, updating }: EtaModalProps) => {
             flexDirection: 'column',
             gap: 6,
             color: 'var(--text-3)',
-            fontSize: '0.72rem',
+            fontSize: "var(--text-sm)",
             marginBottom: 8,
           }}
         >
@@ -125,7 +125,7 @@ const EtaModal = ({ order, onConfirm, onCancel, updating }: EtaModalProps) => {
         <p
           style={{
             color: 'var(--text-3)',
-            fontSize: '0.72rem',
+            fontSize: "var(--text-sm)",
             marginBottom: 16,
           }}
         >
@@ -138,8 +138,8 @@ const EtaModal = ({ order, onConfirm, onCancel, updating }: EtaModalProps) => {
             style={{ flex: 1 }}
             disabled={updating || !payload()}
             onClick={() => {
-              const p = payload();
-              if (p) onConfirm(p);
+              const etaPayload = payload();
+              if (etaPayload) onConfirm(etaPayload);
             }}
           >
             {updating ? '...' : 'Начать готовить'}
@@ -152,5 +152,3 @@ const EtaModal = ({ order, onConfirm, onCancel, updating }: EtaModalProps) => {
     </div>
   );
 };
-
-export default EtaModal;

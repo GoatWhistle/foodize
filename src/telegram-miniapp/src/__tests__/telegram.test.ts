@@ -120,10 +120,20 @@ describe("Telegram initialization flows", () => {
   });
 
   it("should return error status when check throws", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     authServiceMock.telegramCheck.mockRejectedValueOnce(new Error("Failed"));
 
     const res = await initTelegramApp();
+
     expect(res.status).toBe("error");
+    expect(res.start_param).toBe("restaurant_123");
+    expect(errorSpy).toHaveBeenCalledWith(
+      "[initTelegramApp] failed:",
+      undefined,
+      "Failed",
+    );
+
+    errorSpy.mockRestore();
   });
 
   it("should completeTelegramAuth without persisting tokens", async () => {

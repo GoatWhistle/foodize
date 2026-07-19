@@ -39,7 +39,7 @@ interface SearchFilterBarProps {
   extraChips?: ((chipClass: string) => ReactNode) | ReactNode | null;
 }
 
-const SearchFilterBar = ({
+export const SearchFilterBar = ({
   search,
   setSearch,
   onlyOpen,
@@ -79,9 +79,9 @@ const SearchFilterBar = ({
   const filtersActive = onlyOpen || sort !== "default";
 
   return (
-    <div className={s.wrap}>
-      <div className={s.search}>
-        <MagnifyingGlassIcon className={s.searchIcon} size={18} weight="bold" />
+    <div className={s['wrap']}>
+      <div className={s['search']}>
+        <MagnifyingGlassIcon className={s['searchIcon']} size={18} weight="bold" />
         <input
           type="search"
           placeholder={placeholder}
@@ -89,13 +89,13 @@ const SearchFilterBar = ({
           onChange={(e) => { setSearch(e.target.value); }}
           aria-label="Поиск заведения"
         />
-        {searching && <span className={s.spinner} aria-hidden="true" />}
+        {searching && <span className={s['spinner']} aria-hidden="true" />}
       </div>
 
-      <div className={s.filterAnchor} ref={filterRef}>
+      <div className={s['filterAnchor']} ref={filterRef}>
         <button
           type="button"
-          className={`${s.filterButton}${showFilters ? ` ${s.filterButtonOpen}` : ""}${filtersActive ? ` ${s.filterButtonActive}` : ""}`}
+          className={`${s['filterButton']}${showFilters ? ` ${s['filterButtonOpen']}` : ""}${filtersActive ? ` ${s['filterButtonActive']}` : ""}`}
           onClick={() => { setShowFilters((value) => !value); }}
           aria-expanded={showFilters}
           aria-label="Открыть фильтры"
@@ -104,8 +104,8 @@ const SearchFilterBar = ({
         </button>
 
         {showFilters && (
-          <div className={s.dropdown}>
-            <label className={s.checkbox}>
+          <div className={s['dropdown']}>
+            <label className={s['checkbox']}>
               <input
                 type="checkbox"
                 checked={onlyOpen}
@@ -113,20 +113,20 @@ const SearchFilterBar = ({
               />
               Открыто
             </label>
-            <div className={s.sortPanel}>
-              <div className={s.sortLabel}>Сортировка</div>
+            <div className={s['sortPanel']}>
+              <div className={s['sortLabel']}>Сортировка</div>
               {SORT_OPTIONS.map(({ key, label, Icon, iconWeight }) => (
                 <button
                   key={key}
                   type="button"
-                  className={`${s.sortRow}${sort === key ? ` ${s.sortRowActive}` : ""}`}
+                  className={`${s['sortRow']}${sort === key ? ` ${s['sortRowActive']}` : ""}`}
                   onClick={() => { handleSortClick(key); }}
                 >
-                  <span className={s.sortRowLeft}>
+                  <span className={s['sortRowLeft']}>
                     {Icon ? (
                       <Icon size={15} {...(iconWeight ? { weight: iconWeight } : {})} />
                     ) : (
-                      <span className={s.sortRowIconSpacer} />
+                      <span className={s['sortRowIconSpacer']} />
                     )}
                     {label}
                   </span>
@@ -142,9 +142,9 @@ const SearchFilterBar = ({
               ))}
             </div>
             {extraChips && (
-              <div className={s.extraPanel}>
+              <div className={s['extraPanel']}>
                 {typeof extraChips === "function"
-                  ? extraChips(s.sortRow ?? "")
+                  ? extraChips(s['sortRow'] ?? "")
                   : extraChips}
               </div>
             )}
@@ -154,5 +154,3 @@ const SearchFilterBar = ({
     </div>
   );
 };
-
-export default SearchFilterBar;

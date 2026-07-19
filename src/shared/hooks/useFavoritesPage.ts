@@ -39,9 +39,9 @@ export const useFavoritesPage = ({
     setLoading(true);
     const load = async (): Promise<void> => {
       try {
-        const res = await favoriteService.getAll({ page, size: pageSize });
+        const response = await favoriteService.getAll({ page, size: pageSize });
         if (!active) return;
-        const body = res.data;
+        const body = response.data;
         const list = Array.isArray(body.data) ? body.data : [];
         setFavorites(list);
         setTotal(body.pagination.total);

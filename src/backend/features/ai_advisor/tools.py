@@ -12,6 +12,9 @@ from infra.llm import ToolCall, ToolExecutor, ToolSpec
 from infra.llm.base import ToolInputError
 from shared.dependencies.vendor_restaurant import get_vendor_restaurant_ids
 
+_DEFAULT_PERIOD_DAYS = 30
+_MAX_PERIOD_DAYS = 365
+
 _PERIOD = {
     "type": "integer",
     "description": "Сколько последних дней анализировать (по умолчанию 30).",
@@ -85,11 +88,11 @@ def _dumps(payload: object) -> str:
 
 
 def _period_range(args: dict[str, Any]) -> tuple[date, date]:
-    period = args.get("period_days") or 30
+    period = args.get("period_days") or _DEFAULT_PERIOD_DAYS
     try:
-        period = max(1, min(int(period), 365))
+        period = max(1, min(int(period), _MAX_PERIOD_DAYS))
     except (TypeError, ValueError):
-        period = 30
+        period = _DEFAULT_PERIOD_DAYS
     end = datetime.now(UTC).date()
     start = end - timedelta(days=period - 1)
     return start, end
@@ -105,113 +108,120 @@ def _restaurant_id(args: dict[str, Any]) -> uuid.UUID | None:
         raise ToolInputError(f"invalid restaurant_id: {raw!r} — provide a valid UUID") from None
 
 
-def build_advisor_executor(
-    vendor: VendorProfile,
-    default_restaurant_id: uuid.UUID | None = None,
-) -> ToolExecutor:
-    vendor_id = vendor.id
-    owned_restaurant_ids = get_vendor_restaurant_ids(vendor)
-    _advanced_cache: dict[tuple[date, date, uuid.UUID | None], AdvancedAnalytics] = {}
-    _finance_cache: dict[tuple[date, date, uuid.UUID | None], FinanceAnalytics] = {}
+def _localize_categories(rows: list[dict[str, Any]]) -> None:
+    for row in rows:
+        row["category"] = CATEGORY_RU.get(row["category"], row["category"])
 
-    def resolve_restaurant(args: dict[str, Any]) -> uuid.UUID | None:
+
+class _AdvisorToolRunner:
+    def __init__(
+        self, vendor: VendorProfile, default_restaurant_id: uuid.UUID | None = None
+    ) -> None:
+        self._vendor_id = vendor.id
+        self._owned_restaurant_ids = get_vendor_restaurant_ids(vendor)
+        self._default_restaurant_id = default_restaurant_id
+        self._advanced_cache: dict[tuple[date, date, uuid.UUID | None], AdvancedAnalytics] = {}
+        self._finance_cache: dict[tuple[date, date, uuid.UUID | None], FinanceAnalytics] = {}
+
+    def _resolve_restaurant(self, args: dict[str, Any]) -> uuid.UUID | None:
         restaurant_id = _restaurant_id(args)
         if restaurant_id is None:
-            return default_restaurant_id
-        if restaurant_id not in owned_restaurant_ids:
+            return self._default_restaurant_id
+        if restaurant_id not in self._owned_restaurant_ids:
             raise ToolInputError(f"restaurant {restaurant_id} does not belong to this vendor")
         return restaurant_id
 
-    async def _get_advanced(
-        start: date, end: date, restaurant_id: uuid.UUID | None
+    async def _advanced(
+        self, start: date, end: date, restaurant_id: uuid.UUID | None
     ) -> AdvancedAnalytics:
         key = (start, end, restaurant_id)
-        if key not in _advanced_cache:
+        if key not in self._advanced_cache:
             async with db_helper.session_factory() as session:
-                _advanced_cache[key] = await get_advanced_analytics(
+                self._advanced_cache[key] = await get_advanced_analytics(
                     session,
                     date_from=start,
                     date_to=end,
-                    vendor_id=vendor_id,
+                    vendor_id=self._vendor_id,
                     restaurant_id=restaurant_id,
                 )
-        return _advanced_cache[key]
+        return self._advanced_cache[key]
 
-    async def _get_finance(
-        start: date, end: date, restaurant_id: uuid.UUID | None
+    async def _finance(
+        self, start: date, end: date, restaurant_id: uuid.UUID | None
     ) -> FinanceAnalytics:
         key = (start, end, restaurant_id)
-        if key not in _finance_cache:
+        if key not in self._finance_cache:
             async with db_helper.session_factory() as session:
-                _finance_cache[key] = await get_finance_analytics(
+                self._finance_cache[key] = await get_finance_analytics(
                     session,
                     date_from=start,
                     date_to=end,
-                    vendor_id=vendor_id,
+                    vendor_id=self._vendor_id,
                     restaurant_id=restaurant_id,
                 )
-        return _finance_cache[key]
+        return self._finance_cache[key]
 
-    async def _sales_summary(args: dict[str, Any]) -> str:
+    async def sales_summary(self, args: dict[str, Any]) -> str:
         start, end = _period_range(args)
-        data = await _get_finance(start, end, resolve_restaurant(args))
+        finance = await self._finance(start, end, self._resolve_restaurant(args))
         return _dumps(
             {
                 "period": {"from": str(start), "to": str(end)},
-                "total_revenue": data.total_revenue,
-                "average_check": data.average_check,
-                "total_orders": data.total_orders,
-                "completed_orders": data.completed_orders,
-                "cancelled_orders": data.cancelled_orders,
-                "conversion_percent": data.conversion_percent,
-                "revenue_growth_pct": data.revenue_growth_pct,
+                "total_revenue": finance.total_revenue,
+                "average_check": finance.average_check,
+                "total_orders": finance.total_orders,
+                "completed_orders": finance.completed_orders,
+                "cancelled_orders": finance.cancelled_orders,
+                "conversion_percent": finance.conversion_percent,
+                "revenue_growth_pct": finance.revenue_growth_pct,
                 "top_items": [
                     {"name": i.name, "quantity": i.quantity, "revenue": i.revenue}
-                    for i in data.top_items
+                    for i in finance.top_items
                 ],
                 "top_restaurants": [
                     {"name": r.name, "revenue": r.revenue, "orders": r.orders_count}
-                    for r in data.top_restaurants
+                    for r in finance.top_restaurants
                 ],
             }
         )
 
-    async def _peak_hours(args: dict[str, Any]) -> str:
+    async def peak_hours(self, args: dict[str, Any]) -> str:
         start, end = _period_range(args)
-        data = await _get_advanced(start, end, resolve_restaurant(args))
+        analytics = await self._advanced(start, end, self._resolve_restaurant(args))
         return _dumps(
             {
                 "period": {"from": str(start), "to": str(end)},
-                "hourly_load": [{"hour": p.label, "orders": p.value} for p in data.hourly_load],
+                "hourly_load": [
+                    {"hour": p.label, "orders": p.value} for p in analytics.hourly_load
+                ],
             }
         )
 
-    async def _category_breakdown(args: dict[str, Any]) -> str:
+    async def category_breakdown(self, args: dict[str, Any]) -> str:
         start, end = _period_range(args)
-        data = await _get_advanced(start, end, resolve_restaurant(args))
+        analytics = await self._advanced(start, end, self._resolve_restaurant(args))
         return _dumps(
             {
                 "period": {"from": str(start), "to": str(end)},
                 "category_revenue": [
-                    {"category": p.label, "revenue": p.value} for p in data.category_revenue
+                    {"category": p.label, "revenue": p.value} for p in analytics.category_revenue
                 ],
             }
         )
 
-    async def _top_and_bottom(args: dict[str, Any]) -> str:
+    async def top_and_bottom_items(self, args: dict[str, Any]) -> str:
         start, end = _period_range(args)
-        restaurant_id = resolve_restaurant(args)
-        finance = await _get_finance(start, end, restaurant_id)
+        restaurant_id = self._resolve_restaurant(args)
+        finance = await self._finance(start, end, restaurant_id)
         async with db_helper.session_factory() as session:
-            bottom = await crud.get_bottom_items(
+            bottom_items = await crud.get_bottom_items(
                 session,
-                vendor_id=vendor_id,
+                vendor_id=self._vendor_id,
                 start_date=start,
                 end_date=end,
                 restaurant_id=restaurant_id,
             )
-        for item in bottom:
-            item["category"] = CATEGORY_RU.get(item["category"], item["category"])
+        _localize_categories(bottom_items)
         return _dumps(
             {
                 "period": {"from": str(start), "to": str(end)},
@@ -219,33 +229,38 @@ def build_advisor_executor(
                     {"name": i.name, "quantity": i.quantity, "revenue": i.revenue}
                     for i in finance.top_items
                 ],
-                "bottom_items": bottom,
+                "bottom_items": bottom_items,
             }
         )
 
-    async def _menu(args: dict[str, Any]) -> str:
+    async def menu(self, args: dict[str, Any]) -> str:
         async with db_helper.session_factory() as session:
-            items = await crud.get_menu_overview(
-                session, vendor_id=vendor_id, restaurant_id=resolve_restaurant(args)
+            menu_items = await crud.get_menu_overview(
+                session, vendor_id=self._vendor_id, restaurant_id=self._resolve_restaurant(args)
             )
-        for item in items:
-            item["category"] = CATEGORY_RU.get(item["category"], item["category"])
-        return _dumps({"items": items})
+        _localize_categories(menu_items)
+        return _dumps({"items": menu_items})
 
-    async def _reviews(args: dict[str, Any]) -> str:
+    async def reviews_summary(self, args: dict[str, Any]) -> str:
         async with db_helper.session_factory() as session:
-            data = await crud.get_reviews_summary(
-                session, vendor_id=vendor_id, restaurant_id=resolve_restaurant(args)
+            summary = await crud.get_reviews_summary(
+                session, vendor_id=self._vendor_id, restaurant_id=self._resolve_restaurant(args)
             )
-        return _dumps(data)
+        return _dumps(summary)
 
+
+def build_advisor_executor(
+    vendor: VendorProfile,
+    default_restaurant_id: uuid.UUID | None = None,
+) -> ToolExecutor:
+    runner = _AdvisorToolRunner(vendor, default_restaurant_id)
     handlers = {
-        "get_sales_summary": _sales_summary,
-        "get_peak_hours": _peak_hours,
-        "get_category_breakdown": _category_breakdown,
-        "get_top_and_bottom_items": _top_and_bottom,
-        "get_menu": _menu,
-        "get_reviews_summary": _reviews,
+        "get_sales_summary": runner.sales_summary,
+        "get_peak_hours": runner.peak_hours,
+        "get_category_breakdown": runner.category_breakdown,
+        "get_top_and_bottom_items": runner.top_and_bottom_items,
+        "get_menu": runner.menu,
+        "get_reviews_summary": runner.reviews_summary,
     }
 
     async def execute(call: ToolCall) -> str:

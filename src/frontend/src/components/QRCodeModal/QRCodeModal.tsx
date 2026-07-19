@@ -15,13 +15,13 @@ interface QRCodeModalProps {
   initialType?: QRCodeType;
 }
 
-const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCodeModalProps) => {
+export const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCodeModalProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const contentRef = useFocusTrap<HTMLDivElement>({ onEscape: onClose });
   const [type, setType] = useState<QRCodeType>(initialType);
 
-  const webUrl = String(import.meta.env.VITE_WEB_URL || window.location.origin);
-  const botUsername = String(import.meta.env.VITE_BOT_USERNAME || '').replace(
+  const webUrl = String(import.meta.env['VITE_WEB_URL'] || window.location.origin);
+  const botUsername = String(import.meta.env['VITE_BOT_USERNAME'] || '').replace(
     /^@/,
     ''
   );
@@ -34,25 +34,27 @@ const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCodeModalP
   const deepLink = type === 'telegram' ? telegramLink : siteLink;
 
   useEffect(() => {
-    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
     if (!deepLink) {
-      const context = canvasRef.current.getContext('2d');
-      context?.clearRect(
-        0,
-        0,
-        canvasRef.current.width,
-        canvasRef.current.height
-      );
+      const context = canvas.getContext('2d');
+      context?.clearRect(0, 0, canvas.width, canvas.height);
       return;
     }
-    QRCode.toCanvas(canvasRef.current, deepLink, {
-      width: 240,
-      margin: 2,
-      color: {
-        dark: '#2E2418',
-        light: '#F5F0E8',
-      },
-    }).catch((error: unknown) => { logError('QRCodeModal.toCanvas', error); });
+    void (async () => {
+      try {
+        await QRCode.toCanvas(canvas, deepLink, {
+          width: 240,
+          margin: 2,
+          color: {
+            dark: '#2E2418',
+            light: '#F5F0E8',
+          },
+        });
+      } catch (error) {
+        logError('QRCodeModal.toCanvas', error);
+      }
+    })();
   }, [deepLink]);
 
   const handleDownload = async () => {
@@ -63,10 +65,10 @@ const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCodeModalP
         margin: 2,
         color: { dark: '#2E2418', light: '#F5F0E8' },
       });
-      const a = document.createElement('a');
-      a.href = dataUrl;
-      a.download = `qr_${type}_${restaurant.name.replace(/\s+/g, '_')}.png`;
-      a.click();
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `qr_${type}_${restaurant.name.replace(/\s+/g, '_')}.png`;
+      link.click();
     } catch (error) {
       logError('QRCodeModal.download', error);
     }
@@ -103,7 +105,7 @@ const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCodeModalP
               id="qr-modal-title"
               style={{
                 fontWeight: 800,
-                fontSize: '1rem',
+                fontSize: "var(--text-md)",
                 color: 'var(--text-1)',
               }}
             >
@@ -128,7 +130,7 @@ const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCodeModalP
         <p
           style={{
             color: 'var(--text-3)',
-            fontSize: '0.8rem',
+            fontSize: "var(--text-base)",
             marginBottom: 20,
             lineHeight: 1.5,
           }}
@@ -156,7 +158,7 @@ const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCodeModalP
                 type === value ? 'btn btn-primary' : 'btn btn-secondary'
               }
               onClick={() => { setType(value); }}
-              style={{ height: 36, fontSize: '0.78rem' }}
+              style={{ height: 36, fontSize: "var(--text-sm)" }}
             >
               {label}
             </button>
@@ -176,7 +178,7 @@ const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCodeModalP
         {deepLink ? (
           <p
             style={{
-              fontSize: '0.68rem',
+              fontSize: "var(--text-xs)",
               color: 'var(--text-3)',
               marginTop: 12,
               wordBreak: 'break-all',
@@ -189,7 +191,7 @@ const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCodeModalP
           <p
             className="form-error"
             style={{
-              fontSize: '0.72rem',
+              fontSize: "var(--text-sm)",
               marginTop: 12,
               lineHeight: 1.4,
               textAlign: 'left',
@@ -222,5 +224,3 @@ const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCodeModalP
     </div>
   );
 };
-
-export default QRCodeModal;

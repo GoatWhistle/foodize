@@ -25,7 +25,7 @@ async def get_orders_list(
     offset: int = 0,
     limit: int = 20,
 ) -> tuple[list[Order], int]:
-    data = await crud.get_all_orders(
+    orders = await crud.get_all_orders(
         session,
         status=status,
         restaurant_id=restaurant_id,
@@ -45,7 +45,7 @@ async def get_orders_list(
         date_from=date_from,
         date_to=date_to,
     )
-    return data, total
+    return orders, total
 
 
 async def get_restaurants_list(
@@ -58,7 +58,7 @@ async def get_restaurants_list(
     offset: int = 0,
     limit: int = 20,
 ) -> tuple[list[AdminRestaurantResponse], int]:
-    data = await crud.get_all_restaurants(
+    restaurants = await crud.get_all_restaurants(
         session,
         search=search,
         vendor_search=vendor_search,
@@ -76,7 +76,7 @@ async def get_restaurants_list(
         moderation_status=moderation_status,
         min_rating=min_rating,
     )
-    return data, total
+    return restaurants, total
 
 
 async def get_restaurant_or_404(
@@ -136,9 +136,9 @@ async def get_reviews_list(
     offset: int = 0,
     limit: int = 20,
 ) -> tuple[list[AdminReviewResponse], int]:
-    data = await crud.get_all_reviews(session, rating=rating, offset=offset, limit=limit)
+    reviews = await crud.get_all_reviews(session, rating=rating, offset=offset, limit=limit)
     total = await crud.count_all_reviews(session, rating=rating)
-    return data, total
+    return reviews, total
 
 
 async def delete_review_service(session: AsyncSession, review_id: uuid.UUID) -> AdminReviewResponse:

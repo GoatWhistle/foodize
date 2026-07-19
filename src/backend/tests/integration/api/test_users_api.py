@@ -2,7 +2,6 @@ import uuid
 from http import HTTPStatus
 from unittest.mock import AsyncMock, patch
 
-import pytest
 from factories import make_user
 from httpx import AsyncClient
 
@@ -10,7 +9,6 @@ from features.users.models import User
 
 
 class TestUsersAPI:
-    @pytest.mark.asyncio
     async def test_read_user_by_id(self, client: AsyncClient, as_user: User) -> None:
         user_id = as_user.id
         mock_user = make_user(user_id=user_id, name="Target User")
@@ -28,7 +26,6 @@ class TestUsersAPI:
         assert data["name"] == "Target User"
         mock_get.assert_awaited_once()
 
-    @pytest.mark.asyncio
     async def test_read_my_profile(self, client: AsyncClient, as_user: User) -> None:
         response = await client.get("/api/v1/users/me")
 
@@ -37,7 +34,6 @@ class TestUsersAPI:
         assert data["id"] == str(as_user.id)
         assert data["name"] == as_user.name
 
-    @pytest.mark.asyncio
     async def test_update_my_profile(self, client: AsyncClient, as_user: User) -> None:
         updated_user = make_user(user_id=as_user.id, name="Updated Name")
 
@@ -56,12 +52,10 @@ class TestUsersAPI:
         assert data["name"] == "Updated Name"
         mock_update.assert_awaited_once()
 
-    @pytest.mark.asyncio
     async def test_read_user_requires_auth(self, client: AsyncClient) -> None:
         response = await client.get(f"/api/v1/users/{uuid.uuid4()}")
         assert response.status_code == HTTPStatus.UNAUTHORIZED
 
-    @pytest.mark.asyncio
     async def test_change_password_no_content(self, client: AsyncClient, as_user: User) -> None:
         with (
             patch(
@@ -80,7 +74,6 @@ class TestUsersAPI:
             )
         assert response.status_code == HTTPStatus.NO_CONTENT
 
-    @pytest.mark.asyncio
     async def test_change_password_wrong_old(self, client: AsyncClient, as_user: User) -> None:
         with patch(
             "features.users.service.validate_password",

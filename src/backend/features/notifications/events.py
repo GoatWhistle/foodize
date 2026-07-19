@@ -7,10 +7,19 @@ from shared.enums.event_type import EventType
 from shared.enums.order_status import OrderStatus
 
 
-class OrderStatusChangedEvent(BaseModel):
-    event_type: str = EventType.ORDER_STATUS_CHANGED.value
+class NotificationEvent(BaseModel):
+    event_type: str
     event_id: uuid.UUID = Field(default_factory=uuid.uuid4)
     occurred_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
+class UserNotificationMessage(BaseModel):
+    user_id: uuid.UUID
+    payload: str
+
+
+class OrderStatusChangedEvent(NotificationEvent):
+    event_type: str = EventType.ORDER_STATUS_CHANGED.value
 
     order_id: uuid.UUID
     order_display_id: str | None = None
@@ -22,10 +31,8 @@ class OrderStatusChangedEvent(BaseModel):
     total_price: int
 
 
-class FeedbackRequestedEvent(BaseModel):
+class FeedbackRequestedEvent(NotificationEvent):
     event_type: str = EventType.FEEDBACK_REQUESTED.value
-    event_id: uuid.UUID = Field(default_factory=uuid.uuid4)
-    occurred_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     order_id: uuid.UUID
     user_id: uuid.UUID
@@ -33,10 +40,8 @@ class FeedbackRequestedEvent(BaseModel):
     restaurant_name: str
 
 
-class OrderPlacedEvent(BaseModel):
+class OrderPlacedEvent(NotificationEvent):
     event_type: str = EventType.ORDER_PLACED.value
-    event_id: uuid.UUID = Field(default_factory=uuid.uuid4)
-    occurred_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     order_id: uuid.UUID
     order_display_id: str | None = None

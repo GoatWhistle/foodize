@@ -2,7 +2,7 @@ import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
-import LoginPage from '../../pages/auth/LoginPage';
+import { LoginPage } from '../../pages/auth/LoginPage';
 import { useAuthStore } from '../../store/useAuthStore';
 
 type AuthSelector = (s: Record<string, unknown>) => unknown;
@@ -53,9 +53,9 @@ describe('LoginPage', () => {
       </BrowserRouter>
     );
 
-    expect(screen.getByLabelText('Телефон')).toBeDefined();
-    expect(screen.getByLabelText('Пароль')).toBeDefined();
-    expect(screen.getByRole('button', { name: 'Войти' })).toBeDefined();
+    expect(screen.getByLabelText('Телефон')).toBeInTheDocument();
+    expect(screen.getByLabelText('Пароль')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Войти' })).toBeInTheDocument();
   });
 
   it('calls login and navigates on successful submit', async () => {
@@ -111,7 +111,7 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: 'Войти' }));
 
     await waitFor(() => {
-      expect(screen.getByText('Неверный телефон или пароль')).toBeDefined();
+      expect(screen.getByText('Неверный телефон или пароль')).toBeInTheDocument();
     });
   });
 
@@ -126,7 +126,7 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: 'Войти' }));
 
     await waitFor(() => {
-      expect(screen.getByText('Введите телефон и пароль')).toBeDefined();
+      expect(screen.getByText('Введите телефон и пароль')).toBeInTheDocument();
     });
   });
 

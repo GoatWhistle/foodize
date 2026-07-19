@@ -11,7 +11,7 @@ interface ErrorBoundaryState {
   error: Error | null;
 }
 
-class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -43,10 +43,10 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
             textAlign: "center",
           }}
         >
-          <div style={{ fontWeight: 700, fontSize: "1.1rem", color: "var(--text-1)" }}>
+          <div style={{ fontWeight: 700, fontSize: "var(--text-md)", color: "var(--text-1)" }}>
             Что-то пошло не так
           </div>
-          <div style={{ fontSize: "0.85rem", color: "var(--text-3)", maxWidth: 320 }}>
+          <div style={{ fontSize: "var(--text-base)", color: "var(--text-3)", maxWidth: 320 }}>
             {this.state.error?.message ?? "Неизвестная ошибка"}
           </div>
           <button
@@ -61,5 +61,3 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     return this.props.children;
   }
 }
-
-export default ErrorBoundary;

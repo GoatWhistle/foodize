@@ -1,9 +1,9 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import type { PlatformStats } from '@shared/types/models';
-import AdminDashboardPage from '../../pages/admin/AdminDashboardPage';
-
+import { AdminDashboardPage } from '../../pages/admin/AdminDashboardPage';
 vi.mock('../../services/adminService', () => ({
   adminService: {
     getPlatformStats: vi.fn(),
@@ -67,17 +67,19 @@ const render$ = () =>
     </BrowserRouter>
   );
 
+const emptyList = { items: [], total: 0 };
+
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(adminService.getPlatformStats).mockResolvedValue({ data: { data: STATS } } as unknown as Awaited<ReturnType<typeof adminService.getPlatformStats>>);
-  vi.mocked(adminService.getUsers).mockResolvedValue({ data: { data: [], total: 0 } } as unknown as Awaited<ReturnType<typeof adminService.getUsers>>);
-  vi.mocked(adminService.getOrders).mockResolvedValue({ data: { data: [], total: 0 } } as unknown as Awaited<ReturnType<typeof adminService.getOrders>>);
-  vi.mocked(adminService.getRestaurants).mockResolvedValue({ data: { data: [], total: 0 } } as unknown as Awaited<ReturnType<typeof adminService.getRestaurants>>);
-  vi.mocked(adminService.getVendors).mockResolvedValue({ data: { data: [], total: 0 } } as unknown as Awaited<ReturnType<typeof adminService.getVendors>>);
-  vi.mocked(adminService.getReviews).mockResolvedValue({ data: { data: [], total: 0 } } as unknown as Awaited<ReturnType<typeof adminService.getReviews>>);
-  vi.mocked(adminService.getFinance).mockResolvedValue({ data: { data: {} } } as unknown as Awaited<ReturnType<typeof adminService.getFinance>>);
-  vi.mocked(adminService.getAdvancedAnalytics).mockResolvedValue({ data: { data: {} } } as unknown as Awaited<ReturnType<typeof adminService.getAdvancedAnalytics>>);
-  vi.mocked(adminService.getAuditLogs).mockResolvedValue({ data: { data: [], total: 0 } } as unknown as Awaited<ReturnType<typeof adminService.getAuditLogs>>);
+  vi.mocked(adminService.getPlatformStats).mockResolvedValue(STATS);
+  vi.mocked(adminService.getUsers).mockResolvedValue(emptyList);
+  vi.mocked(adminService.getOrders).mockResolvedValue(emptyList);
+  vi.mocked(adminService.getRestaurants).mockResolvedValue(emptyList);
+  vi.mocked(adminService.getVendors).mockResolvedValue(emptyList);
+  vi.mocked(adminService.getReviews).mockResolvedValue(emptyList);
+  vi.mocked(adminService.getFinance).mockResolvedValue({} as unknown as Awaited<ReturnType<typeof adminService.getFinance>>);
+  vi.mocked(adminService.getAdvancedAnalytics).mockResolvedValue({} as unknown as Awaited<ReturnType<typeof adminService.getAdvancedAnalytics>>);
+  vi.mocked(adminService.getAuditLogs).mockResolvedValue(emptyList);
 });
 
 describe('AdminDashboardPage', () => {
@@ -98,63 +100,69 @@ describe('AdminDashboardPage', () => {
   });
 
   it('switches to users tab on click', async () => {
+    const user = userEvent.setup();
     render$();
     const usersBtn = screen.getAllByText('Пользователи')[0];
     if (!usersBtn) throw new Error('tab button not found');
-    fireEvent.click(usersBtn);
+    await user.click(usersBtn);
     await waitFor(() => {
       expect(adminService.getUsers).toHaveBeenCalled();
     });
   });
 
   it('switches to restaurants tab and loads data', async () => {
+    const user = userEvent.setup();
     render$();
     const btn = screen.getAllByText('Рестораны')[0];
     if (!btn) throw new Error('tab button not found');
-    fireEvent.click(btn);
+    await user.click(btn);
     await waitFor(() => {
       expect(adminService.getRestaurants).toHaveBeenCalled();
     });
   });
 
   it('switches to vendors tab and loads data', async () => {
+    const user = userEvent.setup();
     render$();
     const btn = screen.getAllByText('Вендоры')[0];
     if (!btn) throw new Error('tab button not found');
-    fireEvent.click(btn);
+    await user.click(btn);
     await waitFor(() => {
       expect(adminService.getVendors).toHaveBeenCalled();
     });
   });
 
   it('switches to reviews tab and loads data', async () => {
+    const user = userEvent.setup();
     render$();
     const btn = screen.getAllByText('Отзывы')[0];
     if (!btn) throw new Error('tab button not found');
-    fireEvent.click(btn);
+    await user.click(btn);
     await waitFor(() => {
       expect(adminService.getReviews).toHaveBeenCalled();
     });
   });
 
   it('switches to orders tab and loads data', async () => {
+    const user = userEvent.setup();
     render$();
     const btn = screen.getAllByText('Заказы')[0];
     if (!btn) throw new Error('tab button not found');
-    fireEvent.click(btn);
+    await user.click(btn);
     await waitFor(() => {
       expect(adminService.getOrders).toHaveBeenCalled();
     });
   });
 
   it('does not reload stats if already loaded', async () => {
+    const user = userEvent.setup();
     render$();
     await waitFor(() => { expect(adminService.getPlatformStats).toHaveBeenCalledTimes(1); });
     const usersTab = screen.getAllByText('Пользователи')[0];
     const statsTab = screen.getAllByText('Статистика')[0];
     if (!usersTab || !statsTab) throw new Error('tab button not found');
-    fireEvent.click(usersTab);
-    fireEvent.click(statsTab);
+    await user.click(usersTab);
+    await user.click(statsTab);
     await waitFor(() => { expect(adminService.getPlatformStats).toHaveBeenCalledTimes(1); });
   });
 });

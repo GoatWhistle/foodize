@@ -1,14 +1,19 @@
 import uuid
 from datetime import UTC, datetime
+from datetime import time as dt_time
 from unittest.mock import AsyncMock, MagicMock, patch
-
-import pytest
 
 from features.restaurants.working_hours_crud import (
     get_working_hours,
     is_open_now,
     set_working_hours,
 )
+from features.restaurants.working_hours_schemas import WorkingHoursEntry
+
+
+def _parse(value: str) -> dt_time:
+    hour, minute = value.split(":")
+    return dt_time(int(hour), int(minute))
 
 
 def _mock_wh(
@@ -16,13 +21,12 @@ def _mock_wh(
 ) -> MagicMock:
     wh = MagicMock()
     wh.day_of_week = day_of_week
-    wh.open_time = open_time
-    wh.close_time = close_time
+    wh.open_time = _parse(open_time)
+    wh.close_time = _parse(close_time)
     wh.is_closed = is_closed
     return wh
 
 
-@pytest.mark.asyncio
 async def test_get_working_hours_returns_list() -> None:
     wh = _mock_wh(0, "09:00", "22:00")
     mock_result = MagicMock()
@@ -34,7 +38,6 @@ async def test_get_working_hours_returns_list() -> None:
     assert result == [wh]
 
 
-@pytest.mark.asyncio
 async def test_get_working_hours_empty() -> None:
     mock_result = MagicMock()
     mock_result.scalars.return_value.all.return_value = []
@@ -45,9 +48,7 @@ async def test_get_working_hours_empty() -> None:
     assert result == []
 
 
-@pytest.mark.asyncio
 async def test_set_working_hours() -> None:
-    from features.restaurants.working_hours_schemas import WorkingHoursEntry
 
     entries = [
         WorkingHoursEntry(day_of_week=0, open_time="09:00", close_time="22:00", is_closed=False),

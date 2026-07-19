@@ -15,13 +15,15 @@ from features.staff.schemas import StaffRequestCreate
 from features.users.crud import create_user, update_user
 from features.users.models import User
 from features.users.schemas import UserCreate, UserUpdate
-from seed.data import STAFF_REQUEST_APPLICANTS
+from seed.fixtures.staffing import STAFF_REQUEST_APPLICANTS
 from shared.enums.staff_request_status import StaffRequestStatus
 
 
-async def _ensure_applicant(session: AsyncSession, data: dict[str, Any]) -> User:
+async def _ensure_applicant(
+    session: AsyncSession, applicant_spec: dict[str, Any]
+) -> User:
     result = await session.execute(
-        select(User).where(User.phone_number == data["phone_number"])
+        select(User).where(User.phone_number == applicant_spec["phone_number"])
     )
     user = result.scalar_one_or_none()
     if user is not None:
@@ -29,19 +31,19 @@ async def _ensure_applicant(session: AsyncSession, data: dict[str, Any]) -> User
     user = await create_user(
         session,
         UserCreate(
-            name=data["name"],
-            phone_number=data["phone_number"],
-            password=data["password"],
+            name=applicant_spec["name"],
+            phone_number=applicant_spec["phone_number"],
+            password=applicant_spec["password"],
         ),
     )
     await update_user(
         session,
         user,
         UserUpdate(
-            first_name=data.get("first_name"),
-            last_name=data.get("last_name"),
-            middle_name=data.get("middle_name"),
-            email=data.get("email"),
+            first_name=applicant_spec.get("first_name"),
+            last_name=applicant_spec.get("last_name"),
+            middle_name=applicant_spec.get("middle_name"),
+            email=applicant_spec.get("email"),
         ),
     )
     await session.commit()
@@ -64,20 +66,20 @@ async def seed_staff_requests(
         print("  skip (no restaurants)")
         return
 
-    for data in STAFF_REQUEST_APPLICANTS:
-        user = await _ensure_applicant(session, data)
+    for applicant_spec in STAFF_REQUEST_APPLICANTS:
+        user = await _ensure_applicant(session, applicant_spec)
         existing = await get_last_request(session, user.id, restaurant.id)
         if existing is not None:
-            print(f"  skip request (exists): {data['name']}")
+            print(f"  skip request (exists): {applicant_spec['name']}")
             continue
 
         request = await create_staff_request(
             session,
             user.id,
             restaurant.id,
-            StaffRequestCreate(message=data["message"]),
+            StaffRequestCreate(message=applicant_spec["message"]),
         )
-        status = StaffRequestStatus(data["status"])
+        status = StaffRequestStatus(applicant_spec["status"])
         await update_request_status(session, request, status)
 
         if status is StaffRequestStatus.ACCEPTED:
@@ -85,4 +87,6 @@ async def seed_staff_requests(
             if profile is None:
                 await create_staff_profile(session, user.id, restaurant.id)
         await session.commit()
-        print(f"  request [{status.value}]: {data['name']} → '{restaurant.name}'")
+        print(
+            f"  request [{status.value}]: {applicant_spec['name']} → '{restaurant.name}'"
+        )

@@ -1,5 +1,6 @@
 import uuid
 from datetime import UTC, datetime, timedelta
+from datetime import time as _dt_time
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -41,13 +42,14 @@ def _working_hours_entry(
 ) -> WorkingHours:
     entry = MagicMock()
     entry.day_of_week = day_of_week
-    entry.open_time = open_time
-    entry.close_time = close_time
+    open_h, open_m = (int(p) for p in open_time.split(":"))
+    close_h, close_m = (int(p) for p in close_time.split(":"))
+    entry.open_time = _dt_time(open_h, open_m)
+    entry.close_time = _dt_time(close_h, close_m)
     entry.is_closed = is_closed
     return cast("WorkingHours", entry)
 
 
-@pytest.mark.asyncio
 async def test_estimate_restaurant_load_warns_with_later_window() -> None:
     restaurant = _restaurant(avg_prep_time_minutes=10, max_active_orders=20)
 
@@ -74,7 +76,6 @@ async def test_estimate_restaurant_load_warns_with_later_window() -> None:
     assert estimate.active_orders_count == 42
 
 
-@pytest.mark.asyncio
 async def test_estimate_restaurant_load_respects_manual_pause() -> None:
     paused_until = datetime.now(UTC) + timedelta(minutes=30)
     restaurant = _restaurant(is_ordering_paused=True, ordering_paused_until=paused_until)

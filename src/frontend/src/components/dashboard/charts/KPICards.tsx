@@ -43,17 +43,17 @@ export const KPICards = memo(({ finance }: { finance: FinanceAnalytics }) => {
   ];
 
   return (
-    <div className={styles.kpiGrid}>
+    <div className={styles['kpiGrid']}>
       {cards.map(({ label, value, color, sub, large }) => (
-        <div key={label} className={styles.kpiCard}>
-          <div className={styles.kpiLabel}>{label}</div>
+        <div key={label} className={styles['kpiCard']}>
+          <div className={styles['kpiLabel']}>{label}</div>
           <div
-            className={large ? `${styles.kpiValue} ${styles.kpiValueLarge}` : styles.kpiValue}
+            className={large ? `${styles['kpiValue']} ${styles['kpiValueLarge']}` : styles['kpiValue']}
             style={{ color: color ?? 'var(--text-1)' }}
           >
             {value}
           </div>
-          {sub && <div className={styles.kpiSub}>{sub}</div>}
+          {sub && <div className={styles['kpiSub']}>{sub}</div>}
         </div>
       ))}
     </div>

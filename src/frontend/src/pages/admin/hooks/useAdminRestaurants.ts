@@ -59,23 +59,25 @@ export const useAdminRestaurants = ({
   useEffect(() => {
     if (activeTab !== 'restaurants') return;
     setRestaurantsLoading(true);
-    adminService
-      .getRestaurants({
-        page: restaurantsPage,
-        size: PAGE_SIZE,
-        search: restaurantSearch || undefined,
-        vendor_search: restaurantVendorSearch || undefined,
-        is_open: restaurantFilters.is_open || undefined,
-        moderation_status: restaurantFilters.moderation_status || undefined,
-        min_rating: restaurantFilters.min_rating || undefined,
-      })
-      .then((res) => {
-        const body = res.data;
-        setRestaurants(body.data);
-        setRestaurantsTotal(body.pagination.total || 0);
-      })
-      .catch(() => { setActionError('Не удалось загрузить рестораны'); })
-      .finally(() => { setRestaurantsLoading(false); });
+    void (async () => {
+      try {
+        const { items, total } = await adminService.getRestaurants({
+          page: restaurantsPage,
+          size: PAGE_SIZE,
+          search: restaurantSearch || undefined,
+          vendor_search: restaurantVendorSearch || undefined,
+          is_open: restaurantFilters.is_open || undefined,
+          moderation_status: restaurantFilters.moderation_status || undefined,
+          min_rating: restaurantFilters.min_rating || undefined,
+        });
+        setRestaurants(items);
+        setRestaurantsTotal(total);
+      } catch {
+        setActionError('Не удалось загрузить рестораны');
+      } finally {
+        setRestaurantsLoading(false);
+      }
+    })();
   }, [activeTab, restaurantsPage, restaurantFilters, restaurantSearch, restaurantVendorSearch, setActionError]);
 
   const loadRestaurantDetails = createDetailLoader<AdminRestaurant | null>(
@@ -114,8 +116,8 @@ export const useAdminRestaurants = ({
   const handleApproveRestaurant = async (restaurantId: string) => {
     setApproveLoading(true);
     try {
-      const res = await adminService.approveRestaurant(restaurantId);
-      refreshSelectedRestaurant(res.data.data);
+      const restaurant = await adminService.approveRestaurant(restaurantId);
+      refreshSelectedRestaurant(restaurant);
       setActionSuccess('Ресторан одобрен');
     } catch {
       setActionError('Не удалось одобрить ресторан');
@@ -131,8 +133,8 @@ export const useAdminRestaurants = ({
       confirmLabel: 'Отклонить',
       onConfirm: async (reason) => {
         try {
-          const res = await adminService.rejectRestaurant(restaurantId, reason);
-          refreshSelectedRestaurant(res.data.data);
+          const restaurant = await adminService.rejectRestaurant(restaurantId, reason);
+          refreshSelectedRestaurant(restaurant);
           setActionSuccess('Ресторан отклонён');
         } catch {
           setActionError('Не удалось отклонить ресторан');

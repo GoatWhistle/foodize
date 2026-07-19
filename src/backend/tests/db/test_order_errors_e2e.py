@@ -49,7 +49,6 @@ async def _seed_restaurant(
     return vendor_user, restaurant, menu_item
 
 
-@pytest.mark.asyncio
 async def test_place_order_in_closed_restaurant_raises(db_session: AsyncSession) -> None:
     customer = await create_user(
         db_session,
@@ -72,7 +71,6 @@ async def test_place_order_in_closed_restaurant_raises(db_session: AsyncSession)
         )
 
 
-@pytest.mark.asyncio
 async def test_invalid_status_transition_raises(db_session: AsyncSession) -> None:
     customer = await create_user(
         db_session,

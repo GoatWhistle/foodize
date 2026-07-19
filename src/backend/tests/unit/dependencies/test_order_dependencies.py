@@ -44,7 +44,6 @@ def _execute_result(value: object | None) -> MagicMock:
 
 
 class TestVerifyRestaurantAccess:
-    @pytest.mark.asyncio
     async def test_vendor_correct_ownership(self) -> None:
         vendor_id = uuid.uuid4()
         restaurant = _make_restaurant(vendor_id)
@@ -64,7 +63,6 @@ class TestVerifyRestaurantAccess:
             result = await verify_restaurant_access(session, restaurant.id, user)
             assert result == restaurant
 
-    @pytest.mark.asyncio
     async def test_vendor_wrong_ownership(self) -> None:
         restaurant = _make_restaurant(uuid.uuid4())
         user = _make_user(UserRole.VENDOR.value)
@@ -83,7 +81,6 @@ class TestVerifyRestaurantAccess:
             with pytest.raises(AccessDeniedException):
                 await verify_restaurant_access(session, restaurant.id, user)
 
-    @pytest.mark.asyncio
     async def test_staff_at_correct_restaurant(self) -> None:
         restaurant_id = uuid.uuid4()
         restaurant = _make_restaurant(uuid.uuid4())
@@ -100,7 +97,6 @@ class TestVerifyRestaurantAccess:
         result = await verify_restaurant_access(session, restaurant_id, user)
         assert result == restaurant
 
-    @pytest.mark.asyncio
     async def test_staff_at_wrong_restaurant(self) -> None:
         restaurant_id = uuid.uuid4()
         restaurant = _make_restaurant(uuid.uuid4())
@@ -115,7 +111,6 @@ class TestVerifyRestaurantAccess:
         with pytest.raises(AccessDeniedException):
             await verify_restaurant_access(session, restaurant_id, user)
 
-    @pytest.mark.asyncio
     async def test_other_role_denied(self) -> None:
         restaurant = _make_restaurant(uuid.uuid4())
         user = _make_user(UserRole.CUSTOMER.value)
@@ -126,7 +121,6 @@ class TestVerifyRestaurantAccess:
         with pytest.raises(AccessDeniedException):
             await verify_restaurant_access(session, restaurant.id, user)
 
-    @pytest.mark.asyncio
     async def test_restaurant_not_found(self) -> None:
         user = _make_user(UserRole.VENDOR.value)
 
@@ -138,7 +132,6 @@ class TestVerifyRestaurantAccess:
 
 
 class TestGetOrderForStaffOrVendor:
-    @pytest.mark.asyncio
     async def test_order_not_found(self) -> None:
         with patch(
             "features.orders.dependencies.get_order_by_id_for_update",

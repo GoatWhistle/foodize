@@ -4,8 +4,6 @@ import path from 'path';
 
 const coverageGlob = (rel: string): string =>
   path.resolve(__dirname, rel).replace(/\\/g, '/');
-const sharedGlob = (sub: string): string =>
-  coverageGlob(`../shared/${sub}/**/*.{ts,tsx}`);
 
 export default defineConfig({
   plugins: [react()],
@@ -32,7 +30,7 @@ export default defineConfig({
         replacement: path.resolve(__dirname, '../shared'),
       },
     ],
-    dedupe: ['react', 'react-dom', 'react-router-dom', '@phosphor-icons/react', 'zustand', 'axios'],
+    dedupe: ['react', 'react-dom', 'react-router-dom', '@phosphor-icons/react', 'zustand', 'axios', '@testing-library/react', '@testing-library/user-event', '@testing-library/dom'],
     modules: [path.resolve(__dirname, 'node_modules'), 'node_modules'],
   },
   build: {
@@ -72,6 +70,9 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: './src/__tests__/setup.ts',
+    include: [
+      'src/**/*.{test,spec}.{ts,tsx}',
+    ],
     coverage: {
       provider: 'v8',
       allowExternal: true,
@@ -82,19 +83,14 @@ export default defineConfig({
         coverageGlob('src/components/**/*.{ts,tsx}'),
         coverageGlob('src/pages/**/*.{ts,tsx}'),
         coverageGlob('src/hooks/**/*.{ts,tsx}'),
-        sharedGlob('store'),
-        sharedGlob('services'),
-        sharedGlob('utils'),
-        sharedGlob('hooks'),
-        sharedGlob('components'),
-        sharedGlob('pages'),
       ],
-      exclude: ['src/services/generated/**', '**/node_modules/**'],
+      exclude: ['src/services/generated/**', '**/node_modules/**', '**/*.test.{ts,tsx}'],
       thresholds: {
-        statements: 50,
-        branches: 65,
-        functions: 45,
-        lines: 50,
+        perFile: true,
+        statements: 85,
+        branches: 85,
+        functions: 85,
+        lines: 85,
       },
     },
   },

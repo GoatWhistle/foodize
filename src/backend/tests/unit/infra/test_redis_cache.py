@@ -1,7 +1,5 @@
 from unittest.mock import AsyncMock, MagicMock
 
-import pytest
-
 from infra.cache.redis import RedisCache
 
 
@@ -10,7 +8,6 @@ def _make_cache() -> tuple[RedisCache, AsyncMock]:
     return RedisCache(client), client
 
 
-@pytest.mark.asyncio
 async def test_get() -> None:
     cache, client = _make_cache()
     client.get = AsyncMock(return_value="value")
@@ -18,7 +15,6 @@ async def test_get() -> None:
     assert result == "value"
 
 
-@pytest.mark.asyncio
 async def test_set_with_ttl() -> None:
     cache, client = _make_cache()
     client.set = AsyncMock()
@@ -26,7 +22,6 @@ async def test_set_with_ttl() -> None:
     client.set.assert_awaited_once_with("key", "val", ex=60)
 
 
-@pytest.mark.asyncio
 async def test_delete() -> None:
     cache, client = _make_cache()
     client.delete = AsyncMock()
@@ -34,21 +29,18 @@ async def test_delete() -> None:
     client.delete.assert_awaited_once_with("key")
 
 
-@pytest.mark.asyncio
 async def test_exists_true() -> None:
     cache, client = _make_cache()
     client.exists = AsyncMock(return_value=1)
     assert await cache.exists("key") is True
 
 
-@pytest.mark.asyncio
 async def test_exists_false() -> None:
     cache, client = _make_cache()
     client.exists = AsyncMock(return_value=0)
     assert await cache.exists("key") is False
 
 
-@pytest.mark.asyncio
 async def test_set_nx_true() -> None:
     cache, client = _make_cache()
     client.set = AsyncMock(return_value=True)
@@ -56,7 +48,6 @@ async def test_set_nx_true() -> None:
     assert result is True
 
 
-@pytest.mark.asyncio
 async def test_set_nx_false() -> None:
     cache, client = _make_cache()
     client.set = AsyncMock(return_value=None)
@@ -64,7 +55,6 @@ async def test_set_nx_false() -> None:
     assert result is False
 
 
-@pytest.mark.asyncio
 async def test_sadd() -> None:
     cache, client = _make_cache()
     client.sadd = AsyncMock()
@@ -72,7 +62,6 @@ async def test_sadd() -> None:
     client.sadd.assert_awaited_once_with("key", "a", "b")
 
 
-@pytest.mark.asyncio
 async def test_expire() -> None:
     cache, client = _make_cache()
     client.expire = AsyncMock()
@@ -80,7 +69,6 @@ async def test_expire() -> None:
     client.expire.assert_awaited_once_with("key", 300)
 
 
-@pytest.mark.asyncio
 async def test_smembers() -> None:
     cache, client = _make_cache()
     client.smembers = AsyncMock(return_value={"a", "b"})
@@ -88,7 +76,6 @@ async def test_smembers() -> None:
     assert result == {"a", "b"}
 
 
-@pytest.mark.asyncio
 async def test_delete_many_with_keys() -> None:
     cache, client = _make_cache()
     client.delete = AsyncMock()
@@ -96,7 +83,6 @@ async def test_delete_many_with_keys() -> None:
     client.delete.assert_awaited_once_with("k1", "k2")
 
 
-@pytest.mark.asyncio
 async def test_delete_many_empty() -> None:
     cache, client = _make_cache()
     client.delete = AsyncMock()
@@ -104,7 +90,6 @@ async def test_delete_many_empty() -> None:
     client.delete.assert_not_awaited()
 
 
-@pytest.mark.asyncio
 async def test_mget_empty() -> None:
     cache, client = _make_cache()
     result = await cache.mget()
@@ -112,7 +97,6 @@ async def test_mget_empty() -> None:
     client.mget.assert_not_awaited()
 
 
-@pytest.mark.asyncio
 async def test_mget_with_keys() -> None:
     cache, client = _make_cache()
     client.mget = AsyncMock(return_value=["v1", None])
@@ -120,13 +104,11 @@ async def test_mget_with_keys() -> None:
     assert result == ["v1", None]
 
 
-@pytest.mark.asyncio
 async def test_mset_empty() -> None:
     cache, _client = _make_cache()
     await cache.mset({})
 
 
-@pytest.mark.asyncio
 async def test_mset_with_data() -> None:
     cache, client = _make_cache()
     mock_pipe = AsyncMock()
@@ -140,7 +122,6 @@ async def test_mset_with_data() -> None:
     mock_pipe.execute.assert_awaited_once()
 
 
-@pytest.mark.asyncio
 async def test_publish() -> None:
     cache, client = _make_cache()
     client.publish = AsyncMock()
@@ -148,7 +129,6 @@ async def test_publish() -> None:
     client.publish.assert_awaited_once_with("channel", "msg")
 
 
-@pytest.mark.asyncio
 async def test_sadd_with_expire() -> None:
     cache, client = _make_cache()
     mock_pipe = AsyncMock()
@@ -172,7 +152,6 @@ def test_get_raw_client() -> None:
     assert cache.get_raw_client() is client
 
 
-@pytest.mark.asyncio
 async def test_incr_with_expire_sets_ttl_on_first_hit() -> None:
     cache, client = _make_cache()
     client.incr = AsyncMock(return_value=1)
@@ -182,7 +161,6 @@ async def test_incr_with_expire_sets_ttl_on_first_hit() -> None:
     client.expire.assert_awaited_once_with("key", 60)
 
 
-@pytest.mark.asyncio
 async def test_incr_with_expire_skips_ttl_after_first_hit() -> None:
     cache, client = _make_cache()
     client.incr = AsyncMock(return_value=2)

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import KanbanCard from './KanbanCard';
+import { KanbanCard } from './KanbanCard';
 import type { StaffColumnDef } from '../staffColumns';
 import type { StaffOrder } from '../types';
 
@@ -15,7 +15,7 @@ interface KanbanColumnProps {
   onDrop: (column: StaffColumnDef) => void;
 }
 
-const KanbanColumn = ({
+export const KanbanColumn = ({
   column,
   orders,
   onAdvance,
@@ -68,7 +68,7 @@ const KanbanColumn = ({
         <span
           style={{
             fontWeight: 800,
-            fontSize: '0.9rem',
+            fontSize: "var(--text-base)",
             color: 'var(--text-1)',
           }}
         >
@@ -81,7 +81,7 @@ const KanbanColumn = ({
             color: column.color,
             borderRadius: '999px',
             padding: '1px 8px',
-            fontSize: '0.78rem',
+            fontSize: "var(--text-sm)",
             fontWeight: 800,
           }}
         >
@@ -114,7 +114,7 @@ const KanbanColumn = ({
               alignItems: 'center',
               justifyContent: 'center',
               color: 'var(--text-3)',
-              fontSize: '0.78rem',
+              fontSize: "var(--text-sm)",
             }}
           >
             Пусто
@@ -136,5 +136,3 @@ const KanbanColumn = ({
     </div>
   );
 };
-
-export default KanbanColumn;

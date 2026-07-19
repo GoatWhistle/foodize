@@ -33,7 +33,6 @@ async def _make_vendor(db_session: AsyncSession, phone: str) -> VendorProfile:
     return await create_vendor_profile(db_session, user, VendorCreate())
 
 
-@pytest.mark.asyncio
 async def test_create_restaurant_crud(db_session: AsyncSession) -> None:
     vendor_profile = await _make_vendor(db_session, "79001234567")
 
@@ -46,7 +45,6 @@ async def test_create_restaurant_crud(db_session: AsyncSession) -> None:
     assert restaurant.display_id
 
 
-@pytest.mark.asyncio
 async def test_get_restaurant_by_display_id(db_session: AsyncSession) -> None:
     vendor_profile = await _make_vendor(db_session, "79001234572")
     restaurant = await create_restaurant(
@@ -63,7 +61,6 @@ async def test_get_restaurant_by_display_id(db_session: AsyncSession) -> None:
     assert await get_restaurant_by_display_id(db_session, "missing-display-id") is None
 
 
-@pytest.mark.asyncio
 async def test_create_restaurant_retries_display_id_collision(
     db_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -86,7 +83,6 @@ async def test_create_restaurant_retries_display_id_collision(
     assert second.display_id == "free-id"
 
 
-@pytest.mark.asyncio
 async def test_get_restaurant_by_id(db_session: AsyncSession) -> None:
     vendor_profile = await _make_vendor(db_session, "79001234568")
 
@@ -101,7 +97,6 @@ async def test_get_restaurant_by_id(db_session: AsyncSession) -> None:
     assert await get_restaurant_by_id(db_session, uuid.uuid4()) is None
 
 
-@pytest.mark.asyncio
 async def test_update_restaurant(db_session: AsyncSession) -> None:
     vendor_profile = await _make_vendor(db_session, "79001234569")
 
@@ -120,7 +115,6 @@ async def test_update_restaurant(db_session: AsyncSession) -> None:
     assert updated.address == "Old Addr"
 
 
-@pytest.mark.asyncio
 async def test_get_vendor_restaurants_and_count(db_session: AsyncSession) -> None:
     vendor_profile = await _make_vendor(db_session, "79001234570")
 
@@ -140,7 +134,6 @@ async def test_get_vendor_restaurants_and_count(db_session: AsyncSession) -> Non
     assert count == 2
 
 
-@pytest.mark.asyncio
 async def test_get_all_restaurants_with_filters(db_session: AsyncSession) -> None:
     vendor_profile = await _make_vendor(db_session, "79001234571")
 

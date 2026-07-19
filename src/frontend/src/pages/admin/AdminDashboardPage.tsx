@@ -1,262 +1,268 @@
 import { adminService } from '../../services/adminService';
-import QRCodeModal from '../../components/QRCodeModal/QRCodeModal';
+import { QRCodeModal } from '../../components/QRCodeModal/QRCodeModal';
 import { AdminSidebar } from './components/AdminSidebar';
 import { AdminBatchBars } from './components/AdminBatchBars';
-import AdminStatsTab from './tabs/AdminStatsTab';
-import AdminFinanceTab from './tabs/AdminFinanceTab';
-import AdminAuditTab from './tabs/AdminAuditTab';
-import AdminUsersTab from './tabs/AdminUsersTab';
-import AdminOrdersTab from './tabs/AdminOrdersTab';
-import AdminResolutionTab from './tabs/AdminResolutionTab';
-import AdminRestaurantsTab from './tabs/AdminRestaurantsTab';
-import AdminVendorsTab from './tabs/AdminVendorsTab';
-import AdminReviewsTab from './tabs/AdminReviewsTab';
-import AdminDetailModals, { ReasonDialog } from './tabs/AdminDetailModals';
+import { AdminStatsTab } from './tabs/AdminStatsTab';
+import { AdminFinanceTab } from './tabs/AdminFinanceTab';
+import { AdminAuditTab } from './tabs/AdminAuditTab';
+import { AdminUsersTab } from './tabs/AdminUsersTab';
+import { AdminOrdersTab } from './tabs/AdminOrdersTab';
+import { AdminResolutionTab } from './tabs/AdminResolutionTab';
+import { AdminRestaurantsTab } from './tabs/AdminRestaurantsTab';
+import { AdminVendorsTab } from './tabs/AdminVendorsTab';
+import { AdminReviewsTab } from './tabs/AdminReviewsTab';
+import { AdminDetailModals, ReasonDialog } from './tabs/AdminDetailModals';
 import { useAdminDashboard, PAGE_SIZE } from './useAdminDashboard';
 import styles from './AdminDashboardPage.module.css';
 
-const AdminDashboardPage = () => {
-  const d = useAdminDashboard();
+export const AdminDashboardPage = () => {
+  const dashboard = useAdminDashboard();
 
   return (
-    <div className={`page-enter ${styles.page}`}>
+    <div className={`page-enter ${styles['page']}`}>
       <AdminSidebar
-        activeTab={d.activeTab}
-        setActiveTab={d.setActiveTab}
-        entitiesOpen={d.entitiesOpen}
-        setEntitiesOpen={d.setEntitiesOpen}
+        activeTab={dashboard.activeTab}
+        setActiveTab={dashboard.setActiveTab}
+        entitiesOpen={dashboard.entitiesOpen}
+        setEntitiesOpen={dashboard.setEntitiesOpen}
       />
 
-      <div className={styles.main}>
-        {d.actionError && (
-          <div className={`form-error ${styles.errorBanner}`}>{d.actionError}</div>
-        )}
-        {d.actionSuccess && (
-          <div className={styles.successBanner}>
-            {d.actionSuccess}
-          </div>
-        )}
+      <div
+        className={styles['main']}
+        role="tabpanel"
+        id={`admin-panel-${dashboard.activeTab}`}
+      >
+        <div aria-live="assertive">
+          {dashboard.actionError && (
+            <div className={`form-error ${styles['errorBanner']}`} role="alert">{dashboard.actionError}</div>
+          )}
+        </div>
+        <div aria-live="polite">
+          {dashboard.actionSuccess && (
+            <div className={styles['successBanner']} role="status">
+              {dashboard.actionSuccess}
+            </div>
+          )}
+        </div>
 
-        {d.activeTab === 'stats' && (
+        {dashboard.activeTab === 'stats' && (
           <AdminStatsTab
-            stats={d.stats}
-            ordersByStatusChartData={d.ordersByStatusChartData}
-            setActiveTab={d.setActiveTab}
+            stats={dashboard.stats}
+            ordersByStatusChartData={dashboard.ordersByStatusChartData}
+            setActiveTab={dashboard.setActiveTab}
           />
         )}
 
-        {d.activeTab === 'finance' && (
+        {dashboard.activeTab === 'finance' && (
           <AdminFinanceTab
-            finance={d.finance}
-            financeLoading={d.financeLoading}
-            advancedAnalytics={d.advancedAnalytics}
-            analyticsLoading={d.analyticsLoading}
-            financeFilters={d.financeFilters}
-            setFinanceFilters={d.setFinanceFilters}
-            activePreset={d.activePreset}
-            setActivePreset={d.setActivePreset}
-            allRestaurants={d.allRestaurants}
-            exportLoading={d.exportLoading}
-            handleExport={(fn, name) => { void d.handleExport(fn, name); }}
-            todayStr={d.todayStr}
+            finance={dashboard.finance}
+            financeLoading={dashboard.financeLoading}
+            advancedAnalytics={dashboard.advancedAnalytics}
+            analyticsLoading={dashboard.analyticsLoading}
+            financeFilters={dashboard.financeFilters}
+            setFinanceFilters={dashboard.setFinanceFilters}
+            activePreset={dashboard.activePreset}
+            setActivePreset={dashboard.setActivePreset}
+            allRestaurants={dashboard.allRestaurants}
+            exportLoading={dashboard.exportLoading}
+            handleExport={(fn, name) => { void dashboard.handleExport(fn, name); }}
+            todayStr={dashboard.todayStr}
             adminService={adminService}
-            getRestaurantLabel={d.getRestaurantLabel}
-            getDateRangeLabel={d.getDateRangeLabel}
+            getRestaurantLabel={dashboard.getRestaurantLabel}
+            getDateRangeLabel={dashboard.getDateRangeLabel}
           />
         )}
 
-        {d.activeTab === 'audit' && (
+        {dashboard.activeTab === 'audit' && (
           <AdminAuditTab
-            auditLogs={d.auditLogs}
-            auditLoading={d.auditLoading}
-            auditTotal={d.auditTotal}
-            auditPage={d.auditPage}
-            setAuditPage={d.setAuditPage}
-            auditFilters={d.auditFilters}
-            setAuditFilters={d.setAuditFilters}
-            expandedAuditId={d.expandedAuditId}
-            setExpandedAuditId={d.setExpandedAuditId}
+            auditLogs={dashboard.auditLogs}
+            auditLoading={dashboard.auditLoading}
+            auditTotal={dashboard.auditTotal}
+            auditPage={dashboard.auditPage}
+            setAuditPage={dashboard.setAuditPage}
+            auditFilters={dashboard.auditFilters}
+            setAuditFilters={dashboard.setAuditFilters}
+            expandedAuditId={dashboard.expandedAuditId}
+            setExpandedAuditId={dashboard.setExpandedAuditId}
             PAGE_SIZE={PAGE_SIZE}
           />
         )}
 
-        {d.activeTab === 'users' && (
+        {dashboard.activeTab === 'users' && (
           <AdminUsersTab
-            users={d.users}
-            usersLoading={d.usersLoading}
-            usersTotal={d.usersTotal}
-            usersPage={d.usersPage}
-            setUsersPage={d.setUsersPage}
-            userSearchRaw={d.userSearchRaw}
-            setUserSearchRaw={d.setUserSearchRaw}
-            userFilters={d.userFilters}
-            setUserFilters={d.setUserFilters}
-            selectedUserIds={d.selectedUserIds}
-            setSelectedUserIds={d.setSelectedUserIds}
-            exportLoading={d.exportLoading}
-            handleExport={(fn, name) => { void d.handleExport(fn, name); }}
-            loadUserDetails={(id) => { void d.loadUserDetails(id); }}
-            handleDeleteUser={d.handleDeleteUser}
-            currentUser={d.currentUser}
-            todayStr={d.todayStr}
+            users={dashboard.users}
+            usersLoading={dashboard.usersLoading}
+            usersTotal={dashboard.usersTotal}
+            usersPage={dashboard.usersPage}
+            setUsersPage={dashboard.setUsersPage}
+            userSearchRaw={dashboard.userSearchRaw}
+            setUserSearchRaw={dashboard.setUserSearchRaw}
+            userFilters={dashboard.userFilters}
+            setUserFilters={dashboard.setUserFilters}
+            selectedUserIds={dashboard.selectedUserIds}
+            setSelectedUserIds={dashboard.setSelectedUserIds}
+            exportLoading={dashboard.exportLoading}
+            handleExport={(fn, name) => { void dashboard.handleExport(fn, name); }}
+            loadUserDetails={(id) => { void dashboard.loadUserDetails(id); }}
+            handleDeleteUser={dashboard.handleDeleteUser}
+            currentUser={dashboard.currentUser}
+            todayStr={dashboard.todayStr}
             adminService={adminService}
             PAGE_SIZE={PAGE_SIZE}
           />
         )}
 
-        {d.activeTab === 'orders' && (
+        {dashboard.activeTab === 'orders' && (
           <AdminOrdersTab
-            orders={d.orders}
-            ordersLoading={d.ordersLoading}
-            ordersTotal={d.ordersTotal}
-            ordersPage={d.ordersPage}
-            setOrdersPage={d.setOrdersPage}
-            orderSearchRaw={d.orderSearchRaw}
-            setOrderSearchRaw={d.setOrderSearchRaw}
-            orderFilters={d.orderFilters}
-            setOrderFilters={d.setOrderFilters}
-            exportLoading={d.exportLoading}
-            handleExport={(fn, name) => { void d.handleExport(fn, name); }}
-            setSelectedOrder={d.setSelectedOrder}
-            todayStr={d.todayStr}
+            orders={dashboard.orders}
+            ordersLoading={dashboard.ordersLoading}
+            ordersTotal={dashboard.ordersTotal}
+            ordersPage={dashboard.ordersPage}
+            setOrdersPage={dashboard.setOrdersPage}
+            orderSearchRaw={dashboard.orderSearchRaw}
+            setOrderSearchRaw={dashboard.setOrderSearchRaw}
+            orderFilters={dashboard.orderFilters}
+            setOrderFilters={dashboard.setOrderFilters}
+            exportLoading={dashboard.exportLoading}
+            handleExport={(fn, name) => { void dashboard.handleExport(fn, name); }}
+            setSelectedOrder={dashboard.setSelectedOrder}
+            todayStr={dashboard.todayStr}
             adminService={adminService}
             PAGE_SIZE={PAGE_SIZE}
           />
         )}
 
-        {d.activeTab === 'resolution' && (
+        {dashboard.activeTab === 'resolution' && (
           <AdminResolutionTab
-            orders={d.orders}
-            ordersLoading={d.ordersLoading}
-            ordersTotal={d.ordersTotal}
-            ordersPage={d.ordersPage}
-            setOrdersPage={d.setOrdersPage}
-            orderSearchRaw={d.orderSearchRaw}
-            setOrderSearchRaw={d.setOrderSearchRaw}
-            orderFilters={d.orderFilters}
-            setOrderFilters={d.setOrderFilters}
-            setSelectedOrder={d.setSelectedOrder}
-            setReasonDialog={d.setReasonDialog}
+            orders={dashboard.orders}
+            ordersLoading={dashboard.ordersLoading}
+            ordersTotal={dashboard.ordersTotal}
+            ordersPage={dashboard.ordersPage}
+            setOrdersPage={dashboard.setOrdersPage}
+            orderSearchRaw={dashboard.orderSearchRaw}
+            setOrderSearchRaw={dashboard.setOrderSearchRaw}
+            orderFilters={dashboard.orderFilters}
+            setOrderFilters={dashboard.setOrderFilters}
+            setSelectedOrder={dashboard.setSelectedOrder}
+            setReasonDialog={dashboard.setReasonDialog}
             setActionError={() => {}}
             adminService={adminService}
             PAGE_SIZE={PAGE_SIZE}
           />
         )}
 
-        {d.activeTab === 'restaurants' && (
+        {dashboard.activeTab === 'restaurants' && (
           <AdminRestaurantsTab
-            restaurants={d.restaurants}
-            restaurantsLoading={d.restaurantsLoading}
-            restaurantsTotal={d.restaurantsTotal}
-            restaurantsPage={d.restaurantsPage}
-            setRestaurantsPage={d.setRestaurantsPage}
-            restaurantSearchRaw={d.restaurantSearchRaw}
-            setRestaurantSearchRaw={d.setRestaurantSearchRaw}
-            restaurantVendorSearchRaw={d.restaurantVendorSearchRaw}
-            setRestaurantVendorSearchRaw={d.setRestaurantVendorSearchRaw}
-            restaurantFilters={d.restaurantFilters}
-            setRestaurantFilters={d.setRestaurantFilters}
-            selectedRestaurantIds={d.selectedRestaurantIds}
-            setSelectedRestaurantIds={d.setSelectedRestaurantIds}
-            exportLoading={d.exportLoading}
-            handleExport={(fn, name) => { void d.handleExport(fn, name); }}
-            loadRestaurantDetails={(id) => { void d.loadRestaurantDetails(id); }}
-            todayStr={d.todayStr}
+            restaurants={dashboard.restaurants}
+            restaurantsLoading={dashboard.restaurantsLoading}
+            restaurantsTotal={dashboard.restaurantsTotal}
+            restaurantsPage={dashboard.restaurantsPage}
+            setRestaurantsPage={dashboard.setRestaurantsPage}
+            restaurantSearchRaw={dashboard.restaurantSearchRaw}
+            setRestaurantSearchRaw={dashboard.setRestaurantSearchRaw}
+            restaurantVendorSearchRaw={dashboard.restaurantVendorSearchRaw}
+            setRestaurantVendorSearchRaw={dashboard.setRestaurantVendorSearchRaw}
+            restaurantFilters={dashboard.restaurantFilters}
+            setRestaurantFilters={dashboard.setRestaurantFilters}
+            selectedRestaurantIds={dashboard.selectedRestaurantIds}
+            setSelectedRestaurantIds={dashboard.setSelectedRestaurantIds}
+            exportLoading={dashboard.exportLoading}
+            handleExport={(fn, name) => { void dashboard.handleExport(fn, name); }}
+            loadRestaurantDetails={(id) => { void dashboard.loadRestaurantDetails(id); }}
+            todayStr={dashboard.todayStr}
             adminService={adminService}
             PAGE_SIZE={PAGE_SIZE}
           />
         )}
 
-        {d.activeTab === 'vendors' && (
+        {dashboard.activeTab === 'vendors' && (
           <AdminVendorsTab
-            vendors={d.vendors}
-            vendorsLoading={d.vendorsLoading}
-            vendorsTotal={d.vendorsTotal}
-            vendorsPage={d.vendorsPage}
-            setVendorsPage={d.setVendorsPage}
-            vendorSearchRaw={d.vendorSearchRaw}
-            setVendorSearchRaw={d.setVendorSearchRaw}
-            vendorFilters={d.vendorFilters}
-            setVendorFilters={d.setVendorFilters}
-            selectedVendorIds={d.selectedVendorIds}
-            setSelectedVendorIds={d.setSelectedVendorIds}
-            exportLoading={d.exportLoading}
-            handleExport={(fn, name) => { void d.handleExport(fn, name); }}
-            loadVendorDetails={(id) => { void d.loadVendorDetails(id); }}
-            todayStr={d.todayStr}
+            vendors={dashboard.vendors}
+            vendorsLoading={dashboard.vendorsLoading}
+            vendorsTotal={dashboard.vendorsTotal}
+            vendorsPage={dashboard.vendorsPage}
+            setVendorsPage={dashboard.setVendorsPage}
+            vendorSearchRaw={dashboard.vendorSearchRaw}
+            setVendorSearchRaw={dashboard.setVendorSearchRaw}
+            vendorFilters={dashboard.vendorFilters}
+            setVendorFilters={dashboard.setVendorFilters}
+            selectedVendorIds={dashboard.selectedVendorIds}
+            setSelectedVendorIds={dashboard.setSelectedVendorIds}
+            exportLoading={dashboard.exportLoading}
+            handleExport={(fn, name) => { void dashboard.handleExport(fn, name); }}
+            loadVendorDetails={(id) => { void dashboard.loadVendorDetails(id); }}
+            todayStr={dashboard.todayStr}
             adminService={adminService}
             PAGE_SIZE={PAGE_SIZE}
           />
         )}
 
-        {d.activeTab === 'reviews' && (
+        {dashboard.activeTab === 'reviews' && (
           <AdminReviewsTab
-            reviews={d.reviews}
-            reviewsLoading={d.reviewsLoading}
-            reviewsTotal={d.reviewsTotal}
-            reviewsPage={d.reviewsPage}
-            setReviewsPage={d.setReviewsPage}
-            reviewFilters={d.reviewFilters}
-            setReviewFilters={d.setReviewFilters}
-            selectedReviewIds={d.selectedReviewIds}
-            setSelectedReviewIds={d.setSelectedReviewIds}
-            exportLoading={d.exportLoading}
-            handleExport={(fn, name) => { void d.handleExport(fn, name); }}
-            handleDeleteReview={d.handleDeleteReview}
-            todayStr={d.todayStr}
+            reviews={dashboard.reviews}
+            reviewsLoading={dashboard.reviewsLoading}
+            reviewsTotal={dashboard.reviewsTotal}
+            reviewsPage={dashboard.reviewsPage}
+            setReviewsPage={dashboard.setReviewsPage}
+            reviewFilters={dashboard.reviewFilters}
+            setReviewFilters={dashboard.setReviewFilters}
+            selectedReviewIds={dashboard.selectedReviewIds}
+            setSelectedReviewIds={dashboard.setSelectedReviewIds}
+            exportLoading={dashboard.exportLoading}
+            handleExport={(fn, name) => { void dashboard.handleExport(fn, name); }}
+            handleDeleteReview={dashboard.handleDeleteReview}
+            todayStr={dashboard.todayStr}
             adminService={adminService}
             PAGE_SIZE={PAGE_SIZE}
           />
         )}
 
         <AdminDetailModals
-          selectedUser={d.selectedUser}
-          setSelectedUser={d.setSelectedUser}
-          userDetailsLoading={d.userDetailsLoading}
-          currentUser={d.currentUser}
-          permissionActionLoading={d.permissionActionLoading}
-          handleSetPermissionPreset={d.handleSetPermissionPreset}
-          handleMakeAdmin={d.handleMakeAdmin}
-          handleActivateUser={(userId) => { void d.handleActivateUser(userId); }}
-          handleDeleteUser={d.handleDeleteUser}
-          selectedRestaurant={d.selectedRestaurant}
-          setSelectedRestaurant={d.setSelectedRestaurant}
-          restaurantDetailsLoading={d.restaurantDetailsLoading}
-          approveLoading={d.approveLoading}
-          handleApproveRestaurant={(restaurantId) => { void d.handleApproveRestaurant(restaurantId); }}
-          handleRejectRestaurant={d.handleRejectRestaurant}
-          handleDeleteRestaurant={d.handleDeleteRestaurant}
-          setQrType={d.setQrType}
-          setQrRestaurant={d.setQrRestaurant}
-          selectedVendor={d.selectedVendor}
-          setSelectedVendor={d.setSelectedVendor}
-          vendorDetailsLoading={d.vendorDetailsLoading}
-          handleApproveVendor={d.handleApproveVendor}
-          handleRejectVendor={d.handleRejectVendor}
-          handleDeleteVendor={d.handleDeleteVendor}
-          selectedOrder={d.selectedOrder}
-          setSelectedOrder={d.setSelectedOrder}
+          selectedUser={dashboard.selectedUser}
+          setSelectedUser={dashboard.setSelectedUser}
+          userDetailsLoading={dashboard.userDetailsLoading}
+          currentUser={dashboard.currentUser}
+          permissionActionLoading={dashboard.permissionActionLoading}
+          handleSetPermissionPreset={dashboard.handleSetPermissionPreset}
+          handleMakeAdmin={dashboard.handleMakeAdmin}
+          handleActivateUser={(userId) => { void dashboard.handleActivateUser(userId); }}
+          handleDeleteUser={dashboard.handleDeleteUser}
+          selectedRestaurant={dashboard.selectedRestaurant}
+          setSelectedRestaurant={dashboard.setSelectedRestaurant}
+          restaurantDetailsLoading={dashboard.restaurantDetailsLoading}
+          approveLoading={dashboard.approveLoading}
+          handleApproveRestaurant={(restaurantId) => { void dashboard.handleApproveRestaurant(restaurantId); }}
+          handleRejectRestaurant={dashboard.handleRejectRestaurant}
+          handleDeleteRestaurant={dashboard.handleDeleteRestaurant}
+          setQrType={dashboard.setQrType}
+          setQrRestaurant={dashboard.setQrRestaurant}
+          selectedVendor={dashboard.selectedVendor}
+          setSelectedVendor={dashboard.setSelectedVendor}
+          vendorDetailsLoading={dashboard.vendorDetailsLoading}
+          handleApproveVendor={dashboard.handleApproveVendor}
+          handleRejectVendor={dashboard.handleRejectVendor}
+          handleDeleteVendor={dashboard.handleDeleteVendor}
+          selectedOrder={dashboard.selectedOrder}
+          setSelectedOrder={dashboard.setSelectedOrder}
         />
 
         <ReasonDialog
-          dialog={d.reasonDialog}
-          loading={d.reasonLoading}
-          onCancel={() => { d.setReasonDialog(null); }}
-          onConfirm={(reason) => { void d.runReasonAction(reason); }}
+          dialog={dashboard.reasonDialog}
+          loading={dashboard.reasonLoading}
+          onCancel={() => { dashboard.setReasonDialog(null); }}
+          onConfirm={(reason) => { void dashboard.runReasonAction(reason); }}
         />
 
-        <AdminBatchBars d={d} />
+        <AdminBatchBars dashboard={dashboard} />
 
-        {d.qrRestaurant && (
+        {dashboard.qrRestaurant && (
           <QRCodeModal
-            restaurant={d.qrRestaurant}
-            initialType={d.qrType}
-            onClose={() => { d.setQrRestaurant(null); }}
+            restaurant={dashboard.qrRestaurant}
+            initialType={dashboard.qrType}
+            onClose={() => { dashboard.setQrRestaurant(null); }}
           />
         )}
       </div>
     </div>
   );
 };
-
-export default AdminDashboardPage;

@@ -1,6 +1,6 @@
 import type { Dispatch, FormEvent, SetStateAction } from 'react';
 import { HouseIcon, PlusIcon, CaretRightIcon } from '@phosphor-icons/react';
-import EmptyState from '@shared/components/EmptyState/EmptyState';
+import { EmptyState } from '@shared/components/EmptyState/EmptyState';
 import type { Restaurant } from '@shared/types/models';
 import type { NewRestaurantForm, VendorProfile } from './hooks/useVendorRestaurants';
 
@@ -19,7 +19,7 @@ interface VendorRestaurantListProps {
   handleCreateRestaurant: (e: FormEvent<HTMLFormElement>) => void;
 }
 
-export default function VendorRestaurantList({
+export function VendorRestaurantList({
   restaurants,
   loading,
   selectedRestaurant,
@@ -77,7 +77,7 @@ export default function VendorRestaurantList({
             gap: 10,
           }}
         >
-          <h3 style={{ fontWeight: 700, fontSize: '0.9rem' }}>Новое заведение</h3>
+          <h3 style={{ fontWeight: 700, fontSize: "var(--text-base)" }}>Новое заведение</h3>
           {formError && <div className="form-error">{formError}</div>}
           <input
             className="form-input"
@@ -154,7 +154,7 @@ export default function VendorRestaurantList({
                   {r.display_id && (
                     <span
                       style={{
-                        fontSize: '0.7rem',
+                        fontSize: "var(--text-xs)",
                         color: 'var(--text-3)',
                         fontFamily: 'monospace',
                         background: 'var(--bg-surface)',
@@ -170,7 +170,7 @@ export default function VendorRestaurantList({
                   {r.moderation_status === 'PENDING' && (
                     <span
                       className="order-status-badge pending"
-                      style={{ fontSize: '0.6rem' }}
+                      style={{ fontSize: "var(--text-xs)" }}
                     >
                       На модерации
                     </span>
@@ -178,7 +178,7 @@ export default function VendorRestaurantList({
                   {r.moderation_status === 'REJECTED' && (
                     <span
                       className="order-status-badge cancelled"
-                      style={{ fontSize: '0.6rem' }}
+                      style={{ fontSize: "var(--text-xs)" }}
                     >
                       Отклонён
                     </span>

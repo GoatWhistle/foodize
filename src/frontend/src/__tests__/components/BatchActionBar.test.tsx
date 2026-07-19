@@ -1,8 +1,8 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { ComponentProps } from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import BatchActionBar from '../../components/BatchActionBar/BatchActionBar';
-
+import { BatchActionBar } from '../../components/BatchActionBar/BatchActionBar';
 type BatchProps = Omit<Partial<ComponentProps<typeof BatchActionBar>>, 'count'> & {
   count?: number | null;
 };
@@ -35,10 +35,11 @@ describe('BatchActionBar', () => {
     expect(screen.getByText('Выбрано: 3 товара')).toBeInTheDocument();
   });
 
-  it('calls onClear when "Снять выделение" clicked', () => {
+  it('calls onClear when "Снять выделение" clicked', async () => {
+    const user = userEvent.setup();
     const onClear = vi.fn();
     render$({ onClear });
-    fireEvent.click(screen.getByText('Снять выделение'));
+    await user.click(screen.getByText('Снять выделение'));
     expect(onClear).toHaveBeenCalledOnce();
   });
 
@@ -52,10 +53,11 @@ describe('BatchActionBar', () => {
     expect(screen.getByText('Опубликовать')).toBeInTheDocument();
   });
 
-  it('calls action onClick when action button clicked', () => {
+  it('calls action onClick when action button clicked', async () => {
+    const user = userEvent.setup();
     const onClick = vi.fn();
     render$({ actions: [{ label: 'Действие', onClick }] });
-    fireEvent.click(screen.getByText('Действие'));
+    await user.click(screen.getByText('Действие'));
     expect(onClick).toHaveBeenCalledOnce();
   });
 

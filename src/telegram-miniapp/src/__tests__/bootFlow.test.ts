@@ -110,6 +110,65 @@ describe("runBootFlow", () => {
     });
   });
 
+  it("defaults initData to empty string on forced logout when init data is absent", async () => {
+    initTelegramAppMock.mockResolvedValueOnce({
+      status: "registered",
+      start_param: "",
+    });
+
+    const action = await runBootFlow(makeDeps({ isForcedLogout: () => true }));
+
+    expect(action).toEqual({ type: "login", initData: "" });
+  });
+
+  it("authenticates with an empty init data string when the result has none", async () => {
+    initTelegramAppMock.mockResolvedValueOnce({
+      status: "registered",
+      start_param: "",
+    });
+    let authed = false;
+    authExistingUserMock.mockImplementation(() => {
+      authed = true;
+      return Promise.resolve();
+    });
+
+    const action = await runBootFlow(
+      makeDeps({ isAuthenticated: () => authed }),
+    );
+
+    expect(authExistingUserMock).toHaveBeenCalledWith("");
+    expect(action.type).toBe("ready");
+  });
+
+  it("defaults phone and init data to null/empty for a new user with missing fields", async () => {
+    initTelegramAppMock.mockResolvedValueOnce({
+      status: "new_user",
+      start_param: "",
+    });
+
+    const action = await runBootFlow(makeDeps());
+
+    expect(action).toEqual({
+      type: "register",
+      initData: "",
+      phoneNumber: null,
+      startParam: "",
+    });
+  });
+
+  it("returns a bare ready action when unauthenticated and status is not registered/new", async () => {
+    initTelegramAppMock.mockResolvedValueOnce({
+      status: "no_init_data",
+      start_param: "",
+      initData: "",
+    });
+
+    const action = await runBootFlow(makeDeps({ isAuthenticated: () => false }));
+
+    expect(action).toEqual({ type: "ready" });
+    expect(authExistingUserMock).not.toHaveBeenCalled();
+  });
+
   it("throws when initData auth does not authenticate", async () => {
     initTelegramAppMock.mockResolvedValueOnce({
       status: "registered",

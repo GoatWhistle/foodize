@@ -20,7 +20,7 @@ export const OrderPartiesCard = ({ order }: { order: Order }) => (
       <span style={{ fontWeight: 800 }}>Клиент</span>
     </div>
     {order.customer_name && (
-      <div style={{ fontWeight: 800, fontSize: '0.9rem' }}>
+      <div style={{ fontWeight: 800, fontSize: "var(--text-base)" }}>
         {order.customer_name}
       </div>
     )}
@@ -30,23 +30,23 @@ export const OrderPartiesCard = ({ order }: { order: Order }) => (
       <span style={{ fontWeight: 800 }}>Заведение</span>
     </div>
     {order.restaurant_name && (
-      <div style={{ fontWeight: 800, fontSize: '0.9rem' }}>
+      <div style={{ fontWeight: 800, fontSize: "var(--text-base)" }}>
         {order.restaurant_name}
       </div>
     )}
     {order.restaurant_address && (
-      <div style={{ color: 'var(--text-2)', fontSize: '0.82rem' }}>
+      <div style={{ color: 'var(--text-2)', fontSize: "var(--text-base)" }}>
         {order.restaurant_address}
       </div>
     )}
 
     {order.estimated_ready_at && (
-      <div style={{ color: 'var(--text-3)', fontSize: '0.8rem' }}>
+      <div style={{ color: 'var(--text-3)', fontSize: "var(--text-base)" }}>
         Ожидается к: {formatDateTime(order.estimated_ready_at)}
       </div>
     )}
     {order.ready_at && (
-      <div style={{ color: 'var(--text-3)', fontSize: '0.8rem' }}>
+      <div style={{ color: 'var(--text-3)', fontSize: "var(--text-base)" }}>
         Готов: {formatDateTime(order.ready_at)}
       </div>
     )}

@@ -55,18 +55,29 @@ export interface TelegramThemeParams {
   [key: string]: string | undefined;
 }
 
+export interface TelegramSafeAreaInset {
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+}
+
 export interface TelegramWebApp {
   initData: string;
   initDataUnsafe: TelegramInitDataUnsafe;
   colorScheme: TelegramColorScheme;
   themeParams: TelegramThemeParams;
   viewportHeight: number;
+  safeAreaInset?: TelegramSafeAreaInset;
+  contentSafeAreaInset?: TelegramSafeAreaInset;
   BackButton: TelegramBackButton;
   MainButton: TelegramMainButton;
   HapticFeedback: TelegramHapticFeedback;
   expand: () => void;
   ready: () => void;
   close: () => void;
+  enableClosingConfirmation?: () => void;
+  disableClosingConfirmation?: () => void;
   showAlert: (message: string, callback?: () => void) => void;
   showConfirm: (message: string, callback?: (confirmed: boolean) => void) => void;
   requestContact: (callback: (granted: boolean) => void) => void;
@@ -166,3 +177,48 @@ export const hapticImpact = (
 ): void => {
   tg?.HapticFeedback.impactOccurred(style);
 };
+
+export function startTelegramApp(): void {
+  if (!tg) return;
+  tg.ready();
+  tg.expand();
+}
+
+export function enableClosingConfirmation(): void {
+  tg?.enableClosingConfirmation?.();
+}
+
+export function disableClosingConfirmation(): void {
+  tg?.disableClosingConfirmation?.();
+}
+
+const EMPTY_INSET: TelegramSafeAreaInset = { top: 0, bottom: 0, left: 0, right: 0 };
+
+function writeInsetVars(prefix: string, inset: TelegramSafeAreaInset): void {
+  const root = document.documentElement.style;
+  root.setProperty(`${prefix}-top`, `${inset.top}px`);
+  root.setProperty(`${prefix}-bottom`, `${inset.bottom}px`);
+  root.setProperty(`${prefix}-left`, `${inset.left}px`);
+  root.setProperty(`${prefix}-right`, `${inset.right}px`);
+}
+
+export function applySafeAreaInsets(): void {
+  if (typeof document === "undefined") return;
+  writeInsetVars("--tg-safe-area-inset", tg?.safeAreaInset ?? EMPTY_INSET);
+  writeInsetVars(
+    "--tg-content-safe-area-inset",
+    tg?.contentSafeAreaInset ?? EMPTY_INSET,
+  );
+}
+
+export function subscribeSafeAreaInsets(): () => void {
+  applySafeAreaInsets();
+  if (!tg) return () => {};
+  const handler = () => { applySafeAreaInsets(); };
+  tg.onEvent("safeAreaChanged", handler);
+  tg.onEvent("contentSafeAreaChanged", handler);
+  return () => {
+    tg.offEvent("safeAreaChanged", handler);
+    tg.offEvent("contentSafeAreaChanged", handler);
+  };
+}

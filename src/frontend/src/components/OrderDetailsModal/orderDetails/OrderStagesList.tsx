@@ -37,14 +37,14 @@ export const OrderStagesList = ({ stages }: { stages: OrderStage[] }) => (
             opacity: stage.state === 'next' ? 0.62 : 1,
           }}
         >
-          <div style={{ fontSize: '0.82rem', fontWeight: 800 }}>
+          <div style={{ fontSize: "var(--text-base)", fontWeight: 800 }}>
             {STATUS_LABEL_RU[stage.status]}
             {stage.state === 'current' && (
               <span
                 style={{
                   marginLeft: 8,
                   color: 'var(--fire)',
-                  fontSize: '0.72rem',
+                  fontSize: "var(--text-sm)",
                 }}
               >
                 текущий
@@ -54,7 +54,7 @@ export const OrderStagesList = ({ stages }: { stages: OrderStage[] }) => (
           <div
             style={{
               color: 'var(--text-3)',
-              fontSize: '0.72rem',
+              fontSize: "var(--text-sm)",
               whiteSpace: 'nowrap',
             }}
           >

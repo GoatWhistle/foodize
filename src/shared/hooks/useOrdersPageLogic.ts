@@ -58,11 +58,17 @@ export const useOrdersPageLogic = ({
   }, [statusFilter]);
 
   useEffect(() => {
-    fetchMyOrders({
-      page,
-      size: pageSize,
-      status: statusFilter === "DONE" ? "COMPLETED" : undefined,
-    }).catch((err: unknown) => { logError("useOrdersPageLogic.fetchMyOrders", err); });
+    void (async () => {
+      try {
+        await fetchMyOrders({
+          page,
+          size: pageSize,
+          status: statusFilter === "DONE" ? "COMPLETED" : undefined,
+        });
+      } catch (error) {
+        logError("useOrdersPageLogic.fetchMyOrders", error);
+      }
+    })();
   }, [page, statusFilter, fetchMyOrders, pageSize, refreshKey]);
 
   const {

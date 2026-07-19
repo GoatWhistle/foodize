@@ -2,7 +2,7 @@ import { render, screen, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { Order } from '@shared/types/models';
-import OrderStatusPage from '../../pages/orders/OrderStatusPage';
+import { OrderStatusPage } from '../../pages/orders/OrderStatusPage';
 import { useOrdersStore } from '../../store/useOrdersStore';
 
 type StoreState = {
@@ -85,7 +85,7 @@ describe('OrderStatusPage', () => {
 
     expect(screen.getAllByText('Принят').length).toBeGreaterThan(0);
     expect(screen.getAllByText(/500 ₽/)).toHaveLength(2);
-    expect(screen.getByText('Бургер')).toBeDefined();
+    expect(screen.getByText('Бургер')).toBeInTheDocument();
   });
 
   it('fetches the order on mount', () => {
@@ -103,8 +103,7 @@ describe('OrderStatusPage', () => {
 
     renderWithRouter();
 
-    const skeletons = document.querySelectorAll('.skeleton');
-    expect(skeletons.length).toBeGreaterThan(0);
+    expect(screen.getByRole('status', { name: 'Загрузка заказа' })).toBeInTheDocument();
     expect(screen.queryByText('Состав заказа')).toBeNull();
   });
 
@@ -127,8 +126,8 @@ describe('OrderStatusPage', () => {
 
     renderWithRouter();
 
-    expect(screen.getByText('Отменён')).toBeDefined();
-    expect(screen.getByText('Ресторан закрыт')).toBeDefined();
+    expect(screen.getByText('Отменён')).toBeInTheDocument();
+    expect(screen.getByText('Ресторан закрыт')).toBeInTheDocument();
     expect(screen.queryByText('Отменить')).toBeNull();
   });
 
@@ -151,7 +150,7 @@ describe('OrderStatusPage', () => {
     renderWithRouter();
 
     expect(screen.getAllByText('Выдан').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByRole('button', { name: 'Повторить заказ' })).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Повторить заказ' })).toBeInTheDocument();
     expect(screen.queryByText('Отменить')).toBeNull();
   });
 

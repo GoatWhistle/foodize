@@ -1,9 +1,9 @@
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
-import CartDrawer from '@shared/components/CartDrawer/CartDrawer';
-
+import { CartDrawer } from '@shared/components/CartDrawer/CartDrawer';
 const renderInRouter = (ui: ReactNode) => render(<MemoryRouter>{ui}</MemoryRouter>);
 
 type RestaurantState = { menus: Record<string, unknown> };
@@ -88,31 +88,30 @@ describe('CartDrawer', () => {
 
     renderInRouter(<CartDrawer onClose={onClose} />);
 
-    expect(screen.getByText('Pizza')).toBeDefined();
+    expect(screen.getByText('Pizza')).toBeInTheDocument();
     expect(screen.getAllByText(/200 ₽/).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText('2')).toBeDefined();
+    expect(screen.getByText('2')).toBeInTheDocument();
   });
 
   it('calls placeOrder when checkout button clicked', async () => {
     mockStore = makeStore({
       cart: [{ menuItem: { id: '1', name: 'P' }, quantity: 1, selectedOptionIds: [], selectedOptions: [] }],
     });
+    const user = userEvent.setup();
     renderInRouter(<CartDrawer onClose={onClose} />);
 
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /Оформить заказ/ }));
-      await Promise.resolve();
-    });
+    await user.click(screen.getByRole('button', { name: /Оформить заказ/ }));
     expect(mockStore.placeOrder).toHaveBeenCalled();
   });
 
-  it('calls clearCart when "Очистить корзину" clicked', () => {
+  it('calls clearCart when "Очистить корзину" clicked', async () => {
+    const user = userEvent.setup();
     mockStore = makeStore({
       cart: [{ menuItem: { id: '1' }, quantity: 1, selectedOptionIds: [], selectedOptions: [] }],
     });
     renderInRouter(<CartDrawer onClose={onClose} />);
 
-    fireEvent.click(screen.getByText('Очистить корзину'));
+    await user.click(screen.getByText('Очистить корзину'));
     expect(mockStore.clearCart).toHaveBeenCalled();
   });
 
@@ -121,13 +120,12 @@ describe('CartDrawer', () => {
       cart: [{ menuItem: { id: '1', name: 'P' }, quantity: 1, selectedOptionIds: [], selectedOptions: [] }],
       placeOrder: vi.fn().mockRejectedValueOnce(new Error('payment failed')),
     });
+    const user = userEvent.setup();
     renderInRouter(<CartDrawer onClose={onClose} />);
 
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: /Оформить заказ/ }));
-      await Promise.resolve();
-    });
+    await user.click(screen.getByRole('button', { name: /Оформить заказ/ }));
     expect(mockStore.placeOrder).toHaveBeenCalled();
+    expect(await screen.findByText('Ошибка при оформлении заказа')).toBeInTheDocument();
   });
 
   it('renders checkout button with total price', () => {
@@ -136,6 +134,6 @@ describe('CartDrawer', () => {
       cartTotal: () => 350,
     });
     renderInRouter(<CartDrawer onClose={onClose} />);
-    expect(screen.getByRole('button', { name: /Оформить заказ/ })).toBeDefined();
+    expect(screen.getByRole('button', { name: /Оформить заказ/ })).toBeInTheDocument();
   });
 });

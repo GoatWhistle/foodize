@@ -11,10 +11,10 @@ import { KEYFRAMES, NEW_HIGHLIGHT_MS, styles } from './displayBoardStyles';
 
 type OrderId = string | number;
 
-const COOKING_STYLE = getOrderStatusStyle('COOKING');
+const COOKING_STYLE = getOrderStatusStyle('ACCEPTED');
 const READY_STYLE = getOrderStatusStyle('READY');
 
-export default function DisplayBoardPage() {
+export function DisplayBoardPage() {
   const { restaurantId } = useParams();
   const [cooking, setCooking] = useState<OrderId[]>([]);
   const [ready, setReady] = useState<OrderId[]>([]);
@@ -29,10 +29,14 @@ export default function DisplayBoardPage() {
 
   useEffect(() => {
     if (!restaurantId) return;
-    restaurantService
-      .getById(restaurantId)
-      .then((res) => { setRestaurantName(res.data.data.name || ''); })
-      .catch((err: unknown) => { logError('DisplayBoardPage.getRestaurant', err); });
+    void (async () => {
+      try {
+        const response = await restaurantService.getById(restaurantId);
+        setRestaurantName(response.data.data.name || '');
+      } catch (error) {
+        logError('DisplayBoardPage.getRestaurant', error);
+      }
+    })();
   }, [restaurantId]);
 
   useEffect(() => {
@@ -45,8 +49,8 @@ export default function DisplayBoardPage() {
     wsRef.current = createDisplayBoardWebSocket(
       restaurantId,
       (data) => {
-        const nextCooking = (data.cooking as OrderId[] | undefined) ?? [];
-        const nextReady = (data.ready as OrderId[] | undefined) ?? [];
+        const nextCooking = (data['cooking'] as OrderId[] | undefined) ?? [];
+        const nextReady = (data['ready'] as OrderId[] | undefined) ?? [];
 
         const addedCooking = nextCooking.filter(
           (id) => !prevCookingRef.current.has(id)
@@ -93,8 +97,8 @@ export default function DisplayBoardPage() {
 
   if (error) {
     return (
-      <div data-theme="dark" style={styles.errorScreen}>
-        <span style={styles.errorText}>
+      <div data-theme="dark" style={styles['errorScreen']}>
+        <span style={styles['errorText']}>
           {error === 'forbidden' ? 'Нет доступа' : 'Ошибка подключения'}
         </span>
       </div>
@@ -107,12 +111,12 @@ export default function DisplayBoardPage() {
   return (
     <>
       <style>{KEYFRAMES}</style>
-      <div data-theme="dark" style={styles.root}>
-        <div style={styles.header}>
-          <span style={styles.headerName}>{restaurantName}</span>
-          <span style={styles.headerTime}>{timeStr}</span>
+      <div data-theme="dark" style={styles['root']}>
+        <div style={styles['header']}>
+          <span style={styles['headerName']}>{restaurantName}</span>
+          <span style={styles['headerTime']}>{timeStr}</span>
         </div>
-        <div style={styles.columns}>
+        <div style={styles['columns']}>
           <DisplayBoardColumn
             title="Готовятся"
             Icon={CookingPotIcon}
@@ -120,7 +124,7 @@ export default function DisplayBoardPage() {
             newIds={newCooking}
             style={COOKING_STYLE}
           />
-          <div style={styles.divider} />
+          <div style={styles['divider']} />
           <DisplayBoardColumn
             title="Готовы к выдаче"
             Icon={CheckCircleIcon}

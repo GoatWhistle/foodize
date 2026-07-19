@@ -13,7 +13,7 @@ interface EmptyStateProps {
   icon?: ReactNode | false;
 }
 
-const EmptyState = ({
+export const EmptyState = ({
   title = "Здесь пусто",
   subtitle,
   action,
@@ -40,5 +40,3 @@ const EmptyState = ({
     </div>
   );
 };
-
-export default EmptyState;

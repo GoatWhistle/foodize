@@ -1,17 +1,14 @@
 import type { ChangeEvent, Dispatch, ReactNode, SetStateAction } from 'react';
 import { PackageIcon, ClockIcon, CheckCircleIcon, HandPalmIcon, ShieldWarningIcon } from '@phosphor-icons/react';
-import Pagination from '@shared/components/Pagination/Pagination';
-import EmptyState from '@shared/components/EmptyState/EmptyState';
+import { Pagination } from '@shared/components/Pagination/Pagination';
+import { EmptyState } from '@shared/components/EmptyState/EmptyState';
 import { ORDER_STATUS_RU } from '@shared/utils/locales';
 import { translateApiError } from '@shared/utils/translateApiError';
 import type { Order } from '@shared/types/models';
 import type { adminService as AdminService } from '../../../services/adminService';
 import type { OrderFilters } from '../hooks/useAdminOrders';
 import type { ReasonDialogConfig } from '../useAdminDashboard';
-
-type AdminServiceWithForceCancel = typeof AdminService & {
-  forceCancelOrder: (id: string, reason: string) => Promise<unknown>;
-};
+import { formatPrice } from '@shared/utils/price';
 
 const cardStyle = {
   background: 'var(--bg-card)',
@@ -32,7 +29,7 @@ const filterControlStyle = {
   height: 48,
   paddingTop: 11,
   paddingBottom: 11,
-  fontSize: '0.86rem',
+  fontSize: "var(--text-base)",
   lineHeight: 1.2,
 };
 
@@ -68,7 +65,7 @@ export interface AdminResolutionTabProps {
   PAGE_SIZE: number;
 }
 
-export default function AdminResolutionTab({
+export function AdminResolutionTab({
   orders,
   ordersLoading,
   ordersTotal,
@@ -122,8 +119,8 @@ export default function AdminResolutionTab({
       >
         <ShieldWarningIcon size={32} color="var(--error)" />
         <div>
-          <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Центр Модерации</h3>
-          <div style={{ fontSize: '0.85rem', color: 'var(--text-3)' }}>
+          <h3 style={{ margin: 0, fontSize: "var(--text-md)" }}>Центр Модерации</h3>
+          <div style={{ fontSize: "var(--text-base)", color: 'var(--text-3)' }}>
             Инструменты ручной отмены и возврата средств для любых заказов.
           </div>
         </div>
@@ -185,18 +182,18 @@ export default function AdminResolutionTab({
               }}
             >
               <div>
-                <div style={{ color: 'var(--text-3)', fontSize: '0.74rem', fontWeight: 800 }}>
+                <div style={{ color: 'var(--text-3)', fontSize: "var(--text-sm)", fontWeight: 800 }}>
                   Заказ #{orderTitle(o)}
                 </div>
                 <div
                   style={{
                     color: 'var(--text-1)',
                     fontWeight: 900,
-                    fontSize: '1.05rem',
+                    fontSize: "var(--text-md)",
                     marginTop: 2,
                   }}
                 >
-                  {o.total_price} ₽
+                  {formatPrice(o.total_price)}
                 </div>
               </div>
               <span className={`order-status-badge ${cfg.className}`}>
@@ -209,7 +206,7 @@ export default function AdminResolutionTab({
                 flexDirection: 'column',
                 gap: 3,
                 color: 'var(--text-3)',
-                fontSize: '0.84rem',
+                fontSize: "var(--text-base)",
               }}
             >
               <div>
@@ -242,11 +239,11 @@ export default function AdminResolutionTab({
                       confirmLabel: 'Отменить',
                       onConfirm: async (reason) => {
                         try {
-                          await (adminService as AdminServiceWithForceCancel).forceCancelOrder(o.id, reason);
+                          await adminService.forceCancelOrder(o.id, reason);
                           setOrdersPage(1);
-                        } catch (err) {
+                        } catch (error) {
                           setActionError(
-                            translateApiError(err, 'Не удалось отменить заказ. Попробуйте ещё раз.')
+                            translateApiError(error, 'Не удалось отменить заказ. Попробуйте ещё раз.')
                           );
                         }
                       },

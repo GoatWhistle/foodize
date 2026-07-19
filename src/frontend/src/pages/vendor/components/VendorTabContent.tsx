@@ -1,13 +1,13 @@
 import type { Order } from '@shared/types/models';
 import { vendorService } from '@shared/services/vendorService';
-import VendorMenuTab from '../tabs/VendorMenuTab';
-import VendorOrdersTab from '../tabs/VendorOrdersTab';
-import VendorPromosTab from '../tabs/VendorPromosTab';
-import VendorScheduleTab from '../tabs/VendorScheduleTab';
-import VendorStaffTab from '../tabs/VendorStaffTab';
-import VendorAnalyticsTab from '../tabs/VendorAnalyticsTab';
-import VendorSettingsTab from '../tabs/VendorSettingsTab';
-import VendorAdvisorPanel from '../VendorAdvisorPanel';
+import { VendorMenuTab } from '../tabs/VendorMenuTab';
+import { VendorOrdersTab } from '../tabs/VendorOrdersTab';
+import { VendorPromosTab } from '../tabs/VendorPromosTab';
+import { VendorScheduleTab } from '../tabs/VendorScheduleTab';
+import { VendorStaffTab } from '../tabs/VendorStaffTab';
+import { VendorAnalyticsTab } from '../tabs/VendorAnalyticsTab';
+import { VendorSettingsTab } from '../tabs/VendorSettingsTab';
+import { VendorAdvisorPanel } from '../VendorAdvisorPanel';
 import type { useVendorDashboard } from '../useVendorDashboard';
 
 interface OrderGroup {
@@ -17,7 +17,7 @@ interface OrderGroup {
 }
 
 interface VendorTabContentProps {
-  d: ReturnType<typeof useVendorDashboard>;
+  dashboard: ReturnType<typeof useVendorDashboard>;
   todayStr: string;
   statusLabelRu: Record<string, string>;
   groupedRestaurantOrders: OrderGroup[];
@@ -32,7 +32,7 @@ interface VendorTabContentProps {
 }
 
 export function VendorTabContent({
-  d,
+  dashboard,
   todayStr,
   statusLabelRu,
   groupedRestaurantOrders,
@@ -42,160 +42,160 @@ export function VendorTabContent({
   getOrderDisplayId,
   formatOrderTime,
 }: VendorTabContentProps) {
-  if (!d.selectedRestaurant) return null;
+  if (!dashboard.selectedRestaurant) return null;
 
   return (
     <div className="vendor-section" style={{ flex: 1, minWidth: 0, margin: 0 }}>
-      {d.activeTab === 'menu' && (
+      {dashboard.activeTab === 'menu' && (
         <VendorMenuTab
-          selectedRestaurant={d.selectedRestaurant}
-          selectedMenu={d.selectedMenu}
-          loading={d.loading}
-          exportLoading={d.exportLoading}
+          selectedRestaurant={dashboard.selectedRestaurant}
+          selectedMenu={dashboard.selectedMenu}
+          loading={dashboard.loading}
+          exportLoading={dashboard.exportLoading}
           todayStr={todayStr}
-          showAddItem={d.showAddItem}
-          setShowAddItem={d.setShowAddItem}
-          editingItem={d.editingItem}
-          setEditingItem={d.setEditingItem}
-          menuItemForm={d.menuItemForm}
-          setMenuItemForm={d.setMenuItemForm}
-          formLoading={d.formLoading}
-          formError={d.formError}
-          menuError={d.menuError}
-          menuSuccess={d.menuSuccess}
+          showAddItem={dashboard.showAddItem}
+          setShowAddItem={dashboard.setShowAddItem}
+          editingItem={dashboard.editingItem}
+          setEditingItem={dashboard.setEditingItem}
+          menuItemForm={dashboard.menuItemForm}
+          setMenuItemForm={dashboard.setMenuItemForm}
+          formLoading={dashboard.formLoading}
+          formError={dashboard.formError}
+          menuError={dashboard.menuError}
+          menuSuccess={dashboard.menuSuccess}
           handleSaveMenuItem={(e) => {
-            void d.handleSaveMenuItem(e);
+            void dashboard.handleSaveMenuItem(e);
           }}
-          handleDeleteMenuItem={d.handleDeleteMenuItem}
+          handleDeleteMenuItem={dashboard.handleDeleteMenuItem}
           handleVendorExport={handleVendorExport}
           vendorService={vendorService}
         />
       )}
 
-      {d.activeTab === 'orders' && (
+      {dashboard.activeTab === 'orders' && (
         <VendorOrdersTab
-          restaurantOrders={d.restaurantOrders}
-          ordersPage={d.ordersPage}
-          setOrdersPage={d.setOrdersPage}
-          ordersTotal={d.ordersTotal}
-          ordersStatusFilter={d.ordersStatusFilter}
-          setOrdersStatusFilter={d.setOrdersStatusFilter}
-          ordersDateFromFilter={d.ordersDateFromFilter}
-          setOrdersDateFromFilter={d.setOrdersDateFromFilter}
-          ordersDateToFilter={d.ordersDateToFilter}
-          setOrdersDateToFilter={d.setOrdersDateToFilter}
-          ordersLoading={d.ordersLoading}
-          exportLoading={d.exportLoading}
-          updatingOrderId={d.updatingOrderId}
-          selectedOrder={d.selectedOrder}
-          setSelectedOrder={d.setSelectedOrder}
+          restaurantOrders={dashboard.restaurantOrders}
+          ordersPage={dashboard.ordersPage}
+          setOrdersPage={dashboard.setOrdersPage}
+          ordersTotal={dashboard.ordersTotal}
+          ordersStatusFilter={dashboard.ordersStatusFilter}
+          setOrdersStatusFilter={dashboard.setOrdersStatusFilter}
+          ordersDateFromFilter={dashboard.ordersDateFromFilter}
+          setOrdersDateFromFilter={dashboard.setOrdersDateFromFilter}
+          ordersDateToFilter={dashboard.ordersDateToFilter}
+          setOrdersDateToFilter={dashboard.setOrdersDateToFilter}
+          ordersLoading={dashboard.ordersLoading}
+          exportLoading={dashboard.exportLoading}
+          updatingOrderId={dashboard.updatingOrderId}
+          selectedOrder={dashboard.selectedOrder}
+          setSelectedOrder={dashboard.setSelectedOrder}
           todayStr={todayStr}
           groupedRestaurantOrders={groupedRestaurantOrders}
-          ordersError={d.ordersError}
+          ordersError={dashboard.ordersError}
           handleVendorExport={handleVendorExport}
           fetchVendorOrders={() => {
-            void d.fetchVendorOrders();
+            void dashboard.fetchVendorOrders();
           }}
-          handleOrderChange={d.handleOrderChange}
-          handleCancelOrder={d.handleCancelOrder}
+          handleOrderChange={dashboard.handleOrderChange}
+          handleCancelOrder={dashboard.handleCancelOrder}
           vendorService={vendorService}
-          selectedRestaurant={d.selectedRestaurant}
+          selectedRestaurant={dashboard.selectedRestaurant}
           STATUS_LABEL_RU={statusLabelRu}
           getOrderDisplayId={getOrderDisplayId}
           formatOrderTime={formatOrderTime}
         />
       )}
 
-      {d.activeTab === 'promos' && (
+      {dashboard.activeTab === 'promos' && (
         <VendorPromosTab
-          selectedRestaurant={d.selectedRestaurant}
-          promosList={d.promosList}
-          promosLoading={d.promosLoading}
-          promosError={d.promosError}
-          promosSuccess={d.promosSuccess}
-          showPromoForm={d.showPromoForm}
-          setShowPromoForm={d.setShowPromoForm}
-          promoForm={d.promoForm}
-          setPromoForm={d.setPromoForm}
-          promoFormLoading={d.promoFormLoading}
-          deactivatingPromo={d.deactivatingPromo}
+          selectedRestaurant={dashboard.selectedRestaurant}
+          promosList={dashboard.promosList}
+          promosLoading={dashboard.promosLoading}
+          promosError={dashboard.promosError}
+          promosSuccess={dashboard.promosSuccess}
+          showPromoForm={dashboard.showPromoForm}
+          setShowPromoForm={dashboard.setShowPromoForm}
+          promoForm={dashboard.promoForm}
+          setPromoForm={dashboard.setPromoForm}
+          promoFormLoading={dashboard.promoFormLoading}
+          deactivatingPromo={dashboard.deactivatingPromo}
           handleCreatePromo={(e) => {
-            void d.handleCreatePromo(e);
+            void dashboard.handleCreatePromo(e);
           }}
           handleDeactivatePromo={(code) => {
-            void d.handleDeactivatePromo(code);
+            void dashboard.handleDeactivatePromo(code);
           }}
         />
       )}
 
-      {d.activeTab === 'schedule' && (
+      {dashboard.activeTab === 'schedule' && (
         <VendorScheduleTab
-          workingHours={d.workingHours}
-          setWorkingHours={d.setWorkingHours}
-          workingHoursLoading={d.workingHoursLoading}
-          workingHoursSaved={d.workingHoursSaved}
-          workingHoursError={d.workingHoursError}
+          workingHours={dashboard.workingHours}
+          setWorkingHours={dashboard.setWorkingHours}
+          workingHoursLoading={dashboard.workingHoursLoading}
+          workingHoursSaved={dashboard.workingHoursSaved}
+          workingHoursError={dashboard.workingHoursError}
           handleSaveWorkingHours={() => {
-            void d.handleSaveWorkingHours();
+            void dashboard.handleSaveWorkingHours();
           }}
         />
       )}
 
-      {d.activeTab === 'staff' && (
+      {dashboard.activeTab === 'staff' && (
         <VendorStaffTab
-          staffSubTab={d.staffSubTab}
-          setStaffSubTab={d.setStaffSubTab}
-          staffMembers={d.staffMembers}
-          staffMembersTotal={d.staffMembersTotal}
-          staffMembersPage={d.staffMembersPage}
-          setStaffMembersPage={d.setStaffMembersPage}
-          staffMemberRemoving={d.staffMemberRemoving}
+          staffSubTab={dashboard.staffSubTab}
+          setStaffSubTab={dashboard.setStaffSubTab}
+          staffMembers={dashboard.staffMembers}
+          staffMembersTotal={dashboard.staffMembersTotal}
+          staffMembersPage={dashboard.staffMembersPage}
+          setStaffMembersPage={dashboard.setStaffMembersPage}
+          staffMemberRemoving={dashboard.staffMemberRemoving}
           handleRemoveStaffMember={(profileId) => {
-            void d.handleRemoveStaffMember(profileId);
+            void dashboard.handleRemoveStaffMember(profileId);
           }}
-          staffRequests={d.staffRequests}
-          staffTotal={d.staffTotal}
-          staffPage={d.staffPage}
-          setStaffPage={d.setStaffPage}
-          staffDecisionLoading={d.staffDecisionLoading}
+          staffRequests={dashboard.staffRequests}
+          staffTotal={dashboard.staffTotal}
+          staffPage={dashboard.staffPage}
+          setStaffPage={dashboard.setStaffPage}
+          staffDecisionLoading={dashboard.staffDecisionLoading}
           handleStaffDecision={(requestId, status) => {
-            void d.handleStaffDecision(requestId, status);
+            void dashboard.handleStaffDecision(requestId, status);
           }}
         />
       )}
 
-      {d.activeTab === 'analytics' && (
+      {dashboard.activeTab === 'analytics' && (
         <VendorAnalyticsTab
-          finance={d.finance}
-          financeLoading={d.financeLoading}
-          advancedAnalytics={d.advancedAnalytics}
-          analyticsLoading={d.analyticsLoading}
-          financeFilters={d.financeFilters}
-          setFinanceFilters={d.setFinanceFilters}
-          activePreset={d.activePreset}
-          setActivePreset={d.setActivePreset}
-          exportLoading={d.exportLoading}
+          finance={dashboard.finance}
+          financeLoading={dashboard.financeLoading}
+          advancedAnalytics={dashboard.advancedAnalytics}
+          analyticsLoading={dashboard.analyticsLoading}
+          financeFilters={dashboard.financeFilters}
+          setFinanceFilters={dashboard.setFinanceFilters}
+          activePreset={dashboard.activePreset}
+          setActivePreset={dashboard.setActivePreset}
+          exportLoading={dashboard.exportLoading}
           handleVendorExport={handleVendorExport}
           vendorService={vendorService}
-          selectedRestaurant={d.selectedRestaurant}
+          selectedRestaurant={dashboard.selectedRestaurant}
           getVendorRestaurantLabel={getVendorRestaurantLabel}
           getVendorDateRange={getVendorDateRange}
         />
       )}
 
-      {d.activeTab === 'ai' && (
-        <VendorAdvisorPanel restaurantId={d.selectedRestaurant.id} />
+      {dashboard.activeTab === 'ai' && (
+        <VendorAdvisorPanel restaurantId={dashboard.selectedRestaurant.id} />
       )}
 
-      {d.activeTab === 'settings' && (
+      {dashboard.activeTab === 'settings' && (
         <VendorSettingsTab
-          selectedRestaurant={d.selectedRestaurant}
-          editRestaurant={d.editRestaurant}
-          setEditRestaurant={d.setEditRestaurant}
-          formError={d.formError}
-          formLoading={d.formLoading}
+          selectedRestaurant={dashboard.selectedRestaurant}
+          editRestaurant={dashboard.editRestaurant}
+          setEditRestaurant={dashboard.setEditRestaurant}
+          formError={dashboard.formError}
+          formLoading={dashboard.formLoading}
           handleUpdateRestaurant={(e) => {
-            void d.handleUpdateRestaurant(e);
+            void dashboard.handleUpdateRestaurant(e);
           }}
         />
       )}

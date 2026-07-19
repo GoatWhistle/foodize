@@ -5,23 +5,24 @@ import { CATEGORY_RU } from '@shared/utils/locales';
 import type { Restaurant } from '@shared/types/models';
 import { BriefcaseIcon, ListIcon } from '@phosphor-icons/react';
 import { useCartStore } from '../../store/useCartStore';
-import MenuItemCard from '@shared/components/MenuItemCard/MenuItemCard';
-import ProductSheet from '@shared/components/ProductSheet/ProductSheet';
-import ShareModal from '../../components/ShareModal/ShareModal';
+import { MenuItemCard } from '@shared/components/MenuItemCard/MenuItemCard';
+import { ProductSheet } from '@shared/components/ProductSheet/ProductSheet';
+import { ShareModal } from '../../components/ShareModal/ShareModal';
 import { staffService } from '@shared/services/staffService';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useModalStore } from '@shared/store/useModalStore';
 import { useFavoriteStore } from '@shared/store/useFavoriteStore';
 import { useShallow } from 'zustand/react/shallow';
-import { useRestaurantPage } from '@shared/hooks/useRestaurantPage';
-import StaffModal from './components/StaffModal';
-import ReviewsModal from '@shared/components/ReviewsModal/ReviewsModal';
-import InfoModal from '@shared/components/InfoModal/InfoModal';
+import { useRestaurantPageController } from '@shared/hooks/useRestaurantPageController';
+import { StaffModal } from './components/StaffModal';
+import { ReviewsModal } from '@shared/components/ReviewsModal/ReviewsModal';
+import { InfoModal } from '@shared/components/InfoModal/InfoModal';
 import { getCategoryIcon } from '@shared/utils/categoryIcons';
-import { pluralizeRu } from '@shared/utils/pluralize';
+import { toInfoWorkingHours } from '@shared/utils/restaurant';
 import { RestaurantHero } from './components/RestaurantHero';
+import type { CartLineOption } from '@shared/store/createCartStore';
 
-const RestaurantPage = () => {
+export const RestaurantPage = () => {
   const { id } = useParams();
   const location = useLocation();
   const locationState = location.state as { restaurant?: Restaurant } | null;
@@ -34,11 +35,20 @@ const RestaurantPage = () => {
   const [staffLoading, setStaffLoading] = useState(false);
   const [staffError, setStaffError] = useState('');
 
+  const { addToCart } = useCartStore(
+    useShallow((s) => ({ addToCart: s.addToCart }))
+  );
+  const currentUser = useAuthStore((s) => s.user);
+  const requestConfirm = useModalStore((s) => s.requestConfirm);
+  const { favoriteIds, toggle: toggleFavorite } = useFavoriteStore(
+    useShallow((s) => ({ favoriteIds: s.favoriteIds, toggle: s.toggle }))
+  );
+
   const {
     restaurant,
+    restaurantView,
     restaurantUUID,
     rating,
-    reviewCount,
     workingHours,
     loading,
     isRestaurantOpen,
@@ -57,39 +67,25 @@ const RestaurantPage = () => {
     reviewSuccess,
     selectedProduct,
     setSelectedProduct,
-    handleReviewSubmit,
-    handleReviewDelete,
-  } = useRestaurantPage({ id: id ?? '', initialRestaurant: locationState?.restaurant ?? null });
+    isFav,
+    myReview,
+    otherReviews,
+    reviewsButtonLabel,
+    handleProductAdd,
+    handleToggleFavorite,
+    handleDeleteWithConfirm,
+    handleReviewSubmitForm,
+  } = useRestaurantPageController<CartLineOption>({
+    id: id ?? '',
+    initialRestaurant: locationState?.restaurant ?? null,
+    currentUserId: currentUser?.id,
+    addToCart,
+    toggleFavorite,
+    favoriteIds,
+    requestConfirm,
+  });
 
-  const { addToCart } = useCartStore(
-    useShallow((s) => ({ addToCart: s.addToCart }))
-  );
-  const currentUser = useAuthStore((s) => s.user);
-  const requestConfirm = useModalStore((s) => s.requestConfirm);
-  const { favoriteIds, toggle: toggleFavorite } = useFavoriteStore(
-    useShallow((s) => ({ favoriteIds: s.favoriteIds, toggle: s.toggle }))
-  );
-
-  const restaurantView = restaurant as Partial<Restaurant> & {
-    id: string;
-    name: string;
-    address: string;
-  };
-
-  const isFav = restaurantUUID ? favoriteIds.includes(restaurantUUID) : false;
-  const myReview = reviewsList.find((r) => r.user_id === currentUser?.id) ?? null;
-  const otherReviews = reviewsList.filter((r) => r.user_id !== currentUser?.id);
   const canReview = currentUser?.permissions.includes('reviews.create') ?? false;
-
-  const handleDeleteWithConfirm = (reviewId: string) => {
-    requestConfirm({
-      title: 'Удалить отзыв?',
-      message: 'Точно ли вы хотите удалить этот отзыв?',
-      confirmLabel: 'Удалить',
-      danger: true,
-      onConfirm: () => handleReviewDelete(reviewId),
-    });
-  };
 
   const handleStaffSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -107,43 +103,6 @@ const RestaurantPage = () => {
     }
   };
 
-  const handleReviewSubmitAdapter = (
-    payload: FormEvent<HTMLFormElement> | { myReview: unknown; onSuccess: () => void },
-  ) => {
-    if ('myReview' in payload) {
-      void handleReviewSubmit({
-        myReview: Boolean(payload.myReview),
-        onSuccess: payload.onSuccess,
-      });
-    } else {
-      payload.preventDefault();
-      void handleReviewSubmit();
-    }
-  };
-
-  const handleProductAdd = ({
-    item,
-    selectedOptions,
-    quantity,
-  }: {
-    item: Parameters<typeof addToCart>[0];
-    selectedOptions: Parameters<typeof addToCart>[2];
-    quantity: number;
-  }) => {
-    if (!restaurantUUID) return;
-    void addToCart(item, restaurantUUID, selectedOptions, quantity);
-    setSelectedProduct(null);
-  };
-
-  const reviewsButtonLabel = (() => {
-    const parts = [];
-    if (rating != null) parts.push(rating.toFixed(1));
-    if (reviewCount != null)
-      parts.push(`${reviewCount} ${pluralizeRu(reviewCount, ['отзыв', 'отзыва', 'отзывов'])}`);
-    else parts.push('Отзывы');
-    return parts.join(' · ');
-  })();
-
   return (
     <div className="page-enter" style={{ minHeight: '100vh' }}>
       <RestaurantHero
@@ -155,15 +114,13 @@ const RestaurantPage = () => {
         onOpenReviews={() => { setShowReviewsModal(true); setReviewFormOpen(false); }}
         onOpenInfo={() => { setShowInfoModal(true); }}
         onOpenShare={() => { setShowShareModal(true); }}
-        onToggleFavorite={() => {
-          if (restaurantUUID) void toggleFavorite(restaurantUUID);
-        }}
+        onToggleFavorite={handleToggleFavorite}
       />
 
       <div className="restaurant-content">
-        {restaurantView.is_open === false && (
+        {!restaurantView.is_open && (
           <div
-            style={{ padding: '12px 16px', background: 'var(--color-error-bg)', border: '1px solid var(--error)', borderRadius: 'var(--r-md)', color: 'var(--error)', fontSize: '0.85rem', fontWeight: 800, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}
+            style={{ padding: '12px 16px', background: 'var(--color-error-bg)', border: '1px solid var(--error)', borderRadius: 'var(--r-md)', color: 'var(--error)', fontSize: "var(--text-base)", fontWeight: 800, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}
           >
             Заведение временно закрыто и не принимает заказы
           </div>
@@ -258,7 +215,7 @@ const RestaurantPage = () => {
           canReview={canReview}
           currentUser={currentUser}
           onClose={() => { setShowReviewsModal(false); }}
-          onSubmit={handleReviewSubmitAdapter}
+          onSubmit={handleReviewSubmitForm}
           onDeleteWithConfirm={handleDeleteWithConfirm}
           editableForm
           splitOwnReviews
@@ -274,17 +231,10 @@ const RestaurantPage = () => {
 
       {showInfoModal && (
         <InfoModal
-          workingHours={workingHours.map((wh) => ({
-            day_of_week: wh.day_of_week,
-            is_open: !wh.is_closed,
-            opening_time: wh.open_time,
-            closing_time: wh.close_time,
-          }))}
+          workingHours={toInfoWorkingHours(workingHours)}
           onClose={() => { setShowInfoModal(false); }}
         />
       )}
     </div>
   );
 };
-
-export default RestaurantPage;

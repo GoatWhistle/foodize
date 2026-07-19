@@ -1,7 +1,7 @@
-import SharedOrderStatusPage from "@shared/pages/OrderStatusPage/OrderStatusPage";
+import { OrderStatusPage as SharedOrderStatusPage } from "@shared/pages/OrderStatusPage/OrderStatusPage";
 import { createOrderWebSocket } from "../../services/api";
 
-const OrderStatusPage = () => (
+export const OrderStatusPage = () => (
   <SharedOrderStatusPage
     createOrderWebSocket={createOrderWebSocket}
     onBack="/orders"
@@ -9,5 +9,3 @@ const OrderStatusPage = () => (
     showDetails={false}
   />
 );
-
-export default OrderStatusPage;

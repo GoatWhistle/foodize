@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { XIcon } from '@phosphor-icons/react';
 import { useFocusTrap } from '@shared/hooks/useFocusTrap';
+import { formatPrice } from '@shared/utils/price';
 import type { Order, OrderStatus } from '@shared/types/models';
 
 import {
@@ -38,7 +39,7 @@ export interface OrderDetailsModalProps {
   updating: string | null;
 }
 
-const OrderDetailsModal = ({
+export const OrderDetailsModal = ({
   order,
   onClose,
   nextStatus,
@@ -47,7 +48,7 @@ const OrderDetailsModal = ({
   onCancel,
   updating,
 }: OrderDetailsModalProps) => {
-  const { events, eventsLoading, eventsError, eventsUnavailable, loadEvents } =
+  const { events, eventsLoading, eventsUnavailable, loadEvents } =
     useOrderEvents(order?.id);
   const [etaMinutes, setEtaMinutes] = useState<number | null>(null);
   const [manualEtaTime, setManualEtaTime] = useState('');
@@ -102,6 +103,7 @@ const OrderDetailsModal = ({
   return (
     <div
       className="modal-overlay order-details-overlay"
+      data-testid="order-details-overlay"
       style={{ zIndex: 4000 }}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) {
@@ -139,7 +141,7 @@ const OrderDetailsModal = ({
               id="order-details-title"
               style={{
                 color: 'var(--text-3)',
-                fontSize: '0.74rem',
+                fontSize: "var(--text-sm)",
                 fontWeight: 800,
                 textTransform: 'uppercase',
                 letterSpacing: '0.06em',
@@ -148,8 +150,8 @@ const OrderDetailsModal = ({
             >
               Заказ #{getOrderDisplayId(order)}
             </div>
-            <h3 style={{ fontSize: '1.15rem', fontWeight: 900, margin: 0 }}>
-              {order.total_price} ₽
+            <h3 style={{ fontSize: "var(--text-md)", fontWeight: 900, margin: 0 }}>
+              {formatPrice(order.total_price)}
             </h3>
           </div>
           <button
@@ -194,7 +196,6 @@ const OrderDetailsModal = ({
           <OrderEventLog
             events={events}
             eventsLoading={eventsLoading}
-            eventsError={eventsError}
             eventsUnavailable={eventsUnavailable}
           />
         </div>
@@ -225,5 +226,3 @@ const OrderDetailsModal = ({
     </div>
   );
 };
-
-export default OrderDetailsModal;

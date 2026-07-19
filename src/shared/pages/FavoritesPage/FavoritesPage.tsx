@@ -2,9 +2,9 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { HeartIcon } from "@phosphor-icons/react";
 import { useFavoritesPage } from "@shared/hooks/useFavoritesPage";
-import EmptyState from "@shared/components/EmptyState/EmptyState";
-import FavoriteRestaurantCard from "@shared/components/FavoriteRestaurantCard/FavoriteRestaurantCard";
-import Pagination from "@shared/components/Pagination/Pagination";
+import { EmptyState } from "@shared/components/EmptyState/EmptyState";
+import { FavoriteRestaurantCard } from "@shared/components/FavoriteRestaurantCard/FavoriteRestaurantCard";
+import { Pagination } from "@shared/components/Pagination/Pagination";
 import type { FavoriteRestaurantInfo } from "@shared/types/models";
 
 const PAGE_SIZE = 20;
@@ -22,7 +22,7 @@ interface FavoritesPageProps {
   showPagination?: boolean;
 }
 
-const FavoritesPage = ({ BackButton, pageSize = PAGE_SIZE, showPagination = true }: FavoritesPageProps) => {
+export const FavoritesPage = ({ BackButton, pageSize = PAGE_SIZE, showPagination = true }: FavoritesPageProps) => {
   const navigate = useNavigate();
   const { favorites, loading, total, page, setPage, handleUnfavorite, handleNavigate } =
     useFavoritesPage({ pageSize });
@@ -49,7 +49,7 @@ const FavoritesPage = ({ BackButton, pageSize = PAGE_SIZE, showPagination = true
         }}
       >
         <HeartIcon size={22} weight="fill" color="var(--color-error)" />
-        <span style={{ fontWeight: 800, fontSize: "1.1rem", color: "var(--text-1)" }}>
+        <span style={{ fontWeight: 800, fontSize: "var(--text-md)", color: "var(--text-1)" }}>
           Избранное
         </span>
         {total > 0 && (
@@ -59,7 +59,7 @@ const FavoritesPage = ({ BackButton, pageSize = PAGE_SIZE, showPagination = true
               color: "var(--color-error)",
               borderRadius: 20,
               padding: "2px 10px",
-              fontSize: "0.75rem",
+              fontSize: "var(--text-sm)",
               fontWeight: 800,
             }}
           >
@@ -102,5 +102,3 @@ const FavoritesPage = ({ BackButton, pageSize = PAGE_SIZE, showPagination = true
     </div>
   );
 };
-
-export default FavoritesPage;

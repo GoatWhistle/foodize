@@ -39,7 +39,7 @@ export const DetailField = ({ label, children, mono = false }: DetailFieldProps)
     <div
       style={{
         color: 'var(--text-3)',
-        fontSize: '0.7rem',
+        fontSize: "var(--text-xs)",
         fontWeight: 800,
         letterSpacing: '0.08em',
         textTransform: 'uppercase',
@@ -90,11 +90,11 @@ export const DetailModal = ({ title, subtitle, onClose, loading, children }: Det
       >
         <div>
           <div
-            style={{ color: 'var(--text-3)', fontSize: '0.78rem', fontWeight: 800 }}
+            style={{ color: 'var(--text-3)', fontSize: "var(--text-sm)", fontWeight: 800 }}
           >
             {subtitle}
           </div>
-          <h3 style={{ margin: '4px 0 0', color: 'var(--text-1)', fontSize: '1.18rem' }}>
+          <h3 style={{ margin: '4px 0 0', color: 'var(--text-1)', fontSize: "var(--text-md)" }}>
             {title}
           </h3>
         </div>

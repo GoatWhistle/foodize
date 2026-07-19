@@ -76,14 +76,20 @@ export const useHomePageLogic = ({
   }, [debouncedSearch, onlyOpen, sort, direction]);
 
   useEffect(() => {
-    fetchPublicRestaurants({
-      name: debouncedSearch || undefined,
-      is_open: onlyOpen ? true : undefined,
-      sort,
-      direction,
-      page,
-      size: pageSize,
-    }).catch((err: unknown) => { logError("useHomePageLogic.fetchPublicRestaurants", err); });
+    void (async () => {
+      try {
+        await fetchPublicRestaurants({
+          name: debouncedSearch || undefined,
+          is_open: onlyOpen ? true : undefined,
+          sort,
+          direction,
+          page,
+          size: pageSize,
+        });
+      } catch (error) {
+        logError("useHomePageLogic.fetchPublicRestaurants", error);
+      }
+    })();
   }, [debouncedSearch, onlyOpen, sort, direction, page, pageSize, fetchPublicRestaurants]);
 
   const {

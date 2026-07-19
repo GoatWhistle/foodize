@@ -12,13 +12,14 @@ from features.users.schemas import UserCreate, UserUpdate
 from features.vendors.crud import create_vendor_profile, get_vendor_by_user_id
 from features.vendors.models import VendorProfile
 from features.vendors.schemas import VendorCreate
-from seed.data import MODERATION_VENDORS
+from seed.fixtures.staffing import MODERATION_VENDORS
+from seed.restaurants import DEFAULT_AVG_PREP_TIME_MINUTES
 from shared.permissions import CUSTOMER_PERMISSIONS, VENDOR_PERMISSIONS, permissions_with
 
 
-async def _ensure_user(session: AsyncSession, data: dict[str, Any]) -> User:
+async def _ensure_user(session: AsyncSession, vendor_spec: dict[str, Any]) -> User:
     result = await session.execute(
-        select(User).where(User.phone_number == data["phone_number"])
+        select(User).where(User.phone_number == vendor_spec["phone_number"])
     )
     user = result.scalar_one_or_none()
     if user is not None:
@@ -26,26 +27,26 @@ async def _ensure_user(session: AsyncSession, data: dict[str, Any]) -> User:
     user = await create_user(
         session,
         UserCreate(
-            name=data["name"],
-            phone_number=data["phone_number"],
-            password=data["password"],
+            name=vendor_spec["name"],
+            phone_number=vendor_spec["phone_number"],
+            password=vendor_spec["password"],
         ),
     )
     await update_user(
         session,
         user,
         UserUpdate(
-            first_name=data.get("first_name"),
-            last_name=data.get("last_name"),
-            middle_name=data.get("middle_name"),
-            email=data.get("email"),
+            first_name=vendor_spec.get("first_name"),
+            last_name=vendor_spec.get("last_name"),
+            middle_name=vendor_spec.get("middle_name"),
+            email=vendor_spec.get("email"),
         ),
     )
     return user
 
 
 async def _ensure_vendor(
-    session: AsyncSession, user: User, data: dict[str, Any]
+    session: AsyncSession, user: User, vendor_spec: dict[str, Any]
 ) -> VendorProfile:
     user.permissions = permissions_with(
         user.permissions, CUSTOMER_PERMISSIONS | VENDOR_PERMISSIONS
@@ -55,8 +56,8 @@ async def _ensure_vendor(
     vendor = await get_vendor_by_user_id(session, user.id)
     if vendor is None:
         vendor = await create_vendor_profile(session, user, VendorCreate())
-    vendor.approval_status = data["approval_status"]
-    vendor.rejection_reason = data.get("rejection_reason")
+    vendor.approval_status = vendor_spec["approval_status"]
+    vendor.rejection_reason = vendor_spec.get("rejection_reason")
     await session.commit()
     return vendor
 
@@ -72,7 +73,11 @@ async def _ensure_restaurant(
         return
     restaurant = await create_restaurant(
         session,
-        RestaurantCreate(name=rd["name"], address=rd["address"], avg_prep_time_minutes=15),
+        RestaurantCreate(
+            name=rd["name"],
+            address=rd["address"],
+            avg_prep_time_minutes=DEFAULT_AVG_PREP_TIME_MINUTES,
+        ),
         vendor.id,
     )
     restaurant.moderation_status = rd["moderation_status"]
@@ -84,8 +89,8 @@ async def _ensure_restaurant(
 
 async def seed_moderation(session: AsyncSession) -> None:
     print("\n── Moderation queue ────────────────────")
-    for data in MODERATION_VENDORS:
-        user = await _ensure_user(session, data)
-        vendor = await _ensure_vendor(session, user, data)
-        print(f"  vendor {data['name']} [{data['approval_status']}]")
-        await _ensure_restaurant(session, vendor, data["restaurant"])
+    for vendor_spec in MODERATION_VENDORS:
+        user = await _ensure_user(session, vendor_spec)
+        vendor = await _ensure_vendor(session, user, vendor_spec)
+        print(f"  vendor {vendor_spec['name']} [{vendor_spec['approval_status']}]")
+        await _ensure_restaurant(session, vendor, vendor_spec["restaurant"])

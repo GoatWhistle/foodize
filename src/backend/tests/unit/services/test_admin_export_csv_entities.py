@@ -2,8 +2,6 @@ import uuid
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-
 from features.admin.export import (
     export_restaurants_csv,
     export_reviews_csv,
@@ -51,7 +49,6 @@ def _make_review(rvid: uuid.UUID | None = None) -> MagicMock:
 
 
 class TestExportRestaurantsCsv:
-    @pytest.mark.asyncio
     async def test_returns_csv_with_data(self) -> None:
         session = AsyncMock()
         with patch(
@@ -63,7 +60,6 @@ class TestExportRestaurantsCsv:
         assert "Тест Кафе" in content
         assert "ул. Ленина, 1" in content
 
-    @pytest.mark.asyncio
     async def test_includes_rating_and_counts(self) -> None:
         session = AsyncMock()
         resto = _make_restaurant()
@@ -80,7 +76,6 @@ class TestExportRestaurantsCsv:
 
 
 class TestExportVendorsCsv:
-    @pytest.mark.asyncio
     async def test_returns_csv_with_vendor_data(self) -> None:
         session = AsyncMock()
         with patch(
@@ -92,7 +87,6 @@ class TestExportVendorsCsv:
         assert "Вендор Иван" in content
         assert "APPROVED" in content
 
-    @pytest.mark.asyncio
     async def test_restaurant_count_in_row(self) -> None:
         session = AsyncMock()
         v = _make_vendor()
@@ -107,7 +101,6 @@ class TestExportVendorsCsv:
 
 
 class TestExportReviewsCsv:
-    @pytest.mark.asyncio
     async def test_returns_csv_with_review_data(self) -> None:
         session = AsyncMock()
         with patch(
@@ -119,7 +112,6 @@ class TestExportReviewsCsv:
         assert "Тест Кафе" in content
         assert "Отлично!" in content
 
-    @pytest.mark.asyncio
     async def test_min_rating_filter(self) -> None:
         session = AsyncMock()
         reviews = [_make_review(), _make_review()]
@@ -134,7 +126,6 @@ class TestExportReviewsCsv:
         lines = [line for line in content.split("\n") if line.strip()]
         assert len(lines) == 2
 
-    @pytest.mark.asyncio
     async def test_max_rating_filter(self) -> None:
         session = AsyncMock()
         reviews = [_make_review(), _make_review()]
@@ -149,7 +140,6 @@ class TestExportReviewsCsv:
         lines = [line for line in content.split("\n") if line.strip()]
         assert len(lines) == 2
 
-    @pytest.mark.asyncio
     async def test_verified_purchase_yes(self) -> None:
         session = AsyncMock()
         rv = _make_review()

@@ -5,8 +5,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
 from features.auth import service as auth_service
+from features.auth.cookies import (
+    clear_auth_cookies,
+    set_auth_cookies,
+    set_telegram_auth_cookies,
+)
 from features.auth.schemas import TokenResponse
-from features.auth.service import get_current_user, set_telegram_auth_cookies
+from features.auth.service import get_current_user
 from features.telegram import site_login, webapp_auth
 from features.telegram.schemas import (
     TelegramCheckRequest,
@@ -80,9 +85,8 @@ async def telegram_refresh(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
     cache: RedisCache = Depends(redis_cache_dependency),
 ) -> SuccessResponse[TokenResponse]:
-    result = await auth_service.refresh_user_token(
-        request=request, response=response, session=session, cache=cache, same_site="none"
-    )
+    result = await auth_service.refresh_user_token(request=request, session=session, cache=cache)
+    set_auth_cookies(response, result, same_site="none")
     return build_response(result)
 
 
@@ -93,9 +97,8 @@ async def telegram_session_logout(
     response: Response,
     cache: RedisCache = Depends(redis_cache_dependency),
 ) -> None:
-    await auth_service.logout_user(
-        request=request, response=response, cache=cache, same_site="none"
-    )
+    await auth_service.logout_user(request=request, cache=cache)
+    clear_auth_cookies(response, same_site="none")
 
 
 @router.post(
@@ -143,8 +146,8 @@ async def telegram_site_login_verify(
         session=session,
         phone_number=data.phone_number,
         code=data.code,
-        response=response,
     )
+    set_auth_cookies(response, result, same_site="none")
     return build_response(result)
 
 
@@ -163,8 +166,8 @@ async def telegram_site_login_verify_by_username(
         session=session,
         telegram_username=data.telegram_username,
         code=data.code,
-        response=response,
     )
+    set_auth_cookies(response, result, same_site="none")
     return build_response(result)
 
 

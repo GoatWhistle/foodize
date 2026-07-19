@@ -5,6 +5,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from features.orders.exceptions import OrderAccessDeniedException, OrderNotFoundException
+from features.orders.schemas.order import OrderResponse
+from features.orders.schemas.order_event import OrderEventResponse
 from features.orders.services.order_queries import (
     estimate_restaurant_load,
     get_order,
@@ -13,7 +15,8 @@ from features.orders.services.order_queries import (
     get_user_orders,
 )
 from features.restaurants.exceptions import RestaurantNotFoundException
-from shared.enums.order_status import OrderStatus
+
+from .order_helpers import make_order, make_order_event
 
 
 def _restaurant(
@@ -35,18 +38,6 @@ def _restaurant(
     return r
 
 
-def _order_response() -> MagicMock:
-    o = MagicMock()
-    o.id = uuid.uuid4()
-    o.user_id = uuid.uuid4()
-    o.restaurant_id = uuid.uuid4()
-    o.total_price = 500
-    o.status = OrderStatus.PENDING
-    o.items = []
-    return o
-
-
-@pytest.mark.asyncio
 async def test_estimate_load_raises_if_restaurant_not_found() -> None:
     with patch(
         "features.restaurants.crud.get_restaurant_by_id",
@@ -57,7 +48,6 @@ async def test_estimate_load_raises_if_restaurant_not_found() -> None:
             await estimate_restaurant_load(AsyncMock(), uuid.uuid4())
 
 
-@pytest.mark.asyncio
 async def test_estimate_load_restaurant_closed() -> None:
     restaurant = _restaurant(is_open=False)
 
@@ -84,7 +74,6 @@ async def test_estimate_load_restaurant_closed() -> None:
     assert result.reason == "CLOSED"
 
 
-@pytest.mark.asyncio
 async def test_estimate_load_uses_provided_restaurant() -> None:
     restaurant = _restaurant()
 
@@ -106,7 +95,6 @@ async def test_estimate_load_uses_provided_restaurant() -> None:
     assert result.active_orders_count == 5
 
 
-@pytest.mark.asyncio
 async def test_estimate_load_queue_multiplier() -> None:
     restaurant = _restaurant(avg_prep_time_minutes=10, max_active_orders=5)
 
@@ -132,9 +120,8 @@ async def test_estimate_load_queue_multiplier() -> None:
     assert result.estimated_wait_min_minutes > 10
 
 
-@pytest.mark.asyncio
 async def test_get_user_orders_returns_list() -> None:
-    order = _order_response()
+    order = make_order()
 
     with (
         patch(
@@ -147,17 +134,14 @@ async def test_get_user_orders_returns_list() -> None:
             new_callable=AsyncMock,
             return_value=1,
         ),
-        patch(
-            "features.orders.schemas.order.OrderResponse.model_validate", return_value=MagicMock()
-        ),
     ):
         results, total = await get_user_orders(AsyncMock(), uuid.uuid4())
 
     assert total == 1
     assert len(results) == 1
+    assert all(isinstance(r, OrderResponse) for r in results)
 
 
-@pytest.mark.asyncio
 async def test_get_order_raises_if_not_found() -> None:
     with patch(
         "features.orders.crud.order.get_order_by_id", new_callable=AsyncMock, return_value=None
@@ -166,7 +150,6 @@ async def test_get_order_raises_if_not_found() -> None:
             await get_order(AsyncMock(), uuid.uuid4(), uuid.uuid4())
 
 
-@pytest.mark.asyncio
 async def test_get_order_raises_if_not_owner() -> None:
     order = MagicMock()
     order.user_id = uuid.uuid4()
@@ -178,29 +161,21 @@ async def test_get_order_raises_if_not_owner() -> None:
             await get_order(AsyncMock(), order.id, uuid.uuid4())
 
 
-@pytest.mark.asyncio
 async def test_get_order_returns_response() -> None:
     user_id = uuid.uuid4()
-    order = MagicMock()
-    order.user_id = user_id
-    mock_response = MagicMock()
+    order = make_order(user_id=user_id)
 
-    with (
-        patch(
-            "features.orders.crud.order.get_order_by_id", new_callable=AsyncMock, return_value=order
-        ),
-        patch(
-            "features.orders.schemas.order.OrderResponse.model_validate", return_value=mock_response
-        ),
+    with patch(
+        "features.orders.crud.order.get_order_by_id", new_callable=AsyncMock, return_value=order
     ):
         result = await get_order(AsyncMock(), uuid.uuid4(), user_id)
 
-    assert result == mock_response
+    assert isinstance(result, OrderResponse)
+    assert result.id == order.id
 
 
-@pytest.mark.asyncio
 async def test_get_restaurant_orders_returns_list() -> None:
-    order = _order_response()
+    order = make_order()
 
     with (
         patch(
@@ -213,30 +188,22 @@ async def test_get_restaurant_orders_returns_list() -> None:
             new_callable=AsyncMock,
             return_value=1,
         ),
-        patch(
-            "features.orders.schemas.order.OrderResponse.model_validate", return_value=MagicMock()
-        ),
     ):
-        _results, total = await get_restaurant_orders(AsyncMock(), uuid.uuid4())
+        results, total = await get_restaurant_orders(AsyncMock(), uuid.uuid4())
 
     assert total == 1
+    assert all(isinstance(r, OrderResponse) for r in results)
 
 
-@pytest.mark.asyncio
 async def test_get_order_events_returns_list() -> None:
-    event = MagicMock()
+    event = make_order_event()
 
-    with (
-        patch(
-            "features.orders.crud.order.get_events_by_order_id",
-            new_callable=AsyncMock,
-            return_value=[event],
-        ),
-        patch(
-            "features.orders.schemas.order_event.OrderEventResponse.model_validate",
-            return_value=MagicMock(),
-        ),
+    with patch(
+        "features.orders.crud.order.get_events_by_order_id",
+        new_callable=AsyncMock,
+        return_value=[event],
     ):
         results = await get_order_events(AsyncMock(), uuid.uuid4())
 
     assert len(results) == 1
+    assert all(isinstance(r, OrderEventResponse) for r in results)

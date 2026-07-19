@@ -1,5 +1,4 @@
 import type { Dispatch, SetStateAction } from 'react';
-import type { AxiosResponse } from 'axios';
 import { DownloadSimpleIcon } from '@phosphor-icons/react';
 import {
   RevenueChart,
@@ -31,7 +30,7 @@ interface VendorAnalyticsTabProps {
   setActivePreset: Dispatch<SetStateAction<number | null>>;
   exportLoading: boolean;
   handleVendorExport: (
-    exportFn: () => Promise<AxiosResponse<Blob>>,
+    exportFn: () => Promise<Blob>,
     filename: string
   ) => void;
   vendorService: typeof vendorService;
@@ -61,7 +60,7 @@ const AnalyticsSkeleton = () => (
   </div>
 );
 
-export default function VendorAnalyticsTab({
+export function VendorAnalyticsTab({
   finance,
   financeLoading,
   advancedAnalytics,
@@ -131,10 +130,10 @@ export default function VendorAnalyticsTab({
                 const to = new Date();
                 const from = new Date();
                 from.setDate(to.getDate() - preset.days);
-                const fmt = (d: Date) => {
-                  const m = String(d.getMonth() + 1).padStart(2, '0');
-                  const day = String(d.getDate()).padStart(2, '0');
-                  return `${d.getFullYear()}-${m}-${day}`;
+                const fmt = (date: Date) => {
+                  const month = String(date.getMonth() + 1).padStart(2, '0');
+                  const day = String(date.getDate()).padStart(2, '0');
+                  return `${date.getFullYear()}-${month}-${day}`;
                 };
                 setFinanceFilters((prev) => ({
                   ...prev,

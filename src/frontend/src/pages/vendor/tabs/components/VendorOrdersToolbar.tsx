@@ -1,5 +1,4 @@
 import type { Dispatch, SetStateAction } from 'react';
-import type { AxiosResponse } from 'axios';
 import { ArrowsClockwiseIcon, DownloadSimpleIcon } from '@phosphor-icons/react';
 import type { Restaurant } from '@shared/types/models';
 import styles from './VendorOrders.module.css';
@@ -25,12 +24,12 @@ interface VendorOrdersToolbarProps {
   todayStr: string;
   selectedRestaurant: Restaurant | null;
   handleVendorExport: (
-    exportFn: () => Promise<AxiosResponse<Blob>>,
+    exportFn: () => Promise<Blob>,
     filename: string,
   ) => void;
   fetchVendorOrders: () => void;
   vendorService: {
-    exportOrdersCSV: (params: Record<string, unknown>) => Promise<AxiosResponse<Blob>>;
+    exportOrdersCSV: (params: Record<string, unknown>) => Promise<Blob>;
     [key: string]: (...args: never[]) => Promise<unknown>;
   };
 }
@@ -53,14 +52,14 @@ export function VendorOrdersToolbar({
 }: VendorOrdersToolbarProps) {
   return (
     <>
-      <div className={styles.header}>
+      <div className={styles['header']}>
         <div>
-          <div className={styles.headerTitle}>Заказы заведения</div>
-          <div className={styles.headerSubtitle}>
+          <div className={styles['headerTitle']}>Заказы заведения</div>
+          <div className={styles['headerSubtitle']}>
             Новые заказы обновляются автоматически
           </div>
         </div>
-        <div className={styles.headerActions}>
+        <div className={styles['headerActions']}>
           <button
             type="button"
             className="btn btn-secondary btn-sm"
@@ -80,7 +79,7 @@ export function VendorOrdersToolbar({
           </button>
           <button
             type="button"
-            className={`btn btn-secondary btn-sm ${styles.refreshBtn}`}
+            className={`btn btn-secondary btn-sm ${styles['refreshBtn']}`}
             onClick={() => { fetchVendorOrders(); }}
             disabled={ordersLoading}
           >
@@ -89,11 +88,11 @@ export function VendorOrdersToolbar({
           </button>
         </div>
       </div>
-      <div className={styles.chips}>
+      <div className={styles['chips']}>
         {STATUS_CHIPS.map(({ key, label }) => (
           <button
             key={key}
-            className={`category-chip${ordersStatusFilter === key ? ' active' : ''} ${styles.chip}`}
+            className={`category-chip${ordersStatusFilter === key ? ' active' : ''} ${styles['chip']}`}
             onClick={() => {
               setOrdersStatusFilter(key);
               setOrdersPage(1);
@@ -103,9 +102,9 @@ export function VendorOrdersToolbar({
           </button>
         ))}
       </div>
-      <div className={styles.dateRow}>
+      <div className={styles['dateRow']}>
         <input
-          className={`form-input ${styles.dateInput}`}
+          className={`form-input ${styles['dateInput']}`}
           type="date"
           value={ordersDateFromFilter}
           onChange={(e) => {
@@ -114,9 +113,9 @@ export function VendorOrdersToolbar({
           }}
           aria-label="Дата с"
         />
-        <span className={styles.dateDash}>—</span>
+        <span className={styles['dateDash']}>—</span>
         <input
-          className={`form-input ${styles.dateInput}`}
+          className={`form-input ${styles['dateInput']}`}
           type="date"
           value={ordersDateToFilter}
           onChange={(e) => {

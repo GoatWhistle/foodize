@@ -3,7 +3,6 @@ from datetime import datetime
 from http import HTTPStatus
 from unittest.mock import AsyncMock, patch
 
-import pytest
 from httpx import AsyncClient
 
 from features.notifications.models import NotificationType
@@ -28,14 +27,12 @@ def _make_mock_notification(
 
 
 class TestNotificationsAPIAccess:
-    @pytest.mark.asyncio
     async def test_requires_auth(self, client: AsyncClient) -> None:
         response = await client.get("/api/v1/notifications")
         assert response.status_code == HTTPStatus.UNAUTHORIZED
 
 
 class TestGetNotifications:
-    @pytest.mark.asyncio
     async def test_returns_empty_list(self, client: AsyncClient, as_user: User) -> None:
         with (
             patch(
@@ -57,7 +54,6 @@ class TestGetNotifications:
         assert data["total"] == 0
         assert data["unread_count"] == 0
 
-    @pytest.mark.asyncio
     async def test_returns_notifications_with_unread_count(
         self, client: AsyncClient, as_user: User
     ) -> None:
@@ -83,7 +79,6 @@ class TestGetNotifications:
         assert data["unread_count"] == 1
         assert len(data["items"]) == 1
 
-    @pytest.mark.asyncio
     async def test_pagination_params(self, client: AsyncClient, as_user: User) -> None:
         with (
             patch(
@@ -106,7 +101,6 @@ class TestGetNotifications:
 
 
 class TestMarkAsRead:
-    @pytest.mark.asyncio
     async def test_marks_notification_read(self, client: AsyncClient, as_user: User) -> None:
         n = _make_mock_notification(user_id=as_user.id)
         n.is_read = True
@@ -120,7 +114,6 @@ class TestMarkAsRead:
 
         assert response.status_code == HTTPStatus.OK
 
-    @pytest.mark.asyncio
     async def test_returns_404_when_not_found(self, client: AsyncClient, as_user: User) -> None:
         with patch(
             "features.notifications.api.crud.mark_as_read",
@@ -133,7 +126,6 @@ class TestMarkAsRead:
 
 
 class TestMarkAllAsRead:
-    @pytest.mark.asyncio
     async def test_marks_all_read(self, client: AsyncClient, as_user: User) -> None:
         with patch(
             "features.notifications.api.crud.mark_all_as_read",
@@ -146,7 +138,6 @@ class TestMarkAllAsRead:
 
 
 class TestDeleteNotification:
-    @pytest.mark.asyncio
     async def test_deletes_notification(self, client: AsyncClient, as_user: User) -> None:
         with patch(
             "features.notifications.api.crud.delete_notification",
@@ -157,7 +148,6 @@ class TestDeleteNotification:
 
         assert response.status_code == HTTPStatus.NO_CONTENT
 
-    @pytest.mark.asyncio
     async def test_returns_404_when_not_found(self, client: AsyncClient, as_user: User) -> None:
         with patch(
             "features.notifications.api.crud.delete_notification",
@@ -170,7 +160,6 @@ class TestDeleteNotification:
 
 
 class TestDeleteAllNotifications:
-    @pytest.mark.asyncio
     async def test_deletes_all(self, client: AsyncClient, as_user: User) -> None:
         with patch(
             "features.notifications.api.crud.delete_all_notifications",

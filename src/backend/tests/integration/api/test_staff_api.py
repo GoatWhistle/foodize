@@ -2,7 +2,6 @@ import uuid
 from http import HTTPStatus
 from unittest.mock import ANY, AsyncMock, MagicMock, patch
 
-import pytest
 from httpx import AsyncClient
 
 from features.staff.dependencies import get_valid_staff_request
@@ -13,7 +12,6 @@ from shared.enums.staff_request_status import StaffRequestStatus
 
 
 class TestStaffAPI:
-    @pytest.mark.asyncio
     async def test_create_staff_request(self, client: AsyncClient, as_user: User) -> None:
         restaurant_id = uuid.uuid4()
         req_id = uuid.uuid4()
@@ -40,7 +38,6 @@ class TestStaffAPI:
         assert res.json()["data"]["id"] == str(req_id)
         mock_create.assert_awaited_once()
 
-    @pytest.mark.asyncio
     async def test_update_staff_status(self, client: AsyncClient, as_vendor: User) -> None:
         req_id = uuid.uuid4()
 
@@ -75,7 +72,6 @@ class TestStaffAPI:
             session=ANY, request=mock_req, new_status=StaffRequestStatus.ACCEPTED
         )
 
-    @pytest.mark.asyncio
     async def test_read_vendor_requests(
         self, vendor_client: tuple[AsyncClient, VendorProfile]
     ) -> None:
@@ -91,7 +87,6 @@ class TestStaffAPI:
         assert res.json()["data"] == []
         mock_get.assert_awaited_once()
 
-    @pytest.mark.asyncio
     async def test_create_staff_request_requires_auth(self, client: AsyncClient) -> None:
         response = await client.post(
             f"/api/v1/staff/requests/{uuid.uuid4()}", json={"message": "hi"}

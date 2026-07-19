@@ -1,4 +1,4 @@
-import api from "@shared/services/api.instance";
+import { api } from "@shared/services/api.instance";
 import type { AxiosRequestConfig } from "axios";
 import { makeId } from "@shared/utils/id";
 import type {

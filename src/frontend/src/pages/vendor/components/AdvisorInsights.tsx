@@ -9,13 +9,13 @@ interface AdvisorInsightsProps {
 
 export function AdvisorInsights({ insights, insightsLoading, onLoad }: AdvisorInsightsProps) {
   return (
-    <div className={styles.card}>
-      <div className={styles.insightsHeader}>
-        <h3 className={styles.insightsTitle}>
+    <div className={styles['card']}>
+      <div className={styles['insightsHeader']}>
+        <h3 className={styles['insightsTitle']}>
           <ChartLineUpIcon size={20} /> Анализ бизнеса
         </h3>
         <button
-          className={`btn btn-primary ${styles.insightsBtn}`}
+          className={`btn btn-primary ${styles['insightsBtn']}`}
           disabled={insightsLoading}
           onClick={onLoad}
         >
@@ -23,7 +23,7 @@ export function AdvisorInsights({ insights, insightsLoading, onLoad }: AdvisorIn
           {insightsLoading ? 'Анализирую…' : insights ? 'Обновить' : 'Получить анализ'}
         </button>
       </div>
-      {insights && <div className={styles.insightsText}>{insights}</div>}
+      {insights && <div className={styles['insightsText']}>{insights}</div>}
     </div>
   );
 }

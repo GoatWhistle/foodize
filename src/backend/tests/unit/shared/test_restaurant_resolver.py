@@ -7,7 +7,6 @@ from features.restaurants.exceptions import RestaurantNotFoundException
 from shared.restaurant_resolver import resolve_restaurant_uuid
 
 
-@pytest.mark.asyncio
 async def test_resolve_by_valid_uuid() -> None:
     valid_id = uuid.uuid4()
     session = AsyncMock()
@@ -16,7 +15,6 @@ async def test_resolve_by_valid_uuid() -> None:
     session.execute.assert_not_called()
 
 
-@pytest.mark.asyncio
 async def test_resolve_by_display_id_found() -> None:
     rid = uuid.uuid4()
     mock_result = MagicMock()
@@ -28,7 +26,6 @@ async def test_resolve_by_display_id_found() -> None:
     assert result == rid
 
 
-@pytest.mark.asyncio
 async def test_resolve_by_display_id_not_found() -> None:
     mock_result = MagicMock()
     mock_result.scalar_one_or_none = MagicMock(return_value=None)

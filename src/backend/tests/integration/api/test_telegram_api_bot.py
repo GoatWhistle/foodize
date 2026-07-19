@@ -2,7 +2,6 @@ import uuid
 from http import HTTPStatus
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from httpx import AsyncClient
 
 from settings.config.app_config import settings
@@ -36,7 +35,6 @@ def _make_cache(count: int = 1) -> MagicMock:
 
 
 class TestTelegramBotSecret:
-    @pytest.mark.asyncio
     async def test_bot_register_wrong_secret(self, client: AsyncClient) -> None:
         with patch.object(settings.telegram, "bot_api_secret", "correct-secret"):
             response = await client.post(
@@ -46,7 +44,6 @@ class TestTelegramBotSecret:
             )
         assert response.status_code == HTTPStatus.FORBIDDEN
 
-    @pytest.mark.asyncio
     async def test_bot_register_missing_secret(self, client: AsyncClient) -> None:
         with patch.object(settings.telegram, "bot_api_secret", "correct-secret"):
             response = await client.post(
@@ -55,7 +52,6 @@ class TestTelegramBotSecret:
             )
         assert response.status_code == HTTPStatus.FORBIDDEN
 
-    @pytest.mark.asyncio
     async def test_bot_register_empty_configured_secret_denied(self, client: AsyncClient) -> None:
         with patch.object(settings.telegram, "bot_api_secret", ""):
             response = await client.post(
@@ -67,7 +63,6 @@ class TestTelegramBotSecret:
 
 
 class TestTelegramBotRegister:
-    @pytest.mark.asyncio
     async def test_bot_register_success(self, client: AsyncClient) -> None:
         user = _make_user_read()
         cache = _make_cache(count=1)
@@ -88,7 +83,6 @@ class TestTelegramBotRegister:
         assert response.status_code == HTTPStatus.OK
         cache.incr_with_expire.assert_awaited_once_with("rl:bot_register:123", 3600)
 
-    @pytest.mark.asyncio
     async def test_bot_register_rate_limited(self, client: AsyncClient) -> None:
         cache = _make_cache(count=11)
         with (
@@ -104,7 +98,6 @@ class TestTelegramBotRegister:
 
 
 class TestTelegramBotLinkPhone:
-    @pytest.mark.asyncio
     async def test_bot_link_phone_success(self, client: AsyncClient) -> None:
         user = _make_user_read()
         cache = _make_cache(count=1)
@@ -129,7 +122,6 @@ class TestTelegramBotLinkPhone:
         assert response.status_code == HTTPStatus.OK
         cache.incr_with_expire.assert_awaited_once_with("rl:link_phone:55", 3600)
 
-    @pytest.mark.asyncio
     async def test_bot_link_phone_rate_limited(self, client: AsyncClient) -> None:
         cache = _make_cache(count=6)
         with (
@@ -149,7 +141,6 @@ class TestTelegramBotLinkPhone:
 
 
 class TestTelegramBotVendorStatus:
-    @pytest.mark.asyncio
     async def test_bot_vendor_status_success(self, client: AsyncClient) -> None:
         cache = _make_cache(count=1)
         with (
@@ -170,7 +161,6 @@ class TestTelegramBotVendorStatus:
         assert response.json()["data"]["is_vendor"] is False
         cache.incr_with_expire.assert_awaited_once_with("rl:bot_vendor_status:77", 60)
 
-    @pytest.mark.asyncio
     async def test_bot_vendor_status_rate_limited(self, client: AsyncClient) -> None:
         cache = _make_cache(count=21)
         with (
@@ -186,7 +176,6 @@ class TestTelegramBotVendorStatus:
 
 
 class TestTelegramBotTelegramId:
-    @pytest.mark.asyncio
     async def test_bot_telegram_id_success(self, client: AsyncClient) -> None:
         cache = _make_cache(count=1)
         with (
@@ -207,7 +196,6 @@ class TestTelegramBotTelegramId:
         assert response.json()["data"]["telegram_id"] == 555
         cache.incr_with_expire.assert_awaited_once_with("rl:bot_telegram_id:user-abc", 60)
 
-    @pytest.mark.asyncio
     async def test_bot_telegram_id_not_found_returns_null(self, client: AsyncClient) -> None:
         cache = _make_cache(count=1)
         with (
@@ -227,7 +215,6 @@ class TestTelegramBotTelegramId:
         assert response.status_code == HTTPStatus.OK
         assert response.json()["data"]["telegram_id"] is None
 
-    @pytest.mark.asyncio
     async def test_bot_telegram_id_wrong_secret(self, client: AsyncClient) -> None:
         with patch.object(settings.telegram, "bot_api_secret", "correct-secret"):
             response = await client.post(
@@ -239,7 +226,6 @@ class TestTelegramBotTelegramId:
 
 
 class TestTelegramBotOrders:
-    @pytest.mark.asyncio
     async def test_bot_orders_success(self, client: AsyncClient) -> None:
         cache = _make_cache(count=1)
         with (
@@ -260,7 +246,6 @@ class TestTelegramBotOrders:
         assert response.json()["data"] == []
         cache.incr_with_expire.assert_awaited_once_with("rl:bot_orders:88", 60)
 
-    @pytest.mark.asyncio
     async def test_bot_orders_rate_limited(self, client: AsyncClient) -> None:
         cache = _make_cache(count=21)
         with (

@@ -16,3 +16,5 @@ class AuthConfig(BaseConfig):
     password_token_lifetime_seconds: int = 600
     rate_limit_login: str = "10/minute"
     rate_limit_register: str = "10/minute"
+    csrf_cookie_name: str = "csrf_token"
+    csrf_header_name: str = "X-CSRF-Token"

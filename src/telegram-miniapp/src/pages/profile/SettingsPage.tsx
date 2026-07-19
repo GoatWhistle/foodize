@@ -1,4 +1,4 @@
-import SharedSettingsPage from "@shared/pages/SettingsPage/SettingsPage";
+import { SettingsPage as SharedSettingsPage } from "@shared/pages/SettingsPage/SettingsPage";
 import { getBackButton, getTelegramInitData } from "../../telegram/sdk";
 import s from "./ProfilePage.module.css";
 
@@ -10,7 +10,7 @@ const isTelegramUser = (): boolean => {
   }
 };
 
-const SettingsPage = () => {
+export const SettingsPage = () => {
   const hasTelegramSession = isTelegramUser();
 
   return (
@@ -22,9 +22,7 @@ const SettingsPage = () => {
       }}
       BackButton={getBackButton()}
       showPasswordChange={!hasTelegramSession}
-      pageClassName={s.page}
+      pageClassName={s['page']}
     />
   );
 };
-
-export default SettingsPage;

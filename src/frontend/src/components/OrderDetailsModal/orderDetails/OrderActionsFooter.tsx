@@ -51,7 +51,7 @@ export const OrderActionsFooter = ({
           value={cancelReason}
           onChange={(e) => { onCancelReasonChange(e.target.value); }}
           rows={2}
-          style={{ resize: 'none', fontSize: '0.85rem' }}
+          style={{ resize: 'none', fontSize: "var(--text-base)" }}
         />
         <div style={{ display: 'flex', gap: 8 }}>
           <button

@@ -1,7 +1,6 @@
 import uuid
 from unittest.mock import AsyncMock, patch
 
-import pytest
 from factories import make_user
 from ws_test_helpers import FakeWebSocket, fake_session_ctx, make_redis_cache
 
@@ -12,7 +11,6 @@ from shared.exceptions import AccessDeniedException
 
 
 class TestDisplayBoardWS:
-    @pytest.mark.asyncio
     async def test_no_token_sends_not_authenticated(self) -> None:
         websocket = FakeWebSocket()
         with patch(
@@ -25,7 +23,6 @@ class TestDisplayBoardWS:
         assert websocket.first_message().get("error") == "not_authenticated"
         assert websocket.closed
 
-    @pytest.mark.asyncio
     async def test_no_display_board_permission_sends_forbidden(self) -> None:
         websocket = FakeWebSocket()
         with (
@@ -44,7 +41,6 @@ class TestDisplayBoardWS:
         assert websocket.first_message().get("error") == "forbidden"
         assert websocket.closed
 
-    @pytest.mark.asyncio
     async def test_restaurant_access_denied_sends_forbidden(self) -> None:
         websocket = FakeWebSocket()
         user = make_user(user_role=UserRole.STAFF.value)
@@ -69,7 +65,6 @@ class TestDisplayBoardWS:
         assert websocket.first_message().get("error") == "forbidden"
         assert websocket.closed
 
-    @pytest.mark.asyncio
     async def test_staff_gets_display_board_with_cooking_and_ready(self) -> None:
         websocket = FakeWebSocket()
         user = make_user(user_role=UserRole.STAFF.value)
@@ -105,7 +100,6 @@ class TestDisplayBoardWS:
         assert 1001 in board["cooking"]
         assert 1002 in board["ready"]
 
-    @pytest.mark.asyncio
     async def test_display_board_empty_orders(self) -> None:
         websocket = FakeWebSocket()
         user = make_user(user_role=UserRole.STAFF.value)

@@ -3,9 +3,9 @@ from http import HTTPStatus
 from typing import Any
 from unittest.mock import AsyncMock, patch
 
-import pytest
 from httpx import AsyncClient
 
+from features.orders.dependencies import get_order_for_staff_or_vendor
 from features.orders.exceptions import InvalidStatusTransitionException
 from features.orders.models import Order
 from features.users.models import User
@@ -35,7 +35,6 @@ def _make_mock_order(order_id: uuid.UUID, user_id: uuid.UUID | None = None) -> O
 
 
 class TestOrderEventsAPI:
-    @pytest.mark.asyncio
     async def test_read_order_events_as_vendor(self, client: AsyncClient, as_vendor: User) -> None:
         order_id = uuid.uuid4()
         mock_order = _make_mock_order(order_id)
@@ -66,7 +65,6 @@ class TestOrderEventsAPI:
         assert body["data"][0]["old_status"] == OrderStatus.PENDING.value
         mock_get.assert_awaited_once()
 
-    @pytest.mark.asyncio
     async def test_read_order_events_empty(self, client: AsyncClient, as_vendor: User) -> None:
         order_id = uuid.uuid4()
         mock_order = _make_mock_order(order_id)
@@ -92,12 +90,10 @@ class TestOrderEventsAPI:
         assert response.status_code == HTTPStatus.OK
         assert response.json()["data"] == []
 
-    @pytest.mark.asyncio
     async def test_read_order_events_requires_auth(self, client: AsyncClient) -> None:
         response = await client.get(f"/api/v1/orders/{uuid.uuid4()}/events")
         assert response.status_code == HTTPStatus.UNAUTHORIZED
 
-    @pytest.mark.asyncio
     async def test_read_order_events_customer_denied(
         self, client: AsyncClient, as_user: User
     ) -> None:
@@ -113,7 +109,6 @@ class TestOrderEventsAPI:
 
         assert response.status_code == HTTPStatus.FORBIDDEN
 
-    @pytest.mark.asyncio
     async def test_read_order_events_not_found(self, client: AsyncClient, as_vendor: User) -> None:
         with patch(
             "features.orders.api.order.service.get_order_by_identifier",
@@ -126,27 +121,25 @@ class TestOrderEventsAPI:
 
 
 class TestUpdateOrderStatusWithTransitionValidation:
-    @pytest.mark.asyncio
     async def test_invalid_transition_returns_422(
         self, client: AsyncClient, as_vendor: User
     ) -> None:
-        from features.orders.dependencies import get_order_for_staff_or_vendor
 
         order_id = uuid.uuid4()
         mock_order = Order()
         mock_order.id = order_id
 
         app.dependency_overrides[get_order_for_staff_or_vendor] = lambda: mock_order
-
-        with patch(
-            "features.orders.api.order.service.change_order_status",
-            new_callable=AsyncMock,
-            side_effect=InvalidStatusTransitionException(),
-        ):
-            response = await client.patch(
-                f"/api/v1/orders/{order_id}/status",
-                json={"status": OrderStatus.COMPLETED.value},
-            )
-
-        app.dependency_overrides.pop(get_order_for_staff_or_vendor, None)
+        try:
+            with patch(
+                "features.orders.api.order.service.change_order_status",
+                new_callable=AsyncMock,
+                side_effect=InvalidStatusTransitionException(),
+            ):
+                response = await client.patch(
+                    f"/api/v1/orders/{order_id}/status",
+                    json={"status": OrderStatus.COMPLETED.value},
+                )
+        finally:
+            app.dependency_overrides.pop(get_order_for_staff_or_vendor, None)
         assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY

@@ -1,7 +1,7 @@
-import SharedSettingsPage from "@shared/pages/SettingsPage/SettingsPage";
+import { SettingsPage as SharedSettingsPage } from "@shared/pages/SettingsPage/SettingsPage";
 import { ROUTES } from "../../constants/routes";
 
-const SettingsPage = () => (
+export const SettingsPage = () => (
   <SharedSettingsPage
     routes={{
       profile: ROUTES.PROFILE,
@@ -11,5 +11,3 @@ const SettingsPage = () => (
     showPasswordChange
   />
 );
-
-export default SettingsPage;

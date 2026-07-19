@@ -3,11 +3,13 @@ interface FoodizeLogoProps {
   color?: string;
 }
 
-const FoodizeLogo = ({ size = 32, color }: FoodizeLogoProps) => {
+export const FoodizeLogo = ({ size = 32, color }: FoodizeLogoProps) => {
   const textColor = color || "currentColor";
 
   return (
     <div
+      role="img"
+      aria-label="Foodize"
       style={{
         display: "flex",
         alignItems: "baseline",
@@ -46,5 +48,3 @@ const FoodizeLogo = ({ size = 32, color }: FoodizeLogoProps) => {
     </div>
   );
 };
-
-export default FoodizeLogo;

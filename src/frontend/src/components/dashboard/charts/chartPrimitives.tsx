@@ -28,9 +28,9 @@ interface ChartCardProps {
 }
 
 export const ChartCard = ({ title, children }: ChartCardProps): ReactElement => (
-  <div className={styles.card}>
-    <h3 className={styles.cardTitle}>{title}</h3>
-    <div className={styles.chartArea}>
+  <div className={styles['card']}>
+    <h3 className={styles['cardTitle']}>{title}</h3>
+    <div className={styles['chartArea']}>
       <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
         {children}
       </ResponsiveContainer>

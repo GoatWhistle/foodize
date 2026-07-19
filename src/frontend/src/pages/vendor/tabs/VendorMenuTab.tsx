@@ -1,9 +1,8 @@
 import { PlusIcon, DownloadSimpleIcon } from '@phosphor-icons/react';
 import type { Category, MenuItem, MenuItemOptionGroup, Restaurant } from '@shared/types/models';
 import { vendorService } from '@shared/services/vendorService';
-import MenuItemForm from './MenuItemForm';
-import MenuItemList from './MenuItemList';
-
+import { MenuItemForm } from './MenuItemForm';
+import { MenuItemList } from './MenuItemList';
 export interface OptionDraft {
   draftId: string;
   id?: string;
@@ -88,7 +87,7 @@ interface VendorMenuTabProps {
   vendorService: typeof vendorService;
 }
 
-export default function VendorMenuTab({
+export function VendorMenuTab({
   selectedRestaurant,
   selectedMenu,
   loading,
@@ -129,7 +128,7 @@ export default function VendorMenuTab({
           marginBottom: 16,
         }}
       >
-        <h3 style={{ fontWeight: 700, fontSize: '1rem' }}>Позиции меню</h3>
+        <h3 style={{ fontWeight: 700, fontSize: "var(--text-md)" }}>Позиции меню</h3>
         <div style={{ display: 'flex', gap: 8 }}>
           <button
             className="btn btn-secondary btn-sm"

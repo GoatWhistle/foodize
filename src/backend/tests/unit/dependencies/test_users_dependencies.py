@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from features.auth.schemas import UserLogin
 from features.users.dependencies import (
     ensure_user_not_exists_by_phone,
     get_user_by_id,
@@ -22,7 +23,6 @@ def _mock_session(scalar_result: object = None) -> AsyncMock:
     return session
 
 
-@pytest.mark.asyncio
 async def test_get_user_by_phone_found() -> None:
     user = MagicMock()
     session = _mock_session(user)
@@ -30,14 +30,12 @@ async def test_get_user_by_phone_found() -> None:
     assert result == user
 
 
-@pytest.mark.asyncio
 async def test_get_user_by_phone_not_found() -> None:
     session = _mock_session(None)
     result = await get_user_by_phone(session, "+79001234567")
     assert result is None
 
 
-@pytest.mark.asyncio
 async def test_get_user_by_id_found() -> None:
     user = MagicMock()
     session = _mock_session(user)
@@ -45,14 +43,12 @@ async def test_get_user_by_id_found() -> None:
     assert result == user
 
 
-@pytest.mark.asyncio
 async def test_get_user_by_id_not_found() -> None:
     session = _mock_session(None)
     result = await get_user_by_id(session, uuid.uuid4())
     assert result is None
 
 
-@pytest.mark.asyncio
 async def test_get_user_by_id_or_404_found() -> None:
     user = MagicMock()
     with patch(
@@ -62,7 +58,6 @@ async def test_get_user_by_id_or_404_found() -> None:
     assert result == user
 
 
-@pytest.mark.asyncio
 async def test_get_user_by_id_or_404_not_found() -> None:
     with patch(
         "features.users.dependencies.get_user_by_id", new_callable=AsyncMock, return_value=None
@@ -71,9 +66,7 @@ async def test_get_user_by_id_or_404_not_found() -> None:
             await get_user_by_id_or_404(AsyncMock(), uuid.uuid4())
 
 
-@pytest.mark.asyncio
 async def test_get_user_by_phone_or_401_success() -> None:
-    from features.auth.schemas import UserLogin
 
     user = MagicMock()
     user.hashed_password = "hashed"
@@ -95,9 +88,7 @@ async def test_get_user_by_phone_or_401_success() -> None:
     assert result == user
 
 
-@pytest.mark.asyncio
 async def test_get_user_by_phone_or_401_user_not_found() -> None:
-    from features.auth.schemas import UserLogin
 
     user_data = UserLogin(phone_number="+79001234567", password="password123")
 
@@ -108,9 +99,7 @@ async def test_get_user_by_phone_or_401_user_not_found() -> None:
             await get_user_by_phone_or_401(AsyncMock(), user_data)
 
 
-@pytest.mark.asyncio
 async def test_get_user_by_phone_or_401_no_password() -> None:
-    from features.auth.schemas import UserLogin
 
     user = MagicMock()
     user.hashed_password = None
@@ -123,9 +112,7 @@ async def test_get_user_by_phone_or_401_no_password() -> None:
             await get_user_by_phone_or_401(AsyncMock(), user_data)
 
 
-@pytest.mark.asyncio
 async def test_get_user_by_phone_or_401_wrong_password() -> None:
-    from features.auth.schemas import UserLogin
 
     user = MagicMock()
     user.hashed_password = "hashed"
@@ -147,7 +134,6 @@ async def test_get_user_by_phone_or_401_wrong_password() -> None:
             await get_user_by_phone_or_401(AsyncMock(), user_data)
 
 
-@pytest.mark.asyncio
 async def test_ensure_user_not_exists_by_phone_ok() -> None:
     with patch(
         "features.users.dependencies.get_user_by_phone", new_callable=AsyncMock, return_value=None
@@ -155,7 +141,6 @@ async def test_ensure_user_not_exists_by_phone_ok() -> None:
         await ensure_user_not_exists_by_phone(AsyncMock(), "+79001234567")
 
 
-@pytest.mark.asyncio
 async def test_ensure_user_not_exists_by_phone_raises() -> None:
     user = MagicMock()
     with patch(

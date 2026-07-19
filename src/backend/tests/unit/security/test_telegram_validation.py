@@ -194,7 +194,6 @@ class TestConsumeInitDataNonce:
     def _parsed(self) -> dict[str, str]:
         return {"hash": "deadbeef", "auth_date": str(int(time.time()))}
 
-    @pytest.mark.asyncio
     async def test_same_purpose_replay_is_rejected(self) -> None:
         cache = _FakeRedisCache()
         parsed = self._parsed()
@@ -203,7 +202,6 @@ class TestConsumeInitDataNonce:
             with pytest.raises(InvalidTelegramInitDataException, match="already used"):
                 await _consume_init_data_nonce(parsed, "auth")
 
-    @pytest.mark.asyncio
     async def test_auth_and_register_do_not_conflict(self) -> None:
         cache = _FakeRedisCache()
         parsed = self._parsed()
@@ -213,7 +211,6 @@ class TestConsumeInitDataNonce:
 
         assert len(cache.store) == 2
 
-    @pytest.mark.asyncio
     async def test_expired_init_data_is_rejected(self) -> None:
         cache = _FakeRedisCache()
         parsed = {

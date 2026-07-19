@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import MockAdapter from 'axios-mock-adapter';
-import api from '../../services/api';
+import { api } from '../../services/api';
 import { orderService } from '@shared/services/orderService.js';
 
 describe('orderService', () => {
   let mock: MockAdapter;
 
   beforeEach(() => {
-    mock = new MockAdapter(api);
+    mock = new MockAdapter(api, { onNoMatch: 'throwException' });
   });
 
   afterEach(() => {
@@ -65,5 +65,19 @@ describe('orderService', () => {
 
     const result = await orderService.completeOrder('789');
     expect(result.data).toEqual({ id: '789', status: 'COMPLETED' });
+  });
+
+  it('create rejects on 422 response', async () => {
+    mock.onPost('/orders/').reply(422, { detail: 'invalid order' });
+    await expect(
+      orderService.create({ restaurant_id: '2', items: [] })
+    ).rejects.toMatchObject({ response: { status: 422 } });
+  });
+
+  it('getById rejects on 404 response', async () => {
+    mock.onGet('/orders/missing').reply(404, { detail: 'not found' });
+    await expect(orderService.getById('missing')).rejects.toMatchObject({
+      response: { status: 404 },
+    });
   });
 });

@@ -86,11 +86,11 @@ export function MenuItemOptionGroups({
     })); };
 
   return (
-    <div className={styles.root}>
-      <div className={styles.header}>
+    <div className={styles['root']}>
+      <div className={styles['header']}>
         <div>
-          <div className={styles.headerTitle}>Опции блюда</div>
-          <div className={styles.headerSubtitle}>
+          <div className={styles['headerTitle']}>Опции блюда</div>
+          <div className={styles['headerSubtitle']}>
             Например: убрать лук, добавить мясо
           </div>
         </div>

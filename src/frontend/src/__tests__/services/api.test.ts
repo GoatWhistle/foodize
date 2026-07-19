@@ -1,6 +1,34 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
+import { API_BASE_URL, WS_BASE_URL } from '@shared/config';
+
+const REFRESH_URL = `${API_BASE_URL}/refresh`;
+
+interface StubWebSocket {
+  url: string;
+  readyState: number;
+  send: ReturnType<typeof vi.fn>;
+  close: ReturnType<typeof vi.fn>;
+}
+
+const stubWebSocket = (): StubWebSocket[] => {
+  const sockets: StubWebSocket[] = [];
+  class MockWebSocket implements StubWebSocket {
+    static OPEN = 1;
+    url: string;
+    readyState: number;
+    send = vi.fn();
+    close = vi.fn();
+    constructor(urlOrFactory: string | (() => string)) {
+      this.url = typeof urlOrFactory === 'function' ? urlOrFactory() : urlOrFactory;
+      this.readyState = MockWebSocket.OPEN;
+      sockets.push(this);
+    }
+  }
+  vi.stubGlobal('WebSocket', MockWebSocket);
+  return sockets;
+};
 
 const importApiModule = async () => {
   vi.resetModules();
@@ -17,74 +45,38 @@ describe('api infrastructure', () => {
   });
 
   it('builds order websocket URL without token in query string', async () => {
-    const sockets: MockWebSocket[] = [];
-    class MockWebSocket {
-      static OPEN = 1;
-      url: string;
-      readyState: number;
-      constructor(urlOrFactory: string | (() => string)) {
-        this.url = typeof urlOrFactory === 'function' ? urlOrFactory() : urlOrFactory;
-        this.readyState = MockWebSocket.OPEN;
-        sockets.push(this);
-      }
-      send = vi.fn();
-      close = vi.fn();
-    }
-    vi.stubGlobal('WebSocket', MockWebSocket);
+    const sockets = stubWebSocket();
 
     const { createOrderWebSocket } = await importApiModule();
     createOrderWebSocket('order-1', vi.fn(), vi.fn());
 
-    expect(sockets[0]?.url).toBe('ws://localhost:8000/api/v1/ws/orders/order-1');
+    expect(sockets[0]?.url).toBe(`${WS_BASE_URL}/api/v1/ws/orders/order-1`);
   });
 
   it('restaurant orders websocket connects without token in URL', async () => {
-    const sockets: MockWebSocket[] = [];
-    class MockWebSocket {
-      static OPEN = 1;
-      url: string;
-      readyState: number;
-      constructor(urlOrFactory: string | (() => string)) {
-        this.url = typeof urlOrFactory === 'function' ? urlOrFactory() : urlOrFactory;
-        this.readyState = MockWebSocket.OPEN;
-        sockets.push(this);
-      }
-      send = vi.fn();
-      close = vi.fn();
-    }
-    vi.stubGlobal('WebSocket', MockWebSocket);
+    const sockets = stubWebSocket();
 
     const { createRestaurantOrdersWebSocket } = await importApiModule();
     const ws = createRestaurantOrdersWebSocket('rest-1', vi.fn(), vi.fn());
 
-    expect(sockets[0]?.url).toBe('ws://localhost:8000/api/v1/ws/restaurants/rest-1/orders');
+    expect(sockets[0]?.url).toBe(`${WS_BASE_URL}/api/v1/ws/restaurants/rest-1/orders`);
     ws.close();
   });
 
   it('display board websocket connects without token in URL', async () => {
-    const sockets: MockWebSocket[] = [];
-    class MockWebSocket {
-      url: string;
-      constructor(urlOrFactory: string | (() => string)) {
-        this.url = typeof urlOrFactory === 'function' ? urlOrFactory() : urlOrFactory;
-        sockets.push(this);
-      }
-      send = vi.fn();
-      close = vi.fn();
-    }
-    vi.stubGlobal('WebSocket', MockWebSocket);
+    const sockets = stubWebSocket();
 
     const { createDisplayBoardWebSocket } = await importApiModule();
     createDisplayBoardWebSocket('rest-2', vi.fn(), vi.fn());
 
     expect(sockets[0]?.url).toBe(
-      'ws://localhost:8000/api/v1/ws/restaurants/rest-2/display-board'
+      `${WS_BASE_URL}/api/v1/ws/restaurants/rest-2/display-board`
     );
   });
 
   it('refreshes token via cookie and retries a 401 request once', async () => {
-    const { default: api } = await importApiModule();
-    const mock = new MockAdapter(api);
+    const { api } = await importApiModule();
+    const mock = new MockAdapter(api, { onNoMatch: 'throwException' });
     const refresh = vi
       .spyOn(axios, 'post')
       .mockResolvedValueOnce({ data: {} });
@@ -101,7 +93,7 @@ describe('api infrastructure', () => {
       'X-Request-Id': expect.any(String) as unknown,
     });
     expect(refresh).toHaveBeenCalledWith(
-      'http://localhost:8000/api/v1/refresh',
+      REFRESH_URL,
       {},
       expect.objectContaining({
         withCredentials: true,
@@ -118,8 +110,8 @@ describe('api infrastructure', () => {
     delete (window as { location?: Location }).location;
     window.location = { pathname: '/profile', href: '' } as unknown as Location;
 
-    const { default: api } = await importApiModule();
-    const mock = new MockAdapter(api);
+    const { api } = await importApiModule();
+    const mock = new MockAdapter(api, { onNoMatch: 'throwException' });
     vi.spyOn(axios, 'post').mockRejectedValueOnce(new Error('refresh failed'));
 
     mock.onGet('/double-401').reply(401, {});
@@ -136,8 +128,8 @@ describe('api infrastructure', () => {
     delete (window as { location?: Location }).location;
     window.location = { pathname: '/login', href: '' } as unknown as Location;
 
-    const { default: api } = await importApiModule();
-    const mock = new MockAdapter(api);
+    const { api } = await importApiModule();
+    const mock = new MockAdapter(api, { onNoMatch: 'throwException' });
     vi.spyOn(axios, 'post').mockRejectedValueOnce(new Error('refresh failed'));
 
     mock.onGet('/double-401-login').reply(401, {});
@@ -150,8 +142,8 @@ describe('api infrastructure', () => {
   });
 
   it('normalizes nested API error detail before rejecting', async () => {
-    const { default: api } = await importApiModule();
-    const mock = new MockAdapter(api);
+    const { api } = await importApiModule();
+    const mock = new MockAdapter(api, { onNoMatch: 'throwException' });
     mock.onGet('/bad-request').reply(400, {
       detail: { error: 'Readable error' },
     });

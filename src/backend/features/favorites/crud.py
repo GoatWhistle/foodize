@@ -1,6 +1,7 @@
 import uuid
+from datetime import datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -23,15 +24,23 @@ async def get_favorites_by_user(
     user_id: uuid.UUID,
     offset: int = 0,
     limit: int = 20,
+    cursor_created_at: datetime | None = None,
+    cursor_id: uuid.UUID | None = None,
 ) -> list[Favorite]:
-    result = await session.execute(
+    query = (
         select(Favorite)
         .where(Favorite.user_id == user_id)
         .options(selectinload(Favorite.restaurant))
-        .order_by(Favorite.created_at.desc())
-        .offset(offset)
+        .order_by(Favorite.created_at.desc(), Favorite.id.desc())
         .limit(limit)
     )
+    if cursor_created_at is not None and cursor_id is not None:
+        query = query.where(
+            tuple_(Favorite.created_at, Favorite.id) < (cursor_created_at, cursor_id)
+        )
+    else:
+        query = query.offset(offset)
+    result = await session.execute(query)
     return list(result.scalars().all())
 
 

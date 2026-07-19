@@ -1,13 +1,15 @@
 import asyncio
 import html
 import logging
+from collections.abc import Callable
 from typing import Any
 
 from aiogram import Bot
 from aiogram.exceptions import TelegramForbiddenError, TelegramNetworkError, TelegramRetryAfter
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+from aiogram.types import InlineKeyboardMarkup
 
 from config import bot_config
+from keyboards.start_keyboards import OPEN_FOODIZE_BUTTON, OPEN_ORDER_BUTTON, web_app_keyboard
 from services import backend_client, redis_client
 from utils.formatting import format_price, format_status
 
@@ -21,16 +23,20 @@ class RateLimitExhaustedError(Exception):
     pass
 
 
+def _tg_cache_key(user_id: str) -> str:
+    return f"user_tg:{user_id}"
+
+
 async def _cache_telegram_id(user_id: str, telegram_id: int) -> None:
     await redis_client.get_client().set(
-        f"user_tg:{user_id}", str(telegram_id), ex=_TG_CACHE_TTL_SECONDS
+        _tg_cache_key(user_id), str(telegram_id), ex=_TG_CACHE_TTL_SECONDS
     )
 
 
 async def _get_telegram_id(user_id: str) -> int | None:
-    val = await redis_client.get_client().get(f"user_tg:{user_id}")
-    if val:
-        return int(val)
+    cached_id = await redis_client.get_client().get(_tg_cache_key(user_id))
+    if cached_id:
+        return int(cached_id)
 
     telegram_id = await backend_client.get_telegram_id_by_user(user_id)
     if telegram_id is None:
@@ -44,31 +50,19 @@ async def _get_telegram_id(user_id: str) -> int | None:
 
 
 async def _deactivate_telegram_id(user_id: str) -> None:
-    await redis_client.get_client().delete(f"user_tg:{user_id}")
+    await redis_client.get_client().delete(_tg_cache_key(user_id))
     logger.info("Deactivated Telegram binding for user_id=%s (bot blocked)", user_id)
 
 
 def _order_keyboard(order_display_id: str | None) -> InlineKeyboardMarkup | None:
     if not bot_config.mini_app_url:
         return None
-    buttons = []
     if order_display_id:
-        buttons.append(
-            InlineKeyboardButton(
-                text="Открыть заказ",
-                web_app=WebAppInfo(
-                    url=f"{bot_config.mini_app_url}?startapp=order_{order_display_id}"
-                ),
-            )
+        return web_app_keyboard(
+            OPEN_ORDER_BUTTON,
+            f"{bot_config.mini_app_url}?startapp=order_{order_display_id}",
         )
-    else:
-        buttons.append(
-            InlineKeyboardButton(
-                text="Открыть Foodize",
-                web_app=WebAppInfo(url=bot_config.mini_app_url),
-            )
-        )
-    return InlineKeyboardMarkup(inline_keyboard=[buttons])
+    return web_app_keyboard(OPEN_FOODIZE_BUTTON, bot_config.mini_app_url)
 
 
 async def _send_notification(
@@ -103,54 +97,51 @@ async def _send_notification(
     raise RateLimitExhaustedError(user_id)
 
 
-async def handle_order_placed(event: dict[str, Any], bot: Bot) -> None:
+def _order_ref(display_id: object) -> str:
+    return f" <b>#{html.escape(str(display_id))}</b>" if display_id else ""
+
+
+def _order_placed_text(event: dict[str, Any]) -> str:
+    restaurant = html.escape(str(event.get("restaurant_name", "")))
+    return (
+        f"Заказ{_order_ref(event.get('order_display_id'))} в <b>{restaurant}</b> принят!\n\n"
+        f"Позиций: {event.get('items_count', 0)}\n"
+        f"Сумма: {format_price(event.get('total_price', 0))}\n\n"
+        f"Мы уведомим вас, когда статус изменится."
+    )
+
+
+def _order_status_text(event: dict[str, Any]) -> str:
+    restaurant = html.escape(str(event.get("restaurant_name", "")))
+    status_label = html.escape(format_status(event.get("new_status", "")))
+    return (
+        f"Обновление заказа{_order_ref(event.get('order_display_id'))} в <b>{restaurant}</b>\n\n"
+        f"Статус: <b>{status_label}</b>\n"
+        f"Сумма: {format_price(event.get('total_price', 0))}"
+    )
+
+
+async def _notify_user(
+    event: dict[str, Any],
+    bot: Bot,
+    build_text: Callable[[dict[str, Any]], str],
+) -> None:
     user_id = str(event.get("user_id", ""))
     telegram_id = await _get_telegram_id(user_id)
     if not telegram_id:
         return
-
-    restaurant = html.escape(str(event.get("restaurant_name", "")))
-    total = event.get("total_price", 0)
-    count = event.get("items_count", 0)
-    display_id = event.get("order_display_id")
-
-    order_ref = f" <b>#{html.escape(str(display_id))}</b>" if display_id else ""
-    text = (
-        f"Заказ{order_ref} в <b>{restaurant}</b> принят!\n\n"
-        f"Позиций: {count}\n"
-        f"Сумма: {format_price(total)}\n\n"
-        f"Мы уведомим вас, когда статус изменится."
-    )
     await _send_notification(
         bot,
         user_id=user_id,
         telegram_id=telegram_id,
-        text=text,
-        display_id=display_id,
+        text=build_text(event),
+        display_id=event.get("order_display_id"),
     )
+
+
+async def handle_order_placed(event: dict[str, Any], bot: Bot) -> None:
+    await _notify_user(event, bot, _order_placed_text)
 
 
 async def handle_order_status_changed(event: dict[str, Any], bot: Bot) -> None:
-    user_id = str(event.get("user_id", ""))
-    telegram_id = await _get_telegram_id(user_id)
-    if not telegram_id:
-        return
-
-    new_status = event.get("new_status", "")
-    restaurant = html.escape(str(event.get("restaurant_name", "")))
-    total = event.get("total_price", 0)
-    display_id = event.get("order_display_id")
-
-    order_ref = f" <b>#{html.escape(str(display_id))}</b>" if display_id else ""
-    text = (
-        f"Обновление заказа{order_ref} в <b>{restaurant}</b>\n\n"
-        f"Статус: <b>{html.escape(format_status(new_status))}</b>\n"
-        f"Сумма: {format_price(total)}"
-    )
-    await _send_notification(
-        bot,
-        user_id=user_id,
-        telegram_id=telegram_id,
-        text=text,
-        display_id=display_id,
-    )
+    await _notify_user(event, bot, _order_status_text)

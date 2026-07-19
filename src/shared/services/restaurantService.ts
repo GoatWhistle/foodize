@@ -1,4 +1,4 @@
-import api from "@shared/services/api.instance";
+import { api } from "@shared/services/api.instance";
 import type { components } from "@shared/types/api";
 import type {
   Restaurant,

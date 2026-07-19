@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import TelegramLogo from '@shared/components/BrandIcons/TelegramLogo';
-import FoodizeLogo from '@shared/components/FoodizeLogo/FoodizeLogo';
+import { TelegramLogo } from '@shared/components/BrandIcons/TelegramLogo';
+import { FoodizeLogo } from '@shared/components/FoodizeLogo/FoodizeLogo';
 import { ROUTES } from '../../constants/routes';
 import { TELEGRAM_BOT_USERNAME } from '../../config';
 import type { AuthMode } from './types';
@@ -27,7 +27,7 @@ interface AuthCardProps {
   children: ReactNode;
 }
 
-const AuthCard = ({ authMode, telegramUsername, error, showBotLink, children }: AuthCardProps) => {
+export const AuthCard = ({ authMode, telegramUsername, error, showBotLink, children }: AuthCardProps) => {
   const isTelegram = authMode === 'telegram-username' || authMode === 'telegram-code';
 
   return (
@@ -86,7 +86,7 @@ const AuthCard = ({ authMode, telegramUsername, error, showBotLink, children }: 
                 color: 'var(--color-white)',
                 borderRadius: 'var(--r-sm)',
                 fontWeight: 600,
-                fontSize: '0.9rem',
+                fontSize: "var(--text-base)",
                 textDecoration: 'none',
               }}
             >
@@ -105,5 +105,3 @@ const AuthCard = ({ authMode, telegramUsername, error, showBotLink, children }: 
     </div>
   );
 };
-
-export default AuthCard;

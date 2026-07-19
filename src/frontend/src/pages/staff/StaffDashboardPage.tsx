@@ -1,9 +1,9 @@
 import { createPortal } from 'react-dom';
-import ApplicationStatus from './components/ApplicationStatus';
-import EtaModal from './components/EtaModal';
-import StaffHeader from './components/StaffHeader';
-import StaffOrdersTab from './components/StaffOrdersTab';
-import StaffMenuTab from './components/StaffMenuTab';
+import { ApplicationStatus } from './components/ApplicationStatus';
+import { EtaModal } from './components/EtaModal';
+import { StaffHeader } from './components/StaffHeader';
+import { StaffOrdersTab } from './components/StaffOrdersTab';
+import { StaffMenuTab } from './components/StaffMenuTab';
 import { useStaffDashboard } from './hooks/useStaffDashboard';
 
 type StaffTab = 'orders' | 'menu';
@@ -13,7 +13,7 @@ const TABS: { id: StaffTab; label: string }[] = [
   { id: 'menu', label: 'Стоп-лист' },
 ];
 
-const StaffDashboardPage = () => {
+export const StaffDashboardPage = () => {
   const {
     profile,
     profileLoading,
@@ -90,7 +90,7 @@ const StaffDashboardPage = () => {
                 activeTab === tab.id ? '2px solid var(--fire)' : 'none',
               color: activeTab === tab.id ? 'var(--text-1)' : 'var(--text-3)',
               fontWeight: activeTab === tab.id ? 700 : 500,
-              fontSize: '0.9rem',
+              fontSize: "var(--text-base)",
               cursor: 'pointer',
               transition: 'all 0.2s',
             }}
@@ -140,5 +140,3 @@ const StaffDashboardPage = () => {
     </div>
   );
 };
-
-export default StaffDashboardPage;

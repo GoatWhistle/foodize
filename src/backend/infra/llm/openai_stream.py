@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from infra.llm.base import LLMResponse, TextDelta, ToolCall, Usage
+from infra.llm.base import LLMResponse, TextDelta, ToolCall, ToolUseStart, Usage
 
 _ArgumentsParser = Callable[[str, str | None], dict[str, Any]]
 
@@ -14,26 +14,33 @@ class OpenAIStreamAccumulator:
         self._calls: dict[int, dict[str, str]] = {}
         self._finish_reason = ""
         self._usage = Usage()
+        self._tool_use_signaled = False
 
     @property
     def usage(self) -> Usage:
         return self._usage
 
-    def absorb(self, chunk: Any) -> TextDelta | None:
+    def absorb(self, chunk: Any) -> list[TextDelta | ToolUseStart]:
         self._absorb_usage(chunk)
         if not chunk.choices:
-            return None
+            return []
         choice = chunk.choices[0]
         if choice.finish_reason:
             self._finish_reason = choice.finish_reason
         delta = choice.delta
         if delta is None:
-            return None
-        self._absorb_tool_calls(delta.tool_calls or [])
+            return []
+        events: list[TextDelta | ToolUseStart] = []
+        fragments = delta.tool_calls or []
+        if fragments and not self._tool_use_signaled:
+            self._tool_use_signaled = True
+            first_function = fragments[0].function
+            events.append(ToolUseStart(name=getattr(first_function, "name", None) or ""))
+        self._absorb_tool_calls(fragments)
         if delta.content:
             self._text_parts.append(delta.content)
-            return TextDelta(delta.content)
-        return None
+            events.append(TextDelta(delta.content))
+        return events
 
     def _absorb_usage(self, chunk: Any) -> None:
         chunk_usage = getattr(chunk, "usage", None)

@@ -8,7 +8,7 @@ interface HorizontalStepsProps {
   order: Order;
 }
 
-const HorizontalSteps = ({ order }: HorizontalStepsProps) => {
+export const HorizontalSteps = ({ order }: HorizontalStepsProps) => {
   const currentIndex = order.status === "CANCELLED" ? -1 : STATUS_FLOW.indexOf(order.status);
 
   return (
@@ -67,7 +67,7 @@ const HorizontalSteps = ({ order }: HorizontalStepsProps) => {
                 />
                 <div
                   style={{
-                    fontSize: "0.64rem",
+                    fontSize: "var(--text-xs)",
                     fontWeight: state === "current" ? 800 : 500,
                     color:
                       state === "next" ? "var(--text-3)"
@@ -88,5 +88,3 @@ const HorizontalSteps = ({ order }: HorizontalStepsProps) => {
     </div>
   );
 };
-
-export default HorizontalSteps;

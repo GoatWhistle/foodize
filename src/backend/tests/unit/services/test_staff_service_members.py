@@ -25,7 +25,6 @@ def _make_profile() -> MagicMock:
 
 
 class TestGetVendorStaffMembers:
-    @pytest.mark.asyncio
     async def test_returns_members_with_details(self) -> None:
         session = AsyncMock()
         profile = _make_profile()
@@ -48,7 +47,6 @@ class TestGetVendorStaffMembers:
             assert members[0].restaurant_name == "Тест Кафе"
             assert members[0].user_name == "Сотрудник"
 
-    @pytest.mark.asyncio
     async def test_handles_missing_restaurant_and_user(self) -> None:
         session = AsyncMock()
         profile = _make_profile()
@@ -70,7 +68,6 @@ class TestGetVendorStaffMembers:
             assert members[0].restaurant_name is None
             assert members[0].user_name is None
 
-    @pytest.mark.asyncio
     async def test_offset_from_page(self) -> None:
         session = AsyncMock()
         with (
@@ -90,7 +87,6 @@ class TestGetVendorStaffMembers:
 
 
 class TestRemoveStaffMember:
-    @pytest.mark.asyncio
     async def test_raises_not_found_when_profile_missing(self) -> None:
         session = AsyncMock()
         with patch(
@@ -101,7 +97,6 @@ class TestRemoveStaffMember:
             with pytest.raises(NotFoundException):
                 await remove_staff_member(session, uuid.uuid4(), uuid.uuid4())
 
-    @pytest.mark.asyncio
     async def test_raises_access_denied_when_wrong_vendor(self) -> None:
         session = AsyncMock()
         profile = _make_profile()
@@ -118,7 +113,6 @@ class TestRemoveStaffMember:
             with pytest.raises(NotFoundException):
                 await remove_staff_member(session, profile.id, uuid.uuid4())
 
-    @pytest.mark.asyncio
     async def test_raises_not_found_when_restaurant_not_found(self) -> None:
         session = AsyncMock()
         profile = _make_profile()
@@ -133,7 +127,6 @@ class TestRemoveStaffMember:
             with pytest.raises(NotFoundException):
                 await remove_staff_member(session, profile.id, uuid.uuid4())
 
-    @pytest.mark.asyncio
     async def test_deletes_profile_when_authorized(self) -> None:
         session = AsyncMock()
         vendor_id = uuid.uuid4()

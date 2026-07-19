@@ -29,7 +29,7 @@ function buildInit(
     'X-Request-Id': makeId(),
   };
   const token = auth.getToken?.();
-  if (token) headers.Authorization = `Bearer ${token}`;
+  if (token) headers['Authorization'] = `Bearer ${token}`;
   const init: RequestInit = {
     method: 'POST',
     headers,

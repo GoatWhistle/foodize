@@ -10,7 +10,9 @@ from services import backend_client
 
 
 @pytest.fixture(autouse=True)
-async def _reset_client() -> AsyncIterator[None]:
+async def _reset_client(monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[None]:
+    monkeypatch.setattr(bot_config, "backend_url", "http://backend")
+    monkeypatch.setattr(bot_config, "bot_api_secret", "secret")
     await backend_client.close_client()
     yield
     await backend_client.close_client()
@@ -24,7 +26,6 @@ def test_get_client_is_singleton() -> None:
     assert isinstance(first, httpx.AsyncClient)
 
 
-@pytest.mark.asyncio
 async def test_close_client_resets_singleton() -> None:
     backend_client.init_client()
     client = backend_client.get_client()
@@ -35,10 +36,7 @@ async def test_close_client_resets_singleton() -> None:
     assert not new_client.is_closed
 
 
-@pytest.mark.asyncio
 async def test_calls_reuse_shared_client(mocker: MockerFixture) -> None:
-    bot_config.bot_api_secret = "secret"
-    bot_config.backend_url = "http://backend"
     backend_client.init_client()
     shared = backend_client.get_client()
 
@@ -53,23 +51,47 @@ async def test_calls_reuse_shared_client(mocker: MockerFixture) -> None:
     assert backend_client.get_client() is shared
 
 
-@pytest.mark.asyncio
+async def test_post_sends_url_secret_header_and_json_body(mocker: MockerFixture) -> None:
+    backend_client.init_client()
+    shared = backend_client.get_client()
+
+    req = httpx.Request("POST", "http://backend/api/v1/telegram/bot/link-phone")
+    resp = httpx.Response(HTTPStatus.OK, json={"data": {}}, request=req)
+    mock_post = mocker.patch.object(shared, "post", return_value=resp)
+
+    await backend_client.link_phone(
+        telegram_id=111, telegram_username="ivan", phone_number="+79990000000", name="Ivan"
+    )
+
+    args, kwargs = mock_post.call_args
+    assert args[0] == "http://backend/api/v1/telegram/bot/link-phone"
+    assert kwargs["headers"] == {"X-Telegram-Bot-Secret": "secret"}
+    assert kwargs["json"] == {
+        "telegram_id": 111,
+        "telegram_username": "ivan",
+        "phone_number": "+79990000000",
+        "name": "Ivan",
+    }
+
+
 async def test_get_telegram_id_by_user_success(mocker: MockerFixture) -> None:
-    bot_config.backend_url = "http://backend"
     backend_client.init_client()
     shared = backend_client.get_client()
 
     req = httpx.Request("POST", "http://backend/api/v1/telegram/bot/telegram-id")
     resp = httpx.Response(HTTPStatus.OK, json={"data": {"telegram_id": 55555}}, request=req)
-    mocker.patch.object(shared, "post", return_value=resp)
+    mock_post = mocker.patch.object(shared, "post", return_value=resp)
 
     result = await backend_client.get_telegram_id_by_user("user_x")
+
     assert result == 55555
+    args, kwargs = mock_post.call_args
+    assert args[0] == "http://backend/api/v1/telegram/bot/telegram-id"
+    assert kwargs["json"] == {"user_id": "user_x"}
+    assert kwargs["headers"]["X-Telegram-Bot-Secret"] == "secret"
 
 
-@pytest.mark.asyncio
 async def test_get_telegram_id_by_user_http_error_returns_none(mocker: MockerFixture) -> None:
-    bot_config.backend_url = "http://backend"
     backend_client.init_client()
     shared = backend_client.get_client()
 

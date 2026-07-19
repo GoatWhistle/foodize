@@ -1,10 +1,8 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Order } from '@shared/types/models';
-import OrderDetailsModal, {
-  type OrderDetailsModalProps,
-} from '../../components/OrderDetailsModal/OrderDetailsModal';
-
+import { OrderDetailsModal, type OrderDetailsModalProps, } from '../../components/OrderDetailsModal/OrderDetailsModal';
 vi.mock('@shared/services/orderService.js', () => ({
   orderService: {
     getOrderEvents: vi.fn(),
@@ -102,11 +100,11 @@ describe('OrderDetailsModal', () => {
     });
   });
 
-  it('calls onClose when overlay clicked', () => {
+  it('calls onClose when overlay clicked', async () => {
+    const user = userEvent.setup();
     const onClose = vi.fn();
     render$({ onClose });
-    const overlay = document.querySelector('.modal-overlay') as HTMLElement;
-    fireEvent.mouseDown(overlay, { target: overlay });
+    await user.click(screen.getByTestId('order-details-overlay'));
     expect(onClose).toHaveBeenCalled();
   });
 
@@ -152,8 +150,9 @@ describe('OrderDetailsModal', () => {
       nextLabel: { ACCEPTED: 'Готово' },
       onStatusChange,
     });
+    const user = userEvent.setup();
     await waitFor(() => screen.getByText('Готово'));
-    fireEvent.click(screen.getByText('Готово'));
+    await user.click(screen.getByText('Готово'));
     await waitFor(() => {
       expect(onStatusChange).toHaveBeenCalledWith('order-1', 'READY', expect.anything());
     });

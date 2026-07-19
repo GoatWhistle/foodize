@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { ChangeEvent, SyntheticEvent } from "react";
-import FoodizeLogo from "@shared/components/FoodizeLogo/FoodizeLogo";
+import { FoodizeLogo } from "@shared/components/FoodizeLogo/FoodizeLogo";
 import { completeTelegramAuth } from "../../telegram/init";
 import { useAuthStore } from "../../store/useAuthStore";
 import { translateApiError } from "@shared/utils/translateApiError";
@@ -13,7 +13,7 @@ interface RegisterPageProps {
 
 const PHONE_RE = /^\+?[0-9]{7,15}$/;
 
-export default function RegisterPage({
+export function RegisterPage({
   initData,
   prefillPhone,
   onSuccess,
@@ -35,9 +35,9 @@ export default function RegisterPage({
   };
 
   const handlePhoneChange = (e: ChangeEvent<HTMLInputElement>): void => {
-    const val = e.target.value;
-    setPhone(val);
-    setPhoneError(validatePhone(val));
+    const phoneInput = e.target.value;
+    setPhone(phoneInput);
+    setPhoneError(validatePhone(phoneInput));
   };
 
   const handleSubmit = async (e: SyntheticEvent<HTMLFormElement>): Promise<void> => {
@@ -100,7 +100,7 @@ export default function RegisterPage({
         <h1
           style={{
             fontFamily: "var(--font-sans)",
-            fontSize: "1.6rem",
+            fontSize: "var(--text-xl)",
             fontWeight: 800,
             letterSpacing: "-0.03em",
             color: "var(--text-1)",
@@ -111,7 +111,7 @@ export default function RegisterPage({
         </h1>
         <p
           style={{
-            fontSize: "0.9rem",
+            fontSize: "var(--text-base)",
             color: "var(--text-3)",
             marginTop: 6,
             marginBottom: 32,
@@ -150,7 +150,7 @@ export default function RegisterPage({
           {phoneError && (
             <div
               className="form-error"
-              style={{ fontSize: "0.78rem", marginTop: 4 }}
+              style={{ fontSize: "var(--text-sm)", marginTop: 4 }}
             >
               {phoneError}
             </div>

@@ -1,11 +1,14 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
-import App from "./App";
+import { App } from "./App";
+import { applySafeAreaInsets, startTelegramApp } from "./telegram/sdk";
 
 const tg = window.Telegram?.WebApp;
+startTelegramApp();
+applySafeAreaInsets();
 const colorScheme =
-  tg?.colorScheme ??
+  tg?.['colorScheme'] ??
   (window.matchMedia("(prefers-color-scheme: dark)").matches
     ? "dark"
     : "light");

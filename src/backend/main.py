@@ -32,6 +32,7 @@ from features.ai_order_agent.crud import get_embedding_column_dim
 from features.notifications.broker import broker
 from infra.cache.redis import close_redis_pool, get_redis_cache
 from middlewares.cache import AutoCacheMiddleware
+from middlewares.csrf import CsrfMiddleware
 from middlewares.limiter import limiter
 from middlewares.request_id import RequestIDMiddleware
 from middlewares.security import SecurityHeadersMiddleware
@@ -63,13 +64,7 @@ async def _verify_embedding_dim() -> None:
         )
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    if settings.debug:
-        logger.warning(
-            "Application is running with debug=True: production security guards "
-            "(insecure default credentials, weak secrets, docs exposure) are DISABLED."
-        )
+def _enforce_production_guards() -> None:
     if settings.rabbitmq.is_default_insecure and not settings.debug:
         raise RuntimeError(
             "RABBITMQ__URL must be set to a non-default value in production. "
@@ -97,6 +92,17 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             "so a wildcard origin silently breaks all cross-origin requests. "
             "List explicit allowed origins instead."
         )
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    if settings.debug:
+        logger.warning(
+            "Application is running with debug=True: production security guards "
+            "(insecure default credentials, weak secrets) are DISABLED. "
+            "Docs exposure is controlled separately by DOCS__ENABLED."
+        )
+    _enforce_production_guards()
     if settings.llm.embeddings_enabled:
         await _verify_embedding_dim()
     await broker.connect()
@@ -112,22 +118,29 @@ app = FastAPI(
     title="Foodize API",
     version="0.1.0",
     lifespan=lifespan,
-    docs_url="/docs" if settings.debug else None,
-    redoc_url="/redoc" if settings.debug else None,
-    openapi_url="/openapi.json" if settings.debug else None,
+    docs_url="/docs" if settings.docs.enabled else None,
+    redoc_url="/redoc" if settings.docs.enabled else None,
+    openapi_url="/openapi.json" if settings.docs.enabled else None,
 )
 app.state.limiter = limiter
 
 app.add_middleware(RequestIDMiddleware)
 app.add_middleware(AutoCacheMiddleware, ttl=300)
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(CsrfMiddleware)
 app.add_middleware(SlowAPIMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors.allowed_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "X-Request-Id", "Idempotency-Key"],
+    allow_headers=[
+        "Authorization",
+        "Content-Type",
+        "X-Request-Id",
+        "Idempotency-Key",
+        settings.auth.csrf_header_name,
+    ],
 )
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 app.add_exception_handler(RequestValidationError, request_validation_error_handler)  # type: ignore[arg-type]

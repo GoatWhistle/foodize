@@ -9,7 +9,7 @@ interface VendorAdvisorPanelProps {
   restaurantId: string;
 }
 
-export default function VendorAdvisorPanel({ restaurantId }: VendorAdvisorPanelProps) {
+export function VendorAdvisorPanel({ restaurantId }: VendorAdvisorPanelProps) {
   const [messages, setMessages] = useState<AdvisorChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
@@ -89,7 +89,7 @@ export default function VendorAdvisorPanel({ restaurantId }: VendorAdvisorPanelP
   }, []);
 
   return (
-    <div className={styles.root}>
+    <div className={styles['root']}>
       <AdvisorInsights
         insights={insights}
         insightsLoading={insightsLoading}

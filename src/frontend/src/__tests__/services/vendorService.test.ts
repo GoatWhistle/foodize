@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import MockAdapter from 'axios-mock-adapter';
-import api from '../../services/api';
+import { api } from '../../services/api';
 import { vendorService } from '@shared/services/vendorService.js';
 import type { StaffRequestStatus, Schemas } from '@shared/types/models';
 
@@ -10,7 +10,7 @@ describe('vendorService', () => {
   let mock: MockAdapter;
 
   beforeEach(() => {
-    mock = new MockAdapter(api);
+    mock = new MockAdapter(api, { onNoMatch: 'throwException' });
   });
 
   afterEach(() => {
@@ -73,5 +73,19 @@ describe('vendorService', () => {
 
     const result = await vendorService.removeStaffMember('staff-1');
     expect(result.status).toBe(204);
+  });
+
+  it('getMyProfile rejects on 404 response', async () => {
+    mock.onGet('/vendors/').reply(404, { detail: 'not found' });
+    await expect(vendorService.getMyProfile()).rejects.toMatchObject({
+      response: { status: 404 },
+    });
+  });
+
+  it('createProfile rejects on 422 response', async () => {
+    mock.onPost('/vendors/').reply(422, { detail: 'invalid' });
+    await expect(
+      vendorService.createProfile({})
+    ).rejects.toMatchObject({ response: { status: 422 } });
   });
 });

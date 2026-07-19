@@ -1,7 +1,9 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import type { UserEvent } from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
-import RegisterPage from '../../pages/auth/RegisterPage';
+import { RegisterPage } from '../../pages/auth/RegisterPage';
 import { useAuthStore } from '../../store/useAuthStore';
 
 type AuthState = {
@@ -38,36 +40,42 @@ describe('RegisterPage', () => {
   const renderPage = () =>
     render(<BrowserRouter><RegisterPage /></BrowserRouter>);
 
-  const fillAndSubmit = ({
-    name,
-    phone,
-    password,
-  }: {
-    name: string;
-    phone: string;
-    password: string;
-  }) => {
-    fireEvent.change(screen.getByLabelText('Имя'), { target: { value: name } });
-    fireEvent.change(screen.getByLabelText('Телефон'), { target: { value: phone } });
-    fireEvent.change(screen.getByLabelText('Пароль'), { target: { value: password } });
-    const checkbox = document.querySelector('input[type="checkbox"]');
-    if (checkbox) fireEvent.click(checkbox);
-    fireEvent.click(screen.getByRole('button', { name: 'Создать аккаунт' }));
+  const fillAndSubmit = async (
+    user: UserEvent,
+    {
+      name,
+      phone,
+      password,
+    }: {
+      name: string;
+      phone: string;
+      password: string;
+    }
+  ) => {
+    await user.clear(screen.getByLabelText('Имя'));
+    await user.type(screen.getByLabelText('Имя'), name);
+    await user.clear(screen.getByLabelText('Телефон'));
+    await user.type(screen.getByLabelText('Телефон'), phone);
+    await user.clear(screen.getByLabelText('Пароль'));
+    await user.type(screen.getByLabelText('Пароль'), password);
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: 'Создать аккаунт' }));
   };
 
   it('renders registration form', () => {
     renderPage();
-    expect(screen.getByLabelText('Имя')).toBeDefined();
-    expect(screen.getByLabelText('Телефон')).toBeDefined();
-    expect(screen.getByLabelText('Пароль')).toBeDefined();
-    expect(screen.getByRole('button', { name: 'Создать аккаунт' })).toBeDefined();
+    expect(screen.getByLabelText('Имя')).toBeInTheDocument();
+    expect(screen.getByLabelText('Телефон')).toBeInTheDocument();
+    expect(screen.getByLabelText('Пароль')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Создать аккаунт' })).toBeInTheDocument();
   });
 
   it('submits without user_role field', async () => {
+    const user = userEvent.setup();
     registerMock.mockResolvedValueOnce();
     loginMock.mockResolvedValueOnce();
     renderPage();
-    fillAndSubmit({ name: 'Test', phone: '79991234567', password: 'password123' });
+    await fillAndSubmit(user, { name: 'Test', phone: '79991234567', password: 'password123' });
 
     await waitFor(() => {
       expect(registerMock).toHaveBeenCalledWith(
@@ -85,10 +93,11 @@ describe('RegisterPage', () => {
   });
 
   it('registers, logs in and navigates on success', async () => {
+    const user = userEvent.setup();
     registerMock.mockResolvedValueOnce();
     loginMock.mockResolvedValueOnce();
     renderPage();
-    fillAndSubmit({ name: 'Ivan', phone: '79991234567', password: 'pw123456' });
+    await fillAndSubmit(user, { name: 'Ivan', phone: '79991234567', password: 'pw123456' });
 
     await waitFor(() => {
       const phoneMatcher: unknown = expect.stringContaining('79991234567');
@@ -109,42 +118,122 @@ describe('RegisterPage', () => {
   });
 
   it('shows error when registration fails', async () => {
+    const user = userEvent.setup();
     registerMock.mockRejectedValueOnce({
       response: { data: { detail: 'User already exists' } },
     });
     renderPage();
-    fillAndSubmit({ name: 'Ivan', phone: '79991234567', password: 'pw123456' });
+    await fillAndSubmit(user, { name: 'Ivan', phone: '79991234567', password: 'pw123456' });
 
     await waitFor(() => {
-      expect(screen.getByText(/ошибка|регистрац|already/i)).toBeDefined();
+      expect(screen.getByText(/ошибка|регистрац|already/i)).toBeInTheDocument();
     });
   });
 
   it('shows validation error when name is empty', async () => {
+    const user = userEvent.setup();
     renderPage();
-    const checkbox = document.querySelector('input[type="checkbox"]');
-    if (checkbox) fireEvent.click(checkbox);
-    fireEvent.click(screen.getByRole('button', { name: 'Создать аккаунт' }));
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: 'Создать аккаунт' }));
 
     await waitFor(() => {
-      expect(screen.getByText(/введите имя/i)).toBeDefined();
+      expect(screen.getByText(/введите имя/i)).toBeInTheDocument();
     });
     expect(registerMock).not.toHaveBeenCalled();
   });
 
   it('shows validation error when password is too short', async () => {
+    const user = userEvent.setup();
     renderPage();
-    fireEvent.change(screen.getByLabelText('Имя'), { target: { value: 'Ivan' } });
-    fireEvent.change(screen.getByLabelText('Телефон'), { target: { value: '79991234567' } });
-    fireEvent.change(screen.getByLabelText('Пароль'), { target: { value: '123' } });
-    const checkbox = document.querySelector('input[type="checkbox"]');
-    if (checkbox) fireEvent.click(checkbox);
-    fireEvent.click(screen.getByRole('button', { name: 'Создать аккаунт' }));
+    await user.type(screen.getByLabelText('Имя'), 'Ivan');
+    await user.type(screen.getByLabelText('Телефон'), '79991234567');
+    await user.type(screen.getByLabelText('Пароль'), '123');
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: 'Создать аккаунт' }));
 
     await waitFor(() => {
-      expect(screen.getByText(/пароль должен быть/i)).toBeDefined();
+      expect(screen.getByText(/пароль должен быть/i)).toBeInTheDocument();
     });
     expect(registerMock).not.toHaveBeenCalled();
+  });
+
+  it('shows validation error when phone is too short', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.type(screen.getByLabelText('Имя'), 'Ivan');
+    await user.type(screen.getByLabelText('Телефон'), '123');
+    await user.type(screen.getByLabelText('Пароль'), 'password123');
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: 'Создать аккаунт' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/корректный номер телефона/i)).toBeInTheDocument();
+    });
+    expect(registerMock).not.toHaveBeenCalled();
+  });
+
+  it('shows validation error for an invalid email', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.type(screen.getByLabelText('Имя'), 'Ivan');
+    await user.type(screen.getByLabelText('Телефон'), '79991234567');
+    await user.type(screen.getByLabelText(/Email/), 'not-an-email');
+    await user.type(screen.getByLabelText('Пароль'), 'password123');
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: 'Создать аккаунт' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/корректный email/i)).toBeInTheDocument();
+    });
+    expect(registerMock).not.toHaveBeenCalled();
+  });
+
+  it('requires a latin letter in the password', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.type(screen.getByLabelText('Имя'), 'Ivan');
+    await user.type(screen.getByLabelText('Телефон'), '79991234567');
+    await user.type(screen.getByLabelText('Пароль'), '12345678');
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: 'Создать аккаунт' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/латинскую букву/i)).toBeInTheDocument();
+    });
+    expect(registerMock).not.toHaveBeenCalled();
+  });
+
+  it('requires a digit or symbol in the password', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.type(screen.getByLabelText('Имя'), 'Ivan');
+    await user.type(screen.getByLabelText('Телефон'), '79991234567');
+    await user.type(screen.getByLabelText('Пароль'), 'abcdefgh');
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: 'Создать аккаунт' }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/цифру или спецсимвол/i)).toBeInTheDocument();
+    });
+    expect(registerMock).not.toHaveBeenCalled();
+  });
+
+  it('accepts a valid email and registers', async () => {
+    const user = userEvent.setup();
+    registerMock.mockResolvedValueOnce();
+    loginMock.mockResolvedValueOnce();
+    renderPage();
+    await user.type(screen.getByLabelText('Имя'), 'Ivan');
+    await user.type(screen.getByLabelText('Телефон'), '79991234567');
+    await user.type(screen.getByLabelText(/Email/), 'ivan@mail.ru');
+    await user.type(screen.getByLabelText('Пароль'), 'password123');
+    await user.click(screen.getByRole('checkbox'));
+    await user.click(screen.getByRole('button', { name: 'Создать аккаунт' }));
+
+    await waitFor(() => {
+      expect(registerMock).toHaveBeenCalled();
+      expect(mockNavigate).toHaveBeenCalledWith('/');
+    });
   });
 
   it('redirects when already authenticated', () => {

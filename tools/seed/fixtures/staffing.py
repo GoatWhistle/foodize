@@ -1,0 +1,76 @@
+from typing import Any
+
+MODERATION_VENDORS: list[dict[str, Any]] = [
+    {
+        "name": "Пётр Модерский",
+        "first_name": "Пётр",
+        "last_name": "Модерский",
+        "middle_name": "Иванович",
+        "email": "vendor_pending@foodize.dev",
+        "phone_number": "+70000000010",
+        "password": "vendor1234",
+        "approval_status": "PENDING",
+        "rejection_reason": None,
+        "restaurant": {
+            "name": "Кофейня «На модерации»",
+            "address": "ул. Ожидания, д. 3",
+            "description": "Заявка подана, ждём одобрения администратора.",
+            "moderation_status": "PENDING",
+            "rejection_reason": None,
+        },
+    },
+    {
+        "name": "Семён Отказов",
+        "first_name": "Семён",
+        "last_name": "Отказов",
+        "middle_name": "Петрович",
+        "email": "vendor_rejected@foodize.dev",
+        "phone_number": "+70000000011",
+        "password": "vendor1234",
+        "approval_status": "REJECTED",
+        "rejection_reason": "Не пройдена проверка документов ИП.",
+        "restaurant": {
+            "name": "Ларёк «Отклонён»",
+            "address": "ул. Отказная, д. 7",
+            "description": "Заявка отклонена модерацией.",
+            "moderation_status": "REJECTED",
+            "rejection_reason": "Фото заведения не соответствуют требованиям.",
+        },
+    },
+]
+
+STAFF_REQUEST_APPLICANTS: list[dict[str, Any]] = [
+    {
+        "name": "Николай Поваров",
+        "first_name": "Николай",
+        "last_name": "Поваров",
+        "middle_name": "Сергеевич",
+        "email": "cook_pending@foodize.dev",
+        "phone_number": "+70000000012",
+        "password": "cook1234",
+        "message": "Опыт работы поваром 3 года, хочу присоединиться.",
+        "status": "PENDING",
+    },
+    {
+        "name": "Ольга Кухарёва",
+        "first_name": "Ольга",
+        "last_name": "Кухарёва",
+        "middle_name": "Андреевна",
+        "email": "cook_accepted@foodize.dev",
+        "phone_number": "+70000000013",
+        "password": "cook1234",
+        "message": "Готова выйти завтра.",
+        "status": "ACCEPTED",
+    },
+    {
+        "name": "Виктор Обжаркин",
+        "first_name": "Виктор",
+        "last_name": "Обжаркин",
+        "middle_name": "Львович",
+        "email": "cook_rejected@foodize.dev",
+        "phone_number": "+70000000014",
+        "password": "cook1234",
+        "message": "Ищу подработку на выходные.",
+        "status": "REJECTED",
+    },
+]

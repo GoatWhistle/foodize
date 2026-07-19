@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from features.menu.crud import create_option_group
 from features.menu.models import MenuItem, MenuItemOptionGroup
 from features.menu.schemas import MenuItemOptionGroupCreate
-from seed.data import OPTION_GROUP_PRESETS
+from seed.fixtures.menu_options import OPTION_GROUP_PRESETS
 
 
 async def create_sample_option_groups(

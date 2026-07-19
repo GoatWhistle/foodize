@@ -61,7 +61,12 @@ class TextDelta:
     text: str
 
 
-StreamEvent = TextDelta | LLMResponse
+@dataclass
+class ToolUseStart:
+    name: str = ""
+
+
+StreamEvent = TextDelta | ToolUseStart | LLMResponse
 
 
 class LLMClient(ABC):

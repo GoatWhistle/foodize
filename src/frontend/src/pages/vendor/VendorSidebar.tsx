@@ -34,7 +34,7 @@ const TABS = [
   { id: 'settings', label: 'Настройки', icon: <GearIcon size={18} /> },
 ];
 
-export default function VendorSidebar({
+export function VendorSidebar({
   selectedRestaurant,
   activeTab,
   setActiveTab,
@@ -62,7 +62,7 @@ export default function VendorSidebar({
       <div
         style={{
           fontWeight: 800,
-          fontSize: '1rem',
+          fontSize: "var(--text-md)",
           marginBottom: selectedRestaurant.display_id ? 4 : 12,
           color: 'var(--text-1)',
         }}
@@ -72,7 +72,7 @@ export default function VendorSidebar({
       {selectedRestaurant.display_id && (
         <div
           style={{
-            fontSize: '0.75rem',
+            fontSize: "var(--text-sm)",
             color: 'var(--text-3)',
             marginBottom: 12,
             fontFamily: 'monospace',
@@ -88,29 +88,34 @@ export default function VendorSidebar({
         </div>
       )}
 
-      {TABS.map((tab) => (
-        <button
-          key={tab.id}
-          className={`btn ${activeTab === tab.id ? 'btn-primary' : 'btn-secondary'}`}
-          onClick={() => {
-            setActiveTab(tab.id);
-            if (tab.id === 'settings') {
-              setEditRestaurant({ ...selectedRestaurant });
-            }
-          }}
-          style={{
-            justifyContent: 'flex-start',
-            border: 'none',
-            padding: '10px 14px',
-            gap: 10,
-            fontSize: '0.9rem',
-            fontWeight: activeTab === tab.id ? 700 : 500,
-          }}
-        >
-          {tab.icon}
-          {tab.label}
-        </button>
-      ))}
+      <div role="tablist" aria-label="Разделы вендора" aria-orientation="vertical" style={{ display: 'contents' }}>
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            role="tab"
+            aria-selected={activeTab === tab.id}
+            aria-controls={`vendor-panel-${tab.id}`}
+            className={`btn ${activeTab === tab.id ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => {
+              setActiveTab(tab.id);
+              if (tab.id === 'settings') {
+                setEditRestaurant({ ...selectedRestaurant });
+              }
+            }}
+            style={{
+              justifyContent: 'flex-start',
+              border: 'none',
+              padding: '10px 14px',
+              gap: 10,
+              fontSize: "var(--text-base)",
+              fontWeight: activeTab === tab.id ? 700 : 500,
+            }}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
       <div
         style={{
@@ -131,7 +136,7 @@ export default function VendorSidebar({
             alignItems: 'center',
             gap: 10,
             padding: '10px 14px',
-            fontSize: '0.9rem',
+            fontSize: "var(--text-base)",
             fontWeight: 600,
             color: 'var(--fire)',
             textDecoration: 'none',
@@ -152,7 +157,7 @@ export default function VendorSidebar({
             border: 'none',
             padding: '10px 14px',
             gap: 10,
-            fontSize: '0.9rem',
+            fontSize: "var(--text-base)",
             fontWeight: 600,
             color: 'var(--text-2)',
           }}
@@ -171,7 +176,7 @@ export default function VendorSidebar({
             border: 'none',
             padding: '10px 14px',
             gap: 10,
-            fontSize: '0.9rem',
+            fontSize: "var(--text-base)",
             fontWeight: 600,
             color: 'var(--text-2)',
           }}

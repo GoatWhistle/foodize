@@ -2,8 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import BottomNav from "../../components/BottomNav/BottomNav";
-
+import { BottomNav } from "../../components/BottomNav/BottomNav";
 const navigateMock = vi.fn();
 
 vi.mock("react-router-dom", async () => {

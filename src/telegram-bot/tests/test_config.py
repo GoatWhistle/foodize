@@ -1,6 +1,9 @@
 import os
 from unittest.mock import patch
 
+import pytest
+from pydantic import ValidationError
+
 from config import BotConfig
 from utils.enums import EventType
 
@@ -35,3 +38,30 @@ def test_config() -> None:
         assert cfg.mode == "webhook"
         assert cfg.webhook_url == "https://webhook.url"
         assert cfg.webhook_secret == "webhook_secret"
+
+
+def test_webhook_mode_requires_webhook_url() -> None:
+    with patch.dict(
+        os.environ,
+        {
+            "BOT_TOKEN": "test_token",
+            "BOT_MODE": "webhook",
+            "BOT_WEBHOOK_URL": "",
+        },
+        clear=True,
+    ):
+        with pytest.raises(ValidationError, match="BOT_WEBHOOK_URL must be set"):
+            BotConfig()
+
+
+def test_polling_mode_does_not_require_webhook_url() -> None:
+    with patch.dict(
+        os.environ,
+        {
+            "BOT_TOKEN": "test_token",
+            "BOT_MODE": "polling",
+        },
+        clear=True,
+    ):
+        cfg = BotConfig()
+        assert cfg.mode == "polling"

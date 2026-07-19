@@ -3,8 +3,6 @@ from datetime import date
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
-import pytest
-
 from features.ai_advisor.crud import (
     _day_bounds,
     get_bottom_items,
@@ -58,7 +56,6 @@ def _make_reviews_session(
 
 
 class TestGetBottomItems:
-    @pytest.mark.asyncio
     async def test_empty_result(self) -> None:
         session = _make_session_with_rows([])
         result = await get_bottom_items(
@@ -69,7 +66,6 @@ class TestGetBottomItems:
         )
         assert result == []
 
-    @pytest.mark.asyncio
     async def test_returns_items(self) -> None:
         rows = [("Редкость", "burgers", 300, True, 0)]
         session = _make_session_with_rows(rows)
@@ -83,7 +79,6 @@ class TestGetBottomItems:
         assert result[0]["name"] == "Редкость"
         assert result[0]["sold_qty"] == 0
 
-    @pytest.mark.asyncio
     async def test_with_restaurant_filter(self) -> None:
         session = _make_session_with_rows([])
         rid = uuid.uuid4()
@@ -96,7 +91,6 @@ class TestGetBottomItems:
         )
         assert result == []
 
-    @pytest.mark.asyncio
     async def test_sold_qty_none_becomes_zero(self) -> None:
         rows = [("Item", "pizza", 200, True, None)]
         session = _make_session_with_rows(rows)
@@ -110,13 +104,11 @@ class TestGetBottomItems:
 
 
 class TestGetMenuOverview:
-    @pytest.mark.asyncio
     async def test_empty_result(self) -> None:
         session = _make_session_with_rows([])
         result = await get_menu_overview(session, vendor_id=uuid.uuid4())
         assert result == []
 
-    @pytest.mark.asyncio
     async def test_returns_items(self) -> None:
         rows = [("Ресторан 1", "Бургер", "burgers", 250, True)]
         session = _make_session_with_rows(rows)
@@ -126,7 +118,6 @@ class TestGetMenuOverview:
         assert result[0]["name"] == "Бургер"
         assert result[0]["price"] == 250
 
-    @pytest.mark.asyncio
     async def test_with_restaurant_filter(self) -> None:
         rows = [("R", "Item", "cat", 100, True)]
         session = _make_session_with_rows(rows)
@@ -137,7 +128,6 @@ class TestGetMenuOverview:
 
 
 class TestGetReviewsSummary:
-    @pytest.mark.asyncio
     async def test_empty_reviews(self) -> None:
         session = _make_reviews_session(
             totals_row=(0, 0),
@@ -150,7 +140,6 @@ class TestGetReviewsSummary:
         assert result["distribution"] == {}
         assert result["recent"] == []
 
-    @pytest.mark.asyncio
     async def test_with_reviews(self) -> None:
         session = _make_reviews_session(
             totals_row=(4.5, 10),
@@ -165,7 +154,6 @@ class TestGetReviewsSummary:
         assert result["recent"][0]["text"] == "<<<REVIEW>>>Отлично!<<<END_REVIEW>>>"
         assert "Отлично!" in result["recent"][0]["text"]
 
-    @pytest.mark.asyncio
     async def test_with_restaurant_filter(self) -> None:
         session = _make_reviews_session(
             totals_row=(3.0, 2),

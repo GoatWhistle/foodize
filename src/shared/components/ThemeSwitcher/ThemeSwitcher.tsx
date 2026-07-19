@@ -7,7 +7,7 @@ const OPTIONS: { value: ThemePreference; label: string }[] = [
   { value: "dark", label: "Тёмная" },
 ];
 
-const ThemeSwitcher = () => {
+export const ThemeSwitcher = () => {
   const theme = useThemeStore((s) => s.theme);
   const setTheme = useThemeStore((s) => s.setTheme);
 
@@ -23,7 +23,7 @@ const ThemeSwitcher = () => {
     >
       <span
         style={{
-          fontSize: "0.875rem",
+          fontSize: "var(--text-base)",
           fontWeight: 600,
           color: "var(--text-1)",
         }}
@@ -47,7 +47,7 @@ const ThemeSwitcher = () => {
             style={{
               padding: "5px 10px",
               borderRadius: "calc(var(--r-sm) - 2px)",
-              fontSize: "0.72rem",
+              fontSize: "var(--text-sm)",
               fontWeight: 700,
               color: theme === value ? "var(--text-1)" : "var(--text-3)",
               background: theme === value ? "var(--bg-card)" : "transparent",
@@ -65,5 +65,3 @@ const ThemeSwitcher = () => {
     </div>
   );
 };
-
-export default ThemeSwitcher;

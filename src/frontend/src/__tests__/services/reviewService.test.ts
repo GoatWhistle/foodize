@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import MockAdapter from 'axios-mock-adapter';
-import api from '../../services/api';
+import { api } from '../../services/api';
 import { reviewService } from '@shared/services/reviewService.js';
 
 describe('reviewService', () => {
   let mock: MockAdapter;
 
   beforeEach(() => {
-    mock = new MockAdapter(api);
+    mock = new MockAdapter(api, { onNoMatch: 'throwException' });
   });
 
   afterEach(() => {
@@ -43,5 +43,19 @@ describe('reviewService', () => {
 
     const result = await reviewService.deleteReview('123', 'rev-1');
     expect(result.status).toEqual(200);
+  });
+
+  it('getReviews rejects on 500 response', async () => {
+    mock.onGet('/restaurants/123/reviews').reply(500, { detail: 'boom' });
+    await expect(
+      reviewService.getReviews('123', { page: 1, size: 10 })
+    ).rejects.toMatchObject({ response: { status: 500 } });
+  });
+
+  it('createReview rejects on 422 response', async () => {
+    mock.onPost('/restaurants/123/reviews').reply(422, { detail: 'invalid' });
+    await expect(
+      reviewService.createReview('123', { rating: 0, text: '' })
+    ).rejects.toMatchObject({ response: { status: 422 } });
   });
 });

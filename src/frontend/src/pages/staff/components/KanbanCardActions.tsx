@@ -37,7 +37,7 @@ export function KanbanCardActions({
             borderRadius: 'var(--r-sm)',
             border: '1px solid var(--border)',
             padding: '6px 8px',
-            fontSize: '0.8rem',
+            fontSize: "var(--text-base)",
             resize: 'vertical',
             background: 'var(--bg-card)',
             color: 'var(--text-1)',
@@ -46,7 +46,7 @@ export function KanbanCardActions({
         <div style={{ display: 'flex', gap: 6 }}>
           <button
             className="btn btn-secondary"
-            style={{ flex: 1, height: 32, fontSize: '0.78rem' }}
+            style={{ flex: 1, height: 32, fontSize: "var(--text-sm)" }}
             onClick={(e) => {
               e.stopPropagation();
               setShowCancelForm(false);
@@ -60,7 +60,7 @@ export function KanbanCardActions({
             style={{
               flex: 1,
               height: 32,
-              fontSize: '0.78rem',
+              fontSize: "var(--text-sm)",
               background: 'var(--color-error)',
               color: 'var(--fire-text)',
               border: 'none',
@@ -89,7 +89,7 @@ export function KanbanCardActions({
               ? 'btn btn-primary'
               : 'btn btn-secondary'
           }
-          style={{ flex: 1, height: 36, fontSize: '0.8rem' }}
+          style={{ flex: 1, height: 36, fontSize: "var(--text-base)" }}
           disabled={updating === order.id}
           onClick={(e) => {
             e.stopPropagation();

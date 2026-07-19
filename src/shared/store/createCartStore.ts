@@ -71,10 +71,10 @@ export function createCartStore({
 
     fetchCart: async () => {
       try {
-        const res = await cartService.getCart();
+        const response = await cartService.getCart();
         set({
-          cart: res.data.data.items.map(normalizeCartLine),
-          cartRestaurantId: res.data.data.restaurant_id ?? null,
+          cart: response.data.data.items.map(normalizeCartLine),
+          cartRestaurantId: response.data.data.restaurant_id ?? null,
           cartError: null,
         });
       } catch (err) {
@@ -216,13 +216,13 @@ export function createCartStore({
           ...(trimmedComment ? { comment: trimmedComment } : {}),
           ...(requestedPickupAt ? { requested_pickup_at: requestedPickupAt } : {}),
         };
-        const res = await orderService.create(payload, {
+        const response = await orderService.create(payload, {
           headers: { "Idempotency-Key": makeIdempotencyKey() },
         });
         set({ cart: [], cartRestaurantId: null, orderPlacing: false });
-        onOrderPlaced?.(res.data.data);
+        onOrderPlaced?.(response.data.data);
         await cartService.clearCart();
-        return res.data.data;
+        return response.data.data;
       } catch (err) {
         set({ orderPlacing: false });
         throw err;

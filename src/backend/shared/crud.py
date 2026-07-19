@@ -2,13 +2,12 @@ from typing import Any, Protocol, TypeVar
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import InstrumentedAttribute
 
 from shared.exceptions.existence import NotFoundException
 
 
 class _HasId(Protocol):
-    id: InstrumentedAttribute[Any]
+    id: Any
 
 
 T = TypeVar("T", bound=_HasId)

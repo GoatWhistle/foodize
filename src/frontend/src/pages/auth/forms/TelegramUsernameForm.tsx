@@ -20,7 +20,7 @@ interface TelegramUsernameFormProps {
   onBack: () => void;
 }
 
-const TelegramUsernameForm = ({
+export const TelegramUsernameForm = ({
   telegramUsername,
   setTelegramUsername,
   isLoading,
@@ -87,11 +87,11 @@ const TelegramUsernameForm = ({
         </div>
 
         {showError ? (
-          <div style={{ marginTop: 6, fontSize: '0.82rem', color: 'var(--color-error)' }}>
+          <div style={{ marginTop: 6, fontSize: "var(--text-base)", color: 'var(--color-error)' }}>
             {validationError}
           </div>
         ) : telegramUsername && !isValid ? (
-          <div style={{ marginTop: 6, fontSize: '0.82rem', color: 'var(--text-2)' }}>
+          <div style={{ marginTop: 6, fontSize: "var(--text-base)", color: 'var(--text-2)' }}>
             a–z, 0–9 и _ · минимум 5 символов
           </div>
         ) : null}
@@ -117,5 +117,3 @@ const TelegramUsernameForm = ({
     </form>
   );
 };
-
-export default TelegramUsernameForm;

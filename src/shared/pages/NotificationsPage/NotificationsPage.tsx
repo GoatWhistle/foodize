@@ -36,9 +36,16 @@ const getDateStart = (date: Date): Date =>
 const getDayLabel = (diffDays: number): string => {
   if (diffDays === 0) return "Сегодня";
   if (diffDays === 1) return "Вчера";
-  const n = diffDays % 100;
-  const m = diffDays % 10;
-  const suffix = n >= 11 && n <= 14 ? "дней" : m === 1 ? "день" : m >= 2 && m <= 4 ? "дня" : "дней";
+  const lastTwoDigits = diffDays % 100;
+  const lastDigit = diffDays % 10;
+  const suffix =
+    lastTwoDigits >= 11 && lastTwoDigits <= 14
+      ? "дней"
+      : lastDigit === 1
+        ? "день"
+        : lastDigit >= 2 && lastDigit <= 4
+          ? "дня"
+          : "дней";
   return `${diffDays} ${suffix} назад`;
 };
 
@@ -71,7 +78,7 @@ const NotificationSkeleton = () => (
   </div>
 );
 
-const NotificationsPage = ({
+export const NotificationsPage = ({
   useNotificationStore,
   pageClassName = "",
   stickyHeader = true,
@@ -94,9 +101,14 @@ const NotificationsPage = ({
   } = useNotificationStore();
 
   useEffect(() => {
-    void fetchNotifications(1)
-      .then(() => { if (markAllReadOnOpen) markAllAsRead(); })
-      .finally(() => { setLoading(false); });
+    void (async () => {
+      try {
+        await fetchNotifications(1);
+        if (markAllReadOnOpen) markAllAsRead();
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [fetchNotifications, markAllReadOnOpen, markAllAsRead]);
 
   const handleLoadMore = async () => {
@@ -114,7 +126,7 @@ const NotificationsPage = ({
         padding: "16px 16px 8px",
         ...(stickyHeader ? { position: "sticky", top: 0, background: "var(--bg)", zIndex: 10 } : {}),
       }}>
-        <h1 style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text-1)", margin: 0 }}>
+        <h1 style={{ fontSize: "var(--text-md)", fontWeight: 700, color: "var(--text-1)", margin: 0 }}>
           Уведомления
         </h1>
         <div style={{ display: "flex", gap: 8 }}>
@@ -136,7 +148,7 @@ const NotificationsPage = ({
       ) : notifications.length === 0 ? (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "40vh", gap: 12, color: "var(--text-3)" }}>
           <BellSlashIcon size={48} weight="thin" />
-          <span style={{ fontSize: "0.9rem" }}>Нет уведомлений</span>
+          <span style={{ fontSize: "var(--text-base)" }}>Нет уведомлений</span>
         </div>
       ) : (
         <>
@@ -155,9 +167,9 @@ const NotificationsPage = ({
                     <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--accent)", flexShrink: 0, marginTop: 5 }} />
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: "0.875rem", fontWeight: 600, color: "var(--text-1)", marginBottom: 2 }}>{n.title}</div>
-                    <div style={{ fontSize: "0.8rem", color: "var(--text-2)" }}>{n.message}</div>
-                    <div style={{ fontSize: "0.72rem", color: "var(--text-3)", marginTop: 4 }}>
+                    <div style={{ fontSize: "var(--text-base)", fontWeight: 600, color: "var(--text-1)", marginBottom: 2 }}>{n.title}</div>
+                    <div style={{ fontSize: "var(--text-base)", color: "var(--text-2)" }}>{n.message}</div>
+                    <div style={{ fontSize: "var(--text-sm)", color: "var(--text-3)", marginTop: 4 }}>
                       {new Date(n.created_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
                     </div>
                   </div>
@@ -186,5 +198,3 @@ const NotificationsPage = ({
     </div>
   );
 };
-
-export default NotificationsPage;

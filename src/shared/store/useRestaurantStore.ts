@@ -71,8 +71,8 @@ export const useRestaurantStore = create<RestaurantStoreState>((set, get) => ({
       const total = res.data.pagination.total || list.length;
       publicRestaurantsCache.set(cacheKey, { list, total });
       set({ publicRestaurants: list, publicRestaurantsTotal: total, publicLoading: false });
-    } catch (e) {
-      set({ error: translateApiError(e), publicLoading: false });
+    } catch (error) {
+      set({ error: translateApiError(error), publicLoading: false });
     }
   },
 
@@ -82,8 +82,8 @@ export const useRestaurantStore = create<RestaurantStoreState>((set, get) => ({
       const res = await restaurantService.getMy();
       const list = Array.isArray(res.data.data) ? res.data.data : [];
       set({ restaurants: list, myLoading: false });
-    } catch (e) {
-      set({ error: translateApiError(e), myLoading: false });
+    } catch (error) {
+      set({ error: translateApiError(error), myLoading: false });
     }
   },
 
@@ -94,8 +94,8 @@ export const useRestaurantStore = create<RestaurantStoreState>((set, get) => ({
       const res = await menuService.getMenu(restaurantId);
       const list = Array.isArray(res.data.data) ? res.data.data : [];
       set((s) => ({ menus: { ...s.menus, [restaurantId]: list }, menuLoading: false }));
-    } catch (e) {
-      set({ error: translateApiError(e), menuLoading: false });
+    } catch (error) {
+      set({ error: translateApiError(error), menuLoading: false });
     }
   },
 
@@ -107,9 +107,9 @@ export const useRestaurantStore = create<RestaurantStoreState>((set, get) => ({
       const res = await restaurantService.create(data);
       set((s) => ({ restaurants: [...s.restaurants, res.data.data] }));
       return res.data.data;
-    } catch (e) {
-      set({ error: translateApiError(e) });
-      throw e;
+    } catch (error) {
+      set({ error: translateApiError(error) });
+      throw error;
     }
   },
 
@@ -122,9 +122,9 @@ export const useRestaurantStore = create<RestaurantStoreState>((set, get) => ({
         return { menus: { ...s.menus, [restaurantId]: [...currentMenu, res.data.data] } };
       });
       return res.data.data;
-    } catch (e) {
-      set({ error: translateApiError(e) });
-      throw e;
+    } catch (error) {
+      set({ error: translateApiError(error) });
+      throw error;
     }
   },
 }));

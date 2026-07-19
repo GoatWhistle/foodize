@@ -9,10 +9,15 @@ from config import bot_config
 from notifications.consumer import _process, start_notification_consumer
 
 
-@pytest.mark.asyncio
+def _make_redis(claim: bool = True) -> AsyncMock:
+    redis = AsyncMock()
+    redis.set.return_value = "OK" if claim else None
+    return redis
+
+
 async def test_process_notification_success(mocker: MockerFixture) -> None:
-    mock_claim = mocker.patch("notifications.consumer._claim_event", return_value=True)
-    mock_release = mocker.patch("notifications.consumer._release_event")
+    redis = _make_redis(claim=True)
+    mocker.patch("notifications.consumer.redis_client.get_client", return_value=redis)
     message = AsyncMock()
     message.body = json.dumps({"test": "data", "event_id": "evt-1"}).encode("utf-8")
     handler = AsyncMock()
@@ -20,16 +25,17 @@ async def test_process_notification_success(mocker: MockerFixture) -> None:
     exchange = AsyncMock()
 
     await _process(message, handler, bot, exchange, "test_rk")
+
     handler.assert_called_once_with({"test": "data", "event_id": "evt-1"}, bot)
-    mock_claim.assert_awaited_once_with("evt-1")
-    mock_release.assert_not_called()
+    redis.set.assert_awaited_once()
+    assert redis.set.await_args.args[0] == "bot_event:evt-1"
+    redis.delete.assert_not_called()
     message.ack.assert_called_once()
 
 
-@pytest.mark.asyncio
 async def test_process_notification_deduplicates(mocker: MockerFixture) -> None:
-    mocker.patch("notifications.consumer._claim_event", return_value=False)
-    mock_release = mocker.patch("notifications.consumer._release_event")
+    redis = _make_redis(claim=False)
+    mocker.patch("notifications.consumer.redis_client.get_client", return_value=redis)
     message = AsyncMock()
     message.body = json.dumps({"test": "data", "event_id": "evt-dup"}).encode("utf-8")
     handler = AsyncMock()
@@ -37,15 +43,15 @@ async def test_process_notification_deduplicates(mocker: MockerFixture) -> None:
     exchange = AsyncMock()
 
     await _process(message, handler, bot, exchange, "test_rk")
+
     handler.assert_not_called()
-    mock_release.assert_not_called()
+    redis.delete.assert_not_called()
     message.ack.assert_called_once()
 
 
-@pytest.mark.asyncio
 async def test_process_notification_releases_claim_on_failure(mocker: MockerFixture) -> None:
-    mocker.patch("notifications.consumer._claim_event", return_value=True)
-    mock_release = mocker.patch("notifications.consumer._release_event")
+    redis = _make_redis(claim=True)
+    mocker.patch("notifications.consumer.redis_client.get_client", return_value=redis)
     mocker.patch("notifications.consumer.asyncio.sleep")
     message = AsyncMock()
     message.body = json.dumps({"test": "data", "event_id": "evt-fail"}).encode("utf-8")
@@ -57,10 +63,29 @@ async def test_process_notification_releases_claim_on_failure(mocker: MockerFixt
     exchange = AsyncMock()
 
     await _process(message, handler, bot, exchange, "test_rk")
-    mock_release.assert_awaited_once_with("evt-fail")
+
+    redis.delete.assert_awaited_once_with("bot_event:evt-fail")
 
 
-@pytest.mark.asyncio
+async def test_process_notification_invalid_json_dead_letters(mocker: MockerFixture) -> None:
+    redis = _make_redis(claim=True)
+    mocker.patch("notifications.consumer.redis_client.get_client", return_value=redis)
+    mocker.patch("notifications.consumer.asyncio.sleep")
+    message = AsyncMock()
+    message.body = b"not-json{"
+    message.headers = {"x-retry-count": 3}
+    message.delivery_mode = 2
+
+    handler = AsyncMock()
+    bot = AsyncMock()
+    exchange = AsyncMock()
+
+    await _process(message, handler, bot, exchange, "test_rk")
+
+    handler.assert_not_called()
+    message.reject.assert_called_once_with(requeue=False)
+
+
 async def test_process_notification_retry(mocker: MockerFixture) -> None:
     mock_sleep = mocker.patch("notifications.consumer.asyncio.sleep")
     message = AsyncMock()
@@ -73,6 +98,7 @@ async def test_process_notification_retry(mocker: MockerFixture) -> None:
     exchange = AsyncMock()
 
     await _process(message, handler, bot, exchange, "test_rk")
+
     message.ack.assert_called_once()
     exchange.publish.assert_called_once()
     published_msg = exchange.publish.call_args[0][0]
@@ -81,7 +107,6 @@ async def test_process_notification_retry(mocker: MockerFixture) -> None:
     assert mock_sleep.call_args[0][0] == pytest.approx(4.0)
 
 
-@pytest.mark.asyncio
 async def test_process_notification_dlq(mocker: MockerFixture) -> None:
     mocker.patch("notifications.consumer.asyncio.sleep")
     message = AsyncMock()
@@ -94,12 +119,12 @@ async def test_process_notification_dlq(mocker: MockerFixture) -> None:
     exchange = AsyncMock()
 
     await _process(message, handler, bot, exchange, "test_rk")
+
     message.reject.assert_called_once_with(requeue=False)
     exchange.publish.assert_not_called()
 
 
-@pytest.mark.asyncio
-async def test_start_notification_consumer(mocker: MockerFixture) -> None:
+async def test_start_notification_consumer_declares_topology(mocker: MockerFixture) -> None:
     mock_connect = mocker.patch("aio_pika.connect_robust")
     mock_conn = AsyncMock()
     mock_channel = AsyncMock()

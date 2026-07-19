@@ -1,4 +1,4 @@
-from settings.config.runtime.api import ApiPrefix, RunConfig
+from settings.config.runtime.api import ApiPrefix, DocsConfig, RunConfig
 from settings.config.runtime.auth import AuthConfig
 from settings.config.runtime.cors import CorsConfig
 from settings.config.runtime.llm import LLMConfig, LLMProvider
@@ -9,6 +9,7 @@ __all__ = [
     "ApiPrefix",
     "AuthConfig",
     "CorsConfig",
+    "DocsConfig",
     "LLMConfig",
     "LLMProvider",
     "LogsConfig",

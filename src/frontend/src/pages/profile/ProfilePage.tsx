@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { StorefrontIcon, CookingPotIcon, SparkleIcon } from "@phosphor-icons/react";
-import SharedProfilePage from "@shared/pages/ProfilePage/ProfilePage";
+import { ProfilePage as SharedProfilePage } from "@shared/pages/ProfilePage/ProfilePage";
 import { ROUTES } from "../../constants/routes";
 import { vendorService } from "@shared/services/vendorService";
 import { staffService } from "@shared/services/staffService";
@@ -21,7 +21,7 @@ interface ExtraMenuItem {
   right?: ReactNode;
 }
 
-const ProfilePage = () => {
+export const ProfilePage = () => {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const unreadCount = useNotificationStore((s) => s.unreadCount);
@@ -38,15 +38,29 @@ const ProfilePage = () => {
   const canOpenVendorDashboard = isAdmin || vendorProfile?.approval_status === "APPROVED";
 
   useEffect(() => {
-    vendorService.getMyProfile()
-      .then((profile) => { setIsVendor(true); setVendorProfile(profile.data.data); })
-      .catch(() => { setIsVendor(false); setVendorProfile(null); })
-      .finally(() => { setCheckingVendor(false); });
-
-    staffService.getMyProfile()
-      .then(() => { setIsStaff(true); })
-      .catch(() => { setIsStaff(false); })
-      .finally(() => { setCheckingStaff(false); });
+    const detectVendor = async (): Promise<void> => {
+      try {
+        const profileResponse = await vendorService.getMyProfile();
+        setIsVendor(true);
+        setVendorProfile(profileResponse.data.data);
+      } catch {
+        setIsVendor(false);
+        setVendorProfile(null);
+      } finally {
+        setCheckingVendor(false);
+      }
+    };
+    const detectStaff = async (): Promise<void> => {
+      try {
+        await staffService.getMyProfile();
+        setIsStaff(true);
+      } catch {
+        setIsStaff(false);
+      } finally {
+        setCheckingStaff(false);
+      }
+    };
+    void Promise.all([detectVendor(), detectStaff()]);
   }, []);
 
   const handleBecomeVendor = async () => {
@@ -91,7 +105,7 @@ const ProfilePage = () => {
           label: (
             <span>
               Кабинет вендора
-              <span style={{ display: "block", fontSize: "0.75rem", color: "var(--text-3)", marginTop: 2, fontWeight: 400 }}>
+              <span style={{ display: "block", fontSize: "var(--text-sm)", color: "var(--text-3)", marginTop: 2, fontWeight: 400 }}>
                 Ожидание одобрения администратором
               </span>
             </span>
@@ -135,5 +149,3 @@ const ProfilePage = () => {
     </>
   );
 };
-
-export default ProfilePage;

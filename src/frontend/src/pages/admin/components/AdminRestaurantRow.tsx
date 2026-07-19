@@ -52,7 +52,7 @@ export function AdminRestaurantRow({
       >
         <div>
           <div style={{ color: 'var(--text-1)', fontWeight: 900 }}>{restaurant.name}</div>
-          <div style={{ color: 'var(--text-3)', fontSize: '0.84rem', marginTop: 4 }}>
+          <div style={{ color: 'var(--text-3)', fontSize: "var(--text-base)", marginTop: 4 }}>
             {restaurant.address}
           </div>
           <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
@@ -76,7 +76,7 @@ export function AdminRestaurantRow({
             gap: 6,
           }}
         >
-          <div style={{ color: 'var(--text-3)', fontSize: '0.82rem', textAlign: 'right' }}>
+          <div style={{ color: 'var(--text-3)', fontSize: "var(--text-base)", textAlign: 'right' }}>
             {restaurant.orders_count || 0} заказов
             <br />
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
@@ -96,7 +96,7 @@ export function AdminRestaurantRow({
               display: 'flex',
               alignItems: 'center',
               gap: 4,
-              fontSize: '0.72rem',
+              fontSize: "var(--text-sm)",
               fontWeight: 700,
               color: 'var(--text-3)',
               padding: '3px 7px',

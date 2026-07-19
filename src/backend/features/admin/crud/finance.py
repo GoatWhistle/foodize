@@ -131,13 +131,23 @@ async def _fetch_top_items(
     ]
 
 
+def _revenue_growth_pct(total_revenue: int, prev_revenue: int) -> float | None:
+    if prev_revenue > 0:
+        return round((total_revenue - prev_revenue) / prev_revenue * 100, 1)
+    if total_revenue > 0:
+        return 100.0
+    return None
+
+
 async def _fetch_prev_revenue(
     session: AsyncSession,
-    prev_start: date,
-    prev_end: date,
+    start_date: date,
+    days: int,
     vendor_id: uuid.UUID | None,
     restaurant_id: uuid.UUID | None,
 ) -> int:
+    prev_end = start_date - timedelta(days=1)
+    prev_start = prev_end - timedelta(days=days - 1)
     prev_filters = _build_order_filters(prev_start, prev_end, vendor_id, restaurant_id)
     prev_filters.append(Order.status == OrderStatus.COMPLETED.value)
     row = await session.execute(
@@ -171,20 +181,8 @@ async def get_finance_analytics(
     total_revenue = sum(revenue_counts.values())
     conversion = round((completed_orders / total_orders) * 100, 1) if total_orders else 0.0
 
-    prev_end = start_date - timedelta(days=1)
-    prev_start = prev_end - timedelta(days=days - 1)
-    prev_revenue = await _fetch_prev_revenue(
-        session, prev_start, prev_end, vendor_id, restaurant_id
-    )
-
-    if prev_revenue > 0:
-        revenue_growth_pct: float | None = round(
-            (total_revenue - prev_revenue) / prev_revenue * 100, 1
-        )
-    elif total_revenue > 0:
-        revenue_growth_pct = 100.0
-    else:
-        revenue_growth_pct = None
+    prev_revenue = await _fetch_prev_revenue(session, start_date, days, vendor_id, restaurant_id)
+    revenue_growth_pct = _revenue_growth_pct(total_revenue, prev_revenue)
 
     return FinanceAnalytics(
         revenue_by_day=finance_points(revenue_counts, start_date, days),

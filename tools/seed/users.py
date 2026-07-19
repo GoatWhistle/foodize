@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from features.users.crud import create_user, update_user
 from features.users.models import User
 from features.users.schemas import UserCreate, UserUpdate
-from seed.data import SEED_USERS
+from seed.fixtures.users import SEED_USERS
 from shared.permissions import ADMIN_PERMISSIONS, serialize_permissions
 
 

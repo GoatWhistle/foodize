@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, tzinfo
+from datetime import time as dt_time
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -37,7 +38,6 @@ async def _make_restaurant(db_session: AsyncSession) -> Restaurant:
     )
 
 
-@pytest.mark.asyncio
 async def test_set_working_hours_replaces_existing_rows(db_session: AsyncSession) -> None:
     restaurant = await _make_restaurant(db_session)
 
@@ -81,6 +81,10 @@ def test_is_open_now_handles_open_closed_and_missing_days(
         FixedDateTime,
     )
 
+    def _parse(value: str) -> dt_time:
+        hour, minute = value.split(":")
+        return dt_time(int(hour), int(minute))
+
     class Hours:
         def __init__(
             self,
@@ -90,8 +94,8 @@ def test_is_open_now_handles_open_closed_and_missing_days(
             is_closed: bool = False,
         ) -> None:
             self.day_of_week = day_of_week
-            self.open_time = open_time
-            self.close_time = close_time
+            self.open_time = _parse(open_time)
+            self.close_time = _parse(close_time)
             self.is_closed = is_closed
 
     assert is_open_now([Hours(3, "09:00", "18:00")]) is True  # type: ignore[list-item]

@@ -352,16 +352,48 @@ services:
           cpus: "0.5"
           memory: 256M
 
+  # Read/limited proxy in front of the Docker socket. Only this container mounts
+  # docker.sock; autoheal talks to it over a private network with a minimal API surface.
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy:0.3.0
+    restart: unless-stopped
+    environment:
+      CONTAINERS: 1
+      POST: 1
+      INFO: 1
+      PING: 1
+      IMAGES: 0
+      NETWORKS: 0
+      VOLUMES: 0
+      EXEC: 0
+      SECRETS: 0
+      SERVICES: 0
+      SWARM: 0
+      NODES: 0
+      TASKS: 0
+      BUILD: 0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - docker-proxy
+    deploy:
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: 32M
+
   # Restarts containers labeled autoheal=true when their healthcheck goes unhealthy.
   autoheal:
     image: willfarrell/autoheal:1.2.0
     restart: unless-stopped
+    depends_on:
+      - docker-socket-proxy
     environment:
       AUTOHEAL_CONTAINER_LABEL: autoheal
       AUTOHEAL_INTERVAL: 15
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    network_mode: none
+      DOCKER_SOCK: tcp://docker-socket-proxy:2375
+    networks:
+      - docker-proxy
     deploy:
       resources:
         limits:
@@ -375,3 +407,6 @@ volumes:
 networks:
   foodize-network:
     name: foodize-network
+  docker-proxy:
+    name: foodize-docker-proxy
+    internal: true

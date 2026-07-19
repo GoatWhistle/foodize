@@ -14,7 +14,6 @@ from shared.exceptions.existence import InvalidCredentialsException
 
 
 class TestUserDependencies:
-    @pytest.mark.asyncio
     async def test_get_by_phone_401(self) -> None:
         with patch(
             "features.users.dependencies.get_user_by_phone",
@@ -24,7 +23,6 @@ class TestUserDependencies:
             with pytest.raises(InvalidCredentialsException):
                 await get_user_by_phone_or_401(MagicMock(), MagicMock())
 
-    @pytest.mark.asyncio
     async def test_get_by_id_404(self) -> None:
         with patch(
             "features.users.dependencies.get_user_by_id",
@@ -34,7 +32,6 @@ class TestUserDependencies:
             with pytest.raises(NotFoundException):
                 await get_user_by_id_or_404(MagicMock(), uuid.uuid4())
 
-    @pytest.mark.asyncio
     async def test_ensure_not_exists_raises(self) -> None:
         with patch(
             "features.users.dependencies.get_user_by_phone",

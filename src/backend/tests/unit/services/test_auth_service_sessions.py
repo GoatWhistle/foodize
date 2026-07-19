@@ -1,4 +1,5 @@
 import time
+import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import jwt
@@ -9,32 +10,40 @@ from features.auth.service import (
     refresh_user_token,
     register_user,
 )
+from features.users.schemas import UserCreate, UserRead
 from shared.exceptions.existence import AuthException
 
 
+def _make_user() -> MagicMock:
+    user = MagicMock()
+    user.id = uuid.uuid4()
+    user.name = "Test"
+    user.phone_number = "+79001234567"
+    user.permissions = []
+    user.has_password = True
+    user.first_name = None
+    user.last_name = None
+    user.middle_name = None
+    user.email = None
+    user.telegram_id = None
+    user.telegram_username = None
+    return user
+
+
 class TestLogoutUser:
-    @pytest.mark.asyncio
-    async def test_deletes_both_cookies(self) -> None:
+    async def test_logout_without_tokens_succeeds(self) -> None:
         request = MagicMock()
         request.cookies = {}
         request.headers = {}
-        response = MagicMock()
 
-        await logout_user(request, response)
+        await logout_user(request)
 
-        assert response.delete_cookie.call_count == 2
-        calls = [call[0][0] for call in response.delete_cookie.call_args_list]
-        assert "access_token" in calls
-        assert "refresh_token" in calls
-
-    @pytest.mark.asyncio
     async def test_blacklists_valid_access_token(self) -> None:
         access_token = "valid_access"
         now = int(time.time())
         request = MagicMock()
         request.cookies = {"access_token": access_token}
         request.headers = {}
-        response = MagicMock()
 
         mock_cache = MagicMock()
         mock_cache.set = AsyncMock()
@@ -43,32 +52,25 @@ class TestLogoutUser:
             "features.auth.service.decode_jwt",
             return_value={"exp": now + 3600, "typ": "access", "jti": "jti1"},
         ):
-            await logout_user(request, response, cache=mock_cache)
+            await logout_user(request, cache=mock_cache)
 
         mock_cache.set.assert_awaited()
 
-    @pytest.mark.asyncio
     async def test_logout_ignores_invalid_token_error(self) -> None:
         request = MagicMock()
         request.cookies = {"access_token": "bad_token"}
         request.headers = {}
-        response = MagicMock()
 
         mock_cache = MagicMock()
 
         with patch("features.auth.service.decode_jwt", side_effect=jwt.InvalidTokenError):
-            await logout_user(request, response, cache=mock_cache)
-
-        response.delete_cookie.assert_called()
+            await logout_user(request, cache=mock_cache)
 
 
 class TestRegisterUser:
-    @pytest.mark.asyncio
     async def test_register_user(self) -> None:
-        from features.users.schemas import UserCreate
-
         data = UserCreate(name="Test", phone_number="+79001234567", password="Password1")
-        mock_user = MagicMock()
+        mock_user = _make_user()
 
         with (
             patch("features.auth.service.ensure_user_not_exists_by_phone", new_callable=AsyncMock),
@@ -77,22 +79,21 @@ class TestRegisterUser:
                 new_callable=AsyncMock,
                 return_value=mock_user,
             ),
-            patch("features.users.schemas.UserRead.model_validate", return_value=MagicMock()),
         ):
             result = await register_user(AsyncMock(), data)
-        assert result is not None
+
+        assert isinstance(result, UserRead)
+        assert result.id == mock_user.id
 
 
 class TestRefreshUserToken:
-    @pytest.mark.asyncio
     async def test_no_token_raises(self) -> None:
         request = MagicMock()
         request.cookies = {}
         request.headers = {}
         with pytest.raises(AuthException, match="missing"):
-            await refresh_user_token(request, MagicMock(), AsyncMock())
+            await refresh_user_token(request, AsyncMock())
 
-    @pytest.mark.asyncio
     async def test_expired_refresh_raises(self) -> None:
         request = MagicMock()
         request.cookies = {"refresh_token": "old"}
@@ -100,9 +101,8 @@ class TestRefreshUserToken:
 
         with patch("features.auth.service.decode_jwt", side_effect=jwt.ExpiredSignatureError):
             with pytest.raises(AuthException, match="expired"):
-                await refresh_user_token(request, MagicMock(), AsyncMock())
+                await refresh_user_token(request, AsyncMock())
 
-    @pytest.mark.asyncio
     async def test_wrong_type_raises(self) -> None:
         request = MagicMock()
         request.cookies = {"refresh_token": "tok"}
@@ -113,9 +113,8 @@ class TestRefreshUserToken:
             return_value={"typ": "access", "sub": "id", "exp": 9999999999},
         ):
             with pytest.raises(AuthException, match="token type"):
-                await refresh_user_token(request, MagicMock(), AsyncMock())
+                await refresh_user_token(request, AsyncMock())
 
-    @pytest.mark.asyncio
     async def test_session_expired_raises(self) -> None:
         request = MagicMock()
         request.cookies = {"refresh_token": "tok"}
@@ -131,9 +130,8 @@ class TestRefreshUserToken:
             },
         ):
             with pytest.raises(AuthException, match="Session has expired"):
-                await refresh_user_token(request, MagicMock(), AsyncMock())
+                await refresh_user_token(request, AsyncMock())
 
-    @pytest.mark.asyncio
     async def test_already_used_raises(self) -> None:
         request = MagicMock()
         request.cookies = {"refresh_token": "tok"}
@@ -155,9 +153,8 @@ class TestRefreshUserToken:
             patch("features.auth.service.get_redis_cache", return_value=mock_cache),
         ):
             with pytest.raises(AuthException, match="already used"):
-                await refresh_user_token(request, MagicMock(), AsyncMock(), cache=mock_cache)
+                await refresh_user_token(request, AsyncMock(), cache=mock_cache)
 
-    @pytest.mark.asyncio
     async def test_success(self) -> None:
         request = MagicMock()
         request.cookies = {"refresh_token": "tok"}
@@ -185,8 +182,7 @@ class TestRefreshUserToken:
             ),
             patch("features.auth.service.create_access_token", return_value="new_access"),
             patch("features.auth.service.create_refresh_token", return_value="new_refresh"),
-            patch("features.auth.service._set_auth_cookies"),
         ):
-            result = await refresh_user_token(request, MagicMock(), AsyncMock(), cache=mock_cache)
+            result = await refresh_user_token(request, AsyncMock(), cache=mock_cache)
 
         assert result.access_token == "new_access"

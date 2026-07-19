@@ -23,9 +23,9 @@ async def get_users_list(
     limit: int,
     search: str | None = None,
 ) -> tuple[list[User], int]:
-    data = await crud.get_all_users(session, role=role, search=search, offset=offset, limit=limit)
+    users = await crud.get_all_users(session, role=role, search=search, offset=offset, limit=limit)
     total = await crud.count_all_users(session, role=role, search=search)
-    return data, total
+    return users, total
 
 
 async def get_user_or_404(session: AsyncSession, user_id: uuid.UUID) -> User:

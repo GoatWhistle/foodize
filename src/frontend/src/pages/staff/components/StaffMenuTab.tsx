@@ -1,5 +1,6 @@
-import EmptyState from '@shared/components/EmptyState/EmptyState';
+import { EmptyState } from '@shared/components/EmptyState/EmptyState';
 import type { MenuItem } from '@shared/types/models';
+import { formatPrice } from '@shared/utils/price';
 
 interface StaffMenuTabProps {
   menuItems: MenuItem[];
@@ -8,7 +9,7 @@ interface StaffMenuTabProps {
   onToggleAvailability: (item: MenuItem) => void;
 }
 
-const StaffMenuTab = ({ menuItems, menuLoading, menuError, onToggleAvailability }: StaffMenuTabProps) => (
+export const StaffMenuTab = ({ menuItems, menuLoading, menuError, onToggleAvailability }: StaffMenuTabProps) => (
   <div>
     {menuLoading ? (
       <div className="loading-center">
@@ -41,14 +42,14 @@ const StaffMenuTab = ({ menuItems, menuLoading, menuError, onToggleAvailability 
               <div
                 style={{
                   fontWeight: 700,
-                  fontSize: '0.95rem',
+                  fontSize: "var(--text-base)",
                   color: 'var(--text-1)',
                 }}
               >
                 {item.name}
               </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-3)' }}>
-                {item.price} ₽
+              <div style={{ fontSize: "var(--text-sm)", color: 'var(--text-3)' }}>
+                {formatPrice(item.price)}
               </div>
             </div>
             <button
@@ -63,7 +64,7 @@ const StaffMenuTab = ({ menuItems, menuLoading, menuError, onToggleAvailability 
                 color: item.is_available
                   ? 'var(--color-success-dim)'
                   : 'var(--text-3)',
-                fontSize: '0.7rem',
+                fontSize: "var(--text-xs)",
                 fontWeight: 800,
                 cursor: 'pointer',
               }}
@@ -76,5 +77,3 @@ const StaffMenuTab = ({ menuItems, menuLoading, menuError, onToggleAvailability 
     )}
   </div>
 );
-
-export default StaffMenuTab;

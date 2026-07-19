@@ -1,4 +1,4 @@
-import api from './api';
+import { api } from './api';
 import { streamSseRequest } from '@shared/services/streamRequest';
 import { API_BASE_URL } from '@shared/config';
 import type { SuccessResponse, AdvisorInsights } from '@shared/types/models';

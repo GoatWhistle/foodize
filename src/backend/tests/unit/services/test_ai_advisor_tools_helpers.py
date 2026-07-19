@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 import pytest
 
@@ -17,7 +17,6 @@ class TestDumps:
         assert "значение" in result
 
     def test_datetime_default(self) -> None:
-        from datetime import date
 
         result = _dumps({"d": date(2024, 1, 1)})
         assert "2024-01-01" in result

@@ -2,7 +2,6 @@ from http import HTTPStatus
 from typing import cast
 from unittest.mock import MagicMock
 
-import pytest
 from sqlalchemy.exc import IntegrityError
 from starlette.requests import Request
 
@@ -22,7 +21,6 @@ def _make_request() -> Request:
 
 
 class TestAppExceptionHandler:
-    @pytest.mark.asyncio
     async def test_returns_correct_status_and_detail(self) -> None:
         exc = AppException(status_code=HTTPStatus.NOT_FOUND, detail="Not found")
         response = await app_exception_handler(_make_request(), exc)
@@ -30,7 +28,6 @@ class TestAppExceptionHandler:
         body = response.body
         assert b"Not found" in body
 
-    @pytest.mark.asyncio
     async def test_returns_400_for_bad_request(self) -> None:
         exc = AppException(status_code=HTTPStatus.BAD_REQUEST, detail="Bad request")
         response = await app_exception_handler(_make_request(), exc)
@@ -38,7 +35,6 @@ class TestAppExceptionHandler:
 
 
 class TestUnhandledExceptionHandler:
-    @pytest.mark.asyncio
     async def test_returns_500(self) -> None:
         response = await unhandled_exception_handler(_make_request(), Exception("boom"))
         assert response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
@@ -46,7 +42,6 @@ class TestUnhandledExceptionHandler:
 
 
 class TestIntegrityErrorHandler:
-    @pytest.mark.asyncio
     async def test_restaurants_address_constraint(self) -> None:
         exc = MagicMock(spec=IntegrityError)
         exc.orig = Exception("uq_restaurants_address violation")
@@ -54,7 +49,6 @@ class TestIntegrityErrorHandler:
         assert response.status_code == HTTPStatus.BAD_REQUEST
         assert b"restaurant with this address" in response.body
 
-    @pytest.mark.asyncio
     async def test_users_phone_number_constraint(self) -> None:
         exc = MagicMock(spec=IntegrityError)
         exc.orig = Exception("uq_users_phone_number violation")
@@ -63,7 +57,6 @@ class TestIntegrityErrorHandler:
         assert b"phone number" not in response.body
         assert b"Duplicate entry" in response.body
 
-    @pytest.mark.asyncio
     async def test_unknown_constraint(self) -> None:
         exc = MagicMock(spec=IntegrityError)
         exc.orig = Exception("some_unknown_constraint violation")

@@ -1,7 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react';
 import { CheckIcon, TrashIcon, XIcon } from '@phosphor-icons/react';
-import EmptyState from '@shared/components/EmptyState/EmptyState';
-import Pagination from '@shared/components/Pagination/Pagination';
+import { EmptyState } from '@shared/components/EmptyState/EmptyState';
+import { Pagination } from '@shared/components/Pagination/Pagination';
 import { STAFF_STATUS_RU, translate } from '@shared/utils/locales';
 import type { StaffMember, StaffRequest, StaffRequestStatus } from '@shared/types/models';
 import type { StaffSubTab } from '../hooks/useVendorStaff';
@@ -23,7 +23,7 @@ interface VendorStaffTabProps {
   handleStaffDecision: (requestId: string, status: StaffRequestStatus) => void;
 }
 
-export default function VendorStaffTab({
+export function VendorStaffTab({
   staffSubTab,
   setStaffSubTab,
   staffMembers,
@@ -68,7 +68,7 @@ export default function VendorStaffTab({
                     <div style={{ fontWeight: 700 }}>
                       {m.user_name || `ID: ${m.user_id.slice(0, 8)}`}
                     </div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-3)' }}>
+                    <div style={{ fontSize: "var(--text-base)", color: 'var(--text-3)' }}>
                       {m.user_phone || 'Нет телефона'}
                       {m.restaurant_name && ` · ${m.restaurant_name}`}
                     </div>

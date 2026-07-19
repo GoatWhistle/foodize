@@ -1,9 +1,9 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import type { Order } from '@shared/types/models';
-import OrdersPage from '../../pages/orders/OrdersPage';
-
+import { OrdersPage } from '../../pages/orders/OrdersPage';
 type OrdersLogic = {
   visibleOrders: Order[];
   allOrders: Order[];
@@ -62,23 +62,17 @@ describe('OrdersPage', () => {
   it('renders orders list', () => {
     render(<BrowserRouter><OrdersPage /></BrowserRouter>);
 
-    expect(screen.getByText('Мои заказы')).toBeDefined();
-    expect(screen.getByText('500 ₽')).toBeDefined();
-    expect(screen.getByText('1000 ₽')).toBeDefined();
+    expect(screen.getByText('Мои заказы')).toBeInTheDocument();
+    expect(screen.getByText('500 ₽')).toBeInTheDocument();
+    expect(screen.getByText('1000 ₽')).toBeInTheDocument();
   });
 
-  it('navigates to order status page on click', () => {
+  it('navigates to order status page on click', async () => {
+    const user = userEvent.setup();
     render(<BrowserRouter><OrdersPage /></BrowserRouter>);
 
-    const orderCards = screen.getAllByRole('button').filter(
-      (el) => el.textContent?.includes('₽')
-    );
-    const firstCard = orderCards[0];
-    if (!firstCard) throw new Error('order card not found');
-    fireEvent.click(firstCard);
-    expect(mockNavigate).toHaveBeenCalledWith(
-      expect.stringMatching(/\/orders\/order-[12]/)
-    );
+    await user.click(screen.getByRole('button', { name: 'Заказ #order-1' }));
+    expect(mockNavigate).toHaveBeenCalledWith('/orders/order-1');
   });
 
   it('shows empty state if no active orders', () => {
@@ -92,6 +86,6 @@ describe('OrdersPage', () => {
 
     render(<BrowserRouter><OrdersPage /></BrowserRouter>);
 
-    expect(screen.getByText('Заказов пока нет')).toBeDefined();
+    expect(screen.getByText('Заказов пока нет')).toBeInTheDocument();
   });
 });

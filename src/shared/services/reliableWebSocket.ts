@@ -88,15 +88,15 @@ export class ReliableWebSocket {
           string,
           unknown
         >;
-        if (data.type === "pong") {
+        if (data['type'] === "pong") {
           this.resetPongTimeout();
           return;
         }
-        if (data.type === "connected") {
+        if (data['type'] === "connected") {
           this.reconnectAttempts = 0;
           return;
         }
-        if (data.error) return;
+        if (data['error']) return;
         this.onMessage(data);
       } catch (err) {
         logError("reliableWebSocket.onmessage", err);

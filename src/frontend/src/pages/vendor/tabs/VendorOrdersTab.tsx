@@ -1,8 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react';
-import type { AxiosResponse } from 'axios';
-import EmptyState from '@shared/components/EmptyState/EmptyState';
-import Pagination from '@shared/components/Pagination/Pagination';
-import OrderDetailsModal, { type OrderStatusChangeData } from '../../../components/OrderDetailsModal/OrderDetailsModal';
+import { EmptyState } from '@shared/components/EmptyState/EmptyState';
+import { Pagination } from '@shared/components/Pagination/Pagination';
+import { OrderDetailsModal, type OrderStatusChangeData } from '../../../components/OrderDetailsModal/OrderDetailsModal';
 import type { Order, Restaurant, OrderStatus } from '@shared/types/models';
 import { VendorOrderCard } from './components/VendorOrderCard';
 import { VendorOrdersToolbar } from './components/VendorOrdersToolbar';
@@ -34,7 +33,7 @@ interface VendorOrdersTabProps {
   groupedRestaurantOrders: OrderGroup[];
   ordersError: string | null;
   handleVendorExport: (
-    exportFn: () => Promise<AxiosResponse<Blob>>,
+    exportFn: () => Promise<Blob>,
     filename: string,
   ) => void;
   fetchVendorOrders: () => void;
@@ -45,7 +44,7 @@ interface VendorOrdersTabProps {
   ) => Promise<void>;
   handleCancelOrder: (orderId: string, reason: string) => Promise<void>;
   vendorService: {
-    exportOrdersCSV: (params: Record<string, unknown>) => Promise<AxiosResponse<Blob>>;
+    exportOrdersCSV: (params: Record<string, unknown>) => Promise<Blob>;
     [key: string]: (...args: never[]) => Promise<unknown>;
   };
   selectedRestaurant: Restaurant | null;
@@ -68,7 +67,7 @@ const NEXT_ORDER_LABEL_RU: Partial<Record<OrderStatus, string>> = {
 
 export { NEXT_ORDER_STATUS, NEXT_ORDER_LABEL_RU };
 
-export default function VendorOrdersTab({
+export function VendorOrdersTab({
   restaurantOrders,
   ordersPage,
   setOrdersPage,
@@ -122,12 +121,12 @@ export default function VendorOrdersTab({
           vendorService={vendorService}
         />
         {ordersLoading && (!Array.isArray(restaurantOrders) || restaurantOrders.length === 0) ? (
-          <div className={styles.list}>
+          <div className={styles['list']}>
             {[1, 2].map((i) => (
-              <div key={i} className={styles.group}>
-                <div className={`skeleton ${styles.skeletonLabel}`} />
+              <div key={i} className={styles['group']}>
+                <div className={`skeleton ${styles['skeletonLabel']}`} />
                 {[1, 2].map((j) => (
-                  <div key={j} className={`order-card skeleton ${styles.skeletonCard}`} />
+                  <div key={j} className={`order-card skeleton ${styles['skeletonCard']}`} />
                 ))}
               </div>
             ))}
@@ -138,10 +137,10 @@ export default function VendorOrdersTab({
             subtitle={ordersStatusFilter ? 'В этом статусе заказов нет' : 'Пока никто не сделал заказ'}
           />
         ) : (
-          <div className={`${styles.list} ${ordersLoading ? 'loading-dim' : ''}`}>
+          <div className={`${styles['list']} ${ordersLoading ? 'loading-dim' : ''}`}>
             {groupedRestaurantOrders.map((group) => (
-              <div key={group.dateKey} className={styles.group}>
-                <div className={styles.groupTitle}>{group.title}</div>
+              <div key={group.dateKey} className={styles['group']}>
+                <div className={styles['groupTitle']}>{group.title}</div>
                 {group.orders.map((order) => (
                   <VendorOrderCard
                     key={order.id}

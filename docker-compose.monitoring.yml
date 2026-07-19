@@ -13,9 +13,35 @@ services:
     ports:
       - "127.0.0.1:9090:9090"
     restart: unless-stopped
+    depends_on:
+      - alertmanager
     networks:
       - foodize_net
       - foodize-network
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: foodize_alertmanager
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        sed -e "s|\$${ALERTMANAGER_TELEGRAM_BOT_TOKEN}|$${ALERTMANAGER_TELEGRAM_BOT_TOKEN}|g" \
+            -e "s|\$${ALERTMANAGER_TELEGRAM_CHAT_ID}|$${ALERTMANAGER_TELEGRAM_CHAT_ID}|g" \
+            /etc/alertmanager/alertmanager.tmpl.yml > /tmp/alertmanager.yml
+        exec /bin/alertmanager --config.file=/tmp/alertmanager.yml --storage.path=/alertmanager
+    environment:
+      - ALERTMANAGER_TELEGRAM_BOT_TOKEN=${ALERTMANAGER_TELEGRAM_BOT_TOKEN:?ALERTMANAGER_TELEGRAM_BOT_TOKEN is required}
+      - ALERTMANAGER_TELEGRAM_CHAT_ID=${ALERTMANAGER_TELEGRAM_CHAT_ID:?ALERTMANAGER_TELEGRAM_CHAT_ID is required}
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.tmpl.yml:ro
+      - alertmanager_data:/alertmanager
+    ports:
+      - "127.0.0.1:9093:9093"
+    restart: unless-stopped
+    networks:
+      - foodize_net
 
   grafana:
     image: grafana/grafana:11.1.0
@@ -79,6 +105,7 @@ services:
 volumes:
   prometheus_data:
   grafana_data:
+  alertmanager_data:
 
 networks:
   foodize_net:

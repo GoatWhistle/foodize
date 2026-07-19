@@ -19,7 +19,7 @@ export const OrderEtaPicker = ({
       padding: 12,
     }}
   >
-    <div style={{ color: 'var(--text-3)', fontSize: '0.72rem', marginBottom: 8 }}>
+    <div style={{ color: 'var(--text-3)', fontSize: "var(--text-sm)", marginBottom: 8 }}>
       Время готовности
     </div>
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -43,7 +43,7 @@ export const OrderEtaPicker = ({
         gap: 6,
         marginTop: 12,
         color: 'var(--text-3)',
-        fontSize: '0.72rem',
+        fontSize: "var(--text-sm)",
       }}
     >
       Указать точное время

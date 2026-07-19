@@ -2,22 +2,22 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ForkKnifeIcon, SparkleIcon, XIcon } from "@phosphor-icons/react";
 import { useAuthStore } from "../../store/useAuthStore";
-import RestaurantCard from "@shared/components/RestaurantCard/RestaurantCard";
-import EmptyState from "@shared/components/EmptyState/EmptyState";
-import SearchFilterBar from "@shared/components/SearchFilterBar/SearchFilterBar";
+import { RestaurantCard } from "@shared/components/RestaurantCard/RestaurantCard";
+import { EmptyState } from "@shared/components/EmptyState/EmptyState";
+import { SearchFilterBar } from "@shared/components/SearchFilterBar/SearchFilterBar";
 import { useHomePageLogic } from "@shared/hooks/useHomePageLogic";
 import { getGreeting } from "@shared/utils/restaurant";
 import { aiOrderService } from "@shared/services/aiOrderService";
 import { refreshAccessToken } from "../../services/api";
 import type { Restaurant } from "@shared/types/models";
-import s from "./HomePage.module.css";
+import styles from "./HomePage.module.css";
 
 interface AiReplyState {
   text: string;
   error: boolean;
 }
 
-const HomePage = () => {
+export const HomePage = () => {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const [aiReply, setAiReply] = useState<AiReplyState | null>(null);
@@ -62,13 +62,13 @@ const HomePage = () => {
   };
 
   return (
-    <div className={s.page}>
+    <div className={styles['page']}>
       {firstName && (
-        <div className={s.greeting}>
-          <div className={s.greetingLabel}>
+        <div className={styles['greeting']}>
+          <div className={styles['greetingLabel']}>
             {getGreeting()} <ForkKnifeIcon size={12} weight="fill" style={{ display: "inline", verticalAlign: "middle" }} />
           </div>
-          <div className={s.greetingName}>{firstName}</div>
+          <div className={styles['greetingName']}>{firstName}</div>
         </div>
       )}
 
@@ -100,15 +100,15 @@ const HomePage = () => {
       />
 
       {aiReply && (
-        <div className={s.aiPanel} role="status" aria-live="polite">
-          <div className={s.aiPanelHead}>
-            <span className={s.aiPanelTitle}>
+        <div className={styles['aiPanel']} role="status" aria-live="polite">
+          <div className={styles['aiPanelHead']}>
+            <span className={styles['aiPanelTitle']}>
               <SparkleIcon size={15} weight="fill" />
               AI-помощник
             </span>
             <button
               type="button"
-              className={s.aiPanelClose}
+              className={styles['aiPanelClose']}
               aria-label="Закрыть"
               onClick={() => { setAiReply(null); }}
             >
@@ -116,18 +116,18 @@ const HomePage = () => {
             </button>
           </div>
           <div
-            className={`${s.aiPanelBody}${aiReply.error ? ` ${s.aiPanelError}` : ""}`}
+            className={`${styles['aiPanelBody']}${aiReply.error ? ` ${styles['aiPanelError']}` : ""}`}
           >
             {aiReply.text || (aiLoading ? "Думаю…" : "")}
           </div>
         </div>
       )}
 
-      <div className={s.section}>
-        <div className={s.sectionHeader}>
-          <h1 className={s.sectionTitle}>Заведения</h1>
+      <div className={styles['section']}>
+        <div className={styles['sectionHeader']}>
+          <h1 className={styles['sectionTitle']}>Заведения</h1>
           {publicRestaurantsTotal > 0 && (
-            <span style={{ fontSize: "0.82rem", color: "var(--text-3)", fontWeight: 600 }}>
+            <span style={{ fontSize: "var(--text-base)", color: "var(--text-3)", fontWeight: 600 }}>
               {publicRestaurantsTotal}
             </span>
           )}
@@ -144,7 +144,7 @@ const HomePage = () => {
           />
         ) : (
           <>
-            <div className={s.grid}>
+            <div className={styles['grid']}>
               {allRestaurants.map((r: Restaurant) => (
                 <RestaurantCard
                   key={r.id}
@@ -172,5 +172,3 @@ const HomePage = () => {
     </div>
   );
 };
-
-export default HomePage;

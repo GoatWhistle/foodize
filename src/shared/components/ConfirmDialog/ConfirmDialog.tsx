@@ -5,7 +5,7 @@ import { useShallow } from "zustand/react/shallow";
 import { useModalStore } from "@shared/store/useModalStore";
 import type { ModalStoreState } from "@shared/store/useModalStore";
 
-const ConfirmDialog = () => {
+export const ConfirmDialog = () => {
   const { dialog, loading, cancelConfirm, runConfirmAction } = useModalStore(
     useShallow((s: ModalStoreState) => ({
       dialog: s.confirmDialog,
@@ -61,8 +61,8 @@ const ConfirmDialog = () => {
             <TrashIcon size={20} />
           </div>
           <div>
-            <h3 id="confirm-dialog-title" style={{ color: "var(--text-1)", fontSize: "1.05rem", margin: 0 }}>{dialog.title}</h3>
-            <p style={{ color: "var(--text-3)", fontSize: "0.88rem", lineHeight: 1.55, margin: "8px 0 0" }}>
+            <h3 id="confirm-dialog-title" style={{ color: "var(--text-1)", fontSize: "var(--text-md)", margin: 0 }}>{dialog.title}</h3>
+            <p style={{ color: "var(--text-3)", fontSize: "var(--text-base)", lineHeight: 1.55, margin: "8px 0 0" }}>
               {dialog.message}
             </p>
           </div>
@@ -84,5 +84,3 @@ const ConfirmDialog = () => {
     </div>
   );
 };
-
-export default ConfirmDialog;

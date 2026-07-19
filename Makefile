@@ -9,7 +9,7 @@ CERTS_DIR := $(BACKEND_DIR)/certs
 JWT_PRIVATE_KEY := $(CERTS_DIR)/jwt-private.pem
 JWT_PUBLIC_KEY := $(CERTS_DIR)/jwt-public.pem
 
-.PHONY: help sync lint test openapi keys certs build up down stop logs run seed tg backup restore
+.PHONY: help sync lint test openapi keys certs build up down stop logs seed tg backup restore
 
 help:
 	@echo " "
@@ -58,12 +58,12 @@ lint:
 	@echo "Linting completed!"
 
 test:
-	cd "$(BACKEND_DIR)" && uv run pytest
+	cd "$(BACKEND_DIR)" && uv run pytest --cov=. --cov-report=term-missing
 	cd "$(BOT_DIR)" && uv run pytest
-	cd "$(FRONTEND_DIR)" && npm test -- --run
-	cd "$(MINIAPP_DIR)" && npm test -- --run
+	cd "$(SHARED_DIR)" && npm run test:coverage
+	cd "$(FRONTEND_DIR)" && npm run test:coverage
+	cd "$(MINIAPP_DIR)" && npm run test:coverage
 	@echo " "
-	@echo "Shared code is exercised by frontend and miniapp test suites."
 	@echo "Tests completed!"
 
 openapi:

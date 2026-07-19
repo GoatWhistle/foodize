@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import MockAdapter from 'axios-mock-adapter';
-import api from '../../services/api';
+import { api } from '../../services/api';
 import { restaurantService } from '@shared/services/restaurantService.js';
 import type { RestaurantCreate, Schemas } from '@shared/types/models';
 
@@ -10,7 +10,7 @@ describe('restaurantService', () => {
   let mock: MockAdapter;
 
   beforeEach(() => {
-    mock = new MockAdapter(api);
+    mock = new MockAdapter(api, { onNoMatch: 'throwException' });
   });
 
   afterEach(() => {
@@ -73,5 +73,19 @@ describe('restaurantService', () => {
     expect(
       (await restaurantService.setWorkingHours('test-cafe', hours)).data
     ).toEqual(hours);
+  });
+
+  it('getById rejects on 404 response', async () => {
+    mock.onGet('/restaurants/public/missing').reply(404, { detail: 'not found' });
+    await expect(restaurantService.getById('missing')).rejects.toMatchObject({
+      response: { status: 404 },
+    });
+  });
+
+  it('create rejects on 422 response', async () => {
+    mock.onPost('/restaurants/').reply(422, { detail: 'invalid' });
+    await expect(
+      restaurantService.create({ name: 'Bad' } as RestaurantCreate)
+    ).rejects.toMatchObject({ response: { status: 422 } });
   });
 });

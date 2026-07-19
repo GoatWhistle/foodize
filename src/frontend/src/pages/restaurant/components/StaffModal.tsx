@@ -11,18 +11,18 @@ interface StaffModalProps {
   error: string | null;
 }
 
-const StaffModal = ({ restaurantName, message, setMessage, onClose, onSubmit, loading, error }: StaffModalProps) => (
+export const StaffModal = ({ restaurantName, message, setMessage, onClose, onSubmit, loading, error }: StaffModalProps) => (
   <div className="modal-overlay" style={{ zIndex: 3000 }}>
     <div className="modal-content" style={{ maxWidth: '440px', padding: '36px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-1)', margin: 0 }}>
+        <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: "var(--text-xl)", fontWeight: 800, color: 'var(--text-1)', margin: 0 }}>
           Работа
         </h2>
         <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', display: 'flex' }}>
           <XIcon size={28} weight="bold" />
         </button>
       </div>
-      <p style={{ fontSize: '1rem', color: 'var(--text-2)', marginBottom: '24px', lineHeight: 1.6 }}>
+      <p style={{ fontSize: "var(--text-md)", color: 'var(--text-2)', marginBottom: '24px', lineHeight: 1.6 }}>
         Хотите работать в <span style={{ color: 'var(--fire)', fontWeight: 700 }}>{restaurantName}</span>?
       </p>
       <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -43,5 +43,3 @@ const StaffModal = ({ restaurantName, message, setMessage, onClose, onSubmit, lo
     </div>
   </div>
 );
-
-export default StaffModal;

@@ -74,12 +74,7 @@ def _colored_console_renderer(
     return line
 
 
-def configure_logging() -> None:
-    level = settings.logs.level.upper()
-    is_dev = settings.logs.environment != "production"
-
-    logging.basicConfig(format="%(message)s", stream=sys.stdout, level=level)
-
+def _silence_uvicorn_loggers() -> None:
     for noisy_logger in ("uvicorn", "uvicorn.error"):
         logging.getLogger(noisy_logger).setLevel(logging.WARNING)
     access_logger = logging.getLogger("uvicorn.access")
@@ -87,18 +82,30 @@ def configure_logging() -> None:
     access_logger.propagate = False
     access_logger.disabled = True
 
-    if settings.logs.sentry_dsn:
-        integrations: list[Integration] = [SqlalchemyIntegration()]
-        if _fastapi_integration is not None:
-            integrations.insert(0, _fastapi_integration())
 
-        sentry_sdk.init(
-            dsn=settings.logs.sentry_dsn,
-            environment=settings.logs.environment,
-            integrations=integrations,
-            traces_sample_rate=settings.logs.sentry_traces_sample_rate,
-            send_default_pii=False,
-        )
+def _init_sentry() -> None:
+    if not settings.logs.sentry_dsn:
+        return
+    integrations: list[Integration] = [SqlalchemyIntegration()]
+    if _fastapi_integration is not None:
+        integrations.insert(0, _fastapi_integration())
+
+    sentry_sdk.init(
+        dsn=settings.logs.sentry_dsn,
+        environment=settings.logs.environment,
+        integrations=integrations,
+        traces_sample_rate=settings.logs.sentry_traces_sample_rate,
+        send_default_pii=False,
+    )
+
+
+def configure_logging() -> None:
+    level = settings.logs.level.upper()
+    is_dev = settings.logs.environment != "production"
+
+    logging.basicConfig(format="%(message)s", stream=sys.stdout, level=level)
+    _silence_uvicorn_loggers()
+    _init_sentry()
 
     shared_processors: list[structlog.typing.Processor] = [
         structlog.contextvars.merge_contextvars,

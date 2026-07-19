@@ -18,7 +18,7 @@ interface MenuItemFormProps {
   setEditingItem: React.Dispatch<React.SetStateAction<MenuItem | null>>;
 }
 
-export default function MenuItemForm({
+export function MenuItemForm({
   editingItem,
   menuItemForm,
   setMenuItemForm,
@@ -42,7 +42,7 @@ export default function MenuItemForm({
         gap: 10,
       }}
     >
-      <h3 style={{ fontWeight: 700, fontSize: '0.9rem' }}>
+      <h3 style={{ fontWeight: 700, fontSize: "var(--text-base)" }}>
         {editingItem ? 'Редактировать' : 'Новая позиция'}
       </h3>
       {formError && <div className="form-error">{formError}</div>}

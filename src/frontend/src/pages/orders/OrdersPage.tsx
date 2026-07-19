@@ -1,4 +1,4 @@
-import SharedOrdersPage from "@shared/pages/OrdersPage/OrdersPage";
+import { OrdersPage as SharedOrdersPage } from "@shared/pages/OrdersPage/OrdersPage";
 import { ROUTES } from "../../constants/routes";
 
 const STATUS_FILTERS = [
@@ -7,7 +7,7 @@ const STATUS_FILTERS = [
   { key: "DONE",   label: "Завершённые" },
 ];
 
-const OrdersPage = () => (
+export const OrdersPage = () => (
   <SharedOrdersPage
     routes={{
       home: ROUTES.HOME,
@@ -21,5 +21,3 @@ const OrdersPage = () => (
     style={{ padding: "28px var(--gutter, 20px)" }}
   />
 );
-
-export default OrdersPage;

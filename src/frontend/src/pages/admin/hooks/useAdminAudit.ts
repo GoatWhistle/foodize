@@ -49,15 +49,17 @@ export const useAdminAudit = ({ activeTab, setActionError }: UseAdminAuditArgs) 
       ...(auditFilters.date_from && { date_from: auditFilters.date_from }),
       ...(auditFilters.date_to && { date_to: auditFilters.date_to }),
     };
-    adminService
-      .getAuditLogs<AuditLog>(params)
-      .then((res) => {
-        const body = res.data;
-        setAuditLogs(body.data);
-        setAuditTotal(body.pagination.total || 0);
-      })
-      .catch(() => { setActionError('Не удалось загрузить логи'); })
-      .finally(() => { setAuditLoading(false); });
+    void (async () => {
+      try {
+        const { items, total } = await adminService.getAuditLogs<AuditLog>(params);
+        setAuditLogs(items);
+        setAuditTotal(total);
+      } catch {
+        setActionError('Не удалось загрузить логи');
+      } finally {
+        setAuditLoading(false);
+      }
+    })();
   }, [activeTab, auditPage, auditFilters, setActionError]);
 
   return {

@@ -1,5 +1,7 @@
 import random
-from datetime import datetime, timedelta, timezone
+import uuid
+from datetime import UTC, datetime, timedelta
+from itertools import pairwise
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,7 +15,8 @@ from features.reviews.crud import create_review, get_user_review_for_restaurant
 from features.reviews.schemas import ReviewCreate
 from features.users.models import User
 from seed.common import get_or_load_user
-from seed.data import SEED_USERS
+from seed.fixtures.users import SEED_USERS
+from seed.orders import STATUS_PATH
 from shared.enums.order_status import OrderStatus
 from shared.enums.permissions import Permission
 
@@ -23,7 +26,9 @@ SUPERUSER_PHONE = next(
 )
 
 
-def _other_restaurants(su_id, all_restaurants: list[Restaurant]) -> list[Restaurant]:
+def _other_restaurants(
+    su_id: uuid.UUID, all_restaurants: list[Restaurant]
+) -> list[Restaurant]:
     return [r for r in all_restaurants if r.vendor_id != su_id]
 
 
@@ -58,14 +63,8 @@ async def _placed_completed_order(
         )
     )
     order.status = OrderStatus.COMPLETED.value
-    order.ready_at = datetime.now(timezone.utc) - timedelta(minutes=20)
-    path = [
-        OrderStatus.PENDING,
-        OrderStatus.ACCEPTED,
-        OrderStatus.READY,
-        OrderStatus.COMPLETED,
-    ]
-    for old, new in zip(path, path[1:]):
+    order.ready_at = datetime.now(UTC) - timedelta(minutes=20)
+    for old, new in pairwise(STATUS_PATH):
         await create_order_event(
             session, order.id, su.id, [Permission.ORDERS_MANAGE_STATUS], old, new
         )

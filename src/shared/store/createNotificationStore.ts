@@ -53,8 +53,8 @@ export function createNotificationStore({
 
       fetchNotifications: async (page = 1) => {
         try {
-          const res = await notificationService.getNotifications({ page, size: 20 });
-          const { items, total, unread_count } = res.data;
+          const response = await notificationService.getNotifications({ page, size: 20 });
+          const { items, total, unread_count } = response.data;
           set((s) => ({
             notifications: page === 1 ? items : [...s.notifications, ...items],
             total,
@@ -143,7 +143,7 @@ export function createNotificationStore({
         wsInstance = createNotificationWebSocket(
           userId,
           (data) => {
-            if (data.type === "connected") {
+            if (data['type'] === "connected") {
               void get().fetchNotifications(1);
               return;
             }

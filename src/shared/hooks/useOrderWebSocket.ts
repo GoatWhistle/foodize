@@ -38,7 +38,7 @@ export const useOrderWebSocket = (
     wsRef.current = createOrderWebSocket(
       orderId,
       (data) => {
-        if (data.error) return;
+        if (data['error']) return;
         const order = parseOrderMessage(data);
         if (!order) return;
         const prev = useOrdersStore.getState().currentOrder?.status;

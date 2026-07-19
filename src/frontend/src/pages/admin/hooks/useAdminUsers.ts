@@ -54,29 +54,27 @@ export const useAdminUsers = ({
 
   useEffect(() => {
     if (activeTab !== 'users') return;
-    let cancelled = false;
+    const controller = new AbortController();
     setUsersLoading(true);
-    adminService
-      .getUsers({
-        page: usersPage,
-        size: PAGE_SIZE,
-        search: userSearch || undefined,
-        role: userFilters.role || undefined,
-      })
-      .then((res) => {
-        if (cancelled) return;
-        const body = res.data;
-        setUsers(body.data);
-        setUsersTotal(body.pagination.total || 0);
-      })
-      .catch(() => {
-        if (!cancelled) setActionError('Не удалось загрузить пользователей');
-      })
-      .finally(() => {
-        if (!cancelled) setUsersLoading(false);
-      });
+    void (async () => {
+      try {
+        const { items, total } = await adminService.getUsers({
+          page: usersPage,
+          size: PAGE_SIZE,
+          search: userSearch || undefined,
+          role: userFilters.role || undefined,
+        });
+        if (controller.signal.aborted) return;
+        setUsers(items);
+        setUsersTotal(total);
+      } catch {
+        if (!controller.signal.aborted) setActionError('Не удалось загрузить пользователей');
+      } finally {
+        if (!controller.signal.aborted) setUsersLoading(false);
+      }
+    })();
     return () => {
-      cancelled = true;
+      controller.abort();
     };
   }, [activeTab, usersPage, userFilters, userSearch, setActionError]);
 

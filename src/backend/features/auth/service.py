@@ -1,9 +1,8 @@
 import time
 import uuid
-from typing import Literal
 
 import jwt
-from fastapi import Depends, Request, Response
+from fastapi import Depends, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,7 +17,6 @@ from features.users.dependencies import (
 from features.users.models import User
 from features.users.schemas import UserCreate, UserRead
 from infra.cache.redis import RedisCache, get_redis_cache, redis_cache_dependency
-from settings.config.app_config import settings
 from shared.exceptions.existence import AuthException
 from utils.jwt_tokens import create_access_token, create_refresh_token, decode_jwt
 from utils.logging_setup import get_logger
@@ -27,42 +25,6 @@ logger = get_logger()
 
 _REFRESH_BLACKLIST_PREFIX = "refresh_blacklist:"
 _ACCESS_BLACKLIST_PREFIX = "access_blacklist:"
-
-SameSite = Literal["lax", "strict", "none"]
-
-
-def _set_auth_cookies(
-    response: Response,
-    access_token: str,
-    refresh_token: str,
-    same_site: SameSite = "lax",
-) -> None:
-    secure = settings.logs.environment != "development" or same_site == "none"
-    response.set_cookie(
-        key="access_token",
-        value=access_token,
-        httponly=True,
-        secure=secure,
-        max_age=settings.auth.access_token_lifetime_seconds,
-        samesite=same_site,
-    )
-    response.set_cookie(
-        key="refresh_token",
-        value=refresh_token,
-        httponly=True,
-        secure=secure,
-        max_age=settings.auth.refresh_token_lifetime_seconds,
-        samesite=same_site,
-    )
-
-
-def set_telegram_auth_cookies(response: Response, tokens: TokenResponse) -> None:
-    _set_auth_cookies(
-        response,
-        tokens.access_token,
-        tokens.refresh_token,
-        same_site="none",
-    )
 
 
 async def _get_bearer_token(request: Request) -> str | None:
@@ -130,72 +92,50 @@ async def register_user(
 async def login_user(
     session: AsyncSession,
     user_data: UserLogin,
-    response: Response,
 ) -> TokenResponse:
     user = await get_user_by_phone_or_401(session, user_data)
-    return issue_user_tokens(user=user, response=response)
+    return issue_user_tokens(user=user)
 
 
-def issue_user_tokens(user: User, response: Response) -> TokenResponse:
+def issue_user_tokens(user: User) -> TokenResponse:
     access_token = create_access_token(user.id)
     refresh_token = create_refresh_token(user.id)
-    _set_auth_cookies(response, access_token, refresh_token)
     return TokenResponse(
         access_token=access_token, refresh_token=refresh_token, token_type="Bearer"
     )
 
 
+async def _blacklist_token(
+    cache: RedisCache, token: str | None, prefix: str, token_kind: str
+) -> None:
+    if not token:
+        return
+    try:
+        payload = decode_jwt(token)
+        ttl = payload.get("exp", 0) - int(time.time())
+        jti = payload.get("jti")
+        if ttl > 0 and jti:
+            await cache.set(f"{prefix}{jti}", "1", ttl=ttl)
+    except jwt.InvalidTokenError:
+        return
+    except Exception:
+        logger.warning("logout: failed to blacklist %s token", token_kind, exc_info=True)
+
+
 async def logout_user(
     request: Request,
-    response: Response,
     cache: RedisCache | None = None,
-    same_site: SameSite = "lax",
 ) -> None:
     if cache is None:
         cache = get_redis_cache()
-    now = int(time.time())
 
     access_token = request.cookies.get("access_token") or await _get_bearer_token(request)
-    if access_token:
-        try:
-            payload = decode_jwt(access_token)
-            ttl = payload.get("exp", 0) - now
-            jti = payload.get("jti")
-            if ttl > 0 and jti:
-                await cache.set(f"{_ACCESS_BLACKLIST_PREFIX}{jti}", "1", ttl=ttl)
-        except jwt.InvalidTokenError:
-            pass
-        except Exception:
-            logger.warning("logout: failed to blacklist access token")
-
+    await _blacklist_token(cache, access_token, _ACCESS_BLACKLIST_PREFIX, "access")
     refresh_token = request.cookies.get("refresh_token")
-    if refresh_token:
-        try:
-            payload = decode_jwt(refresh_token)
-            ttl = payload.get("exp", 0) - now
-            jti = payload.get("jti")
-            if ttl > 0 and jti:
-                await cache.set(f"{_REFRESH_BLACKLIST_PREFIX}{jti}", "1", ttl=ttl)
-        except jwt.InvalidTokenError:
-            pass
-        except Exception:
-            logger.warning("logout: failed to blacklist refresh token")
-
-    secure = settings.logs.environment != "development" or same_site == "none"
-    response.delete_cookie("access_token", httponly=True, secure=secure, samesite=same_site)
-    response.delete_cookie("refresh_token", httponly=True, secure=secure, samesite=same_site)
+    await _blacklist_token(cache, refresh_token, _REFRESH_BLACKLIST_PREFIX, "refresh")
 
 
-async def refresh_user_token(
-    request: Request,
-    response: Response,
-    session: AsyncSession,
-    cache: RedisCache | None = None,
-    same_site: SameSite = "lax",
-) -> TokenResponse:
-    token = request.cookies.get("refresh_token") or await _get_bearer_token(request)
-    if not token:
-        raise AuthException(detail="Refresh token missing")
+def _decode_refresh_payload(token: str) -> tuple[dict[str, object], uuid.UUID]:
     try:
         payload = decode_jwt(token)
         user_id = payload.get("sub")
@@ -208,35 +148,51 @@ async def refresh_user_token(
     if user_id is None:
         raise AuthException()
     try:
-        parsed_user_id = uuid.UUID(user_id)
+        return payload, uuid.UUID(str(user_id))
     except ValueError:
         raise AuthException(detail="Invalid refresh token") from None
 
+
+async def _consume_refresh_token(cache: RedisCache, payload: dict[str, object]) -> None:
     now = int(time.time())
     session_exp = payload.get("session_exp")
-    if session_exp is not None and session_exp < now:
+    if isinstance(session_exp, int) and session_exp < now:
         raise AuthException(detail="Session has expired, please log in again")
-
-    if cache is None:
-        cache = get_redis_cache()
     jti = payload.get("jti")
     if not jti:
         raise AuthException(detail="Invalid refresh token")
-    blacklist_key = f"{_REFRESH_BLACKLIST_PREFIX}{jti}"
-    ttl = payload.get("exp", 0) - now
+    expires_at = payload.get("exp")
+    ttl = (expires_at if isinstance(expires_at, int) else 0) - now
     if ttl <= 0:
         raise AuthException(detail="Refresh token has expired")
-    blacklisted = await cache.set_nx(blacklist_key, "1", ttl=ttl)
+    blacklisted = await cache.set_nx(f"{_REFRESH_BLACKLIST_PREFIX}{jti}", "1", ttl=ttl)
     if not blacklisted:
         raise AuthException(detail="Refresh token already used")
+
+
+async def refresh_user_token(
+    request: Request,
+    session: AsyncSession,
+    cache: RedisCache | None = None,
+) -> TokenResponse:
+    token = request.cookies.get("refresh_token") or await _get_bearer_token(request)
+    if not token:
+        raise AuthException(detail="Refresh token missing")
+    payload, parsed_user_id = _decode_refresh_payload(token)
+
+    if cache is None:
+        cache = get_redis_cache()
+    await _consume_refresh_token(cache, payload)
 
     user = await get_user_by_id_or_404(session, parsed_user_id)
     if not user.is_active:
         raise AuthException(detail="Account is deactivated")
 
+    session_exp = payload.get("session_exp")
     access_token = create_access_token(user.id)
-    new_refresh_token = create_refresh_token(user.id, session_exp=session_exp)
-    _set_auth_cookies(response, access_token, new_refresh_token, same_site=same_site)
+    new_refresh_token = create_refresh_token(
+        user.id, session_exp=session_exp if isinstance(session_exp, int) else None
+    )
     return TokenResponse(
         access_token=access_token, refresh_token=new_refresh_token, token_type="Bearer"
     )

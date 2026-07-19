@@ -3,6 +3,7 @@ import { PackageIcon, ClockIcon, CheckCircleIcon, HandPalmIcon } from '@phosphor
 import { ORDER_STATUS_RU } from '@shared/utils/locales';
 import type { Order } from '@shared/types/models';
 import styles from './adminTable.module.css';
+import { formatPrice } from '@shared/utils/price';
 
 interface StatusConfig {
   label: string;
@@ -33,7 +34,7 @@ export function AdminOrderCard({ order, onOpen }: AdminOrderCardProps) {
   return (
     <button
       type="button"
-      className={styles.card}
+      className={styles['card']}
       onClick={() => { onOpen(order); }}
       style={{
         padding: 16,
@@ -53,18 +54,18 @@ export function AdminOrderCard({ order, onOpen }: AdminOrderCardProps) {
         }}
       >
         <div>
-          <div style={{ color: 'var(--text-3)', fontSize: '0.74rem', fontWeight: 800 }}>
+          <div style={{ color: 'var(--text-3)', fontSize: "var(--text-sm)", fontWeight: 800 }}>
             Заказ #{orderTitle(order)}
           </div>
           <div
             style={{
               color: 'var(--text-1)',
               fontWeight: 900,
-              fontSize: '1.05rem',
+              fontSize: "var(--text-md)",
               marginTop: 2,
             }}
           >
-            {order.total_price} ₽
+            {formatPrice(order.total_price)}
           </div>
         </div>
         <span className={`order-status-badge ${cfg.className}`}>
@@ -77,7 +78,7 @@ export function AdminOrderCard({ order, onOpen }: AdminOrderCardProps) {
           flexDirection: 'column',
           gap: 3,
           color: 'var(--text-3)',
-          fontSize: '0.84rem',
+          fontSize: "var(--text-base)",
         }}
       >
         <div>

@@ -5,7 +5,7 @@ import { API_BASE_URL } from '@shared/config';
 
 const BASE_URL = API_BASE_URL;
 
-const api: AxiosInstance = createApi({
+export const api: AxiosInstance = createApi({
   withCredentials: true,
   skipRetryUrls: ['/login', '/refresh'],
   refreshToken: () => cookieRefresh(BASE_URL, '/refresh'),
@@ -16,8 +16,6 @@ const api: AxiosInstance = createApi({
     }
   },
 });
-
-export default api;
 
 const wsFactories = createWebSocketFactories();
 export const createOrderWebSocket: typeof wsFactories.createOrderWebSocket = (...args) =>

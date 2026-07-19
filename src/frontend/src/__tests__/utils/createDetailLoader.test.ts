@@ -12,7 +12,7 @@ describe('createDetailLoader', () => {
 
   it('calls fetchFn and sets selected on success', async () => {
     const { setLoading, setSelected, setError } = setup();
-    const fetchFn = vi.fn().mockResolvedValue({ data: { data: { id: '1', name: 'Test' } } });
+    const fetchFn = vi.fn().mockResolvedValue({ id: '1', name: 'Test' });
 
     const loader = createDetailLoader(setLoading, setSelected, fetchFn, 'Ошибка загрузки', setError);
     await loader('1');
@@ -38,7 +38,7 @@ describe('createDetailLoader', () => {
 
   it('always resets loading to false after success', async () => {
     const { setLoading, setSelected, setError } = setup();
-    const fetchFn = vi.fn().mockResolvedValue({ data: { data: {} } });
+    const fetchFn = vi.fn().mockResolvedValue({});
 
     const loader = createDetailLoader(setLoading, setSelected, fetchFn, '', setError);
     await loader('x');
@@ -60,7 +60,7 @@ describe('createDetailLoader', () => {
 
   it('clears error before fetch', async () => {
     const { setLoading, setSelected, setError } = setup();
-    const fetchFn = vi.fn().mockResolvedValue({ data: { data: null } });
+    const fetchFn = vi.fn().mockResolvedValue(null);
 
     const loader = createDetailLoader(setLoading, setSelected, fetchFn, '', setError);
     await loader('x');

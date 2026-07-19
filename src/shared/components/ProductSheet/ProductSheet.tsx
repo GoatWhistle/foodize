@@ -7,6 +7,7 @@ import { formatPrice } from "@shared/utils/price";
 import { useFocusTrap } from "@shared/hooks/useFocusTrap";
 import type { MenuItem } from "@shared/types/models";
 import s from "./ProductSheet.module.css";
+import c from "./ProductSheetControls.module.css";
 
 interface Option {
   id: string;
@@ -74,7 +75,7 @@ const getGroupHint = (group: OptionGroup): string => {
   return "Можно выбрать несколько";
 };
 
-const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }: ProductSheetProps) => {
+export const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }: ProductSheetProps) => {
   const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [error, setError] = useState("");
@@ -148,52 +149,52 @@ const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }: Product
 
   const sheet: ReactNode = (
     <div
-      className={s.overlay}
+      className={s['overlay']}
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose?.(); }}
     >
       <section
         ref={sheetRef}
-        className={`${s.sheet}${groups.length === 0 ? ` ${s.compact}` : ""}`}
+        className={`${s['sheet']}${groups.length === 0 ? ` ${s['compact']}` : ""}`}
         role="dialog"
         aria-modal="true"
         aria-label={item.name}
         tabIndex={-1}
       >
-        <button className={s.close} type="button" onClick={onClose} aria-label="Закрыть">
+        <button className={s['close']} type="button" onClick={onClose} aria-label="Закрыть">
           <XIcon size={18} weight="bold" />
         </button>
-        <div className={s.media}>
+        <div className={s['media']}>
           {item.photo_url ? (
             <img src={item.photo_url} alt={item.name} loading="lazy" />
           ) : (
-            <div className={s.placeholder}>{icon}</div>
+            <div className={s['placeholder']}>{icon}</div>
           )}
         </div>
-        <div className={s.body}>
-          <div className={s.head}>
+        <div className={s['body']}>
+          <div className={s['head']}>
             <h2>{item.name}</h2>
             {item.description && <p>{item.description}</p>}
           </div>
-          <div className={s.priceRow}>
-            <div className={s.basePrice}>{formatPrice(item.price)}</div>
-            <div className={s.meta}>
+          <div className={s['priceRow']}>
+            <div className={s['basePrice']}>{formatPrice(item.price)}</div>
+            <div className={s['meta']}>
               <span>
                 <ClockIcon size={14} weight="bold" />~{item.prep_time_minutes || 15} мин
               </span>
             </div>
           </div>
           {groups.length > 0 && (
-            <div className={s.options}>
+            <div className={c['options']}>
               {groups.map((group) => {
                 const groupOptionIds = group.options.map((o) => o.id);
                 const selectedCount = selectedOptionIds.filter((id) => groupOptionIds.includes(id)).length;
                 return (
-                  <div key={group.id} className={s.optionGroup}>
-                    <div className={s.optionGroupHead}>
+                  <div key={group.id} className={c['optionGroup']}>
+                    <div className={c['optionGroupHead']}>
                       <strong>{group.name}</strong>
                       <span>{getGroupHint(group)}</span>
                     </div>
-                    <div className={s.optionList}>
+                    <div className={c['optionList']}>
                       {group.options.map((option) => {
                         const checked = selectedOptionIds.includes(option.id);
                         const disabled =
@@ -204,7 +205,7 @@ const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }: Product
                         return (
                           <label
                             key={option.id}
-                            className={`${s.option}${checked ? ` ${s.selected}` : ""}`}
+                            className={`${c['option']}${checked ? ` ${c['selected']}` : ""}`}
                           >
                             <span>
                               <input
@@ -228,8 +229,8 @@ const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }: Product
           )}
           {error && <div className="form-error">{error}</div>}
         </div>
-        <div className={s.footer}>
-          <div className={s.qty}>
+        <div className={c['footer']}>
+          <div className={c['qty']}>
             <button type="button" onClick={() => { setQuantity((v) => Math.max(1, v - 1)); }} aria-label="Уменьшить">
               <MinusIcon size={16} weight="bold" />
             </button>
@@ -238,7 +239,7 @@ const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }: Product
               <PlusIcon size={16} weight="bold" />
             </button>
           </div>
-          <button className={s.addBtn} onClick={handleAdd}>
+          <button className={c['addBtn']} onClick={handleAdd}>
             {isClosed ? "Заведение закрыто" : `Добавить · ${formatPrice(unitPrice * quantity)}`}
           </button>
         </div>
@@ -248,5 +249,3 @@ const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }: Product
 
   return createPortal(sheet, document.body);
 };
-
-export default ProductSheet;

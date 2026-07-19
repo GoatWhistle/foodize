@@ -1,11 +1,6 @@
 from database import db_helper
-from seed.data import SEED_USERS
-from seed.engagement import (
-    seed_audit_log,
-    seed_cancelled_orders,
-    seed_extended_promos,
-    seed_promo_order,
-)
+from seed.engagement import seed_audit_log, seed_cancelled_orders
+from seed.fixtures.users import SEED_USERS
 from seed.moderation import seed_moderation
 from seed.notifications import seed_notifications
 from seed.orders import (
@@ -14,6 +9,7 @@ from seed.orders import (
     seed_orders,
     seed_reviews,
 )
+from seed.promos import seed_extended_promos, seed_promo_order
 from seed.restaurants import (
     seed_staff,
     seed_superuser,

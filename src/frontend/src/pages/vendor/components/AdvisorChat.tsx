@@ -30,16 +30,16 @@ export function AdvisorChat({
   onSend,
 }: AdvisorChatProps) {
   return (
-    <div className={`${styles.card} ${styles.chatCard}`}>
-      <h3 className={styles.chatTitle}>Спросить аналитика</h3>
+    <div className={`${styles['card']} ${styles['chatCard']}`}>
+      <h3 className={styles['chatTitle']}>Спросить аналитика</h3>
 
-      <div ref={scrollRef} className={styles.scroll}>
+      <div ref={scrollRef} className={styles['scroll']}>
         {messages.length === 0 && (
-          <div className={styles.suggestions}>
+          <div className={styles['suggestions']}>
             {SUGGESTIONS.map((s) => (
               <button
                 key={s}
-                className={`btn btn-secondary ${styles.suggestion}`}
+                className={`btn btn-secondary ${styles['suggestion']}`}
                 disabled={streaming}
                 onClick={() => { onSend(s); }}
               >
@@ -52,7 +52,7 @@ export function AdvisorChat({
         {messages.map((m, i) => (
           <div
             key={`${m.role}-${i}`}
-            className={`${styles.bubble} ${m.role === 'user' ? styles.bubbleUser : styles.bubbleAssistant}`}
+            className={`${styles['bubble']} ${m.role === 'user' ? styles['bubbleUser'] : styles['bubbleAssistant']}`}
           >
             {m.content || (streaming && i === messages.length - 1 ? '…' : '')}
           </div>
@@ -66,10 +66,10 @@ export function AdvisorChat({
           e.preventDefault();
           onSend();
         }}
-        className={styles.form}
+        className={styles['form']}
       >
         <input
-          className={`form-input ${styles.input}`}
+          className={`form-input ${styles['input']}`}
           placeholder="Например: что добавить в меню?"
           value={input}
           disabled={streaming}
@@ -77,7 +77,7 @@ export function AdvisorChat({
         />
         <button
           type="submit"
-          className={`btn btn-primary ${styles.sendBtn}`}
+          className={`btn btn-primary ${styles['sendBtn']}`}
           disabled={streaming || !input.trim()}
         >
           <CaretRightIcon size={16} />

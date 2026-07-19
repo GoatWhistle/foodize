@@ -32,13 +32,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /backend
 
+RUN useradd -m appuser
+
 COPY --from=builder /opt/venv /opt/venv
 
 COPY . .
 
-FROM base AS migrations
-RUN useradd -m appuser
 USER appuser
+
+FROM base AS migrations
 CMD ["alembic", "upgrade", "head"]
 
 FROM base AS backend
@@ -48,21 +50,13 @@ ENV GUNICORN_TIMEOUT=60
 ENV GUNICORN_GRACEFUL_TIMEOUT=30
 ENV GUNICORN_MAX_REQUESTS=1000
 ENV GUNICORN_MAX_REQUESTS_JITTER=100
-RUN useradd -m appuser
-USER appuser
 CMD ["sh", "-c", "gunicorn main:app -k uvicorn.workers.UvicornWorker -w \"$GUNICORN_WORKERS\" -b 0.0.0.0:8000 --forwarded-allow-ips \"$FORWARDED_ALLOW_IPS\" --timeout \"$GUNICORN_TIMEOUT\" --graceful-timeout \"$GUNICORN_GRACEFUL_TIMEOUT\" --max-requests \"$GUNICORN_MAX_REQUESTS\" --max-requests-jitter \"$GUNICORN_MAX_REQUESTS_JITTER\""]
 
 FROM base AS backend-dev
-RUN useradd -m appuser
-USER appuser
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
 FROM base AS worker
-RUN useradd -m appuser
-USER appuser
 CMD ["python", "-m", "worker.main"]
 
 FROM base AS worker-dev
-RUN useradd -m appuser
-USER appuser
 CMD ["watchfiles", "python -m worker.main", "/backend"]

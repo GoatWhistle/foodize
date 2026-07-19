@@ -1,5 +1,6 @@
 import { CaretRightIcon } from '@phosphor-icons/react';
 import type { Order, OrderStatus } from '@shared/types/models';
+import { formatPrice, formatOptionsSummary } from '@shared/utils/price';
 
 interface VendorOrderCardProps {
   order: Order;
@@ -30,11 +31,11 @@ export function VendorOrderCard({
         <div style={{ fontWeight: 700, marginBottom: 4 }}>
           Заказ #{getOrderDisplayId(order)}
         </div>
-        <div style={{ fontSize: '0.8rem', color: 'var(--text-3)' }}>
+        <div style={{ fontSize: "var(--text-base)", color: 'var(--text-3)' }}>
           {formatOrderTime(order.created_at) && (
             <>{formatOrderTime(order.created_at)} • </>
           )}
-          {order.items.length || 0} позиц. • {order.total_price} ₽
+          {order.items.length || 0} позиц. • {formatPrice(order.total_price)}
           {order.requested_pickup_at && (
             <> • к выдаче {formatOrderTime(order.requested_pickup_at)}</>
           )}
@@ -47,7 +48,7 @@ export function VendorOrderCard({
               flexDirection: 'column',
               gap: 4,
               color: 'var(--text-2)',
-              fontSize: '0.78rem',
+              fontSize: "var(--text-sm)",
             }}
           >
             {order.items.map((item) => (
@@ -56,12 +57,7 @@ export function VendorOrderCard({
                 {item.selected_options.length > 0 && (
                   <span style={{ color: 'var(--text-3)' }}>
                     {' '}(
-                    {item.selected_options
-                      .map(
-                        (option) =>
-                          `${option.name}${option.price_delta ? ` +${option.price_delta} ₽` : ''}`
-                      )
-                      .join(', ')}
+                    {formatOptionsSummary(item.selected_options)}
                     )
                   </span>
                 )}

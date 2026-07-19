@@ -1,7 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react';
 import type { AdminRestaurant, AdminUser, AdminVendor, Order } from '@shared/types/models';
 import type { AuthUser } from '@shared/store/createAuthStore';
-import OrderDetailsModal from '../../../components/OrderDetailsModal/OrderDetailsModal';
+import { OrderDetailsModal } from '../../../components/OrderDetailsModal/OrderDetailsModal';
 import { PERMISSION_PRESETS } from '@shared/utils/permissions';
 import type { QrType } from '../useAdminDashboard';
 import { UserDetailModal } from './detailModals/UserDetailModal';
@@ -46,7 +46,7 @@ interface AdminDetailModalsProps {
 
 const noopStatusChange = async () => {};
 
-export default function AdminDetailModals({
+export function AdminDetailModals({
   selectedUser,
   setSelectedUser,
   userDetailsLoading,

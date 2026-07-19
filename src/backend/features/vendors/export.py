@@ -15,6 +15,44 @@ from shared.enums.order_status import OrderStatus
 
 if TYPE_CHECKING:
     from features.menu.models import MenuItem
+    from features.orders.models import Order
+
+_EXPORT_ROW_LIMIT = 10_000
+_DEFAULT_ORDERS_PERIOD_DAYS = 90
+_DATETIME_FORMAT = "%Y-%m-%d %H:%M"
+
+_ORDER_HEADERS = [
+    "ID",
+    "Номер",
+    "Клиент",
+    "Ресторан",
+    "Статус",
+    "Позиций",
+    "Сумма (₽)",
+    "Дата создания",
+]
+
+
+def _owned_restaurant_ids(
+    vendor: VendorProfile, restaurant_id: uuid.UUID | None
+) -> list[uuid.UUID]:
+    vendor_restaurant_ids = get_vendor_restaurant_ids(vendor)
+    if restaurant_id and restaurant_id in vendor_restaurant_ids:
+        return [restaurant_id]
+    return list(vendor_restaurant_ids)
+
+
+def _order_row(order: "Order") -> list[object]:
+    return [
+        str(order.id),
+        getattr(order, "display_id", None) or str(order.id)[:8],
+        order.user.name if order.user else "",
+        order.restaurant.name if order.restaurant else "",
+        STATUS_RU.get(order.status, order.status),
+        len(order.items or []),
+        order.total_price,
+        order.created_at.strftime(_DATETIME_FORMAT),
+    ]
 
 
 async def export_orders_csv(
@@ -26,28 +64,13 @@ async def export_orders_csv(
     restaurant_id: uuid.UUID | None = None,
 ) -> bytes:
     vendor_restaurant_ids = get_vendor_restaurant_ids(vendor)
-    if restaurant_id:
-        if restaurant_id not in vendor_restaurant_ids:
-            return _make_csv(
-                [
-                    "ID",
-                    "Номер",
-                    "Клиент",
-                    "Ресторан",
-                    "Статус",
-                    "Позиций",
-                    "Сумма (₽)",
-                    "Дата создания",
-                ],
-                [],
-            )
-        query_restaurant_id = restaurant_id
-    else:
-        query_restaurant_id = None
+    if restaurant_id and restaurant_id not in vendor_restaurant_ids:
+        return _make_csv(_ORDER_HEADERS, [])
+    query_restaurant_id = restaurant_id or None
 
     if date_from is None and date_to is None:
         date_to = datetime.now(UTC).date()
-        date_from = date_to - timedelta(days=90)
+        date_from = date_to - timedelta(days=_DEFAULT_ORDERS_PERIOD_DAYS)
 
     orders = await admin_crud.get_all_orders(
         session,
@@ -56,35 +79,11 @@ async def export_orders_csv(
         date_to=date_to,
         restaurant_id=query_restaurant_id,
         offset=0,
-        limit=10_000,
+        limit=_EXPORT_ROW_LIMIT,
     )
     if query_restaurant_id is None:
-        orders = [o for o in orders if o.restaurant_id in vendor_restaurant_ids]
-
-    headers = [
-        "ID",
-        "Номер",
-        "Клиент",
-        "Ресторан",
-        "Статус",
-        "Позиций",
-        "Сумма (₽)",
-        "Дата создания",
-    ]
-    rows = [
-        [
-            str(o.id),
-            getattr(o, "display_id", None) or str(o.id)[:8],
-            o.user.name if o.user else "",
-            o.restaurant.name if o.restaurant else "",
-            STATUS_RU.get(o.status, o.status),
-            len(o.items or []),
-            o.total_price,
-            o.created_at.strftime("%Y-%m-%d %H:%M"),
-        ]
-        for o in orders
-    ]
-    return _make_csv(headers, rows)
+        orders = [order for order in orders if order.restaurant_id in vendor_restaurant_ids]
+    return _make_csv(_ORDER_HEADERS, [_order_row(order) for order in orders])
 
 
 async def export_menu_csv(
@@ -92,15 +91,11 @@ async def export_menu_csv(
     vendor: VendorProfile,
     restaurant_id: uuid.UUID | None = None,
 ) -> bytes:
-    vendor_restaurant_ids = get_vendor_restaurant_ids(vendor)
-    if restaurant_id and restaurant_id in vendor_restaurant_ids:
-        restaurant_ids = [restaurant_id]
-    else:
-        restaurant_ids = list(vendor_restaurant_ids)
+    restaurant_ids = _owned_restaurant_ids(vendor, restaurant_id)
 
     all_items: list[MenuItem] = []
-    for rid in restaurant_ids:
-        items = await get_menu_items(session, rid, limit=10_000)
+    for owned_restaurant_id in restaurant_ids:
+        items = await get_menu_items(session, owned_restaurant_id, limit=_EXPORT_ROW_LIMIT)
         all_items.extend(items)
 
     headers = ["ID", "Название", "Категория", "Цена (₽)", "Доступно", "Ресторан ID"]
@@ -124,13 +119,11 @@ async def export_promos_csv(
     vendor: VendorProfile,
     restaurant_id: uuid.UUID | None = None,
 ) -> bytes:
-    vendor_restaurant_ids = get_vendor_restaurant_ids(vendor)
-    if restaurant_id and restaurant_id in vendor_restaurant_ids:
-        target_ids = [restaurant_id]
-    else:
-        target_ids = list(vendor_restaurant_ids)
+    target_ids = _owned_restaurant_ids(vendor, restaurant_id)
 
-    promos = await get_promos_by_restaurant_ids(session, target_ids, offset=0, limit=10_000)
+    promos = await get_promos_by_restaurant_ids(
+        session, target_ids, offset=0, limit=_EXPORT_ROW_LIMIT
+    )
 
     headers = [
         "Код",
@@ -149,7 +142,7 @@ async def export_promos_csv(
             p.max_uses if p.max_uses is not None else "∞",
             p.used_count,
             "Да" if p.is_active else "Нет",
-            p.created_at.strftime("%Y-%m-%d %H:%M"),
+            p.created_at.strftime(_DATETIME_FORMAT),
         ]
         for p in promos
     ]

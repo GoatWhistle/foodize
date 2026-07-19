@@ -8,11 +8,16 @@ import { useFavoriteStore } from "@shared/store/useFavoriteStore";
 import { useNotificationStore } from "./store/useNotificationStore";
 import { useThemeEffect } from "@shared/hooks/useThemeEffect";
 import { runBootFlow } from "./telegram/bootFlow";
-import { tg } from "./telegram/sdk";
-import LoginPage from "./pages/auth/LoginPage";
-import RegisterPage from "./pages/auth/RegisterPage";
-import ErrorBoundary from "@shared/components/ErrorBoundary/ErrorBoundary";
-import ConfirmDialog from "@shared/components/ConfirmDialog/ConfirmDialog";
+import {
+  disableClosingConfirmation,
+  enableClosingConfirmation,
+  subscribeSafeAreaInsets,
+  tg,
+} from "./telegram/sdk";
+import { LoginPage } from "./pages/auth/LoginPage";
+import { RegisterPage } from "./pages/auth/RegisterPage";
+import { ErrorBoundary } from "@shared/components/ErrorBoundary/ErrorBoundary";
+import { ConfirmDialog } from "@shared/components/ConfirmDialog/ConfirmDialog";
 import { router } from "./routes";
 
 const DEEP_LINK_ID_RE = /^[a-zA-Z0-9-]{1,64}$/;
@@ -55,7 +60,7 @@ function applyTelegramViewport(): void {
 
 type AppState = "loading" | "login" | "register" | "ready";
 
-export default function App() {
+export function App() {
   const [appState, setAppState] = useState<AppState>("loading");
   const [initData, setInitData] = useState<string>("");
   const [prefillPhone, setPrefillPhone] = useState<string | null>(null);
@@ -67,6 +72,7 @@ export default function App() {
   const isAuthenticated = useAuthStore((s) => s.user !== null);
   const user = useAuthStore((s) => s.user);
   const fetchCart = useCartStore((s) => s.fetchCart);
+  const cartCount = useCartStore((s) => s.cart.length);
   const fetchActiveOrder = useOrdersStore((s) => s.fetchActiveOrder);
   const loadFavorites = useFavoriteStore((s) => s.loadFavorites);
   const fetchNotifications = useNotificationStore((s) => s.fetchNotifications);
@@ -82,6 +88,16 @@ export default function App() {
       return () => { webApp.offEvent("themeChanged", applyTelegramTheme); };
     }
   }, []);
+
+  useEffect(() => subscribeSafeAreaInsets(), []);
+
+  useEffect(() => {
+    if (cartCount > 0) {
+      enableClosingConfirmation();
+    } else {
+      disableClosingConfirmation();
+    }
+  }, [cartCount]);
 
   useEffect(() => {
     applyTelegramViewport();

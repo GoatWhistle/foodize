@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Navigate } from "react-router-dom";
 import { ArrowLeftIcon } from "@phosphor-icons/react";
 import s from "./LegalPage.module.css";
 
@@ -222,29 +222,26 @@ const renderContent = (md: string): ReactNode[] => {
   return blocks;
 };
 
-const LegalPage = () => {
+export const LegalPage = () => {
   const { doc } = useParams();
   const navigate = useNavigate();
-  const data = doc ? DOCS[doc] : undefined;
+  const legalDoc = doc ? DOCS[doc] : undefined;
 
-  if (!data) {
-    void navigate("/", { replace: true });
-    return null;
+  if (!legalDoc) {
+    return <Navigate to="/" replace />;
   }
 
   return (
-    <div className={s.page}>
-      <div className={s.header}>
-        <div className={s.headerInner}>
-          <button className={s.back} onClick={() => { void navigate(-1); }} aria-label="Назад">
+    <div className={s['page']}>
+      <div className={s['header']}>
+        <div className={s['headerInner']}>
+          <button className={s['back']} onClick={() => { void navigate(-1); }} aria-label="Назад">
             <ArrowLeftIcon size={20} weight="bold" />
           </button>
-          <h1 className={s.title}>{data.title}</h1>
+          <h1 className={s['title']}>{legalDoc.title}</h1>
         </div>
       </div>
-      <div className={s.body}>{renderContent(data.content)}</div>
+      <div className={s['body']}>{renderContent(legalDoc.content)}</div>
     </div>
   );
 };
-
-export default LegalPage;

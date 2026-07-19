@@ -83,33 +83,40 @@ export const useAdminDashboard = () => {
 
   useEffect(() => {
     if (activeTab === 'stats' && !stats) {
-      adminService
-        .getPlatformStats()
-        .then((res) => { setStats(res.data.data); })
-        .catch(() => { setActionError('Не удалось загрузить статистику'); });
+      void (async () => {
+        try {
+          const platformStats = await adminService.getPlatformStats();
+          setStats(platformStats);
+        } catch {
+          setActionError('Не удалось загрузить статистику');
+        }
+      })();
     }
   }, [activeTab, stats]);
 
   const todayStr = useMemo(() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   }, []);
 
   const ordersByStatusChartData = useMemo(() => {
     if (!stats?.orders_by_status) return null;
     return Object.fromEntries(
-      Object.entries(stats.orders_by_status).map(([k, v]) => [translate(ORDER_STATUS_RU, k), v])
+      Object.entries(stats.orders_by_status).map(([statusKey, count]) => [
+        translate(ORDER_STATUS_RU, statusKey),
+        count,
+      ])
     );
   }, [stats?.orders_by_status]);
 
   const handleExport = async (
-    exportFn: () => Promise<{ data: Blob }>,
+    exportFn: () => Promise<Blob>,
     filename: string
   ) => {
     setExportLoading(true);
     try {
-      const res = await exportFn();
-      downloadBlob(res.data, filename);
+      const blob = await exportFn();
+      downloadBlob(blob, filename);
     } catch {
       setActionError('Не удалось выполнить экспорт');
     } finally {

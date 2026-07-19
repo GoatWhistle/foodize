@@ -41,7 +41,7 @@ const groupByDay = (items: Notification[]): NotificationGroup[] => {
   }, []);
 };
 
-const NotificationBell = () => {
+export const NotificationBell = () => {
   const { user, isAuthenticated } = useAuthStore(
     useShallow((s) => ({ user: s.user, isAuthenticated: s.user !== null }))
   );
@@ -99,11 +99,11 @@ const NotificationBell = () => {
       {isOpen && (
         <div style={{ position: "absolute", top: "100%", right: 0, width: 320, maxHeight: 400, background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--r-md)", boxShadow: "var(--shadow-md)", zIndex: 100, display: "flex", flexDirection: "column", overflow: "hidden", marginTop: 8 }}>
           <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--bg-surface)" }}>
-            <span style={{ fontWeight: 800, fontSize: "0.95rem", color: "var(--text-1)" }}>Уведомления</span>
+            <span style={{ fontWeight: 800, fontSize: "var(--text-base)", color: "var(--text-1)" }}>Уведомления</span>
             {notifications.length > 0 && (
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 {unreadCount > 0 && (
-                  <button onClick={() => { void markAllAsRead(); }} style={{ background: "none", border: "none", color: "var(--accent)", fontSize: "0.8rem", fontWeight: 700, cursor: "pointer", padding: 0 }}>
+                  <button onClick={() => { void markAllAsRead(); }} style={{ background: "none", border: "none", color: "var(--accent)", fontSize: "var(--text-base)", fontWeight: 700, cursor: "pointer", padding: 0 }}>
                     Прочитать все
                   </button>
                 )}
@@ -116,26 +116,27 @@ const NotificationBell = () => {
 
           <div style={{ overflowY: "auto", flex: 1 }}>
             {notifications.length === 0 ? (
-              <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--text-3)", fontSize: "0.875rem" }}>
+              <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--text-3)", fontSize: "var(--text-base)" }}>
                 Нет уведомлений
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column" }}>
                 {groups.map((group) => (
                   <div key={group.label}>
-                    <div style={{ padding: "10px 16px 6px", color: "var(--text-3)", fontSize: "0.72rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em", background: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
+                    <div style={{ padding: "10px 16px 6px", color: "var(--text-3)", fontSize: "var(--text-sm)", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em", background: "var(--bg-surface)", borderBottom: "1px solid var(--border)" }}>
                       {group.label}
                     </div>
                     {group.items.map((n) => (
                       <div
                         key={n.id}
+                        data-testid={`notification-item-${n.id}`}
                         onClick={() => { if (!n.is_read) void markAsRead(n.id); }}
                         style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", background: n.is_read ? "transparent" : "var(--accent-subtle)", cursor: n.is_read ? "default" : "pointer", transition: "background 0.2s" }}
                       >
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, gap: 8 }}>
-                          <strong style={{ fontSize: "0.875rem", color: "var(--text-1)", lineHeight: 1.2 }}>{n.title}</strong>
+                          <strong style={{ fontSize: "var(--text-base)", color: "var(--text-1)", lineHeight: 1.2 }}>{n.title}</strong>
                           <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                            <span style={{ fontSize: "0.7rem", color: "var(--text-3)", whiteSpace: "nowrap" }}>
+                            <span style={{ fontSize: "var(--text-xs)", color: "var(--text-3)", whiteSpace: "nowrap" }}>
                               {n.created_at ? new Date(n.created_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }) : ""}
                             </span>
                             <button
@@ -147,13 +148,13 @@ const NotificationBell = () => {
                             </button>
                           </div>
                         </div>
-                        <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--text-2)", lineHeight: 1.4 }}>{n.message}</p>
+                        <p style={{ margin: 0, fontSize: "var(--text-base)", color: "var(--text-2)", lineHeight: 1.4 }}>{n.message}</p>
                       </div>
                     ))}
                   </div>
                 ))}
                 {hasMore && (
-                  <button onClick={() => { void handleLoadMore(); }} disabled={loadingMore} style={{ width: "100%", padding: "10px 16px", background: "none", border: "none", borderTop: "1px solid var(--border)", color: "var(--accent)", fontSize: "0.8rem", fontWeight: 700, cursor: loadingMore ? "default" : "pointer", opacity: loadingMore ? 0.6 : 1 }}>
+                  <button onClick={() => { void handleLoadMore(); }} disabled={loadingMore} style={{ width: "100%", padding: "10px 16px", background: "none", border: "none", borderTop: "1px solid var(--border)", color: "var(--accent)", fontSize: "var(--text-base)", fontWeight: 700, cursor: loadingMore ? "default" : "pointer", opacity: loadingMore ? 0.6 : 1 }}>
                     {loadingMore ? "Загрузка..." : "Загрузить ещё"}
                   </button>
                 )}
@@ -165,5 +166,3 @@ const NotificationBell = () => {
     </div>
   );
 };
-
-export default NotificationBell;

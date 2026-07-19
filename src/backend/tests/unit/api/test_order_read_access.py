@@ -31,7 +31,6 @@ def _make_order(user_id: uuid.UUID, restaurant_id: uuid.UUID | None = None) -> M
 
 
 class TestVerifyOrderReadAccess:
-    @pytest.mark.asyncio
     async def test_owner_allowed(self) -> None:
         user = _make_user(CUSTOMER_PERMISSIONS)
         order = _make_order(user_id=user.id)
@@ -39,7 +38,6 @@ class TestVerifyOrderReadAccess:
 
         await verify_order_read_access(session, order, user)
 
-    @pytest.mark.asyncio
     async def test_other_customer_denied(self) -> None:
         user = _make_user(CUSTOMER_PERMISSIONS)
         order = _make_order(user_id=uuid.uuid4())
@@ -48,7 +46,6 @@ class TestVerifyOrderReadAccess:
         with pytest.raises(AccessDeniedException):
             await verify_order_read_access(session, order, user)
 
-    @pytest.mark.asyncio
     async def test_admin_allowed(self) -> None:
         user = _make_user(ADMIN_PERMISSIONS)
         order = _make_order(user_id=uuid.uuid4())
@@ -56,7 +53,6 @@ class TestVerifyOrderReadAccess:
 
         await verify_order_read_access(session, order, user)
 
-    @pytest.mark.asyncio
     async def test_vendor_of_own_restaurant_allowed(self) -> None:
         user = _make_user(VENDOR_PERMISSIONS)
         order = _make_order(user_id=uuid.uuid4())
@@ -70,7 +66,6 @@ class TestVerifyOrderReadAccess:
 
         mock_verify.assert_awaited_once_with(session, order.restaurant_id, user)
 
-    @pytest.mark.asyncio
     async def test_vendor_of_other_restaurant_denied(self) -> None:
         user = _make_user(VENDOR_PERMISSIONS)
         order = _make_order(user_id=uuid.uuid4())
@@ -84,7 +79,6 @@ class TestVerifyOrderReadAccess:
             with pytest.raises(AccessDeniedException):
                 await verify_order_read_access(session, order, user)
 
-    @pytest.mark.asyncio
     async def test_staff_with_restaurant_permission_allowed(self) -> None:
         user = _make_user(STAFF_PERMISSIONS)
         order = _make_order(user_id=uuid.uuid4())
@@ -98,7 +92,6 @@ class TestVerifyOrderReadAccess:
 
         mock_verify.assert_awaited_once_with(session, order.restaurant_id, user)
 
-    @pytest.mark.asyncio
     async def test_staff_at_wrong_restaurant_denied(self) -> None:
         user = _make_user(STAFF_PERMISSIONS)
         order = _make_order(user_id=uuid.uuid4())
@@ -112,7 +105,6 @@ class TestVerifyOrderReadAccess:
             with pytest.raises(AccessDeniedException):
                 await verify_order_read_access(session, order, user)
 
-    @pytest.mark.asyncio
     async def test_no_permissions_denied(self) -> None:
         user = _make_user(frozenset(), user_id=uuid.uuid4())
         order = _make_order(user_id=uuid.uuid4())

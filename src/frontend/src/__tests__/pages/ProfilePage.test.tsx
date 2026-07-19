@@ -1,7 +1,8 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
-import ProfilePage from '../../pages/profile/ProfilePage';
+import { ProfilePage } from '../../pages/profile/ProfilePage';
 import { useAuthStore } from '../../store/useAuthStore';
 import { staffService } from '@shared/services/staffService.js';
 import { vendorService } from '@shared/services/vendorService.js';
@@ -83,9 +84,9 @@ describe('ProfilePage', () => {
 
     await waitForProfileChecks();
 
-    expect(screen.getByText('Ivan Ivanov')).toBeDefined();
-    expect(screen.getByText('+7999')).toBeDefined();
-    expect(screen.getByText('Настройки')).toBeDefined();
+    expect(screen.getByText('Ivan Ivanov')).toBeInTheDocument();
+    expect(screen.getByText('+7999')).toBeInTheDocument();
+    expect(screen.getByText('Настройки')).toBeInTheDocument();
   });
 
   it('calls logout and navigates on click', async () => {
@@ -95,8 +96,9 @@ describe('ProfilePage', () => {
       </BrowserRouter>
     );
 
-    await waitFor(() => { expect(screen.getByText(/Выйти/)).toBeDefined(); });
-    fireEvent.click(screen.getByText(/Выйти/));
+    const user = userEvent.setup();
+    await waitFor(() => { expect(screen.getByText(/Выйти/)).toBeInTheDocument(); });
+    await user.click(screen.getByText(/Выйти/));
     expect(logoutMock).toHaveBeenCalled();
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/login');
@@ -110,9 +112,10 @@ describe('ProfilePage', () => {
       </BrowserRouter>
     );
 
+    const user = userEvent.setup();
     await waitForProfileChecks();
 
-    fireEvent.click(screen.getByText(/Мои заказы/));
+    await user.click(screen.getByText(/Мои заказы/));
     expect(mockNavigate).toHaveBeenCalledWith('/orders');
   });
 
@@ -127,9 +130,10 @@ describe('ProfilePage', () => {
       </BrowserRouter>
     );
 
-    expect(await screen.findByText('Кабинет сотрудника')).toBeDefined();
+    const user = userEvent.setup();
+    expect(await screen.findByText('Кабинет сотрудника')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('Кабинет сотрудника'));
+    await user.click(screen.getByText('Кабинет сотрудника'));
     expect(mockNavigate).toHaveBeenCalledWith('/staff');
   });
 });

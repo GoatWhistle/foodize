@@ -96,7 +96,6 @@ class OrderHarness:
         )
 
 
-@pytest.mark.asyncio
 async def test_same_cart_two_confirm_cycles_yield_different_keys(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -113,7 +112,6 @@ async def test_same_cart_two_confirm_cycles_yield_different_keys(
     assert harness.keys[0] != harness.keys[1]
 
 
-@pytest.mark.asyncio
 async def test_place_order_requires_view_cart_first(monkeypatch: pytest.MonkeyPatch) -> None:
     cart = _cart(uuid.uuid4(), uuid.uuid4())
     harness = OrderHarness(monkeypatch, cart)
@@ -124,7 +122,6 @@ async def test_place_order_requires_view_cart_first(monkeypatch: pytest.MonkeyPa
     assert harness.keys == []
 
 
-@pytest.mark.asyncio
 async def test_place_order_blocked_without_new_user_turn(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -139,7 +136,6 @@ async def test_place_order_blocked_without_new_user_turn(
     assert harness.keys == []
 
 
-@pytest.mark.asyncio
 async def test_comment_changes_fingerprint(monkeypatch: pytest.MonkeyPatch) -> None:
     cart = _cart(uuid.uuid4(), uuid.uuid4())
     harness = OrderHarness(monkeypatch, cart)
@@ -153,7 +149,6 @@ async def test_comment_changes_fingerprint(monkeypatch: pytest.MonkeyPatch) -> N
     assert harness.keys[0] != harness.keys[1]
 
 
-@pytest.mark.asyncio
 async def test_promo_code_changes_fingerprint(monkeypatch: pytest.MonkeyPatch) -> None:
     cart = _cart(uuid.uuid4(), uuid.uuid4())
     harness = OrderHarness(monkeypatch, cart)
@@ -167,7 +162,6 @@ async def test_promo_code_changes_fingerprint(monkeypatch: pytest.MonkeyPatch) -
     assert harness.keys[0] != harness.keys[1]
 
 
-@pytest.mark.asyncio
 async def test_options_change_fingerprint(monkeypatch: pytest.MonkeyPatch) -> None:
     restaurant_id = uuid.uuid4()
     menu_item_id = uuid.uuid4()
@@ -185,7 +179,6 @@ async def test_options_change_fingerprint(monkeypatch: pytest.MonkeyPatch) -> No
     assert harness_a.keys[0] != harness_b.keys[0]
 
 
-@pytest.mark.asyncio
 async def test_confirm_token_reset_after_place_blocks_second_place(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -200,7 +193,6 @@ async def test_confirm_token_reset_after_place_blocks_second_place(
     assert "cart_not_confirmed" in result
 
 
-@pytest.mark.asyncio
 async def test_mutation_invalidates_confirmation(monkeypatch: pytest.MonkeyPatch) -> None:
     cart = _cart(uuid.uuid4(), uuid.uuid4())
     harness = OrderHarness(monkeypatch, cart)
@@ -213,7 +205,6 @@ async def test_mutation_invalidates_confirmation(monkeypatch: pytest.MonkeyPatch
     assert harness.keys == []
 
 
-@pytest.mark.asyncio
 async def test_search_menu_delimits_item_names(monkeypatch: pytest.MonkeyPatch) -> None:
     cart = _cart(uuid.uuid4(), uuid.uuid4())
     harness = OrderHarness(monkeypatch, cart)

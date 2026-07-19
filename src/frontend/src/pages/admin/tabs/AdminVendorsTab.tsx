@@ -1,7 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react';
 import { DownloadSimpleIcon } from '@phosphor-icons/react';
-import Pagination from '@shared/components/Pagination/Pagination';
-import EmptyState from '@shared/components/EmptyState/EmptyState';
+import { Pagination } from '@shared/components/Pagination/Pagination';
+import { EmptyState } from '@shared/components/EmptyState/EmptyState';
 import type { adminService as adminServiceType } from '../../../services/adminService';
 import type { AdminVendor, VendorFilters } from '../hooks/useAdminVendors';
 
@@ -18,7 +18,7 @@ interface AdminVendorsTabProps {
   selectedVendorIds: Set<string>;
   setSelectedVendorIds: Dispatch<SetStateAction<Set<string>>>;
   exportLoading: boolean;
-  handleExport: (exportFn: () => Promise<{ data: Blob }>, filename: string) => void;
+  handleExport: (exportFn: () => Promise<Blob>, filename: string) => void;
   loadVendorDetails: (id: string) => void;
   todayStr: string;
   adminService: typeof adminServiceType;
@@ -44,7 +44,7 @@ const filterControlStyle = {
   height: 48,
   paddingTop: 11,
   paddingBottom: 11,
-  fontSize: '0.86rem',
+  fontSize: "var(--text-base)",
   lineHeight: 1.2,
 };
 
@@ -54,7 +54,7 @@ const selectFilterStyle = {
   backgroundPosition: 'right 10px center',
 };
 
-export default function AdminVendorsTab({
+export function AdminVendorsTab({
   vendors,
   vendorsLoading,
   vendorsTotal,
@@ -141,7 +141,7 @@ export default function AdminVendorsTab({
             display: 'flex',
             alignItems: 'center',
             gap: 6,
-            fontSize: '0.82rem',
+            fontSize: "var(--text-base)",
             color: 'var(--text-3)',
             cursor: 'pointer',
           }}
@@ -200,7 +200,7 @@ export default function AdminVendorsTab({
               <div style={{ color: 'var(--text-1)', fontWeight: 900 }}>
                 {vendor.name || 'Вендор без имени'}
               </div>
-              <div style={{ color: 'var(--text-3)', fontSize: '0.84rem', marginTop: 4 }}>
+              <div style={{ color: 'var(--text-3)', fontSize: "var(--text-base)", marginTop: 4 }}>
                 {vendor.phone_number || 'Нет телефона'}
               </div>
             </div>

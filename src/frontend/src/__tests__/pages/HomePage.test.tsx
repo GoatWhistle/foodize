@@ -1,9 +1,9 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import type { Restaurant } from '@shared/types/models';
-import HomePage from '../../pages/home/HomePage';
-
+import { HomePage } from '../../pages/home/HomePage';
 type LogicState = {
   search: string;
   setSearch: ReturnType<typeof vi.fn>;
@@ -53,9 +53,10 @@ vi.mock('@shared/hooks/useHomePageLogic.js', () => ({
   useHomePageLogic: () => mockLogicState,
 }));
 
+let mockAuthUser: { id: string } | null = { id: 'u1' };
 vi.mock('../../store/useAuthStore', () => ({
   useAuthStore: (sel?: (s: { user: { id: string } | null }) => unknown) => {
-    const state = { user: { id: 'u1' } };
+    const state = { user: mockAuthUser };
     return sel ? sel(state) : state;
   },
 }));
@@ -86,9 +87,11 @@ describe('HomePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockLogicState = { ...defaultLogicState };
+    mockAuthUser = { id: 'u1' };
   });
 
-  it('renders search bar and open filter inside filter menu', () => {
+  it('renders search bar and open filter inside filter menu', async () => {
+    const user = userEvent.setup();
     render(
       <BrowserRouter>
         <HomePage />
@@ -97,10 +100,10 @@ describe('HomePage', () => {
 
     expect(
       screen.getByPlaceholderText('Поиск ресторана или адреса...')
-    ).toBeDefined();
+    ).toBeInTheDocument();
 
-    fireEvent.click(screen.getByLabelText('Открыть фильтры'));
-    expect(screen.getByText('Открыто')).toBeDefined();
+    await user.click(screen.getByLabelText('Открыть фильтры'));
+    expect(screen.getByText('Открыто')).toBeInTheDocument();
   });
 
   it('renders all restaurant cards', () => {
@@ -110,20 +113,21 @@ describe('HomePage', () => {
       </BrowserRouter>
     );
 
-    expect(screen.getByText('Шаурма Хаус')).toBeDefined();
-    expect(screen.getByText('Burger Point')).toBeDefined();
-    expect(screen.getByText('Pizza Nova')).toBeDefined();
-    expect(screen.getByText('Sushi House')).toBeDefined();
+    expect(screen.getByText('Шаурма Хаус')).toBeInTheDocument();
+    expect(screen.getByText('Burger Point')).toBeInTheDocument();
+    expect(screen.getByText('Pizza Nova')).toBeInTheDocument();
+    expect(screen.getByText('Sushi House')).toBeInTheDocument();
   });
 
-  it('navigates to restaurant page on card click', () => {
+  it('navigates to restaurant page on card click', async () => {
+    const user = userEvent.setup();
     render(
       <BrowserRouter>
         <HomePage />
       </BrowserRouter>
     );
 
-    fireEvent.click(screen.getByText('Шаурма Хаус'));
+    await user.click(screen.getByText('Шаурма Хаус'));
     expect(mockNavigate).toHaveBeenCalledWith(
       expect.stringContaining('/restaurants/shaurma'),
       expect.anything()
@@ -139,8 +143,7 @@ describe('HomePage', () => {
       </BrowserRouter>
     );
 
-    const skeletons = document.querySelectorAll('.restaurant-card-skeleton');
-    expect(skeletons.length).toBeGreaterThan(0);
+    expect(screen.getByRole('status', { name: 'Загрузка ресторанов' })).toBeInTheDocument();
   });
 
   it('shows empty state when no restaurants', () => {
@@ -157,7 +160,74 @@ describe('HomePage', () => {
       </BrowserRouter>
     );
 
-    expect(screen.getByText('Ничего не найдено')).toBeDefined();
+    expect(screen.getByText('Ничего не найдено')).toBeInTheDocument();
     expect(screen.queryByRole('article')).toBeNull();
+  });
+
+  it('redirects to login on card click when not authenticated', async () => {
+    mockAuthUser = null;
+    const user = userEvent.setup();
+    render(
+      <BrowserRouter>
+        <HomePage />
+      </BrowserRouter>
+    );
+
+    await user.click(screen.getByText('Шаурма Хаус'));
+    expect(mockNavigate).toHaveBeenCalledWith('/login');
+  });
+
+  it('falls back to restaurant id when display_id is missing', async () => {
+    mockLogicState = {
+      ...defaultLogicState,
+      allRestaurants: [
+        { id: 'no-display', name: 'No Display', display_id: null },
+      ] as unknown as Restaurant[],
+      publicRestaurantsTotal: 1,
+    };
+    const user = userEvent.setup();
+    render(
+      <BrowserRouter>
+        <HomePage />
+      </BrowserRouter>
+    );
+
+    await user.click(screen.getByText('No Display'));
+    expect(mockNavigate).toHaveBeenCalledWith(
+      expect.stringContaining('/restaurants/no-display'),
+      expect.anything()
+    );
+  });
+
+  it('keeps the grid mounted while a background refresh is loading', () => {
+    mockLogicState = { ...defaultLogicState, loading: true };
+    const { container } = render(
+      <BrowserRouter>
+        <HomePage />
+      </BrowserRouter>
+    );
+
+    expect(container.querySelector('.restaurants-grid--loading')).not.toBeNull();
+    expect(screen.getByText('Шаурма Хаус')).toBeInTheDocument();
+  });
+
+  it('resets filters from the empty state action', async () => {
+    const resetFilters = vi.fn();
+    mockLogicState = {
+      ...defaultLogicState,
+      loading: false,
+      allRestaurants: [],
+      publicRestaurantsTotal: 0,
+      resetFilters,
+    };
+    const user = userEvent.setup();
+    render(
+      <BrowserRouter>
+        <HomePage />
+      </BrowserRouter>
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Сбросить' }));
+    expect(resetFilters).toHaveBeenCalled();
   });
 });

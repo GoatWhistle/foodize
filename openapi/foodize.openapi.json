@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "FastAPI",
+    "title": "Foodize API",
     "version": "0.1.0"
   },
   "paths": {
@@ -122,7 +122,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse_dict_"
+                  "$ref": "#/components/schemas/SuccessResponse_BatchAffectedResult_"
                 }
               }
             }
@@ -168,7 +168,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse_dict_"
+                  "$ref": "#/components/schemas/SuccessResponse_BatchAffectedResult_"
                 }
               }
             }
@@ -633,7 +633,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse_dict_"
+                  "$ref": "#/components/schemas/SuccessResponse_BatchModerationResult_"
                 }
               }
             }
@@ -679,7 +679,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse_dict_"
+                  "$ref": "#/components/schemas/SuccessResponse_BatchModerationResult_"
                 }
               }
             }
@@ -1019,7 +1019,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse_dict_"
+                  "$ref": "#/components/schemas/SuccessResponse_BatchModerationResult_"
                 }
               }
             }
@@ -1065,7 +1065,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse_dict_"
+                  "$ref": "#/components/schemas/SuccessResponse_BatchModerationResult_"
                 }
               }
             }
@@ -1288,6 +1288,64 @@
         }
       }
     },
+    "/api/v1/admin/orders/{order_id}/cancel": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Force Cancel Order",
+        "operationId": "force_cancel_order_api_v1_admin_orders__order_id__cancel_post",
+        "security": [
+          {
+            "OAuth2PasswordBearerWithCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForceCancelOrderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_OrderResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/reviews": {
       "get": {
         "tags": [
@@ -1390,7 +1448,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse_dict_"
+                  "$ref": "#/components/schemas/SuccessResponse_dict_str__Any__"
                 }
               }
             }
@@ -1952,7 +2010,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessListResponse_dict_str__Any__"
+                }
               }
             }
           },
@@ -4495,6 +4555,110 @@
         }
       }
     },
+    "/api/v1/restaurants/{restaurant_id}/photo": {
+      "post": {
+        "tags": [
+          "Restaurants"
+        ],
+        "summary": "Upload Restaurant Photo",
+        "operationId": "upload_restaurant_photo_api_v1_restaurants__restaurant_id__photo_post",
+        "security": [
+          {
+            "OAuth2PasswordBearerWithCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "restaurant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Restaurant Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_restaurant_photo_api_v1_restaurants__restaurant_id__photo_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_RestaurantResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Restaurants"
+        ],
+        "summary": "Delete Restaurant Photo",
+        "operationId": "delete_restaurant_photo_api_v1_restaurants__restaurant_id__photo_delete",
+        "security": [
+          {
+            "OAuth2PasswordBearerWithCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "restaurant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Restaurant Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_RestaurantResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/restaurants/{restaurant_id}/working-hours": {
       "get": {
         "tags": [
@@ -4593,233 +4757,30 @@
         }
       }
     },
-    "/api/v1/menu/{restaurant_id}/items": {
-      "post": {
+    "/api/v1/media/{key}": {
+      "get": {
         "tags": [
-          "Menu"
+          "Media"
         ],
-        "summary": "Create Menu Item",
-        "operationId": "create_menu_item_api_v1_menu__restaurant_id__items_post",
-        "security": [
-          {
-            "OAuth2PasswordBearerWithCookie": []
-          }
-        ],
+        "summary": "Get Media",
+        "operationId": "get_media_api_v1_media__key__get",
         "parameters": [
           {
-            "name": "restaurant_id",
+            "name": "key",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "format": "uuid",
-              "title": "Restaurant Id"
+              "title": "Key"
             }
           }
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MenuItemCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse_MenuItemResponse_"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/menu/{restaurant_id}/items/{item_id}": {
-      "patch": {
-        "tags": [
-          "Menu"
-        ],
-        "summary": "Update Menu Item",
-        "operationId": "update_menu_item_api_v1_menu__restaurant_id__items__item_id__patch",
-        "security": [
-          {
-            "OAuth2PasswordBearerWithCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "restaurant_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Restaurant Id"
-            }
-          },
-          {
-            "name": "item_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Item Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MenuItemUpdate"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse_MenuItemResponse_"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Menu"
-        ],
-        "summary": "Delete Menu Item",
-        "operationId": "delete_menu_item_api_v1_menu__restaurant_id__items__item_id__delete",
-        "security": [
-          {
-            "OAuth2PasswordBearerWithCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "restaurant_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Restaurant Id"
-            }
-          },
-          {
-            "name": "item_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Item Id"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/menu/{restaurant_id}/items/{item_id}/availability": {
-      "patch": {
-        "tags": [
-          "Menu"
-        ],
-        "summary": "Toggle Item Availability",
-        "operationId": "toggle_item_availability_api_v1_menu__restaurant_id__items__item_id__availability_patch",
-        "security": [
-          {
-            "OAuth2PasswordBearerWithCookie": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "restaurant_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Restaurant Id"
-            }
-          },
-          {
-            "name": "item_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Item Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AvailabilityUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse_MenuItemResponse_"
-                }
+                "schema": {}
               }
             }
           },
@@ -5276,6 +5237,373 @@
         }
       }
     },
+    "/api/v1/menu/{restaurant_id}/items": {
+      "post": {
+        "tags": [
+          "Menu"
+        ],
+        "summary": "Create Menu Item",
+        "operationId": "create_menu_item_api_v1_menu__restaurant_id__items_post",
+        "security": [
+          {
+            "OAuth2PasswordBearerWithCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "restaurant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Restaurant Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MenuItemCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_MenuItemResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/menu/{restaurant_id}/items/{item_id}": {
+      "patch": {
+        "tags": [
+          "Menu"
+        ],
+        "summary": "Update Menu Item",
+        "operationId": "update_menu_item_api_v1_menu__restaurant_id__items__item_id__patch",
+        "security": [
+          {
+            "OAuth2PasswordBearerWithCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "restaurant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Restaurant Id"
+            }
+          },
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MenuItemUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_MenuItemResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Menu"
+        ],
+        "summary": "Delete Menu Item",
+        "operationId": "delete_menu_item_api_v1_menu__restaurant_id__items__item_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearerWithCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "restaurant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Restaurant Id"
+            }
+          },
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/menu/{restaurant_id}/items/{item_id}/photo": {
+      "post": {
+        "tags": [
+          "Menu"
+        ],
+        "summary": "Upload Menu Item Photo",
+        "operationId": "upload_menu_item_photo_api_v1_menu__restaurant_id__items__item_id__photo_post",
+        "security": [
+          {
+            "OAuth2PasswordBearerWithCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "restaurant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Restaurant Id"
+            }
+          },
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_menu_item_photo_api_v1_menu__restaurant_id__items__item_id__photo_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_MenuItemResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Menu"
+        ],
+        "summary": "Delete Menu Item Photo",
+        "operationId": "delete_menu_item_photo_api_v1_menu__restaurant_id__items__item_id__photo_delete",
+        "security": [
+          {
+            "OAuth2PasswordBearerWithCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "restaurant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Restaurant Id"
+            }
+          },
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_MenuItemResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/menu/{restaurant_id}/items/{item_id}/availability": {
+      "patch": {
+        "tags": [
+          "Menu"
+        ],
+        "summary": "Toggle Item Availability",
+        "operationId": "toggle_item_availability_api_v1_menu__restaurant_id__items__item_id__availability_patch",
+        "security": [
+          {
+            "OAuth2PasswordBearerWithCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "restaurant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Restaurant Id"
+            }
+          },
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AvailabilityUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_MenuItemResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/menu/{restaurant_id}": {
       "get": {
         "tags": [
@@ -5357,16 +5685,11 @@
           {
             "name": "Idempotency-Key",
             "in": "header",
-            "required": false,
+            "required": true,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 128,
               "title": "Idempotency-Key"
             }
           }
@@ -6305,6 +6628,41 @@
         }
       }
     },
+    "/api/v1/telegram/refresh": {
+      "post": {
+        "tags": [
+          "Telegram"
+        ],
+        "summary": "Telegram Refresh",
+        "operationId": "telegram_refresh_api_v1_telegram_refresh_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_TokenResponse_"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/telegram/session-logout": {
+      "post": {
+        "tags": [
+          "Telegram"
+        ],
+        "summary": "Telegram Session Logout",
+        "operationId": "telegram_session_logout_api_v1_telegram_session_logout_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        }
+      }
+    },
     "/api/v1/telegram/site-login/request-code": {
       "post": {
         "tags": [
@@ -6700,6 +7058,59 @@
         }
       }
     },
+    "/api/v1/telegram/bot/telegram-id": {
+      "post": {
+        "tags": [
+          "Telegram"
+        ],
+        "summary": "Telegram Bot Telegram Id",
+        "operationId": "telegram_bot_telegram_id_api_v1_telegram_bot_telegram_id_post",
+        "parameters": [
+          {
+            "name": "X-Telegram-Bot-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "X-Telegram-Bot-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TelegramBotTelegramIdRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_TelegramBotTelegramIdResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/telegram/bot/orders": {
       "post": {
         "tags": [
@@ -7052,17 +7463,8 @@
         "summary": "Read All Notifications",
         "operationId": "read_all_notifications_api_v1_notifications_read_all_post",
         "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Read All Notifications Api V1 Notifications Read All Post"
-                }
-              }
-            }
+          "204": {
+            "description": "Successful Response"
           }
         },
         "security": [
@@ -7122,7 +7524,35 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Ping Api Ping Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/live": {
+      "get": {
+        "summary": "Live",
+        "operationId": "live_api_live_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Live Api Live Get"
+                }
               }
             }
           }
@@ -7133,6 +7563,22 @@
       "get": {
         "summary": "Health",
         "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ready": {
+      "get": {
+        "summary": "Ready",
+        "operationId": "ready_api_ready_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -7648,6 +8094,19 @@
         ],
         "title": "AvailabilityUpdate"
       },
+      "BatchAffectedResult": {
+        "properties": {
+          "affected": {
+            "type": "integer",
+            "title": "Affected"
+          }
+        },
+        "type": "object",
+        "required": [
+          "affected"
+        ],
+        "title": "BatchAffectedResult"
+      },
       "BatchIdsRequest": {
         "properties": {
           "ids": {
@@ -7664,6 +8123,33 @@
           "ids"
         ],
         "title": "BatchIdsRequest"
+      },
+      "BatchModerationResult": {
+        "properties": {
+          "succeeded": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Succeeded"
+          },
+          "failed": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Failed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "succeeded",
+          "failed"
+        ],
+        "title": "BatchModerationResult"
       },
       "BatchRejectRequest": {
         "properties": {
@@ -7692,6 +8178,34 @@
           "ids"
         ],
         "title": "BatchRejectRequest"
+      },
+      "Body_upload_menu_item_photo_api_v1_menu__restaurant_id__items__item_id__photo_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_menu_item_photo_api_v1_menu__restaurant_id__items__item_id__photo_post"
+      },
+      "Body_upload_restaurant_photo_api_v1_restaurants__restaurant_id__photo_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_restaurant_photo_api_v1_restaurants__restaurant_id__photo_post"
       },
       "CartItemIn": {
         "properties": {
@@ -8156,6 +8670,21 @@
           "orders_count"
         ],
         "title": "FinanceTopRestaurant"
+      },
+      "ForceCancelOrderRequest": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "title": "ForceCancelOrderRequest"
       },
       "HTTPValidationError": {
         "properties": {
@@ -8990,8 +9519,15 @@
             "title": "Order Id"
           },
           "actor_id": {
-            "type": "string",
-            "format": "uuid",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Actor Id"
           },
           "actor_permissions": {
@@ -10849,6 +11385,30 @@
         ],
         "title": "SuccessListResponse[TelegramBotOrderSummary]"
       },
+      "SuccessListResponse_dict_str__Any__": {
+        "properties": {
+          "data": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "title": "SuccessListResponse[dict[str, Any]]"
+      },
       "SuccessResponse_AdminRestaurantResponse_": {
         "properties": {
           "data": {
@@ -10938,6 +11498,36 @@
           "data"
         ],
         "title": "SuccessResponse[AdvisorInsightsResponse]"
+      },
+      "SuccessResponse_BatchAffectedResult_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/BatchAffectedResult"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessResponse[BatchAffectedResult]"
+      },
+      "SuccessResponse_BatchModerationResult_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/BatchModerationResult"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessResponse[BatchModerationResult]"
       },
       "SuccessResponse_CartResponse_": {
         "properties": {
@@ -11179,6 +11769,21 @@
         ],
         "title": "SuccessResponse[StaffRequestResponse]"
       },
+      "SuccessResponse_TelegramBotTelegramIdResponse_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TelegramBotTelegramIdResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessResponse[TelegramBotTelegramIdResponse]"
+      },
       "SuccessResponse_TelegramBotVendorStatusResponse_": {
         "properties": {
           "data": {
@@ -11299,7 +11904,7 @@
         ],
         "title": "SuccessResponse[VendorResponse]"
       },
-      "SuccessResponse_dict_": {
+      "SuccessResponse_dict_str__Any__": {
         "properties": {
           "data": {
             "additionalProperties": true,
@@ -11314,7 +11919,7 @@
         "required": [
           "data"
         ],
-        "title": "SuccessResponse[dict]"
+        "title": "SuccessResponse[dict[str, Any]]"
       },
       "SuccessResponse_list_WorkingHoursRead__": {
         "properties": {
@@ -11464,6 +12069,38 @@
           "name"
         ],
         "title": "TelegramBotRegisterRequest"
+      },
+      "TelegramBotTelegramIdRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "User Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "TelegramBotTelegramIdRequest"
+      },
+      "TelegramBotTelegramIdResponse": {
+        "properties": {
+          "telegram_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Telegram Id"
+          }
+        },
+        "type": "object",
+        "title": "TelegramBotTelegramIdResponse"
       },
       "TelegramBotVendorStatusRequest": {
         "properties": {
@@ -11816,9 +12453,8 @@
           "phone_number": {
             "type": "string",
             "maxLength": 64,
-            "minLength": 0,
-            "title": "Phone Number",
-            "default": ""
+            "minLength": 1,
+            "title": "Phone Number"
           },
           "id": {
             "type": "string",
@@ -11907,6 +12543,7 @@
         "type": "object",
         "required": [
           "name",
+          "phone_number",
           "id",
           "permissions"
         ],
@@ -12123,27 +12760,6 @@
       },
       "WorkingHoursRead": {
         "properties": {
-          "day_of_week": {
-            "type": "integer",
-            "maximum": 6.0,
-            "minimum": 0.0,
-            "title": "Day Of Week"
-          },
-          "open_time": {
-            "type": "string",
-            "pattern": "^\\d{2}:\\d{2}$",
-            "title": "Open Time"
-          },
-          "close_time": {
-            "type": "string",
-            "pattern": "^\\d{2}:\\d{2}$",
-            "title": "Close Time"
-          },
-          "is_closed": {
-            "type": "boolean",
-            "title": "Is Closed",
-            "default": false
-          },
           "id": {
             "type": "string",
             "format": "uuid",
@@ -12153,15 +12769,34 @@
             "type": "string",
             "format": "uuid",
             "title": "Restaurant Id"
+          },
+          "day_of_week": {
+            "type": "integer",
+            "maximum": 6.0,
+            "minimum": 0.0,
+            "title": "Day Of Week"
+          },
+          "open_time": {
+            "type": "string",
+            "title": "Open Time"
+          },
+          "close_time": {
+            "type": "string",
+            "title": "Close Time"
+          },
+          "is_closed": {
+            "type": "boolean",
+            "title": "Is Closed",
+            "default": false
           }
         },
         "type": "object",
         "required": [
+          "id",
+          "restaurant_id",
           "day_of_week",
           "open_time",
-          "close_time",
-          "id",
-          "restaurant_id"
+          "close_time"
         ],
         "title": "WorkingHoursRead"
       }

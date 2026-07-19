@@ -10,7 +10,7 @@ interface StaffHeaderProps {
   onToggleAutoEta: (checked: boolean) => void;
 }
 
-const StaffHeader = ({ profile, newOrderAlert, onDismissAlert, autoEta, onToggleAutoEta }: StaffHeaderProps) => (
+export const StaffHeader = ({ profile, newOrderAlert, onDismissAlert, autoEta, onToggleAutoEta }: StaffHeaderProps) => (
   <div style={{ marginBottom: 24 }}>
     <div
       style={{
@@ -24,7 +24,7 @@ const StaffHeader = ({ profile, newOrderAlert, onDismissAlert, autoEta, onToggle
       <h1
         style={{
           fontFamily: 'var(--font-sans)',
-          fontSize: '1.8rem',
+          fontSize: "var(--text-xl)",
           fontWeight: 800,
           color: 'var(--text-1)',
           margin: 0,
@@ -40,7 +40,7 @@ const StaffHeader = ({ profile, newOrderAlert, onDismissAlert, autoEta, onToggle
             borderRadius: 'var(--r-sm)',
             padding: '4px 10px',
             color: 'var(--fire-text)',
-            fontSize: '0.75rem',
+            fontSize: "var(--text-sm)",
             fontWeight: 700,
             cursor: 'pointer',
             display: 'flex',
@@ -62,7 +62,7 @@ const StaffHeader = ({ profile, newOrderAlert, onDismissAlert, autoEta, onToggle
         gap: 12,
       }}
     >
-      <p style={{ color: 'var(--text-3)', fontSize: '0.875rem', margin: 0 }}>
+      <p style={{ color: 'var(--text-3)', fontSize: "var(--text-base)", margin: 0 }}>
         Роль:{' '}
         <strong style={{ color: 'var(--text-2)' }}>
           {translate(STAFF_ROLE_RU, profile.role, profile.role)}
@@ -95,7 +95,7 @@ const StaffHeader = ({ profile, newOrderAlert, onDismissAlert, autoEta, onToggle
         />
         <span
           style={{
-            fontSize: '0.78rem',
+            fontSize: "var(--text-sm)",
             fontWeight: 600,
             color: autoEta ? 'var(--fire)' : 'var(--text-2)',
             whiteSpace: 'nowrap',
@@ -107,5 +107,3 @@ const StaffHeader = ({ profile, newOrderAlert, onDismissAlert, autoEta, onToggle
     </div>
   </div>
 );
-
-export default StaffHeader;

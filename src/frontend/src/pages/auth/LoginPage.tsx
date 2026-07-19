@@ -9,37 +9,27 @@ import { extractPhoneNumber } from '@shared/utils/phone';
 import { authService } from '@shared/services/authService';
 import { userService } from '@shared/services/userService';
 import { getPasswordStrength } from './forms/SetPasswordForm';
-import AuthCard from './AuthCard';
-import PasswordLoginForm from './forms/PasswordLoginForm';
-import TelegramUsernameForm from './forms/TelegramUsernameForm';
-import TelegramCodeForm from './forms/TelegramCodeForm';
-import SetPasswordForm from './forms/SetPasswordForm';
+import { AuthCard } from './AuthCard';
+import { PasswordLoginForm } from './forms/PasswordLoginForm';
+import { TelegramUsernameForm } from './forms/TelegramUsernameForm';
+import { TelegramCodeForm } from './forms/TelegramCodeForm';
+import { SetPasswordForm } from './forms/SetPasswordForm';
+import { AuthVisual } from './AuthVisual';
 
-const AuthVisual = () => (
-  <div className="auth-visual">
-    <div className="auth-visual-pattern" />
-    <div className="auth-visual-orbs">
-      <div className="auth-visual-orb auth-visual-orb--1" />
-      <div className="auth-visual-orb auth-visual-orb--2" />
-    </div>
-    <div className="auth-visual-content">
-      <span className="auth-visual-eyebrow">Предзаказ · Самовывоз</span>
-      <div className="auth-visual-title">
-        Еда,
-        <br />
-        которую
-        <br />
-        вы <em>любите</em>
-      </div>
-      <p className="auth-visual-sub">
-        Лучшие заведения города — в одном месте. Выбирайте, заказывайте
-        заранее и забирайте без очередей.
-      </p>
-    </div>
-  </div>
+const LOGIN_VISUAL_TITLE = (
+  <>
+    Еда,
+    <br />
+    которую
+    <br />
+    вы <em>любите</em>
+  </>
 );
 
-const LoginPage = () => {
+const LOGIN_VISUAL_SUBTITLE =
+  'Лучшие заведения города — в одном месте. Выбирайте, заказывайте заранее и забирайте без очередей.';
+
+export const LoginPage = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [telegramUsername, setTelegramUsername] = useState('');
@@ -149,7 +139,7 @@ const LoginPage = () => {
 
   return (
     <div className="auth-page">
-      <AuthVisual />
+      <AuthVisual title={LOGIN_VISUAL_TITLE} subtitle={LOGIN_VISUAL_SUBTITLE} />
       <div className="auth-form-side">
         <AuthCard
           authMode={authMode}
@@ -220,5 +210,3 @@ const LoginPage = () => {
     </div>
   );
 };
-
-export default LoginPage;

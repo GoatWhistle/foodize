@@ -11,13 +11,17 @@ from features.users.models import User
 from features.vendors.crud import create_vendor_profile, get_vendor_by_user_id
 from features.vendors.models import VendorProfile
 from features.vendors.schemas import VendorCreate
-from seed.data import (
+from seed.fixtures.special_vendor import (
     SPECIAL_VENDOR_ADDRESS,
     SPECIAL_VENDOR_ITEMS,
     SPECIAL_VENDOR_PHONE,
     SPECIAL_VENDOR_RESTAURANT,
 )
+from shared.enums.moderation_status import ModerationStatus
 from shared.permissions import CUSTOMER_PERMISSIONS, VENDOR_PERMISSIONS, permissions_with
+
+APPROVED = ModerationStatus.APPROVED.value
+SPECIAL_VENDOR_AVG_PREP_TIME_MINUTES = 15
 
 
 async def _ensure_special_vendor(session: AsyncSession, user: User) -> VendorProfile:
@@ -30,7 +34,7 @@ async def _ensure_special_vendor(session: AsyncSession, user: User) -> VendorPro
     if vendor is None:
         vendor = await create_vendor_profile(session, user, VendorCreate())
         print(f"  vendor profile → {user.name} ({SPECIAL_VENDOR_PHONE})")
-    vendor.approval_status = "APPROVED"
+    vendor.approval_status = APPROVED
     vendor.rejection_reason = None
     await session.commit()
     return vendor
@@ -52,11 +56,11 @@ async def _ensure_special_restaurant(
             RestaurantCreate(
                 name=SPECIAL_VENDOR_RESTAURANT,
                 address=SPECIAL_VENDOR_ADDRESS,
-                avg_prep_time_minutes=15,
+                avg_prep_time_minutes=SPECIAL_VENDOR_AVG_PREP_TIME_MINUTES,
             ),
             vendor.id,
         )
-        restaurant.moderation_status = "APPROVED"
+        restaurant.moderation_status = APPROVED
         restaurant.description = "Шаурма и напитки от Бороды"
         await session.commit()
         print(f"  restaurant '{SPECIAL_VENDOR_RESTAURANT}'")

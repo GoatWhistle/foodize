@@ -1,7 +1,7 @@
 import type { MouseEventHandler, ReactNode } from "react";
 import { ShoppingBagIcon, TrashIcon } from "@phosphor-icons/react";
 import { formatReviewTime } from "@shared/utils/formatReviewTime";
-import StarRatingInput from "@shared/components/StarRatingInput/StarRatingInput";
+import { StarRatingInput } from "@shared/components/StarRatingInput/StarRatingInput";
 import type { Review } from "@shared/types/models";
 import s from "./ReviewCard.module.css";
 
@@ -16,7 +16,7 @@ interface ReviewCardProps {
   actionsExtra?: ReactNode;
 }
 
-const ReviewCard = ({
+export const ReviewCard = ({
   review,
   canDelete = false,
   onDelete,
@@ -28,22 +28,22 @@ const ReviewCard = ({
 }: ReviewCardProps) => {
   const time = formatReviewTime(review.created_at);
   return (
-    <div className={`${s.card}${className ? ` ${className}` : ""}`}>
-      <div className={s.header}>
-        <div className={s.identity}>
+    <div className={`${s['card']}${className ? ` ${className}` : ""}`}>
+      <div className={s['header']}>
+        <div className={s['identity']}>
           {showAvatar && (
-            <div className={s.avatar}>
+            <div className={s['avatar']}>
               {review.user_id.slice(0, 1).toUpperCase() || "U"}
             </div>
           )}
           <div>
-            <div className={s.name}>
+            <div className={s['name']}>
               {review.user_name || "Клиент"}
               {headerExtra}
             </div>
-            <div className={s.meta}>
+            <div className={s['meta']}>
               <StarRatingInput value={review.rating} readOnly size={12} gap={1} />
-              {time && <span className={s.time}>{time}</span>}
+              {time && <span className={s['time']}>{time}</span>}
             </div>
             {showVerifiedBadge && review.is_verified_purchase && (
               <span className="verified-purchase-badge" style={{ marginTop: 3 }}>
@@ -54,14 +54,14 @@ const ReviewCard = ({
           </div>
         </div>
         {(canDelete || actionsExtra) && (
-          <div className={s.actions}>
+          <div className={s['actions']}>
             {actionsExtra}
             {canDelete && (
               <button
                 type="button"
                 aria-label="Удалить отзыв"
                 onClick={onDelete}
-                className={s.deleteBtn}
+                className={s['deleteBtn']}
               >
                 <TrashIcon size={13} weight="bold" />
               </button>
@@ -69,9 +69,7 @@ const ReviewCard = ({
           </div>
         )}
       </div>
-      {review.text && <p className={s.text}>{review.text}</p>}
+      {review.text && <p className={s['text']}>{review.text}</p>}
     </div>
   );
 };
-
-export default ReviewCard;

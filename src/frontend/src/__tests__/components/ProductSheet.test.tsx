@@ -1,8 +1,8 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import type { MenuItem } from '@shared/types/models';
-import ProductSheet from '@shared/components/ProductSheet/ProductSheet';
-
+import { ProductSheet } from '@shared/components/ProductSheet/ProductSheet';
 const item = {
   id: 'item-1',
   name: 'Bowl',
@@ -41,17 +41,18 @@ const item = {
 } as MenuItem;
 
 describe('ProductSheet', () => {
-  it('calculates options, quantity, and submits configured item', () => {
+  it('calculates options, quantity, and submits configured item', async () => {
+    const user = userEvent.setup();
     const onAdd = vi.fn();
     render(<ProductSheet item={item} onClose={vi.fn()} onAdd={onAdd} />);
 
-    fireEvent.click(screen.getByText('Spicy'));
-    fireEvent.click(screen.getByText('Cheese'));
-    fireEvent.click(screen.getByLabelText('Увеличить'));
+    await user.click(screen.getByText('Spicy'));
+    await user.click(screen.getByText('Cheese'));
+    await user.click(screen.getByLabelText('Увеличить'));
 
-    expect(screen.getByText('Добавить · 800 ₽')).toBeDefined();
+    expect(screen.getByText('Добавить · 800 ₽')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('Добавить · 800 ₽'));
+    await user.click(screen.getByText('Добавить · 800 ₽'));
 
     expect(onAdd).toHaveBeenCalledWith({
       item,

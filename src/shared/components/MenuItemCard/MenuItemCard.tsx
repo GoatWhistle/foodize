@@ -13,7 +13,7 @@ interface MenuItemCardProps {
   onHaptic?: () => void;
 }
 
-const MenuItemCard = ({ item, onSelect, isRestaurantOpen = true, onHaptic }: MenuItemCardProps) => {
+const MenuItemCardBase = ({ item, onSelect, isRestaurantOpen = true, onHaptic }: MenuItemCardProps) => {
   const icon = getCategoryIcon(item.category, { size: 28, fallback: "cooking" });
   const isClosed = !isRestaurantOpen;
   const unavailable = !item.is_available || isClosed;
@@ -26,7 +26,7 @@ const MenuItemCard = ({ item, onSelect, isRestaurantOpen = true, onHaptic }: Men
 
   return (
     <div
-      className={s.item}
+      className={s['item']}
       style={unavailable ? { opacity: 0.5 } : {}}
       onClick={handleClick}
       role="button"
@@ -34,31 +34,31 @@ const MenuItemCard = ({ item, onSelect, isRestaurantOpen = true, onHaptic }: Men
       onKeyDown={activateOnKey(handleClick)}
       aria-label={`Открыть ${item.name}`}
     >
-      <div className={s.img}>
+      <div className={s['img']}>
         {item.photo_url ? (
           <img src={item.photo_url} alt={item.name} loading="lazy" />
         ) : (
-          <div className={s.imgPlaceholder}>{icon}</div>
+          <div className={s['imgPlaceholder']}>{icon}</div>
         )}
 
-        <span className={s.categoryTag}>{item.category}</span>
+        <span className={s['categoryTag']}>{item.category}</span>
 
         {unavailable && (
-          <div className={s.unavailableOverlay}>
+          <div className={s['unavailableOverlay']}>
             <ProhibitInsetIcon size={24} color="var(--on-photo-dim)" weight="bold" />
           </div>
         )}
       </div>
 
-      <div className={s.info}>
-        <div className={s.name}>{item.name}</div>
-        {item.description && <div className={s.desc}>{item.description}</div>}
+      <div className={s['info']}>
+        <div className={s['name']}>{item.name}</div>
+        {item.description && <div className={s['desc']}>{item.description}</div>}
 
-        <div className={s.footer}>
-          <span className={s.price}>{formatPrice(item.price)}</span>
+        <div className={s['footer']}>
+          <span className={s['price']}>{formatPrice(item.price)}</span>
           {!unavailable && (
             <button
-              className={s.addBtn}
+              className={s['addBtn']}
               onClick={handleClick}
               aria-label={`Добавить ${item.name}`}
             >
@@ -71,4 +71,4 @@ const MenuItemCard = ({ item, onSelect, isRestaurantOpen = true, onHaptic }: Men
   );
 };
 
-export default memo(MenuItemCard);
+export const MenuItemCard = memo(MenuItemCardBase);

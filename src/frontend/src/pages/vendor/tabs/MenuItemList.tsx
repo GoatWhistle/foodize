@@ -1,10 +1,11 @@
 import { PencilSimpleIcon, XIcon } from '@phosphor-icons/react';
 import { useRestaurantStore } from '@shared/store/useRestaurantStore';
 import { menuService } from '@shared/services/menuService';
-import EmptyState from '@shared/components/EmptyState/EmptyState';
+import { EmptyState } from '@shared/components/EmptyState/EmptyState';
 import { CATEGORY_RU, translate } from '@shared/utils/locales';
 import type { MenuItem, Restaurant } from '@shared/types/models';
 import { normalizeOptionGroups, type MenuItemForm } from './VendorMenuTab';
+import { formatPrice } from '@shared/utils/price';
 
 interface MenuItemListProps {
   selectedMenu: MenuItem[];
@@ -15,7 +16,7 @@ interface MenuItemListProps {
   handleDeleteMenuItem: (itemId: string) => void;
 }
 
-export default function MenuItemList({
+export function MenuItemList({
   selectedMenu,
   loading,
   selectedRestaurant,
@@ -72,7 +73,7 @@ export default function MenuItemList({
             <div
               style={{
                 fontWeight: 700,
-                fontSize: '0.9rem',
+                fontSize: "var(--text-base)",
                 display: 'flex',
                 alignItems: 'center',
                 gap: 6,
@@ -84,14 +85,14 @@ export default function MenuItemList({
               {!item.is_available && (
                 <span
                   className="order-status-badge cancelled"
-                  style={{ fontSize: '0.6rem', padding: '2px 6px' }}
+                  style={{ fontSize: "var(--text-xs)", padding: '2px 6px' }}
                 >
                   СТОП
                 </span>
               )}
             </div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-3)' }}>
-              {item.price} ₽ • {translate(CATEGORY_RU, item.category)}
+            <div style={{ fontSize: "var(--text-sm)", color: 'var(--text-3)' }}>
+              {formatPrice(item.price)} • {translate(CATEGORY_RU, item.category)}
             </div>
             {item.option_groups.length > 0 && (
               <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -100,7 +101,7 @@ export default function MenuItemList({
                     key={group.id}
                     className="tag-pill"
                     style={{
-                      fontSize: '0.68rem',
+                      fontSize: "var(--text-xs)",
                       background: 'var(--bg-raised)',
                       color: 'var(--text-3)',
                       border: '1px solid var(--border)',
@@ -148,7 +149,7 @@ export default function MenuItemList({
                 })();
               }}
             >
-              <span style={{ fontSize: '0.72rem', fontWeight: 800 }}>
+              <span style={{ fontSize: "var(--text-sm)", fontWeight: 800 }}>
                 {item.is_available ? 'ВКЛ' : 'ВЫКЛ'}
               </span>
             </button>

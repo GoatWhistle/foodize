@@ -1,8 +1,7 @@
 import { render, screen, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import DisplayBoardPage from '../../pages/display-board/DisplayBoardPage';
-
+import { DisplayBoardPage } from '../../pages/display-board/DisplayBoardPage';
 type WsMessage = { cooking: string[]; ready: string[] };
 type WsMessageHandler = (msg: WsMessage) => void;
 
@@ -97,16 +96,81 @@ describe('DisplayBoardPage', () => {
   });
 
   it('handles restaurant name fetch error gracefully', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(restaurantService.getById).mockRejectedValue(new Error('Network'));
     render$();
+
     await waitFor(() => {
-      expect(restaurantService.getById).toHaveBeenCalled();
+      expect(errorSpy).toHaveBeenCalledWith(
+        '[DisplayBoardPage.getRestaurant]',
+        expect.any(Error)
+      );
     });
+
+    expect(screen.getByText('Готовятся')).toBeInTheDocument();
+    expect(screen.getByText('Готовы к выдаче')).toBeInTheDocument();
+
+    errorSpy.mockRestore();
   });
 
   it('closes WebSocket on unmount', () => {
     const { unmount } = render$();
     unmount();
     expect(mockWsClose).toHaveBeenCalled();
+  });
+
+  it('does not connect when restaurantId is missing', () => {
+    render(
+      <MemoryRouter initialEntries={['/display']}>
+        <Routes>
+          <Route path="/display" element={<DisplayBoardPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    expect(createDisplayBoardWebSocket).not.toHaveBeenCalled();
+    expect(restaurantService.getById).not.toHaveBeenCalled();
+  });
+
+  it('defaults missing cooking and ready arrays to empty', async () => {
+    render$();
+    await act(async () => {
+      wsMessageHandler?.({} as unknown as WsMessage);
+      await Promise.resolve();
+    });
+    const counts = screen.getAllByText('0');
+    expect(counts.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('clears the new-order highlight after the timeout', async () => {
+    vi.useFakeTimers();
+    try {
+      render$();
+      await act(async () => {
+        wsMessageHandler?.({ cooking: ['A-9'], ready: ['B-9'] });
+        await Promise.resolve();
+      });
+      const cooking = screen.getByText('A-9').parentElement as HTMLElement;
+      expect(cooking.style.animation).not.toBe('');
+
+      await act(async () => {
+        vi.advanceTimersByTime(2000);
+        await Promise.resolve();
+      });
+      const cookingAfter = screen.getByText('A-9').parentElement as HTMLElement;
+      expect(cookingAfter.style.animation).toBe('');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('falls back to empty restaurant name', async () => {
+    vi.mocked(restaurantService.getById).mockResolvedValue({
+      data: { data: { name: '' } },
+    } as unknown as Awaited<ReturnType<typeof restaurantService.getById>>);
+    render$();
+    await waitFor(() => {
+      expect(createDisplayBoardWebSocket).toHaveBeenCalled();
+    });
+    expect(screen.getByText('Готовятся')).toBeInTheDocument();
   });
 });

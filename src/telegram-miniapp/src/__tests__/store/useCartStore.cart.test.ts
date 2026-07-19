@@ -158,6 +158,44 @@ describe("useCartStore cart", () => {
     expect(state.cart[0]?.menuItem).toEqual(newItem);
   });
 
+  it("uses the Telegram showConfirm dialog when replacing a cart from another restaurant", async () => {
+    const showConfirm = vi.fn(
+      (_msg: string, cb: (confirmed: boolean) => void) => { cb(true); },
+    );
+    const prevTelegram = window.Telegram;
+    window.Telegram = {
+      WebApp: { showConfirm },
+    };
+    cartServiceMock.updateCart.mockResolvedValue({});
+    const oldItem = { id: "m1", name: "Pizza", price: 100 };
+    const newItem = { id: "m2", name: "Burger", price: 50 };
+
+    useCartStore.setState({
+      cart: [
+        {
+          menuItem: oldItem,
+          quantity: 1,
+          selectedOptionIds: [],
+          selectedOptions: [],
+          lineKey: "m1:",
+        },
+      ],
+      cartRestaurantId: "rest-1",
+    });
+
+    await useCartStore.getState().addToCart(newItem, "rest-2", [], 1);
+
+    expect(showConfirm).toHaveBeenCalledWith(
+      "Заменить корзину?\nТекущие товары будут удалены.",
+      expect.any(Function),
+    );
+    const state = useCartStore.getState();
+    expect(state.cartRestaurantId).toBe("rest-2");
+    expect(state.cart[0]?.menuItem).toEqual(newItem);
+
+    window.Telegram = prevTelegram as NonNullable<typeof window.Telegram>;
+  });
+
   it("should not replace cart if different restaurant confirmation is declined", async () => {
     window.confirm = vi.fn(() => false);
     const oldItem = { id: "m1", name: "Pizza", price: 100 };

@@ -1,5 +1,6 @@
 import uuid
 from datetime import UTC, datetime, timedelta
+from datetime import time as _time
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -10,6 +11,7 @@ from features.orders.services.order_utils import (
     is_open_at,
     is_ordering_paused,
     make_request_hash,
+    safe_publish,
     validate_requested_pickup_at,
     validate_transition,
 )
@@ -111,44 +113,48 @@ def _make_wh(
 ) -> MagicMock:
     wh = MagicMock()
     wh.day_of_week = day_of_week
-    wh.open_time = open_time
-    wh.close_time = close_time
+    open_h, open_m = (int(p) for p in open_time.split(":"))
+    close_h, close_m = (int(p) for p in close_time.split(":"))
+    wh.open_time = _time(open_h, open_m)
+    wh.close_time = _time(close_h, close_m)
     wh.is_closed = is_closed
     return wh
 
 
+_FIXED_NOW = datetime(2026, 7, 15, 12, 0, tzinfo=UTC)
+
+
 def test_is_open_at_no_hours() -> None:
-    result = is_open_at([], datetime.now(UTC))
+    result = is_open_at([], _FIXED_NOW)
     assert result is None
 
 
 def test_is_open_at_no_matching_day() -> None:
-    now = datetime.now(UTC)
-    other_dow = (now.weekday() + 1) % 7
+    other_dow = (_FIXED_NOW.weekday() + 1) % 7
     wh = _make_wh(other_dow, "09:00", "22:00")
-    result = is_open_at([wh], now)
+    result = is_open_at([wh], _FIXED_NOW)
     assert result is None
 
 
 def test_is_open_at_closed_flag() -> None:
-    now = datetime.now(UTC)
-    wh = _make_wh(now.weekday(), "00:00", "23:59", is_closed=True)
-    result = is_open_at([wh], now)
+    wh = _make_wh(_FIXED_NOW.weekday(), "09:00", "22:00", is_closed=True)
+    result = is_open_at([wh], _FIXED_NOW)
     assert result is False
 
 
 def test_is_open_at_within_hours() -> None:
-    now = datetime.now(UTC)
-    dow = now.weekday()
-    wh = _make_wh(dow, "00:00", "23:59")
-    result = is_open_at([wh], now)
+    wh = _make_wh(_FIXED_NOW.weekday(), "09:00", "22:00")
+    result = is_open_at([wh], _FIXED_NOW)
     assert result is True
 
 
-@pytest.mark.asyncio
-async def test_safe_publish_redis_failure() -> None:
-    from features.orders.services.order_utils import safe_publish
+def test_is_open_at_before_opening() -> None:
+    wh = _make_wh(_FIXED_NOW.weekday(), "13:00", "22:00")
+    result = is_open_at([wh], _FIXED_NOW)
+    assert result is False
 
+
+async def test_safe_publish_redis_failure() -> None:
     mock_cache = MagicMock()
     mock_cache.publish = AsyncMock(side_effect=Exception("redis down"))
 

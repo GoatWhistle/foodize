@@ -3,6 +3,7 @@ import { CATEGORY_RU, translate } from '@shared/utils/locales';
 import type { Order } from '@shared/types/models';
 
 import { optionLabel } from './orderDetails.helpers';
+import { formatPrice } from '@shared/utils/price';
 
 export const OrderItemsList = ({ order }: { order: Order }) => (
   <div>
@@ -43,7 +44,7 @@ export const OrderItemsList = ({ order }: { order: Order }) => (
               <div
                 style={{
                   color: 'var(--text-3)',
-                  fontSize: '0.74rem',
+                  fontSize: "var(--text-sm)",
                   marginTop: 2,
                 }}
               >
@@ -55,11 +56,11 @@ export const OrderItemsList = ({ order }: { order: Order }) => (
               <div
                 style={{
                   color: 'var(--text-3)',
-                  fontSize: '0.74rem',
+                  fontSize: "var(--text-sm)",
                   marginTop: 2,
                 }}
               >
-                {item.price_at_purchase} ₽
+                {formatPrice(item.price_at_purchase)}
               </div>
             </div>
           </div>
@@ -68,7 +69,7 @@ export const OrderItemsList = ({ order }: { order: Order }) => (
               style={{
                 marginTop: 8,
                 color: 'var(--text-3)',
-                fontSize: '0.78rem',
+                fontSize: "var(--text-sm)",
                 lineHeight: 1.45,
               }}
             >

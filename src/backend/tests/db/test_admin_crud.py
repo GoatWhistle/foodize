@@ -89,7 +89,6 @@ async def seeded_db(db_session: AsyncSession) -> dict[str, Any]:
     }
 
 
-@pytest.mark.asyncio
 async def test_get_all_users_returns_all(
     db_session: AsyncSession, seeded_db: dict[str, Any]
 ) -> None:
@@ -97,7 +96,6 @@ async def test_get_all_users_returns_all(
     assert len(users) == 2
 
 
-@pytest.mark.asyncio
 async def test_get_all_users_filter_by_role(
     db_session: AsyncSession, seeded_db: dict[str, Any]
 ) -> None:
@@ -110,13 +108,11 @@ async def test_get_all_users_filter_by_role(
     assert customers[0].id == seeded_db["customer"].id
 
 
-@pytest.mark.asyncio
 async def test_count_all_users(db_session: AsyncSession, seeded_db: dict[str, Any]) -> None:
     assert await count_all_users(db_session) == 2
     assert await count_all_users(db_session, role=UserRole.CUSTOMER) == 1
 
 
-@pytest.mark.asyncio
 async def test_get_user_by_id(db_session: AsyncSession, seeded_db: dict[str, Any]) -> None:
     customer = seeded_db["customer"]
     fetched = await get_user_by_id(db_session, customer.id)
@@ -124,7 +120,6 @@ async def test_get_user_by_id(db_session: AsyncSession, seeded_db: dict[str, Any
     assert fetched.id == customer.id
 
 
-@pytest.mark.asyncio
 async def test_deactivate_user(db_session: AsyncSession, seeded_db: dict[str, Any]) -> None:
     customer = seeded_db["customer"]
     deactivated = await deactivate_user(db_session, customer)
@@ -135,14 +130,12 @@ async def test_deactivate_user(db_session: AsyncSession, seeded_db: dict[str, An
     assert fetched.is_active is False
 
 
-@pytest.mark.asyncio
 async def test_get_all_orders(db_session: AsyncSession, seeded_db: dict[str, Any]) -> None:
     orders = await get_all_orders(db_session)
     assert len(orders) == 1
     assert orders[0].id == seeded_db["order"].id
 
 
-@pytest.mark.asyncio
 async def test_get_all_orders_filter_by_status(
     db_session: AsyncSession, seeded_db: dict[str, Any]
 ) -> None:
@@ -153,13 +146,11 @@ async def test_get_all_orders_filter_by_status(
     assert len(accepted) == 0
 
 
-@pytest.mark.asyncio
 async def test_count_all_orders(db_session: AsyncSession, seeded_db: dict[str, Any]) -> None:
     assert await count_all_orders(db_session) == 1
     assert await count_all_orders(db_session, status=OrderStatus.ACCEPTED) == 0
 
 
-@pytest.mark.asyncio
 async def test_get_platform_stats(db_session: AsyncSession, seeded_db: dict[str, Any]) -> None:
     stats = await get_platform_stats(db_session)
 

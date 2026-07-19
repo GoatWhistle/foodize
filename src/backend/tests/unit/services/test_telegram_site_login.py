@@ -4,7 +4,6 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from fastapi import Response
 
 from features.telegram.site_login import (
     request_site_login_code,
@@ -48,7 +47,6 @@ class _HttpClient:
         return None
 
 
-@pytest.mark.asyncio
 async def test_request_site_login_code_saves_code_and_sends_telegram_message() -> None:
     cache = MagicMock()
     cache.set = AsyncMock()
@@ -77,7 +75,6 @@ async def test_request_site_login_code_saves_code_and_sends_telegram_message() -
     assert "000042" in _HttpClient.post.call_args.kwargs["json"]["text"]
 
 
-@pytest.mark.asyncio
 async def test_request_site_login_code_silently_ignores_unknown_phone() -> None:
     cache = MagicMock()
     cache.incr_with_expire = AsyncMock(return_value=1)
@@ -97,7 +94,6 @@ async def test_request_site_login_code_silently_ignores_unknown_phone() -> None:
     _HttpClient.post.assert_not_awaited()
 
 
-@pytest.mark.asyncio
 async def test_verify_site_login_code_deletes_code_and_issues_tokens() -> None:
     user = _user()
     cache = MagicMock()
@@ -122,7 +118,7 @@ async def test_verify_site_login_code_deletes_code_and_issues_tokens() -> None:
         issue_tokens.return_value.access_token = "access"
         issue_tokens.return_value.refresh_token = "refresh"
         issue_tokens.return_value.token_type = "Bearer"
-        result = await verify_site_login_code(AsyncMock(), "79001234567", "123456", Response())
+        result = await verify_site_login_code(AsyncMock(), "79001234567", "123456")
 
     assert result.access_token == "access"
     assert result.refresh_token == "refresh"
@@ -131,7 +127,6 @@ async def test_verify_site_login_code_deletes_code_and_issues_tokens() -> None:
     assert "telegram_site_login:+79001234567" in delete_keys
 
 
-@pytest.mark.asyncio
 async def test_verify_site_login_code_rejects_wrong_code() -> None:
     cache = MagicMock()
 
@@ -148,10 +143,9 @@ async def test_verify_site_login_code_rejects_wrong_code() -> None:
 
     with patch("features.telegram.site_login.get_redis_cache", return_value=cache):
         with pytest.raises(AuthException, match="Invalid Telegram code"):
-            await verify_site_login_code(AsyncMock(), "79001234567", "000000", Response())
+            await verify_site_login_code(AsyncMock(), "79001234567", "000000")
 
 
-@pytest.mark.asyncio
 async def test_set_site_password_hashes_only_empty_password() -> None:
     user = _user(hashed_password=None)
     session = AsyncMock()
@@ -166,7 +160,6 @@ async def test_set_site_password_hashes_only_empty_password() -> None:
     session.refresh.assert_awaited_once_with(user)
 
 
-@pytest.mark.asyncio
 async def test_set_site_password_rejects_existing_password() -> None:
     with pytest.raises(AuthException, match="Password is already set"):
         await set_site_password(AsyncMock(), _user(hashed_password="hashed"), "newpass")

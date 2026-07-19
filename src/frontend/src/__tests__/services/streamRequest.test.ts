@@ -178,7 +178,7 @@ describe('streamSseRequest', () => {
     expect(init.headers).toEqual(
       expect.objectContaining({ 'Content-Type': 'application/json' })
     );
-    expect((init.headers as Record<string, string>).Authorization).toBeUndefined();
+    expect((init.headers as Record<string, string>)['Authorization']).toBeUndefined();
     expect(init.credentials).toBe('include');
   });
 
@@ -212,10 +212,10 @@ describe('streamSseRequest', () => {
     if (!firstCall || !secondCall) throw new Error('fetch was not called twice');
     const firstInit = firstCall[1] as RequestInit;
     const secondInit = secondCall[1] as RequestInit;
-    expect((firstInit.headers as Record<string, string>).Authorization).toBe(
+    expect((firstInit.headers as Record<string, string>)['Authorization']).toBe(
       'Bearer stale'
     );
-    expect((secondInit.headers as Record<string, string>).Authorization).toBe(
+    expect((secondInit.headers as Record<string, string>)['Authorization']).toBe(
       'Bearer fresh'
     );
     expect(onChunk).toHaveBeenCalledWith('retried');

@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 
 vi.mock('../../services/api', () => ({
-  default: {
+  api: {
     get: vi.fn().mockResolvedValue({ data: {} }),
     post: vi.fn().mockResolvedValue({ data: {} }),
   },
@@ -12,7 +12,7 @@ vi.mock('@shared/services/streamRequest.js', () => ({
 }));
 
 import { aiAdvisorService } from '../../services/aiAdvisorService';
-import api from '../../services/api';
+import { api } from '../../services/api';
 import { streamSseRequest } from '@shared/services/streamRequest.js';
 
 describe('aiAdvisorService', () => {
@@ -49,5 +49,17 @@ describe('aiAdvisorService', () => {
       { messages: [], restaurant_id: null },
       expect.anything()
     );
+  });
+
+  it('getInsights rejects when api responds with a 500', async () => {
+    (vi.mocked(api).get as Mock).mockRejectedValueOnce({ response: { status: 500 } });
+    await expect(aiAdvisorService.getInsights()).rejects.toMatchObject({
+      response: { status: 500 },
+    });
+  });
+
+  it('streamChat rejects when streamSseRequest fails', async () => {
+    vi.mocked(streamSseRequest).mockRejectedValueOnce(new Error('Ошибка 500'));
+    await expect(aiAdvisorService.streamChat([], {})).rejects.toThrow('Ошибка 500');
   });
 });

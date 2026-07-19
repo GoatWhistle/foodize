@@ -21,6 +21,12 @@
 
 .rippleRing {
   position: absolute;
+  width: 80px;
+  height: 80px;
+  top: 50%;
+  left: 50%;
+  margin-top: -40px;
+  margin-left: -40px;
   border-radius: 50%;
   background: var(--accent-subtle);
   animation: ripple-badge 1.8s var(--ease-out) infinite;
@@ -59,4 +65,43 @@
 
 .readyText {
   animation: bounceIn 0.7s var(--ease-spring) forwards;
+}
+
+.pendingIcon {
+  position: relative;
+  z-index: 1;
+}
+
+.pendingTitle {
+  margin-top: 20px;
+  font-weight: 800;
+  font-size: var(--text-xl);
+  letter-spacing: -0.03em;
+}
+
+.subtitle {
+  color: var(--text-3);
+  margin-top: 8px;
+}
+
+.subtitleStrong {
+  color: var(--text-3);
+  margin-top: 8px;
+  font-weight: 600;
+}
+
+.readyIcon {
+  margin-bottom: 12px;
+}
+
+.readyTitle {
+  font-weight: 800;
+  font-size: var(--text-2xl);
+  letter-spacing: -0.04em;
+}
+
+.cancelledTitle {
+  font-weight: 800;
+  font-size: var(--text-xl);
+  letter-spacing: -0.03em;
 }

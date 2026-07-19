@@ -50,7 +50,6 @@ async def restaurant(db_session: AsyncSession) -> Restaurant:
     return await create_restaurant(db_session, rest_data, vendor_profile.id)
 
 
-@pytest.mark.asyncio
 async def test_create_and_get_menu_item(db_session: AsyncSession, restaurant: Restaurant) -> None:
     item_create = MenuItemCreate(
         name="Sushi", description="Fish", price=800, category=Category.SHAURMA
@@ -77,7 +76,6 @@ async def test_create_and_get_menu_item(db_session: AsyncSession, restaurant: Re
     assert response.option_groups == []
 
 
-@pytest.mark.asyncio
 async def test_update_menu_item(db_session: AsyncSession, restaurant: Restaurant) -> None:
     item = await create_menu_item(
         db_session,
@@ -96,7 +94,6 @@ async def test_update_menu_item(db_session: AsyncSession, restaurant: Restaurant
     assert updated.category == Category.SHAURMA.value
 
 
-@pytest.mark.asyncio
 async def test_delete_menu_item_soft_deletes(
     db_session: AsyncSession, restaurant: Restaurant
 ) -> None:
@@ -121,7 +118,6 @@ async def test_delete_menu_item_soft_deletes(
     assert persisted.is_deleted is True
 
 
-@pytest.mark.asyncio
 async def test_menu_item_option_group_crud(
     db_session: AsyncSession, restaurant: Restaurant
 ) -> None:

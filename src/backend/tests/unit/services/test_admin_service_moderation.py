@@ -39,7 +39,6 @@ def _make_mock_restaurant(rest_id: uuid.UUID | None = None) -> MagicMock:
 
 
 class TestModerateVendor:
-    @pytest.mark.asyncio
     async def test_success_logs_audit(self) -> None:
         vendor = _make_mock_vendor()
         updated_vendor = _make_mock_vendor(vendor.id)
@@ -65,7 +64,6 @@ class TestModerateVendor:
             mock_log.assert_awaited_once()
             assert mock_log.call_args[1]["action"] == "MODERATE_VENDOR"
 
-    @pytest.mark.asyncio
     async def test_not_found(self) -> None:
         with patch(
             "features.admin.crud.get_vendor_by_id", new_callable=AsyncMock, return_value=None
@@ -75,7 +73,6 @@ class TestModerateVendor:
 
 
 class TestModerateRestaurant:
-    @pytest.mark.asyncio
     async def test_success_logs_audit(self) -> None:
         restaurant = _make_mock_restaurant()
         updated_restaurant = _make_mock_restaurant(restaurant.id)
@@ -102,7 +99,6 @@ class TestModerateRestaurant:
             mock_log.assert_awaited_once()
             assert mock_log.call_args[1]["action"] == "MODERATE_RESTAURANT"
 
-    @pytest.mark.asyncio
     async def test_not_found(self) -> None:
         session = AsyncMock()
         session.get = AsyncMock(return_value=None)

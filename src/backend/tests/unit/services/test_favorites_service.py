@@ -4,7 +4,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from features.favorites.exceptions import AlreadyFavoritedException, FavoriteNotFoundException
 from features.favorites.service import add_favorite, get_my_favorites, remove_favorite
+from features.restaurants.exceptions import RestaurantNotFoundException
 
 
 def _make_favorite() -> MagicMock:
@@ -22,9 +24,7 @@ def _make_favorite() -> MagicMock:
 
 
 class TestAddFavorite:
-    @pytest.mark.asyncio
     async def test_restaurant_not_found(self) -> None:
-        from features.restaurants.exceptions import RestaurantNotFoundException
 
         with (
             patch(
@@ -36,9 +36,7 @@ class TestAddFavorite:
             with pytest.raises(RestaurantNotFoundException):
                 await add_favorite(MagicMock(), uuid.uuid4(), uuid.uuid4())
 
-    @pytest.mark.asyncio
     async def test_already_favorited(self) -> None:
-        from features.favorites.exceptions import AlreadyFavoritedException
 
         with (
             patch(
@@ -55,7 +53,6 @@ class TestAddFavorite:
             with pytest.raises(AlreadyFavoritedException):
                 await add_favorite(MagicMock(), uuid.uuid4(), uuid.uuid4())
 
-    @pytest.mark.asyncio
     async def test_success(self) -> None:
         fav = _make_favorite()
 
@@ -81,9 +78,7 @@ class TestAddFavorite:
 
 
 class TestRemoveFavorite:
-    @pytest.mark.asyncio
     async def test_not_found(self) -> None:
-        from features.favorites.exceptions import FavoriteNotFoundException
 
         with patch(
             "features.favorites.service.favorites_crud.get_favorite",
@@ -93,7 +88,6 @@ class TestRemoveFavorite:
             with pytest.raises(FavoriteNotFoundException):
                 await remove_favorite(MagicMock(), uuid.uuid4(), uuid.uuid4())
 
-    @pytest.mark.asyncio
     async def test_success(self) -> None:
         fav = MagicMock()
         delete_mock = AsyncMock()
@@ -111,7 +105,6 @@ class TestRemoveFavorite:
 
 
 class TestGetMyFavorites:
-    @pytest.mark.asyncio
     async def test_success(self) -> None:
         fav = _make_favorite()
 
@@ -131,7 +124,6 @@ class TestGetMyFavorites:
             assert len(data) == 1
             assert total == 1
 
-    @pytest.mark.asyncio
     async def test_empty(self) -> None:
         with (
             patch(

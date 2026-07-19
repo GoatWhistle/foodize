@@ -408,3 +408,94 @@ ssh -L 3000:127.0.0.1:3000 user@<SERVER_IP>
 - [ ] Наружу открыты только 22/80/443 (`sudo ufw status`).
 - [ ] S3-бакет: публичный только на чтение, ключи с минимальными правами.
 - [ ] Сертификат Let's Encrypt валиден и автопродляется.
+- [ ] `/api/v1/telegram/bot/*` недоступен снаружи (см. раздел 15).
+
+---
+
+## 15. TLS + HSTS, изоляция bot-эндпоинтов
+
+Готовый пример хардненного host-nginx с TLS 1.2/1.3 и HSTS лежит в
+`deploy/nginx/foodize-tls.conf.example`. Скопируй в
+`/etc/nginx/sites-available/foodize`, подставь `server_name` и пути к сертификатам,
+затем `sudo nginx -t && sudo systemctl reload nginx`.
+
+Ключевое:
+
+- `add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;`
+  — форсит HTTPS на 2 года (backend дублирует HSTS через `SecurityHeadersMiddleware`
+  вне `development`, но терминирующий upstream обязан ставить заголовок сам).
+- Блок `location /api/v1/telegram/bot/ { deny all; return 404; }` закрывает
+  bot-эндпоинты снаружи. Они рассчитаны только на вызовы бота по внутренней
+  docker-сети (`foodize-network`) и защищены shared secret
+  (`TELEGRAM__BOT_API_SECRET`); edge-deny — это defense in depth.
+- CSRF: backend выдаёт cookie `csrf_token` (не httpOnly) при логине/refresh и
+  требует заголовок `X-CSRF-Token` на мутациях под cookie-аутентификацией. Bearer-
+  и bot-запросы исключены. Фронтовый axios-клиент шлёт заголовок автоматически.
+
+### Ротация `TELEGRAM__BOT_API_SECRET` / `BOT_WEBHOOK_SECRET`
+
+1. Сгенерируй новое значение: `openssl rand -hex 32`.
+2. Обнови `.env` (оба сервиса читают одно значение).
+3. Перезапусти backend и бот одновременно, чтобы не было окна рассинхрона:
+   ```bash
+   docker compose -f docker-compose.prod.yaml up -d backend telegram-bot
+   ```
+4. Проверь `getWebhookInfo` (раздел 11) — ошибок быть не должно.
+
+### Метрики и документация
+
+- `/metrics` защищён токеном: задай `RUN__METRICS_TOKEN` в `.env`, тогда Prometheus
+  должен слать `Authorization: Bearer <token>` (см. `docker-compose.monitoring.yml`).
+  Без токена endpoint отвечает как раньше (порт слушается на loopback).
+- Swagger/Redoc/OpenAPI управляются отдельным флагом `DOCS__ENABLED` (по умолчанию
+  `false`), независимым от `DEBUG`. Прод-guard'ы безопасности от `DEBUG` не зависят.
+
+---
+
+## 16. Алерты (Alertmanager → Telegram)
+
+`docker-compose.monitoring.yml` поднимает Alertmanager, Prometheus шлёт в него
+срабатывания (`alerting:` в `prometheus.yml`). Маршрут доставки — Telegram.
+
+```bash
+# в .env для monitoring-стека:
+#   ALERTMANAGER_TELEGRAM_BOT_TOKEN=...   (отдельный бот для алертов)
+#   ALERTMANAGER_TELEGRAM_CHAT_ID=...     (id чата/канала для алертов)
+docker compose -f docker-compose.monitoring.yml up -d
+# Alertmanager на 127.0.0.1:9093 (наружу не открывать)
+```
+
+Шаблон конфигурации — `alertmanager.yml` (плейсхолдеры подставляются из env при
+старте контейнера).
+
+---
+
+## 17. Проверка backup/restore на staging
+
+Перед тем как полагаться на бэкапы в проде, прогони цикл на staging:
+
+```bash
+# 1. Сделать бэкап (авто-детект контейнера pg, опц. шифрование gpg/openssl)
+#    Шифрование включается заданием одного из:
+#      BACKUP_GPG_RECIPIENT=<key-id>            (gpg --encrypt)
+#      BACKUP_ENCRYPTION_PASSPHRASE=<passphrase> (openssl AES-256)
+#    Offsite (опц.): BACKUP_S3_BUCKET + aws/mc CLI.
+bash tools/backup.sh
+
+# 2. Сломать данные (на staging!), затем восстановить
+bash tools/restore.sh ./backups/<файл.dump[.enc|.gpg]> --yes
+
+# 3. Убедиться, что данные вернулись (restore делает DROP DATABASE ... WITH (FORCE)
+#    и pg_restore из дампа).
+```
+
+CI-job `backup-restore-ci` в `.github/workflows/ci.yml` гоняет этот цикл на
+эфемерном Postgres с canary-записью — используй его как эталон.
+
+### Публикация образов и деплой по тегу
+
+`.github/workflows/release.yml` по git-тегу `v*` собирает образы через buildx,
+сканирует Trivy (HIGH/CRITICAL), пушит в GHCR (`ghcr.io/<repo>/<service>`) и
+запускает шаблонный `deploy`-job. Для реального деплоя задай секреты
+`DEPLOY_HOST` / `DEPLOY_USER` / `DEPLOY_SSH_KEY` и замени тело `deploy`-шага на
+`ssh + docker compose pull/up` (пример — в самом workflow).

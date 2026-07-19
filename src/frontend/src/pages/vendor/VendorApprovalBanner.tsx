@@ -4,7 +4,7 @@ interface VendorApprovalBannerProps {
   vendorProfile: VendorProfile | null;
 }
 
-export default function VendorApprovalBanner({ vendorProfile }: VendorApprovalBannerProps) {
+export function VendorApprovalBanner({ vendorProfile }: VendorApprovalBannerProps) {
   if (!vendorProfile || vendorProfile.approval_status === 'APPROVED') return null;
 
   const isPending = vendorProfile.approval_status === 'PENDING';
@@ -24,7 +24,7 @@ export default function VendorApprovalBanner({ vendorProfile }: VendorApprovalBa
       </div>
       <div
         style={{
-          fontSize: '0.85rem',
+          fontSize: "var(--text-base)",
           color: 'var(--text-3)',
           marginBottom: vendorProfile.rejection_reason ? 8 : 0,
         }}
@@ -34,7 +34,7 @@ export default function VendorApprovalBanner({ vendorProfile }: VendorApprovalBa
           : 'К сожалению, ваш профиль не прошел модерацию.'}
       </div>
       {vendorProfile.rejection_reason && (
-        <div style={{ fontSize: '0.85rem', color: 'var(--error)', fontWeight: 500 }}>
+        <div style={{ fontSize: "var(--text-base)", color: 'var(--error)', fontWeight: 500 }}>
           Причина: {vendorProfile.rejection_reason}
         </div>
       )}

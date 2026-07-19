@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
 from features.auth import service
+from features.auth.cookies import clear_auth_cookies, set_auth_cookies
 from features.auth.schemas import TokenResponse, UserLogin
 from features.users.schemas import UserCreate, UserRead
 from infra.cache.redis import RedisCache, redis_cache_dependency
@@ -35,7 +36,8 @@ async def create_login(
     user_in: UserLogin,
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[TokenResponse]:
-    result = await service.login_user(session=session, user_data=user_in, response=response)
+    result = await service.login_user(session=session, user_data=user_in)
+    set_auth_cookies(response, result)
     return build_response(result)
 
 
@@ -47,9 +49,8 @@ async def create_refresh(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
     cache: RedisCache = Depends(redis_cache_dependency),
 ) -> SuccessResponse[TokenResponse]:
-    result = await service.refresh_user_token(
-        request=request, response=response, session=session, cache=cache
-    )
+    result = await service.refresh_user_token(request=request, session=session, cache=cache)
+    set_auth_cookies(response, result)
     return build_response(result)
 
 
@@ -60,4 +61,5 @@ async def create_logout(
     response: Response,
     cache: RedisCache = Depends(redis_cache_dependency),
 ) -> None:
-    await service.logout_user(request=request, response=response, cache=cache)
+    await service.logout_user(request=request, cache=cache)
+    clear_auth_cookies(response)

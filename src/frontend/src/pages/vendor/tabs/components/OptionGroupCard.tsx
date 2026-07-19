@@ -20,24 +20,24 @@ export function OptionGroupCard({
   onAddOption,
 }: OptionGroupCardProps) {
   return (
-    <div className={styles.group}>
-      <div className={styles.row}>
+    <div className={styles['group']}>
+      <div className={styles['row']}>
         <input
-          className={`form-input ${styles.grow}`}
+          className={`form-input ${styles['grow']}`}
           placeholder="Название группы"
           value={group.name}
           onChange={(e) => { onPatchGroup({ name: e.target.value }); }}
         />
         <button
           type="button"
-          className={`btn btn-secondary btn-sm ${styles.dangerBtn}`}
+          className={`btn btn-secondary btn-sm ${styles['dangerBtn']}`}
           onClick={onRemoveGroup}
         >
           <XIcon size={14} />
         </button>
       </div>
 
-      <div className={styles.grid2}>
+      <div className={styles['grid2']}>
         <select
           className="form-input"
           value={group.selection_type}
@@ -63,7 +63,7 @@ export function OptionGroupCard({
         />
       </div>
 
-      <label className={styles.checkboxRow}>
+      <label className={styles['checkboxRow']}>
         <input
           type="checkbox"
           checked={group.is_required}
@@ -78,15 +78,15 @@ export function OptionGroupCard({
       </label>
 
       {group.options.map((option, optionIndex) => (
-        <div key={option.draftId} className={styles.row}>
+        <div key={option.draftId} className={styles['row']}>
           <input
-            className={`form-input ${styles.grow}`}
+            className={`form-input ${styles['grow']}`}
             placeholder="Опция"
             value={option.name}
             onChange={(e) => { onPatchOption(optionIndex, { name: e.target.value }); }}
           />
           <input
-            className={`form-input ${styles.priceInput}`}
+            className={`form-input ${styles['priceInput']}`}
             type="number"
             min="0"
             placeholder="+₽"
@@ -95,7 +95,7 @@ export function OptionGroupCard({
           />
           <button
             type="button"
-            className={`btn btn-secondary btn-sm ${styles.dangerBtn}`}
+            className={`btn btn-secondary btn-sm ${styles['dangerBtn']}`}
             onClick={() => { onRemoveOption(optionIndex); }}
           >
             <XIcon size={14} />

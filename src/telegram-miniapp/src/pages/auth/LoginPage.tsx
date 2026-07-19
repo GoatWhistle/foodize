@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
-import TelegramLogo from "@shared/components/BrandIcons/TelegramLogo";
-import FoodizeLogo from "@shared/components/FoodizeLogo/FoodizeLogo";
+import { TelegramLogo } from "@shared/components/BrandIcons/TelegramLogo";
+import { FoodizeLogo } from "@shared/components/FoodizeLogo/FoodizeLogo";
 import { authExistingUser, initTelegramApp } from "../../telegram/init";
 import {
   getTelegramInitData,
@@ -18,7 +18,7 @@ interface LoginPageProps {
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
-export default function LoginPage({ initData, onSuccess }: LoginPageProps) {
+export function LoginPage({ initData, onSuccess }: LoginPageProps) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -75,11 +75,11 @@ export default function LoginPage({ initData, onSuccess }: LoginPageProps) {
         await finishTelegramAuth(currentInitData);
         return;
       } catch (err) {
-        const e = err as { response?: { status?: number }; message?: string };
+        const authError = err as { response?: { status?: number }; message?: string };
         console.warn(
           "[handleTelegramLogin] finishTelegramAuth failed:",
-          e.response?.status,
-          e.message,
+          authError.response?.status,
+          authError.message,
         );
       }
 
@@ -109,23 +109,23 @@ export default function LoginPage({ initData, onSuccess }: LoginPageProps) {
   };
 
   return (
-    <div className={s.page}>
-      <div className={s.brand}>
-        <div className={s.logo}>
+    <div className={s['page']}>
+      <div className={s['brand']}>
+        <div className={s['logo']}>
           <FoodizeLogo size={30} />
         </div>
-        <h1 className={s.title}>Вход через Telegram</h1>
-        <p className={s.subtitle}>
+        <h1 className={s['title']}>Вход через Telegram</h1>
+        <p className={s['subtitle']}>
           Нажмите кнопку ниже, чтобы вернуться в аккаунт
         </p>
       </div>
 
-      <div className={s.form}>
+      <div className={s['form']}>
         {error && <div className="form-error">{error}</div>}
 
         <button
           type="button"
-          className={`btn btn-primary btn-full ${s.telegramLogin}`}
+          className={`btn btn-primary btn-full ${s['telegramLogin']}`}
           disabled={loading}
           onClick={() => {
             void handleTelegramLogin();

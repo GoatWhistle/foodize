@@ -84,14 +84,12 @@ class TestBuildAdvisorExecutor:
     def executor(self, vendor: MagicMock) -> ToolExecutor:
         return build_advisor_executor(vendor)
 
-    @pytest.mark.asyncio
     async def test_unknown_tool(self, executor: ToolExecutor) -> None:
         call = ToolCall(id="t1", name="nonexistent", arguments={})
         result = json.loads(await executor(call))
         assert "error" in result
         assert "Unknown tool" in result["error"]
 
-    @pytest.mark.asyncio
     async def test_sales_summary(self, session: AsyncMock, vendor: MagicMock) -> None:
         finance = _make_finance_data()
         execute = build_advisor_executor(vendor)
@@ -107,7 +105,6 @@ class TestBuildAdvisorExecutor:
         assert len(result["top_items"]) == 1
         assert result["top_items"][0]["name"] == "Шаурма"
 
-    @pytest.mark.asyncio
     async def test_peak_hours(self, session: AsyncMock, vendor: MagicMock) -> None:
         advanced = _make_advanced_data()
         execute = build_advisor_executor(vendor)
@@ -121,7 +118,6 @@ class TestBuildAdvisorExecutor:
         assert "hourly_load" in result
         assert result["hourly_load"][0]["hour"] == "12"
 
-    @pytest.mark.asyncio
     async def test_category_breakdown(self, session: AsyncMock, vendor: MagicMock) -> None:
         advanced = _make_advanced_data()
         execute = build_advisor_executor(vendor)
@@ -135,7 +131,6 @@ class TestBuildAdvisorExecutor:
         assert "category_revenue" in result
         assert result["category_revenue"][0]["revenue"] == 50000
 
-    @pytest.mark.asyncio
     async def test_top_and_bottom_items(self, session: AsyncMock, vendor: MagicMock) -> None:
         finance = _make_finance_data()
         bottom = [
@@ -166,7 +161,6 @@ class TestBuildAdvisorExecutor:
         assert "bottom_items" in result
         assert result["bottom_items"][0]["name"] == "Редкость"
 
-    @pytest.mark.asyncio
     async def test_get_menu(self, session: AsyncMock, vendor: MagicMock) -> None:
         menu_items = [
             {
@@ -188,7 +182,6 @@ class TestBuildAdvisorExecutor:
         assert "items" in result
         assert result["items"][0]["name"] == "Бургер"
 
-    @pytest.mark.asyncio
     async def test_get_reviews_summary(self, session: AsyncMock, vendor: MagicMock) -> None:
         reviews = {
             "average_rating": 4.5,
@@ -206,7 +199,6 @@ class TestBuildAdvisorExecutor:
             result = json.loads(await execute(call))
         assert result["average_rating"] == 4.5
 
-    @pytest.mark.asyncio
     async def test_caching_advanced(self, session: AsyncMock, vendor: MagicMock) -> None:
         advanced = _make_advanced_data()
         execute = build_advisor_executor(vendor)
@@ -220,7 +212,6 @@ class TestBuildAdvisorExecutor:
             await execute(call)
             mock_adv.assert_awaited_once()
 
-    @pytest.mark.asyncio
     async def test_caching_finance(self, session: AsyncMock, vendor: MagicMock) -> None:
         finance = _make_finance_data()
         execute = build_advisor_executor(vendor)
@@ -234,7 +225,6 @@ class TestBuildAdvisorExecutor:
             await execute(call)
             mock_fin.assert_awaited_once()
 
-    @pytest.mark.asyncio
     async def test_default_restaurant_id_used(self, session: AsyncMock, vendor: MagicMock) -> None:
         default_rid = uuid.uuid4()
         finance = _make_finance_data()
@@ -249,7 +239,6 @@ class TestBuildAdvisorExecutor:
             _, kwargs = mock_fin.call_args
             assert kwargs.get("restaurant_id") == default_rid
 
-    @pytest.mark.asyncio
     async def test_explicit_restaurant_id_overrides_default(self, session: AsyncMock) -> None:
         default_rid = uuid.uuid4()
         explicit_rid = uuid.uuid4()

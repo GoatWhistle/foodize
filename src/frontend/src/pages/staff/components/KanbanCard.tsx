@@ -1,10 +1,12 @@
 import type { DragEvent } from 'react';
 import { FireIcon, TimerIcon, ChatTextIcon } from '@phosphor-icons/react';
 import { getOrderStatusStyle, getOrderStatusLabel } from '@shared/utils/orderStatus';
-import useElapsedSeconds from '../../../hooks/useElapsedSeconds';
+import { useElapsedSeconds } from '../../../hooks/useElapsedSeconds';
 import type { OrderItemOption } from '@shared/types/models';
 import type { StaffOrder } from '../types';
 import { KanbanCardActions } from './KanbanCardActions';
+import { formatPrice } from '@shared/utils/price';
+import s from './KanbanCard.module.css';
 
 const NEXT_STATUS: Record<string, string | undefined> = {
   PENDING: 'ACCEPTED',
@@ -48,7 +50,7 @@ interface KanbanCardProps {
   onDragEnd: () => void;
 }
 
-const KanbanCard = ({
+export const KanbanCard = ({
   order,
   onAdvance,
   onCancel,
@@ -81,55 +83,25 @@ const KanbanCard = ({
       aria-label={`Заказ №${getOrderDisplayId(order)}, статус: ${getOrderStatusLabel(order.status)}`}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
+      className={s['card']}
       style={{
-        background: 'var(--bg-card)',
-        border: `1px solid var(--border)`,
         borderLeft: `4px solid ${getOrderStatusStyle(order.status).solid}`,
-        borderRadius: 'var(--r-md)',
-        padding: '14px 16px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 10,
-        cursor: 'grab',
         opacity: dragging ? 0.4 : 1,
-        transition: 'opacity 0.15s',
-        userSelect: 'none',
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: 8,
-        }}
-      >
-        <span
-          style={{
-            fontWeight: 900,
-            fontSize: '1.15rem',
-            color: 'var(--text-1)',
-          }}
-        >
-          #{getOrderDisplayId(order)}
-        </span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div className={s['header']}>
+        <span className={s['orderId']}>#{getOrderDisplayId(order)}</span>
+        <div className={s['headerRight']}>
           {delayUrgency && (
             <span
+              className={s['delayBadge']}
               style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4,
-                fontSize: '0.7rem',
-                fontWeight: 800,
                 color: delayUrgency === 'critical' ? 'var(--color-error)' : 'var(--color-warning-dim)',
                 background:
                   delayUrgency === 'critical'
                     ? 'var(--color-error-bg)'
                     : 'var(--color-warning-bg)',
                 border: `1px solid ${delayUrgency === 'critical' ? 'var(--color-error-border)' : 'var(--color-warning-border)'}`,
-                borderRadius: 99,
-                padding: '2px 8px',
               }}
             >
               {delayUrgency === 'critical'
@@ -138,49 +110,25 @@ const KanbanCard = ({
               {elapsedMins}м
             </span>
           )}
-          <span
-            style={{
-              fontSize: '0.8rem',
-              color: 'var(--text-3)',
-              fontWeight: 600,
-            }}
-          >
-            {order.total_price} ₽
-          </span>
+          <span className={s['price']}>{formatPrice(order.total_price)}</span>
         </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      <div className={s['items']}>
         {order.items.map((item) => (
           <div key={item.id}>
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                fontSize: '0.84rem',
-                color: 'var(--text-2)',
-              }}
-            >
+            <div className={s['itemRow']}>
               <span>{item.menu_item_name}</span>
-              <span
-                style={{
-                  fontWeight: 700,
-                  color: 'var(--text-1)',
-                  marginLeft: 8,
-                }}
-              >
-                ×{item.quantity}
-              </span>
+              <span className={s['itemQty']}>×{item.quantity}</span>
             </div>
             {item.selected_options && item.selected_options.length > 0 && (
-              <div style={{ paddingLeft: 4, marginTop: 1 }}>
+              <div className={s['itemOptions']}>
                 {item.selected_options.map((opt) => (
                   <span
                     key={opt.id}
+                    className={s['itemOption']}
                     style={{
-                      fontSize: '0.72rem',
                       color: isRemovalOption(opt) ? 'var(--color-error)' : 'var(--text-3)',
-                      marginRight: 6,
                     }}
                   >
                     {opt.name}
@@ -194,36 +142,19 @@ const KanbanCard = ({
       </div>
 
       {order.comment && (
-        <div
-          style={{
-            borderTop: '1px solid var(--border)',
-            paddingTop: 8,
-            fontSize: '0.78rem',
-            color: 'var(--text-3)',
-            fontStyle: 'italic',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-          }}
-        >
+        <div className={s['comment']}>
           <ChatTextIcon size={13} weight="bold" /> {order.comment}
         </div>
       )}
 
       {order.status === 'ACCEPTED' && order.estimated_ready_at && (
-        <div style={{ fontSize: '0.75rem', color: 'var(--fire)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div className={s['eta']}>
           <TimerIcon size={13} weight="bold" /> {formatEta(order.estimated_ready_at)}
         </div>
       )}
 
       {order.requested_pickup_at && (
-        <div
-          style={{
-            fontSize: '0.75rem',
-            color: 'var(--text-3)',
-            fontWeight: 700,
-          }}
-        >
+        <div className={s['pickup']}>
           Ко времени:{' '}
           {new Intl.DateTimeFormat('ru-RU', {
             hour: '2-digit',
@@ -244,5 +175,3 @@ const KanbanCard = ({
     </div>
   );
 };
-
-export default KanbanCard;

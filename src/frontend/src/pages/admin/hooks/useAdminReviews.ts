@@ -32,15 +32,21 @@ export const useAdminReviews = ({ activeTab, setActionError, setActionSuccess }:
   useEffect(() => {
     if (activeTab !== 'reviews') return;
     setReviewsLoading(true);
-    adminService
-      .getReviews({ page: reviewsPage, size: PAGE_SIZE, rating: reviewFilters.rating || undefined })
-      .then((res) => {
-        const body = res.data;
-        setReviews(body.data);
-        setReviewsTotal(body.pagination.total || 0);
-      })
-      .catch(() => { setActionError('Не удалось загрузить отзывы'); })
-      .finally(() => { setReviewsLoading(false); });
+    void (async () => {
+      try {
+        const { items, total } = await adminService.getReviews({
+          page: reviewsPage,
+          size: PAGE_SIZE,
+          rating: reviewFilters.rating || undefined,
+        });
+        setReviews(items);
+        setReviewsTotal(total);
+      } catch {
+        setActionError('Не удалось загрузить отзывы');
+      } finally {
+        setReviewsLoading(false);
+      }
+    })();
   }, [activeTab, reviewsPage, reviewFilters, setActionError]);
 
   const handleDeleteReview = (reviewId: string) => {

@@ -32,7 +32,6 @@ class TestVerifyBotSecret:
 
 
 class TestEnforceBotRateLimit:
-    @pytest.mark.asyncio
     async def test_within_limit_passes(self) -> None:
         cache = MagicMock()
         cache.incr_with_expire = AsyncMock(return_value=10)
@@ -40,7 +39,6 @@ class TestEnforceBotRateLimit:
             await enforce_bot_rate_limit("bot_register", 123, limit=10, ttl=3600)
         cache.incr_with_expire.assert_awaited_once_with("rl:bot_register:123", 3600)
 
-    @pytest.mark.asyncio
     async def test_over_limit_raises_429(self) -> None:
         cache = MagicMock()
         cache.incr_with_expire = AsyncMock(return_value=11)

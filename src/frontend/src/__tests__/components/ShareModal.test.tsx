@@ -1,9 +1,10 @@
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { ComponentProps } from 'react';
 import type { Restaurant } from '@shared/types/models';
-import ShareModal from '../../components/ShareModal/ShareModal';
-
+import { ShareModal } from '../../components/ShareModal/ShareModal';
+const clipboardWriteText = vi.fn<(data: string) => Promise<void>>();
 const RESTAURANT = {
   id: 'resto-1',
   display_id: 'cafe-central',
@@ -13,13 +14,12 @@ const RESTAURANT = {
 const render$ = (props: Partial<ComponentProps<typeof ShareModal>> = {}) =>
   render(<ShareModal restaurant={RESTAURANT} onClose={vi.fn()} {...props} />);
 
-let writeTextMock = vi.fn<(data: string) => Promise<void>>();
-
 beforeEach(() => {
-  vi.clearAllMocks();
-  writeTextMock = vi.fn<(data: string) => Promise<void>>().mockResolvedValue(undefined);
-  Object.assign(navigator, {
-    clipboard: { writeText: writeTextMock },
+  clipboardWriteText.mockReset();
+  clipboardWriteText.mockResolvedValue(undefined);
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText: clipboardWriteText },
   });
   vi.spyOn(window, 'open').mockImplementation(() => null);
 });
@@ -40,33 +40,36 @@ describe('ShareModal', () => {
     expect(screen.getByText('Скопировать ссылку')).toBeInTheDocument();
   });
 
-  it('calls onClose when close button clicked', () => {
+  it('calls onClose when close button clicked', async () => {
+    const user = userEvent.setup();
     const onClose = vi.fn();
     render$({ onClose });
-    fireEvent.click(screen.getByLabelText('Закрыть'));
+    await user.click(screen.getByLabelText('Закрыть'));
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('calls onClose when overlay clicked', () => {
+  it('calls onClose when overlay clicked', async () => {
+    const user = userEvent.setup();
     const onClose = vi.fn();
     render$({ onClose });
-    const overlay = document.querySelector('.modal-overlay') as HTMLElement;
-    fireEvent.mouseDown(overlay, { target: overlay });
+    await user.click(screen.getByTestId('share-modal-overlay'));
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('opens Telegram share URL when Telegram button clicked', () => {
+  it('opens Telegram share URL when Telegram button clicked', async () => {
+    const user = userEvent.setup();
     render$();
-    fireEvent.click(screen.getByText('Отправить в Telegram'));
+    await user.click(screen.getByText('Отправить в Telegram'));
     expect(window.open).toHaveBeenCalledWith(
       expect.stringContaining('t.me/share/url'),
       '_blank'
     );
   });
 
-  it('Telegram URL contains restaurant display_id', () => {
+  it('Telegram URL contains restaurant display_id', async () => {
+    const user = userEvent.setup();
     render$();
-    fireEvent.click(screen.getByText('Отправить в Telegram'));
+    await user.click(screen.getByText('Отправить в Telegram'));
     const firstCall = vi.mocked(window.open).mock.calls[0];
     if (!firstCall) throw new Error('window.open was not called');
     const call = firstCall[0] as string;
@@ -74,34 +77,39 @@ describe('ShareModal', () => {
   });
 
   it('copies link to clipboard and shows success state', async () => {
-    render$();
-    await act(async () => {
-      fireEvent.click(screen.getByText('Скопировать ссылку'));
-      await Promise.resolve();
+    const user = userEvent.setup();
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: clipboardWriteText },
     });
+    render$();
+    await user.click(screen.getByText('Скопировать ссылку'));
     await waitFor(() => {
       expect(screen.getByText('Ссылка скопирована!')).toBeInTheDocument();
     });
-    expect(writeTextMock).toHaveBeenCalledWith(
+    expect(clipboardWriteText).toHaveBeenCalledWith(
       expect.stringContaining('cafe-central')
     );
   });
 
   it('shows error state when clipboard fails', async () => {
-    navigator.clipboard.writeText = vi.fn().mockRejectedValue(new Error('denied'));
-    render$();
-    await act(async () => {
-      fireEvent.click(screen.getByText('Скопировать ссылку'));
-      await Promise.resolve();
+    const user = userEvent.setup();
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: clipboardWriteText },
     });
+    clipboardWriteText.mockRejectedValueOnce(new Error('denied'));
+    render$();
+    await user.click(screen.getByText('Скопировать ссылку'));
     await waitFor(() => {
       expect(screen.getByText('Не удалось скопировать')).toBeInTheDocument();
     });
   });
 
-  it('uses restaurant name in Telegram message text', () => {
+  it('uses restaurant name in Telegram message text', async () => {
+    const user = userEvent.setup();
     render$();
-    fireEvent.click(screen.getByText('Отправить в Telegram'));
+    await user.click(screen.getByText('Отправить в Telegram'));
     const firstCall = vi.mocked(window.open).mock.calls[0];
     if (!firstCall) throw new Error('window.open was not called');
     const call = firstCall[0] as string;

@@ -22,6 +22,13 @@ vi.mock("../../services/api", () => ({
   createNotificationWebSocket: vi.fn(),
 }));
 
+const logErrorMock = vi.hoisted(() => vi.fn());
+vi.mock("@shared/utils/logError", () => ({
+  logError: (...a: unknown[]): void => {
+    logErrorMock(...a);
+  },
+}));
+
 const notificationServiceMock = notificationService as unknown as {
   getNotifications: Mock;
   markAsRead: Mock;
@@ -251,6 +258,61 @@ describe("useNotificationStore", () => {
 
     mockOnClose();
     expect(useNotificationStore.getState().connectionStatus).toBe("closed");
+  });
+
+  it("fires Telegram haptic feedback on a new notification", () => {
+    const notificationOccurred = vi.fn();
+    const prevTelegram = window.Telegram;
+    window.Telegram = {
+      WebApp: { HapticFeedback: { notificationOccurred } },
+    };
+
+    let onMessage!: (data: Record<string, unknown>) => void;
+    createNotificationWebSocketMock.mockImplementationOnce(
+      (_id: string, msg: (d: Record<string, unknown>) => void) => {
+        onMessage = msg;
+        return { close: vi.fn() };
+      },
+    );
+    useNotificationStore.getState().connectWs("user-1");
+
+    onMessage({ id: "n9", type: "order_status", title: "T", message: "M", is_read: false });
+
+    expect(notificationOccurred).toHaveBeenCalledWith("success");
+    expect(logErrorMock).not.toHaveBeenCalled();
+
+    window.Telegram = prevTelegram as NonNullable<typeof window.Telegram>;
+  });
+
+  it("logs an error when haptic feedback throws on a new notification", () => {
+    const prevTelegram = window.Telegram;
+    window.Telegram = {
+      WebApp: {
+        HapticFeedback: {
+          notificationOccurred: () => {
+            throw new Error("haptic unavailable");
+          },
+        },
+      },
+    };
+
+    let onMessage!: (data: Record<string, unknown>) => void;
+    createNotificationWebSocketMock.mockImplementationOnce(
+      (_id: string, msg: (d: Record<string, unknown>) => void) => {
+        onMessage = msg;
+        return { close: vi.fn() };
+      },
+    );
+    useNotificationStore.getState().connectWs("user-1");
+
+    onMessage({ id: "n10", type: "order_status", title: "T", message: "M", is_read: false });
+
+    expect(logErrorMock).toHaveBeenCalledWith(
+      "notificationStore.haptic",
+      expect.any(Error),
+    );
+
+    window.Telegram = prevTelegram as NonNullable<typeof window.Telegram>;
   });
 
   it("should disconnect from WebSocket", () => {

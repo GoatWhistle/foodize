@@ -8,6 +8,7 @@ from features.notifications.events import (
     FeedbackRequestedEvent,
     OrderPlacedEvent,
     OrderStatusChangedEvent,
+    UserNotificationMessage,
 )
 from features.notifications.models import NotificationType
 from features.notifications.outbox_service import enqueue_event
@@ -19,6 +20,27 @@ from utils.logging_setup import get_logger
 logger = get_logger(__name__)
 
 _FEEDBACK_DELAY_SECONDS = 1800
+
+_STATUS_RU = {
+    OrderStatus.PENDING: "Ожидается",
+    OrderStatus.ACCEPTED: "Принят",
+    OrderStatus.READY: "Готово",
+    OrderStatus.COMPLETED: "Выполнено",
+    OrderStatus.CANCELLED: "Отменён",
+}
+
+
+def _status_change_text(event: OrderStatusChangedEvent) -> tuple[str, str]:
+    if event.new_status == OrderStatus.READY:
+        return (
+            "Заказ готов!",
+            f"Ваш заказ из {event.restaurant_name} готов к выдаче. Приятного аппетита!",
+        )
+    status_str = _STATUS_RU.get(event.new_status, event.new_status.value)
+    return (
+        "Статус заказа изменён",
+        f"Ваш заказ из {event.restaurant_name} теперь в статусе: {status_str}.",
+    )
 
 
 async def _create_user_notification(
@@ -34,9 +56,9 @@ async def _create_user_notification(
     return NotificationResponse.model_validate(notification).model_dump_json()
 
 
-async def _publish_user_notification(user_id: uuid.UUID, payload: str) -> None:
+async def _publish_user_notification(message: UserNotificationMessage) -> None:
     redis_client = get_redis_cache()
-    await redis_client.publish(f"user_notifications:{user_id}", payload)
+    await redis_client.publish(f"user_notifications:{message.user_id}", message.payload)
 
 
 async def handle_feedback_requested(session: AsyncSession, event: FeedbackRequestedEvent) -> None:
@@ -51,7 +73,9 @@ async def handle_feedback_requested(session: AsyncSession, event: FeedbackReques
         " в мини-приложении, это поможет ресторану стать лучше!"
     )
     payload = await _create_user_notification(session, event.user_id, title, message)
-    session.info["notification_payload"] = (event.user_id, payload)
+    session.info["notification_payload"] = UserNotificationMessage(
+        user_id=event.user_id, payload=payload
+    )
 
 
 async def handle_order_placed(session: AsyncSession, event: OrderPlacedEvent) -> None:
@@ -64,7 +88,9 @@ async def handle_order_placed(session: AsyncSession, event: OrderPlacedEvent) ->
     title = f"Заказ в {event.restaurant_name} принят"
     message = f"Ваш заказ на сумму {event.total_price} ₽ успешно оформлен и ожидает подтверждения."
     payload = await _create_user_notification(session, event.user_id, title, message)
-    session.info["notification_payload"] = (event.user_id, payload)
+    session.info["notification_payload"] = UserNotificationMessage(
+        user_id=event.user_id, payload=payload
+    )
 
 
 async def handle_order_status_changed(
@@ -78,21 +104,7 @@ async def handle_order_status_changed(
         new_status=event.new_status.value,
     )
 
-    status_ru = {
-        OrderStatus.PENDING: "Ожидается",
-        OrderStatus.ACCEPTED: "Принят",
-        OrderStatus.READY: "Готово",
-        OrderStatus.COMPLETED: "Выполнено",
-        OrderStatus.CANCELLED: "Отменён",
-    }
-
-    status_str = status_ru.get(event.new_status, event.new_status.value)
-    title = "Статус заказа изменён"
-    message = f"Ваш заказ из {event.restaurant_name} теперь в статусе: {status_str}."
-
-    if event.new_status == OrderStatus.READY:
-        title = "Заказ готов!"
-        message = f"Ваш заказ из {event.restaurant_name} готов к выдаче. Приятного аппетита!"
+    title, message = _status_change_text(event)
 
     if event.new_status == OrderStatus.COMPLETED:
         run_at = datetime.now(UTC) + timedelta(seconds=_FEEDBACK_DELAY_SECONDS)
@@ -108,4 +120,6 @@ async def handle_order_status_changed(
         )
 
     payload = await _create_user_notification(session, event.user_id, title, message)
-    session.info["notification_payload"] = (event.user_id, payload)
+    session.info["notification_payload"] = UserNotificationMessage(
+        user_id=event.user_id, payload=payload
+    )

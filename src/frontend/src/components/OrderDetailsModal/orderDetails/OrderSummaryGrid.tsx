@@ -18,7 +18,7 @@ export const OrderSummaryGrid = ({ order }: { order: Order }) => (
         padding: 12,
       }}
     >
-      <div style={{ color: 'var(--text-3)', fontSize: '0.72rem', marginBottom: 6 }}>
+      <div style={{ color: 'var(--text-3)', fontSize: "var(--text-sm)", marginBottom: 6 }}>
         Статус
       </div>
       <div style={{ fontWeight: 800 }}>
@@ -33,7 +33,7 @@ export const OrderSummaryGrid = ({ order }: { order: Order }) => (
         padding: 12,
       }}
     >
-      <div style={{ color: 'var(--text-3)', fontSize: '0.72rem', marginBottom: 6 }}>
+      <div style={{ color: 'var(--text-3)', fontSize: "var(--text-sm)", marginBottom: 6 }}>
         Создан
       </div>
       <div style={{ fontWeight: 800 }}>{formatDateTime(order.created_at)}</div>
@@ -46,7 +46,7 @@ export const OrderSummaryGrid = ({ order }: { order: Order }) => (
         padding: 12,
       }}
     >
-      <div style={{ color: 'var(--text-3)', fontSize: '0.72rem', marginBottom: 6 }}>
+      <div style={{ color: 'var(--text-3)', fontSize: "var(--text-sm)", marginBottom: 6 }}>
         К выдаче
       </div>
       <div style={{ fontWeight: 800 }}>

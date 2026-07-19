@@ -1,4 +1,3 @@
-import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.menu.models import MenuItem
@@ -13,7 +12,6 @@ from shared.enums.category import Category
 from shared.enums.roles import UserRole
 
 
-@pytest.mark.asyncio
 async def test_get_menu_items_by_ids(db_session: AsyncSession) -> None:
     vendor_data = UserCreate(
         name="Vendor2",

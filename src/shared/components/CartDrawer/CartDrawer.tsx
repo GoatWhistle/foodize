@@ -4,7 +4,7 @@ import { TrashIcon, TagIcon, XIcon } from "@phosphor-icons/react";
 import { useShallow } from "zustand/react/shallow";
 import { useCartStore } from "@shared/store/useCartStore.instance";
 import { useOrdersStore } from "@shared/store/useOrdersStore.instance";
-import OrderButton from "@shared/components/OrderButton/OrderButton";
+import { OrderButton } from "@shared/components/OrderButton/OrderButton";
 import { promoService } from "@shared/services/promoService";
 import { orderService } from "@shared/services/orderService";
 import { translateApiError } from "@shared/utils/translateApiError";
@@ -16,6 +16,7 @@ import {
   LoadEstimateSection,
 } from "./CartDrawerSections";
 import s from "./CartDrawer.module.css";
+import { formatPrice } from "@shared/utils/price";
 
 const DEFAULT_WAIT_MINUTES = 15;
 const QUEUE_WARNING_EXTRA_MINUTES = 10;
@@ -42,7 +43,7 @@ const fromDateTimeLocalValue = (value: string): string | null => {
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 };
 
-const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartDrawerProps) => {
+export const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartDrawerProps) => {
   const navigate = useNavigate();
   const { cart, cartRestaurantId, removeFromCart, addToCart, clearCart, placeOrder } =
     useCartStore(
@@ -88,14 +89,19 @@ const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartDrawerPr
 
   useEffect(() => {
     if (!cartRestaurantId) { setLoadEstimate(null); return; }
-    let cancelled = false;
+    const state = { cancelled: false };
     setEstimateLoading(true);
-    orderService
-      .getEstimate(cartRestaurantId)
-      .then((res) => { if (!cancelled) setLoadEstimate(res.data.data); })
-      .catch(() => { if (!cancelled) setLoadEstimate(null); })
-      .finally(() => { if (!cancelled) setEstimateLoading(false); });
-    return () => { cancelled = true; };
+    void (async () => {
+      try {
+        const response = await orderService.getEstimate(cartRestaurantId);
+        if (!state.cancelled) setLoadEstimate(response.data.data);
+      } catch {
+        if (!state.cancelled) setLoadEstimate(null);
+      } finally {
+        if (!state.cancelled) setEstimateLoading(false);
+      }
+    })();
+    return () => { state.cancelled = true; };
   }, [cartRestaurantId]);
 
   const handleApplyPromo = async () => {
@@ -103,8 +109,8 @@ const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartDrawerPr
     setPromoLoading(true);
     setPromoError("");
     try {
-      const res = await promoService.validate(promoCode.trim(), cartRestaurantId, total, isFirstOrder);
-      setAppliedPromo({ ...res.data.data, originalTotal: total });
+      const response = await promoService.validate(promoCode.trim(), cartRestaurantId, total, isFirstOrder);
+      setAppliedPromo({ ...response.data.data, originalTotal: total });
     } catch (err) {
       setPromoError(translateApiError(err, "Неверный промокод"));
       setAppliedPromo(null);
@@ -158,18 +164,18 @@ const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartDrawerPr
   if (!cart.length) return null;
 
   return (
-    <div className={s.overlay} onClick={handleOverlayClick}>
+    <div className={s['overlay']} onClick={handleOverlayClick}>
       <div
-        className={s.drawer}
+        className={s['drawer']}
         ref={drawerRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="cart-drawer-title"
         tabIndex={-1}
       >
-        <div className={s.handle} />
-        <div className={s.inner}>
-          <h2 id="cart-drawer-title" className={s.title}>Корзина</h2>
+        <div className={s['handle']} />
+        <div className={s['inner']}>
+          <h2 id="cart-drawer-title" className={s['title']}>Корзина</h2>
 
           <CartItemsList
             cart={cart}
@@ -186,22 +192,22 @@ const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartDrawerPr
                   value={promoCode}
                   onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); }}
                   onKeyDown={(e) => { if (e.key === "Enter") void handleApplyPromo(); }}
-                  style={{ flex: 1, height: 40, fontSize: "0.85rem", borderRadius: "var(--r-md)", letterSpacing: "0.05em" }}
+                  style={{ flex: 1, height: 40, fontSize: "var(--text-base)", borderRadius: "var(--r-md)", letterSpacing: "0.05em" }}
                 />
                 <button
                   className="btn btn-secondary"
                   onClick={() => { void handleApplyPromo(); }}
                   disabled={promoLoading || !promoCode.trim()}
-                  style={{ height: 40, padding: "0 14px", fontSize: "0.8rem" }}
+                  style={{ height: 40, padding: "0 14px", fontSize: "var(--text-base)" }}
                 >
                   {promoLoading ? "..." : "Применить"}
                 </button>
               </div>
-              {promoError && <div className="form-error" style={{ marginTop: 6, fontSize: "0.8rem" }}>{promoError}</div>}
+              {promoError && <div className="form-error" style={{ marginTop: 6, fontSize: "var(--text-base)" }}>{promoError}</div>}
             </div>
           ) : (
             <div style={{ marginTop: 16, padding: "10px 14px", background: "var(--color-success-bg)", border: "1px solid var(--color-success-border)", borderRadius: "var(--r-md)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.85rem", color: "var(--color-success)", fontWeight: 700 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "var(--text-base)", color: "var(--color-success)", fontWeight: 700 }}>
                 <TagIcon size={14} weight="fill" />
                 {appliedPromo.code}
                 {appliedPromo.discount_type === "PERCENT" ? ` −${appliedPromo.discount_value}%` : ` −${appliedPromo.discount_value} ₽`}
@@ -212,15 +218,15 @@ const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartDrawerPr
             </div>
           )}
 
-          <div className={s.total} style={{ marginTop: 16 }}>
+          <div className={s['total']} style={{ marginTop: 16 }}>
             {appliedPromo && (
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", color: "var(--text-3)", marginBottom: 6, textDecoration: "line-through" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-base)", color: "var(--text-3)", marginBottom: 6, textDecoration: "line-through" }}>
                 <span>Без скидки</span>
-                <span>{total} ₽</span>
+                <span>{formatPrice(total)}</span>
               </div>
             )}
-            <span className={s.totalLabel}>{appliedPromo ? "Итого со скидкой" : "Итого"}</span>
-            <span className={s.totalValue} style={appliedPromo ? { color: "var(--color-success)" } : undefined}>{finalTotal} ₽</span>
+            <span className={s['totalLabel']}>{appliedPromo ? "Итого со скидкой" : "Итого"}</span>
+            <span className={s['totalValue']} style={appliedPromo ? { color: "var(--color-success)" } : undefined}>{formatPrice(finalTotal)}</span>
           </div>
 
           <textarea
@@ -229,7 +235,7 @@ const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartDrawerPr
             value={comment}
             maxLength={500}
             onChange={(e) => { setComment(e.target.value); }}
-            style={{ marginTop: 14, minHeight: 72, resize: "vertical", fontSize: "0.82rem", lineHeight: 1.45 }}
+            style={{ marginTop: 14, minHeight: 72, resize: "vertical", fontSize: "var(--text-base)", lineHeight: 1.45 }}
           />
 
           <PickupTimeSection
@@ -258,14 +264,14 @@ const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartDrawerPr
             isLoading={placing}
             disabled={isClosed || orderingUnavailable || (pickupMode === "scheduled" && (!selectedPickupIso || pickupTooSoon))}
           >
-            {isClosed || orderingUnavailable ? "Приём заказов на паузе" : `Оформить заказ · ${finalTotal} ₽`}
+            {isClosed || orderingUnavailable ? "Приём заказов на паузе" : `Оформить заказ · ${formatPrice(finalTotal)}`}
           </OrderButton>
 
           {error && <div className="form-error" style={{ marginTop: "12px" }}>{error}</div>}
 
           <button
             className="btn btn-ghost btn-full"
-            style={{ marginTop: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", fontSize: "0.8rem" }}
+            style={{ marginTop: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", fontSize: "var(--text-base)" }}
             onClick={() => { void clearCart(); }}
           >
             <TrashIcon size={16} />
@@ -276,5 +282,3 @@ const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartDrawerPr
     </div>
   );
 };
-
-export default CartDrawer;

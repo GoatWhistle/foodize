@@ -42,7 +42,7 @@ export function RestaurantHero({
       <div className="restaurant-hero-info">
         <h1 className="restaurant-hero-name">{restaurant.name}</h1>
         {restaurantView.description && (
-          <p style={{ color: 'var(--on-photo)', fontSize: '0.875rem', margin: '4px 0 8px', lineHeight: 1.4 }}>
+          <p style={{ color: 'var(--on-photo)', fontSize: "var(--text-base)", margin: '4px 0 8px', lineHeight: 1.4 }}>
             {restaurantView.description}
           </p>
         )}

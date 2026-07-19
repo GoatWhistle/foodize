@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Iterator
-from datetime import UTC
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -19,7 +19,6 @@ from features.reviews.service import (
 
 
 def _mock_review(user_id: uuid.UUID, restaurant_id: uuid.UUID) -> MagicMock:
-    from datetime import datetime
 
     r = MagicMock()
     r.id = uuid.uuid4()

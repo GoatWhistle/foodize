@@ -50,7 +50,7 @@ interface ProfilePageProps {
   pageClassName?: string | undefined;
 }
 
-const ProfilePage = ({
+export const ProfilePage = ({
   routes = {},
   onLogout,
   BackButton = null,
@@ -88,12 +88,12 @@ const ProfilePage = ({
   const hasManagement = (isAdmin && (routes.admin || !routes.admin)) || extraMenuItems.length > 0;
 
   return (
-    <div className={`${s.page}${pageClassName ? ` ${pageClassName}` : ""}`}>
-      <div className={s.banner} />
+    <div className={`${s['page']}${pageClassName ? ` ${pageClassName}` : ""}`}>
+      <div className={s['banner']} />
 
       <div style={{ position: "relative" }}>
-        <div className={s.avatarWrap}>
-          <div className={s.avatar}>
+        <div className={s['avatarWrap']}>
+          <div className={s['avatar']}>
             {avatarUrl ? (
               <img src={avatarUrl} alt={displayName} loading="lazy" />
             ) : (
@@ -103,40 +103,40 @@ const ProfilePage = ({
         </div>
       </div>
 
-      <div className={s.body}>
-        <div className={s.name}>{displayName}</div>
-        <div className={s.phone}>{user?.phone_number || "—"}</div>
+      <div className={s['body']}>
+        <div className={s['name']}>{displayName}</div>
+        <div className={s['phone']}>{user?.phone_number || "—"}</div>
         {email && (
-          <div style={{ fontSize: "0.8rem", color: "var(--text-3)", marginBottom: 10 }}>{email}</div>
+          <div style={{ fontSize: "var(--text-base)", color: "var(--text-3)", marginBottom: 10 }}>{email}</div>
         )}
 
-        <div className={s.stats}>
-          <div className={s.stat}>
+        <div className={s['stats']}>
+          <div className={s['stat']}>
             <PackageIcon size={13} color="var(--text-3)" />
             <strong>{ordersTotal}</strong>
             <span>заказов</span>
           </div>
-          <span className={s.statSep}>·</span>
-          <div className={s.stat}>
+          <span className={s['statSep']}>·</span>
+          <div className={s['stat']}>
             <HeartIcon size={13} color="var(--color-error)" />
             <strong>{favoritesCount}</strong>
             <span>избранных</span>
           </div>
         </div>
 
-        <div className={s.group}>
-          <div className={s.groupTitle}>Личное</div>
-          <div className={s.menu}>
-            <button className={s.menuItem} onClick={() => { navTo(routes.orders); }}>
-              <span className={s.menuItemLeft}>
+        <div className={s['group']}>
+          <div className={s['groupTitle']}>Личное</div>
+          <div className={s['menu']}>
+            <button className={s['menuItem']} onClick={() => { navTo(routes.orders); }}>
+              <span className={s['menuItemLeft']}>
                 <PackageIcon size={20} weight="bold" />
                 Мои заказы
               </span>
               <CaretRightIcon size={16} color="var(--text-3)" />
             </button>
 
-            <button className={s.menuItem} onClick={() => { navTo(routes.favorites); }}>
-              <span className={s.menuItemLeft}>
+            <button className={s['menuItem']} onClick={() => { navTo(routes.favorites); }}>
+              <span className={s['menuItemLeft']}>
                 <HeartIcon size={20} weight="bold" color="var(--color-error)" />
                 Избранное
               </span>
@@ -144,14 +144,14 @@ const ProfilePage = ({
             </button>
 
             {routes.notifications && (
-              <button className={s.menuItem} onClick={() => { navTo(routes.notifications); }}>
-                <span className={s.menuItemLeft}>
+              <button className={s['menuItem']} onClick={() => { navTo(routes.notifications); }}>
+                <span className={s['menuItemLeft']}>
                   <BellIcon size={20} weight="bold" />
                   Уведомления
                 </span>
                 <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   {unreadCount > 0 && (
-                    <span className={s.badge}>{unreadCount > 9 ? "9+" : unreadCount}</span>
+                    <span className={s['badge']}>{unreadCount > 9 ? "9+" : unreadCount}</span>
                   )}
                   <CaretRightIcon size={16} color="var(--text-3)" />
                 </span>
@@ -161,12 +161,12 @@ const ProfilePage = ({
         </div>
 
         {hasManagement && (
-          <div className={s.group}>
-            <div className={s.groupTitle}>Управление</div>
-            <div className={s.menu}>
+          <div className={s['group']}>
+            <div className={s['groupTitle']}>Управление</div>
+            <div className={s['menu']}>
               {isAdmin && routes.admin && (
-                <button className={s.menuItem} onClick={() => { navTo(routes.admin); }}>
-                  <span className={s.menuItemLeft}>
+                <button className={s['menuItem']} onClick={() => { navTo(routes.admin); }}>
+                  <span className={s['menuItemLeft']}>
                     <CrownIcon size={20} weight="bold" color="var(--gold)" />
                     Админ-панель
                   </span>
@@ -175,8 +175,8 @@ const ProfilePage = ({
               )}
 
               {isAdmin && !routes.admin && (
-                <button className={s.menuItem} onClick={() => window.Telegram?.WebApp?.showAlert?.("Панель администратора доступна только в веб-версии Foodize")}>
-                  <span className={s.menuItemLeft}>
+                <button className={s['menuItem']} onClick={() => window.Telegram?.WebApp?.showAlert?.("Панель администратора доступна только в веб-версии Foodize")}>
+                  <span className={s['menuItemLeft']}>
                     <CrownIcon size={20} weight="bold" color="var(--gold)" />
                     Панель администратора
                   </span>
@@ -187,11 +187,11 @@ const ProfilePage = ({
               {extraMenuItems.map((item, i) => (
                 <button
                   key={item.id ?? i}
-                  className={`${s.menuItem}${item.onClick ? "" : ` ${s.menuItemStatic}`}`}
+                  className={`${s['menuItem']}${item.onClick ? "" : ` ${s['menuItemStatic']}`}`}
                   onClick={item.onClick}
                   disabled={!item.onClick}
                 >
-                  <span className={s.menuItemLeft}>
+                  <span className={s['menuItemLeft']}>
                     {item.icon}
                     {item.label}
                   </span>
@@ -202,19 +202,19 @@ const ProfilePage = ({
           </div>
         )}
 
-        <div className={s.group}>
-          <div className={s.groupTitle}>Система</div>
-          <div className={s.menu}>
-            <button className={s.menuItem} onClick={() => { navTo(routes.settings ?? "/settings"); }}>
-              <span className={s.menuItemLeft}>
+        <div className={s['group']}>
+          <div className={s['groupTitle']}>Система</div>
+          <div className={s['menu']}>
+            <button className={s['menuItem']} onClick={() => { navTo(routes.settings ?? "/settings"); }}>
+              <span className={s['menuItemLeft']}>
                 <GearSixIcon size={20} weight="bold" />
                 Настройки
               </span>
               <CaretRightIcon size={16} color="var(--text-3)" />
             </button>
 
-            <button className={`${s.menuItem} ${s.danger}`} onClick={() => { void handleLogout(); }}>
-              <span className={s.menuItemLeft}>
+            <button className={`${s['menuItem']} ${s['danger']}`} onClick={() => { void handleLogout(); }}>
+              <span className={s['menuItemLeft']}>
                 <SignOutIcon size={20} weight="bold" />
                 Выйти
               </span>
@@ -225,5 +225,3 @@ const ProfilePage = ({
     </div>
   );
 };
-
-export default ProfilePage;

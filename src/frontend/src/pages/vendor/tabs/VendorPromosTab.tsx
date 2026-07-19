@@ -1,6 +1,6 @@
 import type { Dispatch, FormEvent, SetStateAction } from 'react';
 import { PlusIcon, TagIcon } from '@phosphor-icons/react';
-import EmptyState from '@shared/components/EmptyState/EmptyState';
+import { EmptyState } from '@shared/components/EmptyState/EmptyState';
 import type { Promo, Restaurant } from '@shared/types/models';
 import type { PromoForm as PromoFormValues } from '../hooks/useVendorPromos';
 import { PromoForm } from './components/PromoForm';
@@ -38,7 +38,7 @@ const ListSkeleton = ({ rows = 3 }: ListSkeletonProps) => (
   </div>
 );
 
-export default function VendorPromosTab({
+export function VendorPromosTab({
   selectedRestaurant,
   promosList,
   promosLoading,
@@ -62,7 +62,7 @@ export default function VendorPromosTab({
           alignItems: 'center',
         }}
       >
-        <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>Промокоды</span>
+        <span style={{ fontWeight: 700, fontSize: "var(--text-base)" }}>Промокоды</span>
         {selectedRestaurant && (
           <button
             className="btn btn-primary btn-sm"

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE_FILE = ROOT / "docker-compose.yaml"
@@ -30,12 +32,11 @@ REQUIRED_ENV_STUBS = {
 }
 
 
-def load_config(compose_file: Path) -> dict:
-    env = {**REQUIRED_ENV_STUBS}
+def load_config(compose_file: Path) -> dict[str, Any]:
     result = subprocess.run(
         ["docker", "compose", "-f", str(compose_file), "config", "--format", "json"],
         cwd=ROOT,
-        env={**_current_env(), **env},
+        env={**os.environ, **REQUIRED_ENV_STUBS},
         capture_output=True,
         text=True,
         check=False,
@@ -46,13 +47,7 @@ def load_config(compose_file: Path) -> dict:
     return json.loads(result.stdout)
 
 
-def _current_env() -> dict:
-    import os
-
-    return dict(os.environ)
-
-
-def healthcheck_path(healthcheck: dict | None) -> str | None:
+def healthcheck_path(healthcheck: dict[str, Any] | None) -> str | None:
     if not healthcheck:
         return None
     test = healthcheck.get("test") or []
@@ -84,14 +79,16 @@ def main() -> int:
         p_health = healthcheck_path(p.get("healthcheck"))
         if b_health and p_health and b_health != p_health:
             problems.append(
-                f"[{name}] healthcheck target differs: base={b_health!r} prod={p_health!r}"
+                f"[{name}] healthcheck target differs: "
+                f"base={b_health!r} prod={p_health!r}"
             )
 
         b_ports = {p_["target"] for p_ in b.get("ports", [])}
         p_ports = {p_["target"] for p_ in p.get("ports", [])}
         if b_ports and p_ports and b_ports != p_ports:
             problems.append(
-                f"[{name}] published container ports differ: base={sorted(b_ports)} prod={sorted(p_ports)}"
+                f"[{name}] published container ports differ: "
+                f"base={sorted(b_ports)} prod={sorted(p_ports)}"
             )
 
         b_image = b.get("image")

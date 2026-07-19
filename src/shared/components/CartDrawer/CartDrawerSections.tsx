@@ -8,6 +8,7 @@ import {
 } from "@shared/utils/cartLine";
 import type { OrderLoadEstimate } from "@shared/types/models";
 import s from "./CartDrawer.module.css";
+import { formatPrice } from "@shared/utils/price";
 
 interface CartItemsListProps {
   cart: CartLine[];
@@ -23,33 +24,33 @@ export const CartItemsList = ({
   onDecrease,
   onIncrease,
 }: CartItemsListProps) => (
-  <div className={s.items}>
+  <div className={s['items']}>
     {cart.map((cartItem) => {
       const { menuItem, quantity } = cartItem;
       const selectedOptions = getSelectedOptions(cartItem);
       const selectedOptionIds = getSelectedOptionIds(cartItem);
       const lineKey = `${menuItem.id}:${selectedOptionIds.join(",")}`;
       return (
-        <div key={lineKey} className={s.item}>
+        <div key={lineKey} className={s['item']}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <span className={s.itemName}>{menuItem.name}</span>
+            <span className={s['itemName']}>{menuItem.name}</span>
             {selectedOptions.length > 0 && (
-              <div style={{ marginTop: 3, fontSize: "0.72rem", lineHeight: 1.35, color: "var(--text-3)" }}>
+              <div style={{ marginTop: 3, fontSize: "var(--text-sm)", lineHeight: 1.35, color: "var(--text-3)" }}>
                 {formatOptionsSummary(selectedOptions)}
               </div>
             )}
           </div>
-          <div className={s.itemControls}>
-            <button className={s.qtyBtn} onClick={() => { onDecrease(menuItem.id, selectedOptionIds); }} aria-label="Уменьшить">
+          <div className={s['itemControls']}>
+            <button className={s['qtyBtn']} onClick={() => { onDecrease(menuItem.id, selectedOptionIds); }} aria-label="Уменьшить">
               <MinusIcon size={12} weight="bold" />
             </button>
-            <span style={{ fontWeight: 700, minWidth: 20, textAlign: "center", fontSize: "0.9rem" }}>{quantity}</span>
-            <button className={s.qtyBtn} onClick={() => { onIncrease(menuItem, selectedOptions); }} aria-label="Увеличить">
+            <span style={{ fontWeight: 700, minWidth: 20, textAlign: "center", fontSize: "var(--text-base)" }}>{quantity}</span>
+            <button className={s['qtyBtn']} onClick={() => { onIncrease(menuItem, selectedOptions); }} aria-label="Увеличить">
               <PlusIcon size={12} weight="bold" />
             </button>
           </div>
-          <span style={{ fontWeight: 700, minWidth: 64, textAlign: "right", fontSize: "0.9rem", color: "var(--text-1)" }}>
-            {getLinePrice(cartItem) * quantity} ₽
+          <span style={{ fontWeight: 700, minWidth: 64, textAlign: "right", fontSize: "var(--text-base)", color: "var(--text-1)" }}>
+            {formatPrice(getLinePrice(cartItem) * quantity)}
           </span>
         </div>
       );
@@ -81,7 +82,7 @@ export const PickupTimeSection = ({
   pickupTooSoon,
 }: PickupTimeSectionProps) => (
   <div style={{ marginTop: 14, padding: "12px 14px", border: "1px solid var(--border)", borderRadius: "var(--r-md)", background: "var(--bg-card)" }}>
-    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, fontSize: "0.86rem", fontWeight: 800, color: "var(--text-1)" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, fontSize: "var(--text-base)", fontWeight: 800, color: "var(--text-1)" }}>
       <ClockIcon size={16} weight="bold" />
       Время получения
     </div>
@@ -102,9 +103,9 @@ export const PickupTimeSection = ({
           min={minPickupValue}
           max={maxPickupValue}
           onChange={(e) => { onChangePickupAt(e.target.value); }}
-          style={{ height: 40, fontSize: "0.85rem" }}
+          style={{ height: 40, fontSize: "var(--text-base)" }}
         />
-        <div style={{ marginTop: 6, fontSize: "0.76rem", color: pickupTooSoon ? "var(--error)" : "var(--text-3)" }}>
+        <div style={{ marginTop: 6, fontSize: "var(--text-sm)", color: pickupTooSoon ? "var(--error)" : "var(--text-3)" }}>
           Минимум: {minPickupDate.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
         </div>
       </div>
@@ -127,7 +128,7 @@ export const LoadEstimateSection = ({
 }: LoadEstimateSectionProps) => {
   if (estimateLoading) {
     return (
-      <div style={{ marginTop: 14, padding: "10px 12px", border: "1px solid var(--border)", borderRadius: "var(--r-md)", color: "var(--text-3)", fontSize: "0.85rem", fontWeight: 700 }}>
+      <div style={{ marginTop: 14, padding: "10px 12px", border: "1px solid var(--border)", borderRadius: "var(--r-md)", color: "var(--text-3)", fontSize: "var(--text-base)", fontWeight: 700 }}>
         Проверяем очередь...
       </div>
     );
@@ -141,11 +142,11 @@ export const LoadEstimateSection = ({
         <ClockIcon size={18} weight="fill" color={hasQueueWarning ? "var(--color-warning)" : "var(--text-3)"} />
       )}
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: "0.86rem", fontWeight: 800, color: orderingUnavailable ? "var(--error)" : "var(--text-1)", marginBottom: 2 }}>
+        <div style={{ fontSize: "var(--text-base)", fontWeight: 800, color: orderingUnavailable ? "var(--error)" : "var(--text-1)", marginBottom: 2 }}>
           {orderingUnavailable ? "Заведение временно не принимает заказы" : `Ожидание примерно ${loadEstimate.estimated_wait_min_minutes}-${loadEstimate.estimated_wait_max_minutes} мин.`}
         </div>
         {!orderingUnavailable && (
-          <div style={{ fontSize: "0.78rem", color: "var(--text-3)" }}>
+          <div style={{ fontSize: "var(--text-sm)", color: "var(--text-3)" }}>
             Активных заказов в очереди: {loadEstimate.active_orders_count}
           </div>
         )}

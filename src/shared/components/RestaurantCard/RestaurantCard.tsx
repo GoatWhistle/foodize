@@ -15,7 +15,7 @@ interface RestaurantCardProps {
   favPosition?: "top" | "bottom";
 }
 
-const RestaurantCard = ({
+const RestaurantCardBase = ({
   restaurant,
   onClick,
   isFavorite,
@@ -31,7 +31,7 @@ const RestaurantCard = ({
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry?.isIntersecting) {
-          if (s.visible) el.classList.add(s.visible);
+          if (s['visible']) el.classList.add(s['visible']);
           observer.unobserve(el);
         }
       },
@@ -46,7 +46,7 @@ const RestaurantCard = ({
 
   const favButton = onFavoriteToggle ? (
     <button
-      className={`${s.favBtn}${favPosition === "bottom" ? ` ${s.favBtnBottom}` : ""}${isFavorite ? ` ${s.active}` : ""}`}
+      className={`${s['favBtn']}${favPosition === "bottom" ? ` ${s['favBtnBottom']}` : ""}${isFavorite ? ` ${s['active']}` : ""}`}
       onClick={(e: MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); onFavoriteToggle(restaurant.id); }}
       aria-label={isFavorite ? "Убрать из избранного" : "В избранное"}
       aria-pressed={isFavorite}
@@ -58,33 +58,33 @@ const RestaurantCard = ({
   return (
     <div
       ref={cardRef}
-      className={s.card}
+      className={s['card']}
       onClick={onClick}
       role="button"
       tabIndex={0}
       onKeyDown={activateOnKey(() => onClick?.())}
       aria-label={`Ресторан ${restaurant.name}`}
     >
-      <div className={s.photoWrap}>
+      <div className={s['photoWrap']}>
         {restaurant.photo_url ? (
           <img
-            className={s.photo}
+            className={s['photo']}
             src={restaurant.photo_url}
             alt={restaurant.name}
             loading="lazy"
             style={viewTransition ? { viewTransitionName: `restaurant-image-${restaurant.id}` } : undefined}
           />
         ) : (
-          <div className={s.photoPlaceholder}>{icon}</div>
+          <div className={s['photoPlaceholder']} data-testid="restaurant-photo-placeholder">{icon}</div>
         )}
 
-        <div className={s.topRow}>
-          <div className={`${s.openBadge}${restaurant.is_open ? ` ${s.open}` : ""}`}>
+        <div className={s['topRow']}>
+          <div className={`${s['openBadge']}${restaurant.is_open ? ` ${s['open']}` : ""}`}>
             <CircleIcon size={7} weight="fill" color={restaurant.is_open ? "var(--color-success)" : "var(--on-photo-dim)"} />
             {restaurant.is_open ? "Открыто" : "Закрыто"}
           </div>
-          <div className={s.rightBadges}>
-            <div className={s.ratingBadge}>
+          <div className={s['rightBadges']}>
+            <div className={s['ratingBadge']}>
               <StarIcon size={12} weight="fill" color="var(--star)" />
               <span>{rating ? rating.toFixed(1) : "0.0"}</span>
             </div>
@@ -94,11 +94,11 @@ const RestaurantCard = ({
         {favPosition === "bottom" && favButton}
       </div>
 
-      <div className={s.body}>
-        <h2 className={s.title}>{restaurant.name}</h2>
-        <div className={s.tags}>
+      <div className={s['body']}>
+        <h2 className={s['title']}>{restaurant.name}</h2>
+        <div className={s['tags']}>
           {restaurant.address && (
-            <span className={s.tag}>
+            <span className={s['tag']}>
               <MapPinIcon size={11} weight="bold" />
               {restaurant.address}
             </span>
@@ -109,4 +109,4 @@ const RestaurantCard = ({
   );
 };
 
-export default memo(RestaurantCard);
+export const RestaurantCard = memo(RestaurantCardBase);

@@ -1,4 +1,4 @@
-import api from "@shared/services/api.instance";
+import { api } from "@shared/services/api.instance";
 import type { Cart, CartUpdate, SuccessResponse } from "@shared/types/models";
 
 export const cartService = {

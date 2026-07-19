@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { XIcon, CopyIcon, CheckIcon } from '@phosphor-icons/react';
-import TelegramLogo from '@shared/components/BrandIcons/TelegramLogo';
+import { TelegramLogo } from '@shared/components/BrandIcons/TelegramLogo';
 import { useFocusTrap } from '@shared/hooks/useFocusTrap';
 import type { Restaurant } from '@shared/types/models';
 
@@ -9,13 +9,13 @@ interface ShareModalProps {
   onClose: () => void;
 }
 
-const ShareModal = ({ restaurant, onClose }: ShareModalProps) => {
+export const ShareModal = ({ restaurant, onClose }: ShareModalProps) => {
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
   const contentRef = useFocusTrap<HTMLDivElement>({ onEscape: onClose });
 
-  const miniAppUrl = import.meta.env.VITE_MINI_APP_URL || '';
-  const webUrl = import.meta.env.VITE_WEB_URL || window.location.origin;
+  const miniAppUrl = import.meta.env['VITE_MINI_APP_URL'] || '';
+  const webUrl = import.meta.env['VITE_WEB_URL'] || window.location.origin;
 
   const targetId = restaurant.display_id;
 
@@ -47,6 +47,7 @@ const ShareModal = ({ restaurant, onClose }: ShareModalProps) => {
   return (
     <div
       className="modal-overlay"
+      data-testid="share-modal-overlay"
       style={{ zIndex: 5000, padding: 20 }}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -78,7 +79,7 @@ const ShareModal = ({ restaurant, onClose }: ShareModalProps) => {
             id="share-modal-title"
             style={{
               fontWeight: 800,
-              fontSize: '1.1rem',
+              fontSize: "var(--text-md)",
               color: 'var(--text-1)',
             }}
           >
@@ -154,5 +155,3 @@ const ShareModal = ({ restaurant, onClose }: ShareModalProps) => {
     </div>
   );
 };
-
-export default ShareModal;

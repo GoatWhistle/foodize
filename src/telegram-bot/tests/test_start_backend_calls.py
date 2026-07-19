@@ -1,8 +1,9 @@
+from collections.abc import Callable
 from http import HTTPStatus
-from unittest.mock import AsyncMock, MagicMock
 
 import httpx
 import pytest
+from aiogram.types import Message
 from pytest_mock import MockerFixture
 
 from config import bot_config
@@ -11,153 +12,207 @@ from handlers.start import (
     cmd_orders,
     cmd_vendor_status,
 )
+from tests.conftest import answer_of
 
 
-@pytest.mark.asyncio
-async def test_link_phone_failure_no_secret() -> None:
-    m = AsyncMock()
-    m.from_user = MagicMock()
-    bot_config.bot_api_secret = ""
-    res = await _link_phone(m, "+79990000000")
+@pytest.fixture(autouse=True)
+def _configured(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(bot_config, "bot_api_secret", "secret")
+    monkeypatch.setattr(bot_config, "backend_url", "http://backend")
+    monkeypatch.setattr(bot_config, "mini_app_url", "https://t.me/app")
+
+
+def _http_status_error(status: int, path: str) -> httpx.HTTPStatusError:
+    req = httpx.Request("POST", f"http://backend/api/v1{path}")
+    resp = httpx.Response(status, request=req)
+    return httpx.HTTPStatusError("error", request=req, response=resp)
+
+
+async def test_link_phone_failure_no_secret(
+    monkeypatch: pytest.MonkeyPatch, message_factory: Callable[..., Message]
+) -> None:
+    monkeypatch.setattr(bot_config, "bot_api_secret", "")
+    message = message_factory()
+
+    res = await _link_phone(message, "+79990000000")
+
     assert res is False
-    m.answer.assert_called_with(
+    answer_of(message).assert_called_with(
         "Бот пока не настроен для регистрации: не задан TELEGRAM__BOT_API_SECRET."
     )
 
 
-@pytest.mark.asyncio
-async def test_link_phone_http_status_errors(mocker: MockerFixture) -> None:
-    m = AsyncMock()
-    m.from_user = MagicMock()
-    bot_config.bot_api_secret = "secret"
-    bot_config.backend_url = "http://backend"
+@pytest.mark.parametrize(
+    ("error", "expected"),
+    [
+        (
+            _http_status_error(HTTPStatus.FORBIDDEN, "/telegram/bot/link-phone"),
+            "Бот не прошел проверку доступа к Foodize API.",
+        ),
+        (
+            _http_status_error(HTTPStatus.INTERNAL_SERVER_ERROR, "/telegram/bot/link-phone"),
+            "Не получилось привязать телефон. Проверьте номер и попробуйте еще раз.",
+        ),
+        (
+            httpx.HTTPError("Conn Error"),
+            "Foodize API сейчас недоступен. Попробуйте чуть позже.",
+        ),
+    ],
+)
+async def test_link_phone_http_errors(
+    mocker: MockerFixture,
+    message_factory: Callable[..., Message],
+    error: Exception,
+    expected: str,
+) -> None:
+    mocker.patch("handlers.start.backend_client.link_phone", side_effect=error)
+    message = message_factory()
 
-    mock_post = mocker.patch("httpx.AsyncClient.post")
+    res = await _link_phone(message, "+79990000000")
 
-    req = httpx.Request("POST", "http://backend/api/v1/telegram/bot/link-phone")
-    resp_403 = httpx.Response(HTTPStatus.FORBIDDEN, request=req)
-    mock_post.side_effect = httpx.HTTPStatusError("Forbidden", request=req, response=resp_403)
-    res = await _link_phone(m, "+79990000000")
     assert res is False
-    m.answer.assert_called_with("Бот не прошел проверку доступа к Foodize API.")
-
-    resp_500 = httpx.Response(HTTPStatus.INTERNAL_SERVER_ERROR, request=req)
-    mock_post.side_effect = httpx.HTTPStatusError("Server Error", request=req, response=resp_500)
-    res = await _link_phone(m, "+79990000000")
-    assert res is False
-    m.answer.assert_called_with(
-        "Не получилось привязать телефон. Проверьте номер и попробуйте еще раз."
-    )
-
-    mock_post.side_effect = httpx.HTTPError("Conn Error")
-    res = await _link_phone(m, "+79990000000")
-    assert res is False
-    m.answer.assert_called_with("Foodize API сейчас недоступен. Попробуйте чуть позже.")
+    answer_of(message).assert_called_with(expected)
 
 
-@pytest.mark.asyncio
-async def test_link_phone_success(mocker: MockerFixture) -> None:
-    m = AsyncMock()
-    m.from_user = MagicMock()
-    bot_config.bot_api_secret = "secret"
-    bot_config.backend_url = "http://backend"
-    bot_config.mini_app_url = "https://t.me/app"
+async def test_link_phone_success(
+    mocker: MockerFixture, message_factory: Callable[..., Message]
+) -> None:
+    mocker.patch("handlers.start.backend_client.link_phone", return_value=None)
+    message = message_factory()
 
-    mock_post = mocker.patch("httpx.AsyncClient.post")
-    req = httpx.Request("POST", "http://backend/api/v1/telegram/bot/link-phone")
-    mock_post.return_value = httpx.Response(HTTPStatus.OK, request=req)
+    res = await _link_phone(message, "+79990000000")
 
-    res = await _link_phone(m, "+79990000000")
     assert res is True
-    assert m.answer.call_count == 2
+    assert answer_of(message).call_count == 2
 
 
-@pytest.mark.asyncio
-async def test_cmd_vendor_status(mocker: MockerFixture) -> None:
-    m = AsyncMock()
-    m.from_user = None
-    await cmd_vendor_status(m)
+async def test_cmd_vendor_status_no_user_does_nothing(
+    message_factory: Callable[..., Message],
+) -> None:
+    message = message_factory(from_user=None)
+    await cmd_vendor_status(message)
+    answer_of(message).assert_not_called()
 
-    m.from_user = MagicMock()
-    bot_config.bot_api_secret = ""
-    await cmd_vendor_status(m)
-    m.answer.assert_called_with("Проверка статуса вендора пока не настроена.")
 
-    bot_config.bot_api_secret = "secret"
-    mock_post = mocker.patch("httpx.AsyncClient.post")
+async def test_cmd_vendor_status_not_configured(
+    monkeypatch: pytest.MonkeyPatch, message_factory: Callable[..., Message]
+) -> None:
+    monkeypatch.setattr(bot_config, "bot_api_secret", "")
+    message = message_factory()
+    await cmd_vendor_status(message)
+    answer_of(message).assert_called_with("Проверка статуса вендора пока не настроена.")
 
-    req = httpx.Request("POST", "http://backend/api/v1/telegram/bot/vendor-status")
-    resp_403 = httpx.Response(HTTPStatus.FORBIDDEN, request=req)
-    mock_post.side_effect = httpx.HTTPStatusError("Forbidden", request=req, response=resp_403)
-    await cmd_vendor_status(m)
-    m.answer.assert_called_with("Бот не прошел проверку доступа к Foodize API.")
 
-    resp_500 = httpx.Response(HTTPStatus.INTERNAL_SERVER_ERROR, request=req)
-    mock_post.side_effect = httpx.HTTPStatusError("Server Error", request=req, response=resp_500)
-    await cmd_vendor_status(m)
-    m.answer.assert_called_with("Не удалось получить статус. Попробуйте позже.")
+@pytest.mark.parametrize(
+    ("error", "expected"),
+    [
+        (
+            _http_status_error(HTTPStatus.FORBIDDEN, "/telegram/bot/vendor-status"),
+            "Бот не прошел проверку доступа к Foodize API.",
+        ),
+        (
+            _http_status_error(HTTPStatus.INTERNAL_SERVER_ERROR, "/telegram/bot/vendor-status"),
+            "Не удалось получить статус. Попробуйте позже.",
+        ),
+        (
+            httpx.HTTPError("Conn Error"),
+            "Foodize API сейчас недоступен. Попробуйте чуть позже.",
+        ),
+    ],
+)
+async def test_cmd_vendor_status_http_errors(
+    mocker: MockerFixture,
+    message_factory: Callable[..., Message],
+    error: Exception,
+    expected: str,
+) -> None:
+    mocker.patch("handlers.start.backend_client.get_vendor_status", side_effect=error)
+    message = message_factory()
+    await cmd_vendor_status(message)
+    answer_of(message).assert_called_with(expected)
 
-    mock_post.side_effect = httpx.HTTPError("Conn Error")
-    await cmd_vendor_status(m)
-    m.answer.assert_called_with("Foodize API сейчас недоступен. Попробуйте чуть позже.")
 
-    mock_post.side_effect = None
-    mock_post.return_value = httpx.Response(
-        HTTPStatus.OK,
-        request=req,
-        json={"data": {"is_vendor": True, "approval_status": "APPROVED"}},
+async def test_cmd_vendor_status_success(
+    mocker: MockerFixture, message_factory: Callable[..., Message]
+) -> None:
+    mocker.patch(
+        "handlers.start.backend_client.get_vendor_status",
+        return_value={"is_vendor": True, "approval_status": "APPROVED"},
     )
-    await cmd_vendor_status(m)
-    assert "одобрена" in m.answer.call_args[0][0]
+    message = message_factory()
+    await cmd_vendor_status(message)
+    assert "одобрена" in answer_of(message).call_args[0][0]
 
 
-@pytest.mark.asyncio
-async def test_cmd_orders(mocker: MockerFixture) -> None:
-    m = AsyncMock()
-    m.from_user = None
-    await cmd_orders(m)
+async def test_cmd_orders_no_user_does_nothing(
+    message_factory: Callable[..., Message],
+) -> None:
+    message = message_factory(from_user=None)
+    await cmd_orders(message)
+    answer_of(message).assert_not_called()
 
-    m.from_user = MagicMock()
-    bot_config.bot_api_secret = ""
-    await cmd_orders(m)
-    m.answer.assert_called_with("Просмотр заказов пока не настроен.")
 
-    bot_config.bot_api_secret = "secret"
-    mock_post = mocker.patch("httpx.AsyncClient.post")
+async def test_cmd_orders_not_configured(
+    monkeypatch: pytest.MonkeyPatch, message_factory: Callable[..., Message]
+) -> None:
+    monkeypatch.setattr(bot_config, "bot_api_secret", "")
+    message = message_factory()
+    await cmd_orders(message)
+    answer_of(message).assert_called_with("Просмотр заказов пока не настроен.")
 
-    req = httpx.Request("POST", "http://backend/api/v1/telegram/bot/orders")
-    resp_403 = httpx.Response(HTTPStatus.FORBIDDEN, request=req)
-    mock_post.side_effect = httpx.HTTPStatusError("Forbidden", request=req, response=resp_403)
-    await cmd_orders(m)
-    m.answer.assert_called_with("Бот не прошел проверку доступа к Foodize API.")
 
-    resp_500 = httpx.Response(HTTPStatus.INTERNAL_SERVER_ERROR, request=req)
-    mock_post.side_effect = httpx.HTTPStatusError("Server Error", request=req, response=resp_500)
-    await cmd_orders(m)
-    m.answer.assert_called_with("Не удалось получить заказы. Попробуйте позже.")
+@pytest.mark.parametrize(
+    ("error", "expected"),
+    [
+        (
+            _http_status_error(HTTPStatus.FORBIDDEN, "/telegram/bot/orders"),
+            "Бот не прошел проверку доступа к Foodize API.",
+        ),
+        (
+            _http_status_error(HTTPStatus.INTERNAL_SERVER_ERROR, "/telegram/bot/orders"),
+            "Не удалось получить заказы. Попробуйте позже.",
+        ),
+        (
+            httpx.HTTPError("Conn error"),
+            "Foodize API сейчас недоступен. Попробуйте чуть позже.",
+        ),
+    ],
+)
+async def test_cmd_orders_http_errors(
+    mocker: MockerFixture,
+    message_factory: Callable[..., Message],
+    error: Exception,
+    expected: str,
+) -> None:
+    mocker.patch("handlers.start.backend_client.get_active_orders", side_effect=error)
+    message = message_factory()
+    await cmd_orders(message)
+    answer_of(message).assert_called_with(expected)
 
-    mock_post.side_effect = httpx.HTTPError("Conn error")
-    await cmd_orders(m)
-    m.answer.assert_called_with("Foodize API сейчас недоступен. Попробуйте чуть позже.")
 
-    mock_post.side_effect = None
-    mock_post.return_value = httpx.Response(HTTPStatus.OK, request=req, json={"data": []})
-    await cmd_orders(m)
-    m.answer.assert_called_with("Активных заказов сейчас нет.")
+async def test_cmd_orders_empty(
+    mocker: MockerFixture, message_factory: Callable[..., Message]
+) -> None:
+    mocker.patch("handlers.start.backend_client.get_active_orders", return_value=[])
+    message = message_factory()
+    await cmd_orders(message)
+    answer_of(message).assert_called_with("Активных заказов сейчас нет.")
 
-    mock_post.return_value = httpx.Response(
-        HTTPStatus.OK,
-        request=req,
-        json={
-            "data": [
-                {
-                    "display_id": "123",
-                    "restaurant_name": "Cafe",
-                    "status": "COOKING",
-                    "total_price": 1000,
-                }
-            ]
-        },
+
+async def test_cmd_orders_with_orders(
+    mocker: MockerFixture, message_factory: Callable[..., Message]
+) -> None:
+    mocker.patch(
+        "handlers.start.backend_client.get_active_orders",
+        return_value=[
+            {
+                "display_id": "123",
+                "restaurant_name": "Cafe",
+                "status": "COOKING",
+                "total_price": 1000,
+            }
+        ],
     )
-    await cmd_orders(m)
-    assert "Ваши активные заказы" in m.answer.call_args[0][0]
+    message = message_factory()
+    await cmd_orders(message)
+    assert "Ваши активные заказы" in answer_of(message).call_args[0][0]

@@ -115,14 +115,16 @@ export const useRestaurantPage = ({
     (rid?: string | null) => {
       const target = rid ?? restaurantUUID;
       if (!target) return;
-      reviewService
-        .getRating(target)
-        .then((res) => {
-          const ratingData = res.data.data;
+      void (async () => {
+        try {
+          const response = await reviewService.getRating(target);
+          const ratingData = response.data.data;
           setRating(ratingData.average_rating);
           setReviewCount(ratingData.review_count);
-        })
-        .catch((err: unknown) => { logError("useRestaurantPage.refreshRating", err); });
+        } catch (error) {
+          logError("useRestaurantPage.refreshRating", error);
+        }
+      })();
     },
     [restaurantUUID],
   );
@@ -132,60 +134,64 @@ export const useRestaurantPage = ({
       const target = rid ?? restaurantUUID;
       if (!target) return;
       setReviewsLoading(true);
-      reviewService
-        .getReviews(target, { page: reviewsPage, size: reviewsPageSize })
-        .then((res) => {
-          const body = res.data;
+      void (async () => {
+        try {
+          const response = await reviewService.getReviews(target, {
+            page: reviewsPage,
+            size: reviewsPageSize,
+          });
+          const body = response.data;
           const list = Array.isArray(body.data) ? body.data : [];
           setReviewsList(list);
           setReviewsTotal(body.pagination.total || 0);
-        })
-        .catch((err: unknown) => {
-          setReviewError(translateApiError(err, "Не удалось загрузить отзывы"));
-        })
-        .finally(() => { setReviewsLoading(false); });
+        } catch (error) {
+          setReviewError(translateApiError(error, "Не удалось загрузить отзывы"));
+        } finally {
+          setReviewsLoading(false);
+        }
+      })();
     },
     [restaurantUUID, reviewsPage, reviewsPageSize],
   );
 
   useEffect(() => {
     if (initialRestaurant) return;
-    let stale = false;
+    const state = { stale: false };
     setRestaurantLoading(true);
     setRestaurantError("");
-    restaurantService
-      .getById(id)
-      .then((res) => {
-        if (stale) return;
-        setRestaurantData(res.data.data);
-      })
-      .catch((err: unknown) => {
-        if (stale) return;
-        setRestaurantError(translateApiError(err, "Не удалось загрузить ресторан"));
-      })
-      .finally(() => {
-        if (stale) return;
-        setRestaurantLoading(false);
-      });
+    void (async () => {
+      try {
+        const response = await restaurantService.getById(id);
+        if (state.stale) return;
+        setRestaurantData(response.data.data);
+      } catch (error) {
+        if (state.stale) return;
+        setRestaurantError(translateApiError(error, "Не удалось загрузить ресторан"));
+      } finally {
+        if (!state.stale) setRestaurantLoading(false);
+      }
+    })();
     return () => {
-      stale = true;
+      state.stale = true;
     };
   }, [id, initialRestaurant]);
 
   useEffect(() => {
     if (!restaurantUUID) return;
-    let stale = false;
+    const state = { stale: false };
     void fetchMenu(restaurantUUID);
     refreshRating(restaurantUUID);
-    restaurantService
-      .getWorkingHours(restaurantUUID)
-      .then((res) => {
-        if (stale) return;
-        setWorkingHours(res.data.data);
-      })
-      .catch((err: unknown) => { logError("useRestaurantPage.getWorkingHours", err); });
+    void (async () => {
+      try {
+        const response = await restaurantService.getWorkingHours(restaurantUUID);
+        if (state.stale) return;
+        setWorkingHours(response.data.data);
+      } catch (error) {
+        logError("useRestaurantPage.getWorkingHours", error);
+      }
+    })();
     return () => {
-      stale = true;
+      state.stale = true;
     };
   }, [restaurantUUID, fetchMenu, refreshRating]);
 

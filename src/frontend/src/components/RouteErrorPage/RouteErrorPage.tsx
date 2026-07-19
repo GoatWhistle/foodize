@@ -6,7 +6,7 @@ interface RouteError {
   message?: string;
 }
 
-const RouteErrorPage = () => {
+export const RouteErrorPage = () => {
   const error = useRouteError() as RouteError | null;
   const navigate = useNavigate();
 
@@ -27,10 +27,10 @@ const RouteErrorPage = () => {
         textAlign: "center",
       }}
     >
-      <div style={{ fontWeight: 700, fontSize: "1.5rem", color: "var(--text-1)" }}>
+      <div style={{ fontWeight: 700, fontSize: "var(--text-xl)", color: "var(--text-1)" }}>
         {status === 404 ? "Страница не найдена" : "Что-то пошло не так"}
       </div>
-      <div style={{ fontSize: "0.9rem", color: "var(--text-3)", maxWidth: 360 }}>
+      <div style={{ fontSize: "var(--text-base)", color: "var(--text-3)", maxWidth: 360 }}>
         {message}
       </div>
       <button
@@ -44,5 +44,3 @@ const RouteErrorPage = () => {
     </div>
   );
 };
-
-export default RouteErrorPage;

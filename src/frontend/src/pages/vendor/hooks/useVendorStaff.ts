@@ -20,25 +20,29 @@ export const useVendorStaff = () => {
   const [staffDecisionLoading, setStaffDecisionLoading] = useState<string | null>(null);
 
   useEffect(() => {
-    vendorService
-      .getStaffRequests({ page: staffPage, size: 20 })
-      .then((res) => {
-        const list = Array.isArray(res.data.data) ? res.data.data : [];
+    void (async () => {
+      try {
+        const response = await vendorService.getStaffRequests({ page: staffPage, size: 20 });
+        const list = Array.isArray(response.data.data) ? response.data.data : [];
         setStaffRequests(list);
-        setStaffTotal(readTotal(res.data, list.length));
-      })
-      .catch((err: unknown) => { logError('useVendorStaff.getStaffRequests', err); });
+        setStaffTotal(readTotal(response.data, list.length));
+      } catch (error) {
+        logError('useVendorStaff.getStaffRequests', error);
+      }
+    })();
   }, [staffPage]);
 
   useEffect(() => {
-    vendorService
-      .getStaffMembers({ page: staffMembersPage, size: 20 })
-      .then((res) => {
-        const list = Array.isArray(res.data.data) ? res.data.data : [];
+    void (async () => {
+      try {
+        const response = await vendorService.getStaffMembers({ page: staffMembersPage, size: 20 });
+        const list = Array.isArray(response.data.data) ? response.data.data : [];
         setStaffMembers(list);
-        setStaffMembersTotal(readTotal(res.data, list.length));
-      })
-      .catch((err: unknown) => { logError('useVendorStaff.getStaffMembers', err); });
+        setStaffMembersTotal(readTotal(response.data, list.length));
+      } catch (error) {
+        logError('useVendorStaff.getStaffMembers', error);
+      }
+    })();
   }, [staffMembersPage]);
 
   const handleStaffDecision = async (requestId: string, status: StaffRequestStatus) => {
@@ -46,20 +50,20 @@ export const useVendorStaff = () => {
     try {
       await vendorService.updateStaffStatus(requestId, status);
       setStaffRequests((prev) =>
-        prev.map((r) => (r.id === requestId ? { ...r, status } : r))
+        prev.map((request) => (request.id === requestId ? { ...request, status } : request))
       );
       if (status === 'ACCEPTED') {
-        vendorService
-          .getStaffMembers({ page: 1, size: 20 })
-          .then((res) => {
-            const list = Array.isArray(res.data.data) ? res.data.data : [];
-            setStaffMembers(list);
-            setStaffMembersTotal(readTotal(res.data, list.length));
-          })
-          .catch((err: unknown) => { logError('useVendorStaff.refreshMembers', err); });
+        try {
+          const response = await vendorService.getStaffMembers({ page: 1, size: 20 });
+          const list = Array.isArray(response.data.data) ? response.data.data : [];
+          setStaffMembers(list);
+          setStaffMembersTotal(readTotal(response.data, list.length));
+        } catch (error) {
+          logError('useVendorStaff.refreshMembers', error);
+        }
       }
-    } catch (err) {
-      logError('useVendorStaff.handleStaffDecision', err);
+    } catch (error) {
+      logError('useVendorStaff.handleStaffDecision', error);
     } finally {
       setStaffDecisionLoading(null);
     }
@@ -70,10 +74,10 @@ export const useVendorStaff = () => {
     setStaffMemberRemoving(profileId);
     try {
       await vendorService.removeStaffMember(profileId);
-      setStaffMembers((prev) => prev.filter((m) => m.id !== profileId));
-      setStaffMembersTotal((t) => t - 1);
-    } catch (err) {
-      logError('useVendorStaff.handleRemoveStaffMember', err);
+      setStaffMembers((prev) => prev.filter((member) => member.id !== profileId));
+      setStaffMembersTotal((total) => total - 1);
+    } catch (error) {
+      logError('useVendorStaff.handleRemoveStaffMember', error);
     } finally {
       setStaffMemberRemoving(null);
     }

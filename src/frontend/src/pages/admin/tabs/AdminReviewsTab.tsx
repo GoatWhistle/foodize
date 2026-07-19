@@ -1,7 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react';
 import { TrashIcon, StarIcon, DownloadSimpleIcon } from '@phosphor-icons/react';
-import Pagination from '@shared/components/Pagination/Pagination';
-import EmptyState from '@shared/components/EmptyState/EmptyState';
+import { Pagination } from '@shared/components/Pagination/Pagination';
+import { EmptyState } from '@shared/components/EmptyState/EmptyState';
 import type { adminService as adminServiceType } from '../../../services/adminService';
 import type { AdminReview, ReviewFilters } from '../hooks/useAdminReviews';
 
@@ -16,7 +16,7 @@ interface AdminReviewsTabProps {
   selectedReviewIds: Set<string>;
   setSelectedReviewIds: Dispatch<SetStateAction<Set<string>>>;
   exportLoading: boolean;
-  handleExport: (exportFn: () => Promise<{ data: Blob }>, filename: string) => void;
+  handleExport: (exportFn: () => Promise<Blob>, filename: string) => void;
   handleDeleteReview: (reviewId: string) => void;
   todayStr: string;
   adminService: typeof adminServiceType;
@@ -43,7 +43,7 @@ const formatDateTime = (value?: string | null) => {
   });
 };
 
-export default function AdminReviewsTab({
+export function AdminReviewsTab({
   reviews,
   reviewsLoading,
   reviewsTotal,
@@ -125,7 +125,7 @@ export default function AdminReviewsTab({
             display: 'flex',
             alignItems: 'center',
             gap: 6,
-            fontSize: '0.82rem',
+            fontSize: "var(--text-base)",
             color: 'var(--text-3)',
             cursor: 'pointer',
           }}
@@ -206,7 +206,7 @@ export default function AdminReviewsTab({
                 )}
               </div>
               <div
-                style={{ color: 'var(--text-3)', fontSize: '0.82rem', marginTop: 6 }}
+                style={{ color: 'var(--text-3)', fontSize: "var(--text-base)", marginTop: 6 }}
               >
                 {review.user_name || review.user_phone || shortId(review.user_id)}{' '}
                 · {formatDateTime(review.created_at)}
@@ -215,7 +215,7 @@ export default function AdminReviewsTab({
                 <div
                   style={{
                     color: 'var(--text-2)',
-                    fontSize: '0.9rem',
+                    fontSize: "var(--text-base)",
                     marginTop: 10,
                     lineHeight: 1.5,
                   }}

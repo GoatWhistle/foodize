@@ -1,9 +1,9 @@
-import SharedFavoritesPage from "@shared/pages/FavoritesPage/FavoritesPage";
+import { FavoritesPage as SharedFavoritesPage } from "@shared/pages/FavoritesPage/FavoritesPage";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { ROUTES } from "../../constants/routes";
 
-const FavoritesPage = () => {
+export const FavoritesPage = () => {
   const navigate = useNavigate();
   return (
     <div className="page-enter" style={{ padding: "80px 20px 100px", maxWidth: 640, margin: "0 auto" }}>
@@ -32,5 +32,3 @@ const FavoritesPage = () => {
     </div>
   );
 };
-
-export default FavoritesPage;

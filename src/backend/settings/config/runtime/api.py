@@ -7,6 +7,10 @@ class RunConfig(BaseConfig):
     metrics_token: str = ""
 
 
+class DocsConfig(BaseConfig):
+    enabled: bool = False
+
+
 class ApiV1Prefix(BaseConfig):
     prefix: str = "/v1"
 

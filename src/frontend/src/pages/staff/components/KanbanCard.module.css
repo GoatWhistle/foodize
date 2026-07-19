@@ -1,0 +1,102 @@
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  cursor: grab;
+  transition: opacity 0.15s;
+  user-select: none;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.orderId {
+  font-weight: 900;
+  font-size: var(--text-md);
+  color: var(--text-1);
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.delayBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-xs);
+  font-weight: 800;
+  border-radius: 99px;
+  padding: 2px 8px;
+}
+
+.price {
+  font-size: var(--text-base);
+  color: var(--text-3);
+  font-weight: 600;
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.itemRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--text-base);
+  color: var(--text-2);
+}
+
+.itemQty {
+  font-weight: 700;
+  color: var(--text-1);
+  margin-left: 8px;
+}
+
+.itemOptions {
+  padding-left: 4px;
+  margin-top: 1px;
+}
+
+.itemOption {
+  font-size: var(--text-sm);
+  margin-right: 6px;
+}
+
+.comment {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+  font-size: var(--text-sm);
+  color: var(--text-3);
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.eta {
+  font-size: var(--text-sm);
+  color: var(--fire);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pickup {
+  font-size: var(--text-sm);
+  color: var(--text-3);
+  font-weight: 700;
+}

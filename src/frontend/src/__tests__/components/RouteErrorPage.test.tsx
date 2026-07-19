@@ -1,4 +1,5 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockNavigate = vi.fn();
@@ -9,7 +10,7 @@ vi.mock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
 }));
 
-const { default: RouteErrorPage } = await import('../../components/RouteErrorPage/RouteErrorPage');
+const { RouteErrorPage } = await import('../../components/RouteErrorPage/RouteErrorPage');
 
 const render$ = () => render(<RouteErrorPage />);
 
@@ -60,9 +61,10 @@ describe('RouteErrorPage', () => {
     expect(screen.getByRole('button', { name: 'На главную' })).toBeInTheDocument();
   });
 
-  it('navigates to "/" when button clicked', () => {
+  it('navigates to "/" when button clicked', async () => {
+    const user = userEvent.setup();
     render$();
-    fireEvent.click(screen.getByRole('button', { name: 'На главную' }));
+    await user.click(screen.getByRole('button', { name: 'На главную' }));
     expect(mockNavigate).toHaveBeenCalledWith('/');
   });
 });

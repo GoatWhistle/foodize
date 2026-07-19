@@ -6,10 +6,11 @@ import { createOrderWebSocket } from "../../services/api";
 import { getOrderStatusStyle, getCustomerOrderStatusLabel } from "@shared/utils/orderStatus";
 import type { ReliableWebSocket } from "@shared/services/api";
 import type { OrderStatus } from "@shared/types/models";
+import styles from "./ActiveOrderBanner.module.css";
 
-const ACTIVE_STATUSES = new Set(["PENDING", "ACCEPTED", "COOKING", "READY"]);
+const ACTIVE_STATUSES = new Set(["PENDING", "ACCEPTED", "READY"]);
 
-export default function ActiveOrderBanner() {
+export function ActiveOrderBanner() {
   const navigate = useNavigate();
   const location = useLocation();
   const activeOrder = useOrdersStore((s) => s.activeOrder);
@@ -29,7 +30,7 @@ export default function ActiveOrderBanner() {
     }
 
     wsRef.current = createOrderWebSocket(activeOrderId, (data) => {
-      const status = data.status;
+      const status = data['status'];
       if (typeof status === "string") {
         if (["COMPLETED", "CANCELLED"].includes(status)) {
           clearActiveOrder();
@@ -59,56 +60,18 @@ export default function ActiveOrderBanner() {
       onClick={() => {
         void navigate(`/orders/${activeOrder.display_id}`);
       }}
-      style={{
-        position: "fixed",
-        top: "env(safe-area-inset-top, 0px)",
-        left: 0,
-        right: 0,
-        zIndex: 100,
-        width: "100%",
-        border: "none",
-        borderBottom: "1px solid var(--border)",
-        background: "var(--bg-card)",
-        padding: "10px 16px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        textAlign: "left",
-        cursor: "pointer",
-        boxShadow: "var(--shadow-md)",
-        font: "inherit",
-      }}
+      className={styles['banner']}
     >
       <div>
+        <div className={styles['orderId']}>Заказ #{activeOrder.display_id}</div>
         <div
-          style={{
-            fontSize: "0.75rem",
-            color: "var(--text-3)",
-            marginBottom: 1,
-          }}
-        >
-          Заказ #{activeOrder.display_id}
-        </div>
-        <div
-          style={{
-            fontSize: "0.875rem",
-            fontWeight: 600,
-            color: getOrderStatusStyle(activeOrder.status).solid,
-          }}
+          className={styles['status']}
+          style={{ color: getOrderStatusStyle(activeOrder.status).solid }}
         >
           {getCustomerOrderStatusLabel(activeOrder.status)}
         </div>
       </div>
-      <div
-        style={{
-          fontSize: "0.78rem",
-          color: "var(--accent)",
-          fontWeight: 600,
-          display: "flex",
-          alignItems: "center",
-          gap: 4,
-        }}
-      >
+      <div className={styles['cta']}>
         Смотреть <ArrowRightIcon size={14} weight="bold" />
       </div>
     </button>

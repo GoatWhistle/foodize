@@ -7,7 +7,7 @@ interface OrderButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children?: ReactNode;
 }
 
-const OrderButton = ({
+export const OrderButton = ({
   onClick,
   children,
   isLoading,
@@ -28,8 +28,8 @@ const OrderButton = ({
       {...props}
     >
       {isLoading ? (
-        <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span className="spinner" style={{ width: "18px", height: "18px" }} />
+        <span style={{ display: "flex", alignItems: "center", gap: "8px" }} role="status" aria-live="polite">
+          <span className="spinner" aria-hidden="true" style={{ width: "18px", height: "18px" }} />
           Оформление...
         </span>
       ) : isSuccess ? (
@@ -43,5 +43,3 @@ const OrderButton = ({
     </button>
   );
 };
-
-export default OrderButton;

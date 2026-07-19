@@ -2,9 +2,9 @@ import { useState, useRef, useCallback } from "react";
 import type { CSSProperties, TouchEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { PackageIcon, ArrowClockwiseIcon } from "@phosphor-icons/react";
-import EmptyState from "@shared/components/EmptyState/EmptyState";
-import OrderCard from "@shared/components/OrderCard/OrderCard";
-import Pagination from "@shared/components/Pagination/Pagination";
+import { EmptyState } from "@shared/components/EmptyState/EmptyState";
+import { OrderCard } from "@shared/components/OrderCard/OrderCard";
+import { Pagination } from "@shared/components/Pagination/Pagination";
 import { useOrdersPageLogic } from "@shared/hooks/useOrdersPageLogic";
 
 interface OrdersPageRoutes {
@@ -28,7 +28,7 @@ interface OrdersPageProps {
   style?: CSSProperties;
 }
 
-const OrdersPage = ({
+export const OrdersPage = ({
   routes = {},
   infiniteScroll = false,
   showPagination = true,
@@ -134,7 +134,7 @@ const OrdersPage = ({
 
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
         <PackageIcon size={22} weight="bold" color="var(--accent)" />
-        <h1 style={{ fontFamily: "var(--font-sans)", fontSize: "1.4rem", fontWeight: 800, letterSpacing: "-0.03em", margin: 0 }}>
+        <h1 style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-xl)", fontWeight: 800, letterSpacing: "-0.03em", margin: 0 }}>
           Мои заказы
         </h1>
       </div>
@@ -144,7 +144,7 @@ const OrdersPage = ({
           <button
             key={key}
             className={`category-chip${statusFilter === key ? " active" : ""}`}
-            style={{ fontSize: "0.8rem" }}
+            style={{ fontSize: "var(--text-base)" }}
             onClick={() => { setStatusFilter(key); setPage(1); }}
           >
             {label}
@@ -194,5 +194,3 @@ const OrdersPage = ({
     </div>
   );
 };
-
-export default OrdersPage;

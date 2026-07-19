@@ -1,6 +1,6 @@
 import type { AxiosInstance } from "axios";
 
-const api = new Proxy(
+export const api = new Proxy(
   {},
   {
     get() {
@@ -16,5 +16,3 @@ const api = new Proxy(
     },
   },
 ) as AxiosInstance;
-
-export default api;

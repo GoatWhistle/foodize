@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const useElapsedSeconds = (startIso?: string | null): number => {
+export const useElapsedSeconds = (startIso?: string | null): number => {
   const [seconds, setSeconds] = useState<number>(
     startIso ? Math.floor((Date.now() - new Date(startIso).getTime()) / 1000) : 0
   );
@@ -13,5 +13,3 @@ const useElapsedSeconds = (startIso?: string | null): number => {
   }, [startIso]);
   return seconds;
 };
-
-export default useElapsedSeconds;

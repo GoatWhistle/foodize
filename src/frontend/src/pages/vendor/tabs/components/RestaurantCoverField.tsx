@@ -56,7 +56,7 @@ export function RestaurantCoverField({ selectedRestaurant }: RestaurantCoverFiel
         gap: 8,
       }}
     >
-      <div style={{ fontWeight: 800, fontSize: '0.86rem' }}>Обложка ресторана</div>
+      <div style={{ fontWeight: 800, fontSize: "var(--text-base)" }}>Обложка ресторана</div>
       {coverError && <div className="form-error">{coverError}</div>}
       <div
         style={{
@@ -113,11 +113,11 @@ export function RestaurantCoverField({ selectedRestaurant }: RestaurantCoverFiel
             Удалить
           </button>
         )}
-        <span style={{ fontSize: '0.7rem', color: 'var(--text-3)' }}>
+        <span style={{ fontSize: "var(--text-xs)", color: 'var(--text-3)' }}>
           JPEG, PNG или WebP · до 5 МБ
         </span>
       </div>
-      <span style={{ fontSize: '0.72rem', color: 'var(--text-3)' }}>
+      <span style={{ fontSize: "var(--text-sm)", color: 'var(--text-3)' }}>
         Показывается широким баннером в шапке страницы ресторана. Лучше всего
         подходит горизонтальное фото (например, интерьер или блюдо крупным
         планом) шириной от 1200 px — вертикальные будут сильно обрезаны.

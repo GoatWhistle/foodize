@@ -1,5 +1,5 @@
 import { FireIcon } from '@phosphor-icons/react';
-import KanbanColumn from './KanbanColumn';
+import { KanbanColumn } from './KanbanColumn';
 import { COLUMN_DEFS } from '../staffColumns';
 import type { StaffColumnDef } from '../staffColumns';
 import type { StaffOrder } from '../types';
@@ -16,7 +16,7 @@ interface StaffOrdersTabProps {
   onDrop: (column: StaffColumnDef) => void;
 }
 
-const StaffOrdersTab = ({
+export const StaffOrdersTab = ({
   orders,
   ordersLoading,
   updating,
@@ -52,7 +52,7 @@ const StaffOrdersTab = ({
             border: '1px solid var(--color-error-border)',
             borderRadius: 'var(--r-md)',
             color: 'var(--color-error)',
-            fontSize: '0.85rem',
+            fontSize: "var(--text-base)",
             fontWeight: 700,
             display: 'flex',
             alignItems: 'center',
@@ -99,5 +99,3 @@ const StaffOrdersTab = ({
     </>
   );
 };
-
-export default StaffOrdersTab;

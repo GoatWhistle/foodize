@@ -1,12 +1,9 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-
 from features.admin.service.analytics import get_advanced_analytics, get_finance, get_stats
 
 
 class TestGetStats:
-    @pytest.mark.asyncio
     async def test_delegates_to_crud(self) -> None:
         stats = MagicMock()
         with patch(
@@ -17,7 +14,6 @@ class TestGetStats:
 
 
 class TestGetFinance:
-    @pytest.mark.asyncio
     async def test_delegates_to_crud(self) -> None:
         analytics = MagicMock()
         with patch(
@@ -30,7 +26,6 @@ class TestGetFinance:
 
 
 class TestGetAdvancedAnalytics:
-    @pytest.mark.asyncio
     async def test_delegates_to_crud(self) -> None:
         analytics = MagicMock()
         with patch(

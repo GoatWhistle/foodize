@@ -16,14 +16,12 @@ def _session_returning(restaurant: object | None) -> AsyncMock:
 
 
 class TestRestaurantDependencies:
-    @pytest.mark.asyncio
     async def test_get_restaurant_and_check_ownership_404(self) -> None:
         mock_session = _session_returning(None)
 
         with pytest.raises(NotFoundException):
             await get_restaurant_and_check_ownership(mock_session, uuid.uuid4(), uuid.uuid4())
 
-    @pytest.mark.asyncio
     async def test_get_restaurant_and_check_ownership_wrong_owner(self) -> None:
         mock_rest = MagicMock(vendor_id=uuid.uuid4())
         mock_session = _session_returning(mock_rest)

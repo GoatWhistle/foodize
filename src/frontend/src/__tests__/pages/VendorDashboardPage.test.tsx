@@ -1,13 +1,13 @@
 import {
   render,
   screen,
-  fireEvent,
   waitFor,
   act,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
-import VendorDashboardPage from '../../pages/vendor/VendorDashboardPage';
+import { VendorDashboardPage } from '../../pages/vendor/VendorDashboardPage';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useRestaurantStore } from '@shared/store/useRestaurantStore.js';
 import { vendorService } from '@shared/services/vendorService.js';
@@ -117,11 +117,12 @@ describe('VendorDashboardPage', () => {
 
     await waitForVendorEffects();
 
-    expect(screen.getByText('Дашборд вендора')).toBeDefined();
-    expect(screen.getByText('My Resto')).toBeDefined();
+    expect(screen.getByText('Дашборд вендора')).toBeInTheDocument();
+    expect(screen.getByText('My Resto')).toBeInTheDocument();
   });
 
   it('opens add restaurant form and submits', async () => {
+    const user = userEvent.setup();
     render(
       <BrowserRouter>
         <VendorDashboardPage />
@@ -130,18 +131,14 @@ describe('VendorDashboardPage', () => {
 
     const addButton = await screen.findByRole('button', { name: /Добавить/ });
     await waitFor(() => { expect(addButton).not.toBeDisabled(); });
-    fireEvent.click(addButton);
+    await user.click(addButton);
 
-    expect(screen.getByText('Новое заведение')).toBeDefined();
+    expect(screen.getByText('Новое заведение')).toBeInTheDocument();
 
-    fireEvent.change(screen.getByPlaceholderText('Название'), {
-      target: { value: 'New Place' },
-    });
-    fireEvent.change(screen.getByPlaceholderText('Адрес'), {
-      target: { value: 'New Addr' },
-    });
+    await user.type(screen.getByPlaceholderText('Название'), 'New Place');
+    await user.type(screen.getByPlaceholderText('Адрес'), 'New Addr');
 
-    fireEvent.click(screen.getByText('Создать'));
+    await user.click(screen.getByText('Создать'));
 
     await waitFor(() => {
       expect(createRestaurantMock).toHaveBeenCalledWith(
@@ -156,18 +153,16 @@ describe('VendorDashboardPage', () => {
   });
 
   it('selects a restaurant and shows its menu section', async () => {
+    const user = userEvent.setup();
     render(
       <BrowserRouter>
         <VendorDashboardPage />
       </BrowserRouter>
     );
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('My Resto'));
-      await Promise.resolve();
-    });
+    await user.click(screen.getByText('My Resto'));
 
-    expect(screen.getByText(/Позиции меню/)).toBeDefined();
+    expect(screen.getByText(/Позиции меню/)).toBeInTheDocument();
   });
 
   it('shows pending moderation banner when approval_status is PENDING', async () => {
@@ -182,7 +177,7 @@ describe('VendorDashboardPage', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Профиль на модерации')).toBeDefined();
+      expect(screen.getByText('Профиль на модерации')).toBeInTheDocument();
     });
   });
 
@@ -198,8 +193,8 @@ describe('VendorDashboardPage', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Профиль отклонён')).toBeDefined();
-      expect(screen.getByText(/Неверные документы/)).toBeDefined();
+      expect(screen.getByText('Профиль отклонён')).toBeInTheDocument();
+      expect(screen.getByText(/Неверные документы/)).toBeInTheDocument();
     });
   });
 
@@ -231,7 +226,7 @@ describe('VendorDashboardPage', () => {
       </BrowserRouter>
     );
 
-    expect(screen.getByText('Дашборд вендора')).toBeDefined();
+    expect(screen.getByText('Дашборд вендора')).toBeInTheDocument();
 
     await act(async () => {
       resolveProfile({ data: { data: { approval_status: 'APPROVED' } } });

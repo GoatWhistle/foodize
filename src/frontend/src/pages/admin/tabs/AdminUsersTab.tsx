@@ -1,7 +1,7 @@
 import type { ChangeEvent, Dispatch, SetStateAction } from 'react';
 import { DownloadSimpleIcon } from '@phosphor-icons/react';
-import Pagination from '@shared/components/Pagination/Pagination';
-import EmptyState from '@shared/components/EmptyState/EmptyState';
+import { Pagination } from '@shared/components/Pagination/Pagination';
+import { EmptyState } from '@shared/components/EmptyState/EmptyState';
 import { PERMISSION_PRESET_RU } from '@shared/utils/permissions';
 import type { AuthUser } from '@shared/store/createAuthStore';
 import type { adminService as AdminService } from '../../../services/adminService';
@@ -22,7 +22,7 @@ export interface AdminUsersTabProps {
   selectedUserIds: Set<string>;
   setSelectedUserIds: Dispatch<SetStateAction<Set<string>>>;
   exportLoading: boolean;
-  handleExport: (exportFn: () => Promise<{ data: Blob }>, filename: string) => void;
+  handleExport: (exportFn: () => Promise<Blob>, filename: string) => void;
   loadUserDetails: (id: string) => void;
   handleDeleteUser: (id: string) => void;
   currentUser: AuthUser | null;
@@ -31,7 +31,7 @@ export interface AdminUsersTabProps {
   PAGE_SIZE: number;
 }
 
-export default function AdminUsersTab({
+export function AdminUsersTab({
   users,
   usersLoading,
   usersTotal,
@@ -56,11 +56,11 @@ export default function AdminUsersTab({
 
   if (usersLoading && isEmpty) {
     return (
-      <div className={styles.list}>
+      <div className={styles['list']}>
         {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className={styles.skeletonCard}>
-            <div className={`skeleton ${styles.skeletonLine}`} style={{ width: '30%' }} />
-            <div className={`skeleton ${styles.skeletonLineSub}`} style={{ width: '70%' }} />
+          <div key={i} className={styles['skeletonCard']}>
+            <div className={`skeleton ${styles['skeletonLine']}`} style={{ width: '30%' }} />
+            <div className={`skeleton ${styles['skeletonLineSub']}`} style={{ width: '70%' }} />
           </div>
         ))}
       </div>
@@ -68,10 +68,10 @@ export default function AdminUsersTab({
   }
 
   return (
-    <div className={`${styles.list} ${usersLoading ? 'loading-dim' : ''}`}>
-      <div className={styles.wideFilterGrid}>
+    <div className={`${styles['list']} ${usersLoading ? 'loading-dim' : ''}`}>
+      <div className={styles['wideFilterGrid']}>
         <input
-          className={`form-input ${styles.filterControl}`}
+          className={`form-input ${styles['filterControl']}`}
           placeholder="Поиск по имени или телефону"
           value={userSearchRaw}
           onChange={(event: ChangeEvent<HTMLInputElement>) => {
@@ -80,7 +80,7 @@ export default function AdminUsersTab({
           }}
         />
         <select
-          className={`form-input ${styles.filterControl} ${styles.selectFilter}`}
+          className={`form-input ${styles['filterControl']} ${styles['selectFilter']}`}
           value={userFilters.role}
           onChange={(event: ChangeEvent<HTMLSelectElement>) => {
             setUsersPage(1);
@@ -111,7 +111,7 @@ export default function AdminUsersTab({
             display: 'flex',
             alignItems: 'center',
             gap: 6,
-            fontSize: '0.82rem',
+            fontSize: "var(--text-base)",
             color: 'var(--text-3)',
             cursor: 'pointer',
           }}

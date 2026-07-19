@@ -3,12 +3,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from features.menu.exceptions import MenuItemNotFoundException
+from features.menu.schemas import MenuItemCreate, MenuItemUpdate
 from features.menu.services.menu_items import (
     add_menu_item,
     delete_menu_item_for_vendor,
     get_menu,
     update_menu_item_for_vendor,
 )
+from shared.enums.category import Category
 
 
 def _mock_session() -> AsyncMock:
@@ -18,7 +21,6 @@ def _mock_session() -> AsyncMock:
 
 
 class TestMenuService:
-    @pytest.mark.asyncio
     async def test_get_menu(self) -> None:
         with (
             patch(
@@ -36,9 +38,7 @@ class TestMenuService:
             assert data == []
             assert total == 0
 
-    @pytest.mark.asyncio
     async def test_get_menu_with_items(self) -> None:
-        from shared.enums.category import Category
 
         restaurant_id = uuid.uuid4()
         item = MagicMock()
@@ -69,10 +69,7 @@ class TestMenuService:
             assert len(data) == 1
             assert total == 1
 
-    @pytest.mark.asyncio
     async def test_add_menu_item_success(self) -> None:
-        from features.menu.schemas import MenuItemCreate
-        from shared.enums.category import Category
 
         restaurant_id = uuid.uuid4()
         vendor_id = uuid.uuid4()
@@ -103,10 +100,7 @@ class TestMenuService:
             result = await add_menu_item(_mock_session(), restaurant_id, item_data, vendor_id)
             assert result.name == "Burger"
 
-    @pytest.mark.asyncio
     async def test_update_menu_item_success(self) -> None:
-        from features.menu.schemas import MenuItemUpdate
-        from shared.enums.category import Category
 
         restaurant_id = uuid.uuid4()
         vendor_id = uuid.uuid4()
@@ -159,7 +153,6 @@ class TestMenuService:
             )
             assert result.name == "Updated Burger"
 
-    @pytest.mark.asyncio
     async def test_delete_menu_item_success(self) -> None:
         restaurant_id = uuid.uuid4()
         vendor_id = uuid.uuid4()
@@ -181,9 +174,7 @@ class TestMenuService:
         ):
             await delete_menu_item_for_vendor(_mock_session(), restaurant_id, item_id, vendor_id)
 
-    @pytest.mark.asyncio
     async def test_delete_menu_item_not_found(self) -> None:
-        from features.menu.exceptions import MenuItemNotFoundException
 
         restaurant_id = uuid.uuid4()
         vendor_id = uuid.uuid4()

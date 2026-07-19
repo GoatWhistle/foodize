@@ -19,6 +19,10 @@ logger = logging.getLogger(__name__)
 _MAX_RETRIES = 3
 _RETRY_BASE_DELAY = 2.0
 _DEDUP_TTL_SECONDS = 86400
+_PREFETCH_COUNT = 10
+_RETRY_COUNT_HEADER = "x-retry-count"
+_EVENTS_EXCHANGE = "foodize.events"
+_DLX_EXCHANGE = "foodize.dlx"
 
 _EventHandler = Callable[[dict[str, Any], Bot], Awaitable[None]]
 
@@ -70,47 +74,56 @@ async def _process(
         logger.exception("Failed to process notification message")
         if event_id:
             await _release_event(event_id)
-        headers = message.headers or {}
-        raw_retry_count = headers.get("x-retry-count", 0)
-        retry_count = raw_retry_count if isinstance(raw_retry_count, int) else 0
+        await _requeue_or_dead_letter(message, exchange, routing_key)
 
-        if retry_count < _MAX_RETRIES:
-            backoff = _RETRY_BASE_DELAY * (2**retry_count)
-            logger.info(
-                "Requeueing message (attempt %d/%d) after %.1fs backoff",
-                retry_count + 1,
-                _MAX_RETRIES,
-                backoff,
-            )
-            await asyncio.sleep(backoff)
-            new_headers = dict(headers)
-            new_headers["x-retry-count"] = retry_count + 1
 
-            new_message = aio_pika.Message(
-                body=message.body,
-                headers=new_headers,
-                delivery_mode=message.delivery_mode,
-            )
-            await exchange.publish(new_message, routing_key=routing_key)
-            await message.ack()
-        else:
-            logger.error("Message exceeded max retries, moving to DLQ")
-            await message.reject(requeue=False)
+async def _requeue_or_dead_letter(
+    message: aio_pika.IncomingMessage,
+    exchange: AbstractExchange,
+    routing_key: str,
+) -> None:
+    headers = message.headers or {}
+    raw_retry_count = headers.get(_RETRY_COUNT_HEADER, 0)
+    retry_count = raw_retry_count if isinstance(raw_retry_count, int) else 0
+
+    if retry_count >= _MAX_RETRIES:
+        logger.error("Message exceeded max retries, moving to DLQ")
+        await message.reject(requeue=False)
+        return
+
+    backoff = _RETRY_BASE_DELAY * (2**retry_count)
+    logger.info(
+        "Requeueing message (attempt %d/%d) after %.1fs backoff",
+        retry_count + 1,
+        _MAX_RETRIES,
+        backoff,
+    )
+    await asyncio.sleep(backoff)
+    new_headers = dict(headers)
+    new_headers[_RETRY_COUNT_HEADER] = retry_count + 1
+
+    new_message = aio_pika.Message(
+        body=message.body,
+        headers=new_headers,
+        delivery_mode=message.delivery_mode,
+    )
+    await exchange.publish(new_message, routing_key=routing_key)
+    await message.ack()
 
 
 async def start_notification_consumer(bot: Bot) -> None:
     connection = await aio_pika.connect_robust(bot_config.rabbitmq_url)
     channel = await connection.channel()
-    await channel.set_qos(prefetch_count=10)
+    await channel.set_qos(prefetch_count=_PREFETCH_COUNT)
 
     exchange = await channel.declare_exchange(
-        "foodize.events",
+        _EVENTS_EXCHANGE,
         aio_pika.ExchangeType.TOPIC,
         durable=True,
     )
 
     dlx = await channel.declare_exchange(
-        "foodize.dlx",
+        _DLX_EXCHANGE,
         aio_pika.ExchangeType.TOPIC,
         durable=True,
     )
@@ -123,7 +136,7 @@ async def start_notification_consumer(bot: Bot) -> None:
             queue_name,
             durable=True,
             arguments={
-                "x-dead-letter-exchange": "foodize.dlx",
+                "x-dead-letter-exchange": _DLX_EXCHANGE,
                 "x-dead-letter-routing-key": queue_name,
             },
         )

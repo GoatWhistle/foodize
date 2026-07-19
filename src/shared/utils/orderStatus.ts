@@ -17,18 +17,6 @@ const STATUS_STYLE = {
     border: "var(--fire-glow)",
     solid: "var(--fire)",
   },
-  PREPARING: {
-    color: "var(--fire-dim)",
-    bg: "var(--fire-subtle)",
-    border: "var(--fire-glow)",
-    solid: "var(--fire)",
-  },
-  COOKING: {
-    color: "var(--fire-dim)",
-    bg: "var(--fire-subtle)",
-    border: "var(--fire-glow)",
-    solid: "var(--fire)",
-  },
   READY: {
     color: "var(--color-success-dim)",
     bg: "var(--color-success-bg)",

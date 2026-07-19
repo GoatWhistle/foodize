@@ -4,6 +4,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from features.promos.exceptions import (
+    PromoNotActiveException,
+    PromoNotFoundException,
+    PromoRestaurantMismatchException,
+    PromoUsageLimitException,
+)
 from features.promos.service import validate_promo
 
 
@@ -33,9 +39,7 @@ def _make_promo(
 
 
 class TestValidatePromo:
-    @pytest.mark.asyncio
     async def test_not_found(self) -> None:
-        from features.promos.exceptions import PromoNotFoundException
 
         with patch(
             "features.promos.crud.get_promo_by_code",
@@ -45,9 +49,7 @@ class TestValidatePromo:
             with pytest.raises(PromoNotFoundException):
                 await validate_promo(MagicMock(), "NOCODE", uuid.uuid4())
 
-    @pytest.mark.asyncio
     async def test_restaurant_mismatch(self) -> None:
-        from features.promos.exceptions import PromoRestaurantMismatchException
 
         promo = _make_promo()
         with patch(
@@ -58,9 +60,7 @@ class TestValidatePromo:
             with pytest.raises(PromoRestaurantMismatchException):
                 await validate_promo(MagicMock(), "TEST10", uuid.uuid4())
 
-    @pytest.mark.asyncio
     async def test_not_active(self) -> None:
-        from features.promos.exceptions import PromoNotActiveException
 
         promo = _make_promo(is_active=False)
         with patch(
@@ -71,9 +71,7 @@ class TestValidatePromo:
             with pytest.raises(PromoNotActiveException):
                 await validate_promo(MagicMock(), "TEST10", promo.restaurant_id)
 
-    @pytest.mark.asyncio
     async def test_expired(self) -> None:
-        from features.promos.exceptions import PromoNotActiveException
 
         promo = _make_promo(expires_at=datetime.now(UTC) - timedelta(hours=1))
         with patch(
@@ -84,7 +82,6 @@ class TestValidatePromo:
             with pytest.raises(PromoNotActiveException):
                 await validate_promo(MagicMock(), "TEST10", promo.restaurant_id)
 
-    @pytest.mark.asyncio
     async def test_not_expired_aware_datetime(self) -> None:
         promo = _make_promo(expires_at=datetime.now(UTC) + timedelta(hours=1))
         with patch(
@@ -95,9 +92,7 @@ class TestValidatePromo:
             result = await validate_promo(MagicMock(), "TEST10", promo.restaurant_id)
             assert result.code == promo.code
 
-    @pytest.mark.asyncio
     async def test_usage_limit_reached(self) -> None:
-        from features.promos.exceptions import PromoUsageLimitException
 
         promo = _make_promo(max_uses=5, used_count=5)
         with patch(
@@ -108,7 +103,6 @@ class TestValidatePromo:
             with pytest.raises(PromoUsageLimitException):
                 await validate_promo(MagicMock(), "TEST10", promo.restaurant_id)
 
-    @pytest.mark.asyncio
     async def test_percent_discount(self) -> None:
         promo = _make_promo(discount_type="PERCENT", discount_value=10)
         with patch(
@@ -121,7 +115,6 @@ class TestValidatePromo:
             )
             assert result.discounted_amount == 900
 
-    @pytest.mark.asyncio
     async def test_flat_discount(self) -> None:
         promo = _make_promo(discount_type="FIXED", discount_value=200)
         with patch(
@@ -134,7 +127,6 @@ class TestValidatePromo:
             )
             assert result.discounted_amount == 800
 
-    @pytest.mark.asyncio
     async def test_no_order_total(self) -> None:
         promo = _make_promo()
         with patch(

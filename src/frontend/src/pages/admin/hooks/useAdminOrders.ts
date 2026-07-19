@@ -31,22 +31,24 @@ export const useAdminOrders = ({ activeTab, setActionError }: UseAdminOrdersArgs
   useEffect(() => {
     if (activeTab !== 'orders' && activeTab !== 'resolution') return;
     setOrdersLoading(true);
-    adminService
-      .getOrders({
-        page: ordersPage,
-        size: PAGE_SIZE,
-        status: orderFilters.status || undefined,
-        search: orderSearch || undefined,
-        date_from: orderFilters.date_from || undefined,
-        date_to: orderFilters.date_to || undefined,
-      })
-      .then((res) => {
-        const body = res.data;
-        setOrders(body.data);
-        setOrdersTotal(body.pagination.total || 0);
-      })
-      .catch(() => { setActionError('Не удалось загрузить заказы'); })
-      .finally(() => { setOrdersLoading(false); });
+    void (async () => {
+      try {
+        const { items, total } = await adminService.getOrders({
+          page: ordersPage,
+          size: PAGE_SIZE,
+          status: orderFilters.status || undefined,
+          search: orderSearch || undefined,
+          date_from: orderFilters.date_from || undefined,
+          date_to: orderFilters.date_to || undefined,
+        });
+        setOrders(items);
+        setOrdersTotal(total);
+      } catch {
+        setActionError('Не удалось загрузить заказы');
+      } finally {
+        setOrdersLoading(false);
+      }
+    })();
   }, [activeTab, ordersPage, orderFilters, orderSearch, setActionError]);
 
   return {

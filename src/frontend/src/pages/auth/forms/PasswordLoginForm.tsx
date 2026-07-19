@@ -1,5 +1,5 @@
 import type { FormEvent } from 'react';
-import TelegramLogo from '@shared/components/BrandIcons/TelegramLogo';
+import { TelegramLogo } from '@shared/components/BrandIcons/TelegramLogo';
 import { formatPhoneNumber } from '@shared/utils/phone';
 
 interface PasswordLoginFormProps {
@@ -12,7 +12,7 @@ interface PasswordLoginFormProps {
   onSwitchToTelegram: () => void;
 }
 
-const PasswordLoginForm = ({
+export const PasswordLoginForm = ({
   phoneNumber,
   setPhoneNumber,
   password,
@@ -86,5 +86,3 @@ const PasswordLoginForm = ({
     </button>
   </form>
 );
-
-export default PasswordLoginForm;

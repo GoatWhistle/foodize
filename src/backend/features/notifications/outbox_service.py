@@ -5,7 +5,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
 from prometheus_client import Gauge
-from sqlalchemy import CursorResult, delete, func, select
+from sqlalchemy import CursorResult, Delete, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.db_helper import db_helper
@@ -139,47 +139,37 @@ async def publish_pending_events(
     return published
 
 
+async def _execute_delete(session: AsyncSession, stmt: Delete) -> int:
+    result = cast("CursorResult[Any]", await session.execute(stmt))
+    return result.rowcount or 0
+
+
 async def purge_stale_records(session: AsyncSession) -> int:
     now = datetime.now(UTC)
     outbox_cutoff = now - timedelta(days=_OUTBOX_RETENTION_DAYS)
     idempotency_cutoff = now - timedelta(days=_IDEMPOTENCY_RETENTION_DAYS)
-
     processed_cutoff = now - timedelta(days=_OUTBOX_RETENTION_DAYS)
 
-    outbox_result = cast(
-        "CursorResult[Any]",
-        await session.execute(
-            delete(OutboxEvent)
-            .where(
-                OutboxEvent.status.in_([OutboxStatus.PUBLISHED.value, OutboxStatus.FAILED.value])
-            )
-            .where(OutboxEvent.created_at < outbox_cutoff)
-        ),
+    outbox_removed = await _execute_delete(
+        session,
+        delete(OutboxEvent)
+        .where(OutboxEvent.status.in_([OutboxStatus.PUBLISHED.value, OutboxStatus.FAILED.value]))
+        .where(OutboxEvent.created_at < outbox_cutoff),
     )
-    idempotency_result = cast(
-        "CursorResult[Any]",
-        await session.execute(
-            delete(IdempotencyKey).where(IdempotencyKey.created_at < idempotency_cutoff)
-        ),
+    idempotency_removed = await _execute_delete(
+        session, delete(IdempotencyKey).where(IdempotencyKey.created_at < idempotency_cutoff)
     )
-    processed_result = cast(
-        "CursorResult[Any]",
-        await session.execute(
-            delete(ProcessedEvent).where(ProcessedEvent.created_at < processed_cutoff)
-        ),
+    processed_removed = await _execute_delete(
+        session, delete(ProcessedEvent).where(ProcessedEvent.created_at < processed_cutoff)
     )
     await session.commit()
-    removed = (
-        (outbox_result.rowcount or 0)
-        + (idempotency_result.rowcount or 0)
-        + (processed_result.rowcount or 0)
-    )
+    removed = outbox_removed + idempotency_removed + processed_removed
     if removed:
         logger.info(
             "retention_purge_done",
-            outbox_removed=outbox_result.rowcount or 0,
-            idempotency_removed=idempotency_result.rowcount or 0,
-            processed_removed=processed_result.rowcount or 0,
+            outbox_removed=outbox_removed,
+            idempotency_removed=idempotency_removed,
+            processed_removed=processed_removed,
         )
     return removed
 

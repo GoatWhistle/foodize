@@ -8,7 +8,6 @@ from features.cart.schemas import CartItemIn, CartUpdate
 from features.cart.service import CartService
 
 
-@pytest.mark.asyncio
 class TestCartService:
     @pytest.fixture
     def mock_cache(self) -> AsyncMock:

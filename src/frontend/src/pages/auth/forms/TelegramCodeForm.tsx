@@ -12,7 +12,7 @@ interface TelegramCodeFormProps {
   onResend: () => void | Promise<void>;
 }
 
-const TelegramCodeForm = ({
+export const TelegramCodeForm = ({
   telegramCode,
   setTelegramCode,
   isLoading,
@@ -105,5 +105,3 @@ const TelegramCodeForm = ({
     </form>
   );
 };
-
-export default TelegramCodeForm;

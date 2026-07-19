@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { StorefrontIcon } from '@phosphor-icons/react';
-import RestaurantCard from '@shared/components/RestaurantCard/RestaurantCard';
-import EmptyState from '@shared/components/EmptyState/EmptyState';
-import Pagination from '@shared/components/Pagination/Pagination';
-import SearchFilterBar from '@shared/components/SearchFilterBar/SearchFilterBar';
+import { RestaurantCard } from '@shared/components/RestaurantCard/RestaurantCard';
+import { EmptyState } from '@shared/components/EmptyState/EmptyState';
+import { Pagination } from '@shared/components/Pagination/Pagination';
+import { SearchFilterBar } from '@shared/components/SearchFilterBar/SearchFilterBar';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useFavoriteStore } from '@shared/store/useFavoriteStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -11,7 +11,11 @@ import { ROUTES } from '../../constants/routes';
 import { useHomePageLogic } from '@shared/hooks/useHomePageLogic';
 import type { Restaurant } from '@shared/types/models';
 
-const HomePage = () => {
+const PAGE_SIZE = 20;
+const SKELETON_CARD_COUNT = 8;
+const CARD_FADE_STEP_MS = 40;
+
+export const HomePage = () => {
   const isAuthenticated = useAuthStore((s) => s.user !== null);
   const { favoriteIds } = useFavoriteStore(
     useShallow((s) => ({ favoriteIds: s.favoriteIds }))
@@ -28,9 +32,7 @@ const HomePage = () => {
     loading,
     publicRestaurantsTotal,
     resetFilters,
-  } = useHomePageLogic({ pageSize: 20, infiniteScroll: false });
-
-  const size = 20;
+  } = useHomePageLogic({ pageSize: PAGE_SIZE, infiniteScroll: false });
 
   const handleCardClick = (restaurant: Restaurant) => {
     if (!isAuthenticated) {
@@ -66,15 +68,15 @@ const HomePage = () => {
           <h1 className="section-title">Все заведения</h1>
           <span
             className="text-muted"
-            style={{ fontSize: '0.8rem', fontWeight: 600 }}
+            style={{ fontSize: "var(--text-base)", fontWeight: 600 }}
           >
             {allRestaurants.length}
           </span>
         </div>
 
         {loading && allRestaurants.length === 0 ? (
-          <div className="restaurants-grid">
-            {Array.from({ length: 8 }).map((_, i) => (
+          <div className="restaurants-grid" role="status" aria-busy="true" aria-label="Загрузка ресторанов">
+            {Array.from({ length: SKELETON_CARD_COUNT }).map((_, i) => (
               <div key={i} className="restaurant-card-skeleton" />
             ))}
           </div>
@@ -96,7 +98,7 @@ const HomePage = () => {
                 <div
                   key={r.id}
                   className="restaurant-card-fade"
-                  style={{ animationDelay: `${i * 40}ms` }}
+                  style={{ animationDelay: `${i * CARD_FADE_STEP_MS}ms` }}
                 >
                   <RestaurantCard
                     restaurant={r}
@@ -108,7 +110,7 @@ const HomePage = () => {
             </div>
             <Pagination
               page={page}
-              totalPages={Math.ceil((publicRestaurantsTotal || 1) / size)}
+              totalPages={Math.ceil((publicRestaurantsTotal || 1) / PAGE_SIZE)}
               onPageChange={setPage}
             />
           </div>
@@ -117,5 +119,3 @@ const HomePage = () => {
     </div>
   );
 };
-
-export default HomePage;

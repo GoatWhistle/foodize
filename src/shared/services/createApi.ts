@@ -26,6 +26,19 @@ interface ErrorDetailObject {
   error?: string;
 }
 
+const CSRF_COOKIE_NAME = "csrf_token";
+const CSRF_HEADER_NAME = "X-CSRF-Token";
+const MUTATING_METHODS = new Set(["post", "put", "patch", "delete"]);
+
+const readCsrfToken = (): string | null => {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith(`${CSRF_COOKIE_NAME}=`));
+  const value = match?.split("=")[1];
+  return value ? decodeURIComponent(value) : null;
+};
+
 const normalizeErrorDetail = (
   error: AxiosError<{ detail?: unknown }>,
 ): void => {
@@ -74,6 +87,10 @@ export function createApi({
       if (token) config.headers.Authorization = `Bearer ${token}`;
     }
     config.headers["X-Request-Id"] = makeId();
+    if (withCredentials && MUTATING_METHODS.has((config.method ?? "").toLowerCase())) {
+      const csrfToken = readCsrfToken();
+      if (csrfToken) config.headers[CSRF_HEADER_NAME] = csrfToken;
+    }
     return config;
   });
 

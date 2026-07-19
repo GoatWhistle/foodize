@@ -29,11 +29,11 @@ interface BatchActionBarProps {
   actions: BatchAction[];
 }
 
-export default function BatchActionBar({ count, label, loading, onClear, actions }: BatchActionBarProps) {
+export function BatchActionBar({ count, label, loading, onClear, actions }: BatchActionBarProps) {
   if (!count) return null;
   return (
     <div style={STYLE}>
-      <span style={{ fontWeight: 700, fontSize: '0.9rem', flex: 1 }}>
+      <span style={{ fontWeight: 700, fontSize: "var(--text-base)", flex: 1 }}>
         Выбрано: {count} {label}
       </span>
       <button className="btn btn-secondary btn-sm" disabled={loading} onClick={onClear}>

@@ -8,6 +8,23 @@ from features.orders.models import Order, OrderItem, OrderItemOption
 from features.orders.schemas.order import OrderCreate
 
 
+def _add_option_snapshots(
+    session: AsyncSession,
+    order_items: list[tuple[OrderItem, int]],
+    selected_options_by_item: dict[int, list[MenuItemOption]],
+) -> None:
+    for order_item, index in order_items:
+        for option in selected_options_by_item[index]:
+            session.add(
+                OrderItemOption(
+                    order_item_id=order_item.id,
+                    option_id=option.id,
+                    name_snapshot=option.name,
+                    price_delta_snapshot=option.price_delta,
+                )
+            )
+
+
 async def insert_order_with_items(
     session: AsyncSession,
     order_data: OrderCreate,
@@ -44,15 +61,6 @@ async def insert_order_with_items(
     session.add_all([order_item for order_item, _ in order_items])
     await session.flush()
 
-    for order_item, index in order_items:
-        for option in selected_options_by_item[index]:
-            session.add(
-                OrderItemOption(
-                    order_item_id=order_item.id,
-                    option_id=option.id,
-                    name_snapshot=option.name,
-                    price_delta_snapshot=option.price_delta,
-                )
-            )
+    _add_option_snapshots(session, order_items, selected_options_by_item)
     await session.flush()
     return order

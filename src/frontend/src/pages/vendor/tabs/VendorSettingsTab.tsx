@@ -19,7 +19,7 @@ const toDateTimeLocalValue = (value: string | null | undefined): string => {
   return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
 };
 
-export default function VendorSettingsTab({
+export function VendorSettingsTab({
   selectedRestaurant,
   editRestaurant,
   setEditRestaurant,
@@ -46,7 +46,7 @@ export default function VendorSettingsTab({
       >
         {formError && <div className="form-error">{formError}</div>}
         <div>
-          <label style={{ fontSize: '0.8rem', color: 'var(--text-3)' }}>Название</label>
+          <label style={{ fontSize: "var(--text-base)", color: 'var(--text-3)' }}>Название</label>
           <input
             className="form-input"
             value={editRestaurant?.name ?? selectedRestaurant.name}
@@ -56,7 +56,7 @@ export default function VendorSettingsTab({
           />
         </div>
         <div>
-          <label style={{ fontSize: '0.8rem', color: 'var(--text-3)' }}>Описание ресторана</label>
+          <label style={{ fontSize: "var(--text-base)", color: 'var(--text-3)' }}>Описание ресторана</label>
           <textarea
             className="form-input"
             placeholder="Краткое описание заведения для посетителей..."
@@ -72,7 +72,7 @@ export default function VendorSettingsTab({
           />
         </div>
         <div>
-          <label style={{ fontSize: '0.8rem', color: 'var(--text-3)' }}>Адрес</label>
+          <label style={{ fontSize: "var(--text-base)", color: 'var(--text-3)' }}>Адрес</label>
           <input
             className="form-input"
             value={editRestaurant?.address ?? selectedRestaurant.address}
@@ -114,7 +114,7 @@ export default function VendorSettingsTab({
           <span className="form-check-label">Пауза приёма заказов</span>
         </label>
         <div>
-          <label style={{ fontSize: '0.8rem', color: 'var(--text-3)' }}>Пауза до</label>
+          <label style={{ fontSize: "var(--text-base)", color: 'var(--text-3)' }}>Пауза до</label>
           <input
             className="form-input"
             type="datetime-local"
@@ -130,7 +130,7 @@ export default function VendorSettingsTab({
           />
         </div>
         <div>
-          <label style={{ fontSize: '0.8rem', color: 'var(--text-3)' }}>
+          <label style={{ fontSize: "var(--text-base)", color: 'var(--text-3)' }}>
             Среднее время приготовления, минут
           </label>
           <input
@@ -151,7 +151,7 @@ export default function VendorSettingsTab({
           />
         </div>
         <div>
-          <label style={{ fontSize: '0.8rem', color: 'var(--text-3)' }}>
+          <label style={{ fontSize: "var(--text-base)", color: 'var(--text-3)' }}>
             Мягкий лимит активных заказов
           </label>
           <input

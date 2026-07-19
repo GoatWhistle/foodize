@@ -24,6 +24,12 @@ class User(Base, IdUuidPkMixin, NameStrMixin, CreatedAtMixin, UpdatedAtMixin):
             unique=True,
             postgresql_where=text("email IS NOT NULL"),
         ),
+        Index(
+            "uq_users_telegram_username_active",
+            "telegram_username",
+            unique=True,
+            postgresql_where=text("telegram_username IS NOT NULL"),
+        ),
     )
 
     phone_number: Mapped[str] = mapped_column(String(32), unique=True)

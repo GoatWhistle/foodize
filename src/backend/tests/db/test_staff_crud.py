@@ -55,7 +55,6 @@ async def staff_candidate(db_session: AsyncSession) -> User:
     return await create_user(db_session, user_data)
 
 
-@pytest.mark.asyncio
 async def test_staff_crud_lifecycle(
     db_session: AsyncSession,
     vendor_and_restaurant: tuple[VendorProfile, Restaurant],
@@ -92,7 +91,6 @@ async def test_staff_crud_lifecycle(
     assert profile.user_id == candidate.id
 
 
-@pytest.mark.asyncio
 async def test_update_request_status_no_profile(
     db_session: AsyncSession,
     vendor_and_restaurant: tuple[VendorProfile, Restaurant],
@@ -111,7 +109,6 @@ async def test_update_request_status_no_profile(
     assert profile is None
 
 
-@pytest.mark.asyncio
 async def test_get_restaurant_or_404_returns_instance(
     db_session: AsyncSession, vendor_and_restaurant: tuple[VendorProfile, Restaurant]
 ) -> None:
@@ -124,7 +121,6 @@ async def test_get_restaurant_or_404_returns_instance(
     assert fetched_restaurant.id == restaurant.id
 
 
-@pytest.mark.asyncio
 async def test_get_restaurant_or_404_raises_not_found(db_session: AsyncSession) -> None:
     with pytest.raises(NotFoundException):
         await get_restaurant_or_404(restaurant_id=uuid.uuid4(), session=db_session)

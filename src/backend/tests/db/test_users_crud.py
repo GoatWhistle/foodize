@@ -10,7 +10,6 @@ from features.users.schemas import UserCreate
 from shared.enums.permissions import Permission
 
 
-@pytest.mark.asyncio
 async def test_create_and_get_user(db_session: AsyncSession) -> None:
     user_data = UserCreate(
         name="Ivan",
@@ -35,7 +34,6 @@ async def test_create_and_get_user(db_session: AsyncSession) -> None:
     assert fetched_by_phone.id == user.id
 
 
-@pytest.mark.asyncio
 async def test_create_user_duplicate_phone(db_session: AsyncSession) -> None:
     user_data = UserCreate(
         name="Ivan",

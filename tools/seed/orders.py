@@ -1,5 +1,7 @@
 import random
-from datetime import datetime, timedelta, timezone
+import uuid
+from datetime import UTC, datetime, timedelta
+from itertools import pairwise
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,7 +17,8 @@ from features.reviews.models import Review
 from features.reviews.schemas import ReviewCreate
 from features.users.models import User
 from seed.common import get_or_load_user
-from seed.data import REVIEW_TEXTS, SEED_USERS
+from seed.fixtures.engagement import REVIEW_TEXTS
+from seed.fixtures.users import SEED_USERS
 from shared.enums.order_status import OrderStatus
 from shared.enums.permissions import Permission
 
@@ -79,16 +82,15 @@ async def _add_order_item(
 
 
 def _apply_order_status(order: Order, target_status: OrderStatus) -> None:
-    path = [OrderStatus.ACCEPTED, OrderStatus.READY, OrderStatus.COMPLETED]
     if target_status == OrderStatus.PENDING:
         order.status = OrderStatus.PENDING.value
     else:
-        for step in path:
+        for step in STATUS_PATH[1:]:
             order.status = step.value
             if step == target_status:
                 break
     if target_status == OrderStatus.COMPLETED:
-        order.ready_at = datetime.now(timezone.utc) - timedelta(
+        order.ready_at = datetime.now(UTC) - timedelta(
             minutes=random.randint(5, 30)
         )
 
@@ -124,7 +126,7 @@ async def _record_status_history(
     if target_status == OrderStatus.PENDING:
         return
     reached = STATUS_PATH[: STATUS_PATH.index(target_status) + 1]
-    for old, new in zip(reached, reached[1:]):
+    for old, new in pairwise(reached):
         await create_order_event(
             session,
             order.id,
@@ -133,6 +135,17 @@ async def _record_status_history(
             old,
             new,
         )
+
+
+async def _order_exists(
+    session: AsyncSession, user_id: uuid.UUID, restaurant_id: uuid.UUID
+) -> bool:
+    result = await session.execute(
+        select(Order)
+        .where(Order.user_id == user_id, Order.restaurant_id == restaurant_id)
+        .limit(1)
+    )
+    return result.scalar_one_or_none() is not None
 
 
 async def seed_orders(
@@ -155,15 +168,7 @@ async def seed_orders(
             if not customer:
                 continue
 
-            result = await session.execute(
-                select(Order)
-                .where(
-                    Order.user_id == customer.id,
-                    Order.restaurant_id == restaurant.id,
-                )
-                .limit(1)
-            )
-            if result.scalar_one_or_none():
+            if await _order_exists(session, customer.id, restaurant.id):
                 print(f"  skip order (exists): {customer.name} @ {restaurant.name}")
                 continue
 
@@ -192,7 +197,7 @@ async def seed_reviews(
     review_pool = list(REVIEW_TEXTS)
     random.shuffle(review_pool)
 
-    for i, (order, customer, restaurant) in enumerate(completed_orders):
+    for i, (_order, customer, restaurant) in enumerate(completed_orders):
         result = await session.execute(
             select(Review).where(
                 Review.user_id == customer.id,

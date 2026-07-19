@@ -1,7 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react';
 import { DownloadSimpleIcon } from '@phosphor-icons/react';
-import Pagination from '@shared/components/Pagination/Pagination';
-import EmptyState from '@shared/components/EmptyState/EmptyState';
+import { Pagination } from '@shared/components/Pagination/Pagination';
+import { EmptyState } from '@shared/components/EmptyState/EmptyState';
 import type { adminService as adminServiceType } from '../../../services/adminService';
 import type { AdminRestaurant, RestaurantFilters } from '../hooks/useAdminRestaurants';
 import { AdminRestaurantsFilters } from '../components/AdminRestaurantsFilters';
@@ -22,14 +22,14 @@ interface AdminRestaurantsTabProps {
   selectedRestaurantIds: Set<string>;
   setSelectedRestaurantIds: Dispatch<SetStateAction<Set<string>>>;
   exportLoading: boolean;
-  handleExport: (exportFn: () => Promise<{ data: Blob }>, filename: string) => void;
+  handleExport: (exportFn: () => Promise<Blob>, filename: string) => void;
   loadRestaurantDetails: (id: string) => void;
   todayStr: string;
   adminService: typeof adminServiceType;
   PAGE_SIZE: number;
 }
 
-export default function AdminRestaurantsTab({
+export function AdminRestaurantsTab({
   restaurants,
   restaurantsLoading,
   restaurantsTotal,
@@ -101,7 +101,7 @@ export default function AdminRestaurantsTab({
             display: 'flex',
             alignItems: 'center',
             gap: 6,
-            fontSize: '0.82rem',
+            fontSize: "var(--text-base)",
             color: 'var(--text-3)',
             cursor: 'pointer',
           }}

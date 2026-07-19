@@ -10,7 +10,7 @@ interface StarRatingInputProps {
   gap?: number;
 }
 
-const StarRatingInput = ({
+export const StarRatingInput = ({
   value = 0,
   onChange,
   size = 24,
@@ -48,5 +48,3 @@ const StarRatingInput = ({
     })}
   </div>
 );
-
-export default StarRatingInput;

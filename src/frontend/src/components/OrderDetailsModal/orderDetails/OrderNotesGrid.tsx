@@ -16,10 +16,10 @@ export const OrderNotesGrid = ({ order }: { order: Order }) => (
         padding: 12,
       }}
     >
-      <div style={{ color: 'var(--text-3)', fontSize: '0.72rem' }}>
+      <div style={{ color: 'var(--text-3)', fontSize: "var(--text-sm)" }}>
         Комментарий
       </div>
-      <div style={{ marginTop: 6, fontSize: '0.84rem' }}>
+      <div style={{ marginTop: 6, fontSize: "var(--text-base)" }}>
         {order.comment || 'Не указан'}
       </div>
     </div>
@@ -31,8 +31,8 @@ export const OrderNotesGrid = ({ order }: { order: Order }) => (
         padding: 12,
       }}
     >
-      <div style={{ color: 'var(--text-3)', fontSize: '0.72rem' }}>Промокод</div>
-      <div style={{ marginTop: 6, fontSize: '0.84rem' }}>
+      <div style={{ color: 'var(--text-3)', fontSize: "var(--text-sm)" }}>Промокод</div>
+      <div style={{ marginTop: 6, fontSize: "var(--text-base)" }}>
         {(order as Order & { promo_code?: string | null }).promo_code ||
           'Не сохранен'}
       </div>

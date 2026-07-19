@@ -50,20 +50,22 @@ export const useAdminVendors = ({
   useEffect(() => {
     if (activeTab !== 'vendors') return;
     setVendorsLoading(true);
-    adminService
-      .getVendors({
-        page: vendorsPage,
-        size: PAGE_SIZE,
-        search: vendorSearch || undefined,
-        approval_status: vendorFilters.approval_status || undefined,
-      })
-      .then((res) => {
-        const body = res.data;
-        setVendors(body.data);
-        setVendorsTotal(body.pagination.total || 0);
-      })
-      .catch(() => { setActionError('Не удалось загрузить вендоров'); })
-      .finally(() => { setVendorsLoading(false); });
+    void (async () => {
+      try {
+        const { items, total } = await adminService.getVendors({
+          page: vendorsPage,
+          size: PAGE_SIZE,
+          search: vendorSearch || undefined,
+          approval_status: vendorFilters.approval_status || undefined,
+        });
+        setVendors(items);
+        setVendorsTotal(total);
+      } catch {
+        setActionError('Не удалось загрузить вендоров');
+      } finally {
+        setVendorsLoading(false);
+      }
+    })();
   }, [activeTab, vendorsPage, vendorFilters, vendorSearch, setActionError]);
 
   const loadVendorDetails = createDetailLoader<AdminVendor | null>(
@@ -107,8 +109,8 @@ export const useAdminVendors = ({
       onConfirm: async () => {
         setActionError('');
         try {
-          const res = await adminService.approveVendor(vendorId);
-          refreshSelectedVendor(res.data.data);
+          const vendor = await adminService.approveVendor(vendorId);
+          refreshSelectedVendor(vendor);
           setActionSuccess('Вендор одобрен');
         } catch {
           setActionError('Не удалось одобрить вендора');
@@ -124,8 +126,8 @@ export const useAdminVendors = ({
       confirmLabel: 'Отклонить',
       onConfirm: async (reason) => {
         try {
-          const res = await adminService.rejectVendor(vendorId, reason);
-          refreshSelectedVendor(res.data.data);
+          const vendor = await adminService.rejectVendor(vendorId, reason);
+          refreshSelectedVendor(vendor);
           setActionSuccess('Вендор отклонён');
         } catch {
           setActionError('Не удалось отклонить вендора');

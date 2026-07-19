@@ -2,8 +2,6 @@ from collections.abc import AsyncIterator
 from types import SimpleNamespace
 from typing import Any
 
-import pytest
-
 from infra.llm.base import LLMResponse, TextDelta
 from infra.llm.openai_compatible import OpenAICompatibleClient
 
@@ -55,7 +53,6 @@ def _client(chunks: list[SimpleNamespace]) -> tuple[OpenAICompatibleClient, _Fak
     return client, fake
 
 
-@pytest.mark.asyncio
 async def test_openai_stream_accumulates_text_tool_calls_and_usage() -> None:
     chunks = [
         _chunk(content="Ищу"),
@@ -87,7 +84,6 @@ async def test_openai_stream_accumulates_text_tool_calls_and_usage() -> None:
     assert fake.kwargs["stream_options"] == {"include_usage": True}
 
 
-@pytest.mark.asyncio
 async def test_openai_stream_orders_parallel_tool_calls_by_index() -> None:
     chunks = [
         _chunk(
@@ -107,7 +103,6 @@ async def test_openai_stream_orders_parallel_tool_calls_by_index() -> None:
     assert [call.name for call in final.tool_calls] == ["add", "remove"]
 
 
-@pytest.mark.asyncio
 async def test_openai_stream_malformed_arguments_become_empty_dict() -> None:
     chunks = [
         _chunk(tool_calls=[_fragment(0, id="c", name="search", arguments="{oops")]),

@@ -14,7 +14,7 @@ const filterControlStyle = {
   height: 48,
   paddingTop: 11,
   paddingBottom: 11,
-  fontSize: '0.86rem',
+  fontSize: "var(--text-base)",
   lineHeight: 1.2,
 };
 

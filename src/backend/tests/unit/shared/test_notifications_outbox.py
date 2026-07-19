@@ -3,13 +3,12 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-
 from features.notifications.events import (
     FeedbackRequestedEvent,
     OrderPlacedEvent,
     OrderStatusChangedEvent,
 )
+from features.notifications.handlers import handle_order_status_changed
 from features.notifications.outbox_service import enqueue_event, publish_pending_events
 from shared.enums.order_status import OrderStatus
 from shared.enums.outbox_status import OutboxStatus
@@ -39,7 +38,6 @@ def _make_completed_event() -> OrderStatusChangedEvent:
 
 
 class TestOutboxService:
-    @pytest.mark.asyncio
     async def test_enqueue_event_adds_outbox_record(self) -> None:
         session = MagicMock()
         event = _make_placed_event()
@@ -52,7 +50,6 @@ class TestOutboxService:
         assert outbox.payload["order_id"] == str(event.order_id)
         session.add.assert_called_once_with(outbox)
 
-    @pytest.mark.asyncio
     async def test_enqueue_event_with_run_at_sets_run_at(self) -> None:
         session = MagicMock()
         event = _make_placed_event()
@@ -62,9 +59,7 @@ class TestOutboxService:
 
         assert outbox.run_at == run_at
 
-    @pytest.mark.asyncio
     async def test_completed_status_enqueues_future_feedback_run_at(self) -> None:
-        from features.notifications.handlers import handle_order_status_changed
 
         event = _make_completed_event()
         captured: dict[str, Any] = {}
@@ -93,7 +88,6 @@ class TestOutboxService:
         assert captured["event"].order_id == event.order_id
         assert captured["run_at"] >= before + timedelta(seconds=1799)
 
-    @pytest.mark.asyncio
     async def test_publish_pending_events_marks_successful_events_published(self) -> None:
         event = MagicMock()
         event.routing_key = "order.placed"
@@ -117,7 +111,6 @@ class TestOutboxService:
         assert event.last_error is None
         session.commit.assert_awaited_once()
 
-    @pytest.mark.asyncio
     async def test_publish_pending_events_records_failure_and_backoff(self) -> None:
         event = MagicMock()
         event.routing_key = "order.placed"

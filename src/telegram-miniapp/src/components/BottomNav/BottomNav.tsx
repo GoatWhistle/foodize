@@ -25,7 +25,7 @@ const haptic = (): void => {
   }
 };
 
-const BottomNav = () => {
+export const BottomNav = () => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const unreadCount = useNotificationStore((s) => s.unreadCount);
@@ -38,7 +38,7 @@ const BottomNav = () => {
     path === "/" ? pathname === "/" : pathname.startsWith(path);
 
   return (
-    <div className={s.bar}>
+    <div className={s['bar']}>
       {TABS.map(({ path, icon: Icon, label }) => {
         const active = isActive(path);
         const showBadge = path === "/profile" && unreadCount > 0;
@@ -46,13 +46,13 @@ const BottomNav = () => {
         return (
           <button
             key={path}
-            className={`${s.tab}${active ? ` ${s.active}` : ""}`}
+            className={`${s['tab']}${active ? ` ${s['active']}` : ""}`}
             onClick={() => {
               if (!active) haptic();
               void navigate(path);
             }}
           >
-            <span className={s.icon}>
+            <span className={s['icon']}>
               <Icon size={22} weight={active ? "fill" : "regular"} />
               {showBadge && (
                 <span
@@ -93,13 +93,11 @@ const BottomNav = () => {
                 />
               )}
             </span>
-            <span className={s.pill} aria-hidden="true" />
-            <span className={s.label}>{label}</span>
+            <span className={s['pill']} aria-hidden="true" />
+            <span className={s['label']}>{label}</span>
           </button>
         );
       })}
     </div>
   );
 };
-
-export default BottomNav;

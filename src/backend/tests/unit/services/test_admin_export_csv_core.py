@@ -2,8 +2,6 @@ import uuid
 from datetime import date, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-
 from features.admin.export import (
     _make_csv,
     export_orders_csv,
@@ -67,7 +65,6 @@ class TestMakeCsv:
 
 
 class TestExportUsersCsv:
-    @pytest.mark.asyncio
     async def test_returns_csv_bytes(self) -> None:
         session = AsyncMock()
         with patch(
@@ -80,7 +77,6 @@ class TestExportUsersCsv:
         assert "Иван Иванов" in content
         assert "79001234567" in content
 
-    @pytest.mark.asyncio
     async def test_includes_all_headers(self) -> None:
         session = AsyncMock()
         with patch(
@@ -92,7 +88,6 @@ class TestExportUsersCsv:
         for col in ["ID", "Имя", "Телефон", "Email", "Telegram", "Права", "Активен"]:
             assert col in content
 
-    @pytest.mark.asyncio
     async def test_date_range_defaults_applied(self) -> None:
         session = AsyncMock()
         with patch(
@@ -104,7 +99,6 @@ class TestExportUsersCsv:
             assert "date_from" in call_kwargs
             assert "date_to" in call_kwargs
 
-    @pytest.mark.asyncio
     async def test_explicit_date_range(self) -> None:
         session = AsyncMock()
         d_from = date(2026, 1, 1)
@@ -118,7 +112,6 @@ class TestExportUsersCsv:
             assert call_kwargs["date_from"] == d_from
             assert call_kwargs["date_to"] == d_to
 
-    @pytest.mark.asyncio
     async def test_marks_inactive_users(self) -> None:
         session = AsyncMock()
         user = _make_user()
@@ -133,7 +126,6 @@ class TestExportUsersCsv:
 
 
 class TestExportOrdersCsv:
-    @pytest.mark.asyncio
     async def test_returns_csv_bytes(self) -> None:
         session = AsyncMock()
         with patch(
@@ -146,7 +138,6 @@ class TestExportOrdersCsv:
         assert "A-101" in content
         assert "Тест Кафе" in content
 
-    @pytest.mark.asyncio
     async def test_includes_all_headers(self) -> None:
         session = AsyncMock()
         with patch(
@@ -158,7 +149,6 @@ class TestExportOrdersCsv:
         for col in ["ID", "Номер", "Клиент", "Ресторан", "Статус", "Сумма"]:
             assert col in content
 
-    @pytest.mark.asyncio
     async def test_status_filter_passed(self) -> None:
         session = AsyncMock()
         with patch(
@@ -169,7 +159,6 @@ class TestExportOrdersCsv:
             call_kwargs = mock_get.call_args.kwargs
             assert call_kwargs["status"] == OrderStatus.COMPLETED
 
-    @pytest.mark.asyncio
     async def test_empty_orders(self) -> None:
         session = AsyncMock()
         with patch(

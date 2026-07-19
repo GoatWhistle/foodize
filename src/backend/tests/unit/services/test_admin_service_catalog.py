@@ -56,7 +56,6 @@ def _make_mock_review(review_id: uuid.UUID | None = None) -> MagicMock:
 
 
 class TestGetOrdersList:
-    @pytest.mark.asyncio
     async def test_success(self) -> None:
         orders = [MagicMock(), MagicMock()]
         with (
@@ -71,7 +70,6 @@ class TestGetOrdersList:
 
 
 class TestGetRestaurantsList:
-    @pytest.mark.asyncio
     async def test_success(self) -> None:
         rests = [MagicMock(), MagicMock()]
         with (
@@ -90,7 +88,6 @@ class TestGetRestaurantsList:
             assert len(result) == 2
             assert total == 2
 
-    @pytest.mark.asyncio
     async def test_restaurant_not_found(self) -> None:
         with patch(
             "features.admin.crud.get_restaurant_by_id",
@@ -102,7 +99,6 @@ class TestGetRestaurantsList:
 
 
 class TestDeleteRestaurantService:
-    @pytest.mark.asyncio
     async def test_success(self) -> None:
         rest = MagicMock()
         rest.id = uuid.uuid4()
@@ -121,7 +117,6 @@ class TestDeleteRestaurantService:
             result = await delete_restaurant_service(MagicMock(), rest.id)
             assert result is rest
 
-    @pytest.mark.asyncio
     async def test_not_found(self) -> None:
         with patch(
             "features.admin.crud.get_restaurant_by_id",
@@ -133,7 +128,6 @@ class TestDeleteRestaurantService:
 
 
 class TestGetVendorsList:
-    @pytest.mark.asyncio
     async def test_success(self) -> None:
         vendor = _make_mock_vendor()
         with (
@@ -151,7 +145,6 @@ class TestGetVendorsList:
             _result, total = await get_vendors_list(MagicMock())
             assert total == 1
 
-    @pytest.mark.asyncio
     async def test_vendor_not_found(self) -> None:
         with patch(
             "features.admin.crud.get_vendor_by_id",
@@ -163,7 +156,6 @@ class TestGetVendorsList:
 
 
 class TestDeleteVendorService:
-    @pytest.mark.asyncio
     async def test_success(self) -> None:
         vendor = _make_mock_vendor()
         with (
@@ -180,7 +172,6 @@ class TestDeleteVendorService:
             result = await delete_vendor_service(MagicMock(), vendor.id)
             assert result is not None
 
-    @pytest.mark.asyncio
     async def test_not_found(self) -> None:
         with patch(
             "features.admin.crud.get_vendor_by_id",
@@ -192,7 +183,6 @@ class TestDeleteVendorService:
 
 
 class TestGetReviewsList:
-    @pytest.mark.asyncio
     async def test_success(self) -> None:
         reviews = [MagicMock(), MagicMock()]
         with (
@@ -209,7 +199,6 @@ class TestGetReviewsList:
 
 
 class TestDeleteReviewService:
-    @pytest.mark.asyncio
     async def test_success(self) -> None:
         review = _make_mock_review()
         deleted = _make_mock_review(review.id)
@@ -229,7 +218,6 @@ class TestDeleteReviewService:
             result = await delete_review_service(MagicMock(), review.id)
             assert result is not None
 
-    @pytest.mark.asyncio
     async def test_not_found(self) -> None:
         with patch(
             "features.admin.crud.get_review_by_id", new_callable=AsyncMock, return_value=None

@@ -37,7 +37,15 @@ cleanup() { [[ -n "$TMP" ]] && rm -f "$TMP" 2>/dev/null || true; }
 trap cleanup EXIT
 
 RESTORE_SRC="$FILE"
-if [[ "$FILE" == *.enc ]]; then
+if [[ "$FILE" == *.gpg ]]; then
+  command -v gpg >/dev/null 2>&1 || die "gpg not found for decryption"
+  log "Decrypting $FILE via gpg..."
+  TMP="$(mktemp)"
+  if ! gpg --batch --yes --output "$TMP" --decrypt "$FILE"; then
+    die "gpg decryption failed (missing private key?)"
+  fi
+  RESTORE_SRC="$TMP"
+elif [[ "$FILE" == *.enc ]]; then
   [[ -n "${BACKUP_ENCRYPTION_PASSPHRASE:-}" ]] \
     || die "Encrypted backup but BACKUP_ENCRYPTION_PASSPHRASE is not set"
   command -v openssl >/dev/null 2>&1 || die "openssl not found for decryption"

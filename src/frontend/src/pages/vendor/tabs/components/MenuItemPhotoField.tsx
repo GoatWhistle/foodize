@@ -73,7 +73,7 @@ export function MenuItemPhotoField({ menuItemForm, setMenuItemForm }: MenuItemPh
             Удалить фото
           </button>
         )}
-        <span style={{ fontSize: '0.7rem', color: 'var(--text-3)' }}>
+        <span style={{ fontSize: "var(--text-xs)", color: 'var(--text-3)' }}>
           JPEG, PNG или WebP · до 5 МБ
         </span>
       </div>

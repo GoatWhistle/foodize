@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import MockAdapter from 'axios-mock-adapter';
-import api from '../../services/api';
+import { api } from '../../services/api';
 import { authService } from '@shared/services/authService.js';
 import type { AxiosResponse } from 'axios';
 
@@ -8,7 +8,7 @@ describe('authService', () => {
   let mock: MockAdapter;
 
   beforeEach(() => {
-    mock = new MockAdapter(api);
+    mock = new MockAdapter(api, { onNoMatch: 'throwException' });
   });
 
   afterEach(() => {
@@ -84,5 +84,19 @@ describe('authService', () => {
     mock.onPost('/telegram/logout').reply(204);
     const result = await authService.telegramLogout();
     expect(result.status).toBe(204);
+  });
+
+  it('login rejects on 400 response', async () => {
+    mock.onPost('/login').reply(400, { detail: 'invalid credentials' });
+    await expect(
+      authService.login({ phone_number: '123', password: 'wrong' })
+    ).rejects.toMatchObject({ response: { status: 400 } });
+  });
+
+  it('getMe rejects on 500 response', async () => {
+    mock.onGet('/users/me').reply(500, { detail: 'boom' });
+    await expect(authService.getMe()).rejects.toMatchObject({
+      response: { status: 500 },
+    });
   });
 });

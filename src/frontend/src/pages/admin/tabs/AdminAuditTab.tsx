@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react';
-import Pagination from '@shared/components/Pagination/Pagination';
-import EmptyState from '@shared/components/EmptyState/EmptyState';
+import { Pagination } from '@shared/components/Pagination/Pagination';
+import { EmptyState } from '@shared/components/EmptyState/EmptyState';
 import type { AuditLog, AuditFilters } from '../hooks/useAdminAudit';
 
 interface AdminAuditTabProps {
@@ -42,7 +42,7 @@ const cardStyle = {
   boxShadow: 'var(--shadow-sm)',
 };
 
-export default function AdminAuditTab({
+export function AdminAuditTab({
   auditLogs,
   auditLoading,
   auditTotal,
@@ -154,25 +154,25 @@ export default function AdminAuditTab({
             }}
           >
             <span
-              style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-1)' }}
+              style={{ fontWeight: 700, fontSize: "var(--text-base)", color: 'var(--text-1)' }}
             >
               {AUDIT_ACTION_LABELS[log.action] ?? log.action}
             </span>
             <span className="order-status-badge pending">{log.entity_type}</span>
             <span
-              style={{ fontSize: '0.78rem', color: 'var(--text-3)', marginLeft: 'auto' }}
+              style={{ fontSize: "var(--text-sm)", color: 'var(--text-3)', marginLeft: 'auto' }}
             >
               {new Date(log.created_at).toLocaleString('ru-RU')}
             </span>
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-3)', marginTop: 4 }}>
+          <div style={{ fontSize: "var(--text-sm)", color: 'var(--text-3)', marginTop: 4 }}>
             Объект: {log.entity_id || '—'}
           </div>
           {expandedAuditId === log.id && (
             <pre
               style={{
                 marginTop: 8,
-                fontSize: '0.75rem',
+                fontSize: "var(--text-sm)",
                 color: 'var(--text-2)',
                 background: 'var(--bg-surface)',
                 borderRadius: 6,

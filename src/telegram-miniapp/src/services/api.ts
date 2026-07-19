@@ -7,7 +7,7 @@ const BASE_URL = API_BASE_URL;
 export const refreshAccessToken = (): Promise<void> =>
   cookieRefresh(BASE_URL, "/telegram/refresh");
 
-const api = createApi({
+export const api = createApi({
   withCredentials: true,
   skipRetryUrls: [
     "/telegram/auth",
@@ -17,8 +17,6 @@ const api = createApi({
   ],
   refreshToken: refreshAccessToken,
 });
-
-export default api;
 
 const wsFactories = createWebSocketFactories();
 export const createOrderWebSocket: typeof wsFactories.createOrderWebSocket = (...args) =>

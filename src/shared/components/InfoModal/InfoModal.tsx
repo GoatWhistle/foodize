@@ -20,24 +20,24 @@ interface InfoModalProps {
   showDescription?: boolean;
 }
 
-const InfoModal = ({ restaurant, workingHours, onClose, usePortal = false, showDescription = false }: InfoModalProps) => {
+export const InfoModal = ({ restaurant, workingHours, onClose, usePortal = false, showDescription = false }: InfoModalProps) => {
   const contentRef = useFocusTrap<HTMLDivElement>({ onEscape: onClose });
   const modal = (
     <div
-      className={styles.overlay}
+      className={styles['overlay']}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div
         ref={contentRef}
-        className={styles.content}
+        className={styles['content']}
         role="dialog"
         aria-modal="true"
         aria-labelledby="info-modal-title"
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-          <h2 id="info-modal-title" style={{ margin: 0, fontSize: "1.2rem", fontWeight: 800 }}>Информация</h2>
+          <h2 id="info-modal-title" style={{ margin: 0, fontSize: "var(--text-md)", fontWeight: 800 }}>Информация</h2>
           <button
             onClick={onClose}
             aria-label="Закрыть"
@@ -48,18 +48,18 @@ const InfoModal = ({ restaurant, workingHours, onClose, usePortal = false, showD
         </div>
 
         {showDescription && restaurant?.description && (
-          <div style={{ marginBottom: 20, fontSize: "0.9rem", color: "var(--text-1)", lineHeight: 1.5 }}>
+          <div style={{ marginBottom: 20, fontSize: "var(--text-base)", color: "var(--text-1)", lineHeight: 1.5 }}>
             {restaurant.description}
           </div>
         )}
 
-        <h3 style={{ fontSize: "1rem", fontWeight: 700, marginBottom: 12 }}>Рабочие часы</h3>
+        <h3 style={{ fontSize: "var(--text-md)", fontWeight: 700, marginBottom: 12 }}>Рабочие часы</h3>
         {workingHours.length > 0 ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {workingHours.map((wh) => {
               const dayName = WEEKDAYS_SHORT_RU[wh.day_of_week] ?? WEEKDAYS_SHORT_RU[wh.day_of_week - 1] ?? "";
               return (
-                <div key={wh.day_of_week} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem" }}>
+                <div key={wh.day_of_week} style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-base)" }}>
                   <span style={{ color: "var(--text-2)" }}>{dayName}</span>
                   <span style={{ fontWeight: 600 }}>
                     {wh.is_open
@@ -71,7 +71,7 @@ const InfoModal = ({ restaurant, workingHours, onClose, usePortal = false, showD
             })}
           </div>
         ) : (
-          <div style={{ fontSize: "0.9rem", color: "var(--text-3)" }}>Не указаны</div>
+          <div style={{ fontSize: "var(--text-base)", color: "var(--text-3)" }}>Не указаны</div>
         )}
       </div>
     </div>
@@ -80,5 +80,3 @@ const InfoModal = ({ restaurant, workingHours, onClose, usePortal = false, showD
   if (usePortal) return createPortal(modal, document.body);
   return modal;
 };
-
-export default InfoModal;

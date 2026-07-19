@@ -1,11 +1,11 @@
 import { StorefrontIcon } from '@phosphor-icons/react';
 import type { Order } from '@shared/types/models';
 import { ORDER_STATUS_RU } from '@shared/utils/locales';
-import QRCodeModal from '../../components/QRCodeModal/QRCodeModal';
+import { QRCodeModal } from '../../components/QRCodeModal/QRCodeModal';
 import { vendorService } from '@shared/services/vendorService';
-import VendorRestaurantList from './VendorRestaurantList';
-import VendorSidebar from './VendorSidebar';
-import VendorApprovalBanner from './VendorApprovalBanner';
+import { VendorRestaurantList } from './VendorRestaurantList';
+import { VendorSidebar } from './VendorSidebar';
+import { VendorApprovalBanner } from './VendorApprovalBanner';
 import { VendorTabContent } from './components/VendorTabContent';
 import { useVendorDashboard } from './useVendorDashboard';
 
@@ -64,19 +64,19 @@ const groupOrdersByDate = (orders: Order[]): OrderGroup[] => {
 };
 
 const todayStr = (() => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const dashboard = new Date();
+  return `${dashboard.getFullYear()}-${String(dashboard.getMonth() + 1).padStart(2, '0')}-${String(dashboard.getDate()).padStart(2, '0')}`;
 })();
 
-const VendorDashboardPage = () => {
-  const d = useVendorDashboard();
+export const VendorDashboardPage = () => {
+  const dashboard = useVendorDashboard();
 
   const getVendorRestaurantLabel = () =>
-    (d.selectedRestaurant?.name || 'все').replace(/\s+/g, '_');
+    (dashboard.selectedRestaurant?.name || 'все').replace(/\s+/g, '_');
 
   const getVendorDateRange = () => {
-    const from = d.financeFilters.date_from || todayStr;
-    const to = d.financeFilters.date_to || todayStr;
+    const from = dashboard.financeFilters.date_from || todayStr;
+    const to = dashboard.financeFilters.date_to || todayStr;
     return `${from}_${to}`;
   };
 
@@ -84,10 +84,10 @@ const VendorDashboardPage = () => {
     exportFn: () => ReturnType<typeof vendorService.exportMenuCSV>,
     filename: string
   ): void => {
-    void d.handleVendorExport(exportFn, filename);
+    void dashboard.handleVendorExport(exportFn, filename);
   };
 
-  const groupedRestaurantOrders = groupOrdersByDate(d.restaurantOrders);
+  const groupedRestaurantOrders = groupOrdersByDate(dashboard.restaurantOrders);
 
   return (
     <div className="vendor-page page-enter">
@@ -96,7 +96,7 @@ const VendorDashboardPage = () => {
           display: 'flex',
           alignItems: 'center',
           gap: '10px',
-          fontSize: '1.5rem',
+          fontSize: "var(--text-xl)",
           fontWeight: 800,
           letterSpacing: '-0.03em',
           marginBottom: 16,
@@ -105,38 +105,38 @@ const VendorDashboardPage = () => {
         <StorefrontIcon /> Дашборд вендора
       </h1>
 
-      <VendorApprovalBanner vendorProfile={d.vendorProfile} />
+      <VendorApprovalBanner vendorProfile={dashboard.vendorProfile} />
 
       <VendorRestaurantList
-        restaurants={d.restaurants}
-        loading={d.loading}
-        selectedRestaurant={d.selectedRestaurant}
-        setSelectedRestaurant={d.setSelectedRestaurant}
-        vendorProfile={d.vendorProfile}
-        showAddRestaurant={d.showAddRestaurant}
-        setShowAddRestaurant={d.setShowAddRestaurant}
-        newRestaurant={d.newRestaurant}
-        setNewRestaurant={d.setNewRestaurant}
-        formError={d.formError}
-        formLoading={d.formLoading}
+        restaurants={dashboard.restaurants}
+        loading={dashboard.loading}
+        selectedRestaurant={dashboard.selectedRestaurant}
+        setSelectedRestaurant={dashboard.setSelectedRestaurant}
+        vendorProfile={dashboard.vendorProfile}
+        showAddRestaurant={dashboard.showAddRestaurant}
+        setShowAddRestaurant={dashboard.setShowAddRestaurant}
+        newRestaurant={dashboard.newRestaurant}
+        setNewRestaurant={dashboard.setNewRestaurant}
+        formError={dashboard.formError}
+        formLoading={dashboard.formLoading}
         handleCreateRestaurant={(e) => {
-          void d.handleCreateRestaurant(e);
+          void dashboard.handleCreateRestaurant(e);
         }}
       />
 
-      {d.selectedRestaurant && (
+      {dashboard.selectedRestaurant && (
         <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start', marginTop: 24 }}>
           <VendorSidebar
-            selectedRestaurant={d.selectedRestaurant}
-            activeTab={d.activeTab}
-            setActiveTab={d.setActiveTab}
-            setEditRestaurant={d.setEditRestaurant}
-            setQrType={d.setQrType}
-            setShowQr={d.setShowQr}
+            selectedRestaurant={dashboard.selectedRestaurant}
+            activeTab={dashboard.activeTab}
+            setActiveTab={dashboard.setActiveTab}
+            setEditRestaurant={dashboard.setEditRestaurant}
+            setQrType={dashboard.setQrType}
+            setShowQr={dashboard.setShowQr}
           />
 
           <VendorTabContent
-            d={d}
+            dashboard={dashboard}
             todayStr={todayStr}
             statusLabelRu={STATUS_LABEL_RU}
             groupedRestaurantOrders={groupedRestaurantOrders}
@@ -149,15 +149,13 @@ const VendorDashboardPage = () => {
         </div>
       )}
 
-      {d.showQr && d.selectedRestaurant && (
+      {dashboard.showQr && dashboard.selectedRestaurant && (
         <QRCodeModal
-          restaurant={d.selectedRestaurant}
-          initialType={d.qrType}
-          onClose={() => { d.setShowQr(false); }}
+          restaurant={dashboard.selectedRestaurant}
+          initialType={dashboard.qrType}
+          onClose={() => { dashboard.setShowQr(false); }}
         />
       )}
     </div>
   );
 };
-
-export default VendorDashboardPage;

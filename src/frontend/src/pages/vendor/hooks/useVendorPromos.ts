@@ -46,19 +46,22 @@ export const useVendorPromos = ({ selectedRestaurant, activeTab }: UseVendorProm
     if (activeTab === 'promos') {
       setPromosLoading(true);
       setPromosError('');
-      promoService
-        .list()
-        .then((res) => {
-          const list = Array.isArray(res.data.data) ? res.data.data : [];
+      void (async () => {
+        try {
+          const response = await promoService.list();
+          const list = Array.isArray(response.data.data) ? response.data.data : [];
           setPromosList(list);
-        })
-        .catch(() => { setPromosError('Не удалось загрузить промокоды'); })
-        .finally(() => { setPromosLoading(false); });
+        } catch {
+          setPromosError('Не удалось загрузить промокоды');
+        } finally {
+          setPromosLoading(false);
+        }
+      })();
     }
   }, [activeTab]);
 
-  const handleCreatePromo = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleCreatePromo = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     if (!selectedRestaurant) return;
     setPromoFormLoading(true);
     setPromosError('');
@@ -83,11 +86,11 @@ export const useVendorPromos = ({ selectedRestaurant, activeTab }: UseVendorProm
       setShowPromoForm(false);
       setPromosSuccess('Промокод создан');
       setTimeout(() => { setPromosSuccess(''); }, 2000);
-      const res = await promoService.list();
-      const list = Array.isArray(res.data.data) ? res.data.data : [];
+      const response = await promoService.list();
+      const list = Array.isArray(response.data.data) ? response.data.data : [];
       setPromosList(list);
-    } catch (err) {
-      setPromosError(translateApiError(err, 'Ошибка создания промокода'));
+    } catch (error) {
+      setPromosError(translateApiError(error, 'Ошибка создания промокода'));
     } finally {
       setPromoFormLoading(false);
     }

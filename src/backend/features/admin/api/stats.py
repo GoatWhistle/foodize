@@ -34,7 +34,7 @@ async def read_orders(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessListResponse[OrderResponse]:
     offset = (page - 1) * size
-    data, total = await catalog.get_orders_list(
+    orders, total = await catalog.get_orders_list(
         session=session,
         status=status,
         restaurant_id=restaurant_id,
@@ -45,7 +45,7 @@ async def read_orders(
         offset=offset,
         limit=size,
     )
-    return build_list_response(data=data, total=total, page=page, size=size, request=request)
+    return build_list_response(data=orders, total=total, page=page, size=size, request=request)
 
 
 @router.get("/stats", response_model=SuccessResponse[PlatformStats])
@@ -108,7 +108,7 @@ async def get_audit_logs(
         offset=(page - 1) * size,
         limit=size,
     )
-    data = [
+    audit_entries = [
         {
             "id": str(r.id),
             "actor_id": str(r.actor_id) if r.actor_id else None,
@@ -120,4 +120,6 @@ async def get_audit_logs(
         }
         for r in rows
     ]
-    return build_list_response(data=data, total=total, page=page, size=size, request=request)
+    return build_list_response(
+        data=audit_entries, total=total, page=page, size=size, request=request
+    )

@@ -108,6 +108,38 @@ class AutoCacheMiddleware(BaseHTTPMiddleware):
         except RedisError:
             logger.warning("cache_invalidate_failed", tag=tag_key, exc_info=True)
 
+    async def _read_cached(self, cache_key: str) -> Response | None:
+        cache = get_redis_cache()
+        cached = await cache.get(cache_key)
+        if not cached:
+            return None
+        try:
+            return self._build_cached_response(cached)
+        except (json.JSONDecodeError, KeyError):
+            return Response(content=cached, media_type="application/json")
+
+    async def _store_and_rebuild(self, response: Response, cache_key: str, path: str) -> Response:
+        chunks: list[bytes] = []
+        async for chunk in cast("StreamingResponse", response).body_iterator:
+            chunks.append(chunk.encode() if isinstance(chunk, str) else bytes(chunk))
+        body = b"".join(chunks)
+        response.headers["Vary"] = "Cookie, Authorization"
+        cache = get_redis_cache()
+        try:
+            await cache.set(cache_key, self._serialize_response(body, response), ttl=self.ttl)
+            tag_key = self._make_tag_key(path)
+            await cache.sadd_with_expire(tag_key, cache_key, self.ttl)
+        except UnicodeDecodeError:
+            logger.warning("cache_write_skipped_binary_body", path=path)
+        except RedisError:
+            logger.warning("cache_write_failed", path=path, exc_info=True)
+        return Response(
+            content=body,
+            status_code=response.status_code,
+            headers=dict(response.headers),
+            media_type=response.media_type,
+        )
+
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         path = request.url.path
         method = request.method.upper()
@@ -124,40 +156,15 @@ class AutoCacheMiddleware(BaseHTTPMiddleware):
         if method != "GET" or not self._is_cacheable(path) or is_personalized:
             return await call_next(request)
 
-        cache = get_redis_cache()
         cache_key = self._make_cache_key(request)
         try:
-            cached = await cache.get(cache_key)
+            cached_response = await self._read_cached(cache_key)
         except RedisError:
             return await call_next(request)
-
-        if cached:
-            try:
-                return self._build_cached_response(cached)
-            except (json.JSONDecodeError, KeyError):
-                return Response(content=cached, media_type="application/json")
+        if cached_response is not None:
+            return cached_response
 
         response = await call_next(request)
-
-        if response.status_code == HTTPStatus.OK:
-            chunks: list[bytes] = []
-            async for chunk in cast("StreamingResponse", response).body_iterator:
-                chunks.append(chunk.encode() if isinstance(chunk, str) else bytes(chunk))
-            body = b"".join(chunks)
-            response.headers["Vary"] = "Cookie, Authorization"
-            try:
-                await cache.set(cache_key, self._serialize_response(body, response), ttl=self.ttl)
-                tag_key = self._make_tag_key(path)
-                await cache.sadd_with_expire(tag_key, cache_key, self.ttl)
-            except UnicodeDecodeError:
-                pass
-            except RedisError:
-                logger.warning("cache_write_failed", path=path, exc_info=True)
-            return Response(
-                content=body,
-                status_code=response.status_code,
-                headers=dict(response.headers),
-                media_type=response.media_type,
-            )
-
-        return response
+        if response.status_code != HTTPStatus.OK:
+            return response
+        return await self._store_and_rebuild(response, cache_key, path)
