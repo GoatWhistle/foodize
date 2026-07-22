@@ -4,6 +4,7 @@ import {
   getOrderStatusLabel,
   getCustomerOrderStatusLabel,
 } from "@shared/utils/orderStatus";
+import { t } from "@shared/i18n/useTranslation";
 
 describe("getOrderStatusStyle", () => {
   it("returns the matching style for each known status", () => {
@@ -39,9 +40,9 @@ describe("getOrderStatusStyle", () => {
 
 describe("getOrderStatusLabel", () => {
   it("translates known statuses", () => {
-    expect(getOrderStatusLabel("PENDING")).toBe("Ожидается");
-    expect(getOrderStatusLabel("READY")).toBe("Готов к выдаче");
-    expect(getOrderStatusLabel("CANCELLED")).toBe("Отменён");
+    expect(getOrderStatusLabel("PENDING")).toBe(t("enums.orderStatus.PENDING"));
+    expect(getOrderStatusLabel("READY")).toBe(t("enums.orderStatus.READY"));
+    expect(getOrderStatusLabel("CANCELLED")).toBe(t("enums.orderStatus.CANCELLED"));
   });
 
   it("returns the raw status as fallback for unknown", () => {
@@ -59,8 +60,8 @@ describe("getOrderStatusLabel", () => {
 
 describe("getCustomerOrderStatusLabel", () => {
   it("uses the customer-facing dictionary", () => {
-    expect(getCustomerOrderStatusLabel("PENDING")).toBe("Принимается");
-    expect(getCustomerOrderStatusLabel("ACCEPTED")).toBe("Готовится");
+    expect(getCustomerOrderStatusLabel("PENDING")).toBe(t("enums.orderStatusCustomer.PENDING"));
+    expect(getCustomerOrderStatusLabel("ACCEPTED")).toBe(t("enums.orderStatusCustomer.ACCEPTED"));
   });
 
   it("returns empty string for null", () => {

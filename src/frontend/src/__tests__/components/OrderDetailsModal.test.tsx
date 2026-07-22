@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Order } from '@shared/types/models';
+import { t } from '@shared/i18n/useTranslation';
 import { OrderDetailsModal, type OrderDetailsModalProps, } from '../../components/OrderDetailsModal/OrderDetailsModal';
 vi.mock('@shared/services/orderService.js', () => ({
   orderService: {
@@ -119,7 +120,7 @@ describe('OrderDetailsModal', () => {
     const onCancel = vi.fn();
     render$({ onCancel });
     await waitFor(() => {
-      expect(screen.getByText(/Отмен/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: t('order.actions.cancel') })).toBeInTheDocument();
     });
   });
 
@@ -127,7 +128,7 @@ describe('OrderDetailsModal', () => {
     const onCancel = vi.fn();
     render$({ order: { ...BASE_ORDER, status: 'COMPLETED' }, onCancel });
     await waitFor(() => {
-      expect(screen.queryByText('Отменить заказ')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: t('order.actions.cancel') })).not.toBeInTheDocument();
     });
   });
 
@@ -167,6 +168,6 @@ describe('OrderDetailsModal', () => {
     await waitFor(() => {
       expect(orderService.getOrderEvents).toHaveBeenCalled();
     });
-    expect(screen.queryByText('Подтвердить отмену')).not.toBeInTheDocument();
+    expect(screen.queryByText(t('order.actions.confirmCancel'))).not.toBeInTheDocument();
   });
 });

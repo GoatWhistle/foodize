@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { useTranslation } from '@shared/i18n/useTranslation';
 
 const STYLE: CSSProperties = {
   position: 'fixed',
@@ -30,14 +31,15 @@ interface BatchActionBarProps {
 }
 
 export function BatchActionBar({ count, label, loading, onClear, actions }: BatchActionBarProps) {
+  const { t } = useTranslation();
   if (!count) return null;
   return (
     <div style={STYLE}>
       <span style={{ fontWeight: 700, fontSize: "var(--text-base)", flex: 1 }}>
-        Выбрано: {count} {label}
+        {t('admin.batch.selected', { count, label })}
       </span>
       <button className="btn btn-secondary btn-sm" disabled={loading} onClick={onClear}>
-        Снять выделение
+        {t('common.actions.clearSelection')}
       </button>
       {actions.map((action, i) => (
         <button

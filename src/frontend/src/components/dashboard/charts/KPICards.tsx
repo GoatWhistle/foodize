@@ -1,8 +1,11 @@
 import { memo } from 'react';
 import type { FinanceAnalytics } from '@shared/types/models';
 import styles from './charts.module.css';
+import { useTranslation } from '@shared/i18n/useTranslation';
+
 
 export const KPICards = memo(({ finance }: { finance: FinanceAnalytics }) => {
+  const { t } = useTranslation();
   const cancellationRate =
     finance.total_orders > 0
       ? ((finance.cancelled_orders / finance.total_orders) * 100).toFixed(1)
@@ -16,28 +19,28 @@ export const KPICards = memo(({ finance }: { finance: FinanceAnalytics }) => {
         ? 'var(--color-success)'
         : 'var(--color-error)';
   const growthLabel =
-    growth == null ? '—' : `${growth > 0 ? '+' : ''}${growth}%`;
+    growth == null ? t('common.states.dash') : `${growth > 0 ? '+' : ''}${growth}%`;
 
   const cards = [
     {
-      label: 'Выручка',
+      label: t('admin.charts.kpi.revenue'),
       value: `${finance.total_revenue.toLocaleString('ru-RU')} ₽`,
       color: 'var(--fire)',
       large: true,
     },
     {
-      label: 'Рост',
+      label: t('admin.charts.kpi.growth'),
       value: growthLabel,
       color: growthColor,
-      sub: 'vs. прошлый период',
+      sub: t('admin.charts.kpi.growthSub'),
     },
-    { label: 'Заказов', value: finance.total_orders },
-    { label: 'Средний чек', value: `${finance.average_check} ₽` },
-    { label: 'Конверсия', value: `${finance.conversion_percent}%` },
+    { label: t('admin.charts.kpi.orders'), value: finance.total_orders },
+    { label: t('admin.charts.kpi.averageCheck'), value: t('admin.charts.kpi.averageCheckValue', { value: finance.average_check }) },
+    { label: t('admin.charts.kpi.conversion'), value: t('admin.charts.kpi.conversionValue', { value: finance.conversion_percent }) },
     {
-      label: 'Отменено',
+      label: t('admin.charts.kpi.cancelled'),
       value: finance.cancelled_orders,
-      sub: `${cancellationRate}% от всех`,
+      sub: t('admin.charts.kpi.cancelledSub', { percent: cancellationRate }),
       color: finance.cancelled_orders > 0 ? 'var(--color-error)' : undefined,
     },
   ];

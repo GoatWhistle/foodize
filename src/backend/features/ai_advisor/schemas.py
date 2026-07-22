@@ -3,6 +3,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+from features.ai_advisor.exceptions import AdvisorContentTooLargeError
+
 _MAX_TOTAL_CONTENT_CHARS = 20_000
 
 
@@ -19,7 +21,7 @@ class AdvisorChatRequest(BaseModel):
     def check_total_content_size(self) -> "AdvisorChatRequest":
         total = sum(len(m.content) for m in self.messages)
         if total > _MAX_TOTAL_CONTENT_CHARS:
-            raise ValueError(f"Total message content exceeds {_MAX_TOTAL_CONTENT_CHARS} characters")
+            raise AdvisorContentTooLargeError(limit=_MAX_TOTAL_CONTENT_CHARS)
         return self
 
 

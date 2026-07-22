@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import type { StaffOrder } from '../../../../pages/staff/types';
 import { KanbanCard } from '../../../../pages/staff/components/KanbanCard';
+import { t } from '@shared/i18n/useTranslation';
+import { getOrderStatusLabel } from '@shared/utils/orderStatus';
 
 const makeOrder = (over: Partial<StaffOrder>): StaffOrder =>
   ({
@@ -43,7 +45,10 @@ describe('KanbanCard', () => {
   it('has accessible label and roledescription', () => {
     render(<KanbanCard order={makeOrder({})} {...baseProps} />);
     const card = screen.getByRole('listitem');
-    expect(card).toHaveAttribute('aria-label', expect.stringContaining('Заказ №7'));
+    expect(card).toHaveAttribute(
+      'aria-label',
+      t('staff.card.ariaLabel', { displayId: 7, status: getOrderStatusLabel('PENDING') })
+    );
   });
 
   it('applies reduced opacity when dragging', () => {
@@ -54,19 +59,20 @@ describe('KanbanCard', () => {
   it('shows critical delay badge for accepted orders older than 15m', () => {
     const created = new Date('2026-01-15T09:40:00Z').toISOString();
     render(<KanbanCard order={makeOrder({ status: 'ACCEPTED', created_at: created })} {...baseProps} />);
-    expect(screen.getByText('20м')).toBeInTheDocument();
+    expect(screen.getByText(t('staff.card.elapsedMinutes', { minutes: 20 }))).toBeInTheDocument();
   });
 
   it('shows warning delay badge for accepted orders 8-15m old', () => {
     const created = new Date('2026-01-15T09:50:00Z').toISOString();
     render(<KanbanCard order={makeOrder({ status: 'ACCEPTED', created_at: created })} {...baseProps} />);
-    expect(screen.getByText('10м')).toBeInTheDocument();
+    expect(screen.getByText(t('staff.card.elapsedMinutes', { minutes: 10 }))).toBeInTheDocument();
   });
 
   it('shows no delay badge for fresh accepted orders', () => {
     const created = new Date('2026-01-15T09:57:00Z').toISOString();
     render(<KanbanCard order={makeOrder({ status: 'ACCEPTED', created_at: created })} {...baseProps} />);
-    expect(screen.queryByText(/м$/)).toBeNull();
+    expect(screen.queryByText(t('staff.card.elapsedMinutes', { minutes: 3 }))).toBeNull();
+    expect(screen.queryByText(t('staff.card.elapsedMinutes', { minutes: 10 }))).toBeNull();
   });
 
   it('renders selected options with removal styling and price delta', () => {
@@ -102,7 +108,7 @@ describe('KanbanCard', () => {
         {...baseProps}
       />
     );
-    expect(screen.getByText(/~20 мин/)).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(t('staff.card.etaApprox', { minutes: 20 })))).toBeInTheDocument();
   });
 
   it('renders eta as expired when time passed', () => {
@@ -113,12 +119,12 @@ describe('KanbanCard', () => {
         {...baseProps}
       />
     );
-    expect(screen.getByText(/время вышло/)).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(t('staff.card.etaExpired')))).toBeInTheDocument();
   });
 
   it('renders requested pickup time', () => {
     const pickup = new Date('2026-01-15T14:30:00Z').toISOString();
     render(<KanbanCard order={makeOrder({ requested_pickup_at: pickup })} {...baseProps} />);
-    expect(screen.getByText(/Ко времени:/)).toBeInTheDocument();
+    expect(screen.getByText(t('staff.card.pickupAt'), { exact: false })).toBeInTheDocument();
   });
 });

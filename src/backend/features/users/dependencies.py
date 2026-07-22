@@ -4,9 +4,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.auth.schemas import UserLogin
-from features.users.exceptions import UserAlreadyExistsException
+from features.users.exceptions import UserAlreadyExistsException, UserNotFoundException
 from features.users.models import User
-from shared.exceptions.existence import InvalidCredentialsException, NotFoundException
+from shared.exceptions.existence import InvalidCredentialsException
 from utils.jwt_tokens import validate_password
 
 
@@ -42,7 +42,7 @@ async def get_user_by_id_or_404(
 ) -> User:
     user = await get_user_by_id(session, user_id)
     if not user:
-        raise NotFoundException()
+        raise UserNotFoundException()
     return user
 
 

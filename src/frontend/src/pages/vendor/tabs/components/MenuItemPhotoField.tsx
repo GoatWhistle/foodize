@@ -1,4 +1,5 @@
 import { ImageIcon } from '@phosphor-icons/react';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { MenuItemForm as MenuItemFormValues } from '../VendorMenuTab';
 
 interface MenuItemPhotoFieldProps {
@@ -7,6 +8,7 @@ interface MenuItemPhotoFieldProps {
 }
 
 export function MenuItemPhotoField({ menuItemForm, setMenuItemForm }: MenuItemPhotoFieldProps) {
+  const { t } = useTranslation();
   return (
     <div
       style={{
@@ -35,7 +37,7 @@ export function MenuItemPhotoField({ menuItemForm, setMenuItemForm }: MenuItemPh
         {menuItemForm.photoUrl ? (
           <img
             src={menuItemForm.photoUrl}
-            alt="Фото блюда"
+            alt={t('vendor.menu.photo.alt')}
             loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
         ) : (
@@ -44,7 +46,7 @@ export function MenuItemPhotoField({ menuItemForm, setMenuItemForm }: MenuItemPh
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
         <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', margin: 0 }}>
-          {menuItemForm.photoUrl ? 'Заменить фото' : 'Загрузить фото'}
+          {menuItemForm.photoUrl ? t('vendor.menu.photo.replace') : t('vendor.menu.photo.upload')}
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
@@ -70,11 +72,11 @@ export function MenuItemPhotoField({ menuItemForm, setMenuItemForm }: MenuItemPh
               { setMenuItemForm((form) => ({ ...form, photoFile: null, photoUrl: '' })); }
             }
           >
-            Удалить фото
+            {t('vendor.menu.photo.remove')}
           </button>
         )}
         <span style={{ fontSize: "var(--text-xs)", color: 'var(--text-3)' }}>
-          JPEG, PNG или WebP · до 5 МБ
+          {t('vendor.menu.photo.hint')}
         </span>
       </div>
     </div>

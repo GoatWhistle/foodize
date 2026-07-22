@@ -1,13 +1,14 @@
 import type { RefObject } from 'react';
 import { CaretRightIcon } from '@phosphor-icons/react';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { AdvisorChatMessage } from '../../../services/aiAdvisorService';
 import styles from './VendorAdvisor.module.css';
 
-const SUGGESTIONS = [
-  'Что добавить в меню?',
-  'Когда у меня пиковые часы?',
-  'Какие позиции почти не покупают?',
-  'Как поднять средний чек?',
+const SUGGESTION_KEYS = [
+  'vendor.advisor.suggestions.whatToAdd',
+  'vendor.advisor.suggestions.peakHours',
+  'vendor.advisor.suggestions.unpopularItems',
+  'vendor.advisor.suggestions.raiseAov',
 ];
 
 interface AdvisorChatProps {
@@ -29,14 +30,16 @@ export function AdvisorChat({
   onInputChange,
   onSend,
 }: AdvisorChatProps) {
+  const { t } = useTranslation();
+  const suggestions = SUGGESTION_KEYS.map((key) => t(key));
   return (
     <div className={`${styles['card']} ${styles['chatCard']}`}>
-      <h3 className={styles['chatTitle']}>Спросить аналитика</h3>
+      <h3 className={styles['chatTitle']}>{t('vendor.advisor.chatTitle')}</h3>
 
       <div ref={scrollRef} className={styles['scroll']}>
         {messages.length === 0 && (
           <div className={styles['suggestions']}>
-            {SUGGESTIONS.map((s) => (
+            {suggestions.map((s) => (
               <button
                 key={s}
                 className={`btn btn-secondary ${styles['suggestion']}`}
@@ -70,7 +73,7 @@ export function AdvisorChat({
       >
         <input
           className={`form-input ${styles['input']}`}
-          placeholder="Например: что добавить в меню?"
+          placeholder={t('vendor.advisor.inputPlaceholder')}
           value={input}
           disabled={streaming}
           onChange={(e) => { onInputChange(e.target.value); }}

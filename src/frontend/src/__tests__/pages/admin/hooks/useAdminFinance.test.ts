@@ -1,6 +1,7 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { useAdminFinance } from '../../../../pages/admin/hooks/useAdminFinance';
+import { t } from '@shared/i18n/useTranslation';
 
 vi.mock('../../../../services/adminService', () => ({
   adminService: {
@@ -82,15 +83,15 @@ describe('useAdminFinance', () => {
     >);
     renderHook(() => useAdminFinance(baseArgs()));
     await waitFor(() =>
-      { expect(setActionError).toHaveBeenCalledWith('Не удалось загрузить аналитику'); },
+      { expect(setActionError).toHaveBeenCalledWith(t('admin.finance.errors.loadFailed')); },
     );
   });
 
-  it('builds restaurant label from selection and falls back to "все"', async () => {
+  it('builds restaurant label from selection and falls back to all-restaurants', async () => {
     okAll();
     const { result } = renderHook(() => useAdminFinance(baseArgs()));
     await waitFor(() => { expect(result.current.allRestaurants).toHaveLength(1); });
-    expect(result.current.getRestaurantLabel()).toBe('все');
+    expect(result.current.getRestaurantLabel()).toBe(t('admin.exportFiles.allRestaurants'));
     act(() =>
       { result.current.setFinanceFilters((prev) => ({ ...prev, restaurant_id: 'r1' })); },
     );
@@ -98,7 +99,7 @@ describe('useAdminFinance', () => {
     act(() =>
       { result.current.setFinanceFilters((prev) => ({ ...prev, restaurant_id: 'missing' })); },
     );
-    await waitFor(() => { expect(result.current.getRestaurantLabel()).toBe('все'); });
+    await waitFor(() => { expect(result.current.getRestaurantLabel()).toBe(t('admin.exportFiles.allRestaurants')); });
   });
 
   it('builds date range label with defaults and custom values', async () => {

@@ -5,9 +5,9 @@ import { OrdersPage as SharedOrdersPage } from "@shared/pages/OrdersPage/OrdersP
 import s from "./OrdersPage.module.css";
 
 const STATUS_FILTERS = [
-  { key: "",          label: "Все" },
-  { key: "ACTIVE",    label: "Активные" },
-  { key: "COMPLETED", label: "Выданные" },
+  { key: "",          labelKey: "order.list.filterAll" },
+  { key: "ACTIVE",    labelKey: "order.list.filterActive" },
+  { key: "COMPLETED", labelKey: "order.list.filterCompleted" },
 ];
 
 export const OrdersPage = () => {

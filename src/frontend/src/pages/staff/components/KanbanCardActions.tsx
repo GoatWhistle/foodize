@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { XCircleIcon } from '@phosphor-icons/react';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { StaffOrder } from '../types';
 
 interface KanbanCardActionsProps {
@@ -21,6 +22,7 @@ export function KanbanCardActions({
   nextLabel,
   canCancel,
 }: KanbanCardActionsProps) {
+  const { t } = useTranslation();
   const [showCancelForm, setShowCancelForm] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
 
@@ -30,7 +32,7 @@ export function KanbanCardActions({
         <textarea
           value={cancelReason}
           onChange={(e) => { setCancelReason(e.target.value); }}
-          placeholder="Причина отмены (необязательно)"
+          placeholder={t('staff.card.cancel.reasonPlaceholder')}
           style={{
             width: '100%',
             minHeight: 64,
@@ -53,7 +55,7 @@ export function KanbanCardActions({
               setCancelReason('');
             }}
           >
-            Назад
+            {t('common.actions.back')}
           </button>
           <button
             className="btn"
@@ -73,7 +75,7 @@ export function KanbanCardActions({
               setCancelReason('');
             }}
           >
-            {updating === order.id ? '...' : 'Подтвердить'}
+            {updating === order.id ? '...' : t('common.actions.confirm')}
           </button>
         </div>
       </div>

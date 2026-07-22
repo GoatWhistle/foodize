@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { OrdersPage } from "@shared/pages/OrdersPage/OrdersPage";
 import { useOrdersPageLogic } from "@shared/hooks/useOrdersPageLogic";
 import type { Order } from "@shared/types/models";
+import { t } from "@shared/i18n/useTranslation";
 
 vi.mock("@shared/hooks/useOrdersPageLogic", () => ({
   useOrdersPageLogic: vi.fn(),
@@ -57,9 +58,9 @@ describe("OrdersPage", () => {
   it("renders the heading and status filters", () => {
     mockedHook.mockReturnValue(hookState());
     renderPage();
-    expect(screen.getByRole("heading", { name: "Мои заказы" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Активные" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Завершённые" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: t("order.list.title") })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: t("order.list.filterActive") })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: t("order.list.filterDone") })).toBeInTheDocument();
   });
 
   it("shows a spinner while loading with no orders", () => {
@@ -71,7 +72,7 @@ describe("OrdersPage", () => {
   it("shows the empty state for the active filter", () => {
     mockedHook.mockReturnValue(hookState());
     renderPage();
-    expect(screen.getByText("Активных заказов нет")).toBeInTheDocument();
+    expect(screen.getByText(t("order.list.emptyActiveTitle"))).toBeInTheDocument();
   });
 
   it("renders the orders list", () => {
@@ -95,7 +96,7 @@ describe("OrdersPage", () => {
     const setPage = vi.fn();
     mockedHook.mockReturnValue(hookState({ setStatusFilter, setPage }));
     renderPage();
-    await user.click(screen.getByRole("button", { name: "Завершённые" }));
+    await user.click(screen.getByRole("button", { name: t("order.list.filterDone") }));
     expect(setStatusFilter).toHaveBeenCalledWith("DONE");
     expect(setPage).toHaveBeenCalledWith(1);
   });
@@ -112,7 +113,7 @@ describe("OrdersPage", () => {
     const user = userEvent.setup();
     mockedHook.mockReturnValue(hookState());
     renderPage({ routes: { home: "/home" } });
-    const action = screen.getByRole("button", { name: "Выбрать заведение" });
+    const action = screen.getByRole("button", { name: t("order.list.chooseVenue") });
     await user.click(action);
     expect(action).toBeInTheDocument();
   });
@@ -130,7 +131,7 @@ describe("OrdersPage", () => {
   it("shows the done empty state when the completed filter is active", () => {
     mockedHook.mockReturnValue(hookState({ statusFilter: "DONE" }));
     renderPage();
-    expect(screen.getByText("Завершённых заказов нет")).toBeInTheDocument();
+    expect(screen.getByText(t("order.list.emptyDoneTitle"))).toBeInTheDocument();
   });
 
   it("navigates to an order when a card is clicked", async () => {
@@ -183,9 +184,9 @@ describe("OrdersPage", () => {
   it("shows the generic empty state for an unknown status filter", () => {
     mockedHook.mockReturnValue(hookState({ statusFilter: "" }));
     renderPage();
-    expect(screen.getByText("Заказов пока нет")).toBeInTheDocument();
+    expect(screen.getByText(t("order.list.emptyTitle"))).toBeInTheDocument();
     expect(
-      screen.getByText("Сделайте первый заказ в любом ресторане"),
+      screen.getByText(t("order.list.emptySubtitle")),
     ).toBeInTheDocument();
   });
 

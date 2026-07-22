@@ -3,6 +3,7 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { CartLine } from "@shared/utils/cartLine";
 import type { OrderLoadEstimate } from "@shared/types/models";
+import { t } from "@shared/i18n/useTranslation";
 
 const mocks = vi.hoisted(() => {
   const cartState = {
@@ -62,6 +63,9 @@ const line = (over: Partial<CartLine> = {}): CartLine =>
     ...over,
   });
 
+const minimumMatcher = (content: string): boolean =>
+  content.trim().startsWith(t("order.pickup.minimum", { time: "" }).trim());
+
 const renderDrawer = (props: Partial<React.ComponentProps<typeof CartDrawer>> = {}) =>
   render(
     <MemoryRouter>
@@ -86,10 +90,10 @@ describe("CartDrawer", () => {
 
   it("renders items, total and the order button", async () => {
     renderDrawer();
-    expect(screen.getByText("Корзина")).toBeInTheDocument();
+    expect(screen.getByText(t("order.cart.title"))).toBeInTheDocument();
     expect(screen.getByText("Пицца")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /Оформить заказ/ }),
+      screen.getByRole("button", { name: t("order.checkout.submit", { total: "300 ₽" }) }),
     ).toBeInTheDocument();
     await waitFor(() => { expect(mocks.getEstimate).toHaveBeenCalled(); });
   });
@@ -107,8 +111,8 @@ describe("CartDrawer", () => {
 
   it("increments and decrements a line", () => {
     renderDrawer();
-    fireEvent.click(screen.getByRole("button", { name: "Увеличить" }));
-    fireEvent.click(screen.getByRole("button", { name: "Уменьшить" }));
+    fireEvent.click(screen.getByRole("button", { name: t("order.cart.increase") }));
+    fireEvent.click(screen.getByRole("button", { name: t("order.cart.decrease") }));
     expect(mocks.cartState.addToCart).toHaveBeenCalled();
     expect(mocks.cartState.removeFromCart).toHaveBeenCalled();
   });
@@ -125,10 +129,10 @@ describe("CartDrawer", () => {
       },
     });
     renderDrawer();
-    const input = screen.getByPlaceholderText<HTMLInputElement>("Промокод");
+    const input = screen.getByPlaceholderText<HTMLInputElement>(t("order.cart.promoPlaceholder"));
     fireEvent.change(input, { target: { value: "sale" } });
     expect(input.value).toBe("SALE");
-    fireEvent.click(screen.getByRole("button", { name: "Применить" }));
+    fireEvent.click(screen.getByRole("button", { name: t("common.actions.apply") }));
     await waitFor(() =>
       { expect(mocks.validate).toHaveBeenCalledWith("SALE", "rest-1", 300, true); },
     );
@@ -139,7 +143,7 @@ describe("CartDrawer", () => {
       data: { data: { code: "X", discount_type: "FIXED", discount_value: 5 } },
     });
     renderDrawer();
-    const input = screen.getByPlaceholderText("Промокод");
+    const input = screen.getByPlaceholderText(t("order.cart.promoPlaceholder"));
     fireEvent.change(input, { target: { value: "x" } });
     fireEvent.keyDown(input, { key: "Enter" });
     await waitFor(() => { expect(mocks.validate).toHaveBeenCalled(); });
@@ -148,30 +152,30 @@ describe("CartDrawer", () => {
   it("shows an error when placing an order fails", async () => {
     mocks.cartState.placeOrder.mockRejectedValueOnce(new Error("boom"));
     renderDrawer();
-    fireEvent.click(screen.getByRole("button", { name: /Оформить заказ/ }));
-    await screen.findByText("Ошибка при оформлении заказа");
+    fireEvent.click(screen.getByRole("button", { name: t("order.checkout.submit", { total: "300 ₽" }) }));
+    await screen.findByText(t("order.checkout.failed"));
   });
 
   it("shows an error for an invalid promo", async () => {
     mocks.validate.mockRejectedValue({ response: { data: { detail: "Неверный промокод" } } });
     renderDrawer();
-    fireEvent.change(screen.getByPlaceholderText("Промокод"), {
+    fireEvent.change(screen.getByPlaceholderText(t("order.cart.promoPlaceholder")), {
       target: { value: "bad" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Применить" }));
-    await screen.findByText("Неверный промокод");
+    fireEvent.click(screen.getByRole("button", { name: t("common.actions.apply") }));
+    await screen.findByText(t("order.cart.promoInvalid"));
   });
 
   it("places an order and navigates", async () => {
     renderDrawer();
-    fireEvent.click(screen.getByRole("button", { name: /Оформить заказ/ }));
+    fireEvent.click(screen.getByRole("button", { name: t("order.checkout.submit", { total: "300 ₽" }) }));
     await waitFor(() => { expect(mocks.cartState.placeOrder).toHaveBeenCalled(); });
   });
 
   it("blocks ordering and shows an error when the restaurant is closed", () => {
     renderDrawer({ isRestaurantOpen: false });
     expect(
-      screen.getByRole("button", { name: "Приём заказов на паузе" }),
+      screen.getByRole("button", { name: t("order.checkout.paused") }),
     ).toBeDisabled();
   });
 
@@ -190,33 +194,33 @@ describe("CartDrawer", () => {
       },
     });
     renderDrawer();
-    await screen.findByText("Заведение временно не принимает заказы");
+    await screen.findByText(t("order.estimate.unavailable"));
     expect(
-      screen.getByRole("button", { name: "Приём заказов на паузе" }),
+      screen.getByRole("button", { name: t("order.checkout.paused") }),
     ).toBeDisabled();
   });
 
   it("switches to a scheduled pickup time and validates a too-soon value", () => {
     renderDrawer();
-    fireEvent.click(screen.getByRole("button", { name: "Ко времени" }));
-    expect(screen.getByText(/Минимум:/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: t("order.pickup.scheduled") }));
+    expect(screen.getByText(minimumMatcher)).toBeInTheDocument();
     const input = document.querySelector(
       'input[type="datetime-local"]',
     ) as HTMLInputElement;
     fireEvent.change(input, { target: { value: "2000-01-01T00:00" } });
     expect(
-      screen.getByRole("button", { name: /Оформить заказ/ }),
+      screen.getByRole("button", { name: t("order.checkout.submit", { total: "300 ₽" }) }),
     ).toBeDisabled();
   });
 
   it("edits the order comment and switches pickup mode back to asap", () => {
     renderDrawer();
-    const textarea = screen.getByPlaceholderText(/Комментарий к заказу/);
+    const textarea = screen.getByPlaceholderText(t("order.cart.commentPlaceholder"));
     fireEvent.change(textarea, { target: { value: "без лука" } });
     expect((textarea as HTMLTextAreaElement).value).toBe("без лука");
-    fireEvent.click(screen.getByRole("button", { name: "Ко времени" }));
-    fireEvent.click(screen.getByRole("button", { name: "Как можно скорее" }));
-    expect(screen.queryByText(/Минимум:/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: t("order.pickup.scheduled") }));
+    fireEvent.click(screen.getByRole("button", { name: t("order.pickup.asap") }));
+    expect(screen.queryByText(minimumMatcher)).not.toBeInTheDocument();
   });
 
   it("closes when clicking the overlay outside the drawer", () => {
@@ -230,18 +234,18 @@ describe("CartDrawer", () => {
     mocks.getEstimate.mockRejectedValueOnce(new Error("down"));
     renderDrawer();
     await waitFor(() => { expect(mocks.getEstimate).toHaveBeenCalled(); });
-    expect(screen.getByText(/Оформить заказ/)).toBeInTheDocument();
+    expect(screen.getByText(t("order.checkout.submit", { total: "300 ₽" }))).toBeInTheDocument();
   });
 
   it("resets the estimate when there is no restaurant id", () => {
     mocks.cartState.cartRestaurantId = null;
     renderDrawer();
-    expect(screen.getByText("Корзина")).toBeInTheDocument();
+    expect(screen.getByText(t("order.cart.title"))).toBeInTheDocument();
   });
 
   it("clears the cart", () => {
     renderDrawer();
-    fireEvent.click(screen.getByRole("button", { name: /Очистить корзину/ }));
+    fireEvent.click(screen.getByRole("button", { name: t("order.cart.clear") }));
     expect(mocks.cartState.clearCart).toHaveBeenCalled();
   });
 
@@ -260,7 +264,7 @@ describe("CartDrawer", () => {
       },
     });
     renderDrawer();
-    await screen.findByText(/Ожидание примерно/);
-    expect(screen.getByText(/Активных заказов в очереди/)).toBeInTheDocument();
+    await screen.findByText(t("order.estimate.waitRange", { min: 40, max: 50 }));
+    expect(screen.getByText(t("order.estimate.activeInQueue", { count: 3 }))).toBeInTheDocument();
   });
 });

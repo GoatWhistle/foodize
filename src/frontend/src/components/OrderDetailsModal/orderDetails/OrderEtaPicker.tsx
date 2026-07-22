@@ -1,3 +1,5 @@
+import { useTranslation } from '@shared/i18n/useTranslation';
+
 interface OrderEtaPickerProps {
   etaMinutes: number | null;
   manualEtaTime: string;
@@ -10,7 +12,9 @@ export const OrderEtaPicker = ({
   manualEtaTime,
   onSelectMinutes,
   onManualTimeChange,
-}: OrderEtaPickerProps) => (
+}: OrderEtaPickerProps) => {
+  const { t } = useTranslation();
+  return (
   <div
     style={{
       background: 'var(--bg-surface)',
@@ -20,7 +24,7 @@ export const OrderEtaPicker = ({
     }}
   >
     <div style={{ color: 'var(--text-3)', fontSize: "var(--text-sm)", marginBottom: 8 }}>
-      Время готовности
+      {t('order.eta.title')}
     </div>
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
       {[10, 15, 20].map((minutes) => (
@@ -32,7 +36,7 @@ export const OrderEtaPicker = ({
           }`}
           onClick={() => { onSelectMinutes(minutes); }}
         >
-          {minutes} мин
+          {t('order.eta.minutesChip', { minutes })}
         </button>
       ))}
     </div>
@@ -46,7 +50,7 @@ export const OrderEtaPicker = ({
         fontSize: "var(--text-sm)",
       }}
     >
-      Указать точное время
+      {t('order.eta.exactTime')}
       <input
         type="time"
         value={manualEtaTime}
@@ -64,4 +68,5 @@ export const OrderEtaPicker = ({
       />
     </label>
   </div>
-);
+  );
+};

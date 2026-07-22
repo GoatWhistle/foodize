@@ -9,12 +9,16 @@ from aiogram.types import (
 )
 
 from config import bot_config
+from i18n import DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES
+from utils import messages as msg
 
-RESTART_TEXT = "Перезапустить бота"
-OPEN_FOODIZE_BUTTON = "Открыть Foodize"
-OPEN_ORDER_BUTTON = "Открыть заказ"
-_OPEN_RESTAURANT_BUTTON = "Открыть ресторан"
-_SHARE_PHONE_BUTTON = "Поделиться телефоном"
+
+def restart_text(language: str = DEFAULT_LANGUAGE) -> str:
+    return msg.button("restart", language)
+
+
+def restart_texts() -> set[str]:
+    return {msg.button("restart", lang) for lang in SUPPORTED_LANGUAGES}
 
 
 def _mini_app_base() -> str:
@@ -37,43 +41,59 @@ def web_app_keyboard(text: str, url: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[[_web_app_button(text, url)]])
 
 
-def mini_app_keyboard() -> InlineKeyboardMarkup | None:
+def mini_app_keyboard(language: str = DEFAULT_LANGUAGE) -> InlineKeyboardMarkup | None:
     if not bot_config.mini_app_url:
         return None
-    return web_app_keyboard(OPEN_FOODIZE_BUTTON, bot_config.mini_app_url)
+    return web_app_keyboard(msg.button("openFoodize", language), bot_config.mini_app_url)
 
 
-def restaurant_keyboard(display_id: str, name: str) -> InlineKeyboardMarkup | None:
+def restaurant_keyboard(
+    display_id: str, name: str, language: str = DEFAULT_LANGUAGE
+) -> InlineKeyboardMarkup | None:
     if not bot_config.mini_app_url:
         return None
-    button_text = f"Открыть {name}" if name else _OPEN_RESTAURANT_BUTTON
+    button_text = (
+        msg.button("openNamedRestaurant", language, name=name)
+        if name
+        else msg.button("openRestaurant", language)
+    )
     return web_app_keyboard(button_text, restaurant_deep_link(display_id))
 
 
-def order_deep_link_keyboard(order_display_id: str) -> InlineKeyboardMarkup | None:
+def order_deep_link_keyboard(
+    order_display_id: str, language: str = DEFAULT_LANGUAGE
+) -> InlineKeyboardMarkup | None:
     if not bot_config.mini_app_url:
         return None
     return web_app_keyboard(
-        f"{OPEN_ORDER_BUTTON} #{order_display_id}", order_deep_link(order_display_id)
+        f"{msg.button('openOrder', language)} #{order_display_id}",
+        order_deep_link(order_display_id),
     )
 
 
-def orders_keyboard(orders: list[dict[str, Any]]) -> InlineKeyboardMarkup | None:
+def orders_keyboard(
+    orders: list[dict[str, Any]], language: str = DEFAULT_LANGUAGE
+) -> InlineKeyboardMarkup | None:
     if not bot_config.mini_app_url:
         return None
     rows = [
-        [_web_app_button(f"{OPEN_ORDER_BUTTON} #{display_id}", order_deep_link(str(display_id)))]
+        [
+            _web_app_button(
+                f"{msg.button('openOrder', language)} #{display_id}",
+                order_deep_link(str(display_id)),
+            )
+        ]
         for order in orders
         if (display_id := order.get("display_id"))
     ]
     return InlineKeyboardMarkup(inline_keyboard=rows) if rows else None
 
 
-def phone_keyboard() -> ReplyKeyboardMarkup:
+def phone_keyboard(language: str = DEFAULT_LANGUAGE) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=RESTART_TEXT)],
-            [KeyboardButton(text=_SHARE_PHONE_BUTTON, request_contact=True)],
+            [KeyboardButton(text=msg.button("restart", language))],
+            [KeyboardButton(text=msg.button("sharePhone", language), request_contact=True)],
         ],
         resize_keyboard=True,
         one_time_keyboard=False,

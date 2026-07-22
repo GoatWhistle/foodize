@@ -2779,6 +2779,17 @@ export interface components {
             title: string;
             /** Message */
             message: string;
+            /** Title Key */
+            title_key?: string | null;
+            /** Message Key */
+            message_key?: string | null;
+            /**
+             * Params
+             * @default {}
+             */
+            params: {
+                [key: string]: unknown;
+            };
             type: components["schemas"]["NotificationType"];
             /** Is Read */
             is_read: boolean;
@@ -5051,7 +5062,9 @@ export interface operations {
                 date_from?: string | null;
                 date_to?: string | null;
             };
-            header?: never;
+            header?: {
+                "accept-language"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -5084,7 +5097,9 @@ export interface operations {
                 date_to?: string | null;
                 status?: string | null;
             };
-            header?: never;
+            header?: {
+                "accept-language"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -5113,7 +5128,9 @@ export interface operations {
     export_restaurants_csv_api_v1_admin_export_restaurants_csv_get: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "accept-language"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -5128,12 +5145,23 @@ export interface operations {
                     "application/json": unknown;
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     export_vendors_csv_api_v1_admin_export_vendors_csv_get: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "accept-language"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -5146,6 +5174,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -5156,7 +5193,9 @@ export interface operations {
                 min_rating?: number | null;
                 max_rating?: number | null;
             };
-            header?: never;
+            header?: {
+                "accept-language"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -5188,7 +5227,9 @@ export interface operations {
                 date_from?: string | null;
                 date_to?: string | null;
             };
-            header?: never;
+            header?: {
+                "accept-language"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -5220,7 +5261,9 @@ export interface operations {
                 date_from?: string | null;
                 date_to?: string | null;
             };
-            header?: never;
+            header?: {
+                "accept-language"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -5252,7 +5295,9 @@ export interface operations {
                 date_from?: string | null;
                 date_to?: string | null;
             };
-            header?: never;
+            header?: {
+                "accept-language"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -5281,7 +5326,9 @@ export interface operations {
     advisor_chat_api_v1_ai_advisor_chat_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "accept-language"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -5316,7 +5363,9 @@ export interface operations {
             query?: {
                 refresh?: boolean;
             };
-            header?: never;
+            header?: {
+                "accept-language"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -5345,7 +5394,9 @@ export interface operations {
     order_chat_api_v1_ai_order_chat_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "accept-language"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -6135,7 +6186,9 @@ export interface operations {
                 status?: string | null;
                 restaurant_id?: string | null;
             };
-            header?: never;
+            header?: {
+                "accept-language"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -6166,7 +6219,9 @@ export interface operations {
             query?: {
                 restaurant_id?: string | null;
             };
-            header?: never;
+            header?: {
+                "accept-language"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -6197,7 +6252,9 @@ export interface operations {
             query?: {
                 restaurant_id?: string | null;
             };
-            header?: never;
+            header?: {
+                "accept-language"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -6230,7 +6287,9 @@ export interface operations {
                 date_to?: string | null;
                 restaurant_id?: string | null;
             };
-            header?: never;
+            header?: {
+                "accept-language"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -6263,7 +6322,9 @@ export interface operations {
                 date_to?: string | null;
                 restaurant_id?: string | null;
             };
-            header?: never;
+            header?: {
+                "accept-language"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };

@@ -1,5 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react';
 import { MonitorIcon, StarIcon } from '@phosphor-icons/react';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { AdminRestaurant } from '../hooks/useAdminRestaurants';
 
 const cardStyle = {
@@ -22,6 +23,7 @@ export function AdminRestaurantRow({
   setSelectedRestaurantIds,
   loadRestaurantDetails,
 }: AdminRestaurantRowProps) {
+  const { t } = useTranslation();
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
       <input
@@ -59,12 +61,12 @@ export function AdminRestaurantRow({
             <span
               className={`order-status-badge ${restaurant.is_open ? 'ready' : 'cancelled'}`}
             >
-              {restaurant.is_open ? 'Открыт' : 'Закрыт'}
+              {restaurant.is_open ? t('admin.restaurants.row.open') : t('admin.restaurants.row.closed')}
             </span>
             <span
               className={`order-status-badge ${restaurant.is_hiring ? 'pending' : 'cancelled'}`}
             >
-              {restaurant.is_hiring ? 'Нанимает' : 'Не нанимает'}
+              {restaurant.is_hiring ? t('admin.restaurants.row.hiring') : t('admin.restaurants.row.notHiring')}
             </span>
           </div>
         </div>
@@ -77,7 +79,7 @@ export function AdminRestaurantRow({
           }}
         >
           <div style={{ color: 'var(--text-3)', fontSize: "var(--text-base)", textAlign: 'right' }}>
-            {restaurant.orders_count || 0} заказов
+            {t('admin.restaurants.row.ordersCount', { count: restaurant.orders_count || 0 })}
             <br />
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
               <StarIcon size={14} weight="fill" color="var(--star)" /> {restaurant.average_rating || 0}
@@ -108,7 +110,7 @@ export function AdminRestaurantRow({
             }}
           >
             <MonitorIcon size={11} />
-            Табло
+            {t('admin.restaurants.row.displayBoard')}
           </div>
         </div>
       </button>

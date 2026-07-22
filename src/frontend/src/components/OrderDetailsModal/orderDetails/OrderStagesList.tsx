@@ -1,9 +1,14 @@
 import { ClockIcon } from '@phosphor-icons/react';
 
-import { STATUS_LABEL_RU, formatDateTime } from './orderDetails.helpers';
+import { orderStatusLabel } from '@shared/utils/locales';
+import { useTranslation } from '@shared/i18n/useTranslation';
+
+import { formatDateTime } from './orderDetails.helpers';
 import type { OrderStage } from './orderDetails.helpers';
 
-export const OrderStagesList = ({ stages }: { stages: OrderStage[] }) => (
+export const OrderStagesList = ({ stages }: { stages: OrderStage[] }) => {
+  const { t } = useTranslation();
+  return (
   <div>
     <div
       style={{
@@ -15,7 +20,7 @@ export const OrderStagesList = ({ stages }: { stages: OrderStage[] }) => (
       }}
     >
       <ClockIcon size={18} color="var(--fire)" />
-      Этапы заказа
+      {t('order.stages.title')}
     </div>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {stages.map((stage) => (
@@ -38,7 +43,7 @@ export const OrderStagesList = ({ stages }: { stages: OrderStage[] }) => (
           }}
         >
           <div style={{ fontSize: "var(--text-base)", fontWeight: 800 }}>
-            {STATUS_LABEL_RU[stage.status]}
+            {orderStatusLabel(stage.status)}
             {stage.state === 'current' && (
               <span
                 style={{
@@ -47,7 +52,7 @@ export const OrderStagesList = ({ stages }: { stages: OrderStage[] }) => (
                   fontSize: "var(--text-sm)",
                 }}
               >
-                текущий
+                {t('order.stages.current')}
               </span>
             )}
           </div>
@@ -58,10 +63,11 @@ export const OrderStagesList = ({ stages }: { stages: OrderStage[] }) => (
               whiteSpace: 'nowrap',
             }}
           >
-            {stage.at ? formatDateTime(stage.at) : '—'}
+            {stage.at ? formatDateTime(stage.at) : t('common.states.dash')}
           </div>
         </div>
       ))}
     </div>
   </div>
-);
+  );
+};

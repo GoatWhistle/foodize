@@ -89,7 +89,7 @@ class TestOwnedRestaurantIds:
 class TestOrderRow:
     def test_uses_relations(self) -> None:
         rid = uuid.uuid4()
-        row = _order_row(_make_order(rid))
+        row = _order_row(_make_order(rid), "ru")
         assert row[2] == "Клиент"
         assert row[3] == "Тест Кафе"
         assert row[5] == 2
@@ -97,7 +97,7 @@ class TestOrderRow:
     def test_missing_relations_fallback(self) -> None:
         order = _make_order(uuid.uuid4(), with_relations=False)
         order.display_id = None
-        row = _order_row(order)
+        row = _order_row(order, "ru")
         assert row[2] == ""
         assert row[3] == ""
         assert row[1] == str(order.id)[:8]

@@ -4,6 +4,7 @@ import { KanbanColumn } from '../../../../pages/staff/components/KanbanColumn';
 import { COLUMN_DEFS } from '../../../../pages/staff/staffColumns';
 import type { StaffOrder } from '../../../../pages/staff/types';
 import { at } from '../../../testUtils';
+import { t } from '@shared/i18n/useTranslation';
 
 vi.mock('../../../../pages/staff/components/KanbanCard', () => ({
   KanbanCard: ({
@@ -49,7 +50,7 @@ const baseProps = {
 describe('KanbanColumn', () => {
   it('renders column header with order count', () => {
     render(<KanbanColumn {...baseProps} />);
-    expect(screen.getByText('Новые')).toBeInTheDocument();
+    expect(screen.getByText(t(column.labelKey))).toBeInTheDocument();
     expect(screen.getByText('2')).toBeInTheDocument();
     expect(screen.getByTestId('card-o1')).toBeInTheDocument();
     expect(screen.getByTestId('card-o2')).toBeInTheDocument();
@@ -57,7 +58,7 @@ describe('KanbanColumn', () => {
 
   it('shows empty placeholder when there are no orders', () => {
     render(<KanbanColumn {...baseProps} orders={[]} />);
-    expect(screen.getByText('Пусто')).toBeInTheDocument();
+    expect(screen.getByText(t('staff.columns.empty'))).toBeInTheDocument();
   });
 
   it('marks the currently dragged card', () => {

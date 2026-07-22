@@ -8,6 +8,7 @@ import {
 } from "../../telegram/sdk";
 import { useAuthStore } from "../../store/useAuthStore";
 import { translateApiError } from "@shared/utils/translateApiError";
+import { useTranslation } from "@shared/i18n/useTranslation";
 import s from "./AuthPage.module.css";
 
 interface LoginPageProps {
@@ -19,6 +20,7 @@ const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
 export function LoginPage({ initData, onSuccess }: LoginPageProps) {
+  const { t } = useTranslation();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -62,9 +64,7 @@ export function LoginPage({ initData, onSuccess }: LoginPageProps) {
     const currentInitData = getCurrentInitData();
 
     if (!currentInitData) {
-      setError(
-        "Telegram не передал данные для входа. Закройте миниапку и откройте её заново из Telegram.",
-      );
+      setError(t("auth.miniapp.errors.noInitData"));
       return;
     }
 
@@ -85,22 +85,17 @@ export function LoginPage({ initData, onSuccess }: LoginPageProps) {
 
       const granted = await requestTelegramContact();
       if (!granted) {
-        setError("Чтобы войти через Telegram, поделитесь номером телефона.");
+        setError(t("auth.miniapp.errors.shareContact"));
         return;
       }
 
       const linked = await waitForContactLink();
       if (!linked) {
-        setError(
-          "Номер отправлен, но Telegram ещё не успел привязать аккаунт. Нажмите кнопку ещё раз через пару секунд.",
-        );
+        setError(t("auth.miniapp.errors.contactNotLinked"));
       }
     } catch (err) {
       setError(
-        translateApiError(
-          err,
-          "Telegram не смог выполнить вход. Откройте миниапку из Telegram и попробуйте снова.",
-        ),
+        translateApiError(err, t("auth.miniapp.errors.telegramAuthFailed")),
       );
     } finally {
       setLoading(false);
@@ -114,9 +109,9 @@ export function LoginPage({ initData, onSuccess }: LoginPageProps) {
         <div className={s['logo']}>
           <FoodizeLogo size={30} />
         </div>
-        <h1 className={s['title']}>Вход через Telegram</h1>
+        <h1 className={s['title']}>{t("auth.miniapp.title")}</h1>
         <p className={s['subtitle']}>
-          Нажмите кнопку ниже, чтобы вернуться в аккаунт
+          {t("auth.miniapp.subtitle")}
         </p>
       </div>
 
@@ -133,7 +128,7 @@ export function LoginPage({ initData, onSuccess }: LoginPageProps) {
           style={{ marginTop: 4, borderRadius: "var(--r-md)" }}
         >
           <TelegramLogo size={20} variant="mono" />
-          {loading ? "Входим..." : "Войти через Telegram"}
+          {loading ? t("auth.miniapp.loggingIn") : t("auth.buttons.loginWithTelegram")}
         </button>
       </div>
     </div>

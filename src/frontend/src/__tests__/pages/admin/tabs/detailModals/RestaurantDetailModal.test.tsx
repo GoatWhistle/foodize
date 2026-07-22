@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { RestaurantDetailModal } from '../../../../../pages/admin/tabs/detailModals/RestaurantDetailModal';
 import type { AdminRestaurant } from '@shared/types/models';
+import { t } from '@shared/i18n/useTranslation';
 
 const makeRestaurant = (over: Partial<AdminRestaurant> = {}): AdminRestaurant =>
   ({
@@ -42,23 +43,23 @@ describe('RestaurantDetailModal', () => {
     render(<RestaurantDetailModal {...baseProps()} />);
     expect(screen.getAllByText('Пицца').length).toBeGreaterThan(0);
     expect(screen.getByText('ООО Еда')).toBeInTheDocument();
-    expect(screen.getByText('Открыт')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.restaurants.modal.open'))).toBeInTheDocument();
   });
 
   it('approves and rejects pending restaurant', async () => {
     const props = baseProps();
     render(<RestaurantDetailModal {...props} />);
-    await userEvent.click(screen.getByRole('button', { name: /Одобрить/ }));
+    await userEvent.click(screen.getByRole('button', { name: new RegExp(t('common.actions.approve')) }));
     expect(props.handleApproveRestaurant).toHaveBeenCalledWith('r1');
-    await userEvent.click(screen.getByRole('button', { name: /Отклонить/ }));
+    await userEvent.click(screen.getByRole('button', { name: new RegExp(t('common.actions.reject')) }));
     expect(props.handleRejectRestaurant).toHaveBeenCalledWith('r1');
   });
 
   it('shows approve loading, hides approve when approved', () => {
     const { rerender } = render(<RestaurantDetailModal {...baseProps()} approveLoading />);
-    expect(screen.getByText('Одобрение...')).toBeInTheDocument();
+    expect(screen.getByText(t('common.actions.approving'))).toBeInTheDocument();
     rerender(<RestaurantDetailModal {...baseProps({ moderation_status: 'APPROVED' })} />);
-    expect(screen.queryByRole('button', { name: /Одобрить/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: new RegExp(t('common.actions.approve')) })).not.toBeInTheDocument();
   });
 
   it('hides reject and shows reason when rejected', () => {
@@ -67,24 +68,24 @@ describe('RestaurantDetailModal', () => {
         {...baseProps({ moderation_status: 'REJECTED', rejection_reason: 'плохие фото' })}
       />,
     );
-    expect(screen.queryByRole('button', { name: /Отклонить/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: new RegExp(t('common.actions.reject')) })).not.toBeInTheDocument();
     expect(screen.getByText('плохие фото')).toBeInTheDocument();
   });
 
   it('renders closed badge and zero rating fallback', () => {
     render(<RestaurantDetailModal {...baseProps({ is_open: false, average_rating: 0 })} />);
-    expect(screen.getByText('Закрыт')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.restaurants.modal.closed'))).toBeInTheDocument();
   });
 
   it('opens display board and QR flows', async () => {
     const openSpy = vi.spyOn(window, 'open').mockReturnValue(null);
     const props = baseProps();
     render(<RestaurantDetailModal {...props} />);
-    await userEvent.click(screen.getByRole('button', { name: /Открыть табло/ }));
+    await userEvent.click(screen.getByRole('button', { name: t('admin.restaurants.modal.openDisplayBoard') }));
     expect(openSpy).toHaveBeenCalledWith('/display-board/r1', '_blank', 'noopener,noreferrer');
-    await userEvent.click(screen.getByRole('button', { name: /QR для сайта/ }));
+    await userEvent.click(screen.getByRole('button', { name: t('admin.restaurants.modal.qrSite') }));
     expect(props.setQrType).toHaveBeenCalledWith('site');
-    await userEvent.click(screen.getByRole('button', { name: /QR для Telegram/ }));
+    await userEvent.click(screen.getByRole('button', { name: t('admin.restaurants.modal.qrTelegram') }));
     expect(props.setQrType).toHaveBeenCalledWith('telegram');
     expect(props.setQrRestaurant).toHaveBeenCalledWith(props.selectedRestaurant);
   });
@@ -92,15 +93,17 @@ describe('RestaurantDetailModal', () => {
   it('deletes and closes', async () => {
     const props = baseProps();
     render(<RestaurantDetailModal {...props} />);
-    await userEvent.click(screen.getByRole('button', { name: /Удалить ресторан/ }));
+    await userEvent.click(screen.getByRole('button', { name: t('admin.restaurants.modal.deleteRestaurant') }));
     expect(props.handleDeleteRestaurant).toHaveBeenCalledWith('r1');
-    await userEvent.click(screen.getByLabelText('Закрыть'));
+    await userEvent.click(screen.getByLabelText(t('common.actions.close')));
     expect(props.setSelectedRestaurant).toHaveBeenCalledWith(null);
   });
 
   it('uses vendor fallbacks when missing', () => {
     render(<RestaurantDetailModal {...baseProps({ vendor_name: '', vendor_phone: '' })} />);
-    expect(screen.getByText('Не указано')).toBeInTheDocument();
-    expect(screen.getByText('Не указан')).toBeInTheDocument();
+    expect(screen.getAllByText(t('common.states.notSpecified')).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText(t('common.states.notSpecifiedMale')).length,
+    ).toBeGreaterThan(0);
   });
 });

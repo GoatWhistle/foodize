@@ -7,6 +7,7 @@ import {
   type CartMenuItem,
 } from "@shared/utils/cartLine";
 import type { OrderLoadEstimate } from "@shared/types/models";
+import { useTranslation } from "@shared/i18n/useTranslation";
 import s from "./CartDrawer.module.css";
 import { formatPrice } from "@shared/utils/price";
 
@@ -23,8 +24,10 @@ export const CartItemsList = ({
   cart,
   onDecrease,
   onIncrease,
-}: CartItemsListProps) => (
-  <div className={s['items']}>
+}: CartItemsListProps) => {
+  const { t } = useTranslation();
+  return (
+    <div className={s['items']}>
     {cart.map((cartItem) => {
       const { menuItem, quantity } = cartItem;
       const selectedOptions = getSelectedOptions(cartItem);
@@ -41,11 +44,11 @@ export const CartItemsList = ({
             )}
           </div>
           <div className={s['itemControls']}>
-            <button className={s['qtyBtn']} onClick={() => { onDecrease(menuItem.id, selectedOptionIds); }} aria-label="Уменьшить">
+            <button className={s['qtyBtn']} onClick={() => { onDecrease(menuItem.id, selectedOptionIds); }} aria-label={t("order.cart.decrease")}>
               <MinusIcon size={12} weight="bold" />
             </button>
             <span style={{ fontWeight: 700, minWidth: 20, textAlign: "center", fontSize: "var(--text-base)" }}>{quantity}</span>
-            <button className={s['qtyBtn']} onClick={() => { onIncrease(menuItem, selectedOptions); }} aria-label="Увеличить">
+            <button className={s['qtyBtn']} onClick={() => { onIncrease(menuItem, selectedOptions); }} aria-label={t("order.cart.increase")}>
               <PlusIcon size={12} weight="bold" />
             </button>
           </div>
@@ -55,8 +58,9 @@ export const CartItemsList = ({
         </div>
       );
     })}
-  </div>
-);
+    </div>
+  );
+};
 
 interface PickupTimeSectionProps {
   pickupMode: "asap" | "scheduled";
@@ -80,18 +84,20 @@ export const PickupTimeSection = ({
   maxPickupValue,
   minPickupDate,
   pickupTooSoon,
-}: PickupTimeSectionProps) => (
+}: PickupTimeSectionProps) => {
+  const { t } = useTranslation();
+  return (
   <div style={{ marginTop: 14, padding: "12px 14px", border: "1px solid var(--border)", borderRadius: "var(--r-md)", background: "var(--bg-card)" }}>
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, fontSize: "var(--text-base)", fontWeight: 800, color: "var(--text-1)" }}>
       <ClockIcon size={16} weight="bold" />
-      Время получения
+      {t("order.pickup.title")}
     </div>
     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
       <button type="button" className={`category-chip${pickupMode === "asap" ? " active" : ""}`} onClick={onSelectAsap}>
-        Как можно скорее
+        {t("order.pickup.asap")}
       </button>
       <button type="button" className={`category-chip${pickupMode === "scheduled" ? " active" : ""}`} onClick={onSelectScheduled}>
-        Ко времени
+        {t("order.pickup.scheduled")}
       </button>
     </div>
     {pickupMode === "scheduled" && (
@@ -106,12 +112,13 @@ export const PickupTimeSection = ({
           style={{ height: 40, fontSize: "var(--text-base)" }}
         />
         <div style={{ marginTop: 6, fontSize: "var(--text-sm)", color: pickupTooSoon ? "var(--error)" : "var(--text-3)" }}>
-          Минимум: {minPickupDate.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
+          {t("order.pickup.minimum", { time: minPickupDate.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }) })}
         </div>
       </div>
     )}
   </div>
-);
+  );
+};
 
 interface LoadEstimateSectionProps {
   estimateLoading: boolean;
@@ -126,10 +133,11 @@ export const LoadEstimateSection = ({
   orderingUnavailable,
   hasQueueWarning,
 }: LoadEstimateSectionProps) => {
+  const { t } = useTranslation();
   if (estimateLoading) {
     return (
       <div style={{ marginTop: 14, padding: "10px 12px", border: "1px solid var(--border)", borderRadius: "var(--r-md)", color: "var(--text-3)", fontSize: "var(--text-base)", fontWeight: 700 }}>
-        Проверяем очередь...
+        {t("order.estimate.checkingQueue")}
       </div>
     );
   }
@@ -143,11 +151,16 @@ export const LoadEstimateSection = ({
       )}
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: "var(--text-base)", fontWeight: 800, color: orderingUnavailable ? "var(--error)" : "var(--text-1)", marginBottom: 2 }}>
-          {orderingUnavailable ? "Заведение временно не принимает заказы" : `Ожидание примерно ${loadEstimate.estimated_wait_min_minutes}-${loadEstimate.estimated_wait_max_minutes} мин.`}
+          {orderingUnavailable
+            ? t("order.estimate.unavailable")
+            : t("order.estimate.waitRange", {
+                min: loadEstimate.estimated_wait_min_minutes,
+                max: loadEstimate.estimated_wait_max_minutes,
+              })}
         </div>
         {!orderingUnavailable && (
           <div style={{ fontSize: "var(--text-sm)", color: "var(--text-3)" }}>
-            Активных заказов в очереди: {loadEstimate.active_orders_count}
+            {t("order.estimate.activeInQueue", { count: loadEstimate.active_orders_count })}
           </div>
         )}
       </div>

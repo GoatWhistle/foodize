@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { XIcon } from '@phosphor-icons/react';
 import { useFocusTrap } from '@shared/hooks/useFocusTrap';
 import { formatPrice } from '@shared/utils/price';
+import { useTranslation } from '@shared/i18n/useTranslation';
+
 import type { Order, OrderStatus } from '@shared/types/models';
 
 import {
@@ -48,6 +50,7 @@ export const OrderDetailsModal = ({
   onCancel,
   updating,
 }: OrderDetailsModalProps) => {
+  const { t } = useTranslation();
   const { events, eventsLoading, eventsUnavailable, loadEvents } =
     useOrderEvents(order?.id);
   const [etaMinutes, setEtaMinutes] = useState<number | null>(null);
@@ -148,7 +151,7 @@ export const OrderDetailsModal = ({
                 marginBottom: 4,
               }}
             >
-              Заказ #{getOrderDisplayId(order)}
+              {t('order.banner.orderNumber', { id: getOrderDisplayId(order) })}
             </div>
             <h3 style={{ fontSize: "var(--text-md)", fontWeight: 900, margin: 0 }}>
               {formatPrice(order.total_price)}
@@ -157,7 +160,7 @@ export const OrderDetailsModal = ({
           <button
             className="btn btn-secondary btn-sm"
             onClick={onClose}
-            aria-label="Закрыть"
+            aria-label={t('common.actions.close')}
           >
             <XIcon size={16} />
           </button>

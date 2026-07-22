@@ -7,14 +7,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import db_helper
 from features.auth.service import get_current_user
 from features.orders.crud.order import get_order_by_id_for_update
+from features.orders.exceptions import OrderNotFoundException, OrdersRestaurantAccessDeniedException
 from features.orders.models import Order
 from features.restaurants.crud import get_restaurant_by_id
+from features.restaurants.exceptions import RestaurantNotFoundException
 from features.restaurants.models import Restaurant
 from features.staff.models import StaffProfile
 from features.users.models import User
 from features.vendors.crud import get_vendor_by_user_id
 from shared.enums.permissions import Permission
-from shared.exceptions import AccessDeniedException, NotFoundException
 from shared.permissions import has_permission
 
 
@@ -25,20 +26,20 @@ async def verify_restaurant_access(
 ) -> Restaurant:
     restaurant = await get_restaurant_by_id(session, restaurant_id)
     if not restaurant:
-        raise NotFoundException(detail="Restaurant not found")
+        raise RestaurantNotFoundException()
 
     if has_permission(current_user.permissions, Permission.ORDERS_MODERATE):
         return restaurant
 
     if not has_permission(current_user.permissions, Permission.ORDERS_READ_RESTAURANT):
-        raise AccessDeniedException(detail="Only VENDOR and STAFF can access orders")
+        raise OrdersRestaurantAccessDeniedException()
 
     if has_permission(current_user.permissions, Permission.VENDORS_READ_OWN):
         vendor = await get_vendor_by_user_id(session, current_user.id)
         if vendor and vendor.id == restaurant.vendor_id:
             return restaurant
         if vendor:
-            raise AccessDeniedException(detail="Only VENDOR and STAFF can access orders")
+            raise OrdersRestaurantAccessDeniedException()
 
     result = await session.execute(
         select(StaffProfile).where(
@@ -49,7 +50,7 @@ async def verify_restaurant_access(
     if result.scalar_one_or_none():
         return restaurant
 
-    raise AccessDeniedException(detail="Only VENDOR and STAFF can access orders")
+    raise OrdersRestaurantAccessDeniedException()
 
 
 async def get_restaurant_staff_or_vendor(
@@ -67,6 +68,6 @@ async def get_order_for_staff_or_vendor(
 ) -> Order:
     order = await get_order_by_id_for_update(session, order_id)
     if not order:
-        raise NotFoundException(detail="Order not found")
+        raise OrderNotFoundException()
     await verify_restaurant_access(session, order.restaurant_id, current_user)
     return order

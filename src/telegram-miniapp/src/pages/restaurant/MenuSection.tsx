@@ -4,6 +4,8 @@ import { hapticSelection } from "../../telegram/sdk";
 import s from "./RestaurantPage.module.css";
 import { getCategoryIcon } from "@shared/utils/categoryIcons";
 import type { MenuItem } from "@shared/types/models";
+import { categoryLabel } from "@shared/utils/locales";
+import { useTranslation } from "@shared/i18n/useTranslation";
 
 interface MenuSectionProps {
   isRestaurantOpen: boolean;
@@ -23,7 +25,9 @@ export const MenuSection = ({
   setActiveCategory,
   filteredMenuItems,
   onSelectProduct,
-}: MenuSectionProps) => (
+}: MenuSectionProps) => {
+  const { t } = useTranslation();
+  return (
   <div className={s['content']}>
     {!isRestaurantOpen && (
       <div
@@ -38,7 +42,7 @@ export const MenuSection = ({
           marginBottom: 14,
         }}
       >
-        Заведение сейчас закрыто и не принимает заказы
+        {t("catalog.restaurantPage.closedBannerMiniapp")}
       </div>
     )}
     <div className={s['categoriesScroll']}>
@@ -50,7 +54,7 @@ export const MenuSection = ({
           style={{ display: "flex", alignItems: "center", gap: 5 }}
         >
           {cat === "ALL" ? <ListIcon size={14} /> : getCategoryIcon(cat, { size: 14 })}
-          {cat === "ALL" ? "Все" : cat}
+          {cat === "ALL" ? t("catalog.restaurantPage.allCategories") : categoryLabel(cat)}
         </button>
       ))}
     </div>
@@ -86,4 +90,5 @@ export const MenuSection = ({
       </div>
     )}
   </div>
-);
+  );
+};

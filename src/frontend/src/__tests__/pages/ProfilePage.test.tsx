@@ -1,9 +1,11 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
+import { t } from '@shared/i18n/useTranslation';
 import { ProfilePage } from '../../pages/profile/ProfilePage';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useModalStore } from '@shared/store/useModalStore';
 import { staffService } from '@shared/services/staffService.js';
 import { vendorService } from '@shared/services/vendorService.js';
 
@@ -63,6 +65,7 @@ describe('ProfilePage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    useModalStore.setState({ confirmDialog: null, confirmLoading: false });
     vi.mocked(staffService.getMyProfile).mockRejectedValue(
       new Error('Not a staff member')
     );
@@ -86,10 +89,10 @@ describe('ProfilePage', () => {
 
     expect(screen.getByText('Ivan Ivanov')).toBeInTheDocument();
     expect(screen.getByText('+7999')).toBeInTheDocument();
-    expect(screen.getByText('Настройки')).toBeInTheDocument();
+    expect(screen.getByText(t('profile.page.settings'))).toBeInTheDocument();
   });
 
-  it('calls logout and navigates on click', async () => {
+  it('asks for confirmation before logging out', async () => {
     render(
       <BrowserRouter>
         <ProfilePage />
@@ -97,8 +100,26 @@ describe('ProfilePage', () => {
     );
 
     const user = userEvent.setup();
-    await waitFor(() => { expect(screen.getByText(/Выйти/)).toBeInTheDocument(); });
-    await user.click(screen.getByText(/Выйти/));
+    await waitFor(() => { expect(screen.getByText(t('profile.page.logout'))).toBeInTheDocument(); });
+    await user.click(screen.getByText(t('profile.page.logout')));
+
+    expect(logoutMock).not.toHaveBeenCalled();
+    expect(useModalStore.getState().confirmDialog?.title).toBe(t('profile.page.logoutTitle'));
+  });
+
+  it('calls logout and navigates once confirmed', async () => {
+    render(
+      <BrowserRouter>
+        <ProfilePage />
+      </BrowserRouter>
+    );
+
+    const user = userEvent.setup();
+    await waitFor(() => { expect(screen.getByText(t('profile.page.logout'))).toBeInTheDocument(); });
+    await user.click(screen.getByText(t('profile.page.logout')));
+
+    await act(async () => { await useModalStore.getState().runConfirmAction(); });
+
     expect(logoutMock).toHaveBeenCalled();
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/login');
@@ -115,7 +136,7 @@ describe('ProfilePage', () => {
     const user = userEvent.setup();
     await waitForProfileChecks();
 
-    await user.click(screen.getByText(/Мои заказы/));
+    await user.click(screen.getByText(t('profile.page.myOrders')));
     expect(mockNavigate).toHaveBeenCalledWith('/orders');
   });
 
@@ -131,9 +152,9 @@ describe('ProfilePage', () => {
     );
 
     const user = userEvent.setup();
-    expect(await screen.findByText('Кабинет сотрудника')).toBeInTheDocument();
+    expect(await screen.findByText(t('profile.roles.staffDashboard'))).toBeInTheDocument();
 
-    await user.click(screen.getByText('Кабинет сотрудника'));
+    await user.click(screen.getByText(t('profile.roles.staffDashboard')));
     expect(mockNavigate).toHaveBeenCalledWith('/staff');
   });
 });

@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { vi, describe, it, expect } from 'vitest';
 import { AdminAuditTab } from '../../../../pages/admin/tabs/AdminAuditTab';
 import type { AuditLog, AuditFilters } from '../../../../pages/admin/hooks/useAdminAudit';
+import { t } from '@shared/i18n/useTranslation';
 import { at, req } from '../../../testUtils';
 
 const baseFilters: AuditFilters = { action: '', entity_type: '', date_from: '', date_to: '' };
@@ -43,27 +44,29 @@ const baseProps = (over: Partial<Parameters<typeof AdminAuditTab>[0]> = {}) => (
 describe('AdminAuditTab', () => {
   it('shows skeleton when loading with no logs', () => {
     render(<AdminAuditTab {...baseProps({ auditLogs: [], auditLoading: true })} />);
-    expect(screen.queryByText('Логов пока нет')).not.toBeInTheDocument();
+    expect(screen.queryByText(t('admin.audit.emptyTitle'))).not.toBeInTheDocument();
     expect(screen.queryAllByRole('combobox')).toHaveLength(0);
   });
 
   it('renders logs with known and fallback labels', () => {
     render(<AdminAuditTab {...baseProps()} />);
-    expect(screen.getAllByText('Одобрен вендор').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(t('admin.audit.actions.APPROVE_VENDOR')).length).toBeGreaterThan(0);
     expect(screen.getByText('UNKNOWN_ACTION')).toBeInTheDocument();
-    expect(screen.getByText(/Объект: v1/)).toBeInTheDocument();
-    expect(screen.getByText(/Объект: —/)).toBeInTheDocument();
+    expect(screen.getByText(t('admin.audit.entity', { id: 'v1' }))).toBeInTheDocument();
+    expect(
+      screen.getByText(t('admin.audit.entity', { id: t('common.states.dash') })),
+    ).toBeInTheDocument();
   });
 
   it('renders empty state', () => {
     render(<AdminAuditTab {...baseProps({ auditLogs: [] })} />);
-    expect(screen.getByText('Логов пока нет')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.audit.emptyTitle'))).toBeInTheDocument();
   });
 
   it('toggles expansion showing details JSON', async () => {
     const setExpandedAuditId = vi.fn();
     render(<AdminAuditTab {...baseProps({ setExpandedAuditId })} />);
-    await userEvent.click(screen.getByText(/Объект: v1/));
+    await userEvent.click(screen.getByText(t('admin.audit.entity', { id: 'v1' })));
     expect(setExpandedAuditId).toHaveBeenCalledWith('l1');
   });
 
@@ -73,7 +76,7 @@ describe('AdminAuditTab', () => {
       <AdminAuditTab {...baseProps({ expandedAuditId: 'l1', setExpandedAuditId })} />,
     );
     expect(screen.getByText(/"foo": "bar"/)).toBeInTheDocument();
-    await userEvent.click(screen.getByText(/Объект: v1/));
+    await userEvent.click(screen.getByText(t('admin.audit.entity', { id: 'v1' })));
     expect(setExpandedAuditId).toHaveBeenCalledWith(null);
   });
 

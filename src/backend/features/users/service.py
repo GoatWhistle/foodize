@@ -2,12 +2,12 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from features.auth.exceptions import WrongPasswordException
 from features.users import crud
 from features.users.dependencies import get_user_by_id_or_404
 from features.users.models import User
 from features.users.schemas import UserPublicRead, UserRead
 from shared.enums.permissions import Permission
-from shared.exceptions.existence import AuthException
 from shared.exceptions.rules import AccessDeniedException
 from shared.permissions import has_permission
 from utils.jwt_tokens import validate_password
@@ -22,7 +22,7 @@ async def change_user_password(
     if not current_user.hashed_password or not await validate_password(
         old_password, current_user.hashed_password
     ):
-        raise AuthException(detail="Wrong password")
+        raise WrongPasswordException()
     await crud.update_user_password(session, current_user, new_password)
 
 

@@ -4,83 +4,68 @@ from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from database import db_helper
-from features.admin.crud import CATEGORY_RU, get_advanced_analytics, get_finance_analytics
+from features.admin.crud import get_advanced_analytics, get_finance_analytics, translate_category
 from features.admin.schemas import AdvancedAnalytics, FinanceAnalytics
 from features.ai_advisor import crud
 from features.vendors.models import VendorProfile
 from infra.llm import ToolCall, ToolExecutor, ToolSpec
 from infra.llm.base import ToolInputError
 from shared.dependencies.vendor_restaurant import get_vendor_restaurant_ids
+from shared.i18n import DEFAULT_LANGUAGE, translate
 
 _DEFAULT_PERIOD_DAYS = 30
 _MAX_PERIOD_DAYS = 365
 
-_PERIOD = {
-    "type": "integer",
-    "description": "Сколько последних дней анализировать (по умолчанию 30).",
-}
-_RESTAURANT = {
-    "type": "string",
-    "description": "UUID конкретной точки. Опустить, чтобы взять все точки вендора.",
-}
 
-
-ADVISOR_TOOLS: list[ToolSpec] = [
-    ToolSpec(
-        name="get_sales_summary",
-        description=(
-            "Сводка продаж за период: выручка, средний чек, число заказов, "
-            "конверсия, рост к прошлому периоду, топ-позиции и топ-точки."
+def build_advisor_tools(language: str = DEFAULT_LANGUAGE) -> list[ToolSpec]:
+    period = {
+        "type": "integer",
+        "description": translate("prompts.advisor.tools.periodDays", language),
+    }
+    restaurant = {
+        "type": "string",
+        "description": translate("prompts.advisor.tools.restaurantId", language),
+    }
+    period_schema: dict[str, Any] = {
+        "type": "object",
+        "properties": {"period_days": period, "restaurant_id": restaurant},
+    }
+    restaurant_schema: dict[str, Any] = {
+        "type": "object",
+        "properties": {"restaurant_id": restaurant},
+    }
+    return [
+        ToolSpec(
+            name="get_sales_summary",
+            description=translate("prompts.advisor.tools.salesSummary", language),
+            input_schema=period_schema,
         ),
-        input_schema={
-            "type": "object",
-            "properties": {"period_days": _PERIOD, "restaurant_id": _RESTAURANT},
-        },
-    ),
-    ToolSpec(
-        name="get_peak_hours",
-        description="Загрузка по часам суток (число завершённых заказов в каждый час).",
-        input_schema={
-            "type": "object",
-            "properties": {"period_days": _PERIOD, "restaurant_id": _RESTAURANT},
-        },
-    ),
-    ToolSpec(
-        name="get_category_breakdown",
-        description="Выручка по категориям блюд за период.",
-        input_schema={
-            "type": "object",
-            "properties": {"period_days": _PERIOD, "restaurant_id": _RESTAURANT},
-        },
-    ),
-    ToolSpec(
-        name="get_top_and_bottom_items",
-        description=(
-            "Самые продаваемые и самые редко покупаемые (вплоть до ни разу не "
-            "проданных) позиции меню за период."
+        ToolSpec(
+            name="get_peak_hours",
+            description=translate("prompts.advisor.tools.peakHours", language),
+            input_schema=period_schema,
         ),
-        input_schema={
-            "type": "object",
-            "properties": {"period_days": _PERIOD, "restaurant_id": _RESTAURANT},
-        },
-    ),
-    ToolSpec(
-        name="get_menu",
-        description="Текущее меню вендора: позиции, категории, цены, доступность.",
-        input_schema={
-            "type": "object",
-            "properties": {"restaurant_id": _RESTAURANT},
-        },
-    ),
-    ToolSpec(
-        name="get_reviews_summary",
-        description="Сводка отзывов: средний рейтинг, распределение оценок, свежие тексты.",
-        input_schema={
-            "type": "object",
-            "properties": {"restaurant_id": _RESTAURANT},
-        },
-    ),
-]
+        ToolSpec(
+            name="get_category_breakdown",
+            description=translate("prompts.advisor.tools.categoryBreakdown", language),
+            input_schema=period_schema,
+        ),
+        ToolSpec(
+            name="get_top_and_bottom_items",
+            description=translate("prompts.advisor.tools.topAndBottomItems", language),
+            input_schema=period_schema,
+        ),
+        ToolSpec(
+            name="get_menu",
+            description=translate("prompts.advisor.tools.menu", language),
+            input_schema=restaurant_schema,
+        ),
+        ToolSpec(
+            name="get_reviews_summary",
+            description=translate("prompts.advisor.tools.reviewsSummary", language),
+            input_schema=restaurant_schema,
+        ),
+    ]
 
 
 def _dumps(payload: object) -> str:
@@ -108,18 +93,22 @@ def _restaurant_id(args: dict[str, Any]) -> uuid.UUID | None:
         raise ToolInputError(f"invalid restaurant_id: {raw!r} — provide a valid UUID") from None
 
 
-def _localize_categories(rows: list[dict[str, Any]]) -> None:
+def _localize_categories(rows: list[dict[str, Any]], language: str) -> None:
     for row in rows:
-        row["category"] = CATEGORY_RU.get(row["category"], row["category"])
+        row["category"] = translate_category(row["category"], language)
 
 
 class _AdvisorToolRunner:
     def __init__(
-        self, vendor: VendorProfile, default_restaurant_id: uuid.UUID | None = None
+        self,
+        vendor: VendorProfile,
+        default_restaurant_id: uuid.UUID | None = None,
+        language: str = DEFAULT_LANGUAGE,
     ) -> None:
         self._vendor_id = vendor.id
         self._owned_restaurant_ids = get_vendor_restaurant_ids(vendor)
         self._default_restaurant_id = default_restaurant_id
+        self._language = language
         self._advanced_cache: dict[tuple[date, date, uuid.UUID | None], AdvancedAnalytics] = {}
         self._finance_cache: dict[tuple[date, date, uuid.UUID | None], FinanceAnalytics] = {}
 
@@ -143,6 +132,7 @@ class _AdvisorToolRunner:
                     date_to=end,
                     vendor_id=self._vendor_id,
                     restaurant_id=restaurant_id,
+                    language=self._language,
                 )
         return self._advanced_cache[key]
 
@@ -221,7 +211,7 @@ class _AdvisorToolRunner:
                 end_date=end,
                 restaurant_id=restaurant_id,
             )
-        _localize_categories(bottom_items)
+        _localize_categories(bottom_items, self._language)
         return _dumps(
             {
                 "period": {"from": str(start), "to": str(end)},
@@ -238,7 +228,7 @@ class _AdvisorToolRunner:
             menu_items = await crud.get_menu_overview(
                 session, vendor_id=self._vendor_id, restaurant_id=self._resolve_restaurant(args)
             )
-        _localize_categories(menu_items)
+        _localize_categories(menu_items, self._language)
         return _dumps({"items": menu_items})
 
     async def reviews_summary(self, args: dict[str, Any]) -> str:
@@ -252,8 +242,9 @@ class _AdvisorToolRunner:
 def build_advisor_executor(
     vendor: VendorProfile,
     default_restaurant_id: uuid.UUID | None = None,
+    language: str = DEFAULT_LANGUAGE,
 ) -> ToolExecutor:
-    runner = _AdvisorToolRunner(vendor, default_restaurant_id)
+    runner = _AdvisorToolRunner(vendor, default_restaurant_id, language)
     handlers = {
         "get_sales_summary": runner.sales_summary,
         "get_peak_hours": runner.peak_hours,

@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { MenuSection } from "../../pages/restaurant/MenuSection";
 import type { MenuItem } from "@shared/types/models";
+import { t } from "@shared/i18n/useTranslation";
 
 vi.mock("../../telegram/sdk", () => ({
   hapticSelection: vi.fn(),
@@ -35,7 +36,7 @@ beforeEach(() => {
 describe("MenuSection", () => {
   it("renders category chips with the Все label for ALL", () => {
     render(<MenuSection {...baseProps} setActiveCategory={vi.fn()} onSelectProduct={vi.fn()} />);
-    expect(screen.getByRole("button", { name: "Все" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: t("catalog.restaurantPage.allCategories") })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Пицца" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Напитки" })).toBeInTheDocument();
   });
@@ -75,7 +76,7 @@ describe("MenuSection", () => {
       />,
     );
     expect(
-      screen.getByText("Заведение сейчас закрыто и не принимает заказы"),
+      screen.getByText(t("catalog.restaurantPage.closedBannerMiniapp")),
     ).toBeInTheDocument();
   });
 
@@ -84,6 +85,6 @@ describe("MenuSection", () => {
       <MenuSection {...baseProps} loading setActiveCategory={vi.fn()} onSelectProduct={vi.fn()} />,
     );
     expect(screen.queryByText("Пицца Маргарита")).not.toBeInTheDocument();
-    expect(screen.getByText("Все")).toBeInTheDocument();
+    expect(screen.getByText(t("catalog.restaurantPage.allCategories"))).toBeInTheDocument();
   });
 });

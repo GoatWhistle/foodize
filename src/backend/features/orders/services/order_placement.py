@@ -13,7 +13,10 @@ from features.orders.exceptions import (
     MenuItemRestaurantMismatchException,
     MenuItemsNotFoundException,
     MenuItemUnavailableException,
+    OrderingPausedException,
     OrderNotFoundException,
+    RestaurantClosedAtPickupTimeException,
+    RestaurantOutsideWorkingHoursException,
 )
 from features.orders.models import IdempotencyKey, Order
 from features.orders.schemas.order import OrderCreate, OrderResponse
@@ -45,13 +48,11 @@ async def _validate_restaurant_open(
     if not restaurant.is_open:
         raise RestaurantClosedException()
     if is_ordering_paused(restaurant):
-        raise RestaurantClosedException(detail="Restaurant is temporarily not accepting orders")
+        raise OrderingPausedException()
 
     working_hours = await get_working_hours(session, restaurant.id)
     if working_hours and is_open_now(working_hours) is False:
-        raise RestaurantClosedException(
-            detail="Restaurant is currently closed (outside working hours)"
-        )
+        raise RestaurantOutsideWorkingHoursException()
     return restaurant, working_hours
 
 
@@ -98,7 +99,7 @@ async def _resolve_pickup_timing(
         and working_hours
         and is_open_at(working_hours, requested_pickup_at) is False
     ):
-        raise RestaurantClosedException(detail="Restaurant is closed at requested pickup time")
+        raise RestaurantClosedAtPickupTimeException()
     return requested_pickup_at, fallback_ready_at
 
 

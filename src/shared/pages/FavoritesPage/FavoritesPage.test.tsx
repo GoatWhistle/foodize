@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { FavoritesPage } from "@shared/pages/FavoritesPage/FavoritesPage";
 import { useFavoritesPage } from "@shared/hooks/useFavoritesPage";
 import type { Favorite } from "@shared/types/models";
+import { t } from "@shared/i18n/useTranslation";
 
 vi.mock("@shared/hooks/useFavoritesPage", () => ({
   useFavoritesPage: vi.fn(),
@@ -50,8 +51,8 @@ describe("FavoritesPage", () => {
   it("shows the empty state when there are no favorites", () => {
     mockedHook.mockReturnValue(hookState());
     renderPage();
-    expect(screen.getByText("Нет избранных")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Смотреть рестораны" })).toBeInTheDocument();
+    expect(screen.getByText(t("catalog.favorites.emptyTitle"))).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: t("catalog.favorites.browse") })).toBeInTheDocument();
   });
 
   it("renders the favorites list and the total badge", () => {
@@ -85,7 +86,7 @@ describe("FavoritesPage", () => {
       hookState({ favorites: [makeFavorite("1", "Пиццерия")], total: 1, handleUnfavorite }),
     );
     renderPage();
-    await user.click(screen.getByRole("button", { name: "Убрать из избранного" }));
+    await user.click(screen.getByRole("button", { name: t("catalog.restaurantCard.removeFromFavorites") }));
     expect(handleUnfavorite).toHaveBeenCalledWith("rest-1");
   });
 
@@ -93,7 +94,7 @@ describe("FavoritesPage", () => {
     const user = userEvent.setup();
     mockedHook.mockReturnValue(hookState());
     renderPage();
-    await user.click(screen.getByRole("button", { name: "Смотреть рестораны" }));
+    await user.click(screen.getByRole("button", { name: t("catalog.favorites.browse") }));
   });
 
   it("wires the Telegram BackButton and cleans up on unmount", () => {

@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { EtaModal } from '../../../../pages/staff/components/EtaModal';
 import type { StaffOrder } from '../../../../pages/staff/types';
+import { t } from '@shared/i18n/useTranslation';
 
 const makeOrder = (prepTimes: number[]): StaffOrder =>
   ({
@@ -28,15 +29,15 @@ describe('EtaModal', () => {
     render(
       <EtaModal order={makeOrder([20, 12])} onConfirm={vi.fn()} onCancel={vi.fn()} updating={false} />
     );
-    expect(screen.getByText('Заказ #42')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '20 мин *' })).toBeInTheDocument();
+    expect(screen.getByText(t('staff.etaModal.title', { displayId: 42 }))).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: `${t('staff.etaModal.chipMinutes', { minutes: 20 })}${t('staff.etaModal.recommendedMark')}` })).toBeInTheDocument();
   });
 
   it('falls back to 15 min default when no prep times', () => {
     render(
       <EtaModal order={makeOrder([])} onConfirm={vi.fn()} onCancel={vi.fn()} updating={false} />
     );
-    expect(screen.getByRole('button', { name: '15 мин *' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: `${t('staff.etaModal.chipMinutes', { minutes: 15 })}${t('staff.etaModal.recommendedMark')}` })).toBeInTheDocument();
   });
 
   it('confirms with selected minutes', async () => {
@@ -45,8 +46,8 @@ describe('EtaModal', () => {
     render(
       <EtaModal order={makeOrder([])} onConfirm={onConfirm} onCancel={vi.fn()} updating={false} />
     );
-    await user.click(screen.getByRole('button', { name: '30 мин' }));
-    await user.click(screen.getByRole('button', { name: 'Начать готовить' }));
+    await user.click(screen.getByRole('button', { name: t('staff.etaModal.chipMinutes', { minutes: 30 }) }));
+    await user.click(screen.getByRole('button', { name: t('staff.etaModal.confirm') }));
     expect(onConfirm).toHaveBeenCalledWith({ estimated_ready_in_minutes: 30 });
   });
 
@@ -56,10 +57,10 @@ describe('EtaModal', () => {
     render(
       <EtaModal order={makeOrder([])} onConfirm={onConfirm} onCancel={vi.fn()} updating={false} />
     );
-    const input = screen.getByLabelText(/Или указать точное время/);
+    const input = screen.getByLabelText(new RegExp(t('staff.etaModal.manualLabel')));
     await user.clear(input);
     await user.type(input, '10:30');
-    await user.click(screen.getByRole('button', { name: 'Начать готовить' }));
+    await user.click(screen.getByRole('button', { name: t('staff.etaModal.confirm') }));
     expect(onConfirm).toHaveBeenCalledWith(
       expect.objectContaining<Record<string, unknown>>({ estimated_ready_at: expect.any(String) as unknown })
     );
@@ -78,7 +79,7 @@ describe('EtaModal', () => {
     const { container } = render(
       <EtaModal order={makeOrder([15])} onConfirm={vi.fn()} onCancel={onCancel} updating={false} />
     );
-    await user.click(screen.getByRole('button', { name: 'Отмена' }));
+    await user.click(screen.getByRole('button', { name: t('common.actions.cancel') }));
     expect(onCancel).toHaveBeenCalledTimes(1);
     const overlay = container.querySelector('.modal-overlay') as HTMLElement;
     overlay.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));

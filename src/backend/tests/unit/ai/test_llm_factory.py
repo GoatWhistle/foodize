@@ -1,6 +1,12 @@
 import pytest
 
 from infra.llm import factory
+from infra.llm.exceptions import (
+    MissingAnthropicAPIKeyError,
+    MissingGigaChatAPIKeyError,
+    MissingOpenAIAPIKeyError,
+    UnsupportedLLMProviderError,
+)
 from infra.llm.factory import AgentRole, _resolve_model, get_llm_client
 from settings.config.runtime.llm import LLMConfig, LLMProvider
 
@@ -30,7 +36,7 @@ def test_resolve_model_maps_role_and_provider(
 
 
 def test_resolve_model_rejects_unknown_provider() -> None:
-    with pytest.raises(ValueError, match="Unsupported LLM provider"):
+    with pytest.raises(UnsupportedLLMProviderError, match="Unsupported LLM provider"):
         _resolve_model(AgentRole.ORDER, "telepathy", _CFG)  # type: ignore[arg-type]
 
 
@@ -56,21 +62,21 @@ def test_gigachat_routes_through_openai_compatible_client() -> None:
 def test_build_requires_gigachat_key() -> None:
     cfg = LLMConfig(gigachat_api_key="")
 
-    with pytest.raises(ValueError, match="GIGACHAT_API_KEY"):
+    with pytest.raises(MissingGigaChatAPIKeyError, match="GIGACHAT_API_KEY"):
         factory._build(LLMProvider.GIGACHAT, "gigachat-model", cfg)
 
 
 def test_build_requires_openai_key() -> None:
     cfg = LLMConfig(openai_api_key="")
 
-    with pytest.raises(ValueError, match="OPENAI_API_KEY"):
+    with pytest.raises(MissingOpenAIAPIKeyError, match="OPENAI_API_KEY"):
         factory._build(LLMProvider.OPENAI, "openai-model", cfg)
 
 
 def test_build_requires_anthropic_key_only_for_anthropic() -> None:
     cfg = LLMConfig(anthropic_api_key="")
 
-    with pytest.raises(ValueError, match="ANTHROPIC_API_KEY"):
+    with pytest.raises(MissingAnthropicAPIKeyError, match="ANTHROPIC_API_KEY"):
         factory._build(LLMProvider.ANTHROPIC, "some-model", cfg)
 
 

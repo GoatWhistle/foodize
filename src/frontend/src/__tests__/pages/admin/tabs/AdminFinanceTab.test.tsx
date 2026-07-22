@@ -9,6 +9,7 @@ import type {
   FinanceFilters,
 } from '../../../../pages/admin/hooks/useAdminFinance';
 import type { adminService as adminServiceType } from '../../../../services/adminService';
+import { t } from '@shared/i18n/useTranslation';
 import { at, req } from '../../../testUtils';
 
 vi.mock('../../../../components/dashboard/DashboardCharts', () => ({
@@ -110,14 +111,14 @@ describe('AdminFinanceTab', () => {
     const setFinanceFilters = vi.fn();
     const setActivePreset = vi.fn();
     render(<AdminFinanceTab {...baseProps({ setFinanceFilters, setActivePreset })} />);
-    await userEvent.click(screen.getByRole('button', { name: '7 дней' }));
+    await userEvent.click(screen.getByRole('button', { name: t('admin.finance.presets.days7') }));
     expect(setActivePreset).toHaveBeenCalledWith(7);
     let updater = req(setFinanceFilters.mock.calls.at(-1))[0] as (p: FinanceFilters) => FinanceFilters;
     let next = updater({ date_from: '', date_to: '', restaurant_id: '' });
     expect(next.date_from).toBeTruthy();
     expect(next.date_to).toBeTruthy();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Сбросить' }));
+    await userEvent.click(screen.getByRole('button', { name: t('admin.finance.presets.reset') }));
     expect(setActivePreset).toHaveBeenCalledWith(null);
     updater = req(setFinanceFilters.mock.calls.at(-1))[0] as (p: FinanceFilters) => FinanceFilters;
     next = updater({ date_from: 'x', date_to: 'y', restaurant_id: 'z' });
@@ -128,20 +129,26 @@ describe('AdminFinanceTab', () => {
   it('triggers export actions', async () => {
     const handleExport = vi.fn();
     render(<AdminFinanceTab {...baseProps({ handleExport })} />);
-    await userEvent.click(screen.getByRole('button', { name: /Финансы PDF/ }));
+    await userEvent.click(
+      screen.getByRole('button', { name: t('admin.finance.exports.financePdf') }),
+    );
     expect(handleExport).toHaveBeenCalledWith(
       expect.any(Function),
-      expect.stringContaining('финансы_'),
+      t('admin.exportFiles.finance', { restaurant: 'все', range: '2026-07-18_2026-07-18' }),
     );
     const exportFn = at(handleExport.mock.calls, 0)[0] as () => Promise<Blob>;
     void exportFn();
     expect(adminService.exportFinancePDF).toHaveBeenCalled();
 
-    await userEvent.click(screen.getByRole('button', { name: /Аналитика PDF/ }));
+    await userEvent.click(
+      screen.getByRole('button', { name: t('admin.finance.exports.analyticsPdf') }),
+    );
     void (req(handleExport.mock.calls.at(-1))[0] as () => Promise<Blob>)();
     expect(adminService.exportAnalyticsPDF).toHaveBeenCalled();
 
-    await userEvent.click(screen.getByRole('button', { name: /Обзор платформы PDF/ }));
+    await userEvent.click(
+      screen.getByRole('button', { name: t('admin.finance.exports.overviewPdf') }),
+    );
     void (req(handleExport.mock.calls.at(-1))[0] as () => Promise<Blob>)();
     expect(adminService.exportOverviewPDF).toHaveBeenCalled();
   });
@@ -162,8 +169,8 @@ describe('AdminFinanceTab', () => {
       />,
     );
     expect(screen.queryByTestId('top-restaurants')).not.toBeInTheDocument();
-    expect(screen.getByText(/Топ ресторанов скрыт/)).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Сбросить фильтр' }));
+    expect(screen.getByText(t('admin.finance.topRestaurantsHidden'))).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: t('admin.finance.resetFilter') }));
     const updater = req(setFinanceFilters.mock.calls.at(-1))[0] as (p: FinanceFilters) => FinanceFilters;
     expect(updater({ date_from: '', date_to: '', restaurant_id: 'r1' }).restaurant_id).toBe('');
   });

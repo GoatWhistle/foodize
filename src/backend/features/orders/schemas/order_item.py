@@ -3,6 +3,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from features.orders.exceptions import DuplicateOptionsSelectedError
 from shared.enums.category import Category
 
 
@@ -15,7 +16,7 @@ class OrderItemCreate(BaseModel):
     @classmethod
     def selected_option_ids_must_be_unique(cls, value: list[uuid.UUID]) -> list[uuid.UUID]:
         if len(value) != len(set(value)):
-            raise ValueError("Duplicate options selected")
+            raise DuplicateOptionsSelectedError()
         return value
 
 

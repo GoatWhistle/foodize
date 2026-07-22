@@ -1,8 +1,13 @@
 import type { Order } from '@shared/types/models';
 
-import { STATUS_LABEL_RU, formatDateTime } from './orderDetails.helpers';
+import { orderStatusLabel } from '@shared/utils/locales';
+import { useTranslation } from '@shared/i18n/useTranslation';
 
-export const OrderSummaryGrid = ({ order }: { order: Order }) => (
+import { formatDateTime } from './orderDetails.helpers';
+
+export const OrderSummaryGrid = ({ order }: { order: Order }) => {
+  const { t } = useTranslation();
+  return (
   <div
     style={{
       display: 'grid',
@@ -19,10 +24,10 @@ export const OrderSummaryGrid = ({ order }: { order: Order }) => (
       }}
     >
       <div style={{ color: 'var(--text-3)', fontSize: "var(--text-sm)", marginBottom: 6 }}>
-        Статус
+        {t('common.labels.status')}
       </div>
       <div style={{ fontWeight: 800 }}>
-        {STATUS_LABEL_RU[order.status]}
+        {orderStatusLabel(order.status)}
       </div>
     </div>
     <div
@@ -34,7 +39,7 @@ export const OrderSummaryGrid = ({ order }: { order: Order }) => (
       }}
     >
       <div style={{ color: 'var(--text-3)', fontSize: "var(--text-sm)", marginBottom: 6 }}>
-        Создан
+        {t('order.details.createdAt')}
       </div>
       <div style={{ fontWeight: 800 }}>{formatDateTime(order.created_at)}</div>
     </div>
@@ -47,13 +52,14 @@ export const OrderSummaryGrid = ({ order }: { order: Order }) => (
       }}
     >
       <div style={{ color: 'var(--text-3)', fontSize: "var(--text-sm)", marginBottom: 6 }}>
-        К выдаче
+        {t('order.details.pickupTarget')}
       </div>
       <div style={{ fontWeight: 800 }}>
         {order.requested_pickup_at
           ? formatDateTime(order.requested_pickup_at)
-          : 'Как можно скорее'}
+          : t('order.details.asap')}
       </div>
     </div>
   </div>
-);
+  );
+};

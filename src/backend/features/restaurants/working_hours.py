@@ -12,7 +12,6 @@ if TYPE_CHECKING:
 
 
 class WorkingHours(Base, IdUuidPkMixin):
-    __tablename__ = "working_hours"
     __table_args__ = (
         UniqueConstraint("restaurant_id", "day_of_week", name="uq_working_hours_restaurant_day"),
         CheckConstraint("day_of_week BETWEEN 0 AND 6", name="ck_working_hours_day_of_week"),

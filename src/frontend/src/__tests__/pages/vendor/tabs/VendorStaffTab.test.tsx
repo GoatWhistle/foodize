@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { VendorStaffTab } from '../../../../pages/vendor/tabs/VendorStaffTab';
 import type { StaffMember, StaffRequest } from '@shared/types/models';
 import type { StaffSubTab } from '../../../../pages/vendor/hooks/useVendorStaff';
+import { t } from '@shared/i18n/useTranslation';
 
 const members: StaffMember[] = [
   { id: 'm1', user_id: 'user1234abcd', user_name: 'Иван', user_phone: '+7999', restaurant_name: 'Resto' },
@@ -54,13 +55,13 @@ describe('VendorStaffTab', () => {
   it('renders members with name and fallback id/phone', () => {
     render(<Harness />);
     expect(screen.getByText('Иван')).toBeInTheDocument();
-    expect(screen.getByText(/ID: user5678/)).toBeInTheDocument();
-    expect(screen.getByText('Нет телефона')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.staff.idFallback', { id: 'user5678' }))).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.staff.noPhone'))).toBeInTheDocument();
   });
 
   it('shows empty members state', () => {
     render(<Harness membersData={[]} />);
-    expect(screen.getByText('Нет сотрудников')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.staff.emptyMembersTitle'))).toBeInTheDocument();
   });
 
   it('removes a staff member', async () => {
@@ -82,13 +83,13 @@ describe('VendorStaffTab', () => {
     const user = userEvent.setup();
     const onDecision = vi.fn();
     render(<Harness onDecision={onDecision} />);
-    await user.click(screen.getByRole('button', { name: 'Заявки' }));
-    expect(screen.getByText(/Пользователь #aaaabbbb/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: t('vendor.staff.tabs.requests') }));
+    expect(screen.getByText(t('vendor.staff.requestUser', { id: 'aaaabbbb' }))).toBeInTheDocument();
     const actions = document.querySelector('.staff-request-actions') as HTMLElement;
     const accept = actions.querySelector('.btn-primary') as HTMLElement;
     await user.click(accept);
     expect(onDecision).toHaveBeenCalledWith('r1', 'ACCEPTED');
-    await user.click(screen.getByRole('button', { name: 'Сотрудники' }));
+    await user.click(screen.getByRole('button', { name: t('vendor.staff.tabs.members') }));
     expect(screen.getByText('Иван')).toBeInTheDocument();
   });
 
@@ -104,32 +105,32 @@ describe('VendorStaffTab', () => {
 
   it('shows empty requests state', () => {
     render(<Harness initialTab="requests" requestsData={[]} />);
-    expect(screen.getByText('Нет заявок')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.staff.emptyRequestsTitle'))).toBeInTheDocument();
   });
 
   it('handles non-array requests', () => {
     render(<Harness initialTab="requests" requestsData={null} />);
-    expect(screen.getByText('Нет заявок')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.staff.emptyRequestsTitle'))).toBeInTheDocument();
   });
 
   it('renders members pagination and changes page', async () => {
     const user = userEvent.setup();
     render(<Harness membersTotal={40} />);
-    const nextButtons = screen.getAllByLabelText(/Перейти на страницу/);
+    const nextButtons = screen.getAllByLabelText(new RegExp(t('catalog.pagination.goToPage', { page: '' }).trim()));
     expect(nextButtons.length).toBeGreaterThan(0);
-    await user.click(screen.getByLabelText('Перейти на страницу 2'));
+    await user.click(screen.getByLabelText(t('catalog.pagination.goToPage', { page: 2 })));
     await waitFor(() => {
-      expect(screen.getByLabelText('Перейти на страницу 1')).not.toBeDisabled();
+      expect(screen.getByLabelText(t('catalog.pagination.goToPage', { page: 1 }))).not.toBeDisabled();
     });
   });
 
   it('renders requests pagination and changes page', async () => {
     const user = userEvent.setup();
     render(<Harness initialTab="requests" requestsTotal={40} />);
-    expect(screen.getAllByLabelText(/Перейти на страницу/).length).toBeGreaterThan(0);
-    await user.click(screen.getByLabelText('Перейти на страницу 2'));
+    expect(screen.getAllByLabelText(new RegExp(t('catalog.pagination.goToPage', { page: '' }).trim())).length).toBeGreaterThan(0);
+    await user.click(screen.getByLabelText(t('catalog.pagination.goToPage', { page: 2 })));
     await waitFor(() => {
-      expect(screen.getByLabelText('Перейти на страницу 1')).not.toBeDisabled();
+      expect(screen.getByLabelText(t('catalog.pagination.goToPage', { page: 1 }))).not.toBeDisabled();
     });
   });
 });

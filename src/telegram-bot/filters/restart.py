@@ -1,9 +1,9 @@
 from aiogram.filters import BaseFilter
 from aiogram.types import Message
 
-from keyboards.start_keyboards import RESTART_TEXT
+from keyboards.start_keyboards import restart_texts
 
 
 class RestartFilter(BaseFilter):
     async def __call__(self, message: Message) -> bool:
-        return message.text == RESTART_TEXT
+        return message.text in restart_texts()

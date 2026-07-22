@@ -3,6 +3,7 @@ import { cartService } from "@shared/services/cartService";
 import { orderService } from "@shared/services/orderService";
 import { translateApiError } from "@shared/utils/translateApiError";
 import { logError } from "@shared/utils/logError";
+import { t } from "@shared/i18n/useTranslation";
 import {
   getOptionIds,
   getLinePrice,
@@ -78,7 +79,7 @@ export function createCartStore({
           cartError: null,
         });
       } catch (err) {
-        set({ cartError: translateApiError(err, "Не удалось загрузить корзину") });
+        set({ cartError: translateApiError(err, t("order.cart.loadFailed")) });
       }
     },
 
@@ -99,7 +100,7 @@ export function createCartStore({
           set({ cartError: null });
         } catch (err) {
           set({
-            cartError: translateApiError(err, "Не удалось синхронизировать корзину"),
+            cartError: translateApiError(err, t("order.cart.syncFailed")),
           });
           throw err;
         }

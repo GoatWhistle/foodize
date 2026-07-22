@@ -1,6 +1,9 @@
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { Order } from '@shared/types/models';
 
-export const OrderNotesGrid = ({ order }: { order: Order }) => (
+export const OrderNotesGrid = ({ order }: { order: Order }) => {
+  const { t } = useTranslation();
+  return (
   <div
     style={{
       display: 'grid',
@@ -17,10 +20,10 @@ export const OrderNotesGrid = ({ order }: { order: Order }) => (
       }}
     >
       <div style={{ color: 'var(--text-3)', fontSize: "var(--text-sm)" }}>
-        Комментарий
+        {t('order.details.comment')}
       </div>
       <div style={{ marginTop: 6, fontSize: "var(--text-base)" }}>
-        {order.comment || 'Не указан'}
+        {order.comment || t('order.details.commentEmpty')}
       </div>
     </div>
     <div
@@ -31,11 +34,12 @@ export const OrderNotesGrid = ({ order }: { order: Order }) => (
         padding: 12,
       }}
     >
-      <div style={{ color: 'var(--text-3)', fontSize: "var(--text-sm)" }}>Промокод</div>
+      <div style={{ color: 'var(--text-3)', fontSize: "var(--text-sm)" }}>{t('order.details.promoCode')}</div>
       <div style={{ marginTop: 6, fontSize: "var(--text-base)" }}>
         {(order as Order & { promo_code?: string | null }).promo_code ||
-          'Не сохранен'}
+          t('order.details.promoEmpty')}
       </div>
     </div>
   </div>
-);
+  );
+};

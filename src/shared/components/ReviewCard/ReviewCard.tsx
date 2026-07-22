@@ -3,6 +3,7 @@ import { ShoppingBagIcon, TrashIcon } from "@phosphor-icons/react";
 import { formatReviewTime } from "@shared/utils/formatReviewTime";
 import { StarRatingInput } from "@shared/components/StarRatingInput/StarRatingInput";
 import type { Review } from "@shared/types/models";
+import { useTranslation } from "@shared/i18n/useTranslation";
 import s from "./ReviewCard.module.css";
 
 interface ReviewCardProps {
@@ -26,6 +27,7 @@ export const ReviewCard = ({
   headerExtra,
   actionsExtra,
 }: ReviewCardProps) => {
+  const { t } = useTranslation();
   const time = formatReviewTime(review.created_at);
   return (
     <div className={`${s['card']}${className ? ` ${className}` : ""}`}>
@@ -38,7 +40,7 @@ export const ReviewCard = ({
           )}
           <div>
             <div className={s['name']}>
-              {review.user_name || "Клиент"}
+              {review.user_name || t("catalog.reviews.anonymous")}
               {headerExtra}
             </div>
             <div className={s['meta']}>
@@ -48,7 +50,7 @@ export const ReviewCard = ({
             {showVerifiedBadge && review.is_verified_purchase && (
               <span className="verified-purchase-badge" style={{ marginTop: 3 }}>
                 <ShoppingBagIcon size={10} weight="fill" />
-                Подтверждённый заказ
+                {t("catalog.reviews.verifiedPurchase")}
               </span>
             )}
           </div>
@@ -59,7 +61,7 @@ export const ReviewCard = ({
             {canDelete && (
               <button
                 type="button"
-                aria-label="Удалить отзыв"
+                aria-label={t("catalog.reviews.deleteAria")}
                 onClick={onDelete}
                 className={s['deleteBtn']}
               >

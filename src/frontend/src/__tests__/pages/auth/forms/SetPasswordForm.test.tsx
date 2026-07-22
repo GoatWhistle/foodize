@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
+import { t } from '@shared/i18n/useTranslation';
 import { SetPasswordForm, getPasswordStrength } from '../../../../pages/auth/forms/SetPasswordForm';
 import type { ProfileForm } from '../../../../pages/auth/types';
 
@@ -38,20 +39,20 @@ describe('getPasswordStrength', () => {
   it('returns empty state for empty value', () => {
     const r = getPasswordStrength('');
     expect(r.score).toBe(0);
-    expect(r.label).toBe('Введите пароль');
+    expect(r.label).toBe(t('auth.passwordStrength.empty'));
   });
 
   it('returns weak for short simple password', () => {
-    expect(getPasswordStrength('abc').label).toBe('Слабый пароль');
+    expect(getPasswordStrength('abc').label).toBe(t('auth.passwordStrength.weak'));
   });
 
   it('returns medium for moderately complex password', () => {
-    expect(getPasswordStrength('Abcdefg1').label).toBe('Средний пароль');
+    expect(getPasswordStrength('Abcdefg1').label).toBe(t('auth.passwordStrength.medium'));
   });
 
   it('returns strong for long complex password', () => {
     const r = getPasswordStrength('Abcdefgh1234!@');
-    expect(r.label).toBe('Сильный пароль');
+    expect(r.label).toBe(t('auth.passwordStrength.strong'));
     expect(r.score).toBe(5);
   });
 });
@@ -59,36 +60,36 @@ describe('getPasswordStrength', () => {
 describe('SetPasswordForm', () => {
   it('renders name, password and confirm inputs', () => {
     render(<Harness />);
-    expect(screen.getByLabelText('Имя')).toBeInTheDocument();
-    expect(screen.getByLabelText('Фамилия')).toBeInTheDocument();
-    expect(screen.getByLabelText('Новый пароль')).toBeInTheDocument();
-    expect(screen.getByLabelText('Повторите пароль')).toBeInTheDocument();
+    expect(screen.getByLabelText(t('auth.placeholders.name'))).toBeInTheDocument();
+    expect(screen.getByLabelText(t('auth.placeholders.surname'))).toBeInTheDocument();
+    expect(screen.getByLabelText(t('auth.fields.newPassword'))).toBeInTheDocument();
+    expect(screen.getByLabelText(t('auth.fields.repeatPassword'))).toBeInTheDocument();
   });
 
   it('shows password strength label as user types', async () => {
     const user = userEvent.setup();
     render(<Harness />);
-    expect(screen.getByText('Введите пароль')).toBeInTheDocument();
-    await user.type(screen.getByLabelText('Новый пароль'), 'Abcdefgh1234!@');
-    expect(screen.getByText('Сильный пароль')).toBeInTheDocument();
+    expect(screen.getByText(t('auth.passwordStrength.empty'))).toBeInTheDocument();
+    await user.type(screen.getByLabelText(t('auth.fields.newPassword')), 'Abcdefgh1234!@');
+    expect(screen.getByText(t('auth.passwordStrength.strong'))).toBeInTheDocument();
   });
 
   it('updates profile name fields', async () => {
     const user = userEvent.setup();
     render(<Harness />);
-    await user.type(screen.getByLabelText('Имя'), 'Ivan');
-    await user.type(screen.getByLabelText('Фамилия'), 'Petrov');
-    expect(screen.getByLabelText('Имя')).toHaveValue('Ivan');
-    expect(screen.getByLabelText('Фамилия')).toHaveValue('Petrov');
+    await user.type(screen.getByLabelText(t('auth.placeholders.name')), 'Ivan');
+    await user.type(screen.getByLabelText(t('auth.placeholders.surname')), 'Petrov');
+    expect(screen.getByLabelText(t('auth.placeholders.name'))).toHaveValue('Ivan');
+    expect(screen.getByLabelText(t('auth.placeholders.surname'))).toHaveValue('Petrov');
   });
 
   it('keeps submit disabled while passwords are invalid or mismatched', async () => {
     const user = userEvent.setup();
     render(<Harness />);
-    const submit = screen.getByRole('button', { name: 'Сохранить пароль' });
+    const submit = screen.getByRole('button', { name: t('auth.buttons.savePassword') });
     expect(submit).toBeDisabled();
-    await user.type(screen.getByLabelText('Новый пароль'), 'Abcdefg1');
-    await user.type(screen.getByLabelText('Повторите пароль'), 'different');
+    await user.type(screen.getByLabelText(t('auth.fields.newPassword')), 'Abcdefg1');
+    await user.type(screen.getByLabelText(t('auth.fields.repeatPassword')), 'different');
     expect(submit).toBeDisabled();
   });
 
@@ -96,9 +97,9 @@ describe('SetPasswordForm', () => {
     const onSubmit = vi.fn((e: FormEvent<HTMLFormElement>) => { e.preventDefault(); });
     const user = userEvent.setup();
     render(<Harness onSubmit={onSubmit} />);
-    await user.type(screen.getByLabelText('Новый пароль'), 'Abcdefg1');
-    await user.type(screen.getByLabelText('Повторите пароль'), 'Abcdefg1');
-    const submit = screen.getByRole('button', { name: 'Сохранить пароль' });
+    await user.type(screen.getByLabelText(t('auth.fields.newPassword')), 'Abcdefg1');
+    await user.type(screen.getByLabelText(t('auth.fields.repeatPassword')), 'Abcdefg1');
+    const submit = screen.getByRole('button', { name: t('auth.buttons.savePassword') });
     expect(submit).toBeEnabled();
     await user.click(submit);
     expect(onSubmit).toHaveBeenCalled();
@@ -106,7 +107,7 @@ describe('SetPasswordForm', () => {
 
   it('shows loading label and disables submit when loading', () => {
     render(<Harness isLoading initialNew="Abcdefg1" initialConfirm="Abcdefg1" />);
-    const submit = screen.getByRole('button', { name: 'Сохраняем...' });
+    const submit = screen.getByRole('button', { name: t('common.actions.saving') });
     expect(submit).toBeDisabled();
   });
 });

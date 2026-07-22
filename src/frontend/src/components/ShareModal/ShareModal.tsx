@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { XIcon, CopyIcon, CheckIcon } from '@phosphor-icons/react';
 import { TelegramLogo } from '@shared/components/BrandIcons/TelegramLogo';
 import { useFocusTrap } from '@shared/hooks/useFocusTrap';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { Restaurant } from '@shared/types/models';
 
 interface ShareModalProps {
@@ -10,6 +11,7 @@ interface ShareModalProps {
 }
 
 export const ShareModal = ({ restaurant, onClose }: ShareModalProps) => {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
   const contentRef = useFocusTrap<HTMLDivElement>({ onEscape: onClose });
@@ -23,7 +25,7 @@ export const ShareModal = ({ restaurant, onClose }: ShareModalProps) => {
     ? `${miniAppUrl}?startapp=restaurant_${targetId}`
     : `${webUrl}/restaurants/${targetId}`;
 
-  const text = `Пойдём в ${restaurant.name}!\nПосмотри меню и сделай предзаказ через Foodize:`;
+  const text = t('profile.share.text', { restaurant: restaurant.name });
 
   const handleCopy = async () => {
     try {
@@ -83,11 +85,11 @@ export const ShareModal = ({ restaurant, onClose }: ShareModalProps) => {
               color: 'var(--text-1)',
             }}
           >
-            Поделиться
+            {t('profile.share.title')}
           </span>
           <button
             onClick={onClose}
-            aria-label="Закрыть"
+            aria-label={t('common.actions.close')}
             style={{
               background: 'none',
               border: 'none',
@@ -116,7 +118,7 @@ export const ShareModal = ({ restaurant, onClose }: ShareModalProps) => {
             }}
           >
             <TelegramLogo size={20} variant="color" />
-            Отправить в Telegram
+            {t('profile.share.telegram')}
           </button>
 
           <button
@@ -136,17 +138,17 @@ export const ShareModal = ({ restaurant, onClose }: ShareModalProps) => {
               <>
                 <CheckIcon size={20} color="var(--color-success)" weight="bold" />
                 <span style={{ color: 'var(--color-success)' }}>
-                  Ссылка скопирована!
+                  {t('profile.share.copied')}
                 </span>
               </>
             ) : copyError ? (
               <span style={{ color: 'var(--color-error)' }}>
-                Не удалось скопировать
+                {t('profile.share.copyFailed')}
               </span>
             ) : (
               <>
                 <CopyIcon size={20} />
-                Скопировать ссылку
+                {t('profile.share.copyLink')}
               </>
             )}
           </button>

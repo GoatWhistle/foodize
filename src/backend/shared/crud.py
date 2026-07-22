@@ -3,7 +3,7 @@ from typing import Any, Protocol, TypeVar
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.exceptions.existence import NotFoundException
+from shared.exceptions.existence import ModelNotFoundException
 
 
 class _HasId(Protocol):
@@ -19,5 +19,5 @@ async def get_or_404[T: _HasId](
     result = await session.execute(select(model).where(model.id == id))
     obj = result.scalars().first()
     if obj is None:
-        raise NotFoundException(detail=detail or f"{model.__name__} not found")
+        raise ModelNotFoundException(detail=detail, model=model.__name__)
     return obj

@@ -4,6 +4,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { AdminRestaurantsTab } from '../../../../pages/admin/tabs/AdminRestaurantsTab';
 import type { AdminRestaurant, RestaurantFilters } from '../../../../pages/admin/hooks/useAdminRestaurants';
 import type { adminService as adminServiceType } from '../../../../services/adminService';
+import { t } from '@shared/i18n/useTranslation';
 
 vi.mock('../../../../pages/admin/components/AdminRestaurantsFilters', () => ({
   AdminRestaurantsFilters: () => <div data-testid="filters" />,
@@ -65,7 +66,7 @@ describe('AdminRestaurantsTab', () => {
     render(
       <AdminRestaurantsTab {...baseProps} restaurants={[]} restaurantsTotal={0} />
     );
-    expect(screen.getByText('Ресторанов пока нет')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.restaurants.emptyTitle'))).toBeInTheDocument();
   });
 
   it('renders skeletons for non-array restaurants while loading', () => {
@@ -111,7 +112,7 @@ describe('AdminRestaurantsTab', () => {
     await user.click(screen.getByRole('button', { name: /CSV/ }));
     expect(handleExport).toHaveBeenCalledWith(
       adminService.exportRestaurantsCSV,
-      'рестораны_2026-07-19.csv'
+      t('admin.exportFiles.restaurants', { date: '2026-07-19' })
     );
   });
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { translateApiError } from '@shared/utils/translateApiError';
 import { promoService } from '@shared/services/promoService';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { Promo, Restaurant, Schemas } from '@shared/types/models';
 
 type PromoCreate = Schemas['PromoCreate'];
@@ -33,6 +34,7 @@ interface UseVendorPromosParams {
 }
 
 export const useVendorPromos = ({ selectedRestaurant, activeTab }: UseVendorPromosParams) => {
+  const { t } = useTranslation();
   const [promosList, setPromosList] = useState<Promo[]>([]);
   const [promosLoading, setPromosLoading] = useState(false);
   const [promosError, setPromosError] = useState('');
@@ -52,13 +54,13 @@ export const useVendorPromos = ({ selectedRestaurant, activeTab }: UseVendorProm
           const list = Array.isArray(response.data.data) ? response.data.data : [];
           setPromosList(list);
         } catch {
-          setPromosError('Не удалось загрузить промокоды');
+          setPromosError(t('vendor.promos.errors.loadFailed'));
         } finally {
           setPromosLoading(false);
         }
       })();
     }
-  }, [activeTab]);
+  }, [activeTab, t]);
 
   const handleCreatePromo = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -84,13 +86,13 @@ export const useVendorPromos = ({ selectedRestaurant, activeTab }: UseVendorProm
       await promoService.create(payload);
       setPromoForm(EMPTY_PROMO_FORM);
       setShowPromoForm(false);
-      setPromosSuccess('Промокод создан');
+      setPromosSuccess(t('vendor.promos.messages.created'));
       setTimeout(() => { setPromosSuccess(''); }, 2000);
       const response = await promoService.list();
       const list = Array.isArray(response.data.data) ? response.data.data : [];
       setPromosList(list);
     } catch (error) {
-      setPromosError(translateApiError(error, 'Ошибка создания промокода'));
+      setPromosError(translateApiError(error, t('vendor.promos.errors.createFailed')));
     } finally {
       setPromoFormLoading(false);
     }
@@ -103,7 +105,7 @@ export const useVendorPromos = ({ selectedRestaurant, activeTab }: UseVendorProm
       await promoService.deactivate(code);
       setPromosList((prev) => prev.filter((p) => p.code !== code));
     } catch {
-      setPromosError('Не удалось деактивировать промокод');
+      setPromosError(t('vendor.promos.errors.deactivateFailed'));
     } finally {
       setDeactivatingPromo(null);
     }

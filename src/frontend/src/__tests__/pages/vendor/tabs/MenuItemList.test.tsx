@@ -6,6 +6,7 @@ import { useRestaurantStore } from '@shared/store/useRestaurantStore';
 import { menuService } from '@shared/services/menuService';
 import type { MenuItem, Restaurant } from '@shared/types/models';
 import { at } from '../../../testUtils';
+import { t } from '@shared/i18n/useTranslation';
 
 vi.mock('@shared/store/useRestaurantStore', () => ({
   useRestaurantStore: Object.assign(vi.fn(), {
@@ -73,7 +74,7 @@ describe('MenuItemList', () => {
         handleDeleteMenuItem={vi.fn()}
       />
     );
-    expect(screen.queryByText('Меню пустое')).not.toBeInTheDocument();
+    expect(screen.queryByText(t('vendor.menu.emptyTitle'))).not.toBeInTheDocument();
   });
 
   it('renders empty state', () => {
@@ -87,7 +88,7 @@ describe('MenuItemList', () => {
         handleDeleteMenuItem={vi.fn()}
       />
     );
-    expect(screen.getByText('Меню пустое')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.menu.emptyTitle'))).toBeInTheDocument();
   });
 
   it('renders item with price, category and option groups', () => {
@@ -102,20 +103,20 @@ describe('MenuItemList', () => {
     });
     expect(screen.getByText('Шаурма')).toBeInTheDocument();
     expect(screen.getByText(/Соусы: 2/)).toBeInTheDocument();
-    expect(screen.getByText('ВКЛ')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.menu.on'))).toBeInTheDocument();
   });
 
-  it('renders unavailable item with STOP badge and ВЫКЛ', () => {
+  it('renders unavailable item with stop badge and off label', () => {
     setup({ selectedMenu: [makeItem({ is_available: false })] });
-    expect(screen.getByText('СТОП')).toBeInTheDocument();
-    expect(screen.getByText('ВЫКЛ')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.menu.stopBadge'))).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.menu.off'))).toBeInTheDocument();
   });
 
   it('toggles availability and calls menuService.updateItem', async () => {
     const user = userEvent.setup();
     vi.mocked(menuService.updateItem).mockResolvedValue({} as never);
     setup();
-    await user.click(screen.getByText('ВКЛ'));
+    await user.click(screen.getByText(t('vendor.menu.on')));
     expect(useRestaurantStore.setState).toHaveBeenCalled();
     await waitFor(() => {
       expect(menuService.updateItem).toHaveBeenCalledWith('r1', 'i1', { is_available: false });
@@ -126,7 +127,7 @@ describe('MenuItemList', () => {
     const user = userEvent.setup();
     vi.mocked(menuService.updateItem).mockRejectedValue(new Error('fail'));
     setup();
-    await user.click(screen.getByText('ВКЛ'));
+    await user.click(screen.getByText(t('vendor.menu.on')));
     await waitFor(() => {
       expect(useRestaurantStore.setState).toHaveBeenCalledTimes(2);
     });
@@ -154,7 +155,7 @@ describe('MenuItemList', () => {
     vi.mocked(useRestaurantStore.getState).mockReturnValue({ menus: {} } as never);
     vi.mocked(menuService.updateItem).mockResolvedValue({} as never);
     setup();
-    await user.click(screen.getByText('ВКЛ'));
+    await user.click(screen.getByText(t('vendor.menu.on')));
     await waitFor(() => {
       expect(menuService.updateItem).toHaveBeenCalled();
     });

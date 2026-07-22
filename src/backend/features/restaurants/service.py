@@ -6,7 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database.db_helper import register_after_commit
 from features.restaurants import crud
 from features.restaurants.dependencies import get_restaurant_and_check_ownership
-from features.restaurants.exceptions import RestaurantNotFoundException
+from features.restaurants.exceptions import (
+    RestaurantAccessDeniedException,
+    RestaurantNotFoundException,
+    UnsupportedRestaurantImageTypeException,
+    VendorNotApprovedException,
+)
 from features.restaurants.models import Restaurant
 from features.restaurants.schemas import (
     RestaurantCreate,
@@ -21,8 +26,6 @@ from shared.enums.moderation_status import ModerationStatus
 from shared.enums.permissions import Permission
 from shared.enums.restaurant_sort import RestaurantSort
 from shared.enums.sort_direction import SortDirection
-from shared.exceptions import BadRequestException
-from shared.exceptions.rules import AccessDeniedException
 from shared.permissions import has_permission
 
 
@@ -31,9 +34,9 @@ async def create_restaurant_for_vendor(
 ) -> RestaurantResponse:
     vendor = await vendor_crud.get_vendor_by_id_with_user(session, vendor_id)
     if not vendor:
-        raise AccessDeniedException()
+        raise RestaurantAccessDeniedException()
     if vendor.approval_status != ModerationStatus.APPROVED.value:
-        raise AccessDeniedException(detail="Vendor account is not approved yet")
+        raise VendorNotApprovedException()
 
     restaurant = await crud.create_restaurant(session, restaurant_data, vendor_id)
     if vendor and has_permission(vendor.user.permissions, Permission.RESTAURANTS_MODERATE):
@@ -72,9 +75,7 @@ async def set_restaurant_photo(
     try:
         url = await upload_image(data, content_type, prefix="restaurants")
     except UnsupportedImageType as exc:
-        raise BadRequestException(
-            detail="Поддерживаются только изображения JPEG, PNG или WebP"
-        ) from exc
+        raise UnsupportedRestaurantImageTypeException() from exc
 
     restaurant.photo_url = url
     await session.flush()

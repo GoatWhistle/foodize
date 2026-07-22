@@ -223,7 +223,7 @@ services:
       - WATCHPACK_POLLING=true
       - VITE_API_URL=/api/v1
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:5173/"]
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:5173/"]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -292,7 +292,7 @@ services:
       - CHOKIDAR_USEPOLLING=true
       - VITE_API_URL=/api/v1
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:5174/"]
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:5174/"]
       interval: 15s
       timeout: 5s
       retries: 5

@@ -4,8 +4,10 @@ import { TrashIcon } from "@phosphor-icons/react";
 import { useShallow } from "zustand/react/shallow";
 import { useModalStore } from "@shared/store/useModalStore";
 import type { ModalStoreState } from "@shared/store/useModalStore";
+import { useTranslation } from "@shared/i18n/useTranslation";
 
 export const ConfirmDialog = () => {
+  const { t } = useTranslation();
   const { dialog, loading, cancelConfirm, runConfirmAction } = useModalStore(
     useShallow((s: ModalStoreState) => ({
       dialog: s.confirmDialog,
@@ -58,7 +60,7 @@ export const ConfirmDialog = () => {
               flexShrink: 0,
             }}
           >
-            <TrashIcon size={20} />
+            {dialog.icon ?? <TrashIcon size={20} />}
           </div>
           <div>
             <h3 id="confirm-dialog-title" style={{ color: "var(--text-1)", fontSize: "var(--text-md)", margin: 0 }}>{dialog.title}</h3>
@@ -69,7 +71,7 @@ export const ConfirmDialog = () => {
         </div>
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
           <button ref={cancelBtnRef} className="btn btn-secondary" disabled={loading} onClick={cancelConfirm}>
-            Отмена
+            {dialog.cancelLabel ?? t("common.actions.cancel")}
           </button>
           <button
             className="btn btn-primary"
@@ -77,7 +79,7 @@ export const ConfirmDialog = () => {
             onClick={() => { void runConfirmAction(); }}
             style={{ background: dialog.danger ? "var(--error)" : "var(--fire)" }}
           >
-            {loading ? "Выполняю..." : dialog.confirmLabel}
+            {loading ? t("common.actions.running") : dialog.confirmLabel}
           </button>
         </div>
       </div>

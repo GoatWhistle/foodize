@@ -3,6 +3,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { adminService } from '../../../services/adminService';
 import { useModalStore } from '@shared/store/useModalStore';
 import { useDebounce } from '@shared/utils/useDebounce';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { AdminVendor, PlatformStats } from '@shared/types/models';
 import { createDetailLoader } from '../../../utils/createDetailLoader';
 import type { RequestReason } from '../useAdminDashboard';
@@ -30,6 +31,7 @@ export const useAdminVendors = ({
   setStats,
   requestReason,
 }: UseAdminVendorsArgs) => {
+  const { t } = useTranslation();
   const requestConfirm = useModalStore((s) => s.requestConfirm);
 
   const [vendors, setVendors] = useState<AdminVendor[]>([]);
@@ -61,18 +63,18 @@ export const useAdminVendors = ({
         setVendors(items);
         setVendorsTotal(total);
       } catch {
-        setActionError('Не удалось загрузить вендоров');
+        setActionError(t('admin.vendors.errors.loadFailed'));
       } finally {
         setVendorsLoading(false);
       }
     })();
-  }, [activeTab, vendorsPage, vendorFilters, vendorSearch, setActionError]);
+  }, [activeTab, vendorsPage, vendorFilters, vendorSearch, setActionError, t]);
 
   const loadVendorDetails = createDetailLoader<AdminVendor | null>(
     setVendorDetailsLoading,
     setSelectedVendor,
     adminService.getVendor,
-    'Не удалось загрузить детали вендора',
+    t('admin.vendors.errors.detailsFailed'),
     setActionError
   );
 
@@ -83,9 +85,9 @@ export const useAdminVendors = ({
 
   const handleDeleteVendor = (vendorId: string) => {
     requestConfirm({
-      title: 'Удалить вендора?',
-      message: 'Точно ли вы хотите удалить вендора? Его рестораны будут скрыты.',
-      confirmLabel: 'Удалить вендора',
+      title: t('admin.vendors.dialogs.deleteTitle'),
+      message: t('admin.vendors.dialogs.deleteMessage'),
+      confirmLabel: t('admin.vendors.dialogs.deleteConfirm'),
       danger: true,
       onConfirm: async () => {
         setActionError('');
@@ -95,7 +97,7 @@ export const useAdminVendors = ({
           setSelectedVendor(null);
           setStats(null);
         } catch {
-          setActionError('Не удалось удалить вендора');
+          setActionError(t('admin.vendors.errors.deleteFailed'));
         }
       },
     });
@@ -103,17 +105,17 @@ export const useAdminVendors = ({
 
   const handleApproveVendor = (vendorId: string) => {
     requestConfirm({
-      title: 'Одобрить вендора?',
-      message: 'После одобрения вендор сможет работать в кабинете и управлять заведениями.',
-      confirmLabel: 'Одобрить',
+      title: t('admin.vendors.dialogs.approveTitle'),
+      message: t('admin.vendors.dialogs.approveMessage'),
+      confirmLabel: t('common.actions.approve'),
       onConfirm: async () => {
         setActionError('');
         try {
           const vendor = await adminService.approveVendor(vendorId);
           refreshSelectedVendor(vendor);
-          setActionSuccess('Вендор одобрен');
+          setActionSuccess(t('admin.vendors.messages.approved'));
         } catch {
-          setActionError('Не удалось одобрить вендора');
+          setActionError(t('admin.vendors.errors.approveFailed'));
         }
       },
     });
@@ -121,16 +123,16 @@ export const useAdminVendors = ({
 
   const handleRejectVendor = (vendorId: string) => {
     requestReason({
-      title: 'Отклонить вендора',
-      message: 'Укажите причину отказа, чтобы заявка не выглядела как молчаливый отказ.',
-      confirmLabel: 'Отклонить',
+      title: t('admin.vendors.dialogs.rejectTitle'),
+      message: t('admin.vendors.dialogs.rejectMessage'),
+      confirmLabel: t('common.actions.reject'),
       onConfirm: async (reason) => {
         try {
           const vendor = await adminService.rejectVendor(vendorId, reason);
           refreshSelectedVendor(vendor);
-          setActionSuccess('Вендор отклонён');
+          setActionSuccess(t('admin.vendors.messages.rejected'));
         } catch {
-          setActionError('Не удалось отклонить вендора');
+          setActionError(t('admin.vendors.errors.rejectFailed'));
         }
       },
     });
@@ -143,11 +145,11 @@ export const useAdminVendors = ({
       if (action === 'approve') await adminService.batchApproveVendors(ids);
       else await adminService.batchRejectVendors(ids, reason ?? '');
       setSelectedVendorIds(new Set());
-      setActionSuccess(`Готово: ${ids.length} вендоров`);
+      setActionSuccess(t('admin.vendors.messages.batchDone', { count: ids.length }));
       setVendorsPage(1);
       setVendorFilters((f) => ({ ...f }));
     } catch {
-      setActionError('Ошибка при массовом действии');
+      setActionError(t('admin.vendors.errors.batchFailed'));
     } finally {
       setBatchVendorsLoading(false);
     }

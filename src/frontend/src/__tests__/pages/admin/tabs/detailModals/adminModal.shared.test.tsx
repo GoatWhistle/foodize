@@ -6,6 +6,7 @@ import {
   DetailModal,
   formatDateTime,
 } from '../../../../../pages/admin/tabs/detailModals/adminModal.shared';
+import { t } from '@shared/i18n/useTranslation';
 
 describe('adminModal.shared', () => {
   describe('formatDateTime', () => {
@@ -71,7 +72,7 @@ describe('adminModal.shared', () => {
           <div>x</div>
         </DetailModal>,
       );
-      await userEvent.click(screen.getByLabelText('Закрыть'));
+      await userEvent.click(screen.getByLabelText(t('common.actions.close')));
       expect(onClose).toHaveBeenCalledTimes(1);
     });
 

@@ -4,6 +4,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import { StaffDashboardPage } from '../../pages/staff/StaffDashboardPage';
 import type { Order, StaffProfile } from '@shared/types/models';
+import { t } from '@shared/i18n/useTranslation';
+import { COLUMN_DEFS } from '../../pages/staff/staffColumns';
+import { at } from '../testUtils';
 
 vi.mock('@shared/services/staffService.js', () => ({
   staffService: {
@@ -74,16 +77,16 @@ describe('StaffDashboardPage', () => {
     );
     const { container } = renderPage();
     expect(container.querySelector('.spinner')).not.toBeNull();
-    expect(screen.queryByText('Новые')).toBeNull();
+    expect(screen.queryByText(t(at(COLUMN_DEFS, 0).labelKey))).toBeNull();
   });
 
   it('renders kanban columns for approved staff', async () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText('Новые')).toBeInTheDocument();
-      expect(screen.getByText('Принято')).toBeInTheDocument();
-      expect(screen.getByText('Готово')).toBeInTheDocument();
+      expect(screen.getByText(t(at(COLUMN_DEFS, 0).labelKey))).toBeInTheDocument();
+      expect(screen.getByText(t(at(COLUMN_DEFS, 1).labelKey))).toBeInTheDocument();
+      expect(screen.getByText(t(at(COLUMN_DEFS, 2).labelKey))).toBeInTheDocument();
     });
   });
 
@@ -101,7 +104,7 @@ describe('StaffDashboardPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.queryByText('Новые')).toBeNull();
+      expect(screen.queryByText(t(at(COLUMN_DEFS, 0).labelKey))).toBeNull();
     });
   });
 
@@ -116,7 +119,7 @@ describe('StaffDashboardPage', () => {
 
     await screen.findByText('#1001');
 
-    const acceptBtn = await screen.findByRole('button', { name: /принять/i });
+    const acceptBtn = await screen.findByRole('button', { name: t('staff.card.next.accept') });
     await user.click(acceptBtn);
 
     await waitFor(() => {
@@ -134,13 +137,13 @@ describe('StaffDashboardPage', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await screen.findByText('Новые');
+    await screen.findByText(t(at(COLUMN_DEFS, 0).labelKey));
 
-    const menuTab = screen.getByRole('button', { name: 'Стоп-лист' });
+    const menuTab = screen.getByRole('button', { name: t('staff.dashboard.tabs.menu') });
     await user.click(menuTab);
 
-    expect(await screen.findByText('Меню пусто')).toBeInTheDocument();
-    expect(screen.queryByText('Новые')).toBeNull();
+    expect(await screen.findByText(t('staff.menuTab.emptyTitle'))).toBeInTheDocument();
+    expect(screen.queryByText(t(at(COLUMN_DEFS, 0).labelKey))).toBeNull();
   });
 
   it('toggles auto-eta preference and persists it', async () => {
@@ -148,9 +151,9 @@ describe('StaffDashboardPage', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await screen.findByText('Новые');
+    await screen.findByText(t(at(COLUMN_DEFS, 0).labelKey));
 
-    const autoEtaCheckbox = screen.getByRole('checkbox', { name: /Авто-время по блюдам/i });
+    const autoEtaCheckbox = screen.getByRole('checkbox', { name: t('staff.dashboard.autoEta') });
     await user.click(autoEtaCheckbox);
 
     expect(localStorage.getItem('staff_auto_eta')).toBe('true');
@@ -166,9 +169,9 @@ describe('StaffDashboardPage', () => {
     renderPage();
 
     await screen.findByText('#1001');
-    await user.click(await screen.findByRole('button', { name: /принять/i }));
+    await user.click(await screen.findByRole('button', { name: t('staff.card.next.accept') }));
 
-    const confirmBtn = await screen.findByRole('button', { name: 'Начать готовить' });
+    const confirmBtn = await screen.findByRole('button', { name: t('staff.etaModal.confirm') });
     await user.click(confirmBtn);
 
     await waitFor(() => {
@@ -187,13 +190,13 @@ describe('StaffDashboardPage', () => {
     renderPage();
 
     await screen.findByText('#1001');
-    await user.click(await screen.findByRole('button', { name: /принять/i }));
+    await user.click(await screen.findByRole('button', { name: t('staff.card.next.accept') }));
 
-    await screen.findByRole('button', { name: 'Начать готовить' });
-    await user.click(screen.getByRole('button', { name: 'Отмена' }));
+    await screen.findByRole('button', { name: t('staff.etaModal.confirm') });
+    await user.click(screen.getByRole('button', { name: t('common.actions.cancel') }));
 
     await waitFor(() => {
-      expect(screen.queryByRole('button', { name: 'Начать готовить' })).toBeNull();
+      expect(screen.queryByRole('button', { name: t('staff.etaModal.confirm') })).toBeNull();
     });
     expect(staffService.updateOrderStatus).not.toHaveBeenCalled();
     localStorage.removeItem('staff_auto_eta');
@@ -213,10 +216,10 @@ describe('StaffDashboardPage', () => {
     const user = userEvent.setup();
     renderPage();
 
-    await screen.findByText('Новые');
-    await user.click(screen.getByRole('button', { name: 'Стоп-лист' }));
+    await screen.findByText(t(at(COLUMN_DEFS, 0).labelKey));
+    await user.click(screen.getByRole('button', { name: t('staff.dashboard.tabs.menu') }));
 
-    const toggle = await screen.findByRole('button', { name: 'ВКЛ' });
+    const toggle = await screen.findByRole('button', { name: t('staff.menuTab.on') });
     await user.click(toggle);
 
     await waitFor(() => {
@@ -240,9 +243,9 @@ describe('StaffDashboardPage', () => {
     const cancelIcon = screen.getByRole('button', { name: '' });
     await user.click(cancelIcon);
 
-    const reasonField = await screen.findByPlaceholderText('Причина отмены (необязательно)');
+    const reasonField = await screen.findByPlaceholderText(t('staff.card.cancel.reasonPlaceholder'));
     await user.type(reasonField, 'нет продукта');
-    await user.click(screen.getByRole('button', { name: 'Подтвердить' }));
+    await user.click(screen.getByRole('button', { name: t('common.actions.confirm') }));
 
     await waitFor(() => {
       expect(staffService.cancelOrder).toHaveBeenCalledWith('order-1', 'нет продукта');

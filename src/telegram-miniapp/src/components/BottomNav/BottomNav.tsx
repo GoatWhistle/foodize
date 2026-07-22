@@ -3,18 +3,19 @@ import { StorefrontIcon, PackageIcon, UserIcon, type Icon } from "@phosphor-icon
 import { useNotificationStore } from "../../store/useNotificationStore";
 import { getHapticFeedback } from "../../telegram/sdk";
 import { logError } from "@shared/utils/logError";
+import { useTranslation } from "@shared/i18n/useTranslation";
 import s from "./BottomNav.module.css";
 
 interface Tab {
   path: string;
   icon: Icon;
-  label: string;
+  labelKey: string;
 }
 
 const TABS: Tab[] = [
-  { path: "/", icon: StorefrontIcon, label: "Рестораны" },
-  { path: "/orders", icon: PackageIcon, label: "Заказы" },
-  { path: "/profile", icon: UserIcon, label: "Профиль" },
+  { path: "/", icon: StorefrontIcon, labelKey: "profile.nav.restaurants" },
+  { path: "/orders", icon: PackageIcon, labelKey: "profile.nav.orders" },
+  { path: "/profile", icon: UserIcon, labelKey: "profile.nav.profile" },
 ];
 
 const haptic = (): void => {
@@ -26,6 +27,7 @@ const haptic = (): void => {
 };
 
 export const BottomNav = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const unreadCount = useNotificationStore((s) => s.unreadCount);
@@ -39,7 +41,7 @@ export const BottomNav = () => {
 
   return (
     <div className={s['bar']}>
-      {TABS.map(({ path, icon: Icon, label }) => {
+      {TABS.map(({ path, icon: Icon, labelKey }) => {
         const active = isActive(path);
         const showBadge = path === "/profile" && unreadCount > 0;
         const showConnectionBadge = path === "/profile" && hasConnectionIssue;
@@ -79,7 +81,7 @@ export const BottomNav = () => {
               )}
               {showConnectionBadge && !showBadge && (
                 <span
-                  title="Нет соединения с уведомлениями"
+                  title={t("profile.notifications.connectionIssue")}
                   style={{
                     position: "absolute",
                     top: -2,
@@ -94,7 +96,7 @@ export const BottomNav = () => {
               )}
             </span>
             <span className={s['pill']} aria-hidden="true" />
-            <span className={s['label']}>{label}</span>
+            <span className={s['label']}>{t(labelKey)}</span>
           </button>
         );
       })}

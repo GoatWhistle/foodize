@@ -4,6 +4,7 @@ import { useVendorOrders } from '../../../../pages/vendor/hooks/useVendorOrders'
 import { orderService } from '@shared/services/orderService';
 import { useVendorOrdersWebSocket } from '../../../../hooks/useVendorOrdersWebSocket';
 import type { Order, Restaurant } from '@shared/types/models';
+import { t } from '@shared/i18n/useTranslation';
 
 vi.mock('@shared/services/orderService', () => ({
   orderService: {
@@ -64,7 +65,7 @@ describe('useVendorOrders', () => {
     const { result } = renderHook(() =>
       useVendorOrders({ selectedRestaurant: restaurant, activeTab: 'orders' })
     );
-    await waitFor(() => { expect(result.current.ordersError).toContain('Не удалось загрузить заказы'); });
+    await waitFor(() => { expect(result.current.ordersError).toContain(t('vendor.orders.errors.loadFailed')); });
     expect(result.current.restaurantOrders).toEqual([]);
     expect(result.current.ordersTotal).toBe(0);
   });
@@ -144,7 +145,7 @@ describe('useVendorOrders', () => {
     await act(async () => {
       await result.current.handleOrderChange('o1', 'ACCEPTED');
     });
-    expect(result.current.ordersError).toBe('Не удалось изменить статус заказа');
+    expect(result.current.ordersError).toBe(t('vendor.orders.errors.statusChangeFailed'));
     expect(result.current.updatingOrderId).toBeNull();
   });
 
@@ -171,7 +172,7 @@ describe('useVendorOrders', () => {
     await act(async () => {
       await result.current.handleCancelOrder('o1', 'reason');
     });
-    expect(result.current.ordersError).toBe('Не удалось отменить заказ');
+    expect(result.current.ordersError).toBe(t('vendor.orders.errors.cancelFailed'));
   });
 
   it('fetchVendorOrders returns early with no restaurant', async () => {

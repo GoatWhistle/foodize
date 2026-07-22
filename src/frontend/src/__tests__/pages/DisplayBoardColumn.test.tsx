@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { CookingPotIcon } from '@phosphor-icons/react';
 import { DisplayBoardColumn } from '../../pages/display-board/DisplayBoardColumn';
 import type { StatusStyle } from '../../pages/display-board/displayBoardStyles';
+import { t } from '@shared/i18n/useTranslation';
 
 const style: StatusStyle = {
   bg: '#111',
@@ -22,7 +23,7 @@ describe('DisplayBoardColumn', () => {
       />
     );
     expect(screen.getByText('Готовятся')).toBeInTheDocument();
-    expect(screen.getByText('Пусто')).toBeInTheDocument();
+    expect(screen.getByText(t('staff.displayBoard.empty'))).toBeInTheDocument();
     expect(screen.getByText('0')).toBeInTheDocument();
   });
 
@@ -39,7 +40,7 @@ describe('DisplayBoardColumn', () => {
     expect(screen.getByText('A-1')).toBeInTheDocument();
     expect(screen.getByText('A-2')).toBeInTheDocument();
     expect(screen.getByText('2')).toBeInTheDocument();
-    expect(screen.queryByText('Пусто')).toBeNull();
+    expect(screen.queryByText(t('staff.displayBoard.empty'))).toBeNull();
   });
 
   it('highlights only the cards present in newIds', () => {

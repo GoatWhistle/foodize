@@ -19,6 +19,7 @@ vi.mock("@shared/utils/translateApiError", () => ({
 }));
 
 import { RegisterPage } from "../../pages/auth/RegisterPage";
+import { t } from "@shared/i18n/useTranslation";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -30,24 +31,26 @@ beforeEach(() => {
 describe("RegisterPage", () => {
   it("renders the welcome heading and name field for new users", () => {
     render(<RegisterPage initData="init" onSuccess={vi.fn()} />);
-    expect(screen.getByText("Добро пожаловать")).toBeInTheDocument();
-    expect(screen.getByText("Ваше имя")).toBeInTheDocument();
+    expect(screen.getByText(t("auth.miniapp.welcomeTitle"))).toBeInTheDocument();
+    expect(screen.getByText(t("auth.fields.yourName"))).toBeInTheDocument();
   });
 
   it("renders the login heading and hides the name field when logged out flag is set", () => {
     localStorage.setItem("foodize_tg_logged_out", "1");
     render(<RegisterPage initData="init" onSuccess={vi.fn()} />);
-    expect(screen.getByText("Вход в аккаунт")).toBeInTheDocument();
-    expect(screen.queryByText("Ваше имя")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: t("auth.miniapp.loginTitle") }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(t("auth.fields.yourName"))).not.toBeInTheDocument();
   });
 
   it("shows a validation error for an invalid phone and does not submit", async () => {
     render(<RegisterPage initData="init" onSuccess={vi.fn()} />);
     const phone = screen.getByPlaceholderText("+7XXXXXXXXXX");
     await userEvent.type(phone, "123");
-    await userEvent.click(screen.getByRole("button", { name: "Продолжить" }));
+    await userEvent.click(screen.getByRole("button", { name: t("auth.buttons.continue") }));
     expect(
-      screen.getByText("Неверный формат номера (+7XXXXXXXXXX)"),
+      screen.getByText(t("auth.miniapp.errors.invalidPhoneFormat")),
     ).toBeInTheDocument();
     expect(completeTelegramAuth).not.toHaveBeenCalled();
   });
@@ -56,8 +59,8 @@ describe("RegisterPage", () => {
     const onSuccess = vi.fn();
     render(<RegisterPage initData="init-token" onSuccess={onSuccess} />);
     await userEvent.type(screen.getByPlaceholderText("+7XXXXXXXXXX"), "+79991234567");
-    await userEvent.type(screen.getByPlaceholderText("Имя"), "Иван");
-    await userEvent.click(screen.getByRole("button", { name: "Продолжить" }));
+    await userEvent.type(screen.getByPlaceholderText(t("auth.placeholders.name")), "Иван");
+    await userEvent.click(screen.getByRole("button", { name: t("auth.buttons.continue") }));
     await waitFor(() => {
       expect(completeTelegramAuth).toHaveBeenCalledWith("init-token", "+79991234567", "Иван");
     });
@@ -68,13 +71,13 @@ describe("RegisterPage", () => {
   it("falls back to a default name when only whitespace is entered", async () => {
     render(<RegisterPage initData="init" onSuccess={vi.fn()} />);
     await userEvent.type(screen.getByPlaceholderText("+7XXXXXXXXXX"), "+79991234567");
-    await userEvent.type(screen.getByPlaceholderText("Имя"), "   ");
-    await userEvent.click(screen.getByRole("button", { name: "Продолжить" }));
+    await userEvent.type(screen.getByPlaceholderText(t("auth.placeholders.name")), "   ");
+    await userEvent.click(screen.getByRole("button", { name: t("auth.buttons.continue") }));
     await waitFor(() => {
       expect(completeTelegramAuth).toHaveBeenCalledWith(
         "init",
         "+79991234567",
-        "Telegram User",
+        t("auth.miniapp.defaultName"),
       );
     });
   });
@@ -83,11 +86,11 @@ describe("RegisterPage", () => {
     completeTelegramAuth.mockRejectedValueOnce(new Error("nope"));
     render(<RegisterPage initData="init" onSuccess={vi.fn()} />);
     await userEvent.type(screen.getByPlaceholderText("+7XXXXXXXXXX"), "+79991234567");
-    await userEvent.type(screen.getByPlaceholderText("Имя"), "Иван");
-    await userEvent.click(screen.getByRole("button", { name: "Продолжить" }));
+    await userEvent.type(screen.getByPlaceholderText(t("auth.placeholders.name")), "Иван");
+    await userEvent.click(screen.getByRole("button", { name: t("auth.buttons.continue") }));
     await waitFor(() => {
       expect(
-        screen.getByText("Не удалось зарегистрироваться. Проверьте данные."),
+        screen.getByText(t("auth.miniapp.errors.registerFailed")),
       ).toBeInTheDocument();
     });
   });

@@ -3,7 +3,7 @@ from typing import Any
 
 from features.ai_order_agent.tool_context import OrderToolContext
 from features.ai_order_agent.tool_helpers import _dumps
-from features.ai_order_agent.tool_specs import ORDER_TOOLS
+from features.ai_order_agent.tool_specs import build_order_tools
 from features.ai_order_agent.tools_cart import (
     add_to_cart,
     clear_cart,
@@ -16,8 +16,9 @@ from features.cart.service import CartService
 from features.users.models import User
 from infra.cache.base import CacheRepository
 from infra.llm import ToolCall, ToolExecutor
+from shared.i18n import DEFAULT_LANGUAGE
 
-__all__ = ["ORDER_TOOLS", "build_order_executor"]
+__all__ = ["build_order_executor", "build_order_tools"]
 
 _ToolHandler = Callable[[OrderToolContext, dict[str, Any]], Awaitable[str]]
 
@@ -37,9 +38,14 @@ def build_order_executor(
     cache: CacheRepository,
     *,
     user_turn: int = 0,
+    language: str = DEFAULT_LANGUAGE,
 ) -> ToolExecutor:
     context = OrderToolContext(
-        user=user, cart_service=cart_service, cache=cache, user_turn=user_turn
+        user=user,
+        cart_service=cart_service,
+        cache=cache,
+        user_turn=user_turn,
+        language=language,
     )
 
     async def execute(call: ToolCall) -> str:

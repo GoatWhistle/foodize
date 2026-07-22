@@ -15,11 +15,12 @@ from infra.llm.base import (
     ToolUseStart,
     Usage,
 )
+from shared.i18n import DEFAULT_LANGUAGE, translate
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
-_EMPTY_PLACEHOLDER = "(пустой ответ)"
+_EMPTY_PLACEHOLDER = translate("prompts.common.emptyResponse", DEFAULT_LANGUAGE)
 
 
 def _to_tools(tools: list[ToolSpec]) -> list[dict[str, Any]]:

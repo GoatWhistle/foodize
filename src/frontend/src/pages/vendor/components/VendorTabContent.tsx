@@ -19,7 +19,6 @@ interface OrderGroup {
 interface VendorTabContentProps {
   dashboard: ReturnType<typeof useVendorDashboard>;
   todayStr: string;
-  statusLabelRu: Record<string, string>;
   groupedRestaurantOrders: OrderGroup[];
   handleVendorExport: (
     exportFn: () => ReturnType<typeof vendorService.exportMenuCSV>,
@@ -34,7 +33,6 @@ interface VendorTabContentProps {
 export function VendorTabContent({
   dashboard,
   todayStr,
-  statusLabelRu,
   groupedRestaurantOrders,
   handleVendorExport,
   getVendorRestaurantLabel,
@@ -100,7 +98,6 @@ export function VendorTabContent({
           handleCancelOrder={dashboard.handleCancelOrder}
           vendorService={vendorService}
           selectedRestaurant={dashboard.selectedRestaurant}
-          STATUS_LABEL_RU={statusLabelRu}
           getOrderDisplayId={getOrderDisplayId}
           formatOrderTime={formatOrderTime}
         />

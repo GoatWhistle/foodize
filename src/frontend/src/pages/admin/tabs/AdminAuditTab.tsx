@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react';
 import { Pagination } from '@shared/components/Pagination/Pagination';
 import { EmptyState } from '@shared/components/EmptyState/EmptyState';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { AuditLog, AuditFilters } from '../hooks/useAdminAudit';
 
 interface AdminAuditTabProps {
@@ -16,24 +17,24 @@ interface AdminAuditTabProps {
   PAGE_SIZE: number;
 }
 
-export const AUDIT_ACTION_LABELS: Record<string, string> = {
-  APPROVE_VENDOR: 'Одобрен вендор',
-  REJECT_VENDOR: 'Отклонён вендор',
-  DEACTIVATE_VENDOR: 'Деактивирован вендор',
-  APPROVE_RESTAURANT: 'Одобрен ресторан',
-  REJECT_RESTAURANT: 'Отклонён ресторан',
-  DEACTIVATE_USER: 'Деактивирован пользователь',
-  ACTIVATE_USER: 'Активирован пользователь',
-  UPDATE_PERMISSIONS: 'Изменены права пользователя',
-  CREATE_MENU_ITEM: 'Создан пункт меню',
-  UPDATE_MENU_ITEM: 'Изменён пункт меню',
-  DELETE_MENU_ITEM: 'Удалён пункт меню',
-  TOGGLE_MENU_ITEM: 'Изменена доступность пункта меню',
-  CREATE_PROMO: 'Создан промокод',
-  DEACTIVATE_PROMO: 'Деактивирован промокод',
-  FORCE_CANCEL_ORDER: 'Заказ отменён администратором',
-  DELETE_REVIEW: 'Удален отзыв',
-};
+export const AUDIT_ACTIONS = [
+  'APPROVE_VENDOR',
+  'REJECT_VENDOR',
+  'DEACTIVATE_VENDOR',
+  'APPROVE_RESTAURANT',
+  'REJECT_RESTAURANT',
+  'DEACTIVATE_USER',
+  'ACTIVATE_USER',
+  'UPDATE_PERMISSIONS',
+  'CREATE_MENU_ITEM',
+  'UPDATE_MENU_ITEM',
+  'DELETE_MENU_ITEM',
+  'TOGGLE_MENU_ITEM',
+  'CREATE_PROMO',
+  'DEACTIVATE_PROMO',
+  'FORCE_CANCEL_ORDER',
+  'DELETE_REVIEW',
+];
 
 const cardStyle = {
   background: 'var(--bg-card)',
@@ -54,6 +55,12 @@ export function AdminAuditTab({
   setExpandedAuditId,
   PAGE_SIZE,
 }: AdminAuditTabProps) {
+  const { t } = useTranslation();
+  const actionLabel = (action: string): string => {
+    const key = `admin.audit.actions.${action}`;
+    const resolved = t(key);
+    return resolved === key ? action : resolved;
+  };
   const isEmpty = !Array.isArray(auditLogs) || auditLogs.length === 0;
 
   if (auditLoading && isEmpty) {
@@ -95,10 +102,10 @@ export function AdminAuditTab({
             setAuditFilters((f) => ({ ...f, action: e.target.value }));
           }}
         >
-          <option value="">Все действия</option>
-          {Object.entries(AUDIT_ACTION_LABELS).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
+          <option value="">{t('admin.audit.allActions')}</option>
+          {AUDIT_ACTIONS.map((action) => (
+            <option key={action} value={action}>
+              {actionLabel(action)}
             </option>
           ))}
         </select>
@@ -111,9 +118,9 @@ export function AdminAuditTab({
             setAuditFilters((f) => ({ ...f, entity_type: e.target.value }));
           }}
         >
-          <option value="">Все объекты</option>
-          <option value="vendor">Вендор</option>
-          <option value="restaurant">Ресторан</option>
+          <option value="">{t('admin.audit.allEntities')}</option>
+          <option value="vendor">{t('admin.audit.entityVendor')}</option>
+          <option value="restaurant">{t('admin.audit.entityRestaurant')}</option>
         </select>
         <input
           type="date"
@@ -156,7 +163,7 @@ export function AdminAuditTab({
             <span
               style={{ fontWeight: 700, fontSize: "var(--text-base)", color: 'var(--text-1)' }}
             >
-              {AUDIT_ACTION_LABELS[log.action] ?? log.action}
+              {actionLabel(log.action)}
             </span>
             <span className="order-status-badge pending">{log.entity_type}</span>
             <span
@@ -166,7 +173,7 @@ export function AdminAuditTab({
             </span>
           </div>
           <div style={{ fontSize: "var(--text-sm)", color: 'var(--text-3)', marginTop: 4 }}>
-            Объект: {log.entity_id || '—'}
+            {t('admin.audit.entity', { id: log.entity_id || t('common.states.dash') })}
           </div>
           {expandedAuditId === log.id && (
             <pre
@@ -188,8 +195,8 @@ export function AdminAuditTab({
 
       {isEmpty && (
         <EmptyState
-          title="Логов пока нет"
-          subtitle="Для выбранных фильтров нет результатов"
+          title={t('admin.audit.emptyTitle')}
+          subtitle={t('admin.common.emptySubtitle')}
         />
       )}
 

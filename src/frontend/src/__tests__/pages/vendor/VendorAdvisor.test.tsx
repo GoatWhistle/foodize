@@ -6,6 +6,7 @@ import { AdvisorInsights } from '../../../pages/vendor/components/AdvisorInsight
 import { AdvisorChat } from '../../../pages/vendor/components/AdvisorChat';
 import { VendorAdvisorPanel } from '../../../pages/vendor/VendorAdvisorPanel';
 import type { AdvisorChatMessage } from '../../../services/aiAdvisorService';
+import { t } from '@shared/i18n/useTranslation';
 
 vi.mock('../../../services/aiAdvisorService', () => ({
   aiAdvisorService: {
@@ -20,20 +21,20 @@ describe('AdvisorInsights', () => {
   it('renders load button when no insights', async () => {
     const onLoad = vi.fn();
     render(<AdvisorInsights insights={null} insightsLoading={false} onLoad={onLoad} />);
-    const btn = screen.getByRole('button', { name: /Получить анализ/ });
+    const btn = screen.getByRole('button', { name: t('vendor.advisor.getInsights') });
     await userEvent.click(btn);
     expect(onLoad).toHaveBeenCalled();
   });
 
   it('renders refresh button and insight text when insights present', () => {
     render(<AdvisorInsights insights="Продажи растут" insightsLoading={false} onLoad={vi.fn()} />);
-    expect(screen.getByRole('button', { name: /Обновить/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: t('common.actions.refresh') })).toBeInTheDocument();
     expect(screen.getByText('Продажи растут')).toBeInTheDocument();
   });
 
   it('shows loading label and disables button', () => {
     render(<AdvisorInsights insights={null} insightsLoading={true} onLoad={vi.fn()} />);
-    expect(screen.getByRole('button', { name: /Анализирую/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: t('vendor.advisor.analyzing') })).toBeDisabled();
   });
 });
 
@@ -53,8 +54,8 @@ describe('AdvisorChat', () => {
   it('renders suggestions when no messages and sends one on click', async () => {
     const onSend = vi.fn();
     render(<AdvisorChat {...baseProps} onSend={onSend} />);
-    await userEvent.click(screen.getByRole('button', { name: 'Что добавить в меню?' }));
-    expect(onSend).toHaveBeenCalledWith('Что добавить в меню?');
+    await userEvent.click(screen.getByRole('button', { name: t('vendor.advisor.suggestions.whatToAdd') }));
+    expect(onSend).toHaveBeenCalledWith(t('vendor.advisor.suggestions.whatToAdd'));
   });
 
   it('renders message bubbles and typing placeholder for streaming assistant', () => {
@@ -83,7 +84,7 @@ describe('AdvisorChat', () => {
     render(
       <AdvisorChat {...baseProps} input="меню" onInputChange={onInputChange} onSend={onSend} />,
     );
-    const input = screen.getByPlaceholderText(/что добавить в меню/);
+    const input = screen.getByPlaceholderText(t('vendor.advisor.inputPlaceholder'));
     await userEvent.type(input, 'x');
     expect(onInputChange).toHaveBeenCalled();
     await userEvent.click(screen.getByRole('button', { name: '' }));
@@ -108,7 +109,7 @@ describe('VendorAdvisorPanel', () => {
       data: { data: { insights: 'Хороший рост' } },
     } as unknown as Awaited<ReturnType<typeof aiAdvisorService.getInsights>>);
     render(<VendorAdvisorPanel restaurantId="r1" />);
-    await userEvent.click(screen.getByRole('button', { name: /Получить анализ/ }));
+    await userEvent.click(screen.getByRole('button', { name: t('vendor.advisor.getInsights') }));
     await waitFor(() => { expect(screen.getByText('Хороший рост')).toBeInTheDocument(); });
     expect(aiAdvisorService.getInsights).toHaveBeenCalledWith(false);
   });
@@ -116,9 +117,9 @@ describe('VendorAdvisorPanel', () => {
   it('shows error when insights request fails', async () => {
     vi.mocked(aiAdvisorService.getInsights).mockRejectedValue(new Error('boom'));
     render(<VendorAdvisorPanel restaurantId="r1" />);
-    await userEvent.click(screen.getByRole('button', { name: /Получить анализ/ }));
+    await userEvent.click(screen.getByRole('button', { name: t('vendor.advisor.getInsights') }));
     await waitFor(() =>
-      { expect(screen.getByText(/Не удалось получить анализ/)).toBeInTheDocument(); },
+      { expect(screen.getByText(t('vendor.advisor.errors.insightsFailed'))).toBeInTheDocument(); },
     );
   });
 
@@ -130,7 +131,7 @@ describe('VendorAdvisorPanel', () => {
       },
     );
     render(<VendorAdvisorPanel restaurantId="r1" />);
-    await userEvent.click(screen.getByRole('button', { name: 'Как поднять средний чек?' }));
+    await userEvent.click(screen.getByRole('button', { name: t('vendor.advisor.suggestions.raiseAov') }));
     await waitFor(() => { expect(screen.getByText('Ответ')).toBeInTheDocument(); });
     expect(aiAdvisorService.streamChat).toHaveBeenCalled();
   });
@@ -138,9 +139,9 @@ describe('VendorAdvisorPanel', () => {
   it('shows error and rolls back on stream failure', async () => {
     vi.mocked(aiAdvisorService.streamChat).mockRejectedValue(new Error('net'));
     render(<VendorAdvisorPanel restaurantId="r1" />);
-    await userEvent.click(screen.getByRole('button', { name: 'Что добавить в меню?' }));
+    await userEvent.click(screen.getByRole('button', { name: t('vendor.advisor.suggestions.whatToAdd') }));
     await waitFor(() =>
-      { expect(screen.getByText(/Не удалось получить ответ/)).toBeInTheDocument(); },
+      { expect(screen.getByText(t('vendor.advisor.errors.chatFailed'))).toBeInTheDocument(); },
     );
   });
 
@@ -150,7 +151,7 @@ describe('VendorAdvisorPanel', () => {
       return Promise.resolve();
     });
     render(<VendorAdvisorPanel restaurantId="r1" />);
-    const input = screen.getByPlaceholderText(/что добавить в меню/);
+    const input = screen.getByPlaceholderText(t('vendor.advisor.inputPlaceholder'));
     await userEvent.type(input, 'Вопрос{Enter}');
     await waitFor(() => { expect(aiAdvisorService.streamChat).toHaveBeenCalled(); });
   });
@@ -160,7 +161,7 @@ describe('VendorAdvisorPanel', () => {
       () => new Promise(() => undefined),
     );
     const { unmount } = render(<VendorAdvisorPanel restaurantId="r1" />);
-    await userEvent.click(screen.getByRole('button', { name: 'Что добавить в меню?' }));
+    await userEvent.click(screen.getByRole('button', { name: t('vendor.advisor.suggestions.whatToAdd') }));
     await act(async () => {
       unmount();
       await Promise.resolve();

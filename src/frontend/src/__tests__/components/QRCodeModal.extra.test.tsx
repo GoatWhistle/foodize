@@ -5,6 +5,7 @@ import type { Restaurant } from '@shared/types/models';
 import { QRCodeModal } from '../../components/QRCodeModal/QRCodeModal';
 import QRCode from 'qrcode';
 import { logError } from '@shared/utils/logError';
+import { t } from '@shared/i18n/useTranslation';
 
 vi.mock('qrcode', () => ({
   default: {
@@ -46,7 +47,7 @@ describe('QRCodeModal extra', () => {
     });
 
     render(<QRCodeModal restaurant={restaurant} onClose={vi.fn()} />);
-    await user.click(screen.getByRole('button', { name: 'Скачать PNG' }));
+    await user.click(screen.getByRole('button', { name: t('profile.qr.download') }));
 
     await waitFor(() => {
       expect(QRCode.toDataURL).toHaveBeenCalledWith(
@@ -64,7 +65,7 @@ describe('QRCodeModal extra', () => {
     const user = userEvent.setup();
     vi.mocked(QRCode.toDataURL).mockRejectedValueOnce(new Error('boom'));
     render(<QRCodeModal restaurant={restaurant} onClose={vi.fn()} />);
-    await user.click(screen.getByRole('button', { name: 'Скачать PNG' }));
+    await user.click(screen.getByRole('button', { name: t('profile.qr.download') }));
     await waitFor(() => {
       expect(logError).toHaveBeenCalledWith('QRCodeModal.download', expect.any(Error));
     });
@@ -87,12 +88,12 @@ describe('QRCodeModal extra', () => {
     } as unknown as CanvasRenderingContext2D);
 
     render(<QRCodeModal restaurant={restaurant} onClose={vi.fn()} />);
-    await user.click(screen.getByRole('button', { name: 'Telegram' }));
+    await user.click(screen.getByRole('button', { name: t('profile.qr.telegram') }));
 
     expect(
-      screen.getByText(/Для Telegram QR задайте VITE_BOT_USERNAME/)
+      screen.getByText(t('profile.qr.botMissing', { id: 'food-court-7' }))
     ).toBeInTheDocument();
-    const download = screen.getByRole('button', { name: 'Скачать PNG' });
+    const download = screen.getByRole('button', { name: t('profile.qr.download') });
     expect(download).toBeDisabled();
     await user.click(download);
     expect(QRCode.toDataURL).not.toHaveBeenCalled();
@@ -123,7 +124,7 @@ describe('QRCodeModal extra', () => {
     const onClose = vi.fn();
     const user = userEvent.setup();
     render(<QRCodeModal restaurant={restaurant} onClose={onClose} />);
-    await user.click(screen.getByRole('button', { name: 'Закрыть' }));
+    await user.click(screen.getByRole('button', { name: t('common.actions.close') }));
     expect(onClose).toHaveBeenCalled();
   });
 

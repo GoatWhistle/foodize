@@ -1,8 +1,12 @@
 import type { Dispatch, FormEvent, SetStateAction } from 'react';
 import { XIcon } from '@phosphor-icons/react';
-import { CATEGORY_RU } from '@shared/utils/locales';
+import { categoryLabel } from '@shared/utils/locales';
+import { useTranslation } from '@shared/i18n/useTranslation';
+import type { Category } from '@shared/types/models';
 import type { PromoForm as PromoFormValues } from '../../hooks/useVendorPromos';
 import styles from './VendorPromos.module.css';
+
+const CATEGORY_KEYS: Category[] = ['SHAURMA', 'BURGER', 'DRINK', 'PIZZA', 'SUSHI', 'DESSERT', 'SNACK', 'SALAD', 'OTHER'];
 
 interface PromoFormProps {
   promoForm: PromoFormValues;
@@ -19,12 +23,13 @@ export function PromoForm({
   onSubmit,
   onCancel,
 }: PromoFormProps) {
+  const { t } = useTranslation();
   return (
     <form onSubmit={onSubmit} className={styles['form']}>
-      <div className={styles['formTitle']}>Новый промокод</div>
+      <div className={styles['formTitle']}>{t('vendor.promos.formTitle')}</div>
       <input
         className="form-input"
-        placeholder="Код (напр. SAVE20)"
+        placeholder={t('vendor.promos.placeholders.code')}
         value={promoForm.code}
         onChange={(e) => { setPromoForm((f) => ({ ...f, code: e.target.value.toUpperCase() })); }}
         required
@@ -40,13 +45,13 @@ export function PromoForm({
             })); }
           }
         >
-          <option value="PERCENT">% Процент</option>
-          <option value="FIXED">₽ Фиксированный</option>
+          <option value="PERCENT">{t('vendor.promos.discountTypePercent')}</option>
+          <option value="FIXED">{t('vendor.promos.discountTypeFixed')}</option>
         </select>
         <input
           className="form-input"
           type="number"
-          placeholder={promoForm.discount_type === 'PERCENT' ? 'Скидка %' : 'Сумма ₽'}
+          placeholder={promoForm.discount_type === 'PERCENT' ? t('vendor.promos.placeholders.discountPercent') : t('vendor.promos.placeholders.discountFixed')}
           min={1}
           value={promoForm.discount_value}
           onChange={(e) => { setPromoForm((f) => ({ ...f, discount_value: e.target.value })); }}
@@ -57,7 +62,7 @@ export function PromoForm({
         <input
           className="form-input"
           type="number"
-          placeholder="Макс. использований (не обяз.)"
+          placeholder={t('vendor.promos.placeholders.maxUses')}
           min={1}
           value={promoForm.max_uses}
           onChange={(e) => { setPromoForm((f) => ({ ...f, max_uses: e.target.value })); }}
@@ -65,7 +70,7 @@ export function PromoForm({
         <input
           className="form-input"
           type="datetime-local"
-          placeholder="Истекает (не обяз.)"
+          placeholder={t('vendor.promos.placeholders.expiresAt')}
           value={promoForm.expires_at}
           onChange={(e) => { setPromoForm((f) => ({ ...f, expires_at: e.target.value })); }}
         />
@@ -74,7 +79,7 @@ export function PromoForm({
         <input
           className="form-input"
           type="number"
-          placeholder="Мин. сумма (не обяз.)"
+          placeholder={t('vendor.promos.placeholders.minAmount')}
           min={1}
           value={promoForm.min_order_amount}
           onChange={(e) => { setPromoForm((f) => ({ ...f, min_order_amount: e.target.value })); }}
@@ -84,10 +89,10 @@ export function PromoForm({
           value={promoForm.menu_category}
           onChange={(e) => { setPromoForm((f) => ({ ...f, menu_category: e.target.value })); }}
         >
-          <option value="">Все категории</option>
-          {Object.entries(CATEGORY_RU).map(([k, v]) => (
-            <option key={k} value={k}>
-              {v}
+          <option value="">{t('vendor.promos.placeholders.allCategories')}</option>
+          {CATEGORY_KEYS.map((category) => (
+            <option key={category} value={category}>
+              {categoryLabel(category)}
             </option>
           ))}
         </select>
@@ -98,7 +103,7 @@ export function PromoForm({
           checked={promoForm.first_order_only}
           onChange={(e) => { setPromoForm((f) => ({ ...f, first_order_only: e.target.checked })); }}
         />
-        Только для первого заказа
+        {t('vendor.promos.firstOrderOnlyCheckbox')}
       </label>
       <div className={styles['formActions']}>
         <button
@@ -106,7 +111,7 @@ export function PromoForm({
           type="submit"
           disabled={promoFormLoading}
         >
-          {promoFormLoading ? 'Создаю...' : 'Создать'}
+          {promoFormLoading ? t('vendor.promos.creating') : t('common.actions.create')}
         </button>
         <button className="btn btn-secondary btn-sm" type="button" onClick={onCancel}>
           <XIcon size={14} />

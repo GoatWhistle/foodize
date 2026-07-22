@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { aiAdvisorService } from '../../services/aiAdvisorService';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { AdvisorChatMessage } from '../../services/aiAdvisorService';
 import { AdvisorInsights } from './components/AdvisorInsights';
 import { AdvisorChat } from './components/AdvisorChat';
@@ -10,6 +11,7 @@ interface VendorAdvisorPanelProps {
 }
 
 export function VendorAdvisorPanel({ restaurantId }: VendorAdvisorPanelProps) {
+  const { t } = useTranslation();
   const [messages, setMessages] = useState<AdvisorChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
@@ -62,9 +64,7 @@ export function VendorAdvisorPanel({ restaurantId }: VendorAdvisorPanelProps) {
         );
       } catch (err) {
         if ((err as Error).name !== 'AbortError') {
-          setError(
-            'Не удалось получить ответ. Проверьте подключение и ключ модели.'
-          );
+          setError(t('vendor.advisor.errors.chatFailed'));
           setMessages((prev) => prev.slice(0, -1));
         }
       } finally {
@@ -72,7 +72,7 @@ export function VendorAdvisorPanel({ restaurantId }: VendorAdvisorPanelProps) {
         abortRef.current = null;
       }
     },
-    [input, streaming, messages, restaurantId, appendToLastAssistant]
+    [input, streaming, messages, restaurantId, appendToLastAssistant, t]
   );
 
   const loadInsights = useCallback(async (refresh = false) => {
@@ -82,11 +82,11 @@ export function VendorAdvisorPanel({ restaurantId }: VendorAdvisorPanelProps) {
       const res = await aiAdvisorService.getInsights(refresh);
       setInsights(res.data.data.insights);
     } catch {
-      setError('Не удалось получить анализ бизнеса.');
+      setError(t('vendor.advisor.errors.insightsFailed'));
     } finally {
       setInsightsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   return (
     <div className={styles['root']}>

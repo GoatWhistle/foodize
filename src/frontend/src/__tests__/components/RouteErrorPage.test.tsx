@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { t } from '@shared/i18n/useTranslation';
 
 const mockNavigate = vi.fn();
 let mockError: { message?: string; status?: number; statusText?: string } | null = null;
@@ -23,13 +24,13 @@ describe('RouteErrorPage', () => {
   it('shows "Что-то пошло не так" for generic error', () => {
     mockError = { message: 'Internal Server Error' };
     render$();
-    expect(screen.getByText('Что-то пошло не так')).toBeInTheDocument();
+    expect(screen.getByText(t('common.errors.somethingWentWrong'))).toBeInTheDocument();
   });
 
   it('shows "Страница не найдена" for 404', () => {
     mockError = { status: 404, statusText: 'Not Found' };
     render$();
-    expect(screen.getByText('Страница не найдена')).toBeInTheDocument();
+    expect(screen.getByText(t('common.errors.pageNotFound'))).toBeInTheDocument();
   });
 
   it('displays statusText as message', () => {
@@ -47,24 +48,24 @@ describe('RouteErrorPage', () => {
   it('displays "Неизвестная ошибка" when error has no message or statusText', () => {
     mockError = {};
     render$();
-    expect(screen.getByText('Неизвестная ошибка')).toBeInTheDocument();
+    expect(screen.getByText(t('common.errors.unknown'))).toBeInTheDocument();
   });
 
   it('displays "Неизвестная ошибка" when error is null', () => {
     mockError = null;
     render$();
-    expect(screen.getByText('Неизвестная ошибка')).toBeInTheDocument();
+    expect(screen.getByText(t('common.errors.unknown'))).toBeInTheDocument();
   });
 
   it('renders "На главную" button', () => {
     render$();
-    expect(screen.getByRole('button', { name: 'На главную' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: t('common.actions.goHome') })).toBeInTheDocument();
   });
 
   it('navigates to "/" when button clicked', async () => {
     const user = userEvent.setup();
     render$();
-    await user.click(screen.getByRole('button', { name: 'На главную' }));
+    await user.click(screen.getByRole('button', { name: t('common.actions.goHome') }));
     expect(mockNavigate).toHaveBeenCalledWith('/');
   });
 });

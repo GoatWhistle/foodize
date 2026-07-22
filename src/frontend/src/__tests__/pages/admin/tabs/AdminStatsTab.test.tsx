@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import { AdminStatsTab } from '../../../../pages/admin/tabs/AdminStatsTab';
 import type { PlatformStats } from '@shared/types/models';
+import { t } from '@shared/i18n/useTranslation';
 
 vi.mock('../../../../components/dashboard/DashboardCharts', () => ({
   UsersByRoleChart: ({ data }: { data: Record<string, number> }) => (
@@ -64,10 +65,18 @@ describe('AdminStatsTab', () => {
         setActiveTab={setActiveTab}
       />
     );
-    await user.click(screen.getByRole('button', { name: /Пользователи/ }));
-    await user.click(screen.getByRole('button', { name: /Рестораны/ }));
-    await user.click(screen.getByRole('button', { name: /Заказы/ }));
-    await user.click(screen.getByRole('button', { name: /Вендоры/ }));
+    await user.click(
+      screen.getByRole('button', { name: new RegExp(t('admin.stats.cards.users')) }),
+    );
+    await user.click(
+      screen.getByRole('button', { name: new RegExp(t('admin.stats.cards.restaurants')) }),
+    );
+    await user.click(
+      screen.getByRole('button', { name: new RegExp(t('admin.stats.cards.orders')) }),
+    );
+    await user.click(
+      screen.getByRole('button', { name: new RegExp(t('admin.stats.cards.vendors')) }),
+    );
     expect(setActiveTab).toHaveBeenCalledWith('users');
     expect(setActiveTab).toHaveBeenCalledWith('restaurants');
     expect(setActiveTab).toHaveBeenCalledWith('orders');
@@ -112,6 +121,6 @@ describe('AdminStatsTab', () => {
         setActiveTab={vi.fn()}
       />
     );
-    expect(screen.getByText('+6 за последние 14 дней')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.stats.growth', { count: 6 }))).toBeInTheDocument();
   });
 });

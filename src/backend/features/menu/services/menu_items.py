@@ -5,7 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database.db_helper import register_after_commit
 from features.admin.audit_log import service as audit_service
 from features.menu import crud
-from features.menu.exceptions import MenuItemNotFoundException
+from features.menu.exceptions import (
+    MenuItemNotFoundException,
+    UnsupportedMenuImageTypeException,
+)
 from features.menu.schemas import (
     MenuItemCreate,
     MenuItemResponse,
@@ -14,7 +17,6 @@ from features.menu.schemas import (
 from features.menu.services._shared import get_owned_menu_item
 from features.restaurants.dependencies import get_restaurant_and_check_ownership
 from infra.storage import UnsupportedImageType, delete_image, upload_image
-from shared.exceptions import BadRequestException
 
 
 async def add_menu_item(
@@ -116,9 +118,7 @@ async def set_menu_item_photo(
     try:
         url = await upload_image(data, content_type, prefix="menu")
     except UnsupportedImageType as exc:
-        raise BadRequestException(
-            detail="Поддерживаются только изображения JPEG, PNG или WebP"
-        ) from exc
+        raise UnsupportedMenuImageTypeException() from exc
 
     item.photo_url = url
     await audit_service.log_action(

@@ -3,6 +3,7 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.menu import crud
+from features.menu.exceptions import InvalidSelectionLimitsException
 from features.menu.schemas import (
     MenuItemOptionCreate,
     MenuItemOptionGroupCreate,
@@ -16,7 +17,6 @@ from features.menu.services._shared import (
     get_owned_option,
     get_owned_option_group,
 )
-from shared.exceptions import BadRequestException
 
 
 async def create_option_group_for_vendor(
@@ -45,7 +45,7 @@ async def update_option_group_for_vendor(
         and data.min_selected is not None
         and data.min_selected > data.max_selected
     ):
-        raise BadRequestException(detail="min_selected cannot be greater than max_selected")
+        raise InvalidSelectionLimitsException()
     updated = await crud.update_option_group(session, group, data)
     return MenuItemOptionGroupResponse.model_validate(updated)
 

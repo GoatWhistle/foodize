@@ -2,6 +2,7 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { useAdminReviews } from '../../../../pages/admin/hooks/useAdminReviews';
 import type { ConfirmDialogConfig } from '@shared/store/useModalStore';
+import { t } from '@shared/i18n/useTranslation';
 
 vi.mock('../../../../services/adminService', () => ({
   adminService: {
@@ -66,7 +67,7 @@ describe('useAdminReviews', () => {
   it('handles load error', async () => {
     vi.mocked(adminService.getReviews).mockRejectedValue(new Error('x'));
     renderHook(() => useAdminReviews(baseArgs()));
-    await waitFor(() => { expect(setActionError).toHaveBeenCalledWith('Не удалось загрузить отзывы'); });
+    await waitFor(() => { expect(setActionError).toHaveBeenCalledWith(t('admin.reviews.errors.loadFailed')); });
   });
 
   it('deletes a single review on confirm', async () => {
@@ -92,7 +93,7 @@ describe('useAdminReviews', () => {
     await act(async () => {
       await lastConfirm?.onConfirm?.();
     });
-    expect(setActionError).toHaveBeenCalledWith('Не удалось удалить отзыв');
+    expect(setActionError).toHaveBeenCalledWith(t('admin.reviews.errors.deleteFailed'));
   });
 
   it('batch deletes selected reviews', async () => {
@@ -106,7 +107,7 @@ describe('useAdminReviews', () => {
       await lastConfirm?.onConfirm?.();
     });
     expect(adminService.batchDeleteReviews).toHaveBeenCalledWith(['r1', 'r2']);
-    expect(setActionSuccess).toHaveBeenCalledWith('Удалено: 2 отзывов');
+    expect(setActionSuccess).toHaveBeenCalledWith(t('admin.reviews.messages.batchDeleted', { count: 2 }));
     expect(result.current.selectedReviewIds.size).toBe(0);
   });
 
@@ -120,7 +121,7 @@ describe('useAdminReviews', () => {
     await act(async () => {
       await lastConfirm?.onConfirm?.();
     });
-    expect(setActionError).toHaveBeenCalledWith('Ошибка при удалении');
+    expect(setActionError).toHaveBeenCalledWith(t('admin.reviews.errors.batchDeleteFailed'));
     expect(result.current.batchReviewsLoading).toBe(false);
   });
 

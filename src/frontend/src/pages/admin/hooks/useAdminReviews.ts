@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { adminService } from '../../../services/adminService';
 import { useModalStore } from '@shared/store/useModalStore';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { AdminReview } from '@shared/types/models';
 
 export type { AdminReview };
@@ -19,6 +20,7 @@ export interface ReviewFilters {
 }
 
 export const useAdminReviews = ({ activeTab, setActionError, setActionSuccess }: UseAdminReviewsArgs) => {
+  const { t } = useTranslation();
   const requestConfirm = useModalStore((s) => s.requestConfirm);
 
   const [reviews, setReviews] = useState<AdminReview[]>([]);
@@ -42,18 +44,18 @@ export const useAdminReviews = ({ activeTab, setActionError, setActionSuccess }:
         setReviews(items);
         setReviewsTotal(total);
       } catch {
-        setActionError('Не удалось загрузить отзывы');
+        setActionError(t('admin.reviews.errors.loadFailed'));
       } finally {
         setReviewsLoading(false);
       }
     })();
-  }, [activeTab, reviewsPage, reviewFilters, setActionError]);
+  }, [activeTab, reviewsPage, reviewFilters, setActionError, t]);
 
   const handleDeleteReview = (reviewId: string) => {
     requestConfirm({
-      title: 'Удалить отзыв?',
-      message: 'Точно ли вы хотите удалить отзыв? Он исчезнет из карточки ресторана.',
-      confirmLabel: 'Удалить отзыв',
+      title: t('admin.reviews.dialogs.deleteTitle'),
+      message: t('admin.reviews.dialogs.deleteMessage'),
+      confirmLabel: t('admin.reviews.dialogs.deleteConfirm'),
       danger: true,
       onConfirm: async () => {
         setActionError('');
@@ -62,7 +64,7 @@ export const useAdminReviews = ({ activeTab, setActionError, setActionSuccess }:
           setReviews((prev) => prev.filter((item) => item.id !== reviewId));
           setReviewsTotal((prev) => Math.max(0, prev - 1));
         } catch {
-          setActionError('Не удалось удалить отзыв');
+          setActionError(t('admin.reviews.errors.deleteFailed'));
         }
       },
     });
@@ -71,20 +73,20 @@ export const useAdminReviews = ({ activeTab, setActionError, setActionSuccess }:
   const handleBatchDeleteReviews = () => {
     const ids = Array.from(selectedReviewIds);
     requestConfirm({
-      title: `Удалить ${ids.length} отзывов?`,
-      message: 'Это действие необратимо.',
-      confirmLabel: 'Удалить',
+      title: t('admin.reviews.dialogs.batchDeleteTitle', { count: ids.length }),
+      message: t('admin.reviews.dialogs.batchDeleteMessage'),
+      confirmLabel: t('common.actions.delete'),
       danger: true,
       onConfirm: async () => {
         setBatchReviewsLoading(true);
         try {
           await adminService.batchDeleteReviews(ids);
           setSelectedReviewIds(new Set());
-          setActionSuccess(`Удалено: ${ids.length} отзывов`);
+          setActionSuccess(t('admin.reviews.messages.batchDeleted', { count: ids.length }));
           setReviewsPage(1);
           setReviewFilters((f) => ({ ...f }));
         } catch {
-          setActionError('Ошибка при удалении');
+          setActionError(t('admin.reviews.errors.batchDeleteFailed'));
         } finally {
           setBatchReviewsLoading(false);
         }

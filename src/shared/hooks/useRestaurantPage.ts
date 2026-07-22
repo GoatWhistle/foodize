@@ -7,6 +7,7 @@ import { reviewService } from "@shared/services/reviewService";
 import { restaurantService } from "@shared/services/restaurantService";
 import { translateApiError } from "@shared/utils/translateApiError";
 import { logError } from "@shared/utils/logError";
+import { useTranslation } from "@shared/i18n/useTranslation";
 import { isRestaurantOpen } from "../utils/restaurant";
 import type { MenuItem, Restaurant, Review } from "@shared/types/models";
 import type { components } from "@shared/types/api";
@@ -68,6 +69,7 @@ export const useRestaurantPage = ({
   initialRestaurant = null,
   reviewsPageSize = 10,
 }: UseRestaurantPageOptions): UseRestaurantPageResult => {
+  const { t } = useTranslation();
   const [restaurantData, setRestaurantData] = useState<Restaurant | null>(initialRestaurant);
   const [rating, setRating] = useState<number | null>(null);
   const [reviewCount, setReviewCount] = useState<number | null>(null);
@@ -93,7 +95,7 @@ export const useRestaurantPage = ({
   );
 
   const restaurantUUID = restaurantData?.id ?? null;
-  const restaurant: RestaurantView = restaurantData ?? { id, name: "Ресторан", address: "" };
+  const restaurant: RestaurantView = restaurantData ?? { id, name: t("catalog.restaurantPage.fallbackName"), address: "" };
   const menuItems = menus[restaurantUUID ?? id] || [];
   const restaurantOpen = isRestaurantOpen(restaurantData);
 
@@ -145,7 +147,7 @@ export const useRestaurantPage = ({
           setReviewsList(list);
           setReviewsTotal(body.pagination.total || 0);
         } catch (error) {
-          setReviewError(translateApiError(error, "Не удалось загрузить отзывы"));
+          setReviewError(translateApiError(error, t("catalog.reviews.loadFailed")));
         } finally {
           setReviewsLoading(false);
         }
@@ -166,7 +168,7 @@ export const useRestaurantPage = ({
         setRestaurantData(response.data.data);
       } catch (error) {
         if (state.stale) return;
-        setRestaurantError(translateApiError(error, "Не удалось загрузить ресторан"));
+        setRestaurantError(translateApiError(error, t("catalog.restaurantPage.loadFailed")));
       } finally {
         if (!state.stale) setRestaurantLoading(false);
       }
@@ -221,7 +223,7 @@ export const useRestaurantPage = ({
       window.setTimeout(() => { setReviewSuccess(false); }, 2200);
       onSuccess?.();
     } catch (err) {
-      setReviewError(translateApiError(err, "Не удалось отправить отзыв"));
+      setReviewError(translateApiError(err, t("catalog.reviews.submitFailed")));
     }
   };
 
@@ -232,7 +234,7 @@ export const useRestaurantPage = ({
       setReviewsList((prev) => prev.filter((r) => r.id !== reviewId));
       refreshRating(rid);
     } catch (err) {
-      setReviewError(translateApiError(err, "Не удалось удалить отзыв"));
+      setReviewError(translateApiError(err, t("catalog.reviews.deleteFailed")));
     }
   };
 

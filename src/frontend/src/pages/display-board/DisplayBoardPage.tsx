@@ -6,6 +6,7 @@ import { ReliableWebSocket } from '@shared/services/api';
 import { restaurantService } from '@shared/services/restaurantService';
 import { logError } from '@shared/utils/logError';
 import { getOrderStatusStyle } from '@shared/utils/orderStatus';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import { DisplayBoardColumn } from './DisplayBoardColumn';
 import { KEYFRAMES, NEW_HIGHLIGHT_MS, styles } from './displayBoardStyles';
 
@@ -15,6 +16,7 @@ const COOKING_STYLE = getOrderStatusStyle('ACCEPTED');
 const READY_STYLE = getOrderStatusStyle('READY');
 
 export function DisplayBoardPage() {
+  const { t } = useTranslation();
   const { restaurantId } = useParams();
   const [cooking, setCooking] = useState<OrderId[]>([]);
   const [ready, setReady] = useState<OrderId[]>([]);
@@ -99,7 +101,7 @@ export function DisplayBoardPage() {
     return (
       <div data-theme="dark" style={styles['errorScreen']}>
         <span style={styles['errorText']}>
-          {error === 'forbidden' ? 'Нет доступа' : 'Ошибка подключения'}
+          {error === 'forbidden' ? t('staff.displayBoard.noAccess') : t('staff.displayBoard.connectionError')}
         </span>
       </div>
     );
@@ -118,7 +120,7 @@ export function DisplayBoardPage() {
         </div>
         <div style={styles['columns']}>
           <DisplayBoardColumn
-            title="Готовятся"
+            title={t('staff.displayBoard.cooking')}
             Icon={CookingPotIcon}
             ids={cooking}
             newIds={newCooking}
@@ -126,7 +128,7 @@ export function DisplayBoardPage() {
           />
           <div style={styles['divider']} />
           <DisplayBoardColumn
-            title="Готовы к выдаче"
+            title={t('staff.displayBoard.ready')}
             Icon={CheckCircleIcon}
             ids={ready}
             newIds={newReady}

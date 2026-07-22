@@ -4,6 +4,7 @@ import type {
   OptionDraft,
   OptionGroupDraft,
 } from '../VendorMenuTab';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import { OptionGroupCard } from './OptionGroupCard';
 import styles from './MenuItemOptionGroups.module.css';
 
@@ -32,6 +33,7 @@ export function MenuItemOptionGroups({
   menuItemForm,
   setMenuItemForm,
 }: MenuItemOptionGroupsProps) {
+  const { t } = useTranslation();
   const patchGroup = (groupIndex: number, patch: Partial<OptionGroupDraft>) =>
     { setMenuItemForm((form) => ({
       ...form,
@@ -89,9 +91,9 @@ export function MenuItemOptionGroups({
     <div className={styles['root']}>
       <div className={styles['header']}>
         <div>
-          <div className={styles['headerTitle']}>Опции блюда</div>
+          <div className={styles['headerTitle']}>{t('vendor.menu.options.title')}</div>
           <div className={styles['headerSubtitle']}>
-            Например: убрать лук, добавить мясо
+            {t('vendor.menu.options.hint')}
           </div>
         </div>
         <button
@@ -104,7 +106,7 @@ export function MenuItemOptionGroups({
             })); }
           }
         >
-          <PlusIcon size={14} /> Группа
+          <PlusIcon size={14} /> {t('vendor.menu.options.addGroup')}
         </button>
       </div>
 

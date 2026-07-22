@@ -3,6 +3,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { useAdminRestaurants } from '../../../../pages/admin/hooks/useAdminRestaurants';
 import type { ConfirmDialogConfig } from '@shared/store/useModalStore';
 import type { ReasonDialogConfig } from '../../../../pages/admin/useAdminDashboard';
+import { t } from '@shared/i18n/useTranslation';
 
 vi.mock('../../../../services/adminService', () => ({
   adminService: {
@@ -91,7 +92,7 @@ describe('useAdminRestaurants', () => {
     vi.mocked(adminService.getRestaurants).mockRejectedValue(new Error('x'));
     renderHook(() => useAdminRestaurants(baseArgs()));
     await waitFor(() =>
-      { expect(setActionError).toHaveBeenCalledWith('Не удалось загрузить рестораны'); },
+      { expect(setActionError).toHaveBeenCalledWith(t('admin.restaurants.errors.loadFailed')); },
     );
   });
 
@@ -109,7 +110,7 @@ describe('useAdminRestaurants', () => {
     await act(async () => {
       await result.current.loadRestaurantDetails('r1');
     });
-    expect(setActionError).toHaveBeenCalledWith('Не удалось загрузить детали ресторана');
+    expect(setActionError).toHaveBeenCalledWith(t('admin.restaurants.errors.detailsFailed'));
   });
 
   it('deletes restaurant on confirm', async () => {
@@ -135,7 +136,7 @@ describe('useAdminRestaurants', () => {
     await act(async () => {
       await lastConfirm?.onConfirm?.();
     });
-    expect(setActionError).toHaveBeenCalledWith('Не удалось удалить ресторан');
+    expect(setActionError).toHaveBeenCalledWith(t('admin.restaurants.errors.deleteFailed'));
   });
 
   it('approves restaurant directly', async () => {
@@ -149,7 +150,7 @@ describe('useAdminRestaurants', () => {
     await act(async () => {
       await result.current.handleApproveRestaurant('r1');
     });
-    expect(setActionSuccess).toHaveBeenCalledWith('Ресторан одобрен');
+    expect(setActionSuccess).toHaveBeenCalledWith(t('admin.restaurants.messages.approved'));
     expect(result.current.selectedRestaurant?.moderation_status).toBe('APPROVED');
   });
 
@@ -161,7 +162,7 @@ describe('useAdminRestaurants', () => {
     await act(async () => {
       await result.current.handleApproveRestaurant('r1');
     });
-    expect(setActionError).toHaveBeenCalledWith('Не удалось одобрить ресторан');
+    expect(setActionError).toHaveBeenCalledWith(t('admin.restaurants.errors.approveFailed'));
   });
 
   it('rejects restaurant with reason', async () => {
@@ -176,7 +177,7 @@ describe('useAdminRestaurants', () => {
       await lastReason?.onConfirm('bad photos');
     });
     expect(adminService.rejectRestaurant).toHaveBeenCalledWith('r1', 'bad photos');
-    expect(setActionSuccess).toHaveBeenCalledWith('Ресторан отклонён');
+    expect(setActionSuccess).toHaveBeenCalledWith(t('admin.restaurants.messages.rejected'));
   });
 
   it('reports reject failure', async () => {
@@ -188,7 +189,7 @@ describe('useAdminRestaurants', () => {
     await act(async () => {
       await lastReason?.onConfirm('bad');
     });
-    expect(setActionError).toHaveBeenCalledWith('Не удалось отклонить ресторан');
+    expect(setActionError).toHaveBeenCalledWith(t('admin.restaurants.errors.rejectFailed'));
   });
 
   it('batch approves', async () => {
@@ -201,7 +202,7 @@ describe('useAdminRestaurants', () => {
       await result.current.handleBatchRestaurants('approve');
     });
     expect(adminService.batchApproveRestaurants).toHaveBeenCalledWith(['r1', 'r2']);
-    expect(setActionSuccess).toHaveBeenCalledWith('Готово: 2 ресторанов');
+    expect(setActionSuccess).toHaveBeenCalledWith(t('admin.restaurants.messages.batchDone', { count: 2 }));
   });
 
   it('batch rejects with reason', async () => {
@@ -225,7 +226,7 @@ describe('useAdminRestaurants', () => {
     await act(async () => {
       await result.current.handleBatchRestaurants('approve');
     });
-    expect(setActionError).toHaveBeenCalledWith('Ошибка при массовом действии');
+    expect(setActionError).toHaveBeenCalledWith(t('admin.restaurants.errors.batchFailed'));
   });
 
   it('exposes search and page setters', () => {

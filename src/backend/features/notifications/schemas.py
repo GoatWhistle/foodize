@@ -13,6 +13,9 @@ class NotificationResponse(BaseModel):
     user_id: uuid.UUID
     title: str
     message: str
+    title_key: str | None = None
+    message_key: str | None = None
+    params: dict[str, object] = {}
     type: NotificationType
     is_read: bool
     created_at: datetime

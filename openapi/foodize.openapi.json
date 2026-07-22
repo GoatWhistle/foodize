@@ -2075,6 +2075,22 @@
               ],
               "title": "Date To"
             }
+          },
+          {
+            "name": "accept-language",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Accept-Language"
+            }
           }
         ],
         "responses": {
@@ -2161,6 +2177,22 @@
               ],
               "title": "Status"
             }
+          },
+          {
+            "name": "accept-language",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Accept-Language"
+            }
           }
         ],
         "responses": {
@@ -2192,6 +2224,29 @@
         ],
         "summary": "Export Restaurants Csv",
         "operationId": "export_restaurants_csv_api_v1_admin_export_restaurants_csv_get",
+        "security": [
+          {
+            "OAuth2PasswordBearerWithCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "accept-language",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Accept-Language"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -2200,13 +2255,18 @@
                 "schema": {}
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearerWithCookie": []
-          }
-        ]
+        }
       }
     },
     "/api/v1/admin/export/vendors.csv": {
@@ -2216,6 +2276,29 @@
         ],
         "summary": "Export Vendors Csv",
         "operationId": "export_vendors_csv_api_v1_admin_export_vendors_csv_get",
+        "security": [
+          {
+            "OAuth2PasswordBearerWithCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "accept-language",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Accept-Language"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -2224,13 +2307,18 @@
                 "schema": {}
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearerWithCookie": []
-          }
-        ]
+        }
       }
     },
     "/api/v1/admin/export/reviews.csv": {
@@ -2276,6 +2364,22 @@
                 }
               ],
               "title": "Max Rating"
+            }
+          },
+          {
+            "name": "accept-language",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Accept-Language"
             }
           }
         ],
@@ -2347,6 +2451,22 @@
               ],
               "title": "Date To"
             }
+          },
+          {
+            "name": "accept-language",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Accept-Language"
+            }
           }
         ],
         "responses": {
@@ -2416,6 +2536,22 @@
                 }
               ],
               "title": "Date To"
+            }
+          },
+          {
+            "name": "accept-language",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Accept-Language"
             }
           }
         ],
@@ -2487,6 +2623,22 @@
               ],
               "title": "Date To"
             }
+          },
+          {
+            "name": "accept-language",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Accept-Language"
+            }
           }
         ],
         "responses": {
@@ -2518,15 +2670,38 @@
         ],
         "summary": "Advisor Chat",
         "operationId": "advisor_chat_api_v1_ai_advisor_chat_post",
+        "security": [
+          {
+            "OAuth2PasswordBearerWithCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "accept-language",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Accept-Language"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/AdvisorChatRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -2547,12 +2722,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearerWithCookie": []
-          }
-        ]
+        }
       }
     },
     "/api/v1/ai/advisor/insights": {
@@ -2576,6 +2746,22 @@
               "type": "boolean",
               "default": false,
               "title": "Refresh"
+            }
+          },
+          {
+            "name": "accept-language",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Accept-Language"
             }
           }
         ],
@@ -2610,15 +2796,38 @@
         ],
         "summary": "Order Chat",
         "operationId": "order_chat_api_v1_ai_order_chat_post",
+        "security": [
+          {
+            "OAuth2PasswordBearerWithCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "accept-language",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Accept-Language"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/OrderChatRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -2639,12 +2848,7 @@
               }
             }
           }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearerWithCookie": []
-          }
-        ]
+        }
       }
     },
     "/api/v1/cart": {
@@ -3923,6 +4127,22 @@
               ],
               "title": "Restaurant Id"
             }
+          },
+          {
+            "name": "accept-language",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Accept-Language"
+            }
           }
         ],
         "responses": {
@@ -3976,6 +4196,22 @@
               ],
               "title": "Restaurant Id"
             }
+          },
+          {
+            "name": "accept-language",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Accept-Language"
+            }
           }
         ],
         "responses": {
@@ -4028,6 +4264,22 @@
                 }
               ],
               "title": "Restaurant Id"
+            }
+          },
+          {
+            "name": "accept-language",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Accept-Language"
             }
           }
         ],
@@ -4116,6 +4368,22 @@
               ],
               "title": "Restaurant Id"
             }
+          },
+          {
+            "name": "accept-language",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Accept-Language"
+            }
           }
         ],
         "responses": {
@@ -4202,6 +4470,22 @@
                 }
               ],
               "title": "Restaurant Id"
+            }
+          },
+          {
+            "name": "accept-language",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Accept-Language"
             }
           }
         ],
@@ -9351,6 +9635,34 @@
           "message": {
             "type": "string",
             "title": "Message"
+          },
+          "title_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title Key"
+          },
+          "message_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message Key"
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params",
+            "default": {}
           },
           "type": {
             "$ref": "#/components/schemas/NotificationType"

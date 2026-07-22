@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { BottomNav } from "../../components/BottomNav/BottomNav";
+import { t } from "@shared/i18n/useTranslation";
 const navigateMock = vi.fn();
 
 vi.mock("react-router-dom", async () => {
@@ -57,9 +58,9 @@ afterEach(() => {
 describe("BottomNav", () => {
   it("renders all three tabs", () => {
     renderAt();
-    expect(screen.getByText("Рестораны")).toBeInTheDocument();
-    expect(screen.getByText("Заказы")).toBeInTheDocument();
-    expect(screen.getByText("Профиль")).toBeInTheDocument();
+    expect(screen.getByText(t("profile.nav.restaurants"))).toBeInTheDocument();
+    expect(screen.getByText(t("profile.nav.orders"))).toBeInTheDocument();
+    expect(screen.getByText(t("profile.nav.profile"))).toBeInTheDocument();
   });
 
   it("shows no unread badge when count is 0", () => {
@@ -85,24 +86,24 @@ describe("BottomNav", () => {
       wasEverConnected: true,
     });
     renderAt();
-    expect(screen.getByTitle("Нет соединения с уведомлениями")).toBeInTheDocument();
+    expect(screen.getByTitle(t("profile.notifications.connectionIssue"))).toBeInTheDocument();
   });
 
   it("navigates to the orders tab on click", async () => {
     renderAt("/");
-    await userEvent.click(screen.getByText("Заказы"));
+    await userEvent.click(screen.getByText(t("profile.nav.orders")));
     expect(navigateMock).toHaveBeenCalledWith("/orders");
   });
 
   it("fires haptic feedback when navigating to an inactive tab", async () => {
     renderAt("/");
-    await userEvent.click(screen.getByText("Профиль"));
+    await userEvent.click(screen.getByText(t("profile.nav.profile")));
     expect(selectionChanged).toHaveBeenCalled();
   });
 
   it("does not fire haptic feedback when clicking the already-active tab", async () => {
     renderAt("/orders");
-    await userEvent.click(screen.getByText("Заказы"));
+    await userEvent.click(screen.getByText(t("profile.nav.orders")));
     expect(selectionChanged).not.toHaveBeenCalled();
   });
 });

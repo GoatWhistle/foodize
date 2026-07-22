@@ -3,6 +3,8 @@ import QRCode from 'qrcode';
 import { XIcon, DownloadSimpleIcon, QrCodeIcon } from '@phosphor-icons/react';
 import { useFocusTrap } from '@shared/hooks/useFocusTrap';
 import { logError } from '@shared/utils/logError';
+import { useTranslation } from '@shared/i18n/useTranslation';
+
 import type { Restaurant } from '@shared/types/models';
 
 type QRCodeType = 'site' | 'telegram';
@@ -16,6 +18,7 @@ interface QRCodeModalProps {
 }
 
 export const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCodeModalProps) => {
+  const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const contentRef = useFocusTrap<HTMLDivElement>({ onEscape: onClose });
   const [type, setType] = useState<QRCodeType>(initialType);
@@ -109,12 +112,12 @@ export const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCod
                 color: 'var(--text-1)',
               }}
             >
-              QR-код
+              {t('profile.qr.title')}
             </span>
           </div>
           <button
             onClick={onClose}
-            aria-label="Закрыть"
+            aria-label={t('common.actions.close')}
             style={{
               background: 'none',
               border: 'none',
@@ -135,7 +138,7 @@ export const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCod
             lineHeight: 1.5,
           }}
         >
-          При сканировании откроется страница{' '}
+          {t('profile.qr.hintPrefix')}
           <strong style={{ color: 'var(--text-1)' }}>{restaurant.name}</strong>
         </p>
 
@@ -148,9 +151,9 @@ export const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCod
           }}
         >
           {([
-            ['site', 'Сайт'],
-            ['telegram', 'Telegram'],
-          ] as [QRCodeType, string][]).map(([value, label]) => (
+            ['site', 'profile.qr.site'],
+            ['telegram', 'profile.qr.telegram'],
+          ] as [QRCodeType, string][]).map(([value, labelKey]) => (
             <button
               key={value}
               type="button"
@@ -160,7 +163,7 @@ export const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCod
               onClick={() => { setType(value); }}
               style={{ height: 36, fontSize: "var(--text-sm)" }}
             >
-              {label}
+              {t(labelKey)}
             </button>
           ))}
         </div>
@@ -197,8 +200,7 @@ export const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCod
               textAlign: 'left',
             }}
           >
-            Для Telegram QR задайте VITE_BOT_USERNAME. QR должен вести в бота
-            как /start restaurant_{publicId}.
+            {t('profile.qr.botMissing', { id: publicId })}
           </p>
         )}
 
@@ -218,7 +220,7 @@ export const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCod
           disabled={!deepLink}
         >
           <DownloadSimpleIcon size={16} weight="bold" />
-          Скачать PNG
+          {t('profile.qr.download')}
         </button>
       </div>
     </div>

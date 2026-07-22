@@ -2,12 +2,15 @@ import type { ChangeEvent, Dispatch, SetStateAction } from 'react';
 import { DownloadSimpleIcon } from '@phosphor-icons/react';
 import { Pagination } from '@shared/components/Pagination/Pagination';
 import { EmptyState } from '@shared/components/EmptyState/EmptyState';
-import { PERMISSION_PRESET_RU } from '@shared/utils/permissions';
+import { permissionPresetName } from '@shared/utils/permissions';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { AuthUser } from '@shared/store/createAuthStore';
 import type { adminService as AdminService } from '../../../services/adminService';
 import type { AdminUser, UserFilters } from '../hooks/useAdminUsers';
 import { AdminUserCard } from './components/AdminUserCard';
 import styles from './components/adminTable.module.css';
+
+const ROLE_PRESETS = ['VENDOR', 'STAFF', 'ADMIN'] as const;
 
 export interface AdminUsersTabProps {
   users: AdminUser[];
@@ -52,6 +55,7 @@ export function AdminUsersTab({
   adminService,
   PAGE_SIZE,
 }: AdminUsersTabProps) {
+  const { t } = useTranslation();
   const isEmpty = !Array.isArray(users) || users.length === 0;
 
   if (usersLoading && isEmpty) {
@@ -72,7 +76,7 @@ export function AdminUsersTab({
       <div className={styles['wideFilterGrid']}>
         <input
           className={`form-input ${styles['filterControl']}`}
-          placeholder="Поиск по имени или телефону"
+          placeholder={t('admin.users.searchPlaceholder')}
           value={userSearchRaw}
           onChange={(event: ChangeEvent<HTMLInputElement>) => {
             setUsersPage(1);
@@ -87,14 +91,12 @@ export function AdminUsersTab({
             setUserFilters((prev) => ({ ...prev, role: event.target.value }));
           }}
         >
-          <option value="">Все роли</option>
-          {Object.entries(PERMISSION_PRESET_RU)
-            .filter(([val]) => val !== 'CUSTOMER')
-            .map(([val, label]) => (
-              <option key={val} value={val}>
-                {label}
-              </option>
-            ))}
+          <option value="">{t('admin.users.allRoles')}</option>
+          {ROLE_PRESETS.map((preset) => (
+            <option key={preset} value={preset}>
+              {permissionPresetName(preset)}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -125,13 +127,13 @@ export function AdminUsersTab({
               ); }
             }
           />
-          Выбрать все
+          {t('admin.common.selectAll')}
         </label>
         <button
           className="btn btn-secondary btn-sm"
           disabled={exportLoading}
           onClick={() =>
-            { handleExport(adminService.exportUsersCSV, `пользователи_${todayStr}.csv`); }
+            { handleExport(adminService.exportUsersCSV, t('admin.exportFiles.users', { date: todayStr })); }
           }
         >
           {exportLoading ? '...' : <><DownloadSimpleIcon size={16} weight="bold" /> CSV</>}
@@ -159,8 +161,8 @@ export function AdminUsersTab({
 
       {isEmpty && (
         <EmptyState
-          title="Пользователей пока нет"
-          subtitle="Для выбранных фильтров нет результатов"
+          title={t('admin.users.emptyTitle')}
+          subtitle={t('admin.common.emptySubtitle')}
         />
       )}
 

@@ -1,4 +1,5 @@
 import { StarIcon, ForkKnifeIcon, HeartIcon, ShareNetworkIcon, InfoIcon } from '@phosphor-icons/react';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { Restaurant } from '@shared/types/models';
 
 interface RestaurantHeroProps {
@@ -24,6 +25,7 @@ export function RestaurantHero({
   onOpenShare,
   onToggleFavorite,
 }: RestaurantHeroProps) {
+  const { t } = useTranslation();
   return (
     <div className="restaurant-hero">
       {restaurantView.photo_url ? (
@@ -61,12 +63,12 @@ export function RestaurantHero({
             style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--on-photo-fill)', backdropFilter: 'blur(8px)', border: '1px solid var(--on-photo-line)', color: 'var(--on-photo)' }}
           >
             <InfoIcon size={14} weight="bold" />
-            Инфо
+            {t('catalog.restaurantPage.info')}
           </button>
           <button
             onClick={onOpenShare}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: '50%', background: 'var(--on-photo-fill)', backdropFilter: 'blur(8px)', border: '1px solid var(--on-photo-line)', color: 'var(--on-photo)', cursor: 'pointer', transition: 'all 0.15s', flexShrink: 0 }}
-            aria-label="Поделиться рестораном"
+            aria-label={t('catalog.restaurantPage.share')}
           >
             <ShareNetworkIcon size={16} weight="bold" />
           </button>
@@ -74,7 +76,7 @@ export function RestaurantHero({
             <button
               onClick={onToggleFavorite}
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: '50%', background: isFav ? 'var(--color-error-bg)' : 'var(--on-photo-fill)', backdropFilter: 'blur(8px)', border: isFav ? '1px solid var(--error)' : '1px solid var(--on-photo-line)', color: isFav ? 'var(--error)' : 'var(--on-photo)', cursor: 'pointer', transition: 'all 0.15s', flexShrink: 0 }}
-              aria-label={isFav ? 'Убрать из избранного' : 'В избранное'}
+              aria-label={isFav ? t('catalog.restaurantCard.removeFromFavorites') : t('catalog.restaurantCard.addToFavorites')}
               aria-pressed={isFav}
             >
               <HeartIcon size={16} weight={isFav ? 'fill' : 'regular'} />

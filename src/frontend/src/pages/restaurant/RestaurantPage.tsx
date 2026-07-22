@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
-import { CATEGORY_RU } from '@shared/utils/locales';
+import { categoryLabel } from '@shared/utils/locales';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { Restaurant } from '@shared/types/models';
 import { BriefcaseIcon, ListIcon } from '@phosphor-icons/react';
 import { useCartStore } from '../../store/useCartStore';
@@ -23,6 +24,7 @@ import { RestaurantHero } from './components/RestaurantHero';
 import type { CartLineOption } from '@shared/store/createCartStore';
 
 export const RestaurantPage = () => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const location = useLocation();
   const locationState = location.state as { restaurant?: Restaurant } | null;
@@ -97,7 +99,7 @@ export const RestaurantPage = () => {
       setShowStaffModal(false);
       setStaffMessage('');
     } catch {
-      setStaffError('Ошибка при отправке заявки');
+      setStaffError(t('catalog.staffModal.failed'));
     } finally {
       setStaffLoading(false);
     }
@@ -122,7 +124,7 @@ export const RestaurantPage = () => {
           <div
             style={{ padding: '12px 16px', background: 'var(--color-error-bg)', border: '1px solid var(--error)', borderRadius: 'var(--r-md)', color: 'var(--error)', fontSize: "var(--text-base)", fontWeight: 800, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}
           >
-            Заведение временно закрыто и не принимает заказы
+            {t('catalog.restaurantPage.closedBannerWeb')}
           </div>
         )}
         <div className="menu-categories-scroll">
@@ -134,7 +136,7 @@ export const RestaurantPage = () => {
               style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
             >
               {cat === 'ALL' ? <ListIcon size={14} /> : getCategoryIcon(cat, { size: 16 })}
-              {cat === 'ALL' ? 'Все' : (CATEGORY_RU as Record<string, string>)[cat] || cat}
+              {cat === 'ALL' ? t('catalog.restaurantPage.allCategories') : categoryLabel(cat)}
             </button>
           ))}
         </div>
@@ -168,7 +170,7 @@ export const RestaurantPage = () => {
         {restaurantView.is_hiring && (
           <button className="hiring-hint" onClick={() => { setShowStaffModal(true); }}>
             <BriefcaseIcon size={14} weight="bold" />
-            Заведение ищет сотрудников — откликнуться
+            {t('catalog.restaurantPage.hiringHint')}
           </button>
         )}
       </div>
@@ -221,7 +223,7 @@ export const RestaurantPage = () => {
           splitOwnReviews
           showPagination
           showRatingInHeader
-          successText="Отзыв успешно сохранён"
+          successText={t('catalog.reviews.saved')}
         />
       )}
 

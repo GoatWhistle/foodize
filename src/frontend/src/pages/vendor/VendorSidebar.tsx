@@ -11,6 +11,7 @@ import {
 } from '@phosphor-icons/react';
 import type { Dispatch, SetStateAction } from 'react';
 import { ROUTES } from '../../constants/routes';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { Restaurant } from '@shared/types/models';
 import type { QrType } from './useVendorDashboard';
 
@@ -24,14 +25,14 @@ interface VendorSidebarProps {
 }
 
 const TABS = [
-  { id: 'menu', label: 'Меню', icon: <ForkKnifeIcon size={18} /> },
-  { id: 'orders', label: 'Заказы', icon: <PackageIcon size={18} /> },
-  { id: 'analytics', label: 'Аналитика', icon: <ChartLineUpIcon size={18} /> },
-  { id: 'ai', label: 'ИИ-аналитик', icon: <ChartLineUpIcon size={18} /> },
-  { id: 'promos', label: 'Промокоды', icon: <TagIcon size={18} /> },
-  { id: 'schedule', label: 'Расписание', icon: <ClockIcon size={18} /> },
-  { id: 'staff', label: 'Сотрудники', icon: <UsersIcon size={18} /> },
-  { id: 'settings', label: 'Настройки', icon: <GearIcon size={18} /> },
+  { id: 'menu', labelKey: 'vendor.sidebar.tabs.menu', icon: <ForkKnifeIcon size={18} /> },
+  { id: 'orders', labelKey: 'vendor.sidebar.tabs.orders', icon: <PackageIcon size={18} /> },
+  { id: 'analytics', labelKey: 'vendor.sidebar.tabs.analytics', icon: <ChartLineUpIcon size={18} /> },
+  { id: 'ai', labelKey: 'vendor.sidebar.tabs.ai', icon: <ChartLineUpIcon size={18} /> },
+  { id: 'promos', labelKey: 'vendor.sidebar.tabs.promos', icon: <TagIcon size={18} /> },
+  { id: 'schedule', labelKey: 'vendor.sidebar.tabs.schedule', icon: <ClockIcon size={18} /> },
+  { id: 'staff', labelKey: 'vendor.sidebar.tabs.staff', icon: <UsersIcon size={18} /> },
+  { id: 'settings', labelKey: 'vendor.sidebar.tabs.settings', icon: <GearIcon size={18} /> },
 ];
 
 export function VendorSidebar({
@@ -42,6 +43,7 @@ export function VendorSidebar({
   setQrType,
   setShowQr,
 }: VendorSidebarProps) {
+  const { t } = useTranslation();
   return (
     <div
       className="admin-sidebar"
@@ -88,7 +90,7 @@ export function VendorSidebar({
         </div>
       )}
 
-      <div role="tablist" aria-label="Разделы вендора" aria-orientation="vertical" style={{ display: 'contents' }}>
+      <div role="tablist" aria-label={t('vendor.sidebar.ariaLabel')} aria-orientation="vertical" style={{ display: 'contents' }}>
         {TABS.map((tab) => (
           <button
             key={tab.id}
@@ -112,7 +114,7 @@ export function VendorSidebar({
             }}
           >
             {tab.icon}
-            {tab.label}
+            {t(tab.labelKey)}
           </button>
         ))}
       </div>
@@ -144,7 +146,7 @@ export function VendorSidebar({
           }}
         >
           <MonitorPlayIcon size={18} weight="bold" />
-          Открыть табло
+          {t('vendor.sidebar.openDisplayBoard')}
         </a>
         <button
           className="btn btn-secondary"
@@ -163,7 +165,7 @@ export function VendorSidebar({
           }}
         >
           <QrCodeIcon size={18} />
-          QR для сайта
+          {t('vendor.sidebar.qrSite')}
         </button>
         <button
           className="btn btn-secondary"
@@ -182,7 +184,7 @@ export function VendorSidebar({
           }}
         >
           <QrCodeIcon size={18} />
-          QR для Telegram
+          {t('vendor.sidebar.qrTelegram')}
         </button>
       </div>
     </div>

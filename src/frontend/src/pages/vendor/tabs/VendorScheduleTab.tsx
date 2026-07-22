@@ -1,5 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react';
-import { WEEKDAYS_SHORT_RU } from '@shared/utils/datetime';
+import { weekdaysShort } from '@shared/utils/datetime';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { WorkingHoursRow } from '../hooks/useVendorRestaurants';
 
 interface ListSkeletonProps {
@@ -35,6 +36,8 @@ export function VendorScheduleTab({
   workingHoursError,
   handleSaveWorkingHours,
 }: VendorScheduleTabProps) {
+  const { t } = useTranslation();
+  const weekdays = weekdaysShort();
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div
@@ -44,17 +47,17 @@ export function VendorScheduleTab({
           alignItems: 'center',
         }}
       >
-        <span style={{ fontWeight: 700, fontSize: "var(--text-base)" }}>Расписание работы</span>
+        <span style={{ fontWeight: 700, fontSize: "var(--text-base)" }}>{t('vendor.schedule.sectionTitle')}</span>
         <button
           className="btn btn-primary btn-sm"
           onClick={handleSaveWorkingHours}
           disabled={workingHoursLoading}
         >
           {workingHoursSaved
-            ? 'Сохранено'
+            ? t('common.states.saved')
             : workingHoursLoading
-              ? 'Сохранение...'
-              : 'Сохранить'}
+              ? t('vendor.schedule.saving')
+              : t('common.actions.save')}
         </button>
       </div>
 
@@ -88,7 +91,7 @@ export function VendorScheduleTab({
               <span
                 style={{ fontWeight: 700, fontSize: "var(--text-base)", color: 'var(--text-2)' }}
               >
-                {WEEKDAYS_SHORT_RU[row.day_of_week]}
+                {weekdays[row.day_of_week]}
               </span>
               <input
                 className="form-input"
@@ -114,7 +117,7 @@ export function VendorScheduleTab({
                 }
                 style={{ padding: '6px 8px', fontSize: "var(--text-base)" }}
               />
-              <label className="form-check" style={{ margin: 0, whiteSpace: 'nowrap' }} title="Выходной">
+              <label className="form-check" style={{ margin: 0, whiteSpace: 'nowrap' }} title={t('vendor.schedule.dayOff')}>
                 <input
                   type="checkbox"
                   checked={row.is_closed}
@@ -127,7 +130,7 @@ export function VendorScheduleTab({
                   }
                 />
                 <span className="form-check-label" style={{ fontSize: "var(--text-sm)" }}>
-                  Вых.
+                  {t('vendor.schedule.dayOffShort')}
                 </span>
               </label>
             </div>

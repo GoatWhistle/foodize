@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 import { ReviewsModal } from "@shared/components/ReviewsModal/ReviewsModal";
 import type { Review } from "@shared/types/models";
+import { t } from "@shared/i18n/useTranslation";
 
 const makeReview = (over: Partial<Review> = {}): Review => ({
   id: "r1",
@@ -49,19 +50,19 @@ describe("ReviewsModal", () => {
   it("renders the modal dialog with a title", () => {
     render(<ReviewsModal {...baseProps()} />);
     expect(screen.getByRole("dialog")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Отзывы" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: t("catalog.reviews.title") })).toBeInTheDocument();
   });
 
   it("shows the empty state when there are no reviews", () => {
     render(<ReviewsModal {...baseProps()} />);
-    expect(screen.getByText("Отзывов пока нет")).toBeInTheDocument();
-    expect(screen.getByText("Будьте первым, кто оставит отзыв!")).toBeInTheDocument();
+    expect(screen.getByText(t("catalog.reviews.emptyTitle"))).toBeInTheDocument();
+    expect(screen.getByText(t("catalog.reviews.emptyHint"))).toBeInTheDocument();
   });
 
   it("shows a spinner while loading with no reviews", () => {
     const { container } = render(<ReviewsModal {...baseProps({ reviewsLoading: true })} />);
     expect(container.querySelector(".spinner")).toBeInTheDocument();
-    expect(screen.queryByText("Отзывов пока нет")).not.toBeInTheDocument();
+    expect(screen.queryByText(t("catalog.reviews.emptyTitle"))).not.toBeInTheDocument();
   });
 
   it("renders the reviews list when populated", () => {
@@ -79,7 +80,7 @@ describe("ReviewsModal", () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
     render(<ReviewsModal {...baseProps({ onClose })} />);
-    await user.click(screen.getByRole("button", { name: "Закрыть" }));
+    await user.click(screen.getByRole("button", { name: t("common.actions.close") }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
@@ -93,14 +94,14 @@ describe("ReviewsModal", () => {
 
   it("shows the success message when reviewSuccess is set", () => {
     render(<ReviewsModal {...baseProps({ reviewSuccess: true })} />);
-    expect(screen.getByText("Отзыв успешно опубликован")).toBeInTheDocument();
+    expect(screen.getByText(t("catalog.reviews.published"))).toBeInTheDocument();
   });
 
   it("submits the always-open form and calls onSubmit", async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn();
     render(<ReviewsModal {...baseProps({ onSubmit })} />);
-    await user.click(screen.getByRole("button", { name: "Опубликовать" }));
+    await user.click(screen.getByRole("button", { name: t("catalog.reviews.submit") }));
     expect(onSubmit).toHaveBeenCalledTimes(1);
   });
 
@@ -108,7 +109,7 @@ describe("ReviewsModal", () => {
     const user = userEvent.setup();
     const setReviewForm = vi.fn();
     render(<ReviewsModal {...baseProps({ setReviewForm })} />);
-    await user.type(screen.getByPlaceholderText("Ваш отзыв..."), "Х");
+    await user.type(screen.getByPlaceholderText(t("catalog.reviews.textPlaceholder")), "Х");
     expect(setReviewForm).toHaveBeenCalledWith({ rating: 5, text: "Х" });
   });
 
@@ -134,11 +135,11 @@ describe("ReviewsModal", () => {
         setReviewFormOpen={setReviewFormOpen}
       />,
     );
-    const openButton = screen.getByRole("button", { name: /Оставить отзыв/ });
+    const openButton = screen.getByRole("button", { name: t("catalog.reviews.leave") });
     expect(openButton).toBeInTheDocument();
     await user.click(openButton);
     expect(setReviewFormOpen).toHaveBeenCalledWith(true);
-    expect(screen.queryByPlaceholderText("Ваш отзыв...")).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(t("catalog.reviews.textPlaceholder"))).not.toBeInTheDocument();
   });
 
   it("submits the editable form with a success callback payload", async () => {
@@ -154,7 +155,7 @@ describe("ReviewsModal", () => {
         myReview={makeReview({ id: "mine", text: "старый" })}
       />,
     );
-    await user.click(screen.getByRole("button", { name: "Сохранить" }));
+    await user.click(screen.getByRole("button", { name: t("common.actions.save") }));
     expect(onSubmit).toHaveBeenCalledWith(
       expect.objectContaining({ onSuccess: expect.any(Function) as unknown }),
     );
@@ -173,7 +174,7 @@ describe("ReviewsModal", () => {
     );
     expect(screen.getByText("Я")).toBeInTheDocument();
     expect(screen.getByText("Другой")).toBeInTheDocument();
-    expect(screen.getByText("Вы")).toBeInTheDocument();
+    expect(screen.getByText(t("catalog.reviews.ownBadge"))).toBeInTheDocument();
   });
 
   it("renders pagination when showPagination and multiple pages exist", () => {
@@ -208,7 +209,7 @@ describe("ReviewsModal", () => {
         myReview={makeReview({ id: "mine", text: "старый" })}
       />,
     );
-    const formHeadTitle = screen.getByText("Редактировать отзыв");
+    const formHeadTitle = screen.getByText(t("catalog.reviews.editTitle"));
     const formHead = formHeadTitle.parentElement as HTMLElement;
     const formHeadClose = formHead.querySelector("button") as HTMLButtonElement;
     await user.click(formHeadClose);
@@ -227,7 +228,7 @@ describe("ReviewsModal", () => {
       />,
     );
     expect(
-      screen.getByRole("button", { name: /Редактировать/ }),
+      screen.getByRole("button", { name: t("catalog.reviews.edit") }),
     ).toBeInTheDocument();
   });
 
@@ -247,7 +248,7 @@ describe("ReviewsModal", () => {
         myReview={makeReview({ id: "mine" })}
       />,
     );
-    await user.click(screen.getByRole("button", { name: "Сохранить" }));
+    await user.click(screen.getByRole("button", { name: t("common.actions.save") }));
     expect(setReviewFormOpen).toHaveBeenCalledWith(false);
   });
 
@@ -255,7 +256,7 @@ describe("ReviewsModal", () => {
     const user = userEvent.setup();
     const setReviewForm = vi.fn();
     render(<ReviewsModal {...baseProps({ setReviewForm })} />);
-    await user.click(screen.getByRole("button", { name: "Оценка 4" }));
+    await user.click(screen.getByRole("button", { name: t("catalog.reviews.ratingAria", { value: 4 }) }));
     expect(setReviewForm).toHaveBeenCalledWith({ rating: 4, text: "" });
   });
 
@@ -275,7 +276,7 @@ describe("ReviewsModal", () => {
         myReview={myReview}
       />,
     );
-    await user.click(screen.getByRole("button", { name: "Редактировать отзыв" }));
+    await user.click(screen.getByRole("button", { name: t("catalog.reviews.editAria") }));
     expect(setReviewFormOpen).toHaveBeenCalledWith(true);
   });
 
@@ -292,7 +293,7 @@ describe("ReviewsModal", () => {
         })}
       />,
     );
-    await user.click(screen.getByRole("button", { name: "Удалить отзыв" }));
+    await user.click(screen.getByRole("button", { name: t("catalog.reviews.deleteAria") }));
     expect(onDeleteWithConfirm).toHaveBeenCalledWith("mine");
   });
 });

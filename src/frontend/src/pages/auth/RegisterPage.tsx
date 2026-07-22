@@ -8,19 +8,7 @@ import { translateApiError } from '@shared/utils/translateApiError';
 import { useShallow } from 'zustand/react/shallow';
 import { formatPhoneNumber, extractPhoneNumber } from '@shared/utils/phone';
 import { AuthVisual } from './AuthVisual';
-
-const REGISTER_VISUAL_TITLE = (
-  <>
-    Начни
-    <br />
-    своё <em>вкусное</em>
-    <br />
-    путешествие
-  </>
-);
-
-const REGISTER_VISUAL_SUBTITLE =
-  'Зарегистрируйтесь за 30 секунд и откройте доступ к лучшим заведениям города.';
+import { t, useTranslation } from '@shared/i18n/useTranslation';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_LETTER_RE = /[A-Za-z]/;
@@ -37,17 +25,27 @@ interface RegistrationInput {
 }
 
 const validateRegistration = ({ name, cleanPhone, email, password, agreed }: RegistrationInput): string => {
-  if (!name.trim()) return 'Введите имя';
-  if (cleanPhone.length < MIN_PHONE_DIGITS) return 'Введите корректный номер телефона';
-  if (email && !EMAIL_RE.test(email)) return 'Введите корректный email';
-  if (password.length < MIN_PASSWORD_LENGTH) return 'Пароль должен быть не менее 8 символов';
-  if (!PASSWORD_LETTER_RE.test(password)) return 'Пароль должен содержать хотя бы одну латинскую букву';
-  if (!PASSWORD_DIGIT_OR_SYMBOL_RE.test(password)) return 'Пароль должен содержать хотя бы одну цифру или спецсимвол';
-  if (!agreed) return 'Примите условия использования и политику конфиденциальности';
+  if (!name.trim()) return t('auth.errors.enterName');
+  if (cleanPhone.length < MIN_PHONE_DIGITS) return t('auth.errors.invalidPhone');
+  if (email && !EMAIL_RE.test(email)) return t('auth.errors.invalidEmail');
+  if (password.length < MIN_PASSWORD_LENGTH) return t('auth.errors.passwordTooShort');
+  if (!PASSWORD_LETTER_RE.test(password)) return t('auth.errors.passwordNeedsLetter');
+  if (!PASSWORD_DIGIT_OR_SYMBOL_RE.test(password)) return t('auth.errors.passwordNeedsDigit');
+  if (!agreed) return t('auth.errors.acceptTos');
   return '';
 };
 
 export const RegisterPage = () => {
+  const { t: translate } = useTranslation();
+  const registerVisualTitle = (
+    <>
+      {translate('auth.visual.registerTitleLine1')}
+      <br />
+      {translate('auth.visual.registerTitleLine2')} <em>{translate('auth.visual.registerTitleAccent')}</em>
+      <br />
+      {translate('auth.visual.registerTitleLine3')}
+    </>
+  );
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -81,7 +79,7 @@ export const RegisterPage = () => {
       await login({ phone_number: cleanPhone, password });
       void navigate(ROUTES.HOME);
     } catch (err) {
-      setError(translateApiError(err, 'Ошибка при регистрации'));
+      setError(translateApiError(err, translate('auth.errors.registrationFailed')));
       setPassword('');
     } finally {
       setIsLoading(false);
@@ -90,7 +88,7 @@ export const RegisterPage = () => {
 
   return (
     <div className="auth-page">
-      <AuthVisual title={REGISTER_VISUAL_TITLE} subtitle={REGISTER_VISUAL_SUBTITLE} />
+      <AuthVisual title={registerVisualTitle} subtitle={translate('auth.visual.registerSubtitle')} />
 
       <div className="auth-form-side">
         <div className="auth-card">
@@ -98,8 +96,8 @@ export const RegisterPage = () => {
             <FoodizeLogo size={30} />
           </div>
 
-          <h1 className="auth-heading">Создать аккаунт</h1>
-          <p className="auth-subheading">Быстро и без лишних шагов</p>
+          <h1 className="auth-heading">{translate('auth.headings.register')}</h1>
+          <p className="auth-subheading">{translate('auth.subheadings.register')}</p>
 
           {error && (
             <div className="form-error" style={{ marginBottom: 16 }}>
@@ -116,13 +114,13 @@ export const RegisterPage = () => {
           >
             <div className="form-group">
               <label className="form-label" htmlFor="reg-name">
-                Имя
+                {translate('auth.placeholders.name')}
               </label>
               <input
                 id="reg-name"
                 className="form-input"
                 type="text"
-                placeholder="Ваше имя"
+                placeholder={translate('auth.placeholders.yourName')}
                 value={name}
                 onChange={(e) => { setName(e.target.value); }}
                 required
@@ -133,13 +131,13 @@ export const RegisterPage = () => {
 
             <div className="form-group">
               <label className="form-label" htmlFor="reg-phone">
-                Телефон
+                {translate('auth.fields.phone')}
               </label>
               <input
                 id="reg-phone"
                 className="form-input"
                 type="tel"
-                placeholder="+7 (999) 000-00-00"
+                placeholder={translate('auth.placeholders.phone')}
                 value={phone}
                 onChange={(e) => { setPhone(formatPhoneNumber(e.target.value)); }}
                 required
@@ -149,13 +147,13 @@ export const RegisterPage = () => {
 
             <div className="form-group">
               <label className="form-label" htmlFor="reg-email">
-                Email (необязательно)
+                {translate('auth.fields.emailOptional')}
               </label>
               <input
                 id="reg-email"
                 className="form-input"
                 type="email"
-                placeholder="mail@foodize.ru"
+                placeholder={translate('auth.placeholders.email')}
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); }}
                 autoComplete="email"
@@ -164,13 +162,13 @@ export const RegisterPage = () => {
 
             <div className="form-group">
               <label className="form-label" htmlFor="reg-password">
-                Пароль
+                {translate('auth.fields.password')}
               </label>
               <input
                 id="reg-password"
                 className="form-input"
                 type="password"
-                placeholder="Мин. 8 символов, латинская буква и цифра"
+                placeholder={translate('auth.placeholders.passwordHint')}
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); }}
                 required
@@ -183,18 +181,18 @@ export const RegisterPage = () => {
               <input
                 type="checkbox"
                 className="auth-tos-checkbox"
-                aria-label="Принять условия использования и политику конфиденциальности"
+                aria-label={translate('auth.tos.checkboxLabel')}
                 checked={agreed}
                 onChange={(e) => { setAgreed(e.target.checked); }}
               />
               <span>
-                Я принимаю{' '}
+                {translate('auth.tos.prefix')}{' '}
                 <Link to="/legal/terms" target="_blank" rel="noopener noreferrer">
-                  Условия использования
+                  {translate('auth.tos.terms')}
                 </Link>{' '}
-                и{' '}
+                {translate('auth.tos.and')}{' '}
                 <Link to="/legal/privacy" target="_blank" rel="noopener noreferrer">
-                  Политику конфиденциальности
+                  {translate('auth.tos.privacy')}
                 </Link>
               </span>
             </label>
@@ -215,16 +213,16 @@ export const RegisterPage = () => {
                   style={{ display: 'flex', alignItems: 'center', gap: 10 }}
                 >
                   <span className="spinner" style={{ width: 18, height: 18 }} />
-                  Создаём аккаунт...
+                  {translate('auth.buttons.creatingAccount')}
                 </span>
               ) : (
-                'Создать аккаунт'
+                translate('auth.buttons.createAccount')
               )}
             </button>
           </form>
 
           <div className="auth-footer">
-            Уже есть аккаунт? <Link to={ROUTES.LOGIN}>Войти</Link>
+            {translate('auth.footer.haveAccount')} <Link to={ROUTES.LOGIN}>{translate('auth.footer.loginLink')}</Link>
           </div>
         </div>
       </div>

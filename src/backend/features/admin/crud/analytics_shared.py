@@ -2,28 +2,21 @@ from datetime import date, datetime, timedelta
 from typing import Any, cast
 
 from features.admin.schemas import FinanceSeriesPoint
-from shared.enums.category import Category
-from shared.enums.order_status import OrderStatus
+from shared.i18n import DEFAULT_LANGUAGE, translate
 
-CATEGORY_RU = {
-    Category.SHAURMA.value: "Шаурма",
-    Category.BURGER.value: "Бургеры",
-    Category.PIZZA.value: "Пицца",
-    Category.SUSHI.value: "Суши и Роллы",
-    Category.DRINK.value: "Напитки",
-    Category.SNACK.value: "Снеки",
-    Category.DESSERT.value: "Десерты",
-    Category.SOUP.value: "Супы",
-    Category.SALAD.value: "Салаты",
-}
 
-STATUS_RU = {
-    OrderStatus.PENDING.value: "Ожидается",
-    OrderStatus.ACCEPTED.value: "Принят",
-    OrderStatus.READY.value: "Готово",
-    OrderStatus.COMPLETED.value: "Завершен",
-    OrderStatus.CANCELLED.value: "Отменен",
-}
+def translate_category(value: str | None, language: str = DEFAULT_LANGUAGE) -> str:
+    if not value:
+        return ""
+    translated = translate(f"reports.category.{value}", language)
+    return value if translated == f"reports.category.{value}" else translated
+
+
+def translate_status(value: str | None, language: str = DEFAULT_LANGUAGE) -> str:
+    if not value:
+        return ""
+    translated = translate(f"reports.orderStatus.{value}", language)
+    return value if translated == f"reports.orderStatus.{value}" else translated
 
 
 def finance_points(

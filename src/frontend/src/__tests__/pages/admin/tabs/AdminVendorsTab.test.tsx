@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { AdminVendorsTab } from '../../../../pages/admin/tabs/AdminVendorsTab';
 import type { AdminVendor } from '../../../../pages/admin/hooks/useAdminVendors';
 import type { adminService as adminServiceType } from '../../../../services/adminService';
+import { t } from '@shared/i18n/useTranslation';
 
 const exportVendorsCSV = vi.fn().mockResolvedValue(new Blob());
 const adminService = { exportVendorsCSV } as unknown as typeof adminServiceType;
@@ -62,27 +63,31 @@ describe('AdminVendorsTab', () => {
     renderTab();
     expect(screen.getByText('Vendor One')).toBeInTheDocument();
     expect(screen.getByText('+700000001')).toBeInTheDocument();
-    expect(screen.getByText('Вендор без имени')).toBeInTheDocument();
-    expect(screen.getByText('Нет телефона')).toBeInTheDocument();
-    expect(screen.getByText('3 заведений')).toBeInTheDocument();
-    expect(screen.getByText('0 заведений')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.vendors.noName'))).toBeInTheDocument();
+    expect(screen.getByText(t('admin.vendors.noPhone'))).toBeInTheDocument();
+    expect(
+      screen.getByText(t('admin.vendors.restaurantsCount', { count: 3 })),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(t('admin.vendors.restaurantsCount', { count: 0 })),
+    ).toBeInTheDocument();
   });
 
   it('shows skeleton when loading and empty', () => {
     renderTab({ vendors: [], vendorsLoading: true });
     expect(screen.queryByText('Vendor One')).not.toBeInTheDocument();
-    expect(screen.queryByText('Вендоров пока нет')).not.toBeInTheDocument();
+    expect(screen.queryByText(t('admin.vendors.emptyTitle'))).not.toBeInTheDocument();
   });
 
   it('shows empty state when no vendors and not loading', () => {
     renderTab({ vendors: [], vendorsTotal: 0 });
-    expect(screen.getByText('Вендоров пока нет')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.vendors.emptyTitle'))).toBeInTheDocument();
   });
 
   it('updates search and resets page on typing', async () => {
     const user = userEvent.setup();
     renderTab();
-    await user.type(screen.getByPlaceholderText('Вендор или телефон'), 'a');
+    await user.type(screen.getByPlaceholderText(t('admin.vendors.searchPlaceholder')), 'a');
     expect(setVendorsPage).toHaveBeenCalledWith(1);
     expect(setVendorSearchRaw).toHaveBeenCalled();
   });
@@ -166,7 +171,10 @@ describe('AdminVendorsTab', () => {
     const user = userEvent.setup();
     renderTab();
     await user.click(screen.getByRole('button', { name: /CSV/i }));
-    expect(handleExport).toHaveBeenCalledWith(exportVendorsCSV, 'вендоры_2026-07-18.csv');
+    expect(handleExport).toHaveBeenCalledWith(
+      exportVendorsCSV,
+      t('admin.exportFiles.vendors', { date: '2026-07-18' }),
+    );
   });
 
   it('disables export button and shows spinner when exportLoading', () => {
@@ -200,7 +208,7 @@ describe('AdminVendorsTab', () => {
   it('paginates when multiple pages', async () => {
     const user = userEvent.setup();
     renderTab({ vendorsTotal: 60 });
-    await user.click(screen.getByRole('button', { name: 'Перейти на страницу 2' }));
+    await user.click(screen.getByRole('button', { name: t('catalog.pagination.goToPage', { page: 2 }) }));
     expect(setVendorsPage).toHaveBeenCalledWith(2);
   });
 });

@@ -5,6 +5,9 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { RestaurantPage } from '../../pages/restaurant/RestaurantPage';
 import { useCartStore } from '../../store/useCartStore';
 import type { MenuItem } from '@shared/types/models';
+import { t } from '@shared/i18n/useTranslation';
+import { categoryLabel } from '@shared/utils/locales';
+import { formatPrice } from '@shared/utils/price';
 
 type RestaurantState = {
   fetchMenu: () => void;
@@ -156,10 +159,10 @@ describe('RestaurantPage', () => {
 
     expect(await screen.findByText('Classic Shaurma')).toBeInTheDocument();
     await user.click(
-      screen.getByRole('button', { name: /Открыть Classic Shaurma/ })
+      screen.getByRole('button', { name: t('catalog.menuItem.openAria', { name: 'Classic Shaurma' }) })
     );
     await user.click(screen.getByText('Добавить мясо'));
-    await user.click(screen.getByText(/Добавить · 380 ₽/));
+    await user.click(screen.getByText(t('catalog.product.add', { total: formatPrice(380) })));
 
     expect(addToCartMock).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'm1' }),
@@ -176,7 +179,7 @@ describe('RestaurantPage', () => {
     expect(await screen.findByText('Classic Shaurma')).toBeInTheDocument();
     expect(screen.getByText('Veggie Burger')).toBeInTheDocument();
 
-    const burgersTab = screen.getAllByText('Бургеры')[0];
+    const burgersTab = screen.getAllByText(categoryLabel('BURGER'))[0];
     if (!burgersTab) throw new Error('category tab not found');
     await user.click(burgersTab);
 

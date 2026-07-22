@@ -16,6 +16,7 @@ from features.orders.schemas.order_item import OrderItemCreate
 from features.orders.services.order_placement import place_order
 from features.users.models import User
 from shared.exceptions import AppException
+from shared.i18n import translate
 
 _COMMENT_MAX_LENGTH = 500
 _FINGERPRINT_LENGTH = 32
@@ -27,20 +28,15 @@ def _confirmation_error(ctx: OrderToolContext, stored: str | None) -> str | None
         return _dumps(
             {
                 "error": "cart_not_confirmed",
-                "message": (
-                    "Перед оформлением нужно показать пользователю состав корзины "
-                    "через view_cart и дождаться его явного подтверждения."
-                ),
+                "message": translate("prompts.order.results.cartNotConfirmed", ctx.language),
             }
         )
     if confirmed_turn is None or confirmed_turn >= ctx.user_turn:
         return _dumps(
             {
                 "error": "cart_not_confirmed",
-                "message": (
-                    "Состав корзины показан, но пользователь ещё не подтвердил заказ "
-                    "новым сообщением. Дождись явного согласия в новом сообщении "
-                    "пользователя, затем оформляй."
+                "message": translate(
+                    "prompts.order.results.cartNotConfirmedByUser", ctx.language
                 ),
             }
         )
@@ -101,7 +97,16 @@ async def _validate_confirmed_cart(
 
     cart = await ctx.cart_service.get_cart(ctx.identifier)
     if not cart.items or not cart.restaurant_id:
-        return _dumps({"error": "cart_empty", "message": "Корзина пуста."}), None, None
+        return (
+            _dumps(
+                {
+                    "error": "cart_empty",
+                    "message": translate("prompts.order.results.cartEmpty", ctx.language),
+                }
+            ),
+            None,
+            None,
+        )
 
     if confirmed_hash is not None and confirmed_hash != cart_state_hash(cart):
         await ctx.invalidate_confirm()
@@ -109,10 +114,7 @@ async def _validate_confirmed_cart(
             _dumps(
                 {
                     "error": "cart_changed",
-                    "message": (
-                        "Состав корзины изменился после подтверждения. Покажи актуальный "
-                        "состав через view_cart и дождись нового подтверждения."
-                    ),
+                    "message": translate("prompts.order.results.cartChanged", ctx.language),
                 }
             ),
             None,
@@ -150,7 +152,12 @@ async def place_order_tool(ctx: OrderToolContext, args: dict[str, Any]) -> str:
 
     order_items = _build_order_items(cart)
     if not order_items:
-        return _dumps({"error": "item_unavailable", "message": "Позиции недоступны."})
+        return _dumps(
+            {
+                "error": "item_unavailable",
+                "message": translate("prompts.order.results.itemsUnavailable", ctx.language),
+            }
+        )
 
     order_in = OrderCreate(
         restaurant_id=cart.restaurant_id,

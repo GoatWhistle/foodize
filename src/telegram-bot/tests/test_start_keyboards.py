@@ -7,6 +7,7 @@ from config import bot_config
 from handlers.start import _display_name
 from keyboards import start_keyboards as kbmod
 from tests.conftest import make_user
+from utils import messages as msg
 from utils.formatting import vendor_status_text
 
 
@@ -88,10 +89,16 @@ def test_display_name_without_user(message_factory: Callable[..., Message]) -> N
 
 
 def test_vendor_status_text() -> None:
-    assert "профиль не найден" in vendor_status_text({"is_vendor": False})
-    assert "одобрена" in vendor_status_text({"is_vendor": True, "approval_status": "APPROVED"})
-    assert "отклонена" in vendor_status_text({"is_vendor": True, "approval_status": "REJECTED"})
-    assert "Причина: test" in vendor_status_text(
+    assert vendor_status_text({"is_vendor": False}) == msg.text("vendorNotFound")
+    assert vendor_status_text({"is_vendor": True, "approval_status": "APPROVED"}) == msg.text(
+        "vendorApproved"
+    )
+    assert vendor_status_text({"is_vendor": True, "approval_status": "REJECTED"}) == msg.text(
+        "vendorRejected", suffix=""
+    )
+    assert msg.text("vendorRejectionReason", reason="test") in vendor_status_text(
         {"is_vendor": True, "approval_status": "REJECTED", "rejection_reason": "test"}
     )
-    assert "рассмотрении" in vendor_status_text({"is_vendor": True, "approval_status": "PENDING"})
+    assert vendor_status_text({"is_vendor": True, "approval_status": "PENDING"}) == msg.text(
+        "vendorPending"
+    )

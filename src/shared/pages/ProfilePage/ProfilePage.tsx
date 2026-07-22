@@ -11,7 +11,9 @@ import {
   BellIcon,
 } from "@phosphor-icons/react";
 import { useProfilePage } from "@shared/hooks/useProfilePage";
+import { useModalStore } from "@shared/store/useModalStore";
 import { hasPermission, PERMISSIONS } from "@shared/utils/permissions";
+import { useTranslation } from "@shared/i18n/useTranslation";
 import s from "./ProfilePage.module.css";
 
 interface BackButtonControl {
@@ -61,8 +63,10 @@ export const ProfilePage = ({
   extraMenuItems = [],
   pageClassName = "",
 }: ProfilePageProps) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, logout, displayName } = useProfilePage();
+  const requestConfirm = useModalStore((state) => state.requestConfirm);
 
   const isAdmin = hasPermission(user, PERMISSIONS.ADMIN_ACCESS);
   const initial = displayName[0]?.toUpperCase() || "?";
@@ -76,9 +80,19 @@ export const ProfilePage = ({
     return () => { BackButton.offClick(handler); BackButton.hide(); };
   }, [navigate, BackButton, routes.home]);
 
-  const handleLogout = async () => {
-    await logout();
-    onLogout?.();
+  const handleLogout = () => {
+    requestConfirm({
+      title: t("profile.page.logoutTitle"),
+      message: t("profile.page.logoutMessage"),
+      confirmLabel: t("profile.page.logoutConfirm"),
+      cancelLabel: t("profile.page.logoutCancel"),
+      danger: true,
+      icon: <SignOutIcon size={20} />,
+      onConfirm: async () => {
+        await logout();
+        onLogout?.();
+      },
+    });
   };
 
   const navTo = (path?: string) => {
@@ -105,7 +119,7 @@ export const ProfilePage = ({
 
       <div className={s['body']}>
         <div className={s['name']}>{displayName}</div>
-        <div className={s['phone']}>{user?.phone_number || "—"}</div>
+        <div className={s['phone']}>{user?.phone_number || t("common.states.dash")}</div>
         {email && (
           <div style={{ fontSize: "var(--text-base)", color: "var(--text-3)", marginBottom: 10 }}>{email}</div>
         )}
@@ -114,23 +128,23 @@ export const ProfilePage = ({
           <div className={s['stat']}>
             <PackageIcon size={13} color="var(--text-3)" />
             <strong>{ordersTotal}</strong>
-            <span>заказов</span>
+            <span>{t("profile.page.ordersStat")}</span>
           </div>
           <span className={s['statSep']}>·</span>
           <div className={s['stat']}>
             <HeartIcon size={13} color="var(--color-error)" />
             <strong>{favoritesCount}</strong>
-            <span>избранных</span>
+            <span>{t("profile.page.favoritesStat")}</span>
           </div>
         </div>
 
         <div className={s['group']}>
-          <div className={s['groupTitle']}>Личное</div>
+          <div className={s['groupTitle']}>{t("profile.page.groupPersonal")}</div>
           <div className={s['menu']}>
             <button className={s['menuItem']} onClick={() => { navTo(routes.orders); }}>
               <span className={s['menuItemLeft']}>
                 <PackageIcon size={20} weight="bold" />
-                Мои заказы
+                {t("profile.page.myOrders")}
               </span>
               <CaretRightIcon size={16} color="var(--text-3)" />
             </button>
@@ -138,7 +152,7 @@ export const ProfilePage = ({
             <button className={s['menuItem']} onClick={() => { navTo(routes.favorites); }}>
               <span className={s['menuItemLeft']}>
                 <HeartIcon size={20} weight="bold" color="var(--color-error)" />
-                Избранное
+                {t("profile.page.favorites")}
               </span>
               <CaretRightIcon size={16} color="var(--text-3)" />
             </button>
@@ -147,7 +161,7 @@ export const ProfilePage = ({
               <button className={s['menuItem']} onClick={() => { navTo(routes.notifications); }}>
                 <span className={s['menuItemLeft']}>
                   <BellIcon size={20} weight="bold" />
-                  Уведомления
+                  {t("profile.page.notifications")}
                 </span>
                 <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   {unreadCount > 0 && (
@@ -162,23 +176,23 @@ export const ProfilePage = ({
 
         {hasManagement && (
           <div className={s['group']}>
-            <div className={s['groupTitle']}>Управление</div>
+            <div className={s['groupTitle']}>{t("profile.page.groupManagement")}</div>
             <div className={s['menu']}>
               {isAdmin && routes.admin && (
                 <button className={s['menuItem']} onClick={() => { navTo(routes.admin); }}>
                   <span className={s['menuItemLeft']}>
                     <CrownIcon size={20} weight="bold" color="var(--gold)" />
-                    Админ-панель
+                    {t("profile.page.adminPanelShort")}
                   </span>
                   <CaretRightIcon size={16} color="var(--text-3)" />
                 </button>
               )}
 
               {isAdmin && !routes.admin && (
-                <button className={s['menuItem']} onClick={() => window.Telegram?.WebApp?.showAlert?.("Панель администратора доступна только в веб-версии Foodize")}>
+                <button className={s['menuItem']} onClick={() => window.Telegram?.WebApp?.showAlert?.(t("profile.page.adminWebOnly"))}>
                   <span className={s['menuItemLeft']}>
                     <CrownIcon size={20} weight="bold" color="var(--gold)" />
-                    Панель администратора
+                    {t("profile.page.adminPanel")}
                   </span>
                   <CaretRightIcon size={16} color="var(--text-3)" />
                 </button>
@@ -203,20 +217,20 @@ export const ProfilePage = ({
         )}
 
         <div className={s['group']}>
-          <div className={s['groupTitle']}>Система</div>
+          <div className={s['groupTitle']}>{t("profile.page.groupSystem")}</div>
           <div className={s['menu']}>
             <button className={s['menuItem']} onClick={() => { navTo(routes.settings ?? "/settings"); }}>
               <span className={s['menuItemLeft']}>
                 <GearSixIcon size={20} weight="bold" />
-                Настройки
+                {t("profile.page.settings")}
               </span>
               <CaretRightIcon size={16} color="var(--text-3)" />
             </button>
 
-            <button className={`${s['menuItem']} ${s['danger']}`} onClick={() => { void handleLogout(); }}>
+            <button className={`${s['menuItem']} ${s['danger']}`} onClick={handleLogout}>
               <span className={s['menuItemLeft']}>
                 <SignOutIcon size={20} weight="bold" />
-                Выйти
+                {t("profile.page.logout")}
               </span>
             </button>
           </div>

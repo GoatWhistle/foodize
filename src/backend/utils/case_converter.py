@@ -10,6 +10,17 @@ def camel_case_to_snake_case(name: str) -> str:
     return re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
 
 
+def _pluralize_word(word: str) -> str:
+    if inflector.singular_noun(word):
+        return word
+    plural = str(inflector.plural(word))
+    if word.endswith("o") and plural.endswith("oes"):
+        return f"{word}s"
+    return plural
+
+
 def pluralize_snake_case(name: str) -> str:
-    singular = camel_case_to_snake_case(name)
-    return inflector.plural(singular)
+    snake = camel_case_to_snake_case(name)
+    head, _, last = snake.rpartition("_")
+    pluralized = _pluralize_word(last)
+    return f"{head}_{pluralized}" if head else pluralized

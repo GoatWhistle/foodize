@@ -2,6 +2,7 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { useAdminUsers } from '../../../../pages/admin/hooks/useAdminUsers';
 import type { ConfirmDialogConfig } from '@shared/store/useModalStore';
+import { t } from '@shared/i18n/useTranslation';
 
 vi.mock('../../../../services/adminService', () => ({
   adminService: {
@@ -79,7 +80,7 @@ describe('useAdminUsers', () => {
     vi.mocked(adminService.getUsers).mockRejectedValue(new Error('x'));
     renderHook(() => useAdminUsers(baseArgs()));
     await waitFor(() =>
-      { expect(setActionError).toHaveBeenCalledWith('Не удалось загрузить пользователей'); },
+      { expect(setActionError).toHaveBeenCalledWith(t('admin.users.errors.loadFailed')); },
     );
   });
 
@@ -102,7 +103,7 @@ describe('useAdminUsers', () => {
     await act(async () => {
       await result.current.loadUserDetails('u1');
     });
-    expect(setActionError).toHaveBeenCalledWith('Не удалось загрузить детали пользователя');
+    expect(setActionError).toHaveBeenCalledWith(t('admin.users.errors.detailsFailed'));
   });
 
   it('deletes (blocks) a user on confirm', async () => {
@@ -129,7 +130,7 @@ describe('useAdminUsers', () => {
     await act(async () => {
       await lastConfirm?.onConfirm?.();
     });
-    expect(setActionError).toHaveBeenCalledWith('Не удалось заблокировать пользователя');
+    expect(setActionError).toHaveBeenCalledWith(t('admin.users.errors.blockFailed'));
   });
 
   it('activates a user', async () => {
@@ -152,7 +153,7 @@ describe('useAdminUsers', () => {
     await act(async () => {
       await result.current.handleActivateUser('u2');
     });
-    expect(setActionError).toHaveBeenCalledWith('Не удалось разблокировать пользователя');
+    expect(setActionError).toHaveBeenCalledWith(t('admin.users.errors.unblockFailed'));
   });
 
   it('makes a user admin on confirm', async () => {
@@ -176,7 +177,7 @@ describe('useAdminUsers', () => {
     await act(async () => {
       await lastConfirm?.onConfirm?.();
     });
-    expect(setActionError).toHaveBeenCalledWith('Не удалось изменить роль');
+    expect(setActionError).toHaveBeenCalledWith(t('admin.users.errors.roleChangeFailed'));
   });
 
   it('sets a permission preset on confirm', async () => {
@@ -200,7 +201,7 @@ describe('useAdminUsers', () => {
     await act(async () => {
       await lastConfirm?.onConfirm?.();
     });
-    expect(setActionError).toHaveBeenCalledWith('Не удалось изменить роль');
+    expect(setActionError).toHaveBeenCalledWith(t('admin.users.errors.roleChangeFailed'));
   });
 
   it('batch activates directly without confirm', async () => {
@@ -214,7 +215,7 @@ describe('useAdminUsers', () => {
       await Promise.resolve();
     });
     await waitFor(() => { expect(adminService.batchActivateUsers).toHaveBeenCalledWith(['u1', 'u2']); });
-    expect(setActionSuccess).toHaveBeenCalledWith('Готово: 2 пользователей');
+    expect(setActionSuccess).toHaveBeenCalledWith(t('admin.users.messages.batchDone', { count: 2 }));
   });
 
   it('batch deactivates via confirm', async () => {
@@ -241,7 +242,7 @@ describe('useAdminUsers', () => {
       await Promise.resolve();
     });
     await waitFor(() =>
-      { expect(setActionError).toHaveBeenCalledWith('Ошибка при массовом действии'); },
+      { expect(setActionError).toHaveBeenCalledWith(t('admin.users.errors.batchFailed')); },
     );
   });
 

@@ -4,12 +4,13 @@ from datetime import UTC, date, datetime, timedelta
 from sqlalchemy import ColumnElement, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from features.admin.crud.analytics_shared import CATEGORY_RU, finance_points, parse_day
+from features.admin.crud.analytics_shared import finance_points, parse_day, translate_category
 from features.admin.schemas import AdvancedAnalytics, AnalyticsPoint, FinanceSeriesPoint
 from features.menu.models import MenuItem
 from features.orders.models import Order, OrderItem
 from features.restaurants.models import Restaurant
 from shared.enums.order_status import OrderStatus
+from shared.i18n import DEFAULT_LANGUAGE, translate
 
 _DEFAULT_ANALYTICS_WINDOW_DAYS = 30
 
@@ -30,7 +31,7 @@ async def _fetch_hourly_load(
 
 
 async def _fetch_category_revenue(
-    session: AsyncSession, filters: list[ColumnElement[bool]]
+    session: AsyncSession, filters: list[ColumnElement[bool]], language: str = DEFAULT_LANGUAGE
 ) -> list[AnalyticsPoint]:
     category_rows = await session.execute(
         select(
@@ -45,7 +46,9 @@ async def _fetch_category_revenue(
     )
     return [
         AnalyticsPoint(
-            label=CATEGORY_RU.get(row[0], row[0] or "Без категории"), value=int(row[1] or 0)
+            label=translate_category(row[0], language)
+            or translate("reports.analytics.uncategorized", language),
+            value=int(row[1] or 0),
         )
         for row in category_rows.all()
     ]
@@ -74,6 +77,7 @@ async def get_advanced_analytics(
     date_to: date | None = None,
     restaurant_id: uuid.UUID | None = None,
     vendor_id: uuid.UUID | None = None,
+    language: str = DEFAULT_LANGUAGE,
 ) -> AdvancedAnalytics:
     end_date = date_to or datetime.now(UTC).date()
     start_date = date_from or (end_date - timedelta(days=_DEFAULT_ANALYTICS_WINDOW_DAYS - 1))
@@ -92,6 +96,6 @@ async def get_advanced_analytics(
     days_count = (end_date - start_date).days + 1
     return AdvancedAnalytics(
         hourly_load=await _fetch_hourly_load(session, filters),
-        category_revenue=await _fetch_category_revenue(session, filters),
+        category_revenue=await _fetch_category_revenue(session, filters, language),
         aov_dynamics=await _fetch_aov_dynamics(session, filters, start_date, days_count),
     )

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { VendorScheduleTab } from '../../../../pages/vendor/tabs/VendorScheduleTab';
 import type { WorkingHoursRow } from '../../../../pages/vendor/hooks/useVendorRestaurants';
 import { at } from '../../../testUtils';
+import { t } from '@shared/i18n/useTranslation';
 
 const makeRows = (): WorkingHoursRow[] =>
   Array.from({ length: 7 }, (_, i) => ({
@@ -43,7 +44,7 @@ const Harness = ({
 describe('VendorScheduleTab', () => {
   it('renders 7 rows and title', () => {
     render(<Harness />);
-    expect(screen.getByText('Расписание работы')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.schedule.sectionTitle'))).toBeInTheDocument();
     expect(screen.getAllByDisplayValue('09:00')).toHaveLength(7);
   });
 
@@ -83,17 +84,17 @@ describe('VendorScheduleTab', () => {
     const user = userEvent.setup();
     const onSave = vi.fn();
     render(<Harness onSave={onSave} />);
-    await user.click(screen.getByRole('button', { name: 'Сохранить' }));
+    await user.click(screen.getByRole('button', { name: t('common.actions.save') }));
     expect(onSave).toHaveBeenCalled();
   });
 
-  it('shows Сохранено state', () => {
+  it('shows saved state', () => {
     render(<Harness saved />);
-    expect(screen.getByRole('button', { name: 'Сохранено' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: t('common.states.saved') })).toBeInTheDocument();
   });
 
   it('shows saving state and disables button', () => {
     render(<Harness loading />);
-    expect(screen.getByRole('button', { name: 'Сохранение...' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: t('vendor.schedule.saving') })).toBeDisabled();
   });
 });

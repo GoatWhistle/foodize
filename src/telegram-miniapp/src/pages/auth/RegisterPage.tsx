@@ -4,6 +4,7 @@ import { FoodizeLogo } from "@shared/components/FoodizeLogo/FoodizeLogo";
 import { completeTelegramAuth } from "../../telegram/init";
 import { useAuthStore } from "../../store/useAuthStore";
 import { translateApiError } from "@shared/utils/translateApiError";
+import { useTranslation } from "@shared/i18n/useTranslation";
 
 interface RegisterPageProps {
   initData: string;
@@ -18,6 +19,7 @@ export function RegisterPage({
   prefillPhone,
   onSuccess,
 }: RegisterPageProps) {
+  const { t } = useTranslation();
   const isLogin = localStorage.getItem("foodize_tg_logged_out") === "1";
   const [phone, setPhone] = useState(prefillPhone ?? "");
   const [name, setName] = useState("");
@@ -28,9 +30,9 @@ export function RegisterPage({
   const fetchMe = useAuthStore((s) => s.fetchMe);
 
   const validatePhone = (value: string): string => {
-    if (!value) return "Введите номер телефона";
+    if (!value) return t("auth.miniapp.errors.enterPhone");
     if (!PHONE_RE.test(value.replace(/[\s().-]/g, "")))
-      return "Неверный формат номера (+7XXXXXXXXXX)";
+      return t("auth.miniapp.errors.invalidPhoneFormat");
     return "";
   };
 
@@ -53,16 +55,13 @@ export function RegisterPage({
       await completeTelegramAuth(
         initData,
         phone,
-        name.trim() || "Telegram User",
+        name.trim() || t("auth.miniapp.defaultName"),
       );
       await fetchMe();
       onSuccess();
     } catch (err) {
       setError(
-        translateApiError(
-          err,
-          "Не удалось зарегистрироваться. Проверьте данные.",
-        ),
+        translateApiError(err, t("auth.miniapp.errors.registerFailed")),
       );
     } finally {
       setLoading(false);
@@ -107,7 +106,7 @@ export function RegisterPage({
             margin: 0,
           }}
         >
-          {isLogin ? "Вход в аккаунт" : "Добро пожаловать"}
+          {isLogin ? t("auth.miniapp.loginTitle") : t("auth.miniapp.welcomeTitle")}
         </h1>
         <p
           style={{
@@ -118,8 +117,8 @@ export function RegisterPage({
           }}
         >
           {isLogin
-            ? "Введите телефон аккаунта, в который хотите войти"
-            : "Введите данные для регистрации"}
+            ? t("auth.miniapp.loginSubtitle")
+            : t("auth.miniapp.registerSubtitle")}
         </p>
       </div>
 
@@ -136,7 +135,7 @@ export function RegisterPage({
         }}
       >
         <div className="form-group">
-          <label className="form-label">Номер телефона</label>
+          <label className="form-label">{t("auth.fields.phoneNumber")}</label>
           <input
             type="tel"
             value={phone}
@@ -159,13 +158,13 @@ export function RegisterPage({
 
         {!isLogin && (
           <div className="form-group">
-            <label className="form-label">Ваше имя</label>
+            <label className="form-label">{t("auth.fields.yourName")}</label>
             <input
               type="text"
               value={name}
               onChange={(e) => { setName(e.target.value); }}
               className="form-input"
-              placeholder="Имя"
+              placeholder={t("auth.placeholders.name")}
               required
               minLength={1}
               maxLength={128}
@@ -181,7 +180,7 @@ export function RegisterPage({
           disabled={loading}
           style={{ marginTop: 4, borderRadius: "var(--r-md)" }}
         >
-          {loading ? "Загрузка..." : isLogin ? "Войти" : "Продолжить"}
+          {loading ? t("auth.buttons.loading") : isLogin ? t("auth.buttons.login") : t("auth.buttons.continue")}
         </button>
       </form>
     </div>

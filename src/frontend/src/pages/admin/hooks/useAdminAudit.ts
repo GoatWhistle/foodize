@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { adminService } from '../../../services/adminService';
+import { useTranslation } from '@shared/i18n/useTranslation';
 
 const PAGE_SIZE = 20;
 
@@ -26,6 +27,7 @@ export interface UseAdminAuditArgs {
 }
 
 export const useAdminAudit = ({ activeTab, setActionError }: UseAdminAuditArgs) => {
+  const { t } = useTranslation();
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [auditTotal, setAuditTotal] = useState(0);
   const [auditPage, setAuditPage] = useState(1);
@@ -55,12 +57,12 @@ export const useAdminAudit = ({ activeTab, setActionError }: UseAdminAuditArgs) 
         setAuditLogs(items);
         setAuditTotal(total);
       } catch {
-        setActionError('Не удалось загрузить логи');
+        setActionError(t('admin.audit.errors.loadFailed'));
       } finally {
         setAuditLoading(false);
       }
     })();
-  }, [activeTab, auditPage, auditFilters, setActionError]);
+  }, [activeTab, auditPage, auditFilters, setActionError, t]);
 
   return {
     auditLogs,

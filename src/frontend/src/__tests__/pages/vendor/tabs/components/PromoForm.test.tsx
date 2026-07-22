@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { PromoForm } from '../../../../../pages/vendor/tabs/components/PromoForm';
 import type { PromoForm as PromoFormValues } from '../../../../../pages/vendor/hooks/useVendorPromos';
 import { at } from '../../../../testUtils';
+import { t } from '@shared/i18n/useTranslation';
 
 const EMPTY: PromoFormValues = {
   code: '',
@@ -44,16 +45,16 @@ describe('PromoForm', () => {
     const onSubmit = vi.fn((e: React.FormEvent) => { e.preventDefault(); });
     render(<Harness onSubmit={onSubmit} onCancel={vi.fn()} />);
 
-    const code = screen.getByPlaceholderText(/Код/);
+    const code = screen.getByPlaceholderText(t('vendor.promos.placeholders.code'));
     await user.type(code, 'save20');
     expect((code as HTMLInputElement).value).toBe('SAVE20');
 
-    await user.type(screen.getByPlaceholderText('Скидка %'), '20');
-    await user.type(screen.getByPlaceholderText(/Макс. использований/), '5');
-    await user.type(screen.getByPlaceholderText(/Мин. сумма/), '300');
-    await user.click(screen.getByLabelText(/Только для первого заказа/));
+    await user.type(screen.getByPlaceholderText(t('vendor.promos.placeholders.discountPercent')), '20');
+    await user.type(screen.getByPlaceholderText(t('vendor.promos.placeholders.maxUses')), '5');
+    await user.type(screen.getByPlaceholderText(t('vendor.promos.placeholders.minAmount')), '300');
+    await user.click(screen.getByLabelText(t('vendor.promos.firstOrderOnlyCheckbox')));
 
-    await user.click(screen.getByRole('button', { name: 'Создать' }));
+    await user.click(screen.getByRole('button', { name: t('common.actions.create') }));
     expect(onSubmit).toHaveBeenCalled();
   });
 
@@ -62,7 +63,7 @@ describe('PromoForm', () => {
     render(<Harness onSubmit={vi.fn()} onCancel={vi.fn()} />);
     const selects = screen.getAllByRole('combobox');
     await user.selectOptions(at(selects, 0), 'FIXED');
-    expect(screen.getByPlaceholderText('Сумма ₽')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(t('vendor.promos.placeholders.discountFixed'))).toBeInTheDocument();
     await user.selectOptions(at(selects, 1), 'SHAURMA');
     expect((selects[1] as HTMLSelectElement).value).toBe('SHAURMA');
   });
@@ -70,7 +71,7 @@ describe('PromoForm', () => {
   it('sets expires_at datetime', async () => {
     const user = userEvent.setup();
     render(<Harness onSubmit={vi.fn()} onCancel={vi.fn()} />);
-    const dt = screen.getByPlaceholderText(/Истекает/);
+    const dt = screen.getByPlaceholderText(t('vendor.promos.placeholders.expiresAt'));
     await user.type(dt, '2026-12-31T10:00');
     expect((dt as HTMLInputElement).value).toBe('2026-12-31T10:00');
   });
@@ -79,7 +80,7 @@ describe('PromoForm', () => {
     const user = userEvent.setup();
     const onCancel = vi.fn();
     render(<Harness onSubmit={vi.fn()} onCancel={onCancel} loading />);
-    expect(screen.getByRole('button', { name: 'Создаю...' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: t('vendor.promos.creating') })).toBeDisabled();
     const cancelBtn = at(screen.getAllByRole("button"), 1);
     await user.click(cancelBtn);
     expect(onCancel).toHaveBeenCalled();

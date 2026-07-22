@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import type { OrderEvent } from '@shared/types/models';
+import { t } from '@shared/i18n/useTranslation';
 import { OrderEventLog } from '../../../../components/OrderDetailsModal/orderDetails/OrderEventLog';
 
 const EVENTS = [
@@ -16,24 +17,24 @@ const EVENTS = [
 describe('OrderEventLog', () => {
   it('shows loading state', () => {
     render(<OrderEventLog events={[]} eventsLoading eventsUnavailable={false} />);
-    expect(screen.getByText('Загружаю историю...')).toBeInTheDocument();
+    expect(screen.getByText(t('order.events.loading'))).toBeInTheDocument();
   });
 
   it('shows unavailable state', () => {
     render(<OrderEventLog events={[]} eventsLoading={false} eventsUnavailable />);
-    expect(screen.getByText('История изменений пока недоступна')).toBeInTheDocument();
+    expect(screen.getByText(t('order.events.unavailable'))).toBeInTheDocument();
   });
 
   it('shows empty state when no events', () => {
     render(<OrderEventLog events={[]} eventsLoading={false} eventsUnavailable={false} />);
     expect(
-      screen.getByText('История появится после первого изменения статуса')
+      screen.getByText(t('order.events.empty'))
     ).toBeInTheDocument();
   });
 
   it('renders event rows with status transition', () => {
     render(<OrderEventLog events={EVENTS} eventsLoading={false} eventsUnavailable={false} />);
-    expect(screen.getByText('Журнал изменений')).toBeInTheDocument();
-    expect(screen.getByText(/Ожидает/i)).toBeInTheDocument();
+    expect(screen.getByText(t('order.events.title'))).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(t('enums.orderStatus.PENDING')))).toBeInTheDocument();
   });
 });

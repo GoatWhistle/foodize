@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 import { InfoModal } from "@shared/components/InfoModal/InfoModal";
 import type { Restaurant } from "@shared/types/models";
+import { t } from "@shared/i18n/useTranslation";
 
 const workingHours = [
   { day_of_week: 1, is_open: true, opening_time: "09:00:00", closing_time: "22:00:00" },
@@ -12,15 +13,15 @@ const workingHours = [
 describe("InfoModal", () => {
   it("renders the heading and working hours block", () => {
     render(<InfoModal workingHours={workingHours} onClose={vi.fn()} />);
-    expect(screen.getByRole("heading", { name: "Информация" })).toBeInTheDocument();
-    expect(screen.getByText("Рабочие часы")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: t("catalog.info.title") })).toBeInTheDocument();
+    expect(screen.getByText(t("catalog.info.workingHours"))).toBeInTheDocument();
     expect(screen.getByText("09:00 - 22:00")).toBeInTheDocument();
-    expect(screen.getByText("Выходной")).toBeInTheDocument();
+    expect(screen.getByText(t("catalog.info.dayOff"))).toBeInTheDocument();
   });
 
   it("shows a fallback when there are no working hours", () => {
     render(<InfoModal workingHours={[]} onClose={vi.fn()} />);
-    expect(screen.getByText("Не указаны")).toBeInTheDocument();
+    expect(screen.getByText(t("catalog.info.notSpecified"))).toBeInTheDocument();
   });
 
   it("renders the restaurant description when enabled", () => {
@@ -41,7 +42,7 @@ describe("InfoModal", () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
     render(<InfoModal workingHours={workingHours} onClose={onClose} />);
-    await user.click(screen.getByRole("button", { name: "Закрыть" }));
+    await user.click(screen.getByRole("button", { name: t("common.actions.close") }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
@@ -67,7 +68,7 @@ describe("InfoModal", () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
     render(<InfoModal workingHours={workingHours} onClose={onClose} />);
-    await user.click(screen.getByRole("heading", { name: "Информация" }));
+    await user.click(screen.getByRole("heading", { name: t("catalog.info.title") }));
     expect(onClose).not.toHaveBeenCalled();
   });
 
@@ -76,7 +77,7 @@ describe("InfoModal", () => {
       <InfoModal workingHours={workingHours} onClose={vi.fn()} usePortal />,
     );
     expect(
-      screen.getByRole("heading", { name: "Информация" }),
+      screen.getByRole("heading", { name: t("catalog.info.title") }),
     ).toBeInTheDocument();
   });
 

@@ -1,6 +1,7 @@
 import { PlusIcon, DownloadSimpleIcon } from '@phosphor-icons/react';
 import type { Category, MenuItem, MenuItemOptionGroup, Restaurant } from '@shared/types/models';
 import { vendorService } from '@shared/services/vendorService';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import { MenuItemForm } from './MenuItemForm';
 import { MenuItemList } from './MenuItemList';
 export interface OptionDraft {
@@ -108,6 +109,7 @@ export function VendorMenuTab({
   handleVendorExport,
   vendorService,
 }: VendorMenuTabProps) {
+  const { t } = useTranslation();
   return (
     <div>
       {menuError && (
@@ -128,7 +130,7 @@ export function VendorMenuTab({
           marginBottom: 16,
         }}
       >
-        <h3 style={{ fontWeight: 700, fontSize: "var(--text-md)" }}>Позиции меню</h3>
+        <h3 style={{ fontWeight: 700, fontSize: "var(--text-md)" }}>{t('vendor.menu.sectionTitle')}</h3>
         <div style={{ display: 'flex', gap: 8 }}>
           <button
             className="btn btn-secondary btn-sm"
@@ -139,7 +141,7 @@ export function VendorMenuTab({
                   vendorService.exportMenuCSV({
                     restaurant_id: selectedRestaurant.id || undefined,
                   }),
-                `меню_${todayStr}.csv`
+                t('vendor.exportFiles.menu', { date: todayStr })
               ); }
             }
           >
@@ -153,7 +155,7 @@ export function VendorMenuTab({
               setShowAddItem(!showAddItem);
             }}
           >
-            <PlusIcon size={16} /> Позиция
+            <PlusIcon size={16} /> {t('vendor.menu.addItem')}
           </button>
         </div>
       </div>

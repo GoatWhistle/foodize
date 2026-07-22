@@ -7,6 +7,18 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
+from features.auth.exceptions import (
+    AccountDeactivatedException,
+    InvalidRefreshTokenException,
+    InvalidTokenException,
+    InvalidTokenTypeException,
+    RefreshTokenAlreadyUsedException,
+    RefreshTokenExpiredException,
+    RefreshTokenMissingException,
+    SessionExpiredException,
+    TokenExpiredException,
+    TokenRevokedException,
+)
 from features.auth.schemas import TokenResponse, UserLogin
 from features.users import crud as users_crud
 from features.users.dependencies import (
@@ -17,7 +29,7 @@ from features.users.dependencies import (
 from features.users.models import User
 from features.users.schemas import UserCreate, UserRead
 from infra.cache.redis import RedisCache, get_redis_cache, redis_cache_dependency
-from shared.exceptions.existence import AuthException
+from shared.exceptions.existence import AuthException, NotAuthenticatedException
 from utils.jwt_tokens import create_access_token, create_refresh_token, decode_jwt
 from utils.logging_setup import get_logger
 
@@ -55,28 +67,28 @@ async def get_current_user(
     cache: RedisCache = Depends(redis_cache_dependency),
 ) -> User:
     if not token:
-        raise AuthException(detail="Not authenticated")
+        raise NotAuthenticatedException()
     try:
         payload = decode_jwt(token)
         user_id = payload.get("sub")
     except jwt.ExpiredSignatureError:
-        raise AuthException(detail="Token has expired") from None
+        raise TokenExpiredException() from None
     except jwt.InvalidTokenError:
-        raise AuthException(detail="Invalid token") from None
+        raise InvalidTokenException() from None
     if payload.get("typ") != "access":
-        raise AuthException(detail="Invalid token type")
+        raise InvalidTokenTypeException()
     if user_id is None:
         raise AuthException()
     try:
         parsed_user_id = uuid.UUID(user_id)
     except ValueError:
-        raise AuthException(detail="Invalid token") from None
+        raise InvalidTokenException() from None
     jti = payload.get("jti")
     if jti and await cache.exists(f"{_ACCESS_BLACKLIST_PREFIX}{jti}"):
-        raise AuthException(detail="Token has been invalidated")
+        raise TokenRevokedException()
     user = await get_user_by_id_or_404(session, parsed_user_id)
     if not user.is_active:
-        raise AuthException(detail="Account is deactivated")
+        raise AccountDeactivatedException()
     return user
 
 
@@ -140,34 +152,34 @@ def _decode_refresh_payload(token: str) -> tuple[dict[str, object], uuid.UUID]:
         payload = decode_jwt(token)
         user_id = payload.get("sub")
     except jwt.ExpiredSignatureError:
-        raise AuthException(detail="Refresh token has expired") from None
+        raise RefreshTokenExpiredException() from None
     except jwt.InvalidTokenError:
-        raise AuthException(detail="Invalid refresh token") from None
+        raise InvalidRefreshTokenException() from None
     if payload.get("typ") != "refresh":
-        raise AuthException(detail="Invalid token type")
+        raise InvalidTokenTypeException()
     if user_id is None:
         raise AuthException()
     try:
         return payload, uuid.UUID(str(user_id))
     except ValueError:
-        raise AuthException(detail="Invalid refresh token") from None
+        raise InvalidRefreshTokenException() from None
 
 
 async def _consume_refresh_token(cache: RedisCache, payload: dict[str, object]) -> None:
     now = int(time.time())
     session_exp = payload.get("session_exp")
     if isinstance(session_exp, int) and session_exp < now:
-        raise AuthException(detail="Session has expired, please log in again")
+        raise SessionExpiredException()
     jti = payload.get("jti")
     if not jti:
-        raise AuthException(detail="Invalid refresh token")
+        raise InvalidRefreshTokenException()
     expires_at = payload.get("exp")
     ttl = (expires_at if isinstance(expires_at, int) else 0) - now
     if ttl <= 0:
-        raise AuthException(detail="Refresh token has expired")
+        raise RefreshTokenExpiredException()
     blacklisted = await cache.set_nx(f"{_REFRESH_BLACKLIST_PREFIX}{jti}", "1", ttl=ttl)
     if not blacklisted:
-        raise AuthException(detail="Refresh token already used")
+        raise RefreshTokenAlreadyUsedException()
 
 
 async def refresh_user_token(
@@ -177,7 +189,7 @@ async def refresh_user_token(
 ) -> TokenResponse:
     token = request.cookies.get("refresh_token") or await _get_bearer_token(request)
     if not token:
-        raise AuthException(detail="Refresh token missing")
+        raise RefreshTokenMissingException()
     payload, parsed_user_id = _decode_refresh_payload(token)
 
     if cache is None:
@@ -186,7 +198,7 @@ async def refresh_user_token(
 
     user = await get_user_by_id_or_404(session, parsed_user_id)
     if not user.is_active:
-        raise AuthException(detail="Account is deactivated")
+        raise AccountDeactivatedException()
 
     session_exp = payload.get("session_exp")
     access_token = create_access_token(user.id)

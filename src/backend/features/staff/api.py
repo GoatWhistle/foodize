@@ -11,6 +11,10 @@ from features.menu.services import menu_items as menu_service
 from features.staff import service
 from features.staff.crud import get_last_request_by_user, get_staff_profile_by_user_id
 from features.staff.dependencies import get_valid_staff_request
+from features.staff.exceptions import (
+    StaffMenuAccessDeniedException,
+    StaffProfileNotFoundException,
+)
 from features.staff.models import StaffRequest
 from features.staff.schemas import (
     StaffMemberResponse,
@@ -24,7 +28,6 @@ from features.vendors.dependencies import get_current_vendor
 from features.vendors.models import VendorProfile
 from shared.dependencies import require_permission
 from shared.enums.permissions import Permission
-from shared.exceptions import AccessDeniedException, NotFoundException
 from shared.response import build_list_response, build_response
 from shared.schemas.response import SuccessListResponse, SuccessResponse
 
@@ -38,7 +41,7 @@ async def get_my_staff_profile(
 ) -> SuccessResponse[StaffProfileResponse]:
     profile = await get_staff_profile_by_user_id(session, current_user.id)
     if not profile:
-        raise NotFoundException(detail="Staff profile not found")
+        raise StaffProfileNotFoundException()
     return build_response(StaffProfileResponse.model_validate(profile))
 
 
@@ -140,7 +143,7 @@ async def staff_toggle_item_availability(
 ) -> SuccessResponse[MenuItemResponse]:
     staff_profile = await get_staff_profile_by_user_id(session, current_user.id)
     if not staff_profile or staff_profile.restaurant_id != restaurant_id:
-        raise AccessDeniedException(detail="Not authorized to manage this restaurant's menu")
+        raise StaffMenuAccessDeniedException()
     result = await menu_service.toggle_item_availability_for_staff(
         session=session,
         restaurant_id=restaurant_id,

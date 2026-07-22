@@ -6,6 +6,7 @@ import { EmptyState } from "@shared/components/EmptyState/EmptyState";
 import { FavoriteRestaurantCard } from "@shared/components/FavoriteRestaurantCard/FavoriteRestaurantCard";
 import { Pagination } from "@shared/components/Pagination/Pagination";
 import type { FavoriteRestaurantInfo } from "@shared/types/models";
+import { useTranslation } from "@shared/i18n/useTranslation";
 
 const PAGE_SIZE = 20;
 
@@ -23,6 +24,7 @@ interface FavoritesPageProps {
 }
 
 export const FavoritesPage = ({ BackButton, pageSize = PAGE_SIZE, showPagination = true }: FavoritesPageProps) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { favorites, loading, total, page, setPage, handleUnfavorite, handleNavigate } =
     useFavoritesPage({ pageSize });
@@ -50,7 +52,7 @@ export const FavoritesPage = ({ BackButton, pageSize = PAGE_SIZE, showPagination
       >
         <HeartIcon size={22} weight="fill" color="var(--color-error)" />
         <span style={{ fontWeight: 800, fontSize: "var(--text-md)", color: "var(--text-1)" }}>
-          Избранное
+          {t("catalog.favorites.title")}
         </span>
         {total > 0 && (
           <span
@@ -74,9 +76,9 @@ export const FavoritesPage = ({ BackButton, pageSize = PAGE_SIZE, showPagination
         </div>
       ) : favorites.length === 0 ? (
         <EmptyState
-          title="Нет избранных"
-          subtitle="Нажмите на сердечко на карточке ресторана, чтобы сохранить"
-          action={{ label: "Смотреть рестораны", onClick: () => { void navigate("/"); } }}
+          title={t("catalog.favorites.emptyTitle")}
+          subtitle={t("catalog.favorites.emptySubtitle")}
+          action={{ label: t("catalog.favorites.browse"), onClick: () => { void navigate("/"); } }}
         />
       ) : (
         <div className={loading ? "loading-dim" : undefined} style={{ display: "flex", flexDirection: "column", gap: 10 }}>

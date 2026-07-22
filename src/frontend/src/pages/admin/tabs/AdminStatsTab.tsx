@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { UsersThreeIcon, PackageIcon, StorefrontIcon } from '@phosphor-icons/react';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { PlatformStats, Schemas } from '@shared/types/models';
 import {
   UsersByRoleChart,
@@ -80,6 +81,7 @@ interface StatCardProps {
 }
 
 const StatCard = ({ label, value, icon, growth, onClick }: StatCardProps) => {
+  const { t } = useTranslation();
   const totalGrowth = (growth || []).reduce(
     (sum, point) => sum + (point.count || 0),
     0
@@ -147,7 +149,7 @@ const StatCard = ({ label, value, icon, growth, onClick }: StatCardProps) => {
       <div
         style={{ color: 'var(--text-3)', fontSize: "var(--text-sm)", fontWeight: 700 }}
       >
-        +{totalGrowth} за последние 14 дней
+        {t('admin.stats.growth', { count: totalGrowth })}
       </div>
     </button>
   );
@@ -160,6 +162,7 @@ export interface AdminStatsTabProps {
 }
 
 export function AdminStatsTab({ stats, ordersByStatusChartData, setActiveTab }: AdminStatsTabProps) {
+  const { t } = useTranslation();
   if (!stats) return null;
   const s: PartialStats = stats;
 
@@ -173,28 +176,28 @@ export function AdminStatsTab({ stats, ordersByStatusChartData, setActiveTab }: 
         }}
       >
         <StatCard
-          label="Пользователи"
+          label={t('admin.stats.cards.users')}
           value={s.total_users}
           icon={<UsersThreeIcon size={22} />}
           growth={s.growth?.['users']}
           onClick={() => { setActiveTab('users'); }}
         />
         <StatCard
-          label="Рестораны"
+          label={t('admin.stats.cards.restaurants')}
           value={s.total_restaurants || 0}
           icon={<StorefrontIcon size={22} />}
           growth={s.growth?.['restaurants']}
           onClick={() => { setActiveTab('restaurants'); }}
         />
         <StatCard
-          label="Заказы"
+          label={t('admin.stats.cards.orders')}
           value={sumValues(s.orders_by_status)}
           icon={<PackageIcon size={22} />}
           growth={s.growth?.['orders']}
           onClick={() => { setActiveTab('orders'); }}
         />
         <StatCard
-          label="Вендоры"
+          label={t('admin.stats.cards.vendors')}
           value={s.total_vendors || 0}
           icon={<UsersThreeIcon size={22} />}
           growth={s.growth?.['vendors']}

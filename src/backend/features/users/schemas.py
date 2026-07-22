@@ -3,14 +3,18 @@ import uuid
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
+from features.users.exceptions import (
+    PasswordMissingDigitOrSymbolError,
+    PasswordMissingLetterError,
+)
 from shared.enums.permissions import Permission
 
 
 def _validate_password_strength(v: str) -> str:
     if not re.search(r"[A-Za-z]", v):
-        raise ValueError("Пароль должен содержать хотя бы одну букву")
+        raise PasswordMissingLetterError()
     if not re.search(r"[0-9!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>\/?]", v):
-        raise ValueError("Пароль должен содержать хотя бы одну цифру или спецсимвол")
+        raise PasswordMissingDigitOrSymbolError()
     return v
 
 

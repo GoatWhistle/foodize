@@ -1,4 +1,5 @@
-import { CATEGORY_RU } from '@shared/utils/locales';
+import { categoryLabel } from '@shared/utils/locales';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { Category, MenuItem } from '@shared/types/models';
 import {
   EMPTY_MENU_ITEM_FORM,
@@ -6,6 +7,8 @@ import {
 } from './VendorMenuTab';
 import { MenuItemPhotoField } from './components/MenuItemPhotoField';
 import { MenuItemOptionGroups } from './components/MenuItemOptionGroups';
+
+const CATEGORY_KEYS: Category[] = ['SHAURMA', 'BURGER', 'DRINK', 'PIZZA', 'SUSHI', 'DESSERT', 'SNACK', 'SALAD', 'OTHER'];
 
 interface MenuItemFormProps {
   editingItem: MenuItem | null;
@@ -28,6 +31,7 @@ export function MenuItemForm({
   setShowAddItem,
   setEditingItem,
 }: MenuItemFormProps) {
+  const { t } = useTranslation();
   return (
     <form
       onSubmit={handleSaveMenuItem}
@@ -43,19 +47,19 @@ export function MenuItemForm({
       }}
     >
       <h3 style={{ fontWeight: 700, fontSize: "var(--text-base)" }}>
-        {editingItem ? 'Редактировать' : 'Новая позиция'}
+        {editingItem ? t('vendor.menu.form.editTitle') : t('vendor.menu.form.newTitle')}
       </h3>
       {formError && <div className="form-error">{formError}</div>}
       <input
         className="form-input"
-        placeholder="Название"
+        placeholder={t('common.labels.title')}
         value={menuItemForm.name}
         onChange={(e) => { setMenuItemForm({ ...menuItemForm, name: e.target.value }); }}
         required
       />
       <textarea
         className="form-input"
-        placeholder="Описание"
+        placeholder={t('common.labels.description')}
         value={menuItemForm.description}
         onChange={(e) => { setMenuItemForm({ ...menuItemForm, description: e.target.value }); }}
       />
@@ -63,7 +67,7 @@ export function MenuItemForm({
         <input
           className="form-input"
           type="number"
-          placeholder="Цена"
+          placeholder={t('common.labels.price')}
           value={menuItemForm.price}
           onChange={(e) => { setMenuItemForm({ ...menuItemForm, price: e.target.value }); }}
           required
@@ -77,9 +81,9 @@ export function MenuItemForm({
           }
           style={{ flex: 1 }}
         >
-          {Object.entries(CATEGORY_RU).map(([val, label]) => (
-            <option key={val} value={val}>
-              {label}
+          {CATEGORY_KEYS.map((category) => (
+            <option key={category} value={category}>
+              {categoryLabel(category)}
             </option>
           ))}
         </select>
@@ -96,7 +100,7 @@ export function MenuItemForm({
           style={{ flex: 1 }}
           disabled={formLoading}
         >
-          Сохранить
+          {t('common.actions.save')}
         </button>
         <button
           type="button"
@@ -108,7 +112,7 @@ export function MenuItemForm({
           }}
           style={{ flex: 1 }}
         >
-          Отмена
+          {t('common.actions.cancel')}
         </button>
       </div>
     </form>

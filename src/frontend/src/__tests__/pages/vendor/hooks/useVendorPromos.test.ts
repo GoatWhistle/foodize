@@ -4,6 +4,7 @@ import { useVendorPromos, type PromoForm } from '../../../../pages/vendor/hooks/
 import { promoService } from '@shared/services/promoService';
 import type { Restaurant } from '@shared/types/models';
 import { at } from '../../../testUtils';
+import { t } from '@shared/i18n/useTranslation';
 
 vi.mock('@shared/services/promoService', () => ({
   promoService: {
@@ -57,7 +58,7 @@ describe('useVendorPromos', () => {
     const { result } = renderHook(() =>
       useVendorPromos({ selectedRestaurant: restaurant, activeTab: 'promos' })
     );
-    await waitFor(() => { expect(result.current.promosError).toBe('Не удалось загрузить промокоды'); });
+    await waitFor(() => { expect(result.current.promosError).toBe(t('vendor.promos.errors.loadFailed')); });
   });
 
   it('handles non-array list payload', async () => {
@@ -101,7 +102,7 @@ describe('useVendorPromos', () => {
         first_order_only: true,
       })
     );
-    expect(result.current.promosSuccess).toBe('Промокод создан');
+    expect(result.current.promosSuccess).toBe(t('vendor.promos.messages.created'));
     void act(() => vi.advanceTimersByTime(2000));
     expect(result.current.promosSuccess).toBe('');
     vi.useRealTimers();
@@ -142,7 +143,7 @@ describe('useVendorPromos', () => {
     await act(async () => {
       await result.current.handleCreatePromo(submitEvent());
     });
-    expect(result.current.promosError).toBe('Ошибка создания промокода');
+    expect(result.current.promosError).toBe(t('vendor.promos.errors.createFailed'));
   });
 
   it('deactivates a promo removing it from the list', async () => {
@@ -166,7 +167,7 @@ describe('useVendorPromos', () => {
     await act(async () => {
       await result.current.handleDeactivatePromo('A');
     });
-    expect(result.current.promosError).toBe('Не удалось деактивировать промокод');
+    expect(result.current.promosError).toBe(t('vendor.promos.errors.deactivateFailed'));
   });
 
   it('exposes form setters', () => {

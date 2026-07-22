@@ -1,4 +1,5 @@
 import { CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react";
+import { useTranslation } from "@shared/i18n/useTranslation";
 
 interface PaginationProps {
   page: number;
@@ -7,6 +8,7 @@ interface PaginationProps {
 }
 
 export const Pagination = ({ page, totalPages, onPageChange }: PaginationProps) => {
+  const { t } = useTranslation();
   if (totalPages <= 1) return null;
 
   return (
@@ -24,10 +26,10 @@ export const Pagination = ({ page, totalPages, onPageChange }: PaginationProps) 
         className="btn btn-secondary btn-sm"
         disabled={page <= 1}
         onClick={() => { onPageChange(page - 1); }}
-        aria-label={`Перейти на страницу ${page - 1}`}
+        aria-label={t("catalog.pagination.goToPage", { page: page - 1 })}
         style={{ borderRadius: "100px", padding: "8px 20px", display: "inline-flex", alignItems: "center", gap: 4 }}
       >
-        <CaretLeftIcon size={14} weight="bold" /> Назад
+        <CaretLeftIcon size={14} weight="bold" /> {t("common.actions.back")}
       </button>
 
       <span
@@ -49,10 +51,10 @@ export const Pagination = ({ page, totalPages, onPageChange }: PaginationProps) 
         className="btn btn-secondary btn-sm"
         disabled={page >= totalPages}
         onClick={() => { onPageChange(page + 1); }}
-        aria-label={`Перейти на страницу ${page + 1}`}
+        aria-label={t("catalog.pagination.goToPage", { page: page + 1 })}
         style={{ borderRadius: "100px", padding: "8px 20px", display: "inline-flex", alignItems: "center", gap: 4 }}
       >
-        Вперед <CaretRightIcon size={14} weight="bold" />
+        {t("common.actions.next")} <CaretRightIcon size={14} weight="bold" />
       </button>
     </div>
   );

@@ -17,6 +17,7 @@ from infra.llm.base import (
     ToolSpec,
     ToolUseStart,
 )
+from shared.i18n import DEFAULT_LANGUAGE, translate
 
 logger = logging.getLogger("ai.agent")
 
@@ -25,10 +26,14 @@ ToolExecutor = Callable[[ToolCall], Awaitable[str]]
 _DEFAULT_MAX_TOKENS = 200_000
 _DEFAULT_DEADLINE_SECONDS = 120.0
 _TRUNCATED_STOP_REASONS = frozenset({"max_tokens", "length"})
-_TRUNCATED_NOTICE = "\n\n_(ответ был обрезан из-за лимита длины — уточните запрос)_"
-_STEPS_EXHAUSTED_NOTICE = (
-    "\n\n_(не удалось полностью завершить за отведённое число шагов — уточните запрос)_"
-)
+
+
+def _truncated_notice(language: str) -> str:
+    return translate("prompts.common.truncatedNotice", language)
+
+
+def _steps_exhausted_notice(language: str) -> str:
+    return translate("prompts.common.stepsExhaustedNotice", language)
 
 
 class LLMBudgetExceededError(Exception):
@@ -104,6 +109,7 @@ class _AgentRun:
     execute: ToolExecutor
     max_tokens: int
     deadline: float
+    language: str = field(default=DEFAULT_LANGUAGE)
     output_spent: int = field(default=0)
 
     def absorb(self, response: LLMResponse) -> bool:
@@ -137,7 +143,12 @@ class _AgentRun:
     async def forced_final_answer(self) -> str:
         response = await self.complete(tool_choice="none")
         truncated = self.absorb(response)
-        text = response.text + (_TRUNCATED_NOTICE if truncated else _STEPS_EXHAUSTED_NOTICE)
+        notice = (
+            _truncated_notice(self.language)
+            if truncated
+            else _steps_exhausted_notice(self.language)
+        )
+        text = response.text + notice
         self.history.append(Message(role=Role.ASSISTANT, content=text))
         return text
 
@@ -169,9 +180,12 @@ def _start_run(
     execute: ToolExecutor,
     max_tokens: int,
     deadline_seconds: float,
+    language: str,
 ) -> _AgentRun:
     deadline = asyncio.get_running_loop().time() + deadline_seconds
-    return _AgentRun(client, system, list(messages), tools, execute, max_tokens, deadline)
+    return _AgentRun(
+        client, system, list(messages), tools, execute, max_tokens, deadline, language
+    )
 
 
 async def run_agent(
@@ -184,13 +198,16 @@ async def run_agent(
     max_steps: int = 8,
     max_tokens: int = _DEFAULT_MAX_TOKENS,
     deadline_seconds: float = _DEFAULT_DEADLINE_SECONDS,
+    language: str = DEFAULT_LANGUAGE,
 ) -> tuple[str, list[Message]]:
-    run = _start_run(client, system, messages, tools, execute, max_tokens, deadline_seconds)
+    run = _start_run(
+        client, system, messages, tools, execute, max_tokens, deadline_seconds, language
+    )
     for _ in range(max_steps):
         response = await run.complete()
         truncated = run.absorb(response)
         if not response.tool_calls:
-            text = response.text + (_TRUNCATED_NOTICE if truncated else "")
+            text = response.text + (_truncated_notice(language) if truncated else "")
             run.history.append(Message(role=Role.ASSISTANT, content=text))
             return text, run.history
         await run.append_tool_round(response)
@@ -212,7 +229,7 @@ async def _stream_forced_final(run: _AgentRun) -> AsyncIterator[str]:
         elif isinstance(event, LLMResponse):
             run.absorb(event)
     if not emitted:
-        yield _STEPS_EXHAUSTED_NOTICE
+        yield _steps_exhausted_notice(run.language)
 
 
 async def _stream_agent_loop(run: _AgentRun, max_steps: int) -> AsyncIterator[str]:
@@ -239,7 +256,7 @@ async def _stream_agent_loop(run: _AgentRun, max_steps: int) -> AsyncIterator[st
         truncated = run.absorb(response)
         if not response.tool_calls:
             if truncated:
-                yield _TRUNCATED_NOTICE
+                yield _truncated_notice(run.language)
             return
         await run.append_tool_round(response)
 
@@ -261,8 +278,11 @@ async def stream_agent(
     max_steps: int = 8,
     max_tokens: int = _DEFAULT_MAX_TOKENS,
     deadline_seconds: float = _DEFAULT_DEADLINE_SECONDS,
+    language: str = DEFAULT_LANGUAGE,
 ) -> AsyncIterator[str]:
-    run = _start_run(client, system, messages, tools, execute, max_tokens, deadline_seconds)
+    run = _start_run(
+        client, system, messages, tools, execute, max_tokens, deadline_seconds, language
+    )
     try:
         async for text in _stream_agent_loop(run, max_steps):
             yield text

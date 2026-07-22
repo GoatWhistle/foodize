@@ -1,5 +1,6 @@
 import { createCartStore } from "@shared/store/createCartStore";
 import { useOrdersStore } from "./useOrdersStore";
+import { t } from "@shared/i18n/useTranslation";
 
 export const useCartStore = createCartStore({
   onRestaurantChange: () =>
@@ -7,12 +8,12 @@ export const useCartStore = createCartStore({
       const tg = window.Telegram?.WebApp;
       if (tg?.showConfirm) {
         tg.showConfirm(
-          "Заменить корзину?\nТекущие товары будут удалены.",
+          t("order.cart.replaceConfirmMultiline"),
           resolve,
         );
       } else {
         resolve(
-          window.confirm("Заменить корзину? Текущие товары будут удалены."),
+          window.confirm(t("order.cart.replaceConfirm")),
         );
       }
     }),

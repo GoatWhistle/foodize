@@ -2,6 +2,8 @@ import { render, screen, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { Order } from '@shared/types/models';
+import { t } from '@shared/i18n/useTranslation';
+import { customerOrderStatusLabel } from '@shared/utils/locales';
 import { OrderStatusPage } from '../../pages/orders/OrderStatusPage';
 import { useOrdersStore } from '../../store/useOrdersStore';
 
@@ -83,7 +85,7 @@ describe('OrderStatusPage', () => {
   it('renders order details and initial status', () => {
     renderWithRouter();
 
-    expect(screen.getAllByText('Принят').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(customerOrderStatusLabel('PENDING')).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/500 ₽/)).toHaveLength(2);
     expect(screen.getByText('Бургер')).toBeInTheDocument();
   });
@@ -103,8 +105,8 @@ describe('OrderStatusPage', () => {
 
     renderWithRouter();
 
-    expect(screen.getByRole('status', { name: 'Загрузка заказа' })).toBeInTheDocument();
-    expect(screen.queryByText('Состав заказа')).toBeNull();
+    expect(screen.getByRole('status', { name: t('order.status.loadingLabel') })).toBeInTheDocument();
+    expect(screen.queryByText(t('order.details.composition'))).toBeNull();
   });
 
   it('shows CANCELLED status pill and cancel reason', () => {
@@ -126,9 +128,9 @@ describe('OrderStatusPage', () => {
 
     renderWithRouter();
 
-    expect(screen.getByText('Отменён')).toBeInTheDocument();
+    expect(screen.getByText(customerOrderStatusLabel('CANCELLED'))).toBeInTheDocument();
     expect(screen.getByText('Ресторан закрыт')).toBeInTheDocument();
-    expect(screen.queryByText('Отменить')).toBeNull();
+    expect(screen.queryByText(t('order.status.cancel'))).toBeNull();
   });
 
   it('shows repeat order button when order is COMPLETED', () => {
@@ -149,9 +151,9 @@ describe('OrderStatusPage', () => {
 
     renderWithRouter();
 
-    expect(screen.getAllByText('Выдан').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByRole('button', { name: 'Повторить заказ' })).toBeInTheDocument();
-    expect(screen.queryByText('Отменить')).toBeNull();
+    expect(screen.getAllByText(customerOrderStatusLabel('COMPLETED')).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByRole('button', { name: t('order.status.repeat') })).toBeInTheDocument();
+    expect(screen.queryByText(t('order.status.cancel'))).toBeNull();
   });
 
   it('stops polling when status is ready', async () => {

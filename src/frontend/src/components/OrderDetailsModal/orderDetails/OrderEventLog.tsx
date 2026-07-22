@@ -1,8 +1,11 @@
 import { ClockIcon, ArrowRightIcon } from '@phosphor-icons/react';
 import { permissionPresetLabel } from '@shared/utils/permissions';
+import { orderStatusLabel } from '@shared/utils/locales';
+import { useTranslation } from '@shared/i18n/useTranslation';
+
 import type { OrderEvent } from '@shared/types/models';
 
-import { STATUS_LABEL_RU, formatDateTime } from './orderDetails.helpers';
+import { formatDateTime } from './orderDetails.helpers';
 
 interface OrderEventLogProps {
   events: OrderEvent[];
@@ -14,7 +17,9 @@ export const OrderEventLog = ({
   events,
   eventsLoading,
   eventsUnavailable,
-}: OrderEventLogProps) => (
+}: OrderEventLogProps) => {
+  const { t } = useTranslation();
+  return (
   <div>
     <div
       style={{
@@ -26,24 +31,24 @@ export const OrderEventLog = ({
       }}
     >
       <ClockIcon size={18} color="var(--fire)" />
-      Журнал изменений
+      {t('order.events.title')}
     </div>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {eventsLoading && (
         <div style={{ color: 'var(--text-3)', fontSize: "var(--text-base)" }}>
-          Загружаю историю...
+          {t('order.events.loading')}
         </div>
       )}
       {!eventsLoading && eventsUnavailable && (
         <div style={{ color: 'var(--text-3)', fontSize: "var(--text-base)" }}>
-          История изменений пока недоступна
+          {t('order.events.unavailable')}
         </div>
       )}
       {!eventsLoading &&
         !eventsUnavailable &&
         events.length === 0 && (
           <div style={{ color: 'var(--text-3)', fontSize: "var(--text-base)" }}>
-            История появится после первого изменения статуса
+            {t('order.events.empty')}
           </div>
         )}
       {events.map((event) => (
@@ -60,9 +65,9 @@ export const OrderEventLog = ({
           }}
         >
           <div style={{ fontSize: "var(--text-base)" }}>
-            {STATUS_LABEL_RU[event.old_status]}{' '}
+            {orderStatusLabel(event.old_status)}{' '}
             <ArrowRightIcon size={12} weight="bold" style={{ verticalAlign: 'middle' }} />{' '}
-            {STATUS_LABEL_RU[event.new_status]}
+            {orderStatusLabel(event.new_status)}
             <div
               style={{
                 color: 'var(--text-3)',
@@ -86,4 +91,5 @@ export const OrderEventLog = ({
       ))}
     </div>
   </div>
-);
+  );
+};

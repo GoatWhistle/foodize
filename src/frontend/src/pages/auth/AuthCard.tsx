@@ -4,19 +4,20 @@ import { TelegramLogo } from '@shared/components/BrandIcons/TelegramLogo';
 import { FoodizeLogo } from '@shared/components/FoodizeLogo/FoodizeLogo';
 import { ROUTES } from '../../constants/routes';
 import { TELEGRAM_BOT_USERNAME } from '../../config';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { AuthMode } from './types';
 
-const HEADINGS: Partial<Record<AuthMode, string>> = {
-  password: 'С возвращением',
-  'telegram-username': 'Вход через Telegram',
-  'telegram-code': 'Введите код',
-  'set-password': 'Придумайте пароль',
+const HEADING_KEYS: Partial<Record<AuthMode, string>> = {
+  password: 'auth.headings.password',
+  'telegram-username': 'auth.headings.telegramUsername',
+  'telegram-code': 'auth.headings.telegramCode',
+  'set-password': 'auth.headings.setPassword',
 };
 
-const SUBHEADINGS: Partial<Record<AuthMode, string>> = {
-  password: 'Войдите, чтобы сделать заказ',
-  'telegram-username': 'Введите @username — бот пришлёт одноразовый код',
-  'set-password': 'Пароль нужен для входа через сайт. Имя можно поправить сразу.',
+const SUBHEADING_KEYS: Partial<Record<AuthMode, string>> = {
+  password: 'auth.subheadings.password',
+  'telegram-username': 'auth.subheadings.telegramUsername',
+  'set-password': 'auth.subheadings.setPassword',
 };
 
 interface AuthCardProps {
@@ -28,6 +29,7 @@ interface AuthCardProps {
 }
 
 export const AuthCard = ({ authMode, telegramUsername, error, showBotLink, children }: AuthCardProps) => {
+  const { t } = useTranslation();
   const isTelegram = authMode === 'telegram-username' || authMode === 'telegram-code';
 
   return (
@@ -54,18 +56,18 @@ export const AuthCard = ({ authMode, telegramUsername, error, showBotLink, child
             <TelegramLogo size={20} variant="mono" />
           </span>
         )}
-        {HEADINGS[authMode] ?? 'С возвращением'}
+        {t(HEADING_KEYS[authMode] ?? 'auth.headings.password')}
       </h1>
 
       <p className="auth-subheading">
         {authMode === 'telegram-code'
           ? (
             <>
-              Код отправлен в{' '}
+              {t('auth.codeSentTo')}{' '}
               <strong style={{ color: 'var(--text-2)' }}>@{telegramUsername}</strong>
             </>
           )
-          : SUBHEADINGS[authMode] ?? 'Войдите, чтобы сделать заказ'}
+          : t(SUBHEADING_KEYS[authMode] ?? 'auth.subheadings.password')}
       </p>
 
       {error && (
@@ -91,7 +93,7 @@ export const AuthCard = ({ authMode, telegramUsername, error, showBotLink, child
               }}
             >
               <TelegramLogo size={18} variant="mono" />
-              Открыть @{TELEGRAM_BOT_USERNAME}
+              {t('auth.openBot', { botUsername: String(TELEGRAM_BOT_USERNAME) })}
             </a>
           )}
         </div>
@@ -100,7 +102,7 @@ export const AuthCard = ({ authMode, telegramUsername, error, showBotLink, child
       {children}
 
       <div className="auth-footer">
-        Нет аккаунта? <Link to={ROUTES.REGISTER}>Зарегистрироваться</Link>
+        {t('auth.footer.noAccount')} <Link to={ROUTES.REGISTER}>{t('auth.footer.registerLink')}</Link>
       </div>
     </div>
   );

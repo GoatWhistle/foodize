@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { StaffProfile } from '@shared/types/models';
 import { StaffHeader } from '../../../../pages/staff/components/StaffHeader';
+import { t } from '@shared/i18n/useTranslation';
 
 const PROFILE = { role: 'COOK' } as unknown as StaffProfile;
 
@@ -17,19 +18,19 @@ const baseProps = {
 describe('StaffHeader', () => {
   it('renders title and role', () => {
     render(<StaffHeader {...baseProps} />);
-    expect(screen.getByText('Кабинет сотрудника')).toBeInTheDocument();
-    expect(screen.getByText('Роль:')).toBeInTheDocument();
+    expect(screen.getByText(t('staff.dashboard.title'))).toBeInTheDocument();
+    expect(screen.getByText(t('staff.dashboard.roleLabel'), { exact: false })).toBeInTheDocument();
   });
 
   it('hides alert button when newOrderAlert is false', () => {
     render(<StaffHeader {...baseProps} />);
-    expect(screen.queryByText('Новый заказ!')).toBeNull();
+    expect(screen.queryByText(t('staff.dashboard.newOrderAlert'))).toBeNull();
   });
 
   it('shows alert button and dismisses', async () => {
     const onDismissAlert = vi.fn();
     render(<StaffHeader {...baseProps} newOrderAlert onDismissAlert={onDismissAlert} />);
-    await userEvent.click(screen.getByRole('button', { name: /Новый заказ/ }));
+    await userEvent.click(screen.getByRole('button', { name: t('staff.dashboard.newOrderAlert') }));
     expect(onDismissAlert).toHaveBeenCalled();
   });
 

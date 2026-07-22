@@ -18,6 +18,14 @@ from features.telegram.crud import get_user_by_telegram_id
 from features.telegram.exceptions import (
     InvalidTelegramInitDataException,
     MalformedTelegramInitDataException,
+    TelegramInitDataAlreadyUsedException,
+    TelegramInitDataAuthDateInvalidException,
+    TelegramInitDataAuthDateMissingException,
+    TelegramInitDataExpiredException,
+    TelegramInitDataHashMissingException,
+    TelegramInitDataUserIdMissingException,
+    TelegramInitDataUserPayloadInvalidException,
+    TelegramUserNotFoundException,
 )
 from features.telegram.schemas import TelegramCheckResponse
 from features.users.models import User
@@ -36,19 +44,19 @@ def _validate_init_data(init_data: str) -> dict[str, str]:
 
     received_hash = parsed.pop("hash", None)
     if not received_hash:
-        raise MalformedTelegramInitDataException(detail="Missing hash")
+        raise TelegramInitDataHashMissingException()
 
     auth_date_raw = parsed.get("auth_date")
     if not auth_date_raw:
-        raise MalformedTelegramInitDataException(detail="Missing auth_date")
+        raise TelegramInitDataAuthDateMissingException()
 
     try:
         auth_date = int(auth_date_raw)
     except (ValueError, TypeError) as exc:
-        raise MalformedTelegramInitDataException(detail="Invalid auth_date") from exc
+        raise TelegramInitDataAuthDateInvalidException() from exc
 
     if time.time() - auth_date > _INIT_DATA_MAX_AGE:
-        raise InvalidTelegramInitDataException(detail="initData expired")
+        raise TelegramInitDataExpiredException()
 
     data_check_string = "\n".join(f"{k}={v}" for k, v in sorted(parsed.items()))
 
@@ -73,12 +81,12 @@ async def _consume_init_data_nonce(parsed: dict[str, str], purpose: str) -> None
     now = int(time.time())
     ttl = auth_date + _INIT_DATA_MAX_AGE - now
     if ttl <= 0:
-        raise InvalidTelegramInitDataException(detail="initData expired")
+        raise TelegramInitDataExpiredException()
     cache = get_redis_cache()
     key = f"{_INIT_DATA_NONCE_PREFIX}{purpose}:{received_hash}"
     is_new = await cache.set_nx(key, "1", ttl=ttl)
     if not is_new:
-        raise InvalidTelegramInitDataException(detail="initData already used")
+        raise TelegramInitDataAlreadyUsedException()
 
 
 def _extract_tg_user(parsed: dict[str, str]) -> dict[str, Any]:
@@ -86,9 +94,9 @@ def _extract_tg_user(parsed: dict[str, str]) -> dict[str, Any]:
     try:
         data = json.loads(raw)
     except (json.JSONDecodeError, TypeError) as exc:
-        raise MalformedTelegramInitDataException(detail="Invalid user payload") from exc
+        raise TelegramInitDataUserPayloadInvalidException() from exc
     if "id" not in data:
-        raise MalformedTelegramInitDataException(detail="Missing user id")
+        raise TelegramInitDataUserIdMissingException()
     return cast("dict[str, Any]", data)
 
 
@@ -136,7 +144,7 @@ async def telegram_auth_existing(session: AsyncSession, init_data: str) -> Token
 
     user = await get_user_by_telegram_id(session, telegram_id)
     if not user:
-        raise InvalidTelegramInitDataException(detail="User not found")
+        raise TelegramUserNotFoundException()
 
     await cache_telegram_id(str(user.id), telegram_id)
     return make_tokens(user)

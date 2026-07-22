@@ -4,6 +4,7 @@ import { vi, describe, it, expect } from 'vitest';
 import { AdminUserCard } from '../../../../../pages/admin/tabs/components/AdminUserCard';
 import type { AdminUser } from '../../../../../pages/admin/hooks/useAdminUsers';
 import type { AuthUser } from '@shared/store/createAuthStore';
+import { t } from '@shared/i18n/useTranslation';
 
 const makeUser = (over: Partial<AdminUser> = {}): AdminUser =>
   ({
@@ -31,7 +32,7 @@ describe('AdminUserCard', () => {
     );
     expect(screen.getByText('Иван')).toBeInTheDocument();
     expect(screen.getByText('+79990001122')).toBeInTheDocument();
-    expect(screen.getByText('Активен')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.users.card.active'))).toBeInTheDocument();
   });
 
   it('shows fallbacks and blocked badge', () => {
@@ -45,9 +46,9 @@ describe('AdminUserCard', () => {
         onDelete={vi.fn()}
       />,
     );
-    expect(screen.getByText('Без имени')).toBeInTheDocument();
-    expect(screen.getByText('Нет телефона')).toBeInTheDocument();
-    expect(screen.getByText('Заблокирован')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.users.card.noName'))).toBeInTheDocument();
+    expect(screen.getByText(t('admin.users.card.noPhone'))).toBeInTheDocument();
+    expect(screen.getByText(t('admin.users.card.blocked'))).toBeInTheDocument();
   });
 
   it('opens on click and on keyboard Enter/Space', async () => {
@@ -99,7 +100,7 @@ describe('AdminUserCard', () => {
         onDelete={onDelete}
       />,
     );
-    await userEvent.click(screen.getByTitle('Заблокировать'));
+    await userEvent.click(screen.getByTitle(t('admin.users.card.blockTitle')));
     expect(onDelete).toHaveBeenCalledWith('u1');
   });
 
@@ -114,7 +115,7 @@ describe('AdminUserCard', () => {
         onDelete={vi.fn()}
       />,
     );
-    expect(screen.queryByTitle('Заблокировать')).not.toBeInTheDocument();
+    expect(screen.queryByTitle(t('admin.users.card.blockTitle'))).not.toBeInTheDocument();
   });
 
   it('hides delete for admin users', () => {
@@ -128,6 +129,6 @@ describe('AdminUserCard', () => {
         onDelete={vi.fn()}
       />,
     );
-    expect(screen.queryByTitle('Заблокировать')).not.toBeInTheDocument();
+    expect(screen.queryByTitle(t('admin.users.card.blockTitle'))).not.toBeInTheDocument();
   });
 });

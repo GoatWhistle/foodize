@@ -11,6 +11,7 @@ from features.orders.dependencies import (
     get_restaurant_staff_or_vendor,
     verify_restaurant_access,
 )
+from features.orders.exceptions import OrderNotFoundException
 from features.orders.models import Order
 from features.orders.schemas.order import (
     OrderCancelRequest,
@@ -27,7 +28,7 @@ from middlewares.limiter import limiter
 from shared.dependencies import require_permission
 from shared.enums.order_status import OrderStatus
 from shared.enums.permissions import Permission
-from shared.exceptions import AccessDeniedException, NotFoundException
+from shared.exceptions import AccessDeniedException
 from shared.permissions import has_permission
 from shared.response import build_list_response, build_response
 from shared.restaurant_resolver import resolve_restaurant_uuid
@@ -152,7 +153,7 @@ async def read_order_events(
 ) -> SuccessListResponse[OrderEventResponse]:
     order = await service.get_order_by_identifier(session, order_id)
     if not order:
-        raise NotFoundException(detail="Order not found")
+        raise OrderNotFoundException()
 
     await verify_order_read_access(session, order, current_user)
 
@@ -198,7 +199,7 @@ async def read_order(
 ) -> SuccessResponse[OrderResponse]:
     order = await service.get_order_by_identifier(session, order_id)
     if not order:
-        raise NotFoundException(detail="Order not found")
+        raise OrderNotFoundException()
 
     await verify_order_read_access(session, order, current_user)
 

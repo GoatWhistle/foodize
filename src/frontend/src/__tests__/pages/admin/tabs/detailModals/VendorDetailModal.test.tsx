@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { vi, describe, it, expect } from 'vitest';
 import { VendorDetailModal } from '../../../../../pages/admin/tabs/detailModals/VendorDetailModal';
 import type { AdminVendor } from '@shared/types/models';
+import { t } from '@shared/i18n/useTranslation';
 
 const makeVendor = (over: Partial<AdminVendor> = {}): AdminVendor =>
   ({
@@ -37,15 +38,15 @@ describe('VendorDetailModal', () => {
   it('renders fallback title and approve/reject for pending', async () => {
     const props = baseProps();
     render(<VendorDetailModal {...props} />);
-    await userEvent.click(screen.getByRole('button', { name: /Одобрить/ }));
+    await userEvent.click(screen.getByRole('button', { name: new RegExp(t('common.actions.approve')) }));
     expect(props.handleApproveVendor).toHaveBeenCalledWith('v1');
-    await userEvent.click(screen.getByRole('button', { name: /Отклонить/ }));
+    await userEvent.click(screen.getByRole('button', { name: new RegExp(t('common.actions.reject')) }));
     expect(props.handleRejectVendor).toHaveBeenCalledWith('v1');
   });
 
   it('hides approve when already approved', () => {
     render(<VendorDetailModal {...baseProps({ approval_status: 'APPROVED' })} />);
-    expect(screen.queryByRole('button', { name: /Одобрить/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: new RegExp(t('common.actions.approve')) })).not.toBeInTheDocument();
   });
 
   it('hides reject when already rejected and shows reason', () => {
@@ -54,26 +55,28 @@ describe('VendorDetailModal', () => {
         {...baseProps({ approval_status: 'REJECTED', rejection_reason: 'спам' })}
       />,
     );
-    expect(screen.queryByRole('button', { name: /Отклонить/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: new RegExp(t('common.actions.reject')) })).not.toBeInTheDocument();
     expect(screen.getByText('спам')).toBeInTheDocument();
   });
 
   it('shows loading approve label and disables buttons', () => {
     render(<VendorDetailModal {...baseProps()} approveLoading />);
-    expect(screen.getByText('Одобрение...')).toBeInTheDocument();
+    expect(screen.getByText(t('common.actions.approving'))).toBeInTheDocument();
   });
 
   it('deletes and closes', async () => {
     const props = baseProps();
     render(<VendorDetailModal {...props} />);
-    await userEvent.click(screen.getByRole('button', { name: /Удалить вендора/ }));
+    await userEvent.click(screen.getByRole('button', { name: t('admin.vendors.modal.deleteVendor') }));
     expect(props.handleDeleteVendor).toHaveBeenCalledWith('v1');
-    await userEvent.click(screen.getByLabelText('Закрыть'));
+    await userEvent.click(screen.getByLabelText(t('common.actions.close')));
     expect(props.setSelectedVendor).toHaveBeenCalledWith(null);
   });
 
   it('uses fallback name when empty', () => {
     render(<VendorDetailModal {...baseProps({ name: '' })} />);
-    expect(screen.getByText('Вендор')).toBeInTheDocument();
+    expect(
+      screen.getByText(t('admin.vendors.modal.fallbackTitle')),
+    ).toBeInTheDocument();
   });
 });

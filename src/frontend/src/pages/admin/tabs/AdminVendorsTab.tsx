@@ -2,6 +2,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { DownloadSimpleIcon } from '@phosphor-icons/react';
 import { Pagination } from '@shared/components/Pagination/Pagination';
 import { EmptyState } from '@shared/components/EmptyState/EmptyState';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { adminService as adminServiceType } from '../../../services/adminService';
 import type { AdminVendor, VendorFilters } from '../hooks/useAdminVendors';
 
@@ -73,6 +74,7 @@ export function AdminVendorsTab({
   adminService,
   PAGE_SIZE,
 }: AdminVendorsTabProps) {
+  const { t } = useTranslation();
   const isEmpty = !Array.isArray(vendors) || vendors.length === 0;
 
   if (vendorsLoading && isEmpty) {
@@ -105,7 +107,7 @@ export function AdminVendorsTab({
         <input
           className="form-input"
           style={filterControlStyle}
-          placeholder="Вендор или телефон"
+          placeholder={t('admin.vendors.searchPlaceholder')}
           value={vendorSearchRaw}
           onChange={(event) => {
             setVendorsPage(1);
@@ -121,10 +123,10 @@ export function AdminVendorsTab({
             setVendorFilters((prev) => ({ ...prev, approval_status: event.target.value }));
           }}
         >
-          <option value="">Все статусы</option>
-          <option value="PENDING">На проверке</option>
-          <option value="APPROVED">Одобрен</option>
-          <option value="REJECTED">Отклонён</option>
+          <option value="">{t('admin.vendors.allStatuses')}</option>
+          <option value="PENDING">{t('admin.vendors.statuses.pending')}</option>
+          <option value="APPROVED">{t('admin.vendors.statuses.approved')}</option>
+          <option value="REJECTED">{t('admin.vendors.statuses.rejected')}</option>
         </select>
       </div>
 
@@ -155,13 +157,13 @@ export function AdminVendorsTab({
               ); }
             }
           />
-          Выбрать все
+          {t('admin.common.selectAll')}
         </label>
         <button
           className="btn btn-secondary btn-sm"
           disabled={exportLoading}
           onClick={() =>
-            { handleExport(adminService.exportVendorsCSV, `вендоры_${todayStr}.csv`); }
+            { handleExport(adminService.exportVendorsCSV, t('admin.exportFiles.vendors', { date: todayStr })); }
           }
         >
           {exportLoading ? '...' : <><DownloadSimpleIcon size={16} weight="bold" /> CSV</>}
@@ -198,14 +200,14 @@ export function AdminVendorsTab({
           >
             <div>
               <div style={{ color: 'var(--text-1)', fontWeight: 900 }}>
-                {vendor.name || 'Вендор без имени'}
+                {vendor.name || t('admin.vendors.noName')}
               </div>
               <div style={{ color: 'var(--text-3)', fontSize: "var(--text-base)", marginTop: 4 }}>
-                {vendor.phone_number || 'Нет телефона'}
+                {vendor.phone_number || t('admin.vendors.noPhone')}
               </div>
             </div>
             <span className="order-status-badge pending">
-              {vendor.restaurants_count || 0} заведений
+              {t('admin.vendors.restaurantsCount', { count: vendor.restaurants_count || 0 })}
             </span>
           </button>
         </div>
@@ -213,8 +215,8 @@ export function AdminVendorsTab({
 
       {isEmpty && (
         <EmptyState
-          title="Вендоров пока нет"
-          subtitle="Для выбранных фильтров нет результатов"
+          title={t('admin.vendors.emptyTitle')}
+          subtitle={t('admin.common.emptySubtitle')}
         />
       )}
 

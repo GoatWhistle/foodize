@@ -11,10 +11,13 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useCartStore } from '../../store/useCartStore';
 import { ROUTES } from '../../constants/routes';
 import { formatPrice } from '@shared/utils/price';
+import { useTranslation } from '@shared/i18n/useTranslation';
+
 
 const DEEP_LINK_ID_RE = /^[a-zA-Z0-9-]{1,64}$/;
 
 export const MainLayout = () => {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -71,7 +74,7 @@ export const MainLayout = () => {
   return (
     <div className="layout">
       <header className="header">
-        <Link to={ROUTES.HOME} className="header-logo" aria-label="На главную">
+        <Link to={ROUTES.HOME} className="header-logo" aria-label={t('profile.nav.home')}>
           <FoodizeLogo size={26} />
         </Link>
 
@@ -80,10 +83,10 @@ export const MainLayout = () => {
             <Link
               to={ROUTES.PROFILE}
               className={`nav-link${location.pathname.startsWith(ROUTES.PROFILE) ? ' active' : ''}`}
-              aria-label="Профиль"
+              aria-label={t('profile.nav.profile')}
             >
               <UserIcon size={18} weight="bold" />
-              Профиль
+              {t('profile.nav.profile')}
             </Link>
           )}
           {isAuthenticated && <NotificationBell />}
@@ -95,7 +98,7 @@ export const MainLayout = () => {
               style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
             >
               <SignInIcon size={16} weight="bold" />
-              Войти
+              {t('profile.nav.login')}
             </Link>
           )}
         </div>
@@ -109,11 +112,11 @@ export const MainLayout = () => {
         <button
           className="cart-fab"
           onClick={() => { setIsCartOpen(true); }}
-          aria-label="Открыть корзину"
+          aria-label={t('order.cart.fabOpen')}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <ShoppingCartIcon size={20} weight="fill" />
-            <span>Корзина</span>
+            <span>{t('order.cart.fabLabel')}</span>
             <span className={`cart-badge${badgePop ? ' cart-badge-pop' : ''}`}>
               {cartItemsCount}
             </span>

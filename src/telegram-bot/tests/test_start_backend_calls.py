@@ -13,6 +13,7 @@ from handlers.start import (
     cmd_vendor_status,
 )
 from tests.conftest import answer_of
+from utils import messages as msg
 
 
 @pytest.fixture(autouse=True)
@@ -38,7 +39,7 @@ async def test_link_phone_failure_no_secret(
 
     assert res is False
     answer_of(message).assert_called_with(
-        "Бот пока не настроен для регистрации: не задан TELEGRAM__BOT_API_SECRET."
+        msg.text("botNotConfigured")
     )
 
 
@@ -47,15 +48,15 @@ async def test_link_phone_failure_no_secret(
     [
         (
             _http_status_error(HTTPStatus.FORBIDDEN, "/telegram/bot/link-phone"),
-            "Бот не прошел проверку доступа к Foodize API.",
+            msg.text("botAccessDenied"),
         ),
         (
             _http_status_error(HTTPStatus.INTERNAL_SERVER_ERROR, "/telegram/bot/link-phone"),
-            "Не получилось привязать телефон. Проверьте номер и попробуйте еще раз.",
+            msg.text("phoneLinkFailed"),
         ),
         (
             httpx.HTTPError("Conn Error"),
-            "Foodize API сейчас недоступен. Попробуйте чуть позже.",
+            msg.text("apiUnavailable"),
         ),
     ],
 )
@@ -100,7 +101,7 @@ async def test_cmd_vendor_status_not_configured(
     monkeypatch.setattr(bot_config, "bot_api_secret", "")
     message = message_factory()
     await cmd_vendor_status(message)
-    answer_of(message).assert_called_with("Проверка статуса вендора пока не настроена.")
+    answer_of(message).assert_called_with(msg.text("vendorStatusNotConfigured"))
 
 
 @pytest.mark.parametrize(
@@ -108,15 +109,15 @@ async def test_cmd_vendor_status_not_configured(
     [
         (
             _http_status_error(HTTPStatus.FORBIDDEN, "/telegram/bot/vendor-status"),
-            "Бот не прошел проверку доступа к Foodize API.",
+            msg.text("botAccessDenied"),
         ),
         (
             _http_status_error(HTTPStatus.INTERNAL_SERVER_ERROR, "/telegram/bot/vendor-status"),
-            "Не удалось получить статус. Попробуйте позже.",
+            msg.text("vendorStatusError"),
         ),
         (
             httpx.HTTPError("Conn Error"),
-            "Foodize API сейчас недоступен. Попробуйте чуть позже.",
+            msg.text("apiUnavailable"),
         ),
     ],
 )
@@ -141,7 +142,7 @@ async def test_cmd_vendor_status_success(
     )
     message = message_factory()
     await cmd_vendor_status(message)
-    assert "одобрена" in answer_of(message).call_args[0][0]
+    assert msg.text("vendorApproved") in answer_of(message).call_args[0][0]
 
 
 async def test_cmd_orders_no_user_does_nothing(
@@ -158,7 +159,7 @@ async def test_cmd_orders_not_configured(
     monkeypatch.setattr(bot_config, "bot_api_secret", "")
     message = message_factory()
     await cmd_orders(message)
-    answer_of(message).assert_called_with("Просмотр заказов пока не настроен.")
+    answer_of(message).assert_called_with(msg.text("ordersNotConfigured"))
 
 
 @pytest.mark.parametrize(
@@ -166,15 +167,15 @@ async def test_cmd_orders_not_configured(
     [
         (
             _http_status_error(HTTPStatus.FORBIDDEN, "/telegram/bot/orders"),
-            "Бот не прошел проверку доступа к Foodize API.",
+            msg.text("botAccessDenied"),
         ),
         (
             _http_status_error(HTTPStatus.INTERNAL_SERVER_ERROR, "/telegram/bot/orders"),
-            "Не удалось получить заказы. Попробуйте позже.",
+            msg.text("ordersError"),
         ),
         (
             httpx.HTTPError("Conn error"),
-            "Foodize API сейчас недоступен. Попробуйте чуть позже.",
+            msg.text("apiUnavailable"),
         ),
     ],
 )
@@ -196,7 +197,7 @@ async def test_cmd_orders_empty(
     mocker.patch("handlers.start.backend_client.get_active_orders", return_value=[])
     message = message_factory()
     await cmd_orders(message)
-    answer_of(message).assert_called_with("Активных заказов сейчас нет.")
+    answer_of(message).assert_called_with(msg.text("noActiveOrders"))
 
 
 async def test_cmd_orders_with_orders(
@@ -215,4 +216,4 @@ async def test_cmd_orders_with_orders(
     )
     message = message_factory()
     await cmd_orders(message)
-    assert "Ваши активные заказы" in answer_of(message).call_args[0][0]
+    assert msg.text("activeOrdersHeader") in answer_of(message).call_args[0][0]

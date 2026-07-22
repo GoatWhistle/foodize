@@ -1,9 +1,13 @@
 import { UserCircleIcon, StorefrontIcon } from '@phosphor-icons/react';
 import type { Order } from '@shared/types/models';
 
+import { useTranslation } from '@shared/i18n/useTranslation';
+
 import { formatDateTime } from './orderDetails.helpers';
 
-export const OrderPartiesCard = ({ order }: { order: Order }) => (
+export const OrderPartiesCard = ({ order }: { order: Order }) => {
+  const { t } = useTranslation();
+  return (
   <div
     style={{
       background: 'var(--bg-surface)',
@@ -17,7 +21,7 @@ export const OrderPartiesCard = ({ order }: { order: Order }) => (
   >
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
       <UserCircleIcon size={18} color="var(--fire)" />
-      <span style={{ fontWeight: 800 }}>Клиент</span>
+      <span style={{ fontWeight: 800 }}>{t('order.details.customer')}</span>
     </div>
     {order.customer_name && (
       <div style={{ fontWeight: 800, fontSize: "var(--text-base)" }}>
@@ -27,7 +31,7 @@ export const OrderPartiesCard = ({ order }: { order: Order }) => (
 
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
       <StorefrontIcon size={18} color="var(--fire)" />
-      <span style={{ fontWeight: 800 }}>Заведение</span>
+      <span style={{ fontWeight: 800 }}>{t('order.details.venue')}</span>
     </div>
     {order.restaurant_name && (
       <div style={{ fontWeight: 800, fontSize: "var(--text-base)" }}>
@@ -42,13 +46,14 @@ export const OrderPartiesCard = ({ order }: { order: Order }) => (
 
     {order.estimated_ready_at && (
       <div style={{ color: 'var(--text-3)', fontSize: "var(--text-base)" }}>
-        Ожидается к: {formatDateTime(order.estimated_ready_at)}
+        {t('order.details.expectedBy', { time: formatDateTime(order.estimated_ready_at) })}
       </div>
     )}
     {order.ready_at && (
       <div style={{ color: 'var(--text-3)', fontSize: "var(--text-base)" }}>
-        Готов: {formatDateTime(order.ready_at)}
+        {t('order.details.readyAt', { time: formatDateTime(order.ready_at) })}
       </div>
     )}
   </div>
-);
+  );
+};

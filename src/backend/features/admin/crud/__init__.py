@@ -1,5 +1,5 @@
 from features.admin.crud.advanced_analytics import get_advanced_analytics
-from features.admin.crud.analytics_shared import CATEGORY_RU, STATUS_RU
+from features.admin.crud.analytics_shared import translate_category, translate_status
 from features.admin.crud.audit import get_audit_logs
 from features.admin.crud.finance import get_finance_analytics
 from features.admin.crud.orders import count_all_orders, get_all_orders
@@ -34,8 +34,6 @@ from features.admin.crud.users import (
 )
 
 __all__ = [
-    "CATEGORY_RU",
-    "STATUS_RU",
     "activate_user",
     "batch_activate_users",
     "batch_deactivate_users",
@@ -64,4 +62,6 @@ __all__ = [
     "get_vendor_by_id",
     "set_restaurant_moderation",
     "set_vendor_moderation",
+    "translate_category",
+    "translate_status",
 ]

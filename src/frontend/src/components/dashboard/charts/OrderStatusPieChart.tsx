@@ -1,16 +1,19 @@
 import { memo } from 'react';
 import { PieChart, Pie, Tooltip, Legend } from 'recharts';
 import { ChartCard, COLORS, TOOLTIP_STYLE } from './chartPrimitives';
+import { useTranslation } from '@shared/i18n/useTranslation';
+
 
 export const OrderStatusPieChart = memo(
   ({ data = {} }: { data?: Record<string, number> }) => {
+    const { t } = useTranslation();
     const chartData = Object.entries(data).map(([label, value], index) => ({
       label,
       value,
       fill: COLORS[index % COLORS.length],
     }));
     return (
-      <ChartCard title="Статусы заказов">
+      <ChartCard title={t('admin.charts.orderStatus.title')}>
         <PieChart>
           <Pie
             data={chartData}

@@ -1,4 +1,5 @@
 import { useRouteError, useNavigate } from "react-router-dom";
+import { useTranslation } from "@shared/i18n/useTranslation";
 
 interface RouteError {
   status?: number;
@@ -7,11 +8,12 @@ interface RouteError {
 }
 
 export const RouteErrorPage = () => {
+  const { t } = useTranslation();
   const error = useRouteError() as RouteError | null;
   const navigate = useNavigate();
 
   const message =
-    error?.statusText ?? error?.message ?? "Неизвестная ошибка";
+    error?.statusText ?? error?.message ?? t("common.errors.unknown");
   const status = error?.status;
 
   return (
@@ -28,7 +30,7 @@ export const RouteErrorPage = () => {
       }}
     >
       <div style={{ fontWeight: 700, fontSize: "var(--text-xl)", color: "var(--text-1)" }}>
-        {status === 404 ? "Страница не найдена" : "Что-то пошло не так"}
+        {status === 404 ? t("common.errors.pageNotFound") : t("common.errors.somethingWentWrong")}
       </div>
       <div style={{ fontSize: "var(--text-base)", color: "var(--text-3)", maxWidth: 360 }}>
         {message}
@@ -39,7 +41,7 @@ export const RouteErrorPage = () => {
           void navigate("/");
         }}
       >
-        На главную
+        {t("common.actions.goHome")}
       </button>
     </div>
   );

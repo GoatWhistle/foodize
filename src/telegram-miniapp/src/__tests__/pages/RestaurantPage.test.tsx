@@ -104,6 +104,7 @@ vi.mock("@shared/components/InfoModal/InfoModal", () => ({
 }));
 
 import { RestaurantPage } from "../../pages/restaurant/RestaurantPage";
+import { t } from "@shared/i18n/useTranslation";
 
 const makeController = (o: Record<string, unknown> = {}): Record<string, unknown> => ({
   restaurantView: { id: "42", name: "Кафе" },
@@ -162,19 +163,21 @@ describe("RestaurantPage", () => {
 
   it("hides the cart fab when the cart is empty", () => {
     renderPage();
-    expect(screen.queryByText(/товар/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(t("order.cart.itemsCount", { count: 0 })),
+    ).not.toBeInTheDocument();
   });
 
   it("shows the cart fab with count and total when items are in the cart", () => {
     cartState = { addToCart: vi.fn(), cartCount: () => 3, cartTotal: () => 900 };
     renderPage();
-    expect(screen.getByText(/3 товара/)).toBeInTheDocument();
+    expect(screen.getByText(t("order.cart.itemsCount", { count: 3 }))).toBeInTheDocument();
   });
 
   it("opens the cart drawer via the cart fab and fires haptic", async () => {
     cartState = { addToCart: vi.fn(), cartCount: () => 2, cartTotal: () => 500 };
     renderPage();
-    await userEvent.click(screen.getByText(/2 товара/));
+    await userEvent.click(screen.getByText(t("order.cart.itemsCount", { count: 2 })));
     expect(hapticImpact).toHaveBeenCalledWith("medium");
     expect(screen.getByTestId("cart-drawer")).toBeInTheDocument();
   });
@@ -201,7 +204,7 @@ describe("RestaurantPage", () => {
   it("closes the cart drawer from within it", async () => {
     cartState = { addToCart: vi.fn(), cartCount: () => 2, cartTotal: () => 500 };
     renderPage();
-    await userEvent.click(screen.getByText(/2 товара/));
+    await userEvent.click(screen.getByText(t("order.cart.itemsCount", { count: 2 })));
     await userEvent.click(screen.getByText("close-cart"));
     expect(screen.queryByTestId("cart-drawer")).not.toBeInTheDocument();
   });

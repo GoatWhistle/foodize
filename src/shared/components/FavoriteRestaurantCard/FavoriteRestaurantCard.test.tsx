@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 import { FavoriteRestaurantCard } from "@shared/components/FavoriteRestaurantCard/FavoriteRestaurantCard";
 import type { Favorite } from "@shared/types/models";
+import { t } from "@shared/i18n/useTranslation";
 
 const makeFavorite = (over: Partial<Favorite["restaurant"]> = {}): Favorite => ({
   id: "fav-1",
@@ -24,7 +25,7 @@ describe("FavoriteRestaurantCard", () => {
     );
     expect(screen.getByText("Бургерная")).toBeInTheDocument();
     expect(screen.getByText("ул. Ленина, 5")).toBeInTheDocument();
-    expect(screen.getByText("Открыто")).toBeInTheDocument();
+    expect(screen.getByText(t("catalog.restaurantCard.open"))).toBeInTheDocument();
   });
 
   it("renders the closed status", () => {
@@ -35,7 +36,7 @@ describe("FavoriteRestaurantCard", () => {
         onUnfavorite={vi.fn()}
       />,
     );
-    expect(screen.getByText("Закрыто")).toBeInTheDocument();
+    expect(screen.getByText(t("catalog.restaurantCard.closed"))).toBeInTheDocument();
   });
 
   it("renders a hiring badge when the restaurant is hiring", () => {
@@ -46,7 +47,7 @@ describe("FavoriteRestaurantCard", () => {
         onUnfavorite={vi.fn()}
       />,
     );
-    expect(screen.getByText("Вакансии")).toBeInTheDocument();
+    expect(screen.getByText(t("catalog.restaurantCard.vacancies"))).toBeInTheDocument();
   });
 
   it("calls onNavigate when the card is clicked", async () => {
@@ -70,7 +71,7 @@ describe("FavoriteRestaurantCard", () => {
         onUnfavorite={onUnfavorite}
       />,
     );
-    await user.click(screen.getByRole("button", { name: "Убрать из избранного" }));
+    await user.click(screen.getByRole("button", { name: t("catalog.restaurantCard.removeFromFavorites") }));
     expect(onUnfavorite).toHaveBeenCalledWith("rest-1");
     expect(onNavigate).not.toHaveBeenCalled();
   });

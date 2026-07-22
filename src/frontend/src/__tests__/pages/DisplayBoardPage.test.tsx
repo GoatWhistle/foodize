@@ -2,6 +2,7 @@ import { render, screen, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { DisplayBoardPage } from '../../pages/display-board/DisplayBoardPage';
+import { t } from '@shared/i18n/useTranslation';
 type WsMessage = { cooking: string[]; ready: string[] };
 type WsMessageHandler = (msg: WsMessage) => void;
 
@@ -107,8 +108,8 @@ describe('DisplayBoardPage', () => {
       );
     });
 
-    expect(screen.getByText('Готовятся')).toBeInTheDocument();
-    expect(screen.getByText('Готовы к выдаче')).toBeInTheDocument();
+    expect(screen.getByText(t('staff.displayBoard.cooking'))).toBeInTheDocument();
+    expect(screen.getByText(t('staff.displayBoard.ready'))).toBeInTheDocument();
 
     errorSpy.mockRestore();
   });
@@ -171,6 +172,6 @@ describe('DisplayBoardPage', () => {
     await waitFor(() => {
       expect(createDisplayBoardWebSocket).toHaveBeenCalled();
     });
-    expect(screen.getByText('Готовятся')).toBeInTheDocument();
+    expect(screen.getByText(t('staff.displayBoard.cooking'))).toBeInTheDocument();
   });
 });

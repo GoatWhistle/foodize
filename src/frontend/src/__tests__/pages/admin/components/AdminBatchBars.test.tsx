@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AdminBatchBars } from '../../../../pages/admin/components/AdminBatchBars';
 import type { useAdminDashboard } from '../../../../pages/admin/useAdminDashboard';
 import { at } from '../../../testUtils';
+import { t } from '@shared/i18n/useTranslation';
 
 type Dashboard = ReturnType<typeof useAdminDashboard>;
 
@@ -33,17 +34,17 @@ describe('AdminBatchBars', () => {
 
   it('renders four batch bars with counts', () => {
     render(<AdminBatchBars dashboard={makeDashboard()} />);
-    expect(screen.getByText(/пользователей/)).toBeInTheDocument();
-    expect(screen.getByText(/отзывов/)).toBeInTheDocument();
-    expect(screen.getByText(/вендоров/)).toBeInTheDocument();
-    expect(screen.getByText(/ресторанов/)).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(t('admin.batch.labels.users')))).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(t('admin.batch.labels.reviews')))).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(t('admin.batch.labels.vendors')))).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(t('admin.batch.labels.restaurants')))).toBeInTheDocument();
   });
 
   it('clears user selection', async () => {
     const user = userEvent.setup();
     const setSelectedUserIds = vi.fn();
     render(<AdminBatchBars dashboard={makeDashboard({ setSelectedUserIds })} />);
-    const clearButtons = screen.getAllByRole('button', { name: 'Снять выделение' });
+    const clearButtons = screen.getAllByRole('button', { name: t('common.actions.clearSelection') });
     await user.click(at(clearButtons, 0));
     expect(setSelectedUserIds).toHaveBeenCalledWith(new Set());
   });
@@ -52,8 +53,8 @@ describe('AdminBatchBars', () => {
     const user = userEvent.setup();
     const handleBatchUsers = vi.fn();
     render(<AdminBatchBars dashboard={makeDashboard({ handleBatchUsers })} />);
-    await user.click(screen.getByRole('button', { name: 'Активировать' }));
-    await user.click(screen.getByRole('button', { name: 'Деактивировать' }));
+    await user.click(screen.getByRole('button', { name: t('admin.batch.actions.activate') }));
+    await user.click(screen.getByRole('button', { name: t('admin.batch.actions.deactivate') }));
     expect(handleBatchUsers).toHaveBeenCalledWith('activate');
     expect(handleBatchUsers).toHaveBeenCalledWith('deactivate');
   });
@@ -62,7 +63,7 @@ describe('AdminBatchBars', () => {
     const user = userEvent.setup();
     const handleBatchDeleteReviews = vi.fn();
     render(<AdminBatchBars dashboard={makeDashboard({ handleBatchDeleteReviews })} />);
-    await user.click(screen.getByRole('button', { name: 'Удалить выбранные' }));
+    await user.click(screen.getByRole('button', { name: t('admin.batch.actions.deleteSelected') }));
     expect(handleBatchDeleteReviews).toHaveBeenCalled();
   });
 
@@ -75,13 +76,13 @@ describe('AdminBatchBars', () => {
         dashboard={makeDashboard({ handleBatchVendors, requestReason })}
       />
     );
-    const approveButtons = screen.getAllByRole('button', { name: 'Одобрить выбранных' });
-    const rejectButtons = screen.getAllByRole('button', { name: 'Отклонить выбранных' });
+    const approveButtons = screen.getAllByRole('button', { name: t('admin.batch.actions.approveSelected') });
+    const rejectButtons = screen.getAllByRole('button', { name: t('admin.batch.actions.rejectSelected') });
     await user.click(at(approveButtons, 0));
     await user.click(at(rejectButtons, 0));
     expect(handleBatchVendors).toHaveBeenCalledWith('approve');
     expect(requestReason).toHaveBeenCalledWith(
-      expect.objectContaining({ confirmLabel: 'Отклонить' })
+      expect.objectContaining({ confirmLabel: t('common.actions.reject') })
     );
     const config = at(requestReason.mock.calls, 0)[0] as { onConfirm: (r: string) => void };
     config.onConfirm('bad');
@@ -97,8 +98,8 @@ describe('AdminBatchBars', () => {
         dashboard={makeDashboard({ handleBatchRestaurants, requestReason })}
       />
     );
-    const approveButtons = screen.getAllByRole('button', { name: 'Одобрить выбранных' });
-    const rejectButtons = screen.getAllByRole('button', { name: 'Отклонить выбранных' });
+    const approveButtons = screen.getAllByRole('button', { name: t('admin.batch.actions.approveSelected') });
+    const rejectButtons = screen.getAllByRole('button', { name: t('admin.batch.actions.rejectSelected') });
     await user.click(at(approveButtons, 1));
     await user.click(at(rejectButtons, 1));
     expect(handleBatchRestaurants).toHaveBeenCalledWith('approve');
@@ -121,7 +122,7 @@ describe('AdminBatchBars', () => {
         })}
       />
     );
-    const clearButtons = screen.getAllByRole('button', { name: 'Снять выделение' });
+    const clearButtons = screen.getAllByRole('button', { name: t('common.actions.clearSelection') });
     await user.click(at(clearButtons, 1));
     await user.click(at(clearButtons, 2));
     await user.click(at(clearButtons, 3));

@@ -1,6 +1,7 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useAdminDashboard } from '../../../pages/admin/useAdminDashboard';
+import { t } from '@shared/i18n/useTranslation';
 
 vi.mock('../../../services/adminService', () => ({
   adminService: {
@@ -73,7 +74,7 @@ describe('useAdminDashboard', () => {
     vi.mocked(adminService.getPlatformStats).mockRejectedValueOnce(new Error('nope'));
     const { result } = renderHook(() => useAdminDashboard());
     await waitFor(() => {
-      expect(result.current.actionError).toBe('Не удалось загрузить статистику');
+      expect(result.current.actionError).toBe(t('admin.errors.statsLoadFailed'));
     });
   });
 
@@ -103,7 +104,7 @@ describe('useAdminDashboard', () => {
     await act(async () => {
       await result.current.handleExport(vi.fn().mockRejectedValue(new Error('x')), 'file.csv');
     });
-    expect(result.current.actionError).toBe('Не удалось выполнить экспорт');
+    expect(result.current.actionError).toBe(t('admin.errors.exportFailed'));
   });
 
   it('requestReason opens the dialog and runReasonAction runs onConfirm', async () => {

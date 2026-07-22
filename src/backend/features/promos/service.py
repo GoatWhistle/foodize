@@ -1,6 +1,5 @@
 import uuid
 from datetime import UTC, datetime
-from http import HTTPStatus
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,6 +7,8 @@ from features.admin.audit_log import service as audit_service
 from features.promos import crud
 from features.promos.exceptions import (
     PromoAlreadyExistsException,
+    PromoFirstOrderOnlyException,
+    PromoMinOrderAmountException,
     PromoNotActiveException,
     PromoNotFoundException,
     PromoRestaurantMismatchException,
@@ -17,7 +18,6 @@ from features.promos.models import Promo
 from features.promos.schemas import PromoCreate, PromoResponse, PromoValidateResponse
 from features.restaurants.exceptions import RestaurantNotFoundException
 from shared.enums.discount_type import DiscountType
-from shared.exceptions.base import AppException
 
 
 async def create_promo(
@@ -99,13 +99,13 @@ def _validate_promo_active(
     if promo.max_uses is not None and promo.used_count >= promo.max_uses:
         raise PromoUsageLimitException()
     if promo.first_order_only and not is_first_order:
-        raise AppException(status_code=HTTPStatus.BAD_REQUEST, detail="promo_first_order_only")
+        raise PromoFirstOrderOnlyException()
     if (
         promo.min_order_amount is not None
         and order_total is not None
         and order_total < promo.min_order_amount
     ):
-        raise AppException(status_code=HTTPStatus.BAD_REQUEST, detail="promo_min_order_amount")
+        raise PromoMinOrderAmountException()
 
 
 def _compute_discounted_total(promo: Promo, order_total: int, discount_base: int) -> int:

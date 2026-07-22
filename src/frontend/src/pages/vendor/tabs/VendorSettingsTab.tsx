@@ -1,4 +1,5 @@
 import type { Dispatch, FormEvent, SetStateAction } from 'react';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { Restaurant } from '@shared/types/models';
 import { RestaurantCoverField } from './components/RestaurantCoverField';
 
@@ -27,6 +28,7 @@ export function VendorSettingsTab({
   formLoading,
   handleUpdateRestaurant,
 }: VendorSettingsTabProps) {
+  const { t } = useTranslation();
   return (
     <div
       style={{
@@ -36,7 +38,7 @@ export function VendorSettingsTab({
         borderRadius: 'var(--radius-md)',
       }}
     >
-      <h3 style={{ fontWeight: 700, marginBottom: 12 }}>Настройки ресторана</h3>
+      <h3 style={{ fontWeight: 700, marginBottom: 12 }}>{t('vendor.settings.sectionTitle')}</h3>
 
       <RestaurantCoverField selectedRestaurant={selectedRestaurant} />
 
@@ -46,7 +48,7 @@ export function VendorSettingsTab({
       >
         {formError && <div className="form-error">{formError}</div>}
         <div>
-          <label style={{ fontSize: "var(--text-base)", color: 'var(--text-3)' }}>Название</label>
+          <label style={{ fontSize: "var(--text-base)", color: 'var(--text-3)' }}>{t('common.labels.title')}</label>
           <input
             className="form-input"
             value={editRestaurant?.name ?? selectedRestaurant.name}
@@ -56,10 +58,10 @@ export function VendorSettingsTab({
           />
         </div>
         <div>
-          <label style={{ fontSize: "var(--text-base)", color: 'var(--text-3)' }}>Описание ресторана</label>
+          <label style={{ fontSize: "var(--text-base)", color: 'var(--text-3)' }}>{t('vendor.settings.descriptionLabel')}</label>
           <textarea
             className="form-input"
-            placeholder="Краткое описание заведения для посетителей..."
+            placeholder={t('vendor.settings.descriptionPlaceholder')}
             value={editRestaurant?.description ?? selectedRestaurant.description ?? ''}
             onChange={(e) =>
               { setEditRestaurant({
@@ -72,7 +74,7 @@ export function VendorSettingsTab({
           />
         </div>
         <div>
-          <label style={{ fontSize: "var(--text-base)", color: 'var(--text-3)' }}>Адрес</label>
+          <label style={{ fontSize: "var(--text-base)", color: 'var(--text-3)' }}>{t('common.labels.address')}</label>
           <input
             className="form-input"
             value={editRestaurant?.address ?? selectedRestaurant.address}
@@ -95,7 +97,7 @@ export function VendorSettingsTab({
               }); }
             }
           />
-          <span className="form-check-label">Заведение открыто</span>
+          <span className="form-check-label">{t('vendor.settings.isOpen')}</span>
         </label>
         <label className="form-check">
           <input
@@ -111,10 +113,10 @@ export function VendorSettingsTab({
               }); }
             }
           />
-          <span className="form-check-label">Пауза приёма заказов</span>
+          <span className="form-check-label">{t('vendor.settings.orderingPaused')}</span>
         </label>
         <div>
-          <label style={{ fontSize: "var(--text-base)", color: 'var(--text-3)' }}>Пауза до</label>
+          <label style={{ fontSize: "var(--text-base)", color: 'var(--text-3)' }}>{t('vendor.settings.pausedUntil')}</label>
           <input
             className="form-input"
             type="datetime-local"
@@ -131,7 +133,7 @@ export function VendorSettingsTab({
         </div>
         <div>
           <label style={{ fontSize: "var(--text-base)", color: 'var(--text-3)' }}>
-            Среднее время приготовления, минут
+            {t('vendor.settings.avgPrepTime')}
           </label>
           <input
             className="form-input"
@@ -152,14 +154,14 @@ export function VendorSettingsTab({
         </div>
         <div>
           <label style={{ fontSize: "var(--text-base)", color: 'var(--text-3)' }}>
-            Мягкий лимит активных заказов
+            {t('vendor.settings.maxActiveOrders')}
           </label>
           <input
             className="form-input"
             type="number"
             min="1"
             max="1000"
-            placeholder="Без лимита"
+            placeholder={t('vendor.settings.noLimit')}
             value={
               editRestaurant?.max_active_orders ?? selectedRestaurant.max_active_orders ?? ''
             }
@@ -182,10 +184,10 @@ export function VendorSettingsTab({
               }); }
             }
           />
-          <span className="form-check-label">Набор сотрудников</span>
+          <span className="form-check-label">{t('vendor.settings.isHiring')}</span>
         </label>
         <button type="submit" className="btn btn-primary" disabled={formLoading}>
-          Сохранить
+          {t('common.actions.save')}
         </button>
       </form>
     </div>

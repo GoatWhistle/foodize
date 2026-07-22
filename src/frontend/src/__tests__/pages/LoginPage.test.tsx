@@ -2,6 +2,7 @@ import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
+import { t } from '@shared/i18n/useTranslation';
 import { LoginPage } from '../../pages/auth/LoginPage';
 import { useAuthStore } from '../../store/useAuthStore';
 
@@ -53,9 +54,9 @@ describe('LoginPage', () => {
       </BrowserRouter>
     );
 
-    expect(screen.getByLabelText('Телефон')).toBeInTheDocument();
-    expect(screen.getByLabelText('Пароль')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Войти' })).toBeInTheDocument();
+    expect(screen.getByLabelText(t('auth.fields.phone'))).toBeInTheDocument();
+    expect(screen.getByLabelText(t('auth.fields.password'))).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: t('auth.buttons.login') })).toBeInTheDocument();
   });
 
   it('calls login and navigates on successful submit', async () => {
@@ -72,9 +73,9 @@ describe('LoginPage', () => {
       </BrowserRouter>
     );
 
-    await user.type(screen.getByLabelText('Телефон'), '+7123');
-    await user.type(screen.getByLabelText('Пароль'), 'password123');
-    await user.click(screen.getByRole('button', { name: 'Войти' }));
+    await user.type(screen.getByLabelText(t('auth.fields.phone')), '+7123');
+    await user.type(screen.getByLabelText(t('auth.fields.password')), 'password123');
+    await user.click(screen.getByRole('button', { name: t('auth.buttons.login') }));
 
     await waitFor(() => {
       expect(mockLogin).toHaveBeenCalledWith({
@@ -106,12 +107,12 @@ describe('LoginPage', () => {
       </BrowserRouter>
     );
 
-    await user.type(screen.getByLabelText('Телефон'), '+79001234567');
-    await user.type(screen.getByLabelText('Пароль'), 'wrongpassword');
-    await user.click(screen.getByRole('button', { name: 'Войти' }));
+    await user.type(screen.getByLabelText(t('auth.fields.phone')), '+79001234567');
+    await user.type(screen.getByLabelText(t('auth.fields.password')), 'wrongpassword');
+    await user.click(screen.getByRole('button', { name: t('auth.buttons.login') }));
 
     await waitFor(() => {
-      expect(screen.getByText('Неверный телефон или пароль')).toBeInTheDocument();
+      expect(screen.getByText(t('apiErrors.byDetail.Invalid credentials'))).toBeInTheDocument();
     });
   });
 
@@ -123,10 +124,10 @@ describe('LoginPage', () => {
       </BrowserRouter>
     );
 
-    await user.click(screen.getByRole('button', { name: 'Войти' }));
+    await user.click(screen.getByRole('button', { name: t('auth.buttons.login') }));
 
     await waitFor(() => {
-      expect(screen.getByText('Введите телефон и пароль')).toBeInTheDocument();
+      expect(screen.getByText(t('auth.errors.enterPhoneAndPassword'))).toBeInTheDocument();
     });
   });
 
@@ -150,12 +151,12 @@ describe('LoginPage', () => {
       </BrowserRouter>
     );
 
-    await user.type(screen.getByLabelText('Телефон'), '+7999');
-    await user.type(screen.getByLabelText('Пароль'), 'password123');
-    await user.click(screen.getByRole('button', { name: 'Войти' }));
+    await user.type(screen.getByLabelText(t('auth.fields.phone')), '+7999');
+    await user.type(screen.getByLabelText(t('auth.fields.password')), 'password123');
+    await user.click(screen.getByRole('button', { name: t('auth.buttons.login') }));
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Вход/ })).toBeDisabled();
+      expect(screen.getByRole('button', { name: t('auth.buttons.loggingIn') })).toBeDisabled();
     });
 
     await act(async () => { resolveLogin(undefined); await Promise.resolve(); });

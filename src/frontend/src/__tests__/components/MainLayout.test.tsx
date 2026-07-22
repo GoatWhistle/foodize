@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import { MainLayout } from '../../components/layout/MainLayout';
 import { useAuthStore } from '../../store/useAuthStore';
+import { t } from '@shared/i18n/useTranslation';
 
 type AuthState = { user: { id: string } | null };
 type ThemeState = { theme: string };
@@ -33,9 +34,9 @@ describe('MainLayout', () => {
       </BrowserRouter>
     );
 
-    expect(screen.getByLabelText('На главную')).toBeInTheDocument();
-    expect(screen.getByLabelText('Профиль')).toBeInTheDocument();
-    expect(screen.getByLabelText('Уведомления')).toBeInTheDocument();
+    expect(screen.getByLabelText(t('profile.nav.home'))).toBeInTheDocument();
+    expect(screen.getByLabelText(t('profile.nav.profile'))).toBeInTheDocument();
+    expect(screen.getByLabelText(t('profile.notifications.title'))).toBeInTheDocument();
   });
 
   it('shows login button when not authenticated', () => {
@@ -50,7 +51,7 @@ describe('MainLayout', () => {
       </BrowserRouter>
     );
 
-    expect(screen.getByText('Войти')).toBeInTheDocument();
-    expect(screen.queryByLabelText('Профиль')).toBeNull();
+    expect(screen.getByText(t('profile.nav.login'))).toBeInTheDocument();
+    expect(screen.queryByLabelText(t('profile.nav.profile'))).toBeNull();
   });
 });

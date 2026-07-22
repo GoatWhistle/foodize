@@ -6,6 +6,7 @@ import { AdminOrdersTab } from '../../../../pages/admin/tabs/AdminOrdersTab';
 import type { Order } from '@shared/types/models';
 import type { OrderFilters } from '../../../../pages/admin/hooks/useAdminOrders';
 import type { adminService as adminServiceType } from '../../../../services/adminService';
+import { t } from '@shared/i18n/useTranslation';
 import { at } from '../../../testUtils';
 
 const exportOrdersCSV = vi.fn().mockResolvedValue(new Blob());
@@ -78,29 +79,31 @@ beforeEach(() => {
 describe('AdminOrdersTab', () => {
   it('renders orders with status labels and fallbacks', () => {
     renderTab();
-    expect(screen.getByText('Заказ #101')).toBeInTheDocument();
-    expect(screen.getByText('Заказ #102')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.orders.card.title', { displayId: 101 }))).toBeInTheDocument();
+    expect(screen.getByText(t('admin.orders.card.title', { displayId: 102 }))).toBeInTheDocument();
     expect(screen.getByText('Bob')).toBeInTheDocument();
     expect(screen.getByText('Cafe')).toBeInTheDocument();
-    expect(screen.getByText('Клиент')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.orders.card.customerFallback'))).toBeInTheDocument();
     expect(screen.getByText('WEIRD')).toBeInTheDocument();
   });
 
   it('shows skeleton when loading and empty', () => {
     renderTab({ orders: [], ordersLoading: true });
-    expect(screen.queryByText('Заказ #101')).not.toBeInTheDocument();
-    expect(screen.queryByText('Заказов пока нет')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(t('admin.orders.card.title', { displayId: 101 })),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(t('admin.orders.emptyTitle'))).not.toBeInTheDocument();
   });
 
   it('shows empty state when no orders', () => {
     renderTab({ orders: [], ordersTotal: 0 });
-    expect(screen.getByText('Заказов пока нет')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.orders.emptyTitle'))).toBeInTheDocument();
   });
 
   it('updates search and resets page', async () => {
     const user = userEvent.setup();
     renderTab();
-    await user.type(screen.getByPlaceholderText('Клиент, телефон или ресторан'), 'q');
+    await user.type(screen.getByPlaceholderText(t('admin.orders.searchPlaceholder')), 'q');
     expect(setOrdersPage).toHaveBeenCalledWith(1);
     expect(setOrderSearchRaw).toHaveBeenCalled();
   });
@@ -132,7 +135,7 @@ describe('AdminOrdersTab', () => {
   it('changes status chip and resets page', async () => {
     const user = userEvent.setup();
     renderTab();
-    await user.click(screen.getByRole('button', { name: 'Готовы' }));
+    await user.click(screen.getByRole('button', { name: t('admin.orders.filters.ready') }));
     expect(setOrderFilters).toHaveBeenCalled();
     const updater = setOrderFilters.mock.calls[0]?.[0] as (p: OrderFilters) => OrderFilters;
     expect(updater({ status: '', date_from: '', date_to: '' }).status).toBe('READY');
@@ -141,7 +144,7 @@ describe('AdminOrdersTab', () => {
 
   it('marks the active status chip', () => {
     renderTab({ orderFilters: { status: 'PENDING', date_from: '', date_to: '' } });
-    const chip = screen.getByRole('button', { name: 'Новые' });
+    const chip = screen.getByRole('button', { name: t('admin.orders.filters.pending') });
     expect(chip.className).toContain('active');
   });
 
@@ -180,14 +183,14 @@ describe('AdminOrdersTab', () => {
   it('opens an order on card click', async () => {
     const user = userEvent.setup();
     renderTab();
-    await user.click(screen.getByText('Заказ #101'));
+    await user.click(screen.getByText(t('admin.orders.card.title', { displayId: 101 })));
     expect(setSelectedOrder).toHaveBeenCalledWith(orders[0]);
   });
 
   it('paginates when multiple pages', async () => {
     const user = userEvent.setup();
     renderTab({ ordersTotal: 60 });
-    await user.click(screen.getByRole('button', { name: 'Перейти на страницу 2' }));
+    await user.click(screen.getByRole('button', { name: t('catalog.pagination.goToPage', { page: 2 }) }));
     expect(setOrdersPage).toHaveBeenCalledWith(2);
   });
 });

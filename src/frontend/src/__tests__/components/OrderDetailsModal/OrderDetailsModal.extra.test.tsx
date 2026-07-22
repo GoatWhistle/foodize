@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Order } from '@shared/types/models';
+import { t } from '@shared/i18n/useTranslation';
 import {
   OrderDetailsModal,
   type OrderDetailsModalProps,
@@ -53,7 +54,7 @@ afterEach(() => {
 describe('OrderDetailsModal ETA + cancel flows', () => {
   it('renders ETA picker for ACCEPTED next and disables submit until time chosen', async () => {
     renderModal({ nextStatus: { PENDING: 'ACCEPTED' }, nextLabel: { PENDING: 'Принять' } });
-    await waitFor(() => { expect(screen.getByText('Время готовности')).toBeInTheDocument(); });
+    await waitFor(() => { expect(screen.getByText(t('order.eta.title'))).toBeInTheDocument(); });
     expect(screen.getByRole('button', { name: 'Принять' })).toBeDisabled();
   });
 
@@ -65,8 +66,8 @@ describe('OrderDetailsModal ETA + cancel flows', () => {
       nextLabel: { PENDING: 'Принять' },
       onStatusChange,
     });
-    await waitFor(() => screen.getByText('Время готовности'));
-    await user.click(screen.getByRole('button', { name: '15 мин' }));
+    await waitFor(() => screen.getByText(t('order.eta.title')));
+    await user.click(screen.getByRole('button', { name: t('order.eta.minutesChip', { minutes: 15 }) }));
     await user.click(screen.getByRole('button', { name: 'Принять' }));
     await waitFor(() =>
       { expect(onStatusChange).toHaveBeenCalledWith('order-1', 'ACCEPTED', {
@@ -84,8 +85,8 @@ describe('OrderDetailsModal ETA + cancel flows', () => {
       nextLabel: { PENDING: 'Принять' },
       onStatusChange,
     });
-    await waitFor(() => screen.getByText('Время готовности'));
-    const timeInput = screen.getByLabelText(/Указать точное время/);
+    await waitFor(() => screen.getByText(t('order.eta.title')));
+    const timeInput = screen.getByLabelText(t('order.eta.exactTime'));
     await user.clear(timeInput);
     await user.type(timeInput, '10:30');
     await user.click(screen.getByRole('button', { name: 'Принять' }));
@@ -117,11 +118,11 @@ describe('OrderDetailsModal ETA + cancel flows', () => {
     const onClose = vi.fn();
     const user = userEvent.setup();
     renderModal({ onCancel, onClose });
-    await waitFor(() => screen.getByRole('button', { name: /Отменить/ }));
-    await user.click(screen.getByRole('button', { name: /Отменить/ }));
-    const textarea = screen.getByPlaceholderText('Причина отмены (необязательно)');
+    await waitFor(() => screen.getByRole('button', { name: t('order.actions.cancel') }));
+    await user.click(screen.getByRole('button', { name: t('order.actions.cancel') }));
+    const textarea = screen.getByPlaceholderText(t('order.actions.cancelReasonPlaceholder'));
     await user.type(textarea, ' занят ');
-    await user.click(screen.getByRole('button', { name: 'Подтвердить отмену' }));
+    await user.click(screen.getByRole('button', { name: t('order.actions.confirmCancel') }));
     await waitFor(() => { expect(onCancel).toHaveBeenCalledWith('order-1', 'занят'); });
     expect(onClose).toHaveBeenCalled();
   });
@@ -130,18 +131,18 @@ describe('OrderDetailsModal ETA + cancel flows', () => {
     const onCancel = vi.fn();
     const user = userEvent.setup();
     renderModal({ onCancel });
-    await waitFor(() => screen.getByRole('button', { name: /Отменить/ }));
-    await user.click(screen.getByRole('button', { name: /Отменить/ }));
-    await user.click(screen.getByRole('button', { name: 'Назад' }));
-    expect(screen.queryByPlaceholderText('Причина отмены (необязательно)')).toBeNull();
+    await waitFor(() => screen.getByRole('button', { name: t('order.actions.cancel') }));
+    await user.click(screen.getByRole('button', { name: t('order.actions.cancel') }));
+    await user.click(screen.getByRole('button', { name: t('common.actions.back') }));
+    expect(screen.queryByPlaceholderText(t('order.actions.cancelReasonPlaceholder'))).toBeNull();
   });
 
   it('closes when the X button is clicked', async () => {
     const onClose = vi.fn();
     const user = userEvent.setup();
     renderModal({ onClose });
-    await waitFor(() => screen.getByLabelText('Закрыть'));
-    await user.click(screen.getByLabelText('Закрыть'));
+    await waitFor(() => screen.getByLabelText(t('common.actions.close')));
+    await user.click(screen.getByLabelText(t('common.actions.close')));
     expect(onClose).toHaveBeenCalled();
   });
 });

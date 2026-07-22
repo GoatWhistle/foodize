@@ -6,6 +6,7 @@ import { EmptyState } from "@shared/components/EmptyState/EmptyState";
 import { OrderCard } from "@shared/components/OrderCard/OrderCard";
 import { Pagination } from "@shared/components/Pagination/Pagination";
 import { useOrdersPageLogic } from "@shared/hooks/useOrdersPageLogic";
+import { useTranslation } from "@shared/i18n/useTranslation";
 
 interface OrdersPageRoutes {
   orderStatus?: string;
@@ -14,7 +15,7 @@ interface OrdersPageRoutes {
 
 interface StatusFilter {
   key: string;
-  label: string;
+  labelKey: string;
 }
 
 interface OrdersPageProps {
@@ -35,12 +36,13 @@ export const OrdersPage = ({
   pullToRefresh = false,
   expandableCards = false,
   statusFilters = [
-    { key: "ACTIVE", label: "Активные" },
-    { key: "DONE",   label: "Завершённые" },
+    { key: "ACTIVE", labelKey: "order.list.filterActive" },
+    { key: "DONE",   labelKey: "order.list.filterDone" },
   ],
   pageClassName = "",
   style = {},
 }: OrdersPageProps) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const {
@@ -92,16 +94,16 @@ export const OrdersPage = ({
     : {};
 
   const emptyTitle = statusFilter === "ACTIVE"
-    ? "Активных заказов нет"
+    ? t("order.list.emptyActiveTitle")
     : statusFilter === "DONE"
-      ? "Завершённых заказов нет"
-      : "Заказов пока нет";
+      ? t("order.list.emptyDoneTitle")
+      : t("order.list.emptyTitle");
 
   const emptySubtitle = statusFilter === "ACTIVE"
-    ? "Сделайте первый заказ — это займёт меньше минуты"
+    ? t("order.list.emptyActiveSubtitle")
     : statusFilter === "DONE"
-      ? "Здесь появятся выданные и отменённые заказы"
-      : "Сделайте первый заказ в любом ресторане";
+      ? t("order.list.emptyDoneSubtitle")
+      : t("order.list.emptySubtitle");
 
   const orderRoute = (id: number): string =>
     routes.orderStatus
@@ -135,19 +137,19 @@ export const OrdersPage = ({
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
         <PackageIcon size={22} weight="bold" color="var(--accent)" />
         <h1 style={{ fontFamily: "var(--font-sans)", fontSize: "var(--text-xl)", fontWeight: 800, letterSpacing: "-0.03em", margin: 0 }}>
-          Мои заказы
+          {t("order.list.title")}
         </h1>
       </div>
 
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
-        {statusFilters.map(({ key, label }) => (
+        {statusFilters.map(({ key, labelKey }) => (
           <button
             key={key}
             className={`category-chip${statusFilter === key ? " active" : ""}`}
             style={{ fontSize: "var(--text-base)" }}
             onClick={() => { setStatusFilter(key); setPage(1); }}
           >
-            {label}
+            {t(labelKey)}
           </button>
         ))}
       </div>
@@ -162,7 +164,7 @@ export const OrdersPage = ({
         <EmptyState
           title={emptyTitle}
           subtitle={emptySubtitle}
-          {...(routes.home ? { action: { label: "Выбрать заведение", onClick: () => { void navigate(routes.home as string); } } } : {})}
+          {...(routes.home ? { action: { label: t("order.list.chooseVenue"), onClick: () => { void navigate(routes.home as string); } } } : {})}
         />
       ) : (
         <div className={ordersLoading ? "loading-dim" : undefined}>

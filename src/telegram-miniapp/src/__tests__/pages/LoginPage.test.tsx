@@ -27,6 +27,7 @@ vi.mock("@shared/utils/translateApiError", () => ({
 }));
 
 import { LoginPage } from "../../pages/auth/LoginPage";
+import { t } from "@shared/i18n/useTranslation";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -39,14 +40,14 @@ beforeEach(() => {
 describe("LoginPage", () => {
   it("renders the Telegram login button and heading", () => {
     render(<LoginPage onSuccess={vi.fn()} />);
-    expect(screen.getByText("Вход через Telegram")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Войти через Telegram/ })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: t("auth.miniapp.title") })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: new RegExp(t("auth.buttons.loginWithTelegram")) })).toBeInTheDocument();
   });
 
   it("shows an error when Telegram passed no init data", async () => {
     render(<LoginPage onSuccess={vi.fn()} />);
-    await userEvent.click(screen.getByRole("button", { name: /Войти через Telegram/ }));
-    expect(screen.getByText(/Telegram не передал данные для входа/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: new RegExp(t("auth.buttons.loginWithTelegram")) }));
+    expect(screen.getByText(t("auth.miniapp.errors.noInitData"))).toBeInTheDocument();
     expect(authExistingUser).not.toHaveBeenCalled();
   });
 
@@ -54,7 +55,7 @@ describe("LoginPage", () => {
     getTelegramInitData.mockReturnValue("live-init");
     const onSuccess = vi.fn();
     render(<LoginPage onSuccess={onSuccess} />);
-    await userEvent.click(screen.getByRole("button", { name: /Войти через Telegram/ }));
+    await userEvent.click(screen.getByRole("button", { name: new RegExp(t("auth.buttons.loginWithTelegram")) }));
     await waitFor(() => {
       expect(authExistingUser).toHaveBeenCalledWith("live-init");
     });
@@ -67,7 +68,7 @@ describe("LoginPage", () => {
     getTelegramInitData.mockReturnValue("");
     const onSuccess = vi.fn();
     render(<LoginPage initData="prop-init" onSuccess={onSuccess} />);
-    await userEvent.click(screen.getByRole("button", { name: /Войти через Telegram/ }));
+    await userEvent.click(screen.getByRole("button", { name: new RegExp(t("auth.buttons.loginWithTelegram")) }));
     await waitFor(() => {
       expect(authExistingUser).toHaveBeenCalledWith("prop-init");
     });
@@ -79,10 +80,10 @@ describe("LoginPage", () => {
     authExistingUser.mockRejectedValueOnce({ response: { status: 404 } });
     requestTelegramContact.mockResolvedValueOnce(false);
     render(<LoginPage onSuccess={vi.fn()} />);
-    await userEvent.click(screen.getByRole("button", { name: /Войти через Telegram/ }));
+    await userEvent.click(screen.getByRole("button", { name: new RegExp(t("auth.buttons.loginWithTelegram")) }));
     await waitFor(() => {
       expect(
-        screen.getByText(/поделитесь номером телефона/),
+        screen.getByText(t("auth.miniapp.errors.shareContact")),
       ).toBeInTheDocument();
     });
     expect(requestTelegramContact).toHaveBeenCalledTimes(1);
@@ -103,7 +104,7 @@ describe("LoginPage", () => {
     render(<LoginPage onSuccess={onSuccess} />);
 
     fireEvent.click(
-      screen.getByRole("button", { name: /Войти через Telegram/ }),
+      screen.getByRole("button", { name: new RegExp(t("auth.buttons.loginWithTelegram")) }),
     );
 
     for (let i = 0; i < 5 && onSuccess.mock.calls.length === 0; i += 1) {
@@ -124,7 +125,7 @@ describe("LoginPage", () => {
     render(<LoginPage onSuccess={vi.fn()} />);
 
     fireEvent.click(
-      screen.getByRole("button", { name: /Войти через Telegram/ }),
+      screen.getByRole("button", { name: new RegExp(t("auth.buttons.loginWithTelegram")) }),
     );
 
     for (let i = 0; i < 16; i += 1) {
@@ -132,7 +133,7 @@ describe("LoginPage", () => {
     }
 
     expect(
-      screen.getByText(/ещё не успел привязать аккаунт/),
+      screen.getByText(t("auth.miniapp.errors.contactNotLinked")),
     ).toBeInTheDocument();
     vi.useRealTimers();
   });
@@ -144,11 +145,11 @@ describe("LoginPage", () => {
     render(<LoginPage onSuccess={vi.fn()} />);
 
     await userEvent.click(
-      screen.getByRole("button", { name: /Войти через Telegram/ }),
+      screen.getByRole("button", { name: new RegExp(t("auth.buttons.loginWithTelegram")) }),
     );
     await waitFor(() => {
       expect(
-        screen.getByText(/Telegram не смог выполнить вход/),
+        screen.getByText(t("auth.miniapp.errors.telegramAuthFailed")),
       ).toBeInTheDocument();
     });
   });

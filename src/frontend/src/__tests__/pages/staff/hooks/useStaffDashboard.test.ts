@@ -4,6 +4,7 @@ import type { StaffProfile, MenuItem } from '@shared/types/models';
 import type { StaffOrder } from '../../../../pages/staff/types';
 import { COLUMN_DEFS } from '../../../../pages/staff/staffColumns';
 import { at, req } from '../../../testUtils';
+import { t } from '@shared/i18n/useTranslation';
 
 vi.mock('@shared/services/staffService', () => ({
   staffService: {
@@ -96,7 +97,7 @@ describe('useStaffDashboard', () => {
     mockResolved(staffService.getRestaurantOrders as never, [order({})]);
     vi.mocked(staffService.getMenu).mockRejectedValue(new Error('x'));
     const { result } = renderHook(() => useStaffDashboard());
-    await waitFor(() => { expect(result.current.menuError).toBe('Не удалось загрузить меню'); });
+    await waitFor(() => { expect(result.current.menuError).toBe(t('staff.errors.menuLoadFailed')); });
   });
 
   it('initializes autoEta from localStorage', async () => {
@@ -165,7 +166,7 @@ describe('useStaffDashboard', () => {
       await Promise.resolve();
     });
     await waitFor(() =>
-      { expect(result.current.orderActionError).toBe('Не удалось обновить статус'); }
+      { expect(result.current.orderActionError).toBe(t('staff.errors.statusUpdateFailed')); }
     );
   });
 
@@ -195,7 +196,7 @@ describe('useStaffDashboard', () => {
       await Promise.resolve();
     });
     await waitFor(() =>
-      { expect(result.current.orderActionError).toBe('Не удалось принять заказ'); }
+      { expect(result.current.orderActionError).toBe(t('staff.errors.acceptOrderFailed')); }
     );
   });
 
@@ -214,7 +215,7 @@ describe('useStaffDashboard', () => {
       await result.current.handleCancelOrder('o1', null);
     });
     await waitFor(() =>
-      { expect(result.current.orderActionError).toBe('Не удалось отменить заказ'); }
+      { expect(result.current.orderActionError).toBe(t('staff.errors.cancelOrderFailed')); }
     );
   });
 
@@ -234,7 +235,7 @@ describe('useStaffDashboard', () => {
       await result.current.handleToggleAvailability(menuItem);
     });
     await waitFor(() => { expect(result.current.menuItems[0]?.is_available).toBe(true); });
-    expect(result.current.menuError).toBe('Не удалось изменить статус блюда');
+    expect(result.current.menuError).toBe(t('staff.errors.toggleAvailabilityFailed'));
   });
 
   it('drag flow: onDragStart sets id, handleDrop triggers cooking for pending->accepted', async () => {

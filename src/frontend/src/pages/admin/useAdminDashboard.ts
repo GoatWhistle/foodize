@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { adminService } from '../../services/adminService';
 import { useAuthStore } from '../../store/useAuthStore';
-import { ORDER_STATUS_RU, translate } from '@shared/utils/locales';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { AdminRestaurant, PlatformStats } from '@shared/types/models';
 import { downloadBlob } from '../../utils/download';
 import { useAdminUsers } from './hooks/useAdminUsers';
@@ -29,6 +29,7 @@ export type RequestReason = (dialog: ReasonDialogConfig) => void;
 const SUCCESS_TOAST_DURATION = 4000;
 
 export const useAdminDashboard = () => {
+  const { t } = useTranslation();
   const { user: currentUser } = useAuthStore();
 
   const [activeTab, setActiveTab] = useState('stats');
@@ -88,11 +89,11 @@ export const useAdminDashboard = () => {
           const platformStats = await adminService.getPlatformStats();
           setStats(platformStats);
         } catch {
-          setActionError('Не удалось загрузить статистику');
+          setActionError(t('admin.errors.statsLoadFailed'));
         }
       })();
     }
-  }, [activeTab, stats]);
+  }, [activeTab, stats, t]);
 
   const todayStr = useMemo(() => {
     const today = new Date();
@@ -103,11 +104,11 @@ export const useAdminDashboard = () => {
     if (!stats?.orders_by_status) return null;
     return Object.fromEntries(
       Object.entries(stats.orders_by_status).map(([statusKey, count]) => [
-        translate(ORDER_STATUS_RU, statusKey),
+        t(`enums.orderStatus.${statusKey}`),
         count,
       ])
     );
-  }, [stats?.orders_by_status]);
+  }, [stats?.orders_by_status, t]);
 
   const handleExport = async (
     exportFn: () => Promise<Blob>,
@@ -118,7 +119,7 @@ export const useAdminDashboard = () => {
       const blob = await exportFn();
       downloadBlob(blob, filename);
     } catch {
-      setActionError('Не удалось выполнить экспорт');
+      setActionError(t('admin.errors.exportFailed'));
     } finally {
       setExportLoading(false);
     }

@@ -5,6 +5,7 @@ import {
   toInfoWorkingHours,
   type WorkingHoursSource,
 } from "@shared/utils/restaurant";
+import { t } from "@shared/i18n/useTranslation";
 
 describe("getGreeting", () => {
   afterEach(() => {
@@ -19,32 +20,32 @@ describe("getGreeting", () => {
 
   it("returns night greeting before 5", () => {
     setHour(3);
-    expect(getGreeting()).toBe("Доброй ночи");
+    expect(getGreeting()).toBe(t("catalog.greeting.night"));
   });
 
   it("returns morning greeting before 12", () => {
     setHour(9);
-    expect(getGreeting()).toBe("Доброе утро");
+    expect(getGreeting()).toBe(t("catalog.greeting.morning"));
   });
 
   it("returns afternoon greeting before 17", () => {
     setHour(14);
-    expect(getGreeting()).toBe("Добрый день");
+    expect(getGreeting()).toBe(t("catalog.greeting.afternoon"));
   });
 
   it("returns evening greeting from 17", () => {
     setHour(20);
-    expect(getGreeting()).toBe("Добрый вечер");
+    expect(getGreeting()).toBe(t("catalog.greeting.evening"));
   });
 
   it("boundary at 5 is morning", () => {
     setHour(5);
-    expect(getGreeting()).toBe("Доброе утро");
+    expect(getGreeting()).toBe(t("catalog.greeting.morning"));
   });
 
   it("boundary at 17 is evening", () => {
     setHour(17);
-    expect(getGreeting()).toBe("Добрый вечер");
+    expect(getGreeting()).toBe(t("catalog.greeting.evening"));
   });
 });
 

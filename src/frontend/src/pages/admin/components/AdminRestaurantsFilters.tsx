@@ -1,6 +1,9 @@
 import type { Dispatch, SetStateAction } from 'react';
-import { APPROVAL_STATUS_RU } from '@shared/utils/locales';
+import { approvalStatusLabel } from '@shared/utils/locales';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { RestaurantFilters } from '../hooks/useAdminRestaurants';
+
+const APPROVAL_STATUSES = ['PENDING', 'APPROVED', 'REJECTED'];
 
 const filterGridStyle = {
   display: 'grid',
@@ -43,12 +46,13 @@ export function AdminRestaurantsFilters({
   setRestaurantFilters,
   setRestaurantsPage,
 }: AdminRestaurantsFiltersProps) {
+  const { t } = useTranslation();
   return (
     <div style={filterGridStyle}>
       <input
         className="form-input"
         style={filterControlStyle}
-        placeholder="Ресторан"
+        placeholder={t('admin.restaurants.filters.restaurantPlaceholder')}
         value={restaurantSearchRaw}
         onChange={(event) => {
           setRestaurantsPage(1);
@@ -58,7 +62,7 @@ export function AdminRestaurantsFilters({
       <input
         className="form-input"
         style={filterControlStyle}
-        placeholder="Вендор или телефон"
+        placeholder={t('admin.restaurants.filters.vendorPlaceholder')}
         value={restaurantVendorSearchRaw}
         onChange={(event) => {
           setRestaurantsPage(1);
@@ -74,9 +78,9 @@ export function AdminRestaurantsFilters({
           setRestaurantFilters((prev) => ({ ...prev, is_open: event.target.value }));
         }}
       >
-        <option value="">Любой статус</option>
-        <option value="true">Открыт</option>
-        <option value="false">Закрыт</option>
+        <option value="">{t('admin.common.anyStatus')}</option>
+        <option value="true">{t('admin.restaurants.filters.open')}</option>
+        <option value="false">{t('admin.restaurants.filters.closed')}</option>
       </select>
       <select
         className="form-input"
@@ -87,10 +91,10 @@ export function AdminRestaurantsFilters({
           setRestaurantFilters((prev) => ({ ...prev, moderation_status: event.target.value }));
         }}
       >
-        <option value="">Модерация</option>
-        {Object.entries(APPROVAL_STATUS_RU).map(([val, label]) => (
-          <option key={val} value={val}>
-            {label}
+        <option value="">{t('admin.restaurants.filters.moderation')}</option>
+        {APPROVAL_STATUSES.map((status) => (
+          <option key={status} value={status}>
+            {approvalStatusLabel(status)}
           </option>
         ))}
       </select>
@@ -103,10 +107,10 @@ export function AdminRestaurantsFilters({
           setRestaurantFilters((prev) => ({ ...prev, min_rating: event.target.value }));
         }}
       >
-        <option value="">Любой рейтинг</option>
-        <option value="4">от 4 звёзд</option>
-        <option value="3">от 3 звёзд</option>
-        <option value="2">от 2 звёзд</option>
+        <option value="">{t('admin.restaurants.filters.anyRating')}</option>
+        <option value="4">{t('admin.restaurants.filters.ratingFrom4')}</option>
+        <option value="3">{t('admin.restaurants.filters.ratingFrom3')}</option>
+        <option value="2">{t('admin.restaurants.filters.ratingFrom2')}</option>
       </select>
     </div>
   );

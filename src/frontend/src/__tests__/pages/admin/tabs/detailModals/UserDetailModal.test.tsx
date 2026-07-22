@@ -4,6 +4,7 @@ import { vi, describe, it, expect } from 'vitest';
 import { UserDetailModal } from '../../../../../pages/admin/tabs/detailModals/UserDetailModal';
 import type { AdminUser } from '@shared/types/models';
 import type { AuthUser } from '@shared/store/createAuthStore';
+import { t } from '@shared/i18n/useTranslation';
 
 const makeUser = (over: Partial<AdminUser> = {}): AdminUser =>
   ({
@@ -40,46 +41,46 @@ describe('UserDetailModal', () => {
     expect(screen.getByText('Иван Петров')).toBeInTheDocument();
     expect(screen.getByText('@ivan')).toBeInTheDocument();
     expect(screen.getByText('ivan@mail.ru')).toBeInTheDocument();
-    expect(screen.getByText('Активен')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.users.card.active'))).toBeInTheDocument();
   });
 
   it('renders role preset buttons and make-admin, calls handlers', async () => {
     const props = baseProps();
     render(<UserDetailModal {...props} />);
-    await userEvent.click(screen.getByRole('button', { name: 'Вендор' }));
+    await userEvent.click(screen.getByRole('button', { name: t('enums.permissionPreset.VENDOR') }));
     expect(props.handleSetPermissionPreset).toHaveBeenCalledWith('u1', 'VENDOR');
-    await userEvent.click(screen.getByRole('button', { name: 'Сделать админом' }));
+    await userEvent.click(screen.getByRole('button', { name: t('admin.users.modal.makeAdmin') }));
     expect(props.handleMakeAdmin).toHaveBeenCalledWith('u1');
   });
 
   it('blocks an active non-admin user', async () => {
     const props = baseProps();
     render(<UserDetailModal {...props} />);
-    await userEvent.click(screen.getByRole('button', { name: 'Заблокировать пользователя' }));
+    await userEvent.click(screen.getByRole('button', { name: t('admin.users.modal.block') }));
     expect(props.handleDeleteUser).toHaveBeenCalledWith('u1');
   });
 
   it('activates a blocked user', async () => {
     const props = baseProps({ is_active: false });
     render(<UserDetailModal {...props} />);
-    await userEvent.click(screen.getByRole('button', { name: 'Разблокировать' }));
+    await userEvent.click(screen.getByRole('button', { name: t('admin.users.modal.unblock') }));
     expect(props.handleActivateUser).toHaveBeenCalledWith('u1');
   });
 
   it('shows applying label when loading', () => {
     render(<UserDetailModal {...baseProps({ is_active: false })} permissionActionLoading />);
-    expect(screen.getByText('Применяю...')).toBeInTheDocument();
+    expect(screen.getByText(t('common.actions.applying'))).toBeInTheDocument();
   });
 
   it('hides role management for self', () => {
     render(<UserDetailModal {...baseProps({ id: 'me' })} />);
-    expect(screen.queryByText('Управление ролью')).not.toBeInTheDocument();
+    expect(screen.queryByText(t('admin.users.modal.roleManagement'))).not.toBeInTheDocument();
   });
 
   it('hides role management for admins', () => {
     render(<UserDetailModal {...baseProps({ permissions: ['admin.access'] })} />);
-    expect(screen.queryByText('Управление ролью')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Заблокировать пользователя' })).not.toBeInTheDocument();
+    expect(screen.queryByText(t('admin.users.modal.roleManagement'))).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: t('admin.users.modal.block') })).not.toBeInTheDocument();
   });
 
   it('uses fallbacks for missing fields', () => {
@@ -95,15 +96,19 @@ describe('UserDetailModal', () => {
         })}
       />,
     );
-    expect(screen.getByText('Пользователь')).toBeInTheDocument();
-    expect(screen.getByText('Не указан')).toBeInTheDocument();
-    expect(screen.getAllByText('Не указано').length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(t('admin.users.modal.fallbackTitle')),
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByText(t('common.states.notSpecifiedMale')).length,
+    ).toBeGreaterThan(0);
+    expect(screen.getAllByText(t('common.states.notSpecified')).length).toBeGreaterThan(0);
   });
 
   it('closes via header button', async () => {
     const props = baseProps();
     render(<UserDetailModal {...props} />);
-    await userEvent.click(screen.getByLabelText('Закрыть'));
+    await userEvent.click(screen.getByLabelText(t('common.actions.close')));
     expect(props.setSelectedUser).toHaveBeenCalledWith(null);
   });
 });

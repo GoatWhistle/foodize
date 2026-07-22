@@ -12,8 +12,8 @@ from aiogram.types import InlineKeyboardMarkup
 from pytest_mock import MockerFixture
 
 from config import bot_config
+from exceptions import RateLimitExhaustedError
 from notifications.handlers import (
-    RateLimitExhaustedError,
     _deactivate_telegram_id,
     _get_telegram_id,
     _order_keyboard,
@@ -21,6 +21,7 @@ from notifications.handlers import (
     handle_order_placed,
     handle_order_status_changed,
 )
+from utils import messages as msg
 
 
 @pytest.fixture(autouse=True)
@@ -115,7 +116,7 @@ def test_order_keyboard_with_display_id() -> None:
     kb = _order_keyboard("123")
     assert isinstance(kb, InlineKeyboardMarkup)
     button = kb.inline_keyboard[0][0]
-    assert button.text == "Открыть заказ"
+    assert button.text == msg.button("openOrder")
     assert button.web_app is not None
     assert button.web_app.url == "https://t.me/bot/app?startapp=order_123"
 
@@ -124,7 +125,7 @@ def test_order_keyboard_without_display_id() -> None:
     kb = _order_keyboard(None)
     assert isinstance(kb, InlineKeyboardMarkup)
     button = kb.inline_keyboard[0][0]
-    assert button.text == "Открыть Foodize"
+    assert button.text == msg.button("openFoodize")
     assert button.web_app is not None
     assert button.web_app.url == "https://t.me/bot/app"
 
@@ -174,7 +175,7 @@ async def test_send_notification_forbidden_deactivates(mocker: MockerFixture) ->
     ("handler", "event", "expected_substrings"),
     [
         (handle_order_placed, _placed_event(), ["Cafe", "500,00 ₽", "999"]),
-        (handle_order_status_changed, _status_event(), ["Caf", "Готов к выдаче"]),
+        (handle_order_status_changed, _status_event(), ["Caf", msg.order_status("READY")]),
     ],
 )
 async def test_handler_sends_message_when_telegram_id_known(

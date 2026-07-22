@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { ComponentProps } from 'react';
 import type { Restaurant } from '@shared/types/models';
 import { ShareModal } from '../../components/ShareModal/ShareModal';
+import { t } from '@shared/i18n/useTranslation';
 const clipboardWriteText = vi.fn<(data: string) => Promise<void>>();
 const RESTAURANT = {
   id: 'resto-1',
@@ -27,24 +28,24 @@ beforeEach(() => {
 describe('ShareModal', () => {
   it('renders title "Поделиться"', () => {
     render$();
-    expect(screen.getByText('Поделиться')).toBeInTheDocument();
+    expect(screen.getByText(t('profile.share.title'))).toBeInTheDocument();
   });
 
   it('renders Telegram share button', () => {
     render$();
-    expect(screen.getByText('Отправить в Telegram')).toBeInTheDocument();
+    expect(screen.getByText(t('profile.share.telegram'))).toBeInTheDocument();
   });
 
   it('renders copy link button', () => {
     render$();
-    expect(screen.getByText('Скопировать ссылку')).toBeInTheDocument();
+    expect(screen.getByText(t('profile.share.copyLink'))).toBeInTheDocument();
   });
 
   it('calls onClose when close button clicked', async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
     render$({ onClose });
-    await user.click(screen.getByLabelText('Закрыть'));
+    await user.click(screen.getByLabelText(t('common.actions.close')));
     expect(onClose).toHaveBeenCalled();
   });
 
@@ -59,7 +60,7 @@ describe('ShareModal', () => {
   it('opens Telegram share URL when Telegram button clicked', async () => {
     const user = userEvent.setup();
     render$();
-    await user.click(screen.getByText('Отправить в Telegram'));
+    await user.click(screen.getByText(t('profile.share.telegram')));
     expect(window.open).toHaveBeenCalledWith(
       expect.stringContaining('t.me/share/url'),
       '_blank'
@@ -69,7 +70,7 @@ describe('ShareModal', () => {
   it('Telegram URL contains restaurant display_id', async () => {
     const user = userEvent.setup();
     render$();
-    await user.click(screen.getByText('Отправить в Telegram'));
+    await user.click(screen.getByText(t('profile.share.telegram')));
     const firstCall = vi.mocked(window.open).mock.calls[0];
     if (!firstCall) throw new Error('window.open was not called');
     const call = firstCall[0] as string;
@@ -83,9 +84,9 @@ describe('ShareModal', () => {
       value: { writeText: clipboardWriteText },
     });
     render$();
-    await user.click(screen.getByText('Скопировать ссылку'));
+    await user.click(screen.getByText(t('profile.share.copyLink')));
     await waitFor(() => {
-      expect(screen.getByText('Ссылка скопирована!')).toBeInTheDocument();
+      expect(screen.getByText(t('profile.share.copied'))).toBeInTheDocument();
     });
     expect(clipboardWriteText).toHaveBeenCalledWith(
       expect.stringContaining('cafe-central')
@@ -100,16 +101,16 @@ describe('ShareModal', () => {
     });
     clipboardWriteText.mockRejectedValueOnce(new Error('denied'));
     render$();
-    await user.click(screen.getByText('Скопировать ссылку'));
+    await user.click(screen.getByText(t('profile.share.copyLink')));
     await waitFor(() => {
-      expect(screen.getByText('Не удалось скопировать')).toBeInTheDocument();
+      expect(screen.getByText(t('profile.share.copyFailed'))).toBeInTheDocument();
     });
   });
 
   it('uses restaurant name in Telegram message text', async () => {
     const user = userEvent.setup();
     render$();
-    await user.click(screen.getByText('Отправить в Telegram'));
+    await user.click(screen.getByText(t('profile.share.telegram')));
     const firstCall = vi.mocked(window.open).mock.calls[0];
     if (!firstCall) throw new Error('window.open was not called');
     const call = firstCall[0] as string;

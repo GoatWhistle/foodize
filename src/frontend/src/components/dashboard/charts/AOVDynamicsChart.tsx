@@ -2,10 +2,14 @@ import { memo } from 'react';
 import type { FinanceSeriesPoint } from '@shared/types/models';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { ChartCard, TOOLTIP_STYLE } from './chartPrimitives';
+import { useTranslation } from '@shared/i18n/useTranslation';
+
 
 export const AOVDynamicsChart = memo(
-  ({ data }: { data: FinanceSeriesPoint[] }) => (
-    <ChartCard title="Динамика среднего чека">
+  ({ data }: { data: FinanceSeriesPoint[] }) => {
+    const { t } = useTranslation();
+    return (
+    <ChartCard title={t('admin.charts.aovDynamics.title')}>
       <LineChart data={data}>
         <CartesianGrid
           strokeDasharray="3 3"
@@ -35,9 +39,10 @@ export const AOVDynamicsChart = memo(
           stroke="var(--chart-3)"
           strokeWidth={2}
           dot={{ r: 4 }}
-          name="Средний чек"
+          name={t('admin.charts.aovDynamics.series')}
         />
       </LineChart>
     </ChartCard>
-  ),
+    );
+  },
 );

@@ -1,6 +1,7 @@
 import { create, type StoreApi, type UseBoundStore } from "zustand";
 import { orderService } from "@shared/services/orderService";
 import { translateApiError } from "@shared/utils/translateApiError";
+import { t } from "@shared/i18n/useTranslation";
 import type { Order } from "@shared/types/models";
 
 export interface OrdersStoreState {
@@ -41,7 +42,7 @@ export function createOrdersStore(): UseBoundStore<StoreApi<OrdersStoreState>> {
       } catch (err) {
         set({
           ordersLoading: false,
-          ordersError: translateApiError(err, "Не удалось загрузить заказы"),
+          ordersError: translateApiError(err, t("order.list.loadFailed")),
         });
       }
     },
@@ -69,7 +70,7 @@ export function createOrdersStore(): UseBoundStore<StoreApi<OrdersStoreState>> {
         );
         set({ activeOrder: active ?? null, activeOrderError: null });
       } catch (err) {
-        set({ activeOrderError: translateApiError(err, "Не удалось загрузить активный заказ") });
+        set({ activeOrderError: translateApiError(err, t("order.status.activeLoadFailed")) });
       }
     },
   }));

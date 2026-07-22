@@ -5,10 +5,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from features.restaurants.crud import get_restaurant_by_id
 from features.restaurants.exceptions import RestaurantNotFoundException
 from features.reviews import crud
-from features.reviews.exceptions import ReviewLimitExceededException, ReviewNotAllowedException
+from features.reviews.exceptions import (
+    ReviewLimitExceededException,
+    ReviewNotAllowedException,
+    ReviewNotFoundException,
+)
 from features.reviews.models import Review
 from features.reviews.schemas import RatingResponse, ReviewCreate, ReviewResponse
-from shared.exceptions import NotFoundException
 
 MAX_REVIEWS_PER_USER_RESTAURANT = 1
 
@@ -70,7 +73,7 @@ async def delete_review_for_user(
 
     review = await crud.get_review_by_id_for_user(session, review_id, user_id, restaurant_id)
     if not review:
-        raise NotFoundException(detail="Review not found")
+        raise ReviewNotFoundException()
 
     response = _review_to_response(review)
     await crud.delete_review(session, review)
@@ -93,7 +96,7 @@ async def update_review_for_user(
 
     review = await crud.get_user_review_for_restaurant(session, user_id, restaurant_id)
     if not review:
-        raise NotFoundException(detail="Review not found")
+        raise ReviewNotFoundException()
 
     updated = await crud.update_review(session, review, review_data)
 

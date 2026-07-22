@@ -1,5 +1,7 @@
 import { XCircleIcon } from '@phosphor-icons/react';
 import type { Order, OrderStatus } from '@shared/types/models';
+import { useTranslation } from '@shared/i18n/useTranslation';
+
 
 interface OrderActionsFooterProps {
   order: Order;
@@ -33,7 +35,9 @@ export const OrderActionsFooter = ({
   onCancelReasonChange,
   onCancel,
   onSubmitNext,
-}: OrderActionsFooterProps) => (
+}: OrderActionsFooterProps) => {
+  const { t } = useTranslation();
+  return (
   <div
     style={{
       padding: '14px 22px',
@@ -47,7 +51,7 @@ export const OrderActionsFooter = ({
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <textarea
           className="form-input"
-          placeholder="Причина отмены (необязательно)"
+          placeholder={t('order.actions.cancelReasonPlaceholder')}
           value={cancelReason}
           onChange={(e) => { onCancelReasonChange(e.target.value); }}
           rows={2}
@@ -60,7 +64,7 @@ export const OrderActionsFooter = ({
             disabled={cancelling}
             style={{ flex: 1 }}
           >
-            Назад
+            {t('common.actions.back')}
           </button>
           <button
             className="btn"
@@ -73,7 +77,7 @@ export const OrderActionsFooter = ({
               border: 'none',
             }}
           >
-            {cancelling ? '...' : 'Подтвердить отмену'}
+            {cancelling ? '...' : t('order.actions.confirmCancel')}
           </button>
         </div>
       </div>
@@ -86,7 +90,7 @@ export const OrderActionsFooter = ({
             style={{ display: 'flex', alignItems: 'center', gap: 6 }}
           >
             <XCircleIcon size={16} />
-            Отменить
+            {t('order.actions.cancel')}
           </button>
         )}
         {next && (
@@ -98,10 +102,11 @@ export const OrderActionsFooter = ({
           >
             {updating === order.id
               ? '...'
-              : nextLabel?.[order.status] || 'Дальше'}
+              : nextLabel?.[order.status] || t('order.actions.next')}
           </button>
         )}
       </div>
     )}
   </div>
-);
+  );
+};

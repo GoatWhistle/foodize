@@ -2,6 +2,8 @@ import uuid
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from features.cart.exceptions import DuplicateCartOptionsError
+
 
 class MenuItemShort(BaseModel):
     id: uuid.UUID
@@ -41,14 +43,14 @@ class CartItemIn(BaseModel):
     @classmethod
     def selected_option_ids_must_be_unique(cls, value: list[uuid.UUID]) -> list[uuid.UUID]:
         if len(value) != len(set(value)):
-            raise ValueError("Duplicate options selected")
+            raise DuplicateCartOptionsError()
         return value
 
     @model_validator(mode="after")
     def selected_options_must_be_unique(self) -> "CartItemIn":
         option_ids = [option.option_id for option in self.selected_options]
         if len(option_ids) != len(set(option_ids)):
-            raise ValueError("Duplicate options selected")
+            raise DuplicateCartOptionsError()
         return self
 
 

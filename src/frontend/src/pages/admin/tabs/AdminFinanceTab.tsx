@@ -9,8 +9,9 @@ import {
   TopItemsChart,
   TopRestaurantsChart,
 } from '../../../components/dashboard/DashboardCharts';
-import { CATEGORY_RU, translate } from '@shared/utils/locales';
+import { categoryLabel } from '@shared/utils/locales';
 import { presetToDateRange } from '@shared/utils/datetime';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { adminService as adminServiceType } from '../../../services/adminService';
 import type {
   FinanceAnalytics,
@@ -37,14 +38,14 @@ interface AdminFinanceTabProps {
   getDateRangeLabel: () => string;
 }
 
-const DATE_PRESETS: readonly { label: string; days: number | null }[] = [
-  { label: 'Сегодня', days: 0 },
-  { label: '3 дня', days: 3 },
-  { label: '7 дней', days: 7 },
-  { label: '30 дней', days: 30 },
-  { label: 'Полгода', days: 180 },
-  { label: 'Год', days: 365 },
-  { label: 'Сбросить', days: null },
+const DATE_PRESETS: readonly { labelKey: string; days: number | null }[] = [
+  { labelKey: 'admin.finance.presets.today', days: 0 },
+  { labelKey: 'admin.finance.presets.days3', days: 3 },
+  { labelKey: 'admin.finance.presets.days7', days: 7 },
+  { labelKey: 'admin.finance.presets.days30', days: 30 },
+  { labelKey: 'admin.finance.presets.halfYear', days: 180 },
+  { labelKey: 'admin.finance.presets.year', days: 365 },
+  { labelKey: 'admin.finance.presets.reset', days: null },
 ];
 
 const filterGridStyle = {
@@ -106,6 +107,7 @@ export function AdminFinanceTab({
   getRestaurantLabel,
   getDateRangeLabel,
 }: AdminFinanceTabProps) {
+  const { t } = useTranslation();
   const dateRange = {
     date_from: financeFilters.date_from || undefined,
     date_to: financeFilters.date_to || undefined,
@@ -116,8 +118,8 @@ export function AdminFinanceTab({
     exportFn: () => Promise<Blob>;
   }[] = [
     {
-      label: 'Финансы PDF',
-      filename: `финансы_${getRestaurantLabel()}_${getDateRangeLabel()}.pdf`,
+      label: t('admin.finance.exports.financePdf'),
+      filename: t('admin.exportFiles.finance', { restaurant: getRestaurantLabel(), range: getDateRangeLabel() }),
       exportFn: () =>
         adminService.exportFinancePDF({
           ...dateRange,
@@ -125,13 +127,13 @@ export function AdminFinanceTab({
         }),
     },
     {
-      label: 'Аналитика PDF',
-      filename: `аналитика_${getRestaurantLabel()}_${getDateRangeLabel()}.pdf`,
+      label: t('admin.finance.exports.analyticsPdf'),
+      filename: t('admin.exportFiles.analytics', { restaurant: getRestaurantLabel(), range: getDateRangeLabel() }),
       exportFn: () => adminService.exportAnalyticsPDF(dateRange),
     },
     {
-      label: 'Обзор платформы PDF',
-      filename: `обзор_платформы_${todayStr}.pdf`,
+      label: t('admin.finance.exports.overviewPdf'),
+      filename: t('admin.exportFiles.overview', { date: todayStr }),
       exportFn: () => adminService.exportOverviewPDF(dateRange),
     },
   ];
@@ -168,7 +170,7 @@ export function AdminFinanceTab({
           }
           style={selectFilterStyle}
         >
-          <option value="">Все рестораны</option>
+          <option value="">{t('admin.finance.allRestaurants')}</option>
           {allRestaurants.map((r) => (
             <option key={r.id} value={r.id}>
               {r.name}
@@ -180,7 +182,7 @@ export function AdminFinanceTab({
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 20 }}>
         {DATE_PRESETS.map((preset) => (
           <button
-            key={preset.label}
+            key={preset.labelKey}
             className={`btn btn-sm ${activePreset === preset.days ? 'btn-primary' : 'btn-secondary'}`}
             style={{ whiteSpace: 'nowrap' }}
             onClick={() => {
@@ -196,7 +198,7 @@ export function AdminFinanceTab({
               }
             }}
           >
-            {preset.label}
+            {t(preset.labelKey)}
           </button>
         ))}
       </div>
@@ -236,7 +238,7 @@ export function AdminFinanceTab({
               <CategoryRevenueChart
                 data={advancedAnalytics.category_revenue.map((item) => ({
                   ...item,
-                  label: translate(CATEGORY_RU, item.label),
+                  label: categoryLabel(item.label),
                 }))}
               />
             )}
@@ -258,14 +260,14 @@ export function AdminFinanceTab({
                   color: 'var(--text-2)',
                 }}
               >
-                <span>Топ ресторанов скрыт — активен фильтр по ресторану</span>
+                <span>{t('admin.finance.topRestaurantsHidden')}</span>
                 <button
                   className="btn btn-secondary btn-sm"
                   onClick={() =>
                     { setFinanceFilters((prev) => ({ ...prev, restaurant_id: '' })); }
                   }
                 >
-                  Сбросить фильтр
+                  {t('admin.finance.resetFilter')}
                 </button>
               </div>
             ) : (

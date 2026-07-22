@@ -2,11 +2,14 @@ import { memo } from 'react';
 import type { FinanceTopItem } from '@shared/types/models';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { ChartCard, TOOLTIP_STYLE } from './chartPrimitives';
+import { useTranslation } from '@shared/i18n/useTranslation';
+
 
 export const TopItemsChart = memo(({ data = [] }: { data?: FinanceTopItem[] }) => {
+  const { t } = useTranslation();
   if (!Array.isArray(data)) return null;
   return (
-    <ChartCard title="Топ 5 блюд">
+    <ChartCard title={t('admin.charts.topItems.title')}>
       <BarChart
         data={data.slice(0, 5)}
         layout="vertical"
@@ -28,7 +31,7 @@ export const TopItemsChart = memo(({ data = [] }: { data?: FinanceTopItem[] }) =
         />
         <Tooltip
           contentStyle={TOOLTIP_STYLE}
-          formatter={(value) => [value, 'Продано шт.']}
+          formatter={(value) => [value, t('admin.charts.topItems.soldUnits')]}
         />
         <Bar
           dataKey="quantity"

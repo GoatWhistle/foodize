@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import { PromoCard } from '../../../../../pages/vendor/tabs/components/PromoCard';
 import type { Promo } from '@shared/types/models';
+import { t } from '@shared/i18n/useTranslation';
 
 const makePromo = (overrides: Partial<Promo> = {}): Promo =>
   ({
@@ -31,8 +32,8 @@ describe('PromoCard', () => {
     render(<PromoCard promo={promo} deactivating={false} onDeactivate={vi.fn()} />);
     expect(screen.getByText('SAVE20')).toBeInTheDocument();
     expect(screen.getByText(/20%/)).toBeInTheDocument();
-    expect(screen.getByText(/Условия:/)).toBeInTheDocument();
-    expect(screen.getByText('Активен')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.promos.card.conditions', { conditions: '' }).trim(), { exact: false })).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.promos.card.active'))).toBeInTheDocument();
   });
 
   it('renders fixed discount and infinite uses without conditions', () => {
@@ -43,7 +44,7 @@ describe('PromoCard', () => {
     });
     render(<PromoCard promo={promo} deactivating={false} onDeactivate={vi.fn()} />);
     expect(screen.getByText(/∞/)).toBeInTheDocument();
-    expect(screen.queryByText(/Условия:/)).not.toBeInTheDocument();
+    expect(screen.queryByText(t('vendor.promos.card.conditions', { conditions: '' }).trim(), { exact: false })).not.toBeInTheDocument();
   });
 
   it('renders unknown menu_category label as raw value', () => {
@@ -56,7 +57,7 @@ describe('PromoCard', () => {
     const user = userEvent.setup();
     const onDeactivate = vi.fn();
     render(<PromoCard promo={makePromo()} deactivating={false} onDeactivate={onDeactivate} />);
-    await user.click(screen.getByTitle('Деактивировать'));
+    await user.click(screen.getByTitle(t('vendor.promos.card.deactivate')));
     expect(onDeactivate).toHaveBeenCalledWith('SAVE20');
   });
 
@@ -64,12 +65,12 @@ describe('PromoCard', () => {
     render(
       <PromoCard promo={makePromo({ is_active: false })} deactivating={false} onDeactivate={vi.fn()} />
     );
-    expect(screen.getByText('Завершён')).toBeInTheDocument();
-    expect(screen.queryByTitle('Деактивировать')).not.toBeInTheDocument();
+    expect(screen.getByText(t('vendor.promos.card.finished'))).toBeInTheDocument();
+    expect(screen.queryByTitle(t('vendor.promos.card.deactivate'))).not.toBeInTheDocument();
   });
 
   it('disables deactivate button while deactivating', () => {
     render(<PromoCard promo={makePromo()} deactivating onDeactivate={vi.fn()} />);
-    expect(screen.getByTitle('Деактивировать')).toBeDisabled();
+    expect(screen.getByTitle(t('vendor.promos.card.deactivate'))).toBeDisabled();
   });
 });

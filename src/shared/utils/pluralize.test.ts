@@ -1,59 +1,92 @@
-import { describe, it, expect } from "vitest";
-import { pluralizeRu } from "@shared/utils/pluralize";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { plural } from "@shared/utils/pluralize";
+import { useLanguageStore } from "@shared/store/useLanguageStore";
 
-const forms: readonly [string, string, string] = ["товар", "товара", "товаров"];
+const KEY = "order.cart.itemsCount";
 
-describe("pluralizeRu", () => {
-  it("returns form[0] for 1", () => {
-    expect(pluralizeRu(1, forms)).toBe("товар");
+describe("plural (ru)", () => {
+  beforeEach(() => {
+    useLanguageStore.setState({ language: "ru" });
   });
 
-  it("returns form[0] for 21", () => {
-    expect(pluralizeRu(21, forms)).toBe("товар");
+  afterEach(() => {
+    useLanguageStore.setState({ language: "ru" });
   });
 
-  it("returns form[1] for 2, 3, 4", () => {
-    expect(pluralizeRu(2, forms)).toBe("товара");
-    expect(pluralizeRu(3, forms)).toBe("товара");
-    expect(pluralizeRu(4, forms)).toBe("товара");
+  it("uses the one form for 1", () => {
+    expect(plural(KEY, 1)).toBe("1 товар");
   });
 
-  it("returns form[1] for 22, 23, 24", () => {
-    expect(pluralizeRu(22, forms)).toBe("товара");
-    expect(pluralizeRu(24, forms)).toBe("товара");
+  it("uses the one form for 21", () => {
+    expect(plural(KEY, 21)).toBe("21 товар");
   });
 
-  it("returns form[2] for 0", () => {
-    expect(pluralizeRu(0, forms)).toBe("товаров");
+  it("uses the few form for 2, 3, 4", () => {
+    expect(plural(KEY, 2)).toBe("2 товара");
+    expect(plural(KEY, 3)).toBe("3 товара");
+    expect(plural(KEY, 4)).toBe("4 товара");
   });
 
-  it("returns form[2] for 5-10", () => {
-    expect(pluralizeRu(5, forms)).toBe("товаров");
-    expect(pluralizeRu(10, forms)).toBe("товаров");
+  it("uses the few form for 22, 24", () => {
+    expect(plural(KEY, 22)).toBe("22 товара");
+    expect(plural(KEY, 24)).toBe("24 товара");
   });
 
-  it("returns form[2] for teens 11-14", () => {
-    expect(pluralizeRu(11, forms)).toBe("товаров");
-    expect(pluralizeRu(12, forms)).toBe("товаров");
-    expect(pluralizeRu(13, forms)).toBe("товаров");
-    expect(pluralizeRu(14, forms)).toBe("товаров");
+  it("uses the many form for 0", () => {
+    expect(plural(KEY, 0)).toBe("0 товаров");
   });
 
-  it("returns form[2] for 15-20", () => {
-    expect(pluralizeRu(15, forms)).toBe("товаров");
-    expect(pluralizeRu(19, forms)).toBe("товаров");
+  it("uses the many form for 5-10", () => {
+    expect(plural(KEY, 5)).toBe("5 товаров");
+    expect(plural(KEY, 10)).toBe("10 товаров");
   });
 
-  it("handles negatives via absolute value", () => {
-    expect(pluralizeRu(-1, forms)).toBe("товар");
-    expect(pluralizeRu(-2, forms)).toBe("товара");
-    expect(pluralizeRu(-11, forms)).toBe("товаров");
-    expect(pluralizeRu(-5, forms)).toBe("товаров");
+  it("uses the many form for teens 11-14", () => {
+    expect(plural(KEY, 11)).toBe("11 товаров");
+    expect(plural(KEY, 12)).toBe("12 товаров");
+    expect(plural(KEY, 13)).toBe("13 товаров");
+    expect(plural(KEY, 14)).toBe("14 товаров");
   });
 
-  it("handles large numbers by last two digits", () => {
-    expect(pluralizeRu(101, forms)).toBe("товар");
-    expect(pluralizeRu(111, forms)).toBe("товаров");
-    expect(pluralizeRu(1002, forms)).toBe("товара");
+  it("uses the many form for 15-19", () => {
+    expect(plural(KEY, 15)).toBe("15 товаров");
+    expect(plural(KEY, 19)).toBe("19 товаров");
+  });
+
+  it("selects the form by absolute value for negatives", () => {
+    expect(plural(KEY, -1)).toBe("-1 товар");
+    expect(plural(KEY, -2)).toBe("-2 товара");
+    expect(plural(KEY, -11)).toBe("-11 товаров");
+    expect(plural(KEY, -5)).toBe("-5 товаров");
+  });
+
+  it("selects the form by the last two digits of large numbers", () => {
+    expect(plural(KEY, 101)).toBe("101 товар");
+    expect(plural(KEY, 111)).toBe("111 товаров");
+    expect(plural(KEY, 1002)).toBe("1002 товара");
+  });
+});
+
+describe("plural (en)", () => {
+  beforeEach(() => {
+    useLanguageStore.setState({ language: "en" });
+  });
+
+  afterEach(() => {
+    useLanguageStore.setState({ language: "ru" });
+  });
+
+  it("uses the one form for 1", () => {
+    expect(plural(KEY, 1)).toBe("1 item");
+  });
+
+  it("uses the many form for 0 and 2+", () => {
+    expect(plural(KEY, 0)).toBe("0 items");
+    expect(plural(KEY, 2)).toBe("2 items");
+  });
+
+  it("ignores the russian teen rule", () => {
+    expect(plural(KEY, 11)).toBe("11 items");
+    expect(plural(KEY, 21)).toBe("21 items");
   });
 });

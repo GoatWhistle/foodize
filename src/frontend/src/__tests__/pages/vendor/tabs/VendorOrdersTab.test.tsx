@@ -2,8 +2,9 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import { useState } from 'react';
-import { VendorOrdersTab, NEXT_ORDER_STATUS, NEXT_ORDER_LABEL_RU } from '../../../../pages/vendor/tabs/VendorOrdersTab';
+import { VendorOrdersTab, NEXT_ORDER_STATUS, NEXT_ORDER_LABEL_KEYS } from '../../../../pages/vendor/tabs/VendorOrdersTab';
 import type { Order, Restaurant } from '@shared/types/models';
+import { t } from '@shared/i18n/useTranslation';
 
 vi.mock('../../../../components/OrderDetailsModal/OrderDetailsModal', () => ({
   OrderDetailsModal: ({ order, onClose, onStatusChange, onCancel }: {
@@ -77,7 +78,6 @@ const Harness = ({
       handleCancelOrder={onCancel as never}
       vendorService={vendorServiceMock}
       selectedRestaurant={restaurant}
-      STATUS_LABEL_RU={{ PENDING: 'Новый' }}
       getOrderDisplayId={(o) => o.id}
       formatOrderTime={() => '10:00'}
     />
@@ -87,14 +87,14 @@ const Harness = ({
 describe('VendorOrdersTab', () => {
   it('exports the status maps', () => {
     expect(NEXT_ORDER_STATUS.PENDING).toBe('ACCEPTED');
-    expect(NEXT_ORDER_LABEL_RU.PENDING).toBe('Принять');
+    expect(NEXT_ORDER_LABEL_KEYS.PENDING).toBe('vendor.orders.nextLabel.accept');
   });
 
   it('renders grouped orders and toolbar', () => {
     render(<Harness />);
     expect(screen.getByText('Сегодня')).toBeInTheDocument();
-    expect(screen.getByText(/Заказ #o1/)).toBeInTheDocument();
-    expect(screen.getByText('Заказы заведения')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.orders.card.title', { displayId: 'o1' }))).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.orders.toolbarTitle'))).toBeInTheDocument();
   });
 
   it('shows error banner', () => {
@@ -104,24 +104,24 @@ describe('VendorOrdersTab', () => {
 
   it('shows skeleton while loading with no orders', () => {
     render(<Harness orders={[]} grouped={[]} ordersLoading total={0} />);
-    expect(screen.queryByText('Нет заказов')).not.toBeInTheDocument();
+    expect(screen.queryByText(t('vendor.orders.emptyTitle'))).not.toBeInTheDocument();
   });
 
   it('shows empty state without filter', () => {
     render(<Harness orders={[]} grouped={[]} total={0} />);
-    expect(screen.getByText('Нет заказов')).toBeInTheDocument();
-    expect(screen.getByText('Пока никто не сделал заказ')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.orders.emptyTitle'))).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.orders.emptySubtitle'))).toBeInTheDocument();
   });
 
   it('shows empty state with a status filter message', () => {
     render(<Harness orders={[]} grouped={[]} total={0} statusFilter="READY" />);
-    expect(screen.getByText('В этом статусе заказов нет')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.orders.emptySubtitleFiltered'))).toBeInTheDocument();
   });
 
   it('opens modal on order click and closes it', async () => {
     const user = userEvent.setup();
     render(<Harness />);
-    await user.click(screen.getByText(/Заказ #o1/));
+    await user.click(screen.getByText(t('vendor.orders.card.title', { displayId: 'o1' })));
     expect(screen.getByTestId('order-modal')).toBeInTheDocument();
     await user.click(screen.getByText('close'));
     expect(screen.queryByTestId('order-modal')).not.toBeInTheDocument();
@@ -132,7 +132,7 @@ describe('VendorOrdersTab', () => {
     const onChange = vi.fn();
     const onCancel = vi.fn();
     render(<Harness onChange={onChange} onCancel={onCancel} />);
-    await user.click(screen.getByText(/Заказ #o1/));
+    await user.click(screen.getByText(t('vendor.orders.card.title', { displayId: 'o1' })));
     await user.click(screen.getByText('advance'));
     expect(onChange).toHaveBeenCalledWith('o1', 'ACCEPTED');
     await user.click(screen.getByText('cancel'));
@@ -142,11 +142,11 @@ describe('VendorOrdersTab', () => {
   it('renders pagination when total exceeds page size', () => {
     const orders = [makeOrder()];
     render(<Harness orders={orders} total={40} />);
-    expect(screen.getAllByLabelText(/Перейти на страницу/).length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText(new RegExp(t('catalog.pagination.goToPage', { page: '' }).trim())).length).toBeGreaterThan(0);
   });
 
   it('handles non-array orders as empty', () => {
     render(<Harness orders={null} grouped={[]} total={0} />);
-    expect(screen.getByText('Нет заказов')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.orders.emptyTitle'))).toBeInTheDocument();
   });
 });

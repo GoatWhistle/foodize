@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { vendorService } from '@shared/services/vendorService';
 import { logError } from '@shared/utils/logError';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { StaffMember, StaffRequest, StaffRequestStatus } from '@shared/types/models';
 
 export type StaffSubTab = 'members' | 'requests';
@@ -9,6 +10,7 @@ const readTotal = (body: { pagination?: { total?: number } }, fallback: number):
   body.pagination?.total ?? fallback;
 
 export const useVendorStaff = () => {
+  const { t } = useTranslation();
   const [staffRequests, setStaffRequests] = useState<StaffRequest[]>([]);
   const [staffPage, setStaffPage] = useState(1);
   const [staffTotal, setStaffTotal] = useState(0);
@@ -70,7 +72,7 @@ export const useVendorStaff = () => {
   };
 
   const handleRemoveStaffMember = async (profileId: string) => {
-    if (!window.confirm('Уволить сотрудника?')) return;
+    if (!window.confirm(t('vendor.staff.confirmRemove'))) return;
     setStaffMemberRemoving(profileId);
     try {
       await vendorService.removeStaffMember(profileId);

@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { RestaurantCoverField } from '../../../../../pages/vendor/tabs/components/RestaurantCoverField';
 import { restaurantService } from '@shared/services/restaurantService';
 import type { Restaurant } from '@shared/types/models';
+import { t } from '@shared/i18n/useTranslation';
 
 vi.mock('@shared/services/restaurantService', () => ({
   restaurantService: {
@@ -22,15 +23,15 @@ describe('RestaurantCoverField', () => {
 
   it('renders placeholder and upload label when no cover', () => {
     render(<RestaurantCoverField selectedRestaurant={makeRestaurant()} />);
-    expect(screen.getByText('Загрузить обложку')).toBeInTheDocument();
-    expect(screen.queryByAltText('Обложка ресторана')).not.toBeInTheDocument();
+    expect(screen.getByText(t('vendor.settings.cover.upload'))).toBeInTheDocument();
+    expect(screen.queryByAltText(t('vendor.settings.cover.alt'))).not.toBeInTheDocument();
   });
 
   it('renders existing cover with replace and delete', () => {
     render(<RestaurantCoverField selectedRestaurant={makeRestaurant({ photo_url: 'http://c/x.png' })} />);
-    expect(screen.getByAltText('Обложка ресторана')).toBeInTheDocument();
-    expect(screen.getByText('Заменить обложку')).toBeInTheDocument();
-    expect(screen.getByText('Удалить')).toBeInTheDocument();
+    expect(screen.getByAltText(t('vendor.settings.cover.alt'))).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.settings.cover.replace'))).toBeInTheDocument();
+    expect(screen.getByText(t('common.actions.delete'))).toBeInTheDocument();
   });
 
   it('uploads a file and shows returned url', async () => {
@@ -41,7 +42,7 @@ describe('RestaurantCoverField', () => {
     const { container } = render(<RestaurantCoverField selectedRestaurant={makeRestaurant()} />);
     const input = container.querySelector('input[type="file"]') as HTMLInputElement;
     await user.upload(input, new File(['x'], 'c.png', { type: 'image/png' }));
-    expect(await screen.findByAltText('Обложка ресторана')).toHaveAttribute('src', 'http://c/new.png');
+    expect(await screen.findByAltText(t('vendor.settings.cover.alt'))).toHaveAttribute('src', 'http://c/new.png');
   });
 
   it('shows error when upload fails', async () => {
@@ -50,7 +51,7 @@ describe('RestaurantCoverField', () => {
     const { container } = render(<RestaurantCoverField selectedRestaurant={makeRestaurant()} />);
     const input = container.querySelector('input[type="file"]') as HTMLInputElement;
     await user.upload(input, new File(['x'], 'c.png', { type: 'image/png' }));
-    expect(await screen.findByText('Не удалось загрузить фото')).toBeInTheDocument();
+    expect(await screen.findByText(t('vendor.settings.cover.uploadFailed'))).toBeInTheDocument();
   });
 
   it('ignores empty file selection', async () => {
@@ -65,9 +66,9 @@ describe('RestaurantCoverField', () => {
     const user = userEvent.setup();
     vi.mocked(restaurantService.deletePhoto).mockResolvedValue({} as unknown as Awaited<ReturnType<typeof restaurantService.deletePhoto>>);
     render(<RestaurantCoverField selectedRestaurant={makeRestaurant({ photo_url: 'http://c/x.png' })} />);
-    await user.click(screen.getByText('Удалить'));
+    await user.click(screen.getByText(t('common.actions.delete')));
     await waitFor(() => {
-      expect(screen.queryByAltText('Обложка ресторана')).not.toBeInTheDocument();
+      expect(screen.queryByAltText(t('vendor.settings.cover.alt'))).not.toBeInTheDocument();
     });
   });
 
@@ -75,18 +76,18 @@ describe('RestaurantCoverField', () => {
     const user = userEvent.setup();
     vi.mocked(restaurantService.deletePhoto).mockRejectedValue(new Error('nope'));
     render(<RestaurantCoverField selectedRestaurant={makeRestaurant({ photo_url: 'http://c/x.png' })} />);
-    await user.click(screen.getByText('Удалить'));
-    expect(await screen.findByText('Не удалось удалить фото')).toBeInTheDocument();
+    await user.click(screen.getByText(t('common.actions.delete')));
+    expect(await screen.findByText(t('vendor.settings.cover.deleteFailed'))).toBeInTheDocument();
   });
 
   it('resets cover url when selected restaurant changes', () => {
     const { rerender } = render(
       <RestaurantCoverField selectedRestaurant={makeRestaurant({ id: 'r1', photo_url: 'http://c/a.png' })} />
     );
-    expect(screen.getByAltText('Обложка ресторана')).toHaveAttribute('src', 'http://c/a.png');
+    expect(screen.getByAltText(t('vendor.settings.cover.alt'))).toHaveAttribute('src', 'http://c/a.png');
     rerender(
       <RestaurantCoverField selectedRestaurant={makeRestaurant({ id: 'r2', photo_url: '' })} />
     );
-    expect(screen.queryByAltText('Обложка ресторана')).not.toBeInTheDocument();
+    expect(screen.queryByAltText(t('vendor.settings.cover.alt'))).not.toBeInTheDocument();
   });
 });

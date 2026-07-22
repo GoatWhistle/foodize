@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import { OrderButton } from '@shared/components/OrderButton/OrderButton';
+import { t } from '@shared/i18n/useTranslation';
 describe('OrderButton', () => {
   it('renders children correctly', () => {
     render(<OrderButton>Order Now</OrderButton>);
@@ -22,7 +23,7 @@ describe('OrderButton', () => {
     expect(screen.queryByText('Submit')).toBeNull();
     expect(screen.getByRole('status')).toBeInTheDocument();
     expect(container.querySelector('.spinner')).toBeInTheDocument();
-    expect(screen.getByText('Оформление...')).toBeInTheDocument();
+    expect(screen.getByText(t('order.checkout.placing'))).toBeInTheDocument();
   });
 
   it('has transition style applied', () => {

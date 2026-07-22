@@ -2,7 +2,7 @@ import uuid
 from typing import Any
 
 from database import db_helper
-from features.admin.crud import CATEGORY_RU
+from features.admin.crud import translate_category
 from features.ai_order_agent import search as search_mod
 from features.ai_order_agent.tool_context import OrderToolContext
 from features.ai_order_agent.tool_helpers import (
@@ -17,6 +17,7 @@ from features.ai_order_agent.tool_helpers import (
 from features.cart.schemas import CartItemIn, CartSelectedOption, CartUpdate
 from features.menu.crud import get_menu_item_by_id
 from features.menu.models import MenuItem
+from shared.i18n import translate
 
 _MAX_ITEM_QUANTITY = 99
 
@@ -40,17 +41,14 @@ async def search_menu(ctx: OrderToolContext, args: dict[str, Any]) -> str:
             restaurant_id=_parse_uuid(args.get("restaurant_id")),
         )
     for result in results:
-        result["category"] = CATEGORY_RU.get(result["category"], result["category"])
+        result["category"] = translate_category(result["category"], ctx.language)
         if result.get("name"):
             result["name"] = f"<<<ITEM>>>{_strip_item_markers(result['name'])}<<<END_ITEM>>>"
     if not results:
         return _dumps(
             {
                 "results": [],
-                "message": (
-                    "Сейчас нет доступных ресторанов или блюд. Повторять поиск не нужно — "
-                    "сообщи об этом пользователю."
-                ),
+                "message": translate("prompts.order.results.noResults", ctx.language),
             }
         )
     return _dumps({"results": results})
@@ -132,7 +130,12 @@ async def add_to_cart(ctx: OrderToolContext, args: dict[str, Any]) -> str:
     async with db_helper.session_factory() as session:
         item = await get_menu_item_by_id(session, item_id)
     if item is None or item.is_deleted or not item.is_available:
-        return _dumps({"error": "item_unavailable", "message": "Позиция недоступна."})
+        return _dumps(
+            {
+                "error": "item_unavailable",
+                "message": translate("prompts.order.results.itemUnavailable", ctx.language),
+            }
+        )
 
     quantity = _parse_quantity(args.get("quantity"))
     valid_options, valid_ids = _collect_valid_options(item, args.get("option_ids"))
@@ -142,9 +145,8 @@ async def add_to_cart(ctx: OrderToolContext, args: dict[str, Any]) -> str:
         return _dumps(
             {
                 "error": "cart_has_other_restaurant",
-                "message": (
-                    "В корзине позиции из другого ресторана. Очистите её (clear_cart), "
-                    "чтобы заказать в этом."
+                "message": translate(
+                    "prompts.order.results.cartHasOtherRestaurant", ctx.language
                 ),
             }
         )

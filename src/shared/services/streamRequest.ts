@@ -1,6 +1,7 @@
 import { API_BASE_URL } from '@shared/config';
 import { makeId } from '@shared/utils/id';
 import { cookieRefresh } from '@shared/services/cookieRefresh';
+import { t } from '@shared/i18n/useTranslation';
 
 const BASE_URL = API_BASE_URL;
 
@@ -58,13 +59,13 @@ async function doStreamRequest(
 
     const retryResponse = await fetch(url, buildInit(body, auth, signal));
     if (!retryResponse.ok || !retryResponse.body) {
-      throw new Error(`Ошибка ${retryResponse.status}`);
+      throw new Error(t('common.errors.requestFailed', { status: retryResponse.status }));
     }
     return retryResponse;
   }
 
   if (!response.ok || !response.body) {
-    throw new Error(`Ошибка ${response.status}`);
+    throw new Error(t('common.errors.requestFailed', { status: response.status }));
   }
   return response;
 }
@@ -83,7 +84,7 @@ export async function streamSseRequest(
       let timer: ReturnType<typeof setTimeout> | undefined;
       const idle = new Promise<never>((_, reject) => {
         timer = setTimeout(() => {
-          reject(new Error('Ответ не пришёл вовремя. Попробуйте ещё раз.'));
+          reject(new Error(t('common.errors.timeout')));
         }, idleTimeoutMs);
       });
       try {

@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { MenuItem } from '@shared/types/models';
 import { StaffMenuTab } from '../../../../pages/staff/components/StaffMenuTab';
+import { t } from '@shared/i18n/useTranslation';
 
 const ITEMS = [
   { id: 'm1', name: 'Бургер', price: 300, is_available: true },
@@ -28,7 +29,7 @@ describe('StaffMenuTab', () => {
     render(
       <StaffMenuTab menuItems={[]} menuLoading={false} menuError="" onToggleAvailability={vi.fn()} />
     );
-    expect(screen.getByText('Меню пусто')).toBeInTheDocument();
+    expect(screen.getByText(t('staff.menuTab.emptyTitle'))).toBeInTheDocument();
   });
 
   it('renders items with availability labels and toggles', async () => {
@@ -37,9 +38,9 @@ describe('StaffMenuTab', () => {
       <StaffMenuTab menuItems={ITEMS} menuLoading={false} menuError="" onToggleAvailability={onToggle} />
     );
     expect(screen.getByText('Бургер')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'ВКЛ' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'ВЫКЛ' })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'ВКЛ' }));
+    expect(screen.getByRole('button', { name: t('staff.menuTab.on') })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: t('staff.menuTab.off') })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: t('staff.menuTab.on') }));
     expect(onToggle).toHaveBeenCalledWith(ITEMS[0]);
   });
 });

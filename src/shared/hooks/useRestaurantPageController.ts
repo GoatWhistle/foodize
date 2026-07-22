@@ -3,8 +3,8 @@ import type { SyntheticEvent } from "react";
 import { useRestaurantPage } from "@shared/hooks/useRestaurantPage";
 import { splitReviewsByAuthor } from "@shared/utils/reviews";
 import { toInfoWorkingHours } from "@shared/utils/restaurant";
-import { pluralizeRu } from "@shared/utils/pluralize";
 import type { MenuItem, Restaurant } from "@shared/types/models";
+import { useTranslation } from "@shared/i18n/useTranslation";
 
 interface ConfirmRequest {
   title: string;
@@ -44,6 +44,7 @@ export function useRestaurantPageController<Option>({
   favoriteIds,
   requestConfirm,
 }: RestaurantPageControllerArgs<Option>) {
+  const { t } = useTranslation();
   const page = useRestaurantPage({ id, initialRestaurant });
 
   const restaurantView = page.restaurant as Restaurant;
@@ -59,14 +60,12 @@ export function useRestaurantPageController<Option>({
     const parts: string[] = [];
     if (page.rating != null) parts.push(page.rating.toFixed(1));
     if (page.reviewCount != null) {
-      parts.push(
-        `${page.reviewCount} ${pluralizeRu(page.reviewCount, ["отзыв", "отзыва", "отзывов"])}`,
-      );
+      parts.push(t("catalog.reviews.reviewsCount", { count: page.reviewCount }));
     } else {
-      parts.push("Отзывы");
+      parts.push(t("catalog.reviews.buttonLabel"));
     }
     return parts.join(" · ");
-  }, [page.rating, page.reviewCount]);
+  }, [page.rating, page.reviewCount, t]);
 
   const handleProductAdd = ({
     item,
@@ -101,9 +100,9 @@ export function useRestaurantPageController<Option>({
 
   const handleDeleteWithConfirm = (reviewId: string): void => {
     requestConfirm({
-      title: "Удалить отзыв?",
-      message: "Точно ли вы хотите удалить этот отзыв?",
-      confirmLabel: "Удалить",
+      title: t("catalog.reviews.deleteTitle"),
+      message: t("catalog.reviews.deleteMessage"),
+      confirmLabel: t("common.actions.delete"),
       danger: true,
       onConfirm: () => page.handleReviewDelete(reviewId),
     });

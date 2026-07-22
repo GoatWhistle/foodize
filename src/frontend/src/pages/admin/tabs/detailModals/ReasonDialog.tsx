@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { ReasonDialogConfig } from '../../useAdminDashboard';
 
 interface ReasonDialogProps {
@@ -9,6 +10,7 @@ interface ReasonDialogProps {
 }
 
 export const ReasonDialog = ({ dialog, loading, onCancel, onConfirm }: ReasonDialogProps) => {
+  const { t } = useTranslation();
   const [reason, setReason] = useState('');
 
   useEffect(() => {
@@ -56,7 +58,7 @@ export const ReasonDialog = ({ dialog, loading, onCancel, onConfirm }: ReasonDia
           className="form-input"
           value={reason}
           onChange={(event) => { setReason(event.target.value); }}
-          placeholder="Напишите причину отклонения"
+          placeholder={t('admin.reasonDialog.placeholder')}
           rows={4}
           style={{ minHeight: 112, resize: 'vertical' }}
           autoFocus
@@ -70,7 +72,7 @@ export const ReasonDialog = ({ dialog, loading, onCancel, onConfirm }: ReasonDia
           }}
         >
           <button className="btn btn-secondary" disabled={loading} onClick={onCancel}>
-            Отмена
+            {t('common.actions.cancel')}
           </button>
           <button
             className="btn btn-primary"
@@ -78,7 +80,7 @@ export const ReasonDialog = ({ dialog, loading, onCancel, onConfirm }: ReasonDia
             onClick={() => { onConfirm(trimmedReason); }}
             style={{ background: 'var(--error)' }}
           >
-            {loading ? 'Выполняю...' : dialog.confirmLabel}
+            {loading ? t('admin.reasonDialog.running') : dialog.confirmLabel}
           </button>
         </div>
       </div>

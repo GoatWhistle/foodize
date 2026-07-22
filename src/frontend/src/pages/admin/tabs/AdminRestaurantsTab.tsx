@@ -2,6 +2,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { DownloadSimpleIcon } from '@phosphor-icons/react';
 import { Pagination } from '@shared/components/Pagination/Pagination';
 import { EmptyState } from '@shared/components/EmptyState/EmptyState';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { adminService as adminServiceType } from '../../../services/adminService';
 import type { AdminRestaurant, RestaurantFilters } from '../hooks/useAdminRestaurants';
 import { AdminRestaurantsFilters } from '../components/AdminRestaurantsFilters';
@@ -50,6 +51,7 @@ export function AdminRestaurantsTab({
   adminService,
   PAGE_SIZE,
 }: AdminRestaurantsTabProps) {
+  const { t } = useTranslation();
   const isEmpty = !Array.isArray(restaurants) || restaurants.length === 0;
 
   if (restaurantsLoading && isEmpty) {
@@ -115,13 +117,13 @@ export function AdminRestaurantsTab({
               ); }
             }
           />
-          Выбрать все
+          {t('admin.common.selectAll')}
         </label>
         <button
           className="btn btn-secondary btn-sm"
           disabled={exportLoading}
           onClick={() =>
-            { handleExport(adminService.exportRestaurantsCSV, `рестораны_${todayStr}.csv`); }
+            { handleExport(adminService.exportRestaurantsCSV, t('admin.exportFiles.restaurants', { date: todayStr })); }
           }
         >
           {exportLoading ? '...' : <><DownloadSimpleIcon size={16} weight="bold" /> CSV</>}
@@ -140,8 +142,8 @@ export function AdminRestaurantsTab({
 
       {isEmpty && (
         <EmptyState
-          title="Ресторанов пока нет"
-          subtitle="Для выбранных фильтров нет результатов"
+          title={t('admin.restaurants.emptyTitle')}
+          subtitle={t('admin.common.emptySubtitle')}
         />
       )}
 

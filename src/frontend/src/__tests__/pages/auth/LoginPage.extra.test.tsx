@@ -2,6 +2,8 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
+import { t } from '@shared/i18n/useTranslation';
+import { TELEGRAM_BOT_USERNAME } from '../../../config';
 import { LoginPage } from '../../../pages/auth/LoginPage';
 import { useAuthStore } from '../../../store/useAuthStore';
 import { authService } from '@shared/services/authService';
@@ -47,8 +49,8 @@ const renderPage = () =>
   );
 
 const goToTelegramUsername = async (user: ReturnType<typeof userEvent.setup>) => {
-  await user.click(screen.getByRole('button', { name: /Войти через Telegram/ }));
-  return screen.getByLabelText('Telegram @username');
+  await user.click(screen.getByRole('button', { name: new RegExp(t('auth.buttons.loginWithTelegram')) }));
+  return screen.getByLabelText(t('auth.fields.telegramUsername'));
 };
 
 describe('LoginPage telegram + set-password flows', () => {
@@ -72,13 +74,13 @@ describe('LoginPage telegram + set-password flows', () => {
     renderPage();
     const input = await goToTelegramUsername(user);
     await user.type(input, 'validuser');
-    await user.click(screen.getByRole('button', { name: 'Получить код в Telegram' }));
+    await user.click(screen.getByRole('button', { name: t('auth.buttons.getCode') }));
     await waitFor(() => {
       expect(authService.requestTelegramLoginCodeByUsername).toHaveBeenCalledWith({
         telegram_username: 'validuser',
       });
     });
-    expect(await screen.findByLabelText('Код из Telegram')).toBeInTheDocument();
+    expect(await screen.findByLabelText(t('auth.fields.telegramCode'))).toBeInTheDocument();
   });
 
   it('shows bot link when username lookup returns 404', async () => {
@@ -89,9 +91,14 @@ describe('LoginPage telegram + set-password flows', () => {
     renderPage();
     const input = await goToTelegramUsername(user);
     await user.type(input, 'validuser');
-    await user.click(screen.getByRole('button', { name: 'Получить код в Telegram' }));
-    expect(await screen.findByText(/Аккаунт не найден/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Открыть/ })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: t('auth.buttons.getCode') }));
+    expect(await screen.findByText(new RegExp(t('auth.errors.accountNotFound')))).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', {
+        name: (name: string) =>
+          name.includes(t('auth.openBot', { botUsername: String(TELEGRAM_BOT_USERNAME) })),
+      }),
+    ).toBeInTheDocument();
   });
 
   it('shows generic error when username lookup fails non-404', async () => {
@@ -102,16 +109,16 @@ describe('LoginPage telegram + set-password flows', () => {
     renderPage();
     const input = await goToTelegramUsername(user);
     await user.type(input, 'validuser');
-    await user.click(screen.getByRole('button', { name: 'Получить код в Telegram' }));
-    expect(await screen.findByText('Не удалось отправить код')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: t('auth.buttons.getCode') }));
+    expect(await screen.findByText(t('auth.errors.codeSendFailed'))).toBeInTheDocument();
   });
 
   it('goes back to password step from username form', async () => {
     const user = userEvent.setup();
     renderPage();
     await goToTelegramUsername(user);
-    await user.click(screen.getByRole('button', { name: 'Назад' }));
-    expect(await screen.findByLabelText('Телефон')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: t('common.actions.back') }));
+    expect(await screen.findByLabelText(t('auth.fields.phone'))).toBeInTheDocument();
   });
 
   const reachCodeStep = async (user: ReturnType<typeof userEvent.setup>) => {
@@ -122,8 +129,8 @@ describe('LoginPage telegram + set-password flows', () => {
     );
     const input = await goToTelegramUsername(user);
     await user.type(input, 'validuser');
-    await user.click(screen.getByRole('button', { name: 'Получить код в Telegram' }));
-    await screen.findByLabelText('Код из Telegram');
+    await user.click(screen.getByRole('button', { name: t('auth.buttons.getCode') }));
+    await screen.findByLabelText(t('auth.fields.telegramCode'));
   };
 
   it('logs in with code and navigates when password not required', async () => {
@@ -131,8 +138,8 @@ describe('LoginPage telegram + set-password flows', () => {
     const user = userEvent.setup();
     renderPage();
     await reachCodeStep(user);
-    await user.type(screen.getByLabelText('Код из Telegram'), '123456');
-    await user.click(screen.getByRole('button', { name: 'Подтвердить код' }));
+    await user.type(screen.getByLabelText(t('auth.fields.telegramCode')), '123456');
+    await user.click(screen.getByRole('button', { name: t('auth.buttons.confirmCode') }));
     await waitFor(() => {
       expect(storeState.loginWithTelegramCodeByUsername).toHaveBeenCalledWith({
         telegram_username: 'validuser',
@@ -147,9 +154,9 @@ describe('LoginPage telegram + set-password flows', () => {
     const user = userEvent.setup();
     renderPage();
     await reachCodeStep(user);
-    await user.type(screen.getByLabelText('Код из Telegram'), '123456');
-    await user.click(screen.getByRole('button', { name: 'Подтвердить код' }));
-    expect(await screen.findByLabelText('Новый пароль')).toBeInTheDocument();
+    await user.type(screen.getByLabelText(t('auth.fields.telegramCode')), '123456');
+    await user.click(screen.getByRole('button', { name: t('auth.buttons.confirmCode') }));
+    expect(await screen.findByLabelText(t('auth.fields.newPassword'))).toBeInTheDocument();
   });
 
   it('shows error when code verification fails', async () => {
@@ -159,39 +166,39 @@ describe('LoginPage telegram + set-password flows', () => {
     const user = userEvent.setup();
     renderPage();
     await reachCodeStep(user);
-    await user.type(screen.getByLabelText('Код из Telegram'), '123456');
-    await user.click(screen.getByRole('button', { name: 'Подтвердить код' }));
-    expect(await screen.findByText('Неверный код из Telegram')).toBeInTheDocument();
+    await user.type(screen.getByLabelText(t('auth.fields.telegramCode')), '123456');
+    await user.click(screen.getByRole('button', { name: t('auth.buttons.confirmCode') }));
+    expect(await screen.findByText(t('auth.errors.wrongTelegramCode'))).toBeInTheDocument();
   });
 
   const reachSetPassword = async (user: ReturnType<typeof userEvent.setup>) => {
     storeState.loginWithTelegramCodeByUsername = vi.fn().mockResolvedValue({ requiresPassword: true });
     await reachCodeStep(user);
-    await user.type(screen.getByLabelText('Код из Telegram'), '123456');
-    await user.click(screen.getByRole('button', { name: 'Подтвердить код' }));
-    await screen.findByLabelText('Новый пароль');
+    await user.type(screen.getByLabelText(t('auth.fields.telegramCode')), '123456');
+    await user.click(screen.getByRole('button', { name: t('auth.buttons.confirmCode') }));
+    await screen.findByLabelText(t('auth.fields.newPassword'));
   };
 
   it('shows error when passwords do not match', async () => {
     const user = userEvent.setup();
     renderPage();
     await reachSetPassword(user);
-    await user.type(screen.getByLabelText('Новый пароль'), 'Abcdefg1');
-    await user.type(screen.getByLabelText('Повторите пароль'), 'Abcdefg2');
-    const form = screen.getByLabelText('Новый пароль').closest('form') as HTMLFormElement;
+    await user.type(screen.getByLabelText(t('auth.fields.newPassword')), 'Abcdefg1');
+    await user.type(screen.getByLabelText(t('auth.fields.repeatPassword')), 'Abcdefg2');
+    const form = screen.getByLabelText(t('auth.fields.newPassword')).closest('form') as HTMLFormElement;
     form.requestSubmit();
-    expect(await screen.findByText('Пароли не совпадают')).toBeInTheDocument();
+    expect(await screen.findByText(t('auth.errors.passwordsDoNotMatch'))).toBeInTheDocument();
   });
 
   it('shows error when password too weak', async () => {
     const user = userEvent.setup();
     renderPage();
     await reachSetPassword(user);
-    await user.type(screen.getByLabelText('Новый пароль'), 'aaaaaaaa');
-    await user.type(screen.getByLabelText('Повторите пароль'), 'aaaaaaaa');
-    const form = screen.getByLabelText('Новый пароль').closest('form') as HTMLFormElement;
+    await user.type(screen.getByLabelText(t('auth.fields.newPassword')), 'aaaaaaaa');
+    await user.type(screen.getByLabelText(t('auth.fields.repeatPassword')), 'aaaaaaaa');
+    const form = screen.getByLabelText(t('auth.fields.newPassword')).closest('form') as HTMLFormElement;
     form.requestSubmit();
-    expect(await screen.findByText('Пароль слишком слабый')).toBeInTheDocument();
+    expect(await screen.findByText(t('auth.errors.passwordTooWeak'))).toBeInTheDocument();
   });
 
   it('saves password with profile update and navigates', async () => {
@@ -201,10 +208,10 @@ describe('LoginPage telegram + set-password flows', () => {
     const user = userEvent.setup();
     renderPage();
     await reachSetPassword(user);
-    await user.type(screen.getByLabelText('Имя'), 'Ivan');
-    await user.type(screen.getByLabelText('Новый пароль'), 'Abcdefg1');
-    await user.type(screen.getByLabelText('Повторите пароль'), 'Abcdefg1');
-    await user.click(screen.getByRole('button', { name: 'Сохранить пароль' }));
+    await user.type(screen.getByLabelText(t('auth.placeholders.name')), 'Ivan');
+    await user.type(screen.getByLabelText(t('auth.fields.newPassword')), 'Abcdefg1');
+    await user.type(screen.getByLabelText(t('auth.fields.repeatPassword')), 'Abcdefg1');
+    await user.click(screen.getByRole('button', { name: t('auth.buttons.savePassword') }));
     await waitFor(() => {
       expect(storeState.setTelegramSitePassword).toHaveBeenCalledWith('Abcdefg1');
       expect(userService.updateMe).toHaveBeenCalledWith({ first_name: 'Ivan', last_name: '' });
@@ -218,10 +225,10 @@ describe('LoginPage telegram + set-password flows', () => {
     const user = userEvent.setup();
     renderPage();
     await reachSetPassword(user);
-    await user.type(screen.getByLabelText('Новый пароль'), 'Abcdefg1');
-    await user.type(screen.getByLabelText('Повторите пароль'), 'Abcdefg1');
-    await user.click(screen.getByRole('button', { name: 'Сохранить пароль' }));
-    expect(await screen.findByText('Не удалось сохранить пароль')).toBeInTheDocument();
+    await user.type(screen.getByLabelText(t('auth.fields.newPassword')), 'Abcdefg1');
+    await user.type(screen.getByLabelText(t('auth.fields.repeatPassword')), 'Abcdefg1');
+    await user.click(screen.getByRole('button', { name: t('auth.buttons.savePassword') }));
+    expect(await screen.findByText(t('auth.errors.passwordSaveFailed'))).toBeInTheDocument();
   });
 
 });

@@ -10,6 +10,7 @@ import { translateApiError } from "@shared/utils/translateApiError";
 import { hasPermission, PERMISSIONS } from "@shared/utils/permissions";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useNotificationStore } from "../../store/useNotificationStore";
+import { useTranslation } from "@shared/i18n/useTranslation";
 import type { Schemas } from "@shared/types/models";
 
 type VendorProfile = Schemas["VendorResponse"];
@@ -22,6 +23,7 @@ interface ExtraMenuItem {
 }
 
 export const ProfilePage = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const unreadCount = useNotificationStore((s) => s.unreadCount);
@@ -71,7 +73,7 @@ export const ProfilePage = () => {
       setIsVendor(true);
       setVendorProfile(profile.data.data);
     } catch (err) {
-      setVendorError(translateApiError(err, "Не удалось стать вендором"));
+      setVendorError(translateApiError(err, t("profile.roles.becomeVendorFailed")));
     } finally {
       setVendorLoading(false);
     }
@@ -82,7 +84,7 @@ export const ProfilePage = () => {
   if (!checkingStaff && isStaff) {
     extraMenuItems.push({
       icon: <CookingPotIcon size={20} weight="bold" color="var(--fire)" />,
-      label: "Кабинет сотрудника",
+      label: t("profile.roles.staffDashboard"),
       onClick: () => {
         void navigate(ROUTES.STAFF_DASHBOARD);
       },
@@ -94,7 +96,7 @@ export const ProfilePage = () => {
       if (canOpenVendorDashboard) {
         extraMenuItems.push({
           icon: <StorefrontIcon size={20} weight="bold" />,
-          label: "Кабинет вендора",
+          label: t("profile.roles.vendorDashboard"),
           onClick: () => {
             void navigate(ROUTES.VENDOR_DASHBOARD);
           },
@@ -104,9 +106,9 @@ export const ProfilePage = () => {
           icon: <StorefrontIcon size={20} weight="bold" />,
           label: (
             <span>
-              Кабинет вендора
+              {t("profile.roles.vendorDashboard")}
               <span style={{ display: "block", fontSize: "var(--text-sm)", color: "var(--text-3)", marginTop: 2, fontWeight: 400 }}>
-                Ожидание одобрения администратором
+                {t("profile.roles.vendorPending")}
               </span>
             </span>
           ),
@@ -117,7 +119,7 @@ export const ProfilePage = () => {
     } else {
       extraMenuItems.push({
         icon: <SparkleIcon size={20} weight="bold" color="var(--fire)" />,
-        label: vendorLoading ? "Загрузка..." : "Стать вендором",
+        label: vendorLoading ? t("common.states.loading") : t("profile.roles.becomeVendor"),
         onClick: vendorLoading
           ? undefined
           : () => {

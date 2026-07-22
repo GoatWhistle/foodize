@@ -5,6 +5,7 @@ import { vi, describe, it, expect } from 'vitest';
 import { AdminReviewsTab } from '../../../../pages/admin/tabs/AdminReviewsTab';
 import type { AdminReview } from '../../../../pages/admin/hooks/useAdminReviews';
 import type { adminService as adminServiceType } from '../../../../services/adminService';
+import { t } from '@shared/i18n/useTranslation';
 import { at, req } from '../../../testUtils';
 
 const reviews: AdminReview[] = [
@@ -53,14 +54,14 @@ const baseProps = (over: Partial<Parameters<typeof AdminReviewsTab>[0]> = {}) =>
 describe('AdminReviewsTab', () => {
   it('shows skeleton while loading empty', () => {
     render(<AdminReviewsTab {...baseProps({ reviews: [], reviewsLoading: true })} />);
-    expect(screen.queryByText('Отзывов пока нет')).not.toBeInTheDocument();
+    expect(screen.queryByText(t('admin.reviews.emptyTitle'))).not.toBeInTheDocument();
     expect(screen.queryByText('CSV')).not.toBeInTheDocument();
   });
 
   it('renders reviews with verified badge, text and fallbacks', () => {
     render(<AdminReviewsTab {...baseProps()} />);
     expect(screen.getByText('Пицца')).toBeInTheDocument();
-    expect(screen.getByText('Покупка подтверждена')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.reviews.verifiedPurchase'))).toBeInTheDocument();
     expect(screen.getByText('Отлично')).toBeInTheDocument();
     expect(screen.getByText('Иван · 01.01.2026, 13:00')).toBeInTheDocument();
     expect(screen.getByText('rest2abc')).toBeInTheDocument();
@@ -69,7 +70,7 @@ describe('AdminReviewsTab', () => {
 
   it('renders empty state', () => {
     render(<AdminReviewsTab {...baseProps({ reviews: [] })} />);
-    expect(screen.getByText('Отзывов пока нет')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.reviews.emptyTitle'))).toBeInTheDocument();
   });
 
   it('filters by rating and resets page', async () => {
@@ -79,7 +80,7 @@ describe('AdminReviewsTab', () => {
     await userEvent.click(screen.getByRole('button', { name: /5/ }));
     expect(setReviewsPage).toHaveBeenCalledWith(1);
     expect(setReviewFilters).toHaveBeenCalledWith({ rating: '5' });
-    await userEvent.click(screen.getByRole('button', { name: 'Все' }));
+    await userEvent.click(screen.getByRole('button', { name: t('admin.reviews.allRatings') }));
     expect(setReviewFilters).toHaveBeenLastCalledWith({ rating: '' });
   });
 
@@ -132,11 +133,14 @@ describe('AdminReviewsTab', () => {
       />,
     );
     await userEvent.click(screen.getByRole('button', { name: /CSV/ }));
-    expect(handleExport).toHaveBeenCalledWith(expect.any(Function), 'отзывы_2026-07-18.csv');
+    expect(handleExport).toHaveBeenCalledWith(
+      expect.any(Function),
+      t('admin.exportFiles.reviews', { date: '2026-07-18' }),
+    );
     const exportFn = at(handleExport.mock.calls, 0)[0] as () => Promise<Blob>;
     void exportFn();
     expect(csvFn).toHaveBeenCalledWith({ min_rating: '4', max_rating: '4' });
-    await userEvent.click(at(screen.getAllByTitle("Удалить отзыв"), 0));
+    await userEvent.click(at(screen.getAllByTitle(t('admin.reviews.deleteTitle')), 0));
     expect(handleDeleteReview).toHaveBeenCalledWith('rv1');
   });
 

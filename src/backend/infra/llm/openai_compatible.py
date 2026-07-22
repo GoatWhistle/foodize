@@ -18,6 +18,7 @@ from infra.llm.base import (
     Usage,
 )
 from infra.llm.openai_stream import OpenAIStreamAccumulator
+from shared.i18n import DEFAULT_LANGUAGE, translate
 from utils.logging_setup import get_logger
 
 if TYPE_CHECKING:
@@ -27,7 +28,7 @@ if TYPE_CHECKING:
 
 logger = get_logger("ai.openai_compatible")
 
-_EMPTY_PLACEHOLDER = "(пустой ответ)"
+_EMPTY_PLACEHOLDER = translate("prompts.common.emptyResponse", DEFAULT_LANGUAGE)
 
 
 def _to_tools(tools: list[ToolSpec]) -> list[dict[str, Any]]:

@@ -4,6 +4,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { VendorOrdersToolbar } from '../../../../../pages/vendor/tabs/components/VendorOrdersToolbar';
 import type { Restaurant } from '@shared/types/models';
 import { at } from '../../../../testUtils';
+import { t } from '@shared/i18n/useTranslation';
 
 type ToolbarProps = React.ComponentProps<typeof VendorOrdersToolbar>;
 
@@ -33,17 +34,17 @@ const exportHandler = (props: ToolbarProps): ReturnType<typeof vi.fn> =>
 describe('VendorOrdersToolbar', () => {
   it('renders header, chips and date inputs', () => {
     render(<VendorOrdersToolbar {...makeProps()} />);
-    expect(screen.getByText('Заказы заведения')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Новые' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Дата с')).toBeInTheDocument();
-    expect(screen.getByLabelText('Дата по')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.orders.toolbarTitle'))).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: t('vendor.orders.filters.pending') })).toBeInTheDocument();
+    expect(screen.getByLabelText(t('vendor.orders.dateFrom'))).toBeInTheDocument();
+    expect(screen.getByLabelText(t('vendor.orders.dateTo'))).toBeInTheDocument();
   });
 
   it('selecting a status chip updates filter and resets page', async () => {
     const user = userEvent.setup();
     const props = makeProps();
     render(<VendorOrdersToolbar {...props} />);
-    await user.click(screen.getByRole('button', { name: 'Готовые' }));
+    await user.click(screen.getByRole('button', { name: t('vendor.orders.filters.ready') }));
     expect(props.setOrdersStatusFilter).toHaveBeenCalledWith('READY');
     expect(props.setOrdersPage).toHaveBeenCalledWith(1);
   });
@@ -53,7 +54,7 @@ describe('VendorOrdersToolbar', () => {
     const props = makeProps({ ordersStatusFilter: 'PENDING' });
     render(<VendorOrdersToolbar {...props} />);
     await user.click(screen.getByRole('button', { name: /CSV/ }));
-    expect(props.handleVendorExport).toHaveBeenCalledWith(expect.any(Function), 'заказы_2026-07-18.csv');
+    expect(props.handleVendorExport).toHaveBeenCalledWith(expect.any(Function), t('vendor.exportFiles.orders', { date: '2026-07-18' }));
     const exportFn = at(exportHandler(props).mock.calls, 0)[0] as () => Promise<Blob>;
     await exportFn();
     expect(exportCsv(props)).toHaveBeenCalledWith({ restaurant_id: 'r1', status: 'PENDING' });
@@ -63,7 +64,7 @@ describe('VendorOrdersToolbar', () => {
     const user = userEvent.setup();
     const props = makeProps();
     render(<VendorOrdersToolbar {...props} />);
-    await user.click(screen.getByRole('button', { name: /Обновить/ }));
+    await user.click(screen.getByRole('button', { name: new RegExp(t('common.actions.refresh')) }));
     expect(props.fetchVendorOrders).toHaveBeenCalled();
   });
 
@@ -76,9 +77,9 @@ describe('VendorOrdersToolbar', () => {
     const user = userEvent.setup();
     const props = makeProps();
     render(<VendorOrdersToolbar {...props} />);
-    await user.type(screen.getByLabelText('Дата с'), '2026-07-01');
+    await user.type(screen.getByLabelText(t('vendor.orders.dateFrom')), '2026-07-01');
     expect(props.setOrdersDateFromFilter).toHaveBeenCalled();
-    await user.type(screen.getByLabelText('Дата по'), '2026-07-31');
+    await user.type(screen.getByLabelText(t('vendor.orders.dateTo')), '2026-07-31');
     expect(props.setOrdersDateToFilter).toHaveBeenCalled();
   });
 
@@ -86,7 +87,7 @@ describe('VendorOrdersToolbar', () => {
     const user = userEvent.setup();
     const props = makeProps({ ordersDateFromFilter: '2026-07-01' });
     render(<VendorOrdersToolbar {...props} />);
-    await user.click(screen.getByRole('button', { name: 'Сбросить период' }));
+    await user.click(screen.getByRole('button', { name: t('vendor.orders.resetPeriod') }));
     expect(props.setOrdersDateFromFilter).toHaveBeenCalledWith('');
     expect(props.setOrdersDateToFilter).toHaveBeenCalledWith('');
     expect(props.setOrdersPage).toHaveBeenCalledWith(1);

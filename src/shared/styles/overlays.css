@@ -20,6 +20,12 @@
   --star-border:  oklch(72% 0.13 80 / 0.35);
   --star-fill:    oklch(72% 0.13 80 / 0.12);
 
+  --badge-bg:          oklch(20% 0.02 60 / 0.78);
+  --badge-border:      oklch(100% 0 0 / 0.14);
+  --badge-fg:          oklch(100% 0 0 / 0.95);
+  --badge-fg-dim:      oklch(100% 0 0 / 0.70);
+  --badge-success-fg:  oklch(84% 0.19 148);
+
   --z-sticky:   100;
   --z-banner:   1000;
   --z-drawer:   1200;

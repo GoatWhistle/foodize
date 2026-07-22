@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { StaffOrder, EtaPayload } from '../types';
 
 interface EtaModalProps {
@@ -33,6 +34,7 @@ const getOrderDefaultEta = (order: StaffOrder): number => {
 };
 
 export const EtaModal = ({ order, onConfirm, onCancel, updating }: EtaModalProps) => {
+  const { t } = useTranslation();
   const defaultMinutes = getOrderDefaultEta(order);
   const [etaMinutes, setEtaMinutes] = useState<number | null>(defaultMinutes);
   const [manualTime, setManualTime] = useState('');
@@ -58,7 +60,7 @@ export const EtaModal = ({ order, onConfirm, onCancel, updating }: EtaModalProps
     >
       <div className="modal-content" style={{ maxWidth: 360, padding: '24px' }}>
         <h3 style={{ fontWeight: 900, fontSize: "var(--text-md)", marginBottom: 4 }}>
-          Заказ #{getOrderDisplayId(order)}
+          {t('staff.etaModal.title', { displayId: getOrderDisplayId(order) })}
         </h3>
         <p
           style={{
@@ -67,7 +69,7 @@ export const EtaModal = ({ order, onConfirm, onCancel, updating }: EtaModalProps
             marginBottom: 16,
           }}
         >
-          Выберите время готовности
+          {t('staff.etaModal.subtitle')}
         </p>
 
         <div
@@ -88,7 +90,7 @@ export const EtaModal = ({ order, onConfirm, onCancel, updating }: EtaModalProps
                 setManualTime('');
               }}
             >
-              {m} мин{m === defaultMinutes ? ' *' : ''}
+              {t('staff.etaModal.chipMinutes', { minutes: m })}{m === defaultMinutes ? t('staff.etaModal.recommendedMark') : ''}
             </button>
           ))}
         </div>
@@ -103,7 +105,7 @@ export const EtaModal = ({ order, onConfirm, onCancel, updating }: EtaModalProps
             marginBottom: 8,
           }}
         >
-          Или указать точное время
+          {t('staff.etaModal.manualLabel')}
           <input
             type="time"
             value={manualTime}
@@ -129,7 +131,7 @@ export const EtaModal = ({ order, onConfirm, onCancel, updating }: EtaModalProps
             marginBottom: 16,
           }}
         >
-          * — рекомендовано по составу заказа
+          {t('staff.etaModal.recommendedHint')}
         </p>
 
         <div style={{ display: 'flex', gap: 8 }}>
@@ -142,10 +144,10 @@ export const EtaModal = ({ order, onConfirm, onCancel, updating }: EtaModalProps
               if (etaPayload) onConfirm(etaPayload);
             }}
           >
-            {updating ? '...' : 'Начать готовить'}
+            {updating ? '...' : t('staff.etaModal.confirm')}
           </button>
           <button className="btn btn-secondary" onClick={onCancel}>
-            Отмена
+            {t('common.actions.cancel')}
           </button>
         </div>
       </div>

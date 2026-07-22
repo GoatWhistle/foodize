@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import type { Restaurant } from '@shared/types/models';
+import { t } from '@shared/i18n/useTranslation';
 import { HomePage } from '../../pages/home/HomePage';
 type LogicState = {
   search: string;
@@ -99,11 +100,11 @@ describe('HomePage', () => {
     );
 
     expect(
-      screen.getByPlaceholderText('Поиск ресторана или адреса...')
+      screen.getByPlaceholderText(t('catalog.search.placeholderRestaurant'))
     ).toBeInTheDocument();
 
-    await user.click(screen.getByLabelText('Открыть фильтры'));
-    expect(screen.getByText('Открыто')).toBeInTheDocument();
+    await user.click(screen.getByLabelText(t('catalog.search.openFilters')));
+    expect(screen.getByText(t('catalog.search.onlyOpen'))).toBeInTheDocument();
   });
 
   it('renders all restaurant cards', () => {
@@ -143,7 +144,7 @@ describe('HomePage', () => {
       </BrowserRouter>
     );
 
-    expect(screen.getByRole('status', { name: 'Загрузка ресторанов' })).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: t('catalog.home.loadingRestaurants') })).toBeInTheDocument();
   });
 
   it('shows empty state when no restaurants', () => {
@@ -160,7 +161,7 @@ describe('HomePage', () => {
       </BrowserRouter>
     );
 
-    expect(screen.getByText('Ничего не найдено')).toBeInTheDocument();
+    expect(screen.getByText(t('catalog.home.emptyTitle'))).toBeInTheDocument();
     expect(screen.queryByRole('article')).toBeNull();
   });
 
@@ -227,7 +228,7 @@ describe('HomePage', () => {
       </BrowserRouter>
     );
 
-    await user.click(screen.getByRole('button', { name: 'Сбросить' }));
+    await user.click(screen.getByRole('button', { name: t('common.actions.reset') }));
     expect(resetFilters).toHaveBeenCalled();
   });
 });

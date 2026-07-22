@@ -15,21 +15,19 @@ import { TelegramUsernameForm } from './forms/TelegramUsernameForm';
 import { TelegramCodeForm } from './forms/TelegramCodeForm';
 import { SetPasswordForm } from './forms/SetPasswordForm';
 import { AuthVisual } from './AuthVisual';
-
-const LOGIN_VISUAL_TITLE = (
-  <>
-    Еда,
-    <br />
-    которую
-    <br />
-    вы <em>любите</em>
-  </>
-);
-
-const LOGIN_VISUAL_SUBTITLE =
-  'Лучшие заведения города — в одном месте. Выбирайте, заказывайте заранее и забирайте без очередей.';
+import { useTranslation } from '@shared/i18n/useTranslation';
 
 export const LoginPage = () => {
+  const { t } = useTranslation();
+  const loginVisualTitle = (
+    <>
+      {t('auth.visual.loginTitleLine1')}
+      <br />
+      {t('auth.visual.loginTitleLine2')}
+      <br />
+      {t('auth.visual.loginTitleLine3')} <em>{t('auth.visual.loginTitleAccent')}</em>
+    </>
+  );
   const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [telegramUsername, setTelegramUsername] = useState('');
@@ -60,13 +58,13 @@ export const LoginPage = () => {
   const handlePasswordLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     clearError();
-    if (!phoneNumber || !password) { setError('Введите телефон и пароль'); return; }
+    if (!phoneNumber || !password) { setError(t('auth.errors.enterPhoneAndPassword')); return; }
     setIsLoading(true);
     try {
       await login({ phone_number: extractPhoneNumber(phoneNumber), password });
       void navigate(redirectTo);
     } catch (err) {
-      setError(translateApiError(err, 'Неверный телефон или пароль'));
+      setError(translateApiError(err, t('auth.errors.wrongPhoneOrPassword')));
       setPassword('');
     } finally {
       setIsLoading(false);
@@ -87,9 +85,9 @@ export const LoginPage = () => {
       };
       if (axiosErr.response?.status === 404) {
         setShowBotLink(true);
-        setError('Аккаунт не найден. Запустите бота — он зарегистрирует вас автоматически:');
+        setError(t('auth.errors.accountNotFound'));
       } else {
-        setError(translateApiError(err, 'Не удалось отправить код'));
+        setError(translateApiError(err, t('auth.errors.codeSendFailed')));
       }
     } finally {
       setIsLoading(false);
@@ -108,7 +106,7 @@ export const LoginPage = () => {
       if (result.requiresPassword) { setAuthMode('set-password'); return; }
       void navigate(redirectTo);
     } catch (err) {
-      setError(translateApiError(err, 'Неверный код из Telegram'));
+      setError(translateApiError(err, t('auth.errors.wrongTelegramCode')));
       setTelegramCode('');
     } finally {
       setIsLoading(false);
@@ -118,8 +116,8 @@ export const LoginPage = () => {
   const handlePasswordSetup = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     clearError();
-    if (newPassword !== confirmPassword) { setError('Пароли не совпадают'); return; }
-    if (getPasswordStrength(newPassword).score < 3) { setError('Пароль слишком слабый'); return; }
+    if (newPassword !== confirmPassword) { setError(t('auth.errors.passwordsDoNotMatch')); return; }
+    if (getPasswordStrength(newPassword).score < 3) { setError(t('auth.errors.passwordTooWeak')); return; }
     setIsLoading(true);
     try {
       await setTelegramSitePassword(newPassword);
@@ -129,7 +127,7 @@ export const LoginPage = () => {
       }
       void navigate(redirectTo);
     } catch (err) {
-      setError(translateApiError(err, 'Не удалось сохранить пароль'));
+      setError(translateApiError(err, t('auth.errors.passwordSaveFailed')));
       setNewPassword('');
       setConfirmPassword('');
     } finally {
@@ -139,7 +137,7 @@ export const LoginPage = () => {
 
   return (
     <div className="auth-page">
-      <AuthVisual title={LOGIN_VISUAL_TITLE} subtitle={LOGIN_VISUAL_SUBTITLE} />
+      <AuthVisual title={loginVisualTitle} subtitle={t('auth.visual.loginSubtitle')} />
       <div className="auth-form-side">
         <AuthCard
           authMode={authMode}

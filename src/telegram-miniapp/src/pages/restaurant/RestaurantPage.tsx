@@ -16,10 +16,10 @@ import { ReviewsModal } from "@shared/components/ReviewsModal/ReviewsModal";
 import { InfoModal } from "@shared/components/InfoModal/InfoModal";
 import { RestaurantHero } from "./RestaurantHero";
 import { MenuSection } from "./MenuSection";
-import { pluralizeRu } from "@shared/utils/pluralize";
 import type { CartLineOption } from "@shared/store/createCartStore";
 import type { Restaurant } from "@shared/types/models";
 import { formatPrice } from "@shared/utils/price";
+import { useTranslation } from "@shared/i18n/useTranslation";
 
 const Portal = ({ children }: { children: ReactNode }) =>
   typeof document === "undefined"
@@ -27,6 +27,7 @@ const Portal = ({ children }: { children: ReactNode }) =>
     : createPortal(children, document.body);
 
 export const RestaurantPage = () => {
+  const { t } = useTranslation();
   const { id = "" } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -137,7 +138,7 @@ export const RestaurantPage = () => {
           >
             <ShoppingCartIcon size={18} weight="bold" />
             <span className="cart-fab-label">
-              {count} {pluralizeRu(count, ["товар", "товара", "товаров"])}
+              {t("order.cart.itemsCount", { count })}
             </span>
             <span className="cart-fab-total">{formatPrice(total)}</span>
           </button>

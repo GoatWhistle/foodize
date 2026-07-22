@@ -5,6 +5,7 @@ import { useAuthStore } from "@shared/store/useAuthStore.instance";
 import type { AuthStoreState, AuthUser } from "@shared/store/createAuthStore";
 import { userService } from "@shared/services/userService";
 import { translateApiError } from "@shared/utils/translateApiError";
+import { useTranslation } from "@shared/i18n/useTranslation";
 
 interface EditForm {
   name: string;
@@ -44,6 +45,7 @@ const asString = (value: unknown): string =>
   typeof value === "string" ? value : "";
 
 export const useProfilePage = (): UseProfilePageResult => {
+  const { t } = useTranslation();
   const { user, logout, fetchMe } = useAuthStore(
     useShallow((s: AuthStoreState) => ({ user: s.user, logout: s.logout, fetchMe: s.fetchMe })),
   );
@@ -90,7 +92,7 @@ export const useProfilePage = (): UseProfilePageResult => {
       setEditSuccess(true);
       setEditMode(false);
     } catch (err) {
-      setEditError(translateApiError(err, "Не удалось сохранить"));
+      setEditError(translateApiError(err, t("profile.settings.saveFailed")));
     } finally {
       setEditLoading(false);
     }
@@ -106,7 +108,7 @@ export const useProfilePage = (): UseProfilePageResult => {
       setPwSuccess(true);
       setPwForm({ old_password: "", new_password: "" });
     } catch (err) {
-      setPwError(translateApiError(err, "Не удалось сменить пароль"));
+      setPwError(translateApiError(err, t("profile.settings.passwordChangeFailed")));
     } finally {
       setPwLoading(false);
     }
@@ -115,7 +117,7 @@ export const useProfilePage = (): UseProfilePageResult => {
   const displayName =
     user?.first_name && asString(user.last_name)
       ? `${user.first_name} ${asString(user.last_name)}`
-      : user?.name || "Пользователь";
+      : user?.name || t("profile.page.fallbackName");
 
   return {
     user,

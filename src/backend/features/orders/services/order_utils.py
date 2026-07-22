@@ -8,7 +8,20 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.menu.models import MenuItem, MenuItemOption
-from features.orders.exceptions import InvalidStatusTransitionException
+from features.orders.exceptions import (
+    DuplicateOptionsSelectedException,
+    IdempotencyKeyPayloadMismatchException,
+    IdempotentRequestInProgressException,
+    InvalidStatusTransitionException,
+    NotEnoughOptionsException,
+    OptionMenuItemMismatchException,
+    OptionNotFoundException,
+    OptionUnavailableException,
+    PickupTimeTooFarException,
+    PickupTimeTooSoonException,
+    SingleOptionRequiredException,
+    TooManyOptionsException,
+)
 from features.orders.models import IdempotencyKey
 from features.orders.schemas.order import OrderCreate
 from features.orders.schemas.order_item import OrderItemCreate
@@ -18,7 +31,6 @@ from features.restaurants.working_hours_crud import is_open_now
 from infra.cache.redis import get_redis_cache
 from shared.enums.order_status import OrderStatus
 from shared.enums.selection_type import SelectionType
-from shared.exceptions import BadRequestException
 from utils.logging_setup import get_logger
 
 logger = get_logger(__name__)
@@ -66,7 +78,7 @@ def validate_item_options(
 ) -> list[MenuItemOption]:
     selected_ids = item_data.selected_option_ids
     if len(selected_ids) != len(set(selected_ids)):
-        raise BadRequestException(detail="Duplicate options selected")
+        raise DuplicateOptionsSelectedException()
 
     selected_options: list[MenuItemOption] = []
     selected_by_group: dict[uuid.UUID, int] = {}
@@ -74,11 +86,11 @@ def validate_item_options(
     for option_id in selected_ids:
         option = options_by_id.get(option_id)
         if not option:
-            raise BadRequestException(detail="Selected option not found")
+            raise OptionNotFoundException()
         if option.group.menu_item_id != menu_item.id:
-            raise BadRequestException(detail="Selected option does not belong to menu item")
+            raise OptionMenuItemMismatchException()
         if not option.group.is_active or not option.is_available:
-            raise BadRequestException(detail="Selected option is not available")
+            raise OptionUnavailableException()
         selected_options.append(option)
         selected_by_group[option.group_id] = selected_by_group.get(option.group_id, 0) + 1
 
@@ -90,11 +102,11 @@ def validate_item_options(
         if group.is_required:
             min_selected = max(1, min_selected)
         if selected_count < min_selected:
-            raise BadRequestException(detail=f"Not enough options selected for {group.name}")
+            raise NotEnoughOptionsException(group=group.name)
         if group.max_selected is not None and selected_count > group.max_selected:
-            raise BadRequestException(detail=f"Too many options selected for {group.name}")
+            raise TooManyOptionsException(group=group.name)
         if group.selection_type == SelectionType.SINGLE.value and selected_count > 1:
-            raise BadRequestException(detail=f"Only one option can be selected for {group.name}")
+            raise SingleOptionRequiredException(group=group.name)
 
     return selected_options
 
@@ -121,11 +133,9 @@ def validate_requested_pickup_at(
     now = datetime.now(UTC)
     latest = now + timedelta(days=_PICKUP_TIME_HORIZON_DAYS)
     if pickup_at < min_ready_at:
-        raise BadRequestException(detail="Pickup time is too soon for the current restaurant load")
+        raise PickupTimeTooSoonException()
     if pickup_at > latest:
-        raise BadRequestException(
-            detail=f"Pickup time must be within {_PICKUP_TIME_HORIZON_DAYS} days"
-        )
+        raise PickupTimeTooFarException(days=_PICKUP_TIME_HORIZON_DAYS)
     return pickup_at
 
 
@@ -171,9 +181,9 @@ async def start_idempotency_record(
 
     existing = await get_idempotency_record(session, user_id, key)
     if existing is None:
-        raise BadRequestException(detail="Idempotent request is still being processed")
+        raise IdempotentRequestInProgressException()
     if existing.request_hash != request_hash:
-        raise BadRequestException(detail="Idempotency key was used with different payload")
+        raise IdempotencyKeyPayloadMismatchException()
     if existing.response_json:
         return existing
-    raise BadRequestException(detail="Idempotent request is still being processed")
+    raise IdempotentRequestInProgressException()

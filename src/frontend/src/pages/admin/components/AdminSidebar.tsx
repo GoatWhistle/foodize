@@ -11,23 +11,25 @@ import {
   RowsIcon,
   ShieldWarningIcon,
 } from '@phosphor-icons/react';
+import { useTranslation } from '@shared/i18n/useTranslation';
 
 const ENTITY_TAB_IDS = new Set(['users', 'orders', 'restaurants', 'vendors', 'reviews']);
 
 interface TabDef {
   id: string;
-  label: string;
+  labelKey: string;
   icon: ReactNode;
 }
 
 interface TabButtonProps {
   tab: TabDef;
+  label: string;
   activeTab: string;
   indented?: boolean;
   onClick: (id: string) => void;
 }
 
-const TabButton = memo(({ tab, activeTab, indented, onClick }: TabButtonProps) => (
+const TabButton = memo(({ tab, label, activeTab, indented, onClick }: TabButtonProps) => (
   <button
     role="tab"
     aria-selected={activeTab === tab.id}
@@ -44,20 +46,20 @@ const TabButton = memo(({ tab, activeTab, indented, onClick }: TabButtonProps) =
     }}
   >
     {tab.icon}
-    {tab.label}
+    {label}
   </button>
 ));
 
 const tabs: TabDef[] = [
-  { id: 'stats', label: 'Статистика', icon: <ChartLineUpIcon size={18} /> },
-  { id: 'users', label: 'Пользователи', icon: <UsersThreeIcon size={18} /> },
-  { id: 'orders', label: 'Заказы', icon: <PackageIcon size={18} /> },
-  { id: 'resolution', label: 'Модерация', icon: <ShieldWarningIcon size={18} /> },
-  { id: 'restaurants', label: 'Рестораны', icon: <StorefrontIcon size={18} /> },
-  { id: 'vendors', label: 'Вендоры', icon: <UsersThreeIcon size={18} /> },
-  { id: 'reviews', label: 'Отзывы', icon: <StarIcon size={18} /> },
-  { id: 'finance', label: 'Аналитика', icon: <ChartLineUpIcon size={18} /> },
-  { id: 'audit', label: 'Логи', icon: <ClockIcon size={18} /> },
+  { id: 'stats', labelKey: 'admin.sidebar.tabs.stats', icon: <ChartLineUpIcon size={18} /> },
+  { id: 'users', labelKey: 'admin.sidebar.tabs.users', icon: <UsersThreeIcon size={18} /> },
+  { id: 'orders', labelKey: 'admin.sidebar.tabs.orders', icon: <PackageIcon size={18} /> },
+  { id: 'resolution', labelKey: 'admin.sidebar.tabs.resolution', icon: <ShieldWarningIcon size={18} /> },
+  { id: 'restaurants', labelKey: 'admin.sidebar.tabs.restaurants', icon: <StorefrontIcon size={18} /> },
+  { id: 'vendors', labelKey: 'admin.sidebar.tabs.vendors', icon: <UsersThreeIcon size={18} /> },
+  { id: 'reviews', labelKey: 'admin.sidebar.tabs.reviews', icon: <StarIcon size={18} /> },
+  { id: 'finance', labelKey: 'admin.sidebar.tabs.finance', icon: <ChartLineUpIcon size={18} /> },
+  { id: 'audit', labelKey: 'admin.sidebar.tabs.audit', icon: <ClockIcon size={18} /> },
 ];
 
 interface AdminSidebarProps {
@@ -73,13 +75,14 @@ export function AdminSidebar({
   entitiesOpen,
   setEntitiesOpen,
 }: AdminSidebarProps) {
+  const { t } = useTranslation();
   const handleTabClick = useCallback((id: string) => { setActiveTab(id); }, [setActiveTab]);
 
   return (
     <div
       className="admin-sidebar"
       role="tablist"
-      aria-label="Разделы админ-панели"
+      aria-label={t('admin.sidebar.ariaLabel')}
       aria-orientation="vertical"
       style={{
         width: 240, flexShrink: 0, position: 'sticky', top: 80,
@@ -88,10 +91,14 @@ export function AdminSidebar({
         borderRadius: 'var(--r-md)', border: '1px solid var(--border)',
       }}
     >
-      <h1 style={{ fontSize: "var(--text-md)", fontWeight: 900, marginBottom: 16 }}>Админ-панель</h1>
+      <h1 style={{ fontSize: "var(--text-md)", fontWeight: 900, marginBottom: 16 }}>
+        {t('admin.sidebar.title')}
+      </h1>
       {tabs
-        .filter((t) => t.id === 'stats')
-        .map((tab) => <TabButton key={tab.id} tab={tab} activeTab={activeTab} onClick={handleTabClick} />)}
+        .filter((tab) => tab.id === 'stats')
+        .map((tab) => (
+          <TabButton key={tab.id} tab={tab} label={t(tab.labelKey)} activeTab={activeTab} onClick={handleTabClick} />
+        ))}
       <div>
         <button
           onClick={() => { setEntitiesOpen((o) => !o); }}
@@ -108,7 +115,7 @@ export function AdminSidebar({
           }}
         >
           <RowsIcon size={16} weight="bold" />
-          Сущности
+          {t('admin.sidebar.entities')}
           <CaretDownIcon
             size={14} weight="bold"
             style={{
@@ -121,14 +128,18 @@ export function AdminSidebar({
         {entitiesOpen && (
           <div style={{ paddingLeft: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
             {tabs
-              .filter((t) => ENTITY_TAB_IDS.has(t.id))
-              .map((tab) => <TabButton key={tab.id} tab={tab} activeTab={activeTab} indented onClick={handleTabClick} />)}
+              .filter((tab) => ENTITY_TAB_IDS.has(tab.id))
+              .map((tab) => (
+                <TabButton key={tab.id} tab={tab} label={t(tab.labelKey)} activeTab={activeTab} indented onClick={handleTabClick} />
+              ))}
           </div>
         )}
       </div>
       {tabs
-        .filter((t) => !ENTITY_TAB_IDS.has(t.id) && t.id !== 'stats')
-        .map((tab) => <TabButton key={tab.id} tab={tab} activeTab={activeTab} onClick={handleTabClick} />)}
+        .filter((tab) => !ENTITY_TAB_IDS.has(tab.id) && tab.id !== 'stats')
+        .map((tab) => (
+          <TabButton key={tab.id} tab={tab} label={t(tab.labelKey)} activeTab={activeTab} onClick={handleTabClick} />
+        ))}
     </div>
   );
 }

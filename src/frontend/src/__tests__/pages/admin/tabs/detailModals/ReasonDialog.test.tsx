@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { vi, describe, it, expect } from 'vitest';
 import { ReasonDialog } from '../../../../../pages/admin/tabs/detailModals/ReasonDialog';
 import type { ReasonDialogConfig } from '../../../../../pages/admin/useAdminDashboard';
+import { t } from '@shared/i18n/useTranslation';
 
 const dialog: ReasonDialogConfig = {
   title: 'Отклонить',
@@ -28,7 +29,7 @@ describe('ReasonDialog', () => {
     expect(screen.getByText('Почему?')).toBeInTheDocument();
     const confirmBtn = screen.getByRole('button', { name: 'Отклонить' });
     expect(confirmBtn).toBeDisabled();
-    await userEvent.type(screen.getByPlaceholderText('Напишите причину отклонения'), '  bad  ');
+    await userEvent.type(screen.getByPlaceholderText(t('admin.reasonDialog.placeholder')), '  bad  ');
     expect(confirmBtn).toBeEnabled();
     await userEvent.click(confirmBtn);
     expect(onConfirm).toHaveBeenCalledWith('bad');
@@ -39,7 +40,7 @@ describe('ReasonDialog', () => {
     render(
       <ReasonDialog dialog={dialog} loading={false} onCancel={onCancel} onConfirm={vi.fn()} />,
     );
-    await userEvent.click(screen.getByRole('button', { name: 'Отмена' }));
+    await userEvent.click(screen.getByRole('button', { name: t('common.actions.cancel') }));
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
@@ -47,8 +48,8 @@ describe('ReasonDialog', () => {
     render(
       <ReasonDialog dialog={dialog} loading onCancel={vi.fn()} onConfirm={vi.fn()} />,
     );
-    expect(screen.getByText('Выполняю...')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Отмена' })).toBeDisabled();
+    expect(screen.getByText(t('admin.reasonDialog.running'))).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: t('common.actions.cancel') })).toBeDisabled();
   });
 
   it('does not cancel on overlay click while loading', async () => {
@@ -65,7 +66,7 @@ describe('ReasonDialog', () => {
     const { rerender } = render(
       <ReasonDialog dialog={dialog} loading={false} onCancel={vi.fn()} onConfirm={vi.fn()} />,
     );
-    const textarea = screen.getByPlaceholderText<HTMLTextAreaElement>('Напишите причину отклонения');
+    const textarea = screen.getByPlaceholderText<HTMLTextAreaElement>(t('admin.reasonDialog.placeholder'));
     await userEvent.type(textarea, 'text');
     expect(textarea.value).toBe('text');
     rerender(
@@ -77,7 +78,7 @@ describe('ReasonDialog', () => {
       />,
     );
     expect(
-      screen.getByPlaceholderText<HTMLTextAreaElement>('Напишите причину отклонения').value,
+      screen.getByPlaceholderText<HTMLTextAreaElement>(t('admin.reasonDialog.placeholder')).value,
     ).toBe('');
   });
 });

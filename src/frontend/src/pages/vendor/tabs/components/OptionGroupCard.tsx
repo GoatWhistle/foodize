@@ -1,4 +1,5 @@
 import { PlusIcon, XIcon } from '@phosphor-icons/react';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { OptionGroupDraft } from '../VendorMenuTab';
 import styles from './MenuItemOptionGroups.module.css';
 
@@ -19,12 +20,13 @@ export function OptionGroupCard({
   onRemoveOption,
   onAddOption,
 }: OptionGroupCardProps) {
+  const { t } = useTranslation();
   return (
     <div className={styles['group']}>
       <div className={styles['row']}>
         <input
           className={`form-input ${styles['grow']}`}
-          placeholder="Название группы"
+          placeholder={t('vendor.menu.options.groupNamePlaceholder')}
           value={group.name}
           onChange={(e) => { onPatchGroup({ name: e.target.value }); }}
         />
@@ -49,14 +51,14 @@ export function OptionGroupCard({
             ); }
           }
         >
-          <option value="multiple">Несколько</option>
-          <option value="single">Один вариант</option>
+          <option value="multiple">{t('vendor.menu.options.multiple')}</option>
+          <option value="single">{t('vendor.menu.options.single')}</option>
         </select>
         <input
           className="form-input"
           type="number"
           min="1"
-          placeholder="Макс. выборов"
+          placeholder={t('vendor.menu.options.maxChoicesPlaceholder')}
           value={group.max_selected}
           disabled={group.selection_type === 'single'}
           onChange={(e) => { onPatchGroup({ max_selected: e.target.value }); }}
@@ -74,14 +76,14 @@ export function OptionGroupCard({
             }); }
           }
         />
-        Обязательный выбор
+        {t('vendor.menu.options.required')}
       </label>
 
       {group.options.map((option, optionIndex) => (
         <div key={option.draftId} className={styles['row']}>
           <input
             className={`form-input ${styles['grow']}`}
-            placeholder="Опция"
+            placeholder={t('vendor.menu.options.optionPlaceholder')}
             value={option.name}
             onChange={(e) => { onPatchOption(optionIndex, { name: e.target.value }); }}
           />
@@ -104,7 +106,7 @@ export function OptionGroupCard({
       ))}
 
       <button type="button" className="btn btn-secondary btn-sm" onClick={onAddOption}>
-        <PlusIcon size={14} /> Опция
+        <PlusIcon size={14} /> {t('vendor.menu.options.addOption')}
       </button>
     </div>
   );

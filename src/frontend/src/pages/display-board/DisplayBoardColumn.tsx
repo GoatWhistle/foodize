@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
 import type { IconProps } from '@phosphor-icons/react';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import { styles, type StatusStyle } from './displayBoardStyles';
 
 type OrderId = string | number;
@@ -13,6 +14,7 @@ interface DisplayBoardColumnProps {
 }
 
 export function DisplayBoardColumn({ title, Icon, ids, newIds, style }: DisplayBoardColumnProps) {
+  const { t } = useTranslation();
   return (
     <div style={{ ...styles['column'], background: style.bg }}>
       <div style={{ ...styles['columnHeader'], color: style.solid }}>
@@ -24,7 +26,7 @@ export function DisplayBoardColumn({ title, Icon, ids, newIds, style }: DisplayB
         {ids.length === 0 ? (
           <div style={styles['empty']}>
             <Icon size={48} weight="light" />
-            <span style={styles['emptyText']}>Пусто</span>
+            <span style={styles['emptyText']}>{t('staff.displayBoard.empty')}</span>
           </div>
         ) : (
           ids.map((id) => (

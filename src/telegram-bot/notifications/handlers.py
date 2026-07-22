@@ -9,18 +9,17 @@ from aiogram.exceptions import TelegramForbiddenError, TelegramNetworkError, Tel
 from aiogram.types import InlineKeyboardMarkup
 
 from config import bot_config
-from keyboards.start_keyboards import OPEN_FOODIZE_BUTTON, OPEN_ORDER_BUTTON, web_app_keyboard
+from exceptions import RateLimitExhaustedError
+from i18n import DEFAULT_LANGUAGE, normalize_language
+from keyboards.start_keyboards import web_app_keyboard
 from services import backend_client, redis_client
+from utils import messages as msg
 from utils.formatting import format_price, format_status
 
 logger = logging.getLogger(__name__)
 
 _TG_CACHE_TTL_SECONDS = 86400 * 30
 _MAX_RATE_LIMIT_RETRIES = 3
-
-
-class RateLimitExhaustedError(Exception):
-    pass
 
 
 def _tg_cache_key(user_id: str) -> str:
@@ -54,15 +53,17 @@ async def _deactivate_telegram_id(user_id: str) -> None:
     logger.info("Deactivated Telegram binding for user_id=%s (bot blocked)", user_id)
 
 
-def _order_keyboard(order_display_id: str | None) -> InlineKeyboardMarkup | None:
+def _order_keyboard(
+    order_display_id: str | None, language: str = DEFAULT_LANGUAGE
+) -> InlineKeyboardMarkup | None:
     if not bot_config.mini_app_url:
         return None
     if order_display_id:
         return web_app_keyboard(
-            OPEN_ORDER_BUTTON,
+            msg.button("openOrder", language),
             f"{bot_config.mini_app_url}?startapp=order_{order_display_id}",
         )
-    return web_app_keyboard(OPEN_FOODIZE_BUTTON, bot_config.mini_app_url)
+    return web_app_keyboard(msg.button("openFoodize", language), bot_config.mini_app_url)
 
 
 async def _send_notification(
@@ -72,8 +73,9 @@ async def _send_notification(
     telegram_id: int,
     text: str,
     display_id: str | None,
+    language: str = DEFAULT_LANGUAGE,
 ) -> None:
-    markup = _order_keyboard(display_id)
+    markup = _order_keyboard(display_id, language)
     for attempt in range(_MAX_RATE_LIMIT_RETRIES):
         try:
             await bot.send_message(chat_id=telegram_id, text=text, reply_markup=markup)
@@ -97,27 +99,35 @@ async def _send_notification(
     raise RateLimitExhaustedError(user_id)
 
 
+def _event_language(event: dict[str, Any]) -> str:
+    return normalize_language(event.get("language"))
+
+
 def _order_ref(display_id: object) -> str:
     return f" <b>#{html.escape(str(display_id))}</b>" if display_id else ""
 
 
 def _order_placed_text(event: dict[str, Any]) -> str:
-    restaurant = html.escape(str(event.get("restaurant_name", "")))
-    return (
-        f"Заказ{_order_ref(event.get('order_display_id'))} в <b>{restaurant}</b> принят!\n\n"
-        f"Позиций: {event.get('items_count', 0)}\n"
-        f"Сумма: {format_price(event.get('total_price', 0))}\n\n"
-        f"Мы уведомим вас, когда статус изменится."
+    language = _event_language(event)
+    return msg.notification(
+        "orderPlaced",
+        language,
+        order_ref=_order_ref(event.get("order_display_id")),
+        restaurant=html.escape(str(event.get("restaurant_name", ""))),
+        items_count=event.get("items_count", 0),
+        total=format_price(event.get("total_price", 0)),
     )
 
 
 def _order_status_text(event: dict[str, Any]) -> str:
-    restaurant = html.escape(str(event.get("restaurant_name", "")))
-    status_label = html.escape(format_status(event.get("new_status", "")))
-    return (
-        f"Обновление заказа{_order_ref(event.get('order_display_id'))} в <b>{restaurant}</b>\n\n"
-        f"Статус: <b>{status_label}</b>\n"
-        f"Сумма: {format_price(event.get('total_price', 0))}"
+    language = _event_language(event)
+    return msg.notification(
+        "orderStatusChanged",
+        language,
+        order_ref=_order_ref(event.get("order_display_id")),
+        restaurant=html.escape(str(event.get("restaurant_name", ""))),
+        status=html.escape(format_status(event.get("new_status", ""), language)),
+        total=format_price(event.get("total_price", 0)),
     )
 
 
@@ -136,6 +146,7 @@ async def _notify_user(
         telegram_id=telegram_id,
         text=build_text(event),
         display_id=event.get("order_display_id"),
+        language=_event_language(event),
     )
 
 

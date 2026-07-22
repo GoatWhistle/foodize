@@ -5,6 +5,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ProfilePage } from "@shared/pages/ProfilePage/ProfilePage";
 import { useProfilePage } from "@shared/hooks/useProfilePage";
 import type { UseProfilePageResult } from "@shared/hooks/useProfilePage";
+import { t } from "@shared/i18n/useTranslation";
+import { useModalStore } from "@shared/store/useModalStore";
 
 vi.mock("@shared/hooks/useProfilePage", () => ({
   useProfilePage: vi.fn(),
@@ -52,9 +54,9 @@ describe("ProfilePage", () => {
     renderPage();
     expect(screen.getByText("Тест Пользователь")).toBeInTheDocument();
     expect(screen.getByText("+79990001122")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Мои заказы/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Избранное/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Выйти/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: new RegExp(t("profile.page.myOrders")) })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: new RegExp(t("profile.page.favorites")) })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: new RegExp(t("profile.page.logout")) })).toBeInTheDocument();
   });
 
   it("renders order and favorite counts", () => {
@@ -67,7 +69,7 @@ describe("ProfilePage", () => {
   it("does not show the admin panel for non-admins", () => {
     mockedHook.mockReturnValue(hookState());
     renderPage({ routes: { admin: "/admin" } });
-    expect(screen.queryByText("Админ-панель")).not.toBeInTheDocument();
+    expect(screen.queryByText(t("profile.page.adminPanelShort"))).not.toBeInTheDocument();
   });
 
   it("shows the admin panel for admins", () => {
@@ -75,13 +77,13 @@ describe("ProfilePage", () => {
       hookState({ user: { id: "u1", name: "Admin", permissions: ["admin.access"] } as UseProfilePageResult["user"] }),
     );
     renderPage({ routes: { admin: "/admin" } });
-    expect(screen.getByText("Админ-панель")).toBeInTheDocument();
+    expect(screen.getByText(t("profile.page.adminPanelShort"))).toBeInTheDocument();
   });
 
   it("shows the notifications item with an unread badge", () => {
     mockedHook.mockReturnValue(hookState());
     renderPage({ routes: { notifications: "/notifications" }, unreadCount: 5 });
-    expect(screen.getByRole("button", { name: /Уведомления/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: new RegExp(t("profile.page.notifications")) })).toBeInTheDocument();
     expect(screen.getByText("5")).toBeInTheDocument();
   });
 
@@ -91,7 +93,8 @@ describe("ProfilePage", () => {
     const onLogout = vi.fn();
     mockedHook.mockReturnValue(hookState({ logout }));
     renderPage({ onLogout });
-    await user.click(screen.getByRole("button", { name: /Выйти/ }));
+    await user.click(screen.getByRole("button", { name: new RegExp(t("profile.page.logout")) }));
+    await useModalStore.getState().runConfirmAction();
     expect(logout).toHaveBeenCalledTimes(1);
     await vi.waitFor(() => { expect(onLogout).toHaveBeenCalledTimes(1); });
   });
@@ -113,10 +116,10 @@ describe("ProfilePage", () => {
         settings: "/settings",
       },
     });
-    await user.click(screen.getByRole("button", { name: /Мои заказы/ }));
-    await user.click(screen.getByRole("button", { name: /Избранное/ }));
-    await user.click(screen.getByRole("button", { name: /Уведомления/ }));
-    await user.click(screen.getByRole("button", { name: /Настройки/ }));
+    await user.click(screen.getByRole("button", { name: new RegExp(t("profile.page.myOrders")) }));
+    await user.click(screen.getByRole("button", { name: new RegExp(t("profile.page.favorites")) }));
+    await user.click(screen.getByRole("button", { name: new RegExp(t("profile.page.notifications")) }));
+    await user.click(screen.getByRole("button", { name: new RegExp(t("profile.page.settings")) }));
   });
 
   it("caps the unread badge at 9+", () => {
@@ -137,7 +140,7 @@ describe("ProfilePage", () => {
       }),
     );
     renderPage({ routes: { admin: "/admin" } });
-    await user.click(screen.getByRole("button", { name: /Админ-панель/ }));
+    await user.click(screen.getByRole("button", { name: new RegExp(t("profile.page.adminPanelShort")) }));
   });
 
   it("shows the Telegram-only admin item and triggers the alert", async () => {
@@ -157,7 +160,7 @@ describe("ProfilePage", () => {
     );
     renderPage();
     await user.click(
-      screen.getByRole("button", { name: /Панель администратора/ }),
+      screen.getByRole("button", { name: new RegExp(t("profile.page.adminPanel")) }),
     );
     expect(showAlert).toHaveBeenCalled();
     delete (window as unknown as { Telegram?: unknown }).Telegram;

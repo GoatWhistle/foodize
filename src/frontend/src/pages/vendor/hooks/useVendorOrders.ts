@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { translateApiError } from '@shared/utils/translateApiError';
 import { orderService } from '@shared/services/orderService';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { Order, OrderStatus, OrderStatusUpdate, Restaurant } from '@shared/types/models';
 import { useVendorOrdersWebSocket } from '../../../hooks/useVendorOrdersWebSocket';
 
@@ -16,6 +17,7 @@ interface FetchOrdersOptions {
 }
 
 export const useVendorOrders = ({ selectedRestaurant, activeTab }: UseVendorOrdersParams) => {
+  const { t } = useTranslation();
   const [restaurantOrders, setRestaurantOrders] = useState<Order[]>([]);
   const [ordersPage, setOrdersPage] = useState(1);
   const [ordersTotal, setOrdersTotal] = useState(0);
@@ -51,16 +53,13 @@ export const useVendorOrders = ({ selectedRestaurant, activeTab }: UseVendorOrde
         setRestaurantOrders([]);
         setOrdersTotal(0);
         setOrdersError(
-          translateApiError(
-            err,
-            'Не удалось загрузить заказы. Проверьте, что аккаунт вендора имеет доступ к этому заведению.'
-          )
+          translateApiError(err, t('vendor.orders.errors.loadFailed'))
         );
       } finally {
         if (!silent && requestId === requestSeqRef.current) setOrdersLoading(false);
       }
     },
-    [selectedRestaurant, ordersPage, ordersStatusFilter, ordersDateFromFilter, ordersDateToFilter]
+    [selectedRestaurant, ordersPage, ordersStatusFilter, ordersDateFromFilter, ordersDateToFilter, t]
   );
 
   useEffect(() => {
@@ -102,7 +101,7 @@ export const useVendorOrders = ({ selectedRestaurant, activeTab }: UseVendorOrde
       );
       await fetchVendorOrders({ silent: true });
     } catch (err) {
-      setOrdersError(translateApiError(err, 'Не удалось изменить статус заказа'));
+      setOrdersError(translateApiError(err, t('vendor.orders.errors.statusChangeFailed')));
     } finally {
       setUpdatingOrderId(null);
     }
@@ -120,7 +119,7 @@ export const useVendorOrders = ({ selectedRestaurant, activeTab }: UseVendorOrde
       );
       await fetchVendorOrders({ silent: true });
     } catch (err) {
-      setOrdersError(translateApiError(err, 'Не удалось отменить заказ'));
+      setOrdersError(translateApiError(err, t('vendor.orders.errors.cancelFailed')));
     } finally {
       setUpdatingOrderId(null);
     }

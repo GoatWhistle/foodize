@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { downloadBlob } from '../../../utils/download';
+import { useTranslation } from '@shared/i18n/useTranslation';
 
 interface UseVendorExportParams {
   setOrdersError: (message: string) => void;
 }
 
 export const useVendorExport = ({ setOrdersError }: UseVendorExportParams) => {
+  const { t } = useTranslation();
   const [exportLoading, setExportLoading] = useState(false);
 
   const handleVendorExport = async (
@@ -17,7 +19,7 @@ export const useVendorExport = ({ setOrdersError }: UseVendorExportParams) => {
       const blob = await exportFn();
       downloadBlob(blob, filename);
     } catch {
-      setOrdersError('Не удалось выполнить экспорт');
+      setOrdersError(t('vendor.errors.exportFailed'));
     } finally {
       setExportLoading(false);
     }

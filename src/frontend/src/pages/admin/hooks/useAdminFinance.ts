@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { adminService } from '../../../services/adminService';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type {
   AdminRestaurant,
   AdvancedAnalytics,
@@ -24,6 +25,7 @@ export interface FinanceFilters {
 }
 
 export const useAdminFinance = ({ activeTab, setActionError, todayStr }: UseAdminFinanceArgs) => {
+  const { t } = useTranslation();
   const [allRestaurants, setAllRestaurants] = useState<AdminRestaurant[]>([]);
   const [finance, setFinance] = useState<FinanceAnalytics | null>(null);
   const [financeLoading, setFinanceLoading] = useState(false);
@@ -50,12 +52,12 @@ export const useAdminFinance = ({ activeTab, setActionError, todayStr }: UseAdmi
       setFinance(financeData);
       setAdvancedAnalytics(analyticsData);
     } catch {
-      setActionError('Не удалось загрузить аналитику');
+      setActionError(t('admin.finance.errors.loadFailed'));
     } finally {
       setFinanceLoading(false);
       setAnalyticsLoading(false);
     }
-  }, [financeFilters, setActionError]);
+  }, [financeFilters, setActionError, t]);
 
   useEffect(() => {
     if (activeTab === 'finance') void fetchFinance();
@@ -71,9 +73,10 @@ export const useAdminFinance = ({ activeTab, setActionError, todayStr }: UseAdmi
   }, [activeTab, allRestaurants.length]);
 
   const getRestaurantLabel = () => {
-    if (!financeFilters.restaurant_id) return 'все';
+    const fallback = t('admin.exportFiles.allRestaurants');
+    if (!financeFilters.restaurant_id) return fallback;
     return (
-      allRestaurants.find((restaurant) => restaurant.id === financeFilters.restaurant_id)?.name || 'все'
+      allRestaurants.find((restaurant) => restaurant.id === financeFilters.restaurant_id)?.name || fallback
     ).replace(/\s+/g, '_');
   };
 

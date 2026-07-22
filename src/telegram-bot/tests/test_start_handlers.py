@@ -15,6 +15,7 @@ from handlers.start import (
     handle_restart_button,
 )
 from tests.conftest import answer_of, make_chat, make_user
+from utils import messages as msg
 
 
 @pytest.fixture(autouse=True)
@@ -182,7 +183,7 @@ async def test_handle_contact_rejects_foreign_number(
 
     await handle_contact(message)
 
-    answer_of(message).assert_called_with("Пожалуйста, отправьте свой номер телефона.")
+    answer_of(message).assert_called_with(msg.text("sendOwnPhone"))
 
 
 async def test_handle_contact_links_own_number(

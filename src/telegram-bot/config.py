@@ -3,6 +3,8 @@ from typing import Literal
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from exceptions import WebhookUrlMissingError
+
 
 class BotConfig(BaseSettings):
     bot_token: str = Field(alias="BOT_TOKEN")
@@ -27,7 +29,7 @@ class BotConfig(BaseSettings):
     @model_validator(mode="after")
     def _validate_webhook(self) -> "BotConfig":
         if self.mode == "webhook" and not self.webhook_url:
-            raise ValueError("BOT_WEBHOOK_URL must be set when BOT_MODE=webhook")
+            raise WebhookUrlMissingError("BOT_WEBHOOK_URL must be set when BOT_MODE=webhook")
         return self
 
 

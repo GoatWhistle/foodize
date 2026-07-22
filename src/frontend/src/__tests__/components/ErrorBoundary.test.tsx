@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ErrorBoundary } from '@shared/components/ErrorBoundary/ErrorBoundary';
+import { t } from '@shared/i18n/useTranslation';
 let shouldThrow = false;
 
 const ConditionalBroken = () => {
@@ -39,7 +40,7 @@ describe('ErrorBoundary', () => {
 
     expect(screen.getByText('Boom')).toBeInTheDocument();
     shouldThrow = false;
-    await user.click(screen.getByRole('button', { name: 'Попробовать снова' }));
+    await user.click(screen.getByRole('button', { name: t('common.actions.retry') }));
 
     expect(screen.getByText('Recovered')).toBeInTheDocument();
   });

@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
+import { t } from '@shared/i18n/useTranslation';
 import { ProfilePage } from '../../../pages/profile/ProfilePage';
 import { useAuthStore } from '../../../store/useAuthStore';
 import { useNotificationStore } from '../../../store/useNotificationStore';
@@ -76,7 +77,7 @@ describe('ProfilePage extra branches', () => {
   it('shows approved vendor dashboard link and navigates', async () => {
     vi.mocked(vendorService.getMyProfile).mockResolvedValueOnce(approvedVendor);
     renderPage();
-    const item = await screen.findByText('Кабинет вендора');
+    const item = await screen.findByText(t('profile.roles.vendorDashboard'));
     const user = userEvent.setup();
     await user.click(item);
     expect(mockNavigate).toHaveBeenCalledWith('/vendor');
@@ -85,13 +86,13 @@ describe('ProfilePage extra branches', () => {
   it('shows pending approval note without navigation for unapproved vendor', async () => {
     vi.mocked(vendorService.getMyProfile).mockResolvedValueOnce(pendingVendor);
     renderPage();
-    expect(await screen.findByText('Ожидание одобрения администратором')).toBeInTheDocument();
+    expect(await screen.findByText(t('profile.roles.vendorPending'))).toBeInTheDocument();
   });
 
   it('shows admin vendor dashboard link for admins even without vendor profile', async () => {
     vi.mocked(hasPermission).mockReturnValue(true);
     renderPage();
-    const item = await screen.findByText('Кабинет вендора');
+    const item = await screen.findByText(t('profile.roles.vendorDashboard'));
     const user = userEvent.setup();
     await user.click(item);
     expect(mockNavigate).toHaveBeenCalledWith('/vendor');
@@ -100,22 +101,22 @@ describe('ProfilePage extra branches', () => {
   it('lets a non-vendor become a vendor', async () => {
     vi.mocked(vendorService.createProfile).mockResolvedValueOnce(approvedVendor);
     renderPage();
-    const become = await screen.findByText('Стать вендором');
+    const become = await screen.findByText(t('profile.roles.becomeVendor'));
     const user = userEvent.setup();
     await user.click(become);
     await waitFor(() => {
       expect(vendorService.createProfile).toHaveBeenCalledWith({});
     });
-    expect(await screen.findByText('Кабинет вендора')).toBeInTheDocument();
+    expect(await screen.findByText(t('profile.roles.vendorDashboard'))).toBeInTheDocument();
   });
 
   it('shows error when becoming a vendor fails', async () => {
     vi.mocked(vendorService.createProfile).mockRejectedValueOnce({ response: { status: 500 } });
     renderPage();
-    const become = await screen.findByText('Стать вендором');
+    const become = await screen.findByText(t('profile.roles.becomeVendor'));
     const user = userEvent.setup();
     await user.click(become);
-    expect(await screen.findByText('Не удалось стать вендором')).toBeInTheDocument();
+    expect(await screen.findByText(t('profile.roles.becomeVendorFailed'))).toBeInTheDocument();
   });
 
   it('shows unread notification badge from the notification store', async () => {

@@ -1,14 +1,12 @@
-import { ORDER_STATUS_RU } from '@shared/utils/locales';
+import { t } from '@shared/i18n/useTranslation';
 import type { Order, OrderEvent, OrderItemOption, OrderStatus } from '@shared/types/models';
-
-export const STATUS_LABEL_RU = ORDER_STATUS_RU;
 
 export const STATUS_FLOW: OrderStatus[] = ['PENDING', 'ACCEPTED', 'READY', 'COMPLETED'];
 
 export const CANCELLABLE_STATUSES = new Set<OrderStatus>(['PENDING', 'ACCEPTED']);
 
 export const formatDateTime = (value: string | null | undefined): string => {
-  if (!value) return '—';
+  if (!value) return t('common.states.dash');
   return new Date(value).toLocaleString('ru-RU', {
     day: '2-digit',
     month: '2-digit',
@@ -18,7 +16,9 @@ export const formatDateTime = (value: string | null | undefined): string => {
 };
 
 export const optionLabel = (option: OrderItemOption): string =>
-  `${option.name}${option.price_delta ? ` +${option.price_delta} ₽` : ''}`;
+  option.price_delta
+    ? t('order.details.optionDelta', { name: option.name, delta: option.price_delta })
+    : option.name;
 
 export const buildReadyAtIso = (timeValue: string | null | undefined): string | null => {
   if (!timeValue) return null;

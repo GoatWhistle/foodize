@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import type { StaffOrder } from '../../../../pages/staff/types';
 import { StaffOrdersTab } from '../../../../pages/staff/components/StaffOrdersTab';
+import { COLUMN_DEFS } from '../../../../pages/staff/staffColumns';
+import { t } from '@shared/i18n/useTranslation';
+import { at } from '../../../testUtils';
 
 const makeOrder = (over: Partial<StaffOrder>): StaffOrder =>
   ({
@@ -48,9 +51,9 @@ describe('StaffOrdersTab', () => {
       makeOrder({ id: 'r', display_id: 3, status: 'READY' }),
     ];
     render(<StaffOrdersTab orders={orders} ordersLoading={false} {...baseProps} />);
-    expect(screen.getByText('Новые')).toBeInTheDocument();
-    expect(screen.getByText('Принято')).toBeInTheDocument();
-    expect(screen.getByText('Готово')).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: t(at(COLUMN_DEFS, 0).labelKey) })).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: t(at(COLUMN_DEFS, 1).labelKey) })).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: t(at(COLUMN_DEFS, 2).labelKey) })).toBeInTheDocument();
     expect(screen.getByText('#1')).toBeInTheDocument();
     expect(screen.getByText('#2')).toBeInTheDocument();
     expect(screen.getByText('#3')).toBeInTheDocument();
@@ -59,15 +62,19 @@ describe('StaffOrdersTab', () => {
   it('does not show critical banner when no delayed orders', () => {
     const orders = [makeOrder({ status: 'PENDING' })];
     render(<StaffOrdersTab orders={orders} ordersLoading={false} {...baseProps} />);
-    expect(screen.queryByText(/задерживается/)).toBeNull();
+    expect(screen.queryByText(t('staff.delayedBanner.hint'), { exact: false })).toBeNull();
   });
 
   it('shows singular critical banner for one delayed accepted order', () => {
     const old = new Date('2026-01-15T09:40:00Z').toISOString();
     const orders = [makeOrder({ id: 'a', status: 'ACCEPTED', created_at: old })];
     render(<StaffOrdersTab orders={orders} ordersLoading={false} {...baseProps} />);
-    expect(screen.getByText(/заказ задерживается/)).toBeInTheDocument();
-    expect(screen.getByText(/проверьте принятые/)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        `${t('staff.delayedBanner.orders', { count: 1 })} ${t('staff.delayedBanner.hint')}`,
+        { exact: false }
+      )
+    ).toBeInTheDocument();
   });
 
   it('shows plural (2-4) banner form', () => {
@@ -77,7 +84,9 @@ describe('StaffOrdersTab', () => {
       makeOrder({ id: 'a2', status: 'ACCEPTED', created_at: old }),
     ];
     render(<StaffOrdersTab orders={orders} ordersLoading={false} {...baseProps} />);
-    expect(screen.getByText(/заказа задерживается/)).toBeInTheDocument();
+    expect(
+      screen.getByText(t('staff.delayedBanner.orders', { count: 2 }), { exact: false })
+    ).toBeInTheDocument();
   });
 
   it('shows many (>=5) banner form', () => {
@@ -86,6 +95,8 @@ describe('StaffOrdersTab', () => {
       makeOrder({ id: `a${i}`, display_id: i, status: 'ACCEPTED', created_at: old })
     );
     render(<StaffOrdersTab orders={orders} ordersLoading={false} {...baseProps} />);
-    expect(screen.getByText(/заказов задерживается/)).toBeInTheDocument();
+    expect(
+      screen.getByText(t('staff.delayedBanner.orders', { count: 5 }), { exact: false })
+    ).toBeInTheDocument();
   });
 });

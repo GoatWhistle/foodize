@@ -9,9 +9,13 @@ import {
   Tooltip,
 } from 'recharts';
 import { ChartCard, TOOLTIP_STYLE, TOOLTIP_LABEL_STYLE } from './chartPrimitives';
+import { useTranslation } from '@shared/i18n/useTranslation';
 
-export const RevenueChart = memo(({ data }: { data: FinanceSeriesPoint[] }) => (
-  <ChartCard title="Динамика выручки">
+
+export const RevenueChart = memo(({ data }: { data: FinanceSeriesPoint[] }) => {
+  const { t } = useTranslation();
+  return (
+  <ChartCard title={t('admin.charts.revenue.title')}>
     <AreaChart data={data}>
       <defs>
         <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
@@ -48,8 +52,9 @@ export const RevenueChart = memo(({ data }: { data: FinanceSeriesPoint[] }) => (
         fillOpacity={1}
         fill="url(#colorRevenue)"
         strokeWidth={2}
-        name="Выручка"
+        name={t('admin.charts.revenue.series')}
       />
     </AreaChart>
   </ChartCard>
-));
+  );
+});

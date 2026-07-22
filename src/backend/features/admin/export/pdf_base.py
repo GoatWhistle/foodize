@@ -2,6 +2,8 @@ from datetime import UTC, datetime, timedelta
 
 from fpdf import FPDF
 
+from shared.i18n import DEFAULT_LANGUAGE, translate
+
 _FONT_PATH = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 _FONT_BOLD_PATH = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 
@@ -14,13 +16,14 @@ class _PDF(FPDF):
     _BORDER_CLR = (210, 213, 220)
     _TEXT_MUTED = (120, 125, 135)
 
-    def __init__(self, title: str, subtitle: str = ""):
+    def __init__(self, title: str, subtitle: str = "", language: str = DEFAULT_LANGUAGE):
         super().__init__()
         self.add_font("dv", "", _FONT_PATH)
         self.add_font("dv", "B", _FONT_BOLD_PATH)
         self.set_font("dv", "", 10)
         self._title = title
         self._subtitle = subtitle
+        self._language = language
         self._row_index = 0
         self.add_page()
         self._draw_header()
@@ -32,7 +35,14 @@ class _PDF(FPDF):
         self.set_y(8)
         self.set_text_color(180, 185, 200)
         self.set_font("dv", "", 8)
-        self.cell(0, 5, "FOODIZE · ПЛАТФОРМА ПРЕДЗАКАЗОВ", new_x="LMARGIN", new_y="NEXT", align="C")
+        self.cell(
+            0,
+            5,
+            translate("reports.pdf.brandLine", self._language),
+            new_x="LMARGIN",
+            new_y="NEXT",
+            align="C",
+        )
 
         self.set_draw_color(*self._BRAND)
         self.set_line_width(0.8)
@@ -50,12 +60,13 @@ class _PDF(FPDF):
 
         self.set_font("dv", "", 8)
         self.set_text_color(*self._TEXT_MUTED)
+        timestamp = (datetime.now(UTC) + timedelta(hours=3)).strftime(
+            translate("reports.common.generatedFormat", self._language)
+        )
         self.cell(
             0,
             5,
-            "Сформировано: "
-            + (datetime.now(UTC) + timedelta(hours=3)).strftime("%d.%m.%Y в %H:%M")
-            + " МСК",
+            translate("reports.pdf.generatedAt", self._language, timestamp=timestamp),
             new_x="LMARGIN",
             new_y="NEXT",
             align="C",
@@ -72,7 +83,10 @@ class _PDF(FPDF):
         self.set_font("dv", "", 7)
         self.set_text_color(*self._TEXT_MUTED)
         self.cell(
-            0, 5, f"Страница {self.page_no()} | Foodize — конфиденциальный документ", align="C"
+            0,
+            5,
+            translate("reports.pdf.footer", self._language, page=self.page_no()),
+            align="C",
         )
         self.set_text_color(0, 0, 0)
 

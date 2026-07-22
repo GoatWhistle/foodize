@@ -6,6 +6,8 @@ import { getCategoryIcon } from "@shared/utils/categoryIcons";
 import { formatPrice } from "@shared/utils/price";
 import { useFocusTrap } from "@shared/hooks/useFocusTrap";
 import type { MenuItem } from "@shared/types/models";
+import { useTranslation } from "@shared/i18n/useTranslation";
+import { t as translate } from "@shared/i18n/useTranslation";
 import s from "./ProductSheet.module.css";
 import c from "./ProductSheetControls.module.css";
 
@@ -65,17 +67,22 @@ const getGroupHint = (group: OptionGroup): string => {
   const max = group.selection_type === "single" ? 1 : group.max_selected;
   const min = getMinSelected(group);
   if (group.selection_type === "single") {
-    return group.is_required ? "Обязательно выбрать 1" : "Можно выбрать 1";
+    return group.is_required
+      ? translate("catalog.product.hintSingleRequired")
+      : translate("catalog.product.hintSingleOptional");
   }
   if (group.is_required && max) {
-    return min === max ? `Выберите ${min}` : `Выберите от ${min} до ${max}`;
+    return min === max
+      ? translate("catalog.product.hintExact", { count: min })
+      : translate("catalog.product.hintRange", { min, max });
   }
-  if (group.is_required) return `Выберите минимум ${min}`;
-  if (max) return `Можно выбрать до ${max}`;
-  return "Можно выбрать несколько";
+  if (group.is_required) return translate("catalog.product.hintMin", { min });
+  if (max) return translate("catalog.product.hintMax", { max });
+  return translate("catalog.product.hintMultiple");
 };
 
 export const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }: ProductSheetProps) => {
+  const { t } = useTranslation();
   const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [error, setError] = useState("");
@@ -138,11 +145,11 @@ export const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }: 
   };
 
   const handleAdd = () => {
-    if (isClosed) { setError("Заведение сейчас закрыто и не принимает заказы"); return; }
+    if (isClosed) { setError(t("catalog.product.closed")); return; }
     for (const group of groups) {
       const groupOptionIds = group.options.map((o) => o.id);
       const selectedCount = selectedOptionIds.filter((id) => groupOptionIds.includes(id)).length;
-      if (selectedCount < getMinSelected(group)) { setError(`Выберите: ${group.name}`); return; }
+      if (selectedCount < getMinSelected(group)) { setError(t("catalog.product.selectGroup", { group: group.name })); return; }
     }
     onAdd?.({ item, selectedOptions, quantity });
   };
@@ -160,7 +167,7 @@ export const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }: 
         aria-label={item.name}
         tabIndex={-1}
       >
-        <button className={s['close']} type="button" onClick={onClose} aria-label="Закрыть">
+        <button className={s['close']} type="button" onClick={onClose} aria-label={t("common.actions.close")}>
           <XIcon size={18} weight="bold" />
         </button>
         <div className={s['media']}>
@@ -179,7 +186,7 @@ export const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }: 
             <div className={s['basePrice']}>{formatPrice(item.price)}</div>
             <div className={s['meta']}>
               <span>
-                <ClockIcon size={14} weight="bold" />~{item.prep_time_minutes || 15} мин
+                <ClockIcon size={14} weight="bold" />{t("catalog.product.prepTime", { minutes: item.prep_time_minutes || 15 })}
               </span>
             </div>
           </div>
@@ -231,16 +238,18 @@ export const ProductSheet = ({ item, onClose, onAdd, isRestaurantOpen = true }: 
         </div>
         <div className={c['footer']}>
           <div className={c['qty']}>
-            <button type="button" onClick={() => { setQuantity((v) => Math.max(1, v - 1)); }} aria-label="Уменьшить">
+            <button type="button" onClick={() => { setQuantity((v) => Math.max(1, v - 1)); }} aria-label={t("catalog.product.decrease")}>
               <MinusIcon size={16} weight="bold" />
             </button>
             <span>{quantity}</span>
-            <button type="button" onClick={() => { setQuantity((v) => Math.min(99, v + 1)); }} aria-label="Увеличить">
+            <button type="button" onClick={() => { setQuantity((v) => Math.min(99, v + 1)); }} aria-label={t("catalog.product.increase")}>
               <PlusIcon size={16} weight="bold" />
             </button>
           </div>
           <button className={c['addBtn']} onClick={handleAdd}>
-            {isClosed ? "Заведение закрыто" : `Добавить · ${formatPrice(unitPrice * quantity)}`}
+            {isClosed
+              ? t("catalog.product.venueClosed")
+              : t("catalog.product.add", { total: formatPrice(unitPrice * quantity) })}
           </button>
         </div>
       </section>

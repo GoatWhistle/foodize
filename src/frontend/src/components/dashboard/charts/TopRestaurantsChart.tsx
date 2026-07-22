@@ -2,12 +2,15 @@ import { memo } from 'react';
 import type { FinanceTopRestaurant } from '@shared/types/models';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { ChartCard, TOOLTIP_STYLE } from './chartPrimitives';
+import { useTranslation } from '@shared/i18n/useTranslation';
+
 
 export const TopRestaurantsChart = memo(
   ({ data = [] }: { data?: FinanceTopRestaurant[] }) => {
+    const { t } = useTranslation();
     if (!Array.isArray(data)) return null;
     return (
-      <ChartCard title="Топ 5 ресторанов">
+      <ChartCard title={t('admin.charts.topRestaurants.title')}>
         <BarChart
           data={data.slice(0, 5)}
           layout="vertical"
@@ -29,7 +32,7 @@ export const TopRestaurantsChart = memo(
           />
           <Tooltip
             contentStyle={TOOLTIP_STYLE}
-            formatter={(value) => [`${String(value)} ₽`, 'Выручка']}
+            formatter={(value) => [`${String(value)} ₽`, t('admin.charts.topRestaurants.revenue')]}
           />
           <Bar
             dataKey="revenue"

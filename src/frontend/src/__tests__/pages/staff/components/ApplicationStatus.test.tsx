@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import type { StaffRequest } from '@shared/types/models';
+import { t } from '@shared/i18n/useTranslation';
 
 vi.mock('@shared/services/staffService', () => ({
   staffService: {
@@ -35,31 +36,31 @@ describe('ApplicationStatus', () => {
   it('renders PENDING status config', async () => {
     resolveApp(makeApp('PENDING'));
     render(<ApplicationStatus />);
-    expect(await screen.findByText('Заявка на рассмотрении')).toBeInTheDocument();
-    expect(screen.getByText('Заявка #abcdef12')).toBeInTheDocument();
+    expect(await screen.findByText(t('staff.application.pending.title'))).toBeInTheDocument();
+    expect(screen.getByText(t('staff.application.number', { id: 'abcdef12' }))).toBeInTheDocument();
   });
 
   it('renders ACCEPTED status config', async () => {
     resolveApp(makeApp('ACCEPTED'));
     render(<ApplicationStatus />);
-    expect(await screen.findByText('Заявка одобрена')).toBeInTheDocument();
+    expect(await screen.findByText(t('staff.application.accepted.title'))).toBeInTheDocument();
   });
 
   it('renders REJECTED status config', async () => {
     resolveApp(makeApp('REJECTED'));
     render(<ApplicationStatus />);
-    expect(await screen.findByText('Заявка отклонена')).toBeInTheDocument();
+    expect(await screen.findByText(t('staff.application.rejected.title'))).toBeInTheDocument();
   });
 
   it('renders empty state when no application', async () => {
     resolveApp(null);
     render(<ApplicationStatus />);
-    expect(await screen.findByText('Нет профиля сотрудника')).toBeInTheDocument();
+    expect(await screen.findByText(t('staff.application.noProfileTitle'))).toBeInTheDocument();
   });
 
   it('renders empty state when request fails', async () => {
     vi.mocked(staffService.getMyApplication).mockRejectedValue(new Error('boom'));
     render(<ApplicationStatus />);
-    expect(await screen.findByText('Нет профиля сотрудника')).toBeInTheDocument();
+    expect(await screen.findByText(t('staff.application.noProfileTitle'))).toBeInTheDocument();
   });
 });

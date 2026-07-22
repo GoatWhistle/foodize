@@ -3,6 +3,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { adminService } from '../../../services/adminService';
 import { useModalStore } from '@shared/store/useModalStore';
 import { useDebounce } from '@shared/utils/useDebounce';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { AdminRestaurant, PlatformStats } from '@shared/types/models';
 import { createDetailLoader } from '../../../utils/createDetailLoader';
 import type { RequestReason } from '../useAdminDashboard';
@@ -32,6 +33,7 @@ export const useAdminRestaurants = ({
   setStats,
   requestReason,
 }: UseAdminRestaurantsArgs) => {
+  const { t } = useTranslation();
   const requestConfirm = useModalStore((s) => s.requestConfirm);
 
   const [restaurants, setRestaurants] = useState<AdminRestaurant[]>([]);
@@ -73,18 +75,18 @@ export const useAdminRestaurants = ({
         setRestaurants(items);
         setRestaurantsTotal(total);
       } catch {
-        setActionError('Не удалось загрузить рестораны');
+        setActionError(t('admin.restaurants.errors.loadFailed'));
       } finally {
         setRestaurantsLoading(false);
       }
     })();
-  }, [activeTab, restaurantsPage, restaurantFilters, restaurantSearch, restaurantVendorSearch, setActionError]);
+  }, [activeTab, restaurantsPage, restaurantFilters, restaurantSearch, restaurantVendorSearch, setActionError, t]);
 
   const loadRestaurantDetails = createDetailLoader<AdminRestaurant | null>(
     setRestaurantDetailsLoading,
     setSelectedRestaurant,
     adminService.getRestaurant,
-    'Не удалось загрузить детали ресторана',
+    t('admin.restaurants.errors.detailsFailed'),
     setActionError
   );
 
@@ -95,9 +97,9 @@ export const useAdminRestaurants = ({
 
   const handleDeleteRestaurant = (restaurantId: string) => {
     requestConfirm({
-      title: 'Удалить ресторан?',
-      message: 'Точно ли вы хотите удалить ресторан? Он пропадёт из активных списков и будет закрыт.',
-      confirmLabel: 'Удалить ресторан',
+      title: t('admin.restaurants.dialogs.deleteTitle'),
+      message: t('admin.restaurants.dialogs.deleteMessage'),
+      confirmLabel: t('admin.restaurants.dialogs.deleteConfirm'),
       danger: true,
       onConfirm: async () => {
         setActionError('');
@@ -107,7 +109,7 @@ export const useAdminRestaurants = ({
           setSelectedRestaurant(null);
           setStats(null);
         } catch {
-          setActionError('Не удалось удалить ресторан');
+          setActionError(t('admin.restaurants.errors.deleteFailed'));
         }
       },
     });
@@ -118,9 +120,9 @@ export const useAdminRestaurants = ({
     try {
       const restaurant = await adminService.approveRestaurant(restaurantId);
       refreshSelectedRestaurant(restaurant);
-      setActionSuccess('Ресторан одобрен');
+      setActionSuccess(t('admin.restaurants.messages.approved'));
     } catch {
-      setActionError('Не удалось одобрить ресторан');
+      setActionError(t('admin.restaurants.errors.approveFailed'));
     } finally {
       setApproveLoading(false);
     }
@@ -128,16 +130,16 @@ export const useAdminRestaurants = ({
 
   const handleRejectRestaurant = (restaurantId: string) => {
     requestReason({
-      title: 'Отклонить ресторан',
-      message: 'Укажите причину. Вендор увидит, что нужно исправить перед повторной проверкой.',
-      confirmLabel: 'Отклонить',
+      title: t('admin.restaurants.dialogs.rejectTitle'),
+      message: t('admin.restaurants.dialogs.rejectMessage'),
+      confirmLabel: t('common.actions.reject'),
       onConfirm: async (reason) => {
         try {
           const restaurant = await adminService.rejectRestaurant(restaurantId, reason);
           refreshSelectedRestaurant(restaurant);
-          setActionSuccess('Ресторан отклонён');
+          setActionSuccess(t('admin.restaurants.messages.rejected'));
         } catch {
-          setActionError('Не удалось отклонить ресторан');
+          setActionError(t('admin.restaurants.errors.rejectFailed'));
         }
       },
     });
@@ -150,11 +152,11 @@ export const useAdminRestaurants = ({
       if (action === 'approve') await adminService.batchApproveRestaurants(ids);
       else await adminService.batchRejectRestaurants(ids, reason ?? '');
       setSelectedRestaurantIds(new Set());
-      setActionSuccess(`Готово: ${ids.length} ресторанов`);
+      setActionSuccess(t('admin.restaurants.messages.batchDone', { count: ids.length }));
       setRestaurantsPage(1);
       setRestaurantFilters((f) => ({ ...f }));
     } catch {
-      setActionError('Ошибка при массовом действии');
+      setActionError(t('admin.restaurants.errors.batchFailed'));
     } finally {
       setBatchRestaurantsLoading(false);
     }

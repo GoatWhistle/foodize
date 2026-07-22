@@ -8,6 +8,7 @@ import {
 import { hapticImpact } from "../../telegram/sdk";
 import s from "./RestaurantPage.module.css";
 import type { Restaurant } from "@shared/types/models";
+import { useTranslation } from "@shared/i18n/useTranslation";
 
 interface RestaurantHeroProps {
   restaurant: Restaurant;
@@ -25,7 +26,9 @@ export const RestaurantHero = ({
   onToggleFav,
   onShowReviews,
   onShowInfo,
-}: RestaurantHeroProps) => (
+}: RestaurantHeroProps) => {
+  const { t } = useTranslation();
+  return (
   <div className={s['hero']}>
     {restaurant.photo_url ? (
       <img
@@ -69,7 +72,7 @@ export const RestaurantHero = ({
           }}
         >
           <ChatCircleIcon size={13} weight="bold" />
-          Отзывы
+          {t("catalog.reviews.buttonLabel")}
         </button>
         <button
           className={s['pill']}
@@ -78,7 +81,7 @@ export const RestaurantHero = ({
             onShowInfo();
           }}
         >
-          Инфо
+          {t("catalog.restaurantPage.info")}
         </button>
       </div>
     </div>
@@ -100,7 +103,7 @@ export const RestaurantHero = ({
         cursor: "pointer",
       }}
       onClick={onToggleFav}
-      aria-label={isFav ? "Убрать из избранного" : "В избранное"}
+      aria-label={isFav ? t("catalog.restaurantCard.removeFromFavorites") : t("catalog.restaurantCard.addToFavorites")}
     >
       <HeartIcon
         size={16}
@@ -109,4 +112,5 @@ export const RestaurantHero = ({
       />
     </button>
   </div>
-);
+  );
+};

@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 import type { MenuItem } from "@shared/types/models";
 import { ProductSheet } from "./ProductSheet";
+import { t } from "@shared/i18n/useTranslation";
 
 type SheetItem = MenuItem & { category_name?: string | null };
 
@@ -26,29 +27,29 @@ describe("ProductSheet", () => {
   it("renders the item name and add button with total price", () => {
     render(<ProductSheet item={makeItem()} />);
     expect(screen.getByRole("dialog", { name: "Бургер" })).toBeInTheDocument();
-    expect(screen.getByText(/Добавить · 400 ₽/)).toBeInTheDocument();
+    expect(screen.getByText(t("catalog.product.add", { total: "400 ₽" }))).toBeInTheDocument();
   });
 
   it("calls onClose when the close button is clicked", async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
     render(<ProductSheet item={makeItem()} onClose={onClose} />);
-    await user.click(screen.getByLabelText("Закрыть"));
+    await user.click(screen.getByLabelText(t("common.actions.close")));
     expect(onClose).toHaveBeenCalled();
   });
 
   it("increments quantity and updates the add total", async () => {
     const user = userEvent.setup();
     render(<ProductSheet item={makeItem()} />);
-    await user.click(screen.getByLabelText("Увеличить"));
-    expect(screen.getByText(/Добавить · 800 ₽/)).toBeInTheDocument();
+    await user.click(screen.getByLabelText(t("catalog.product.increase")));
+    expect(screen.getByText(t("catalog.product.add", { total: "800 ₽" }))).toBeInTheDocument();
   });
 
   it("calls onAdd with item and quantity", async () => {
     const user = userEvent.setup();
     const onAdd = vi.fn();
     render(<ProductSheet item={makeItem()} onAdd={onAdd} />);
-    await user.click(screen.getByText(/Добавить · 400 ₽/));
+    await user.click(screen.getByText(t("catalog.product.add", { total: "400 ₽" })));
     expect(onAdd).toHaveBeenCalledWith(
       expect.objectContaining({ quantity: 1, selectedOptions: [] }),
     );
@@ -56,7 +57,7 @@ describe("ProductSheet", () => {
 
   it("shows a closed label when the restaurant is closed", () => {
     render(<ProductSheet item={makeItem()} isRestaurantOpen={false} />);
-    expect(screen.getByText("Заведение закрыто")).toBeInTheDocument();
+    expect(screen.getByText(t("catalog.product.venueClosed"))).toBeInTheDocument();
   });
 
   const singleGroup = {
@@ -96,10 +97,10 @@ describe("ProductSheet", () => {
         onAdd={onAdd}
       />,
     );
-    expect(screen.getByText("Обязательно выбрать 1")).toBeInTheDocument();
+    expect(screen.getByText(t("catalog.product.hintSingleRequired"))).toBeInTheDocument();
     await user.click(screen.getByRole("radio", { name: /Большой/ }));
-    expect(screen.getByText(/Добавить · 500 ₽/)).toBeInTheDocument();
-    await user.click(screen.getByText(/Добавить ·/));
+    expect(screen.getByText(t("catalog.product.add", { total: "500 ₽" }))).toBeInTheDocument();
+    await user.click(screen.getByText(t("catalog.product.add", { total: "500 ₽" })));
     expect(onAdd).toHaveBeenCalledWith(
       expect.objectContaining({
         selectedOptions: expect.arrayContaining([
@@ -116,7 +117,7 @@ describe("ProductSheet", () => {
         item={makeItem({ option_groups: [multiGroup] } as Partial<SheetItem>)}
       />,
     );
-    expect(screen.getByText("Можно выбрать до 2")).toBeInTheDocument();
+    expect(screen.getByText(t("catalog.product.hintMax", { max: 2 }))).toBeInTheDocument();
     await user.click(screen.getByRole("checkbox", { name: /Сыр/ }));
     await user.click(screen.getByRole("checkbox", { name: /Бекон/ }));
     expect(screen.getByRole("checkbox", { name: /Соус/ })).toBeDisabled();
@@ -138,17 +139,17 @@ describe("ProductSheet", () => {
         onAdd={onAdd}
       />,
     );
-    await user.click(screen.getByText(/Добавить ·/));
-    expect(screen.getByText("Выберите: Добавки")).toBeInTheDocument();
+    await user.click(screen.getByText(t("catalog.product.add", { total: "400 ₽" })));
+    expect(screen.getByText(t("catalog.product.selectGroup", { group: "Добавки" }))).toBeInTheDocument();
     expect(onAdd).not.toHaveBeenCalled();
   });
 
   it("sets an error when adding while the restaurant is closed", async () => {
     const user = userEvent.setup();
     render(<ProductSheet item={makeItem()} isRestaurantOpen={false} />);
-    await user.click(screen.getByText("Заведение закрыто"));
+    await user.click(screen.getByText(t("catalog.product.venueClosed")));
     expect(
-      screen.getByText("Заведение сейчас закрыто и не принимает заказы"),
+      screen.getByText(t("catalog.product.closed")),
     ).toBeInTheDocument();
   });
 
@@ -165,9 +166,9 @@ describe("ProductSheet", () => {
     );
     expect(screen.getByRole("img", { name: "Бургер" })).toBeInTheDocument();
     expect(screen.getByText("Вкусно")).toBeInTheDocument();
-    expect(screen.getByText(/~20 мин/)).toBeInTheDocument();
-    await user.click(screen.getByLabelText("Уменьшить"));
-    expect(screen.getByText(/Добавить · 400 ₽/)).toBeInTheDocument();
+    expect(screen.getByText(t("catalog.product.prepTime", { minutes: 20 }))).toBeInTheDocument();
+    await user.click(screen.getByLabelText(t("catalog.product.decrease")));
+    expect(screen.getByText(t("catalog.product.add", { total: "400 ₽" }))).toBeInTheDocument();
   });
 
   it("closes when the overlay backdrop is pressed", () => {

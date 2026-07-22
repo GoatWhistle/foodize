@@ -7,7 +7,8 @@ from aiogram.types import Message, Update
 from pytest_mock import MockerFixture
 
 from config import bot_config
-from keyboards.start_keyboards import RESTART_TEXT
+from keyboards.start_keyboards import restart_text
+from utils import messages as msg
 
 
 @pytest.fixture
@@ -48,7 +49,7 @@ async def test_orders_command_reaches_handler(
 
     await dispatcher.feed_update(bot, update)
 
-    answer_spy.assert_called_with("Активных заказов сейчас нет.")
+    answer_spy.assert_called_with(msg.text("noActiveOrders"))
 
 
 async def test_vendor_status_command_reaches_handler(
@@ -66,7 +67,7 @@ async def test_vendor_status_command_reaches_handler(
 
     await dispatcher.feed_update(bot, update)
 
-    assert "профиль не найден" in answer_spy.call_args[0][0]
+    assert answer_spy.call_args[0][0] == msg.text("vendorNotFound")
 
 
 async def test_restart_button_reaches_handler(
@@ -75,7 +76,7 @@ async def test_restart_button_reaches_handler(
     update_factory: Callable[..., Update],
     answer_spy: AsyncMock,
 ) -> None:
-    update = update_factory(text=RESTART_TEXT)
+    update = update_factory(text=restart_text())
 
     await dispatcher.feed_update(bot, update)
 

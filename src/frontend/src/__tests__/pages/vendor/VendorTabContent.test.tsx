@@ -69,7 +69,6 @@ const makeDashboard = (activeTab: string, selectedRestaurant: unknown = { id: 'r
 
 const baseProps = {
   todayStr: '2026-01-01',
-  statusLabelRu: {},
   groupedRestaurantOrders: [],
   handleVendorExport: vi.fn(),
   getVendorRestaurantLabel: () => 'all',

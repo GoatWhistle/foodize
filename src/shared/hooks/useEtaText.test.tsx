@@ -2,6 +2,7 @@ import { renderHook, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { useEtaText } from "@shared/hooks/useEtaText";
 import type { OrderStatus } from "@shared/types/models";
+import { t } from "@shared/i18n/useTranslation";
 
 describe("useEtaText", () => {
   beforeEach(() => {
@@ -41,7 +42,7 @@ describe("useEtaText", () => {
     const { result } = renderHook(() =>
       useEtaText(future, "PREPARING" as OrderStatus),
     );
-    expect(result.current).toBe("Будет готов через ~15 мин");
+    expect(result.current).toBe(t("order.status.etaMinutes", { minutes: 15 }));
   });
 
   it("shows delay message for a past estimate", () => {
@@ -49,7 +50,7 @@ describe("useEtaText", () => {
     const { result } = renderHook(() =>
       useEtaText(past, "PREPARING" as OrderStatus),
     );
-    expect(result.current).toBe("Задерживаемся, скоро будет");
+    expect(result.current).toBe(t("order.status.etaDelayed"));
   });
 
   it("re-renders on the refresh interval", () => {
@@ -57,10 +58,10 @@ describe("useEtaText", () => {
     const { result } = renderHook(() =>
       useEtaText(future, "PREPARING" as OrderStatus),
     );
-    expect(result.current).toBe("Будет готов через ~30 мин");
+    expect(result.current).toBe(t("order.status.etaMinutes", { minutes: 30 }));
     act(() => {
       vi.advanceTimersByTime(31_000);
     });
-    expect(result.current).toBe("Будет готов через ~29 мин");
+    expect(result.current).toBe(t("order.status.etaMinutes", { minutes: 29 }));
   });
 });

@@ -17,6 +17,7 @@ import type {
   FinanceTopRestaurant,
   AnalyticsPoint,
 } from '@shared/types/models';
+import { t } from '@shared/i18n/useTranslation';
 
 type FormatterFn = (value: unknown, name?: unknown) => unknown;
 
@@ -77,9 +78,9 @@ describe('KPICards', () => {
       cancelled_orders: 10,
     } as unknown as FinanceAnalytics;
     render(<KPICards finance={finance} />);
-    expect(screen.getByText('Выручка')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.charts.kpi.revenue'))).toBeInTheDocument();
     expect(screen.getByText('+12.5%')).toBeInTheDocument();
-    expect(screen.getByText('5.0% от всех')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.charts.kpi.cancelledSub', { percent: '5.0' }))).toBeInTheDocument();
   });
 
   it('renders dash growth when growth is null and zero cancellation', () => {
@@ -92,8 +93,8 @@ describe('KPICards', () => {
       cancelled_orders: 0,
     } as unknown as FinanceAnalytics;
     render(<KPICards finance={finance} />);
-    expect(screen.getByText('—')).toBeInTheDocument();
-    expect(screen.getByText('0% от всех')).toBeInTheDocument();
+    expect(screen.getByText(t('common.states.dash'))).toBeInTheDocument();
+    expect(screen.getByText(t('admin.charts.kpi.cancelledSub', { percent: 0 }))).toBeInTheDocument();
   });
 
   it('renders negative growth', () => {
@@ -113,7 +114,7 @@ describe('KPICards', () => {
 describe('RevenueChart', () => {
   it('renders title and formats axis ticks', () => {
     render(<RevenueChart data={series} />);
-    expect(screen.getByText('Динамика выручки')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.charts.revenue.title'))).toBeInTheDocument();
     expect(screen.getAllByTestId('axis').length).toBeGreaterThan(0);
     expect(screen.getByText(/500₽/)).toBeInTheDocument();
   });
@@ -122,7 +123,7 @@ describe('RevenueChart', () => {
 describe('AOVDynamicsChart', () => {
   it('renders title and formats ticks', () => {
     render(<AOVDynamicsChart data={series} />);
-    expect(screen.getByText('Динамика среднего чека')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.charts.aovDynamics.title'))).toBeInTheDocument();
     expect(screen.getByText(/500₽/)).toBeInTheDocument();
   });
 });
@@ -134,8 +135,8 @@ describe('TopItemsChart', () => {
       { name: 'Burger', quantity: 5 },
     ] as unknown as FinanceTopItem[];
     render(<TopItemsChart data={data} />);
-    expect(screen.getByText('Топ 5 блюд')).toBeInTheDocument();
-    expect(screen.getByText(/Продано шт/)).toBeInTheDocument();
+    expect(screen.getByText(t('admin.charts.topItems.title'))).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(t('admin.charts.topItems.soldUnits')))).toBeInTheDocument();
   });
 
   it('returns null when data is not an array', () => {
@@ -150,8 +151,8 @@ describe('TopRestaurantsChart', () => {
   it('renders with data and revenue formatter', () => {
     const data = [{ name: 'Resto', revenue: 1000 }] as unknown as FinanceTopRestaurant[];
     render(<TopRestaurantsChart data={data} />);
-    expect(screen.getByText('Топ 5 ресторанов')).toBeInTheDocument();
-    expect(screen.getByText(/Выручка/)).toBeInTheDocument();
+    expect(screen.getByText(t('admin.charts.topRestaurants.title'))).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(t('admin.charts.topRestaurants.revenue')))).toBeInTheDocument();
   });
 
   it('returns null when data is not an array', () => {
@@ -165,14 +166,14 @@ describe('TopRestaurantsChart', () => {
 describe('HourlyLoadChart', () => {
   it('renders title', () => {
     render(<HourlyLoadChart data={points} />);
-    expect(screen.getByText('Нагрузка по часам')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.charts.hourlyLoad.title'))).toBeInTheDocument();
   });
 });
 
 describe('CategoryRevenueChart', () => {
   it('renders title with mapped colors', () => {
     render(<CategoryRevenueChart data={points} />);
-    expect(screen.getByText('Выручка по категориям')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.charts.categoryRevenue.title'))).toBeInTheDocument();
     expect(screen.getByTestId('chart')).toBeInTheDocument();
   });
 });
@@ -180,27 +181,27 @@ describe('CategoryRevenueChart', () => {
 describe('OrderStatusPieChart', () => {
   it('renders title with status entries', () => {
     render(<OrderStatusPieChart data={{ NEW: 3, DONE: 7 }} />);
-    expect(screen.getByText('Статусы заказов')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.charts.orderStatus.title'))).toBeInTheDocument();
   });
 
   it('renders with default empty data', () => {
     render(<OrderStatusPieChart />);
-    expect(screen.getByText('Статусы заказов')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.charts.orderStatus.title'))).toBeInTheDocument();
   });
 });
 
 describe('UsersByRoleChart', () => {
   it('renders role cards with computed percentages', () => {
     render(<UsersByRoleChart data={{ CUSTOMER: 80, STAFF: 15, VENDOR: 5 }} />);
-    expect(screen.getByText('Клиенты')).toBeInTheDocument();
-    expect(screen.getByText('Персонал')).toBeInTheDocument();
-    expect(screen.getByText('Вендоры')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.charts.usersByRole.customer'))).toBeInTheDocument();
+    expect(screen.getByText(t('admin.charts.usersByRole.staff'))).toBeInTheDocument();
+    expect(screen.getByText(t('admin.charts.usersByRole.vendor'))).toBeInTheDocument();
     expect(screen.getByText('80')).toBeInTheDocument();
-    expect(screen.getByText('80% от всех')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.charts.usersByRole.percentOfAll', { percent: 80 }))).toBeInTheDocument();
   });
 
   it('renders zeros with default data', () => {
     render(<UsersByRoleChart />);
-    expect(screen.getAllByText('0% от всех').length).toBe(3);
+    expect(screen.getAllByText(t('admin.charts.usersByRole.percentOfAll', { percent: 0 })).length).toBe(3);
   });
 });

@@ -5,15 +5,17 @@ import { StaffHeader } from './components/StaffHeader';
 import { StaffOrdersTab } from './components/StaffOrdersTab';
 import { StaffMenuTab } from './components/StaffMenuTab';
 import { useStaffDashboard } from './hooks/useStaffDashboard';
+import { useTranslation } from '@shared/i18n/useTranslation';
 
 type StaffTab = 'orders' | 'menu';
 
-const TABS: { id: StaffTab; label: string }[] = [
-  { id: 'orders', label: 'Заказы' },
-  { id: 'menu', label: 'Стоп-лист' },
+const TABS: { id: StaffTab; labelKey: string }[] = [
+  { id: 'orders', labelKey: 'staff.dashboard.tabs.orders' },
+  { id: 'menu', labelKey: 'staff.dashboard.tabs.menu' },
 ];
 
 export const StaffDashboardPage = () => {
+  const { t } = useTranslation();
   const {
     profile,
     profileLoading,
@@ -95,7 +97,7 @@ export const StaffDashboardPage = () => {
               transition: 'all 0.2s',
             }}
           >
-            {tab.label}
+            {t(tab.labelKey)}
           </button>
         ))}
       </div>

@@ -1,10 +1,10 @@
 :root {
-  --accent:        oklch(55% 0.17 40);
-  --accent-dim:    oklch(48% 0.15 40);
-  --accent-deep:   oklch(40% 0.12 38);
-  --accent-glow:   oklch(55% 0.17 40 / 0.24);
-  --accent-subtle: oklch(55% 0.17 40 / 0.10);
-  --accent-text:   oklch(98% 0.004 60);
+  --accent:        oklch(64% 0.21 42);
+  --accent-dim:    oklch(57% 0.19 41);
+  --accent-deep:   oklch(45% 0.15 38);
+  --accent-glow:   oklch(64% 0.21 42 / 0.28);
+  --accent-subtle: oklch(64% 0.21 42 / 0.12);
+  --accent-text:   oklch(99% 0.004 60);
 
   --fire:        var(--accent);
   --fire-dim:    var(--accent-dim);
@@ -86,13 +86,13 @@
   --border-mid: oklch(84% 0.010 60);
   --border-hi:  oklch(70% 0.007 60);
 
-  --fire:        oklch(55% 0.17 40);
-  --fire-dim:    oklch(48% 0.15 40);
-  --fire-deep:   oklch(40% 0.12 38);
-  --fire-glow:   oklch(55% 0.17 40 / 0.24);
-  --fire-subtle: oklch(55% 0.17 40 / 0.10);
-  --fire-text:   oklch(98% 0.004 60);
-  --shadow-fire: 0 10px 26px oklch(55% 0.17 40 / 0.24);
+  --fire:        oklch(64% 0.21 42);
+  --fire-dim:    oklch(57% 0.19 41);
+  --fire-deep:   oklch(45% 0.15 38);
+  --fire-glow:   oklch(64% 0.21 42 / 0.28);
+  --fire-subtle: oklch(64% 0.21 42 / 0.12);
+  --fire-text:   oklch(99% 0.004 60);
+  --shadow-fire: 0 10px 26px oklch(64% 0.21 42 / 0.28);
 
   --accent:        var(--fire);
   --accent-dim:    var(--fire-dim);

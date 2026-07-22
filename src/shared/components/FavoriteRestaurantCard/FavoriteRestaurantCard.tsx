@@ -1,6 +1,7 @@
 import { HeartIcon, MapPinIcon, BriefcaseIcon } from "@phosphor-icons/react";
 import type { Favorite, FavoriteRestaurantInfo } from "@shared/types/models";
 import { activateOnKey } from "@shared/utils/a11y";
+import { useTranslation } from "@shared/i18n/useTranslation";
 import s from "./FavoriteRestaurantCard.module.css";
 
 interface FavoriteRestaurantCardProps {
@@ -10,6 +11,7 @@ interface FavoriteRestaurantCardProps {
 }
 
 export const FavoriteRestaurantCard = ({ favorite, onNavigate, onUnfavorite }: FavoriteRestaurantCardProps) => {
+  const { t } = useTranslation();
   const { restaurant } = favorite;
 
   return (
@@ -34,12 +36,12 @@ export const FavoriteRestaurantCard = ({ favorite, onNavigate, onUnfavorite }: F
 
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
         <span style={{ fontSize: "var(--text-xs)", fontWeight: 800, color: restaurant.is_open ? "var(--color-success)" : "var(--color-neutral)" }}>
-          {restaurant.is_open ? "Открыто" : "Закрыто"}
+          {restaurant.is_open ? t("catalog.restaurantCard.open") : t("catalog.restaurantCard.closed")}
         </span>
         {restaurant.is_hiring && (
           <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: "var(--text-xs)", fontWeight: 700, color: "var(--amber)" }}>
             <BriefcaseIcon size={10} weight="fill" />
-            Вакансии
+            {t("catalog.restaurantCard.vacancies")}
           </span>
         )}
       </div>
@@ -47,7 +49,7 @@ export const FavoriteRestaurantCard = ({ favorite, onNavigate, onUnfavorite }: F
       <button
         className={s['unfavBtn']}
         onClick={(e) => { e.stopPropagation(); onUnfavorite(restaurant.id); }}
-        aria-label="Убрать из избранного"
+        aria-label={t("catalog.restaurantCard.removeFromFavorites")}
       >
         <HeartIcon size={16} weight="fill" color="var(--color-error)" />
       </button>

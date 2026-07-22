@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { SettingsPage } from "@shared/pages/SettingsPage/SettingsPage";
 import { useProfilePage } from "@shared/hooks/useProfilePage";
 import type { UseProfilePageResult } from "@shared/hooks/useProfilePage";
+import { t } from "@shared/i18n/useTranslation";
 
 vi.mock("@shared/hooks/useProfilePage", () => ({
   useProfilePage: vi.fn(),
@@ -54,17 +55,17 @@ describe("SettingsPage", () => {
   it("renders the settings sections", () => {
     mockedHook.mockReturnValue(hookState());
     renderPage();
-    expect(screen.getByRole("heading", { name: "Настройки" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: t("profile.settings.title") })).toBeInTheDocument();
     expect(screen.getByTestId("theme-switcher")).toBeInTheDocument();
-    expect(screen.getByText("Данные профиля")).toBeInTheDocument();
-    expect(screen.getByText("Безопасность")).toBeInTheDocument();
+    expect(screen.getByText(t("profile.settings.profileData"))).toBeInTheDocument();
+    expect(screen.getByText(t("profile.settings.security"))).toBeInTheDocument();
   });
 
   it("prefills profile inputs from the hook form", () => {
     mockedHook.mockReturnValue(hookState());
     renderPage();
-    expect(screen.getByPlaceholderText("Отображаемое имя")).toHaveValue("Ник");
-    expect(screen.getByPlaceholderText("Имя")).toHaveValue("Имя");
+    expect(screen.getByPlaceholderText(t("common.labels.displayName"))).toHaveValue("Ник");
+    expect(screen.getByPlaceholderText(t("common.labels.name"))).toHaveValue("Имя");
     expect(screen.getByPlaceholderText("Email")).toHaveValue("a@b.c");
   });
 
@@ -73,7 +74,7 @@ describe("SettingsPage", () => {
     const handleSave = vi.fn();
     mockedHook.mockReturnValue(hookState({ handleSave }));
     renderPage();
-    await user.click(screen.getByRole("button", { name: "Сохранить" }));
+    await user.click(screen.getByRole("button", { name: t("common.actions.save") }));
     expect(handleSave).toHaveBeenCalledTimes(1);
   });
 
@@ -86,13 +87,13 @@ describe("SettingsPage", () => {
   it("shows an edit success message", () => {
     mockedHook.mockReturnValue(hookState({ editSuccess: true }));
     renderPage();
-    expect(screen.getByText("Данные сохранены")).toBeInTheDocument();
+    expect(screen.getByText(t("profile.settings.saved"))).toBeInTheDocument();
   });
 
   it("hides the password section when disabled", () => {
     mockedHook.mockReturnValue(hookState());
     renderPage({ showPasswordChange: false });
-    expect(screen.queryByText("Безопасность")).not.toBeInTheDocument();
+    expect(screen.queryByText(t("profile.settings.security"))).not.toBeInTheDocument();
   });
 
   it("submits the password change form", async () => {
@@ -105,7 +106,7 @@ describe("SettingsPage", () => {
       }),
     );
     renderPage();
-    await user.click(screen.getByRole("button", { name: "Сменить пароль" }));
+    await user.click(screen.getByRole("button", { name: t("profile.settings.changePassword") }));
     expect(handlePasswordChange).toHaveBeenCalled();
   });
 
@@ -113,9 +114,9 @@ describe("SettingsPage", () => {
     const user = userEvent.setup();
     mockedHook.mockReturnValue(hookState());
     renderPage();
-    await user.click(screen.getByRole("button", { name: /Условия сервиса/ }));
-    await user.click(screen.getByRole("button", { name: /Политика конфиденциальности/ }));
-    expect(screen.getByRole("button", { name: /Политика конфиденциальности/ })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: new RegExp(t("profile.settings.terms")) }));
+    await user.click(screen.getByRole("button", { name: new RegExp(t("profile.settings.privacy")) }));
+    expect(screen.getByRole("button", { name: new RegExp(t("profile.settings.privacy")) })).toBeInTheDocument();
   });
 
   it("updates every profile field through its onChange handler", async () => {
@@ -123,10 +124,10 @@ describe("SettingsPage", () => {
     const setEditForm = vi.fn();
     mockedHook.mockReturnValue(hookState({ setEditForm }));
     renderPage();
-    await user.type(screen.getByPlaceholderText("Отображаемое имя"), "X");
-    await user.type(screen.getByPlaceholderText("Имя"), "X");
-    await user.type(screen.getByPlaceholderText("Фамилия"), "X");
-    await user.type(screen.getByPlaceholderText("Отчество"), "X");
+    await user.type(screen.getByPlaceholderText(t("common.labels.displayName")), "X");
+    await user.type(screen.getByPlaceholderText(t("common.labels.name")), "X");
+    await user.type(screen.getByPlaceholderText(t("common.labels.surname")), "X");
+    await user.type(screen.getByPlaceholderText(t("common.labels.patronymic")), "X");
     await user.type(screen.getByPlaceholderText("Email"), "X");
     expect(setEditForm).toHaveBeenCalled();
     const updater = setEditForm.mock.calls.at(-1)?.[0] as
@@ -141,8 +142,8 @@ describe("SettingsPage", () => {
     const setPwForm = vi.fn();
     mockedHook.mockReturnValue(hookState({ setPwForm }));
     renderPage();
-    await user.type(screen.getByPlaceholderText("Текущий пароль"), "a");
-    await user.type(screen.getByPlaceholderText("Минимум 8 символов"), "b");
+    await user.type(screen.getByPlaceholderText(t("profile.settings.currentPassword")), "a");
+    await user.type(screen.getByPlaceholderText(t("profile.settings.newPasswordHint")), "b");
     expect(setPwForm).toHaveBeenCalled();
   });
 
@@ -157,9 +158,9 @@ describe("SettingsPage", () => {
     );
     renderPage();
     expect(screen.getByText("Пароль неверный")).toBeInTheDocument();
-    expect(screen.getByText("Пароль изменён")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Меняем..." })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Сохраняем..." })).toBeDisabled();
+    expect(screen.getByText(t("profile.settings.passwordChanged"))).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: t("profile.settings.changingPassword") })).toBeDisabled();
+    expect(screen.getByRole("button", { name: t("common.actions.saving") })).toBeDisabled();
   });
 
   it("wires the Telegram BackButton", () => {

@@ -4,6 +4,8 @@ import type { ReactNode } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { CartDrawer } from '@shared/components/CartDrawer/CartDrawer';
+import { t } from '@shared/i18n/useTranslation';
+import { formatPrice } from '@shared/utils/price';
 const renderInRouter = (ui: ReactNode) => render(<MemoryRouter>{ui}</MemoryRouter>);
 
 type RestaurantState = { menus: Record<string, unknown> };
@@ -100,7 +102,7 @@ describe('CartDrawer', () => {
     const user = userEvent.setup();
     renderInRouter(<CartDrawer onClose={onClose} />);
 
-    await user.click(screen.getByRole('button', { name: /Оформить заказ/ }));
+    await user.click(screen.getByRole('button', { name: t('order.checkout.submit', { total: formatPrice(0) }) }));
     expect(mockStore.placeOrder).toHaveBeenCalled();
   });
 
@@ -111,7 +113,7 @@ describe('CartDrawer', () => {
     });
     renderInRouter(<CartDrawer onClose={onClose} />);
 
-    await user.click(screen.getByText('Очистить корзину'));
+    await user.click(screen.getByText(t('order.cart.clear')));
     expect(mockStore.clearCart).toHaveBeenCalled();
   });
 
@@ -123,9 +125,9 @@ describe('CartDrawer', () => {
     const user = userEvent.setup();
     renderInRouter(<CartDrawer onClose={onClose} />);
 
-    await user.click(screen.getByRole('button', { name: /Оформить заказ/ }));
+    await user.click(screen.getByRole('button', { name: t('order.checkout.submit', { total: formatPrice(0) }) }));
     expect(mockStore.placeOrder).toHaveBeenCalled();
-    expect(await screen.findByText('Ошибка при оформлении заказа')).toBeInTheDocument();
+    expect(await screen.findByText(t('order.checkout.failed'))).toBeInTheDocument();
   });
 
   it('renders checkout button with total price', () => {
@@ -134,6 +136,6 @@ describe('CartDrawer', () => {
       cartTotal: () => 350,
     });
     renderInRouter(<CartDrawer onClose={onClose} />);
-    expect(screen.getByRole('button', { name: /Оформить заказ/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: t('order.checkout.submit', { total: formatPrice(350) }) })).toBeInTheDocument();
   });
 });

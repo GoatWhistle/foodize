@@ -129,7 +129,11 @@ class TestStreamChat:
 
         captured: dict[str, Any] = {}
 
-        def _fake_executor(v: MagicMock, default_restaurant_id: uuid.UUID | None = None) -> Any:
+        def _fake_executor(
+            v: MagicMock,
+            default_restaurant_id: uuid.UUID | None = None,
+            language: str = "ru",
+        ) -> Any:
             captured["rid"] = default_restaurant_id
 
             async def _execute(call: Any) -> str:

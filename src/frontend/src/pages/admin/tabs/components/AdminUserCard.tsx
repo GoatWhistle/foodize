@@ -1,5 +1,6 @@
 import { TrashIcon } from '@phosphor-icons/react';
 import { hasPermission, permissionPresetLabel, PERMISSIONS } from '@shared/utils/permissions';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { AuthUser } from '@shared/store/createAuthStore';
 import type { AdminUser } from '../../hooks/useAdminUsers';
 import styles from './adminTable.module.css';
@@ -21,6 +22,7 @@ export function AdminUserCard({
   onOpen,
   onDelete,
 }: AdminUserCardProps) {
+  const { t } = useTranslation();
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
       <input
@@ -57,17 +59,17 @@ export function AdminUserCard({
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontWeight: 800, color: 'var(--text-1)' }}>
-              {user.name || 'Без имени'}
+              {user.name || t('admin.users.card.noName')}
             </div>
             <div style={{ fontSize: "var(--text-base)", color: 'var(--text-3)' }}>
-              {user.phone_number || 'Нет телефона'}
+              {user.phone_number || t('admin.users.card.noPhone')}
             </div>
             <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
               <span className="order-status-badge pending">
                 {permissionPresetLabel(user.permissions)}
               </span>
               <span className={`order-status-badge ${user.is_active ? 'ready' : 'cancelled'}`}>
-                {user.is_active ? 'Активен' : 'Заблокирован'}
+                {user.is_active ? t('admin.users.card.active') : t('admin.users.card.blocked')}
               </span>
             </div>
           </div>
@@ -80,7 +82,7 @@ export function AdminUserCard({
                 event.stopPropagation();
                 onDelete(user.id);
               }}
-              title="Заблокировать"
+              title={t('admin.users.card.blockTitle')}
               style={{ color: 'var(--error)' }}
             >
               <TrashIcon size={16} />

@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 import { NotificationsPage } from "@shared/pages/NotificationsPage/NotificationsPage";
 import type { Notification } from "@shared/types/models";
+import { t } from "@shared/i18n/useTranslation";
 
 const makeNotification = (over: Partial<Notification> = {}): Notification => ({
   id: "n1",
@@ -10,6 +11,7 @@ const makeNotification = (over: Partial<Notification> = {}): Notification => ({
   type: "ORDER_STATUS",
   title: "Заказ готов",
   message: "Ваш заказ можно забрать",
+  params: {},
   is_read: false,
   created_at: new Date().toISOString(),
   ...over,
@@ -36,7 +38,7 @@ describe("NotificationsPage", () => {
   it("fetches notifications on mount and shows the empty state", async () => {
     const fetchNotifications = vi.fn().mockResolvedValue(undefined);
     render(<NotificationsPage useNotificationStore={makeStore({ fetchNotifications })} />);
-    await waitFor(() => { expect(screen.getByText("Нет уведомлений")).toBeInTheDocument(); });
+    await waitFor(() => { expect(screen.getByText(t("profile.notifications.empty"))).toBeInTheDocument(); });
     expect(fetchNotifications).toHaveBeenCalledWith(1);
   });
 
@@ -52,7 +54,7 @@ describe("NotificationsPage", () => {
     );
     await waitFor(() => { expect(screen.getByText("Первое")).toBeInTheDocument(); });
     expect(screen.getByText("Второе")).toBeInTheDocument();
-    expect(screen.getByText("Сегодня")).toBeInTheDocument();
+    expect(screen.getByText(t("common.time.today"))).toBeInTheDocument();
   });
 
   it("marks an unread notification as read on click", async () => {
@@ -78,8 +80,8 @@ describe("NotificationsPage", () => {
         useNotificationStore={makeStore({ notifications, total: 1, unreadCount: 1, markAllAsRead })}
       />,
     );
-    await waitFor(() => { expect(screen.getByRole("button", { name: "Прочитать все" })).toBeInTheDocument(); });
-    await user.click(screen.getByRole("button", { name: "Прочитать все" }));
+    await waitFor(() => { expect(screen.getByRole("button", { name: t("profile.notifications.markAllRead") })).toBeInTheDocument(); });
+    await user.click(screen.getByRole("button", { name: t("profile.notifications.markAllRead") }));
     expect(markAllAsRead).toHaveBeenCalled();
   });
 
@@ -93,7 +95,7 @@ describe("NotificationsPage", () => {
       />,
     );
     await waitFor(() => { expect(screen.getByText("Удаляемое")).toBeInTheDocument(); });
-    await user.click(screen.getByRole("button", { name: "Удалить" }));
+    await user.click(screen.getByRole("button", { name: t("profile.notifications.delete") }));
     expect(deleteNotification).toHaveBeenCalledWith("a");
   });
 
@@ -106,8 +108,8 @@ describe("NotificationsPage", () => {
         useNotificationStore={makeStore({ notifications, total: 1, deleteAll })}
       />,
     );
-    await waitFor(() => { expect(screen.getByRole("button", { name: "Удалить все" })).toBeInTheDocument(); });
-    await user.click(screen.getByRole("button", { name: "Удалить все" }));
+    await waitFor(() => { expect(screen.getByRole("button", { name: t("profile.notifications.deleteAll") })).toBeInTheDocument(); });
+    await user.click(screen.getByRole("button", { name: t("profile.notifications.deleteAll") }));
     expect(deleteAll).toHaveBeenCalled();
   });
 
@@ -120,8 +122,8 @@ describe("NotificationsPage", () => {
         useNotificationStore={makeStore({ notifications, total: 5, loadMore })}
       />,
     );
-    await waitFor(() => { expect(screen.getByRole("button", { name: "Загрузить ещё" })).toBeInTheDocument(); });
-    await user.click(screen.getByRole("button", { name: "Загрузить ещё" }));
+    await waitFor(() => { expect(screen.getByRole("button", { name: t("common.actions.loadMore") })).toBeInTheDocument(); });
+    await user.click(screen.getByRole("button", { name: t("common.actions.loadMore") }));
     expect(loadMore).toHaveBeenCalled();
   });
 });

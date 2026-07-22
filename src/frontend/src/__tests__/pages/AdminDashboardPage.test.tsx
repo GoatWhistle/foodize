@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import type { PlatformStats } from '@shared/types/models';
 import { AdminDashboardPage } from '../../pages/admin/AdminDashboardPage';
+import { t } from '@shared/i18n/useTranslation';
 vi.mock('../../services/adminService', () => ({
   adminService: {
     getPlatformStats: vi.fn(),
@@ -85,7 +86,7 @@ beforeEach(() => {
 describe('AdminDashboardPage', () => {
   it('renders stats tab by default and loads stats', async () => {
     render$();
-    expect(screen.getByText('Статистика')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.sidebar.tabs.stats'))).toBeInTheDocument();
     await waitFor(() => {
       expect(adminService.getPlatformStats).toHaveBeenCalledTimes(1);
     });
@@ -93,7 +94,9 @@ describe('AdminDashboardPage', () => {
 
   it('renders all sidebar navigation tabs', () => {
     render$();
-    const labels = ['Статистика', 'Пользователи', 'Заказы', 'Модерация', 'Рестораны', 'Вендоры', 'Отзывы', 'Аналитика'];
+    const labels = ['stats', 'users', 'orders', 'resolution', 'restaurants', 'vendors', 'reviews', 'finance'].map(
+      (id) => t(`admin.sidebar.tabs.${id}`)
+    );
     labels.forEach((label) => {
       expect(screen.getAllByText(label).length).toBeGreaterThan(0);
     });
@@ -102,7 +105,7 @@ describe('AdminDashboardPage', () => {
   it('switches to users tab on click', async () => {
     const user = userEvent.setup();
     render$();
-    const usersBtn = screen.getAllByText('Пользователи')[0];
+    const usersBtn = screen.getAllByText(t('admin.sidebar.tabs.users'))[0];
     if (!usersBtn) throw new Error('tab button not found');
     await user.click(usersBtn);
     await waitFor(() => {
@@ -113,7 +116,7 @@ describe('AdminDashboardPage', () => {
   it('switches to restaurants tab and loads data', async () => {
     const user = userEvent.setup();
     render$();
-    const btn = screen.getAllByText('Рестораны')[0];
+    const btn = screen.getAllByText(t('admin.sidebar.tabs.restaurants'))[0];
     if (!btn) throw new Error('tab button not found');
     await user.click(btn);
     await waitFor(() => {
@@ -124,7 +127,7 @@ describe('AdminDashboardPage', () => {
   it('switches to vendors tab and loads data', async () => {
     const user = userEvent.setup();
     render$();
-    const btn = screen.getAllByText('Вендоры')[0];
+    const btn = screen.getAllByText(t('admin.sidebar.tabs.vendors'))[0];
     if (!btn) throw new Error('tab button not found');
     await user.click(btn);
     await waitFor(() => {
@@ -135,7 +138,7 @@ describe('AdminDashboardPage', () => {
   it('switches to reviews tab and loads data', async () => {
     const user = userEvent.setup();
     render$();
-    const btn = screen.getAllByText('Отзывы')[0];
+    const btn = screen.getAllByText(t('admin.sidebar.tabs.reviews'))[0];
     if (!btn) throw new Error('tab button not found');
     await user.click(btn);
     await waitFor(() => {
@@ -146,7 +149,7 @@ describe('AdminDashboardPage', () => {
   it('switches to orders tab and loads data', async () => {
     const user = userEvent.setup();
     render$();
-    const btn = screen.getAllByText('Заказы')[0];
+    const btn = screen.getAllByText(t('admin.sidebar.tabs.orders'))[0];
     if (!btn) throw new Error('tab button not found');
     await user.click(btn);
     await waitFor(() => {
@@ -158,8 +161,8 @@ describe('AdminDashboardPage', () => {
     const user = userEvent.setup();
     render$();
     await waitFor(() => { expect(adminService.getPlatformStats).toHaveBeenCalledTimes(1); });
-    const usersTab = screen.getAllByText('Пользователи')[0];
-    const statsTab = screen.getAllByText('Статистика')[0];
+    const usersTab = screen.getAllByText(t('admin.sidebar.tabs.users'))[0];
+    const statsTab = screen.getAllByText(t('admin.sidebar.tabs.stats'))[0];
     if (!usersTab || !statsTab) throw new Error('tab button not found');
     await user.click(usersTab);
     await user.click(statsTab);

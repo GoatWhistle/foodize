@@ -1,6 +1,7 @@
 import type { FormEvent } from 'react';
 import { TelegramLogo } from '@shared/components/BrandIcons/TelegramLogo';
 import { formatPhoneNumber } from '@shared/utils/phone';
+import { useTranslation } from '@shared/i18n/useTranslation';
 
 interface PasswordLoginFormProps {
   phoneNumber: string;
@@ -20,17 +21,19 @@ export const PasswordLoginForm = ({
   isLoading,
   onSubmit,
   onSwitchToTelegram,
-}: PasswordLoginFormProps) => (
+}: PasswordLoginFormProps) => {
+  const { t } = useTranslation();
+  return (
   <form className="auth-form" onSubmit={onSubmit} noValidate>
     <div className="form-group">
       <label className="form-label" htmlFor="login-phone">
-        Телефон
+        {t('auth.fields.phone')}
       </label>
       <input
         id="login-phone"
         className="form-input"
         type="tel"
-        placeholder="+7 (999) 000-00-00"
+        placeholder={t('auth.placeholders.phone')}
         value={phoneNumber}
         onChange={(e) => { setPhoneNumber(formatPhoneNumber(e.target.value)); }}
         required
@@ -41,13 +44,13 @@ export const PasswordLoginForm = ({
 
     <div className="form-group">
       <label className="form-label" htmlFor="login-password">
-        Пароль
+        {t('auth.fields.password')}
       </label>
       <input
         id="login-password"
         className="form-input"
         type="password"
-        placeholder="Минимум 8 символов"
+        placeholder={t('auth.placeholders.passwordMin')}
         value={password}
         onChange={(e) => { setPassword(e.target.value); }}
         required
@@ -66,14 +69,14 @@ export const PasswordLoginForm = ({
       {isLoading ? (
         <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span className="spinner" style={{ width: 18, height: 18 }} />
-          Вход...
+          {t('auth.buttons.loggingIn')}
         </span>
       ) : (
-        'Войти'
+        t('auth.buttons.login')
       )}
     </button>
 
-    <div className="auth-divider">или</div>
+    <div className="auth-divider">{t('auth.divider')}</div>
 
     <button
       type="button"
@@ -82,7 +85,8 @@ export const PasswordLoginForm = ({
       onClick={onSwitchToTelegram}
     >
       <TelegramLogo size={20} variant="mono" />
-      Войти через Telegram
+      {t('auth.buttons.loginWithTelegram')}
     </button>
   </form>
-);
+  );
+};

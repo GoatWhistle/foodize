@@ -1,5 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { CheckIcon } from "@phosphor-icons/react";
+import { useTranslation } from "@shared/i18n/useTranslation";
 
 interface OrderButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   isLoading?: boolean;
@@ -16,6 +17,7 @@ export const OrderButton = ({
   className = "",
   ...props
 }: OrderButtonProps) => {
+  const { t } = useTranslation();
   return (
     <button
       className={`btn btn-primary order-btn ${className} ${isLoading ? "loading" : ""} ${isSuccess ? "success" : ""}`}
@@ -30,12 +32,12 @@ export const OrderButton = ({
       {isLoading ? (
         <span style={{ display: "flex", alignItems: "center", gap: "8px" }} role="status" aria-live="polite">
           <span className="spinner" aria-hidden="true" style={{ width: "18px", height: "18px" }} />
-          Оформление...
+          {t("order.checkout.placing")}
         </span>
       ) : isSuccess ? (
         <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <CheckIcon size={20} weight="bold" />
-          Готово!
+          {t("order.checkout.success")}
         </span>
       ) : (
         children

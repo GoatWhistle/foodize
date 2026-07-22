@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { RestaurantCard } from "@shared/components/RestaurantCard/RestaurantCard";
 import type { Restaurant } from "@shared/types/models";
+import { t } from "@shared/i18n/useTranslation";
 
 const baseRestaurant = (over: Partial<Restaurant> = {}): Restaurant =>
   ({
@@ -36,7 +37,7 @@ describe("RestaurantCard", () => {
     expect(screen.getByText("Пиццерия")).toBeInTheDocument();
     expect(screen.getByText("ул. Ленина, 1")).toBeInTheDocument();
     expect(screen.getByText("4.5")).toBeInTheDocument();
-    expect(screen.getByText("Открыто")).toBeInTheDocument();
+    expect(screen.getByText(t("catalog.restaurantCard.open"))).toBeInTheDocument();
   });
 
   it("shows a placeholder when there is no photo and 0.0 rating when missing", () => {
@@ -49,7 +50,7 @@ describe("RestaurantCard", () => {
       screen.getByTestId("restaurant-photo-placeholder"),
     ).toBeInTheDocument();
     expect(screen.getByText("0.0")).toBeInTheDocument();
-    expect(screen.getByText("Закрыто")).toBeInTheDocument();
+    expect(screen.getByText(t("catalog.restaurantCard.closed"))).toBeInTheDocument();
   });
 
   it("renders a photo with a view transition name when a photo url is present", () => {
@@ -65,7 +66,7 @@ describe("RestaurantCard", () => {
   it("fires onClick on click and on keyboard activation", () => {
     const onClick = vi.fn();
     render(<RestaurantCard restaurant={baseRestaurant()} onClick={onClick} />);
-    const card = screen.getByRole("button", { name: /Ресторан/ });
+    const card = screen.getByRole("button", { name: t("catalog.restaurantCard.ariaLabel", { name: "Пиццерия" }) });
     fireEvent.click(card);
     fireEvent.keyDown(card, { key: "Enter" });
     expect(onClick).toHaveBeenCalledTimes(2);
@@ -82,7 +83,7 @@ describe("RestaurantCard", () => {
         onFavoriteToggle={onFavoriteToggle}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "В избранное" }));
+    fireEvent.click(screen.getByRole("button", { name: t("catalog.restaurantCard.addToFavorites") }));
     expect(onFavoriteToggle).toHaveBeenCalledWith("r1");
     expect(onClick).not.toHaveBeenCalled();
   });
@@ -98,7 +99,7 @@ describe("RestaurantCard", () => {
       />,
     );
     expect(
-      screen.getByRole("button", { name: "Убрать из избранного" }),
+      screen.getByRole("button", { name: t("catalog.restaurantCard.removeFromFavorites") }),
     ).toBeInTheDocument();
   });
 

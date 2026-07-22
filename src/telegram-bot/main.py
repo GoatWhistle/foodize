@@ -12,6 +12,7 @@ from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_applicati
 from aiohttp import web
 
 from config import bot_config
+from exceptions import WebhookSecretMissingError
 from handlers import start
 from middlewares.throttling import build_throttling_middleware
 from notifications.consumer import start_notification_consumer
@@ -74,7 +75,7 @@ def _install_stop_signal_handlers() -> asyncio.Event:
 
 async def _run_webhook(bot: Bot, dp: Dispatcher) -> None:
     if not bot_config.webhook_secret:
-        raise RuntimeError(
+        raise WebhookSecretMissingError(
             "BOT_WEBHOOK_SECRET must be set when BOT_MODE=webhook. "
             "Without it the /webhook endpoint accepts unauthenticated requests."
         )

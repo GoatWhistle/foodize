@@ -1,6 +1,7 @@
 import { MapPinIcon, CheckCircleIcon, SmileyIcon, XCircleIcon } from "@phosphor-icons/react";
 import type { OrderStatus } from "@shared/types/models";
 import { getOrderStatusStyle } from "@shared/utils/orderStatus";
+import { useTranslation } from "@shared/i18n/useTranslation";
 import s from "./OrderStatusBadge.module.css";
 
 interface OrderStatusBadgeProps {
@@ -9,6 +10,7 @@ interface OrderStatusBadgeProps {
 }
 
 export const OrderStatusBadge = ({ status, cancellationReason }: OrderStatusBadgeProps) => {
+  const { t } = useTranslation();
   const statusColor = getOrderStatusStyle(status).solid;
 
   if (status === "PENDING" || status === "ACCEPTED") {
@@ -21,10 +23,10 @@ export const OrderStatusBadge = ({ status, cancellationReason }: OrderStatusBadg
           <MapPinIcon size={64} weight="fill" />
         </div>
         <p className={s['pendingTitle']}>
-          {status === "ACCEPTED" ? "Принят" : "Ожидается"}
+          {status === "ACCEPTED" ? t("order.badge.acceptedTitle") : t("order.badge.pendingTitle")}
         </p>
         <p className={s['subtitle']}>
-          {status === "ACCEPTED" ? "Ресторан подтвердил заказ" : "Ожидаем подтверждения ресторана"}
+          {status === "ACCEPTED" ? t("order.badge.acceptedSubtitle") : t("order.badge.pendingSubtitle")}
         </p>
       </div>
     );
@@ -41,10 +43,10 @@ export const OrderStatusBadge = ({ status, cancellationReason }: OrderStatusBadg
           )}
         </div>
         <p className={`${s['readyText']} ${s['readyTitle']}`} style={{ color: statusColor }}>
-          {status === "COMPLETED" ? "Приятного аппетита!" : "Забирай!"}
+          {status === "COMPLETED" ? t("order.badge.completedTitle") : t("order.badge.readyTitle")}
         </p>
         <p className={s['subtitleStrong']}>
-          {status === "COMPLETED" ? "Заказ уже получен" : "Заказ ждёт тебя на кассе"}
+          {status === "COMPLETED" ? t("order.badge.completedSubtitle") : t("order.badge.readySubtitle")}
         </p>
       </div>
     );
@@ -56,10 +58,10 @@ export const OrderStatusBadge = ({ status, cancellationReason }: OrderStatusBadg
         <XCircleIcon size={80} weight="fill" />
       </div>
       <p className={s['cancelledTitle']} style={{ color: statusColor }}>
-        Отменён
+        {t("order.badge.cancelledTitle")}
       </p>
       <p className={s['subtitle']}>
-        {cancellationReason || "Заказ был отменён"}
+        {cancellationReason || t("order.badge.cancelledSubtitle")}
       </p>
     </div>
   );

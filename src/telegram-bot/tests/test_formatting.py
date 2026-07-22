@@ -1,3 +1,4 @@
+from utils import messages as msg
 from utils.formatting import format_price, format_status
 
 
@@ -8,6 +9,6 @@ def test_format_price() -> None:
 
 
 def test_format_status() -> None:
-    assert format_status("PENDING") == "Ожидает подтверждения"
-    assert format_status("COOKING") == "Готовится"
+    assert format_status("PENDING") == msg.order_status("PENDING")
+    assert format_status("COOKING") == msg.order_status("COOKING")
     assert format_status("UNKNOWN") == "UNKNOWN"

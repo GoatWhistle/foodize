@@ -1,5 +1,6 @@
 import { CookingPotIcon, BellIcon } from '@phosphor-icons/react';
-import { STAFF_ROLE_RU, translate } from '@shared/utils/locales';
+import { staffRoleLabel } from '@shared/utils/locales';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { StaffProfile } from '@shared/types/models';
 
 interface StaffHeaderProps {
@@ -10,7 +11,9 @@ interface StaffHeaderProps {
   onToggleAutoEta: (checked: boolean) => void;
 }
 
-export const StaffHeader = ({ profile, newOrderAlert, onDismissAlert, autoEta, onToggleAutoEta }: StaffHeaderProps) => (
+export const StaffHeader = ({ profile, newOrderAlert, onDismissAlert, autoEta, onToggleAutoEta }: StaffHeaderProps) => {
+  const { t } = useTranslation();
+  return (
   <div style={{ marginBottom: 24 }}>
     <div
       style={{
@@ -30,7 +33,7 @@ export const StaffHeader = ({ profile, newOrderAlert, onDismissAlert, autoEta, o
           margin: 0,
         }}
       >
-        Кабинет сотрудника
+        {t('staff.dashboard.title')}
       </h1>
       {newOrderAlert && (
         <button
@@ -50,7 +53,7 @@ export const StaffHeader = ({ profile, newOrderAlert, onDismissAlert, autoEta, o
           onClick={onDismissAlert}
         >
           <BellIcon size={12} weight="fill" />
-          Новый заказ!
+          {t('staff.dashboard.newOrderAlert')}
         </button>
       )}
     </div>
@@ -63,9 +66,9 @@ export const StaffHeader = ({ profile, newOrderAlert, onDismissAlert, autoEta, o
       }}
     >
       <p style={{ color: 'var(--text-3)', fontSize: "var(--text-base)", margin: 0 }}>
-        Роль:{' '}
+        {t('staff.dashboard.roleLabel')}{' '}
         <strong style={{ color: 'var(--text-2)' }}>
-          {translate(STAFF_ROLE_RU, profile.role, profile.role)}
+          {staffRoleLabel(profile.role)}
         </strong>
       </p>
       <label
@@ -101,9 +104,10 @@ export const StaffHeader = ({ profile, newOrderAlert, onDismissAlert, autoEta, o
             whiteSpace: 'nowrap',
           }}
         >
-          Авто-время по блюдам
+          {t('staff.dashboard.autoEta')}
         </span>
       </label>
     </div>
   </div>
-);
+  );
+};

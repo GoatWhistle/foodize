@@ -1,9 +1,11 @@
+import { t } from "@shared/i18n/useTranslation";
+
 export function getGreeting(): string {
   const hour = new Date().getHours();
-  if (hour < 5) return 'Доброй ночи';
-  if (hour < 12) return 'Доброе утро';
-  if (hour < 17) return 'Добрый день';
-  return 'Добрый вечер';
+  if (hour < 5) return t("catalog.greeting.night");
+  if (hour < 12) return t("catalog.greeting.morning");
+  if (hour < 17) return t("catalog.greeting.afternoon");
+  return t("catalog.greeting.evening");
 }
 
 export function isRestaurantOpen(restaurant: { is_open?: boolean | null } | null | undefined): boolean {

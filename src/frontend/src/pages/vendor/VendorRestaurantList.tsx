@@ -1,6 +1,7 @@
 import type { Dispatch, FormEvent, SetStateAction } from 'react';
 import { HouseIcon, PlusIcon, CaretRightIcon } from '@phosphor-icons/react';
 import { EmptyState } from '@shared/components/EmptyState/EmptyState';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { Restaurant } from '@shared/types/models';
 import type { NewRestaurantForm, VendorProfile } from './hooks/useVendorRestaurants';
 
@@ -33,6 +34,7 @@ export function VendorRestaurantList({
   formLoading,
   handleCreateRestaurant,
 }: VendorRestaurantListProps) {
+  const { t } = useTranslation();
   return (
     <div className="vendor-section">
       <div
@@ -47,7 +49,7 @@ export function VendorRestaurantList({
           className="vendor-section-title"
           style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
         >
-          <HouseIcon /> Мои заведения
+          <HouseIcon /> {t('vendor.restaurants.sectionTitle')}
         </span>
         <button
           className="btn btn-primary btn-sm"
@@ -55,11 +57,11 @@ export function VendorRestaurantList({
           disabled={vendorProfile?.approval_status !== 'APPROVED'}
           title={
             vendorProfile?.approval_status !== 'APPROVED'
-              ? 'Дождитесь одобрения профиля'
+              ? t('vendor.restaurants.waitApproval')
               : ''
           }
         >
-          <PlusIcon size={16} /> Добавить
+          <PlusIcon size={16} /> {t('common.actions.add')}
         </button>
       </div>
 
@@ -77,18 +79,18 @@ export function VendorRestaurantList({
             gap: 10,
           }}
         >
-          <h3 style={{ fontWeight: 700, fontSize: "var(--text-base)" }}>Новое заведение</h3>
+          <h3 style={{ fontWeight: 700, fontSize: "var(--text-base)" }}>{t('vendor.restaurants.newFormTitle')}</h3>
           {formError && <div className="form-error">{formError}</div>}
           <input
             className="form-input"
-            placeholder="Название"
+            placeholder={t('common.labels.title')}
             value={newRestaurant.name}
             onChange={(e) => { setNewRestaurant({ ...newRestaurant, name: e.target.value }); }}
             required
           />
           <input
             className="form-input"
-            placeholder="Адрес"
+            placeholder={t('common.labels.address')}
             value={newRestaurant.address}
             onChange={(e) => { setNewRestaurant({ ...newRestaurant, address: e.target.value }); }}
             required
@@ -98,7 +100,7 @@ export function VendorRestaurantList({
             type="number"
             min="1"
             max="240"
-            placeholder="Среднее время приготовления, минут"
+            placeholder={t('vendor.restaurants.placeholders.avgPrepTime')}
             value={newRestaurant.avg_prep_time_minutes}
             onChange={(e) =>
               { setNewRestaurant({ ...newRestaurant, avg_prep_time_minutes: e.target.value }); }
@@ -109,14 +111,14 @@ export function VendorRestaurantList({
             type="number"
             min="1"
             max="1000"
-            placeholder="Мягкий лимит активных заказов"
+            placeholder={t('vendor.restaurants.placeholders.maxActiveOrders')}
             value={newRestaurant.max_active_orders}
             onChange={(e) =>
               { setNewRestaurant({ ...newRestaurant, max_active_orders: e.target.value }); }
             }
           />
           <button type="submit" className="btn btn-primary" disabled={formLoading}>
-            Создать
+            {t('common.actions.create')}
           </button>
         </form>
       )}
@@ -136,7 +138,7 @@ export function VendorRestaurantList({
           ))}
         </div>
       ) : !Array.isArray(restaurants) || restaurants.length === 0 ? (
-        <EmptyState title="Нет заведений" subtitle="Добавьте первое заведение" />
+        <EmptyState title={t('vendor.restaurants.emptyTitle')} subtitle={t('vendor.restaurants.emptySubtitle')} />
       ) : (
         <div className={`restaurant-list${loading ? ' loading-dim' : ''}`}>
           {restaurants.map((r) => (
@@ -172,7 +174,7 @@ export function VendorRestaurantList({
                       className="order-status-badge pending"
                       style={{ fontSize: "var(--text-xs)" }}
                     >
-                      На модерации
+                      {t('enums.approvalStatus.PENDING')}
                     </span>
                   )}
                   {r.moderation_status === 'REJECTED' && (
@@ -180,7 +182,7 @@ export function VendorRestaurantList({
                       className="order-status-badge cancelled"
                       style={{ fontSize: "var(--text-xs)" }}
                     >
-                      Отклонён
+                      {t('enums.approvalStatus.REJECTED')}
                     </span>
                   )}
                 </div>

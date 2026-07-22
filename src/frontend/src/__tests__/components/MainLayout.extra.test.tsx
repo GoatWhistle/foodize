@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { t } from '@shared/i18n/useTranslation';
 
 const navigateMock = vi.fn();
 
@@ -76,7 +77,7 @@ describe('MainLayout cart + deep links', () => {
     cartState.cart = [line(100, 2, [50])];
     const user = userEvent.setup();
     renderLayout();
-    const fab = screen.getByLabelText('Открыть корзину');
+    const fab = screen.getByLabelText(t('order.cart.fabOpen'));
     expect(fab).toBeInTheDocument();
     expect(screen.getByText('2')).toBeInTheDocument();
     await user.click(fab);
@@ -87,7 +88,7 @@ describe('MainLayout cart + deep links', () => {
 
   it('does not render fab when cart is empty', () => {
     renderLayout();
-    expect(screen.queryByLabelText('Открыть корзину')).toBeNull();
+    expect(screen.queryByLabelText(t('order.cart.fabOpen'))).toBeNull();
     expect(screen.getByTestId('assistant')).toBeInTheDocument();
   });
 

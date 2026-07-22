@@ -1,21 +1,21 @@
 import type { ReactNode } from 'react';
 import { PackageIcon, ClockIcon, CheckCircleIcon, HandPalmIcon } from '@phosphor-icons/react';
-import { ORDER_STATUS_RU } from '@shared/utils/locales';
+import { orderStatusLabel } from '@shared/utils/locales';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { Order } from '@shared/types/models';
 import styles from './adminTable.module.css';
 import { formatPrice } from '@shared/utils/price';
 
 interface StatusConfig {
-  label: string;
   className: string;
   icon: ReactNode;
 }
 
 const STATUS_MAP: Record<string, StatusConfig> = {
-  PENDING: { label: ORDER_STATUS_RU.PENDING, className: 'pending', icon: <ClockIcon /> },
-  ACCEPTED: { label: ORDER_STATUS_RU.ACCEPTED, className: 'pending', icon: <CheckCircleIcon /> },
-  READY: { label: ORDER_STATUS_RU.READY, className: 'ready', icon: <HandPalmIcon /> },
-  COMPLETED: { label: ORDER_STATUS_RU.COMPLETED, className: 'ready', icon: <CheckCircleIcon weight="fill" /> },
+  PENDING: { className: 'pending', icon: <ClockIcon /> },
+  ACCEPTED: { className: 'pending', icon: <CheckCircleIcon /> },
+  READY: { className: 'ready', icon: <HandPalmIcon /> },
+  COMPLETED: { className: 'ready', icon: <CheckCircleIcon weight="fill" /> },
 };
 
 const orderTitle = (order: Order): number => order.display_id;
@@ -26,11 +26,8 @@ interface AdminOrderCardProps {
 }
 
 export function AdminOrderCard({ order, onOpen }: AdminOrderCardProps) {
-  const cfg = STATUS_MAP[order.status] ?? {
-    label: order.status,
-    className: 'pending',
-    icon: <PackageIcon />,
-  };
+  const { t } = useTranslation();
+  const cfg = STATUS_MAP[order.status] ?? { className: 'pending', icon: <PackageIcon /> };
   return (
     <button
       type="button"
@@ -55,7 +52,7 @@ export function AdminOrderCard({ order, onOpen }: AdminOrderCardProps) {
       >
         <div>
           <div style={{ color: 'var(--text-3)', fontSize: "var(--text-sm)", fontWeight: 800 }}>
-            Заказ #{orderTitle(order)}
+            {t('admin.orders.card.title', { displayId: orderTitle(order) })}
           </div>
           <div
             style={{
@@ -69,7 +66,7 @@ export function AdminOrderCard({ order, onOpen }: AdminOrderCardProps) {
           </div>
         </div>
         <span className={`order-status-badge ${cfg.className}`}>
-          {cfg.icon} {cfg.label}
+          {cfg.icon} {orderStatusLabel(order.status)}
         </span>
       </div>
       <div
@@ -82,7 +79,7 @@ export function AdminOrderCard({ order, onOpen }: AdminOrderCardProps) {
         }}
       >
         <div>
-          <b style={{ color: 'var(--text-2)' }}>{order.customer_name || 'Клиент'}</b>
+          <b style={{ color: 'var(--text-2)' }}>{order.customer_name || t('admin.orders.card.customerFallback')}</b>
           {order.customer_phone && <span> · {order.customer_phone}</span>}
         </div>
         {(order.restaurant_name || order.restaurant_address) && (

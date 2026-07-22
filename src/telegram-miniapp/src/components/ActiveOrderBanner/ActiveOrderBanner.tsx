@@ -6,11 +6,13 @@ import { createOrderWebSocket } from "../../services/api";
 import { getOrderStatusStyle, getCustomerOrderStatusLabel } from "@shared/utils/orderStatus";
 import type { ReliableWebSocket } from "@shared/services/api";
 import type { OrderStatus } from "@shared/types/models";
+import { useTranslation } from "@shared/i18n/useTranslation";
 import styles from "./ActiveOrderBanner.module.css";
 
 const ACTIVE_STATUSES = new Set(["PENDING", "ACCEPTED", "READY"]);
 
 export function ActiveOrderBanner() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const activeOrder = useOrdersStore((s) => s.activeOrder);
@@ -56,14 +58,14 @@ export function ActiveOrderBanner() {
   return (
     <button
       type="button"
-      aria-label={`Открыть заказ #${activeOrder.display_id}`}
+      aria-label={t("order.banner.open", { id: activeOrder.display_id })}
       onClick={() => {
         void navigate(`/orders/${activeOrder.display_id}`);
       }}
       className={styles['banner']}
     >
       <div>
-        <div className={styles['orderId']}>Заказ #{activeOrder.display_id}</div>
+        <div className={styles['orderId']}>{t("order.banner.orderNumber", { id: activeOrder.display_id })}</div>
         <div
           className={styles['status']}
           style={{ color: getOrderStatusStyle(activeOrder.status).solid }}
@@ -72,7 +74,7 @@ export function ActiveOrderBanner() {
         </div>
       </div>
       <div className={styles['cta']}>
-        Смотреть <ArrowRightIcon size={14} weight="bold" />
+        {t("common.actions.watch")} <ArrowRightIcon size={14} weight="bold" />
       </div>
     </button>
   );

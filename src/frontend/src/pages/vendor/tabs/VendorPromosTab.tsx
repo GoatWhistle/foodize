@@ -1,6 +1,7 @@
 import type { Dispatch, FormEvent, SetStateAction } from 'react';
 import { PlusIcon, TagIcon } from '@phosphor-icons/react';
 import { EmptyState } from '@shared/components/EmptyState/EmptyState';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { Promo, Restaurant } from '@shared/types/models';
 import type { PromoForm as PromoFormValues } from '../hooks/useVendorPromos';
 import { PromoForm } from './components/PromoForm';
@@ -53,6 +54,7 @@ export function VendorPromosTab({
   handleCreatePromo,
   handleDeactivatePromo,
 }: VendorPromosTabProps) {
+  const { t } = useTranslation();
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div
@@ -62,7 +64,7 @@ export function VendorPromosTab({
           alignItems: 'center',
         }}
       >
-        <span style={{ fontWeight: 700, fontSize: "var(--text-base)" }}>Промокоды</span>
+        <span style={{ fontWeight: 700, fontSize: "var(--text-base)" }}>{t('vendor.promos.sectionTitle')}</span>
         {selectedRestaurant && (
           <button
             className="btn btn-primary btn-sm"
@@ -70,7 +72,7 @@ export function VendorPromosTab({
             onClick={() => { setShowPromoForm((v) => !v); }}
           >
             <PlusIcon size={14} />
-            Создать
+            {t('common.actions.create')}
           </button>
         )}
       </div>
@@ -95,8 +97,8 @@ export function VendorPromosTab({
       ) : promosList.length === 0 ? (
         <EmptyState
           icon={<TagIcon size={36} />}
-          title="Нет промокодов"
-          subtitle="Создайте первый промокод для скидки клиентам"
+          title={t('vendor.promos.emptyTitle')}
+          subtitle={t('vendor.promos.emptySubtitle')}
         />
       ) : (
         <div className={promosLoading ? 'loading-dim' : undefined}>

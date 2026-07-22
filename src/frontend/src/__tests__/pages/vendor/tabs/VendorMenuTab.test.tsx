@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { VendorMenuTab, EMPTY_MENU_ITEM_FORM, normalizeOptionGroups, type MenuItemForm as MenuItemFormValues } from '../../../../pages/vendor/tabs/VendorMenuTab';
 import type { MenuItem, MenuItemOptionGroup, Restaurant } from '@shared/types/models';
 import { at } from '../../../testUtils';
+import { t } from '@shared/i18n/useTranslation';
 
 vi.mock('@shared/store/useRestaurantStore', () => ({
   useRestaurantStore: Object.assign(vi.fn(), { getState: vi.fn(() => ({ menus: {} })), setState: vi.fn() }),
@@ -62,8 +63,8 @@ describe('VendorMenuTab', () => {
 
   it('renders heading and empty menu', () => {
     render(<Harness />);
-    expect(screen.getByText('Позиции меню')).toBeInTheDocument();
-    expect(screen.getByText('Меню пустое')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.menu.sectionTitle'))).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.menu.emptyTitle'))).toBeInTheDocument();
   });
 
   it('shows menu error and success', () => {
@@ -72,16 +73,16 @@ describe('VendorMenuTab', () => {
     expect(screen.getByText('Успех')).toBeInTheDocument();
   });
 
-  it('opens add form when clicking Позиция', async () => {
+  it('opens add form when clicking add item', async () => {
     const user = userEvent.setup();
     render(<Harness />);
-    await user.click(screen.getByRole('button', { name: /Позиция/ }));
-    expect(screen.getByText('Новая позиция')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: new RegExp(t('vendor.menu.addItem')) }));
+    expect(screen.getByText(t('vendor.menu.form.newTitle'))).toBeInTheDocument();
   });
 
   it('renders the form when showAddItem is true', () => {
     render(<Harness showAddItem />);
-    expect(screen.getByText('Новая позиция')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.menu.form.newTitle'))).toBeInTheDocument();
   });
 
   it('exports menu CSV', async () => {
@@ -89,7 +90,7 @@ describe('VendorMenuTab', () => {
     const onExport = vi.fn();
     render(<Harness onExport={onExport} />);
     await user.click(screen.getByRole('button', { name: /CSV/ }));
-    expect(onExport).toHaveBeenCalledWith(expect.any(Function), 'меню_2026-07-18.csv');
+    expect(onExport).toHaveBeenCalledWith(expect.any(Function), t('vendor.exportFiles.menu', { date: '2026-07-18' }));
     const fn = at(onExport.mock.calls, 0)[0] as () => Promise<Blob>;
     await fn();
     expect((vendorServiceMock as { exportMenuCSV: ReturnType<typeof vi.fn> }).exportMenuCSV).toHaveBeenCalledWith({ restaurant_id: 'r1' });
@@ -102,7 +103,7 @@ describe('VendorMenuTab', () => {
 
   it('renders form when editingItem set', () => {
     render(<Harness editingItem={{ id: 'i1' }} />);
-    expect(screen.getByText('Редактировать')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.menu.form.editTitle'))).toBeInTheDocument();
   });
 });
 

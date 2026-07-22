@@ -3,6 +3,7 @@ import { EmptyState } from '@shared/components/EmptyState/EmptyState';
 import { Pagination } from '@shared/components/Pagination/Pagination';
 import { OrderDetailsModal, type OrderStatusChangeData } from '../../../components/OrderDetailsModal/OrderDetailsModal';
 import type { Order, Restaurant, OrderStatus } from '@shared/types/models';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import { VendorOrderCard } from './components/VendorOrderCard';
 import { VendorOrdersToolbar } from './components/VendorOrdersToolbar';
 import styles from './components/VendorOrders.module.css';
@@ -48,7 +49,6 @@ interface VendorOrdersTabProps {
     [key: string]: (...args: never[]) => Promise<unknown>;
   };
   selectedRestaurant: Restaurant | null;
-  STATUS_LABEL_RU: Record<string, string>;
   getOrderDisplayId: (order: Order) => string | number;
   formatOrderTime: (value?: string | null) => string;
 }
@@ -59,13 +59,13 @@ const NEXT_ORDER_STATUS: Partial<Record<OrderStatus, OrderStatus>> = {
   READY: 'COMPLETED',
 };
 
-const NEXT_ORDER_LABEL_RU: Partial<Record<OrderStatus, string>> = {
-  PENDING: 'Принять',
-  ACCEPTED: 'Готово',
-  READY: 'Выдать',
+const NEXT_ORDER_LABEL_KEYS: Partial<Record<OrderStatus, string>> = {
+  PENDING: 'vendor.orders.nextLabel.accept',
+  ACCEPTED: 'vendor.orders.nextLabel.ready',
+  READY: 'vendor.orders.nextLabel.complete',
 };
 
-export { NEXT_ORDER_STATUS, NEXT_ORDER_LABEL_RU };
+export { NEXT_ORDER_STATUS, NEXT_ORDER_LABEL_KEYS };
 
 export function VendorOrdersTab({
   restaurantOrders,
@@ -92,10 +92,13 @@ export function VendorOrdersTab({
   handleCancelOrder,
   vendorService,
   selectedRestaurant,
-  STATUS_LABEL_RU,
   getOrderDisplayId,
   formatOrderTime,
 }: VendorOrdersTabProps) {
+  const { t } = useTranslation();
+  const nextOrderLabel = Object.fromEntries(
+    Object.entries(NEXT_ORDER_LABEL_KEYS).map(([status, key]) => [status, t(key)]),
+  ) as Partial<Record<OrderStatus, string>>;
   return (
     <>
       <div>
@@ -133,8 +136,8 @@ export function VendorOrdersTab({
           </div>
         ) : !Array.isArray(restaurantOrders) || restaurantOrders.length === 0 ? (
           <EmptyState
-            title="Нет заказов"
-            subtitle={ordersStatusFilter ? 'В этом статусе заказов нет' : 'Пока никто не сделал заказ'}
+            title={t('vendor.orders.emptyTitle')}
+            subtitle={ordersStatusFilter ? t('vendor.orders.emptySubtitleFiltered') : t('vendor.orders.emptySubtitle')}
           />
         ) : (
           <div className={`${styles['list']} ${ordersLoading ? 'loading-dim' : ''}`}>
@@ -147,7 +150,6 @@ export function VendorOrdersTab({
                     order={order}
                     updatingOrderId={updatingOrderId}
                     setSelectedOrder={setSelectedOrder}
-                    STATUS_LABEL_RU={STATUS_LABEL_RU}
                     nextOrderStatus={NEXT_ORDER_STATUS}
                     getOrderDisplayId={getOrderDisplayId}
                     formatOrderTime={formatOrderTime}
@@ -169,7 +171,7 @@ export function VendorOrdersTab({
           order={selectedOrder}
           onClose={() => { setSelectedOrder(null); }}
           nextStatus={NEXT_ORDER_STATUS}
-          nextLabel={NEXT_ORDER_LABEL_RU}
+          nextLabel={nextOrderLabel}
           onStatusChange={handleOrderChange}
           onCancel={(orderId, reason) => handleCancelOrder(orderId, reason ?? '')}
           updating={updatingOrderId}

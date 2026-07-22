@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import type { UserEvent } from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
+import { t } from '@shared/i18n/useTranslation';
 import { RegisterPage } from '../../pages/auth/RegisterPage';
 import { useAuthStore } from '../../store/useAuthStore';
 
@@ -52,22 +53,22 @@ describe('RegisterPage', () => {
       password: string;
     }
   ) => {
-    await user.clear(screen.getByLabelText('Имя'));
-    await user.type(screen.getByLabelText('Имя'), name);
-    await user.clear(screen.getByLabelText('Телефон'));
-    await user.type(screen.getByLabelText('Телефон'), phone);
-    await user.clear(screen.getByLabelText('Пароль'));
-    await user.type(screen.getByLabelText('Пароль'), password);
+    await user.clear(screen.getByLabelText(t('auth.placeholders.name')));
+    await user.type(screen.getByLabelText(t('auth.placeholders.name')), name);
+    await user.clear(screen.getByLabelText(t('auth.fields.phone')));
+    await user.type(screen.getByLabelText(t('auth.fields.phone')), phone);
+    await user.clear(screen.getByLabelText(t('auth.fields.password')));
+    await user.type(screen.getByLabelText(t('auth.fields.password')), password);
     await user.click(screen.getByRole('checkbox'));
-    await user.click(screen.getByRole('button', { name: 'Создать аккаунт' }));
+    await user.click(screen.getByRole('button', { name: t('auth.buttons.createAccount') }));
   };
 
   it('renders registration form', () => {
     renderPage();
-    expect(screen.getByLabelText('Имя')).toBeInTheDocument();
-    expect(screen.getByLabelText('Телефон')).toBeInTheDocument();
-    expect(screen.getByLabelText('Пароль')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Создать аккаунт' })).toBeInTheDocument();
+    expect(screen.getByLabelText(t('auth.placeholders.name'))).toBeInTheDocument();
+    expect(screen.getByLabelText(t('auth.fields.phone'))).toBeInTheDocument();
+    expect(screen.getByLabelText(t('auth.fields.password'))).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: t('auth.buttons.createAccount') })).toBeInTheDocument();
   });
 
   it('submits without user_role field', async () => {
@@ -126,7 +127,7 @@ describe('RegisterPage', () => {
     await fillAndSubmit(user, { name: 'Ivan', phone: '79991234567', password: 'pw123456' });
 
     await waitFor(() => {
-      expect(screen.getByText(/ошибка|регистрац|already/i)).toBeInTheDocument();
+      expect(screen.getByText(t('auth.errors.registrationFailed'))).toBeInTheDocument();
     });
   });
 
@@ -134,10 +135,10 @@ describe('RegisterPage', () => {
     const user = userEvent.setup();
     renderPage();
     await user.click(screen.getByRole('checkbox'));
-    await user.click(screen.getByRole('button', { name: 'Создать аккаунт' }));
+    await user.click(screen.getByRole('button', { name: t('auth.buttons.createAccount') }));
 
     await waitFor(() => {
-      expect(screen.getByText(/введите имя/i)).toBeInTheDocument();
+      expect(screen.getByText(new RegExp(t('auth.errors.enterName'), 'i'))).toBeInTheDocument();
     });
     expect(registerMock).not.toHaveBeenCalled();
   });
@@ -145,14 +146,14 @@ describe('RegisterPage', () => {
   it('shows validation error when password is too short', async () => {
     const user = userEvent.setup();
     renderPage();
-    await user.type(screen.getByLabelText('Имя'), 'Ivan');
-    await user.type(screen.getByLabelText('Телефон'), '79991234567');
-    await user.type(screen.getByLabelText('Пароль'), '123');
+    await user.type(screen.getByLabelText(t('auth.placeholders.name')), 'Ivan');
+    await user.type(screen.getByLabelText(t('auth.fields.phone')), '79991234567');
+    await user.type(screen.getByLabelText(t('auth.fields.password')), '123');
     await user.click(screen.getByRole('checkbox'));
-    await user.click(screen.getByRole('button', { name: 'Создать аккаунт' }));
+    await user.click(screen.getByRole('button', { name: t('auth.buttons.createAccount') }));
 
     await waitFor(() => {
-      expect(screen.getByText(/пароль должен быть/i)).toBeInTheDocument();
+      expect(screen.getByText(new RegExp(t('auth.errors.passwordTooShort'), 'i'))).toBeInTheDocument();
     });
     expect(registerMock).not.toHaveBeenCalled();
   });
@@ -160,14 +161,14 @@ describe('RegisterPage', () => {
   it('shows validation error when phone is too short', async () => {
     const user = userEvent.setup();
     renderPage();
-    await user.type(screen.getByLabelText('Имя'), 'Ivan');
-    await user.type(screen.getByLabelText('Телефон'), '123');
-    await user.type(screen.getByLabelText('Пароль'), 'password123');
+    await user.type(screen.getByLabelText(t('auth.placeholders.name')), 'Ivan');
+    await user.type(screen.getByLabelText(t('auth.fields.phone')), '123');
+    await user.type(screen.getByLabelText(t('auth.fields.password')), 'password123');
     await user.click(screen.getByRole('checkbox'));
-    await user.click(screen.getByRole('button', { name: 'Создать аккаунт' }));
+    await user.click(screen.getByRole('button', { name: t('auth.buttons.createAccount') }));
 
     await waitFor(() => {
-      expect(screen.getByText(/корректный номер телефона/i)).toBeInTheDocument();
+      expect(screen.getByText(new RegExp(t('auth.errors.invalidPhone'), 'i'))).toBeInTheDocument();
     });
     expect(registerMock).not.toHaveBeenCalled();
   });
@@ -175,15 +176,15 @@ describe('RegisterPage', () => {
   it('shows validation error for an invalid email', async () => {
     const user = userEvent.setup();
     renderPage();
-    await user.type(screen.getByLabelText('Имя'), 'Ivan');
-    await user.type(screen.getByLabelText('Телефон'), '79991234567');
-    await user.type(screen.getByLabelText(/Email/), 'not-an-email');
-    await user.type(screen.getByLabelText('Пароль'), 'password123');
+    await user.type(screen.getByLabelText(t('auth.placeholders.name')), 'Ivan');
+    await user.type(screen.getByLabelText(t('auth.fields.phone')), '79991234567');
+    await user.type(screen.getByLabelText(t('auth.fields.emailOptional')), 'not-an-email');
+    await user.type(screen.getByLabelText(t('auth.fields.password')), 'password123');
     await user.click(screen.getByRole('checkbox'));
-    await user.click(screen.getByRole('button', { name: 'Создать аккаунт' }));
+    await user.click(screen.getByRole('button', { name: t('auth.buttons.createAccount') }));
 
     await waitFor(() => {
-      expect(screen.getByText(/корректный email/i)).toBeInTheDocument();
+      expect(screen.getByText(new RegExp(t('auth.errors.invalidEmail'), 'i'))).toBeInTheDocument();
     });
     expect(registerMock).not.toHaveBeenCalled();
   });
@@ -191,14 +192,14 @@ describe('RegisterPage', () => {
   it('requires a latin letter in the password', async () => {
     const user = userEvent.setup();
     renderPage();
-    await user.type(screen.getByLabelText('Имя'), 'Ivan');
-    await user.type(screen.getByLabelText('Телефон'), '79991234567');
-    await user.type(screen.getByLabelText('Пароль'), '12345678');
+    await user.type(screen.getByLabelText(t('auth.placeholders.name')), 'Ivan');
+    await user.type(screen.getByLabelText(t('auth.fields.phone')), '79991234567');
+    await user.type(screen.getByLabelText(t('auth.fields.password')), '12345678');
     await user.click(screen.getByRole('checkbox'));
-    await user.click(screen.getByRole('button', { name: 'Создать аккаунт' }));
+    await user.click(screen.getByRole('button', { name: t('auth.buttons.createAccount') }));
 
     await waitFor(() => {
-      expect(screen.getByText(/латинскую букву/i)).toBeInTheDocument();
+      expect(screen.getByText(new RegExp(t('auth.errors.passwordNeedsLetter'), 'i'))).toBeInTheDocument();
     });
     expect(registerMock).not.toHaveBeenCalled();
   });
@@ -206,14 +207,14 @@ describe('RegisterPage', () => {
   it('requires a digit or symbol in the password', async () => {
     const user = userEvent.setup();
     renderPage();
-    await user.type(screen.getByLabelText('Имя'), 'Ivan');
-    await user.type(screen.getByLabelText('Телефон'), '79991234567');
-    await user.type(screen.getByLabelText('Пароль'), 'abcdefgh');
+    await user.type(screen.getByLabelText(t('auth.placeholders.name')), 'Ivan');
+    await user.type(screen.getByLabelText(t('auth.fields.phone')), '79991234567');
+    await user.type(screen.getByLabelText(t('auth.fields.password')), 'abcdefgh');
     await user.click(screen.getByRole('checkbox'));
-    await user.click(screen.getByRole('button', { name: 'Создать аккаунт' }));
+    await user.click(screen.getByRole('button', { name: t('auth.buttons.createAccount') }));
 
     await waitFor(() => {
-      expect(screen.getByText(/цифру или спецсимвол/i)).toBeInTheDocument();
+      expect(screen.getByText(new RegExp(t('auth.errors.passwordNeedsDigit'), 'i'))).toBeInTheDocument();
     });
     expect(registerMock).not.toHaveBeenCalled();
   });
@@ -223,12 +224,12 @@ describe('RegisterPage', () => {
     registerMock.mockResolvedValueOnce();
     loginMock.mockResolvedValueOnce();
     renderPage();
-    await user.type(screen.getByLabelText('Имя'), 'Ivan');
-    await user.type(screen.getByLabelText('Телефон'), '79991234567');
-    await user.type(screen.getByLabelText(/Email/), 'ivan@mail.ru');
-    await user.type(screen.getByLabelText('Пароль'), 'password123');
+    await user.type(screen.getByLabelText(t('auth.placeholders.name')), 'Ivan');
+    await user.type(screen.getByLabelText(t('auth.fields.phone')), '79991234567');
+    await user.type(screen.getByLabelText(t('auth.fields.emailOptional')), 'ivan@mail.ru');
+    await user.type(screen.getByLabelText(t('auth.fields.password')), 'password123');
     await user.click(screen.getByRole('checkbox'));
-    await user.click(screen.getByRole('button', { name: 'Создать аккаунт' }));
+    await user.click(screen.getByRole('button', { name: t('auth.buttons.createAccount') }));
 
     await waitFor(() => {
       expect(registerMock).toHaveBeenCalled();
@@ -242,6 +243,6 @@ describe('RegisterPage', () => {
       return sel ? sel(state) : state;
     }) as typeof useAuthStore);
     renderPage();
-    expect(screen.queryByRole('button', { name: 'Создать аккаунт' })).toBeNull();
+    expect(screen.queryByRole('button', { name: t('auth.buttons.createAccount') })).toBeNull();
   });
 });

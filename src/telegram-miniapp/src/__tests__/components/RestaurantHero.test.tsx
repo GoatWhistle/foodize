@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { RestaurantHero } from "../../pages/restaurant/RestaurantHero";
 import type { Restaurant } from "@shared/types/models";
+import { t } from "@shared/i18n/useTranslation";
 
 const hapticImpact = vi.fn();
 vi.mock("../../telegram/sdk", () => ({
@@ -49,7 +50,7 @@ describe("RestaurantHero", () => {
   it("hides the rating pill when rating is null", () => {
     render(<RestaurantHero {...baseProps} rating={null} onToggleFav={vi.fn()} />);
     expect(screen.queryByText("4.5")).not.toBeInTheDocument();
-    expect(screen.getByText("Отзывы")).toBeInTheDocument();
+    expect(screen.getByText(t("catalog.reviews.buttonLabel"))).toBeInTheDocument();
   });
 
   it("renders a placeholder when there is no photo", () => {
@@ -67,7 +68,7 @@ describe("RestaurantHero", () => {
   it("fires haptic and callback when Отзывы is clicked", async () => {
     const onShowReviews = vi.fn();
     render(<RestaurantHero {...baseProps} onShowReviews={onShowReviews} onToggleFav={vi.fn()} />);
-    await userEvent.click(screen.getByText("Отзывы"));
+    await userEvent.click(screen.getByText(t("catalog.reviews.buttonLabel")));
     expect(hapticImpact).toHaveBeenCalledWith("light");
     expect(onShowReviews).toHaveBeenCalledTimes(1);
   });
@@ -75,7 +76,7 @@ describe("RestaurantHero", () => {
   it("fires haptic and callback when Инфо is clicked", async () => {
     const onShowInfo = vi.fn();
     render(<RestaurantHero {...baseProps} onShowInfo={onShowInfo} onToggleFav={vi.fn()} />);
-    await userEvent.click(screen.getByText("Инфо"));
+    await userEvent.click(screen.getByText(t("catalog.restaurantPage.info")));
     expect(hapticImpact).toHaveBeenCalledWith("light");
     expect(onShowInfo).toHaveBeenCalledTimes(1);
   });
@@ -85,11 +86,11 @@ describe("RestaurantHero", () => {
     const { rerender } = render(
       <RestaurantHero {...baseProps} isFav={false} onToggleFav={onToggleFav} />,
     );
-    const addBtn = screen.getByLabelText("В избранное");
+    const addBtn = screen.getByLabelText(t("catalog.restaurantCard.addToFavorites"));
     await userEvent.click(addBtn);
     expect(onToggleFav).toHaveBeenCalledTimes(1);
 
     rerender(<RestaurantHero {...baseProps} isFav onToggleFav={onToggleFav} />);
-    expect(screen.getByLabelText("Убрать из избранного")).toBeInTheDocument();
+    expect(screen.getByLabelText(t("catalog.restaurantCard.removeFromFavorites"))).toBeInTheDocument();
   });
 });

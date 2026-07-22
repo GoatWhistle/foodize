@@ -9,6 +9,7 @@ import { promoService } from "@shared/services/promoService";
 import { orderService } from "@shared/services/orderService";
 import { translateApiError } from "@shared/utils/translateApiError";
 import { useFocusTrap } from "@shared/hooks/useFocusTrap";
+import { useTranslation } from "@shared/i18n/useTranslation";
 import type { PromoValidate, OrderLoadEstimate } from "@shared/types/models";
 import {
   CartItemsList,
@@ -44,6 +45,7 @@ const fromDateTimeLocalValue = (value: string): string | null => {
 };
 
 export const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartDrawerProps) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { cart, cartRestaurantId, removeFromCart, addToCart, clearCart, placeOrder } =
     useCartStore(
@@ -112,7 +114,7 @@ export const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartD
       const response = await promoService.validate(promoCode.trim(), cartRestaurantId, total, isFirstOrder);
       setAppliedPromo({ ...response.data.data, originalTotal: total });
     } catch (err) {
-      setPromoError(translateApiError(err, "Неверный промокод"));
+      setPromoError(translateApiError(err, t("order.cart.promoInvalid")));
       setAppliedPromo(null);
     } finally {
       setPromoLoading(false);
@@ -142,7 +144,7 @@ export const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartD
   const pickupTooSoon = pickupMode === "scheduled" && Boolean(requestedPickupAt) && new Date(requestedPickupAt) < minPickupDate;
 
   const handlePlaceOrder = async () => {
-    if (isClosed) { setError("Заведение сейчас закрыто и не принимает заказы"); return; }
+    if (isClosed) { setError(t("order.checkout.closed")); return; }
     onHaptic?.();
     setPlacing(true);
     setError("");
@@ -151,7 +153,7 @@ export const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartD
       onClose();
       if (order) void navigate(`/orders/${order.display_id}`);
     } catch (err) {
-      setError(translateApiError(err, "Ошибка при оформлении заказа"));
+      setError(translateApiError(err, t("order.checkout.failed")));
     } finally {
       setPlacing(false);
     }
@@ -175,7 +177,7 @@ export const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartD
       >
         <div className={s['handle']} />
         <div className={s['inner']}>
-          <h2 id="cart-drawer-title" className={s['title']}>Корзина</h2>
+          <h2 id="cart-drawer-title" className={s['title']}>{t("order.cart.title")}</h2>
 
           <CartItemsList
             cart={cart}
@@ -188,7 +190,7 @@ export const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartD
               <div style={{ display: "flex", gap: 8 }}>
                 <input
                   className="form-input"
-                  placeholder="Промокод"
+                  placeholder={t("order.cart.promoPlaceholder")}
                   value={promoCode}
                   onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); }}
                   onKeyDown={(e) => { if (e.key === "Enter") void handleApplyPromo(); }}
@@ -200,7 +202,7 @@ export const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartD
                   disabled={promoLoading || !promoCode.trim()}
                   style={{ height: 40, padding: "0 14px", fontSize: "var(--text-base)" }}
                 >
-                  {promoLoading ? "..." : "Применить"}
+                  {promoLoading ? "..." : t("common.actions.apply")}
                 </button>
               </div>
               {promoError && <div className="form-error" style={{ marginTop: 6, fontSize: "var(--text-base)" }}>{promoError}</div>}
@@ -221,17 +223,17 @@ export const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartD
           <div className={s['total']} style={{ marginTop: 16 }}>
             {appliedPromo && (
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-base)", color: "var(--text-3)", marginBottom: 6, textDecoration: "line-through" }}>
-                <span>Без скидки</span>
+                <span>{t("order.cart.withoutDiscount")}</span>
                 <span>{formatPrice(total)}</span>
               </div>
             )}
-            <span className={s['totalLabel']}>{appliedPromo ? "Итого со скидкой" : "Итого"}</span>
+            <span className={s['totalLabel']}>{appliedPromo ? t("order.cart.totalWithDiscount") : t("order.cart.total")}</span>
             <span className={s['totalValue']} style={appliedPromo ? { color: "var(--color-success)" } : undefined}>{formatPrice(finalTotal)}</span>
           </div>
 
           <textarea
             className="form-input"
-            placeholder="Комментарий к заказу: побольше соуса, без острого..."
+            placeholder={t("order.cart.commentPlaceholder")}
             value={comment}
             maxLength={500}
             onChange={(e) => { setComment(e.target.value); }}
@@ -264,7 +266,9 @@ export const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartD
             isLoading={placing}
             disabled={isClosed || orderingUnavailable || (pickupMode === "scheduled" && (!selectedPickupIso || pickupTooSoon))}
           >
-            {isClosed || orderingUnavailable ? "Приём заказов на паузе" : `Оформить заказ · ${formatPrice(finalTotal)}`}
+            {isClosed || orderingUnavailable
+              ? t("order.checkout.paused")
+              : t("order.checkout.submit", { total: formatPrice(finalTotal) })}
           </OrderButton>
 
           {error && <div className="form-error" style={{ marginTop: "12px" }}>{error}</div>}
@@ -275,7 +279,7 @@ export const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartD
             onClick={() => { void clearCart(); }}
           >
             <TrashIcon size={16} />
-            Очистить корзину
+            {t("order.cart.clear")}
           </button>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { Component } from "react";
 import type { ErrorInfo, ReactNode } from "react";
+import { t } from "@shared/i18n/useTranslation";
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -44,16 +45,16 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           }}
         >
           <div style={{ fontWeight: 700, fontSize: "var(--text-md)", color: "var(--text-1)" }}>
-            Что-то пошло не так
+            {t("common.errors.somethingWentWrong")}
           </div>
           <div style={{ fontSize: "var(--text-base)", color: "var(--text-3)", maxWidth: 320 }}>
-            {this.state.error?.message ?? "Неизвестная ошибка"}
+            {this.state.error?.message ?? t("common.errors.unknown")}
           </div>
           <button
             className="btn btn-secondary"
             onClick={() => { this.setState({ hasError: false, error: null }); }}
           >
-            Попробовать снова
+            {t("common.actions.retry")}
           </button>
         </div>
       );

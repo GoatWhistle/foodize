@@ -1,58 +1,32 @@
-export const ORDER_STATUS_RU = {
-  PENDING: "Ожидается",
-  ACCEPTED: "Принят",
-  READY: "Готов к выдаче",
-  COMPLETED: "Выдан",
-  CANCELLED: "Отменён",
-};
+import { t } from "@shared/i18n/useTranslation";
 
-export const ORDER_STATUS_CUSTOMER_RU = {
-  PENDING: "Принимается",
-  ACCEPTED: "Готовится",
-  READY: "Готов к выдаче",
-  COMPLETED: "Выдан",
-  CANCELLED: "Отменён",
-};
-
-export const APPROVAL_STATUS_RU = {
-  PENDING: "На модерации",
-  APPROVED: "Одобрен",
-  REJECTED: "Отклонён",
-};
-
-export const CATEGORY_RU = {
-  SHAURMA: "Шаурма",
-  BURGER: "Бургеры",
-  DRINK: "Напитки",
-  PIZZA: "Пицца",
-  SUSHI: "Суши",
-  DESSERT: "Десерты",
-  SNACK: "Снеки",
-  SALAD: "Салаты",
-  OTHER: "Разное",
-};
-
-export const DISCOUNT_TYPE_RU = {
-  PERCENT: "Процент",
-  FIXED: "Сумма",
-};
-
-export const STAFF_STATUS_RU = {
-  PENDING: "Новая заявка",
-  APPROVED: "Принят",
-  REJECTED: "Отклонён",
-  REVOKED: "Отозван",
-};
-
-export const STAFF_ROLE_RU = {
-  COOK: "Повар",
-};
-
-export const translate = (
-  dict: Record<string, string>,
+export const translateEnum = (
+  namespace: string,
   key: string | null | undefined,
   fallback = "",
 ): string => {
   if (!key) return fallback;
-  return dict[key] ?? fallback;
+  const resolved = t(`enums.${namespace}.${key}`);
+  return resolved === `enums.${namespace}.${key}` ? fallback : resolved;
 };
+
+export const orderStatusLabel = (key: string | null | undefined): string =>
+  translateEnum("orderStatus", key, key ?? "");
+
+export const customerOrderStatusLabel = (key: string | null | undefined): string =>
+  translateEnum("orderStatusCustomer", key, key ?? "");
+
+export const approvalStatusLabel = (key: string | null | undefined): string =>
+  translateEnum("approvalStatus", key, key ?? "");
+
+export const categoryLabel = (key: string | null | undefined): string =>
+  translateEnum("category", key, key ?? "");
+
+export const discountTypeLabel = (key: string | null | undefined): string =>
+  translateEnum("discountType", key, key ?? "");
+
+export const staffStatusLabel = (key: string | null | undefined): string =>
+  translateEnum("staffStatus", key, key ?? "");
+
+export const staffRoleLabel = (key: string | null | undefined): string =>
+  translateEnum("staffRole", key, key ?? "");

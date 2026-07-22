@@ -6,6 +6,7 @@ import { vendorService } from '@shared/services/vendorService';
 import { restaurantService } from '@shared/services/restaurantService';
 import type { Restaurant } from '@shared/types/models';
 import { at } from '../../../testUtils';
+import { t } from '@shared/i18n/useTranslation';
 
 const fetchMyRestaurants = vi.fn(() => Promise.resolve(undefined));
 const fetchMenu = vi.fn(() => Promise.resolve(undefined));
@@ -110,7 +111,7 @@ describe('useVendorRestaurants', () => {
     await act(async () => {
       await result.current.handleCreateRestaurant(submitEvent());
     });
-    expect(params.setFormError).toHaveBeenCalledWith('Ошибка создания');
+    expect(params.setFormError).toHaveBeenCalledWith(t('vendor.settings.errors.createFailed'));
   });
 
   it('updates a restaurant', async () => {
@@ -141,7 +142,7 @@ describe('useVendorRestaurants', () => {
     await act(async () => {
       await result.current.handleUpdateRestaurant(submitEvent());
     });
-    expect(params.setFormError).toHaveBeenCalledWith('Укажите название заведения');
+    expect(params.setFormError).toHaveBeenCalledWith(t('vendor.settings.errors.nameRequired'));
   });
 
   it('validates missing address on update', async () => {
@@ -152,7 +153,7 @@ describe('useVendorRestaurants', () => {
     await act(async () => {
       await result.current.handleUpdateRestaurant(submitEvent());
     });
-    expect(params.setFormError).toHaveBeenCalledWith('Укажите адрес заведения');
+    expect(params.setFormError).toHaveBeenCalledWith(t('vendor.settings.errors.addressRequired'));
   });
 
   it('returns early on update with no selected restaurant', async () => {
@@ -172,7 +173,7 @@ describe('useVendorRestaurants', () => {
     await act(async () => {
       await result.current.handleUpdateRestaurant(submitEvent());
     });
-    expect(params.setFormError).toHaveBeenCalledWith('Ошибка обновления');
+    expect(params.setFormError).toHaveBeenCalledWith(t('vendor.settings.errors.updateFailed'));
   });
 
   it('loads working hours defaults when none saved on schedule tab', async () => {
@@ -198,7 +199,7 @@ describe('useVendorRestaurants', () => {
     vi.mocked(restaurantService.getWorkingHours).mockRejectedValue({ response: { status: 500 } });
     const { result } = renderHook(() => useVendorRestaurants(makeParams('schedule')));
     act(() => { result.current.setSelectedRestaurant({ id: 'r1' } as Restaurant); });
-    await waitFor(() => { expect(result.current.workingHoursError).toBe('Не удалось загрузить расписание'); });
+    await waitFor(() => { expect(result.current.workingHoursError).toBe(t('vendor.schedule.errors.loadFailed')); });
   });
 
   it('suppresses working hours error on 404', async () => {
@@ -247,6 +248,6 @@ describe('useVendorRestaurants', () => {
     await act(async () => {
       await result.current.handleSaveWorkingHours();
     });
-    expect(result.current.workingHoursError).toBe('Не удалось сохранить расписание');
+    expect(result.current.workingHoursError).toBe(t('vendor.schedule.errors.saveFailed'));
   });
 });

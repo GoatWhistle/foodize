@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { AdminRestaurantRow } from '../../../../pages/admin/components/AdminRestaurantRow';
 import type { AdminRestaurant } from '../../../../pages/admin/hooks/useAdminRestaurants';
+import { t } from '@shared/i18n/useTranslation';
 
 const makeRestaurant = (over: Partial<AdminRestaurant> = {}): AdminRestaurant =>
   ({
@@ -32,9 +33,9 @@ describe('AdminRestaurantRow', () => {
       />,
     );
     expect(screen.getByText('Пицца')).toBeInTheDocument();
-    expect(screen.getByText('Открыт')).toBeInTheDocument();
-    expect(screen.getByText('Нанимает')).toBeInTheDocument();
-    expect(screen.getByText(/10 заказов/)).toBeInTheDocument();
+    expect(screen.getByText(t('admin.restaurants.row.open'))).toBeInTheDocument();
+    expect(screen.getByText(t('admin.restaurants.row.hiring'))).toBeInTheDocument();
+    expect(screen.getByText(t('admin.restaurants.row.ordersCount', { count: 10 }), { exact: false })).toBeInTheDocument();
   });
 
   it('renders closed and not-hiring badges plus zero fallbacks', () => {
@@ -51,9 +52,9 @@ describe('AdminRestaurantRow', () => {
         loadRestaurantDetails={vi.fn()}
       />,
     );
-    expect(screen.getByText('Закрыт')).toBeInTheDocument();
-    expect(screen.getByText('Не нанимает')).toBeInTheDocument();
-    expect(screen.getByText(/0 заказов/)).toBeInTheDocument();
+    expect(screen.getByText(t('admin.restaurants.row.closed'))).toBeInTheDocument();
+    expect(screen.getByText(t('admin.restaurants.row.notHiring'))).toBeInTheDocument();
+    expect(screen.getByText(t('admin.restaurants.row.ordersCount', { count: 0 }), { exact: false })).toBeInTheDocument();
   });
 
   it('opens details when row clicked', async () => {
@@ -108,7 +109,7 @@ describe('AdminRestaurantRow', () => {
         loadRestaurantDetails={loadRestaurantDetails}
       />,
     );
-    await userEvent.click(screen.getByText('Табло'));
+    await userEvent.click(screen.getByText(t('admin.restaurants.row.displayBoard')));
     expect(openSpy).toHaveBeenCalledWith(
       '/display-board/r1',
       '_blank',

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { VendorPromosTab } from '../../../../pages/vendor/tabs/VendorPromosTab';
 import type { Promo, Restaurant } from '@shared/types/models';
 import type { PromoForm as PromoFormValues } from '../../../../pages/vendor/hooks/useVendorPromos';
+import { t } from '@shared/i18n/useTranslation';
 
 const EMPTY_FORM: PromoFormValues = {
   code: '',
@@ -78,39 +79,39 @@ describe('VendorPromosTab', () => {
   it('toggles the promo form open', async () => {
     const user = userEvent.setup();
     render(<Harness />);
-    await user.click(screen.getByRole('button', { name: /Создать/ }));
-    expect(screen.getByText('Новый промокод')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: new RegExp(t('common.actions.create')) }));
+    expect(screen.getByText(t('vendor.promos.formTitle'))).toBeInTheDocument();
   });
 
   it('renders form when showPromoForm and can cancel it', async () => {
     const user = userEvent.setup();
     render(<Harness showForm />);
-    expect(screen.getByText('Новый промокод')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.promos.formTitle'))).toBeInTheDocument();
     const cancelBtn = screen.getAllByRole('button').find((b) => b.getAttribute('type') === 'button' && b.querySelector('svg'));
     await user.click(cancelBtn as HTMLElement);
-    expect(screen.queryByText('Новый промокод')).not.toBeInTheDocument();
+    expect(screen.queryByText(t('vendor.promos.formTitle'))).not.toBeInTheDocument();
   });
 
   it('shows skeleton while loading with empty list', () => {
     render(<Harness list={[]} loading />);
-    expect(screen.queryByText('Нет промокодов')).not.toBeInTheDocument();
+    expect(screen.queryByText(t('vendor.promos.emptyTitle'))).not.toBeInTheDocument();
   });
 
   it('shows empty state when no promos', () => {
     render(<Harness list={[]} />);
-    expect(screen.getByText('Нет промокодов')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.promos.emptyTitle'))).toBeInTheDocument();
   });
 
   it('deactivates a promo', async () => {
     const user = userEvent.setup();
     const onDeactivate = vi.fn();
     render(<Harness onDeactivate={onDeactivate} />);
-    await user.click(screen.getByTitle('Деактивировать'));
+    await user.click(screen.getByTitle(t('vendor.promos.card.deactivate')));
     expect(onDeactivate).toHaveBeenCalledWith('SAVE20');
   });
 
   it('hides create button when no restaurant selected', () => {
     render(<Harness restaurant={null} />);
-    expect(screen.queryByRole('button', { name: /Создать/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: new RegExp(t('common.actions.create')) })).not.toBeInTheDocument();
   });
 });

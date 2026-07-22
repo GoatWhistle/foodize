@@ -2,6 +2,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { TrashIcon, StarIcon, DownloadSimpleIcon } from '@phosphor-icons/react';
 import { Pagination } from '@shared/components/Pagination/Pagination';
 import { EmptyState } from '@shared/components/EmptyState/EmptyState';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { adminService as adminServiceType } from '../../../services/adminService';
 import type { AdminReview, ReviewFilters } from '../hooks/useAdminReviews';
 
@@ -60,6 +61,7 @@ export function AdminReviewsTab({
   adminService,
   PAGE_SIZE,
 }: AdminReviewsTabProps) {
+  const { t } = useTranslation();
   const isEmpty = !Array.isArray(reviews) || reviews.length === 0;
 
   if (reviewsLoading && isEmpty) {
@@ -96,7 +98,7 @@ export function AdminReviewsTab({
             setReviewFilters({ rating: '' });
           }}
         >
-          Все
+          {t('admin.reviews.allRatings')}
         </button>
         {[5, 4, 3, 2, 1].map((rating) => (
           <button
@@ -139,7 +141,7 @@ export function AdminReviewsTab({
               ); }
             }
           />
-          Выбрать все
+          {t('admin.common.selectAll')}
         </label>
         <button
           className="btn btn-secondary btn-sm"
@@ -151,7 +153,7 @@ export function AdminReviewsTab({
                   min_rating: reviewFilters.rating || undefined,
                   max_rating: reviewFilters.rating || undefined,
                 }),
-              `отзывы_${todayStr}.csv`
+              t('admin.exportFiles.reviews', { date: todayStr })
             ); }
           }
         >
@@ -202,7 +204,7 @@ export function AdminReviewsTab({
                 </span>
                 <span className="order-status-badge pending"><StarIcon size={14} weight="fill" color="var(--star)" /> {review.rating}</span>
                 {review.is_verified_purchase && (
-                  <span className="order-status-badge ready">Покупка подтверждена</span>
+                  <span className="order-status-badge ready">{t('admin.reviews.verifiedPurchase')}</span>
                 )}
               </div>
               <div
@@ -227,7 +229,7 @@ export function AdminReviewsTab({
             <button
               className="btn btn-secondary btn-sm"
               onClick={() => { handleDeleteReview(review.id); }}
-              title="Удалить отзыв"
+              title={t('admin.reviews.deleteTitle')}
               style={{ color: 'var(--error)', flexShrink: 0 }}
             >
               <TrashIcon size={16} />
@@ -238,8 +240,8 @@ export function AdminReviewsTab({
 
       {isEmpty && (
         <EmptyState
-          title="Отзывов пока нет"
-          subtitle="Для выбранных фильтров нет результатов"
+          title={t('admin.reviews.emptyTitle')}
+          subtitle={t('admin.common.emptySubtitle')}
         />
       )}
 

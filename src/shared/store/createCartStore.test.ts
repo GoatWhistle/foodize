@@ -24,6 +24,7 @@ vi.mock("@shared/utils/translateApiError", () => ({
 vi.mock("@shared/utils/logError", () => ({ logError: vi.fn() }));
 
 import { createCartStore } from "./createCartStore";
+import { t } from "@shared/i18n/useTranslation";
 
 const menuItem = (id: string, price = 100): CartMenuItem =>
   (({ id, name: `M${id}`, price }));
@@ -106,7 +107,7 @@ describe("createCartStore", () => {
     mocks.getCart.mockRejectedValue(new Error("net"));
     const store = createCartStore();
     await store.getState().fetchCart();
-    expect(store.getState().cartError).toBe("Не удалось загрузить корзину");
+    expect(store.getState().cartError).toBe(t("order.cart.loadFailed"));
   });
 
   it("placeOrder returns undefined when there is no restaurant", async () => {
@@ -165,7 +166,7 @@ describe("createCartStore", () => {
     mocks.updateCart.mockRejectedValueOnce(new Error("sync"));
     await store.getState()._syncCart();
     expect(store.getState().cartError).toBe(
-      "Не удалось синхронизировать корзину",
+      t("order.cart.syncFailed"),
     );
   });
 

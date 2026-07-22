@@ -1,6 +1,7 @@
 import { EmptyState } from '@shared/components/EmptyState/EmptyState';
 import type { MenuItem } from '@shared/types/models';
 import { formatPrice } from '@shared/utils/price';
+import { useTranslation } from '@shared/i18n/useTranslation';
 
 interface StaffMenuTabProps {
   menuItems: MenuItem[];
@@ -9,7 +10,9 @@ interface StaffMenuTabProps {
   onToggleAvailability: (item: MenuItem) => void;
 }
 
-export const StaffMenuTab = ({ menuItems, menuLoading, menuError, onToggleAvailability }: StaffMenuTabProps) => (
+export const StaffMenuTab = ({ menuItems, menuLoading, menuError, onToggleAvailability }: StaffMenuTabProps) => {
+  const { t } = useTranslation();
+  return (
   <div>
     {menuLoading ? (
       <div className="loading-center">
@@ -19,8 +22,8 @@ export const StaffMenuTab = ({ menuItems, menuLoading, menuError, onToggleAvaila
       <div className="form-error">{menuError}</div>
     ) : menuItems.length === 0 ? (
       <EmptyState
-        title="Меню пусто"
-        subtitle="В этом ресторане пока нет блюд"
+        title={t('staff.menuTab.emptyTitle')}
+        subtitle={t('staff.menuTab.emptySubtitle')}
       />
     ) : (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -69,11 +72,12 @@ export const StaffMenuTab = ({ menuItems, menuLoading, menuError, onToggleAvaila
                 cursor: 'pointer',
               }}
             >
-              {item.is_available ? 'ВКЛ' : 'ВЫКЛ'}
+              {item.is_available ? t('staff.menuTab.on') : t('staff.menuTab.off')}
             </button>
           </div>
         ))}
       </div>
     )}
   </div>
-);
+  );
+};

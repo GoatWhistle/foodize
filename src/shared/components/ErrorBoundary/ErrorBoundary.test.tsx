@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { ReactElement } from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { ErrorBoundary } from "@shared/components/ErrorBoundary/ErrorBoundary";
+import { t } from "@shared/i18n/useTranslation";
 
 const Boom = ({ message }: { message?: string }): never => {
   throw new Error(message ?? "boom");
@@ -31,7 +32,7 @@ describe("ErrorBoundary", () => {
         <Boom message="explosion" />
       </ErrorBoundary>,
     );
-    expect(screen.getByText("Что-то пошло не так")).toBeInTheDocument();
+    expect(screen.getByText(t("common.errors.somethingWentWrong"))).toBeInTheDocument();
     expect(screen.getByText("explosion")).toBeInTheDocument();
   });
 
@@ -47,7 +48,7 @@ describe("ErrorBoundary", () => {
       </ErrorBoundary>,
     );
     shouldThrow = false;
-    fireEvent.click(screen.getByText("Попробовать снова"));
+    fireEvent.click(screen.getByText(t("common.actions.retry")));
     expect(screen.getByText("recovered")).toBeInTheDocument();
   });
 

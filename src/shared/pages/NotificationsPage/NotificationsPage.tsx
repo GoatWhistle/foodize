@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { TrashIcon, BellSlashIcon } from "@phosphor-icons/react";
 import type { Notification } from "@shared/types/models";
+import { useTranslation } from "@shared/i18n/useTranslation";
+import { t as translate } from "@shared/i18n/useTranslation";
+import { notificationTitle, notificationMessage } from "@shared/utils/notificationText";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -34,19 +37,9 @@ const getDateStart = (date: Date): Date =>
   new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
 const getDayLabel = (diffDays: number): string => {
-  if (diffDays === 0) return "Сегодня";
-  if (diffDays === 1) return "Вчера";
-  const lastTwoDigits = diffDays % 100;
-  const lastDigit = diffDays % 10;
-  const suffix =
-    lastTwoDigits >= 11 && lastTwoDigits <= 14
-      ? "дней"
-      : lastDigit === 1
-        ? "день"
-        : lastDigit >= 2 && lastDigit <= 4
-          ? "дня"
-          : "дней";
-  return `${diffDays} ${suffix} назад`;
+  if (diffDays === 0) return translate("common.time.today");
+  if (diffDays === 1) return translate("common.time.yesterday");
+  return translate("common.time.daysAgo", { count: diffDays });
 };
 
 const groupByDay = (notifications: Notification[]): NotificationGroup[] => {
@@ -85,6 +78,7 @@ export const NotificationsPage = ({
   markAllReadOnOpen = false,
   style = {},
 }: NotificationsPageProps) => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
 
@@ -127,16 +121,16 @@ export const NotificationsPage = ({
         ...(stickyHeader ? { position: "sticky", top: 0, background: "var(--bg)", zIndex: 10 } : {}),
       }}>
         <h1 style={{ fontSize: "var(--text-md)", fontWeight: 700, color: "var(--text-1)", margin: 0 }}>
-          Уведомления
+          {t("profile.notifications.title")}
         </h1>
         <div style={{ display: "flex", gap: 8 }}>
           {unreadCount > 0 && (
             <button className="btn btn-secondary btn-sm" onClick={markAllAsRead}>
-              Прочитать все
+              {t("profile.notifications.markAllRead")}
             </button>
           )}
           {notifications.length > 0 && (
-            <button className="btn btn-ghost btn-icon" aria-label="Удалить все" onClick={deleteAll}>
+            <button className="btn btn-ghost btn-icon" aria-label={t("profile.notifications.deleteAll")} onClick={deleteAll}>
               <TrashIcon size={18} />
             </button>
           )}
@@ -148,7 +142,7 @@ export const NotificationsPage = ({
       ) : notifications.length === 0 ? (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "40vh", gap: 12, color: "var(--text-3)" }}>
           <BellSlashIcon size={48} weight="thin" />
-          <span style={{ fontSize: "var(--text-base)" }}>Нет уведомлений</span>
+          <span style={{ fontSize: "var(--text-base)" }}>{t("profile.notifications.empty")}</span>
         </div>
       ) : (
         <>
@@ -167,8 +161,8 @@ export const NotificationsPage = ({
                     <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--accent)", flexShrink: 0, marginTop: 5 }} />
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: "var(--text-base)", fontWeight: 600, color: "var(--text-1)", marginBottom: 2 }}>{n.title}</div>
-                    <div style={{ fontSize: "var(--text-base)", color: "var(--text-2)" }}>{n.message}</div>
+                    <div style={{ fontSize: "var(--text-base)", fontWeight: 600, color: "var(--text-1)", marginBottom: 2 }}>{notificationTitle(n)}</div>
+                    <div style={{ fontSize: "var(--text-base)", color: "var(--text-2)" }}>{notificationMessage(n)}</div>
                     <div style={{ fontSize: "var(--text-sm)", color: "var(--text-3)", marginTop: 4 }}>
                       {new Date(n.created_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
                     </div>
@@ -176,7 +170,7 @@ export const NotificationsPage = ({
                   <button
                     className="btn btn-ghost"
                     style={{ padding: 4, flexShrink: 0 }}
-                    aria-label="Удалить"
+                    aria-label={t("profile.notifications.delete")}
                     onClick={(e) => { e.stopPropagation(); deleteNotification(n.id); }}
                   >
                     <TrashIcon size={16} />
@@ -189,7 +183,7 @@ export const NotificationsPage = ({
           {hasMore && (
             <div style={{ padding: "12px 16px" }}>
               <button className="btn btn-secondary" style={{ width: "100%" }} disabled={loadingMore} onClick={() => { void handleLoadMore(); }}>
-                {loadingMore ? <span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> : "Загрузить ещё"}
+                {loadingMore ? <span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> : t("common.actions.loadMore")}
               </button>
             </div>
           )}

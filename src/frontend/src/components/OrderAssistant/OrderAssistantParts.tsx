@@ -1,5 +1,7 @@
 import type { CSSProperties, RefObject } from 'react';
 import { SparkleIcon } from '@phosphor-icons/react';
+import { useTranslation } from '@shared/i18n/useTranslation';
+
 
 export interface AssistantMessage {
   id: string;
@@ -7,10 +9,10 @@ export interface AssistantMessage {
   content: string;
 }
 
-export const SUGGESTIONS = [
-  'Где острая шаурма дешевле 350?',
-  'Хочу два бургера и колу',
-  'Что есть на десерт?',
+export const SUGGESTION_KEYS = [
+  'vendor.assistant.suggestions.cheapSpicyShaurma',
+  'vendor.assistant.suggestions.twoBurgersAndCola',
+  'vendor.assistant.suggestions.dessert',
 ];
 
 const launcherStyle: CSSProperties = {
@@ -36,24 +38,29 @@ interface AssistantLauncherProps {
   onOpen: () => void;
 }
 
-export const AssistantLauncher = ({ triggerRef, onOpen }: AssistantLauncherProps) => (
-  <button ref={triggerRef} onClick={onOpen} aria-label="Помощник заказа" style={launcherStyle}>
-    <SparkleIcon size={18} weight="fill" />
-    Помощник
-  </button>
-);
+export const AssistantLauncher = ({ triggerRef, onOpen }: AssistantLauncherProps) => {
+  const { t } = useTranslation();
+  return (
+    <button ref={triggerRef} onClick={onOpen} aria-label={t('vendor.assistant.ariaLabel')} style={launcherStyle}>
+      <SparkleIcon size={18} weight="fill" />
+      {t('vendor.assistant.launcher')}
+    </button>
+  );
+};
 
 interface AssistantSuggestionsProps {
   streaming: boolean;
   onPick: (suggestion: string) => void;
 }
 
-const AssistantSuggestions = ({ streaming, onPick }: AssistantSuggestionsProps) => (
+const AssistantSuggestions = ({ streaming, onPick }: AssistantSuggestionsProps) => {
+  const { t } = useTranslation();
+  return (
   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
     <div style={{ fontSize: "var(--text-base)", color: 'var(--text-2)' }}>
-      Спросите, что хотите заказать — найду и помогу оформить.
+      {t('vendor.assistant.intro')}
     </div>
-    {SUGGESTIONS.map((suggestion) => (
+    {SUGGESTION_KEYS.map((key) => t(key)).map((suggestion) => (
       <button
         key={suggestion}
         className="btn btn-secondary"
@@ -65,7 +72,8 @@ const AssistantSuggestions = ({ streaming, onPick }: AssistantSuggestionsProps) 
       </button>
     ))}
   </div>
-);
+  );
+};
 
 const messageBubbleStyle = (isUser: boolean): CSSProperties => ({
   alignSelf: isUser ? 'flex-end' : 'flex-start',

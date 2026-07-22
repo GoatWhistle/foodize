@@ -1,3 +1,4 @@
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { VendorProfile } from './hooks/useVendorRestaurants';
 
 interface VendorApprovalBannerProps {
@@ -5,6 +6,7 @@ interface VendorApprovalBannerProps {
 }
 
 export function VendorApprovalBanner({ vendorProfile }: VendorApprovalBannerProps) {
+  const { t } = useTranslation();
   if (!vendorProfile || vendorProfile.approval_status === 'APPROVED') return null;
 
   const isPending = vendorProfile.approval_status === 'PENDING';
@@ -20,7 +22,7 @@ export function VendorApprovalBanner({ vendorProfile }: VendorApprovalBannerProp
       }}
     >
       <div style={{ fontWeight: 800, color: 'var(--text-1)', marginBottom: 4 }}>
-        {isPending ? 'Профиль на модерации' : 'Профиль отклонён'}
+        {isPending ? t('vendor.approvalBanner.pendingTitle') : t('vendor.approvalBanner.rejectedTitle')}
       </div>
       <div
         style={{
@@ -30,12 +32,12 @@ export function VendorApprovalBanner({ vendorProfile }: VendorApprovalBannerProp
         }}
       >
         {isPending
-          ? 'Ваш профиль проверяется администратором. Ваши заведения пока не видны покупателям.'
-          : 'К сожалению, ваш профиль не прошел модерацию.'}
+          ? t('vendor.approvalBanner.pendingText')
+          : t('vendor.approvalBanner.rejectedText')}
       </div>
       {vendorProfile.rejection_reason && (
         <div style={{ fontSize: "var(--text-base)", color: 'var(--error)', fontWeight: 500 }}>
-          Причина: {vendorProfile.rejection_reason}
+          {t('vendor.approvalBanner.reason', { reason: vendorProfile.rejection_reason })}
         </div>
       )}
     </div>

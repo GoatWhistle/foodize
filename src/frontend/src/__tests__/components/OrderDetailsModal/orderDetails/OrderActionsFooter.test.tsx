@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Order } from '@shared/types/models';
+import { t } from '@shared/i18n/useTranslation';
 import { OrderActionsFooter } from '../../../../components/OrderDetailsModal/orderDetails/OrderActionsFooter';
 
 const ORDER = { id: 'o1', status: 'ACCEPTED' } as Order;
@@ -32,9 +33,9 @@ describe('OrderActionsFooter', () => {
     expect(onSubmitNext).toHaveBeenCalled();
   });
 
-  it('falls back to "Дальше" when no label for status', () => {
+  it('falls back to next label when no label for status', () => {
     render(<OrderActionsFooter {...baseProps} nextLabel={{}} />);
-    expect(screen.getByRole('button', { name: 'Дальше' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: t('order.actions.next') })).toBeInTheDocument();
   });
 
   it('shows "..." when updating this order', () => {
@@ -45,13 +46,13 @@ describe('OrderActionsFooter', () => {
   it('shows cancel button and triggers onShowCancelForm', async () => {
     const onShowCancelForm = vi.fn();
     render(<OrderActionsFooter {...baseProps} onShowCancelForm={onShowCancelForm} />);
-    await userEvent.click(screen.getByRole('button', { name: /Отменить/ }));
+    await userEvent.click(screen.getByRole('button', { name: t('order.actions.cancel') }));
     expect(onShowCancelForm).toHaveBeenCalled();
   });
 
   it('hides cancel button when canCancel is false', () => {
     render(<OrderActionsFooter {...baseProps} canCancel={false} />);
-    expect(screen.queryByRole('button', { name: /Отменить/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: t('order.actions.cancel') })).toBeNull();
   });
 
   it('hides next button when next is undefined', () => {
@@ -78,12 +79,12 @@ describe('OrderActionsFooter', () => {
         onCancelReasonChange={onCancelReasonChange}
       />
     );
-    const textarea = screen.getByPlaceholderText('Причина отмены (необязательно)');
+    const textarea = screen.getByPlaceholderText(t('order.actions.cancelReasonPlaceholder'));
     await userEvent.type(textarea, 'x');
     expect(onCancelReasonChange).toHaveBeenCalled();
-    await userEvent.click(screen.getByRole('button', { name: 'Назад' }));
+    await userEvent.click(screen.getByRole('button', { name: t('common.actions.back') }));
     expect(onHideCancelForm).toHaveBeenCalled();
-    await userEvent.click(screen.getByRole('button', { name: 'Подтвердить отмену' }));
+    await userEvent.click(screen.getByRole('button', { name: t('order.actions.confirmCancel') }));
     expect(onCancel).toHaveBeenCalled();
   });
 

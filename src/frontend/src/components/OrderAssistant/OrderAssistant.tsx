@@ -4,10 +4,13 @@ import { aiOrderService } from '@shared/services/aiOrderService';
 import { useDialogKeyboard } from '@shared/hooks/useDialogKeyboard';
 import { makeId } from '@shared/utils/id';
 import { useCartStore } from '../../store/useCartStore';
+import { useTranslation } from '@shared/i18n/useTranslation';
+
 import { AssistantLauncher, AssistantMessages } from './OrderAssistantParts';
 import type { AssistantMessage } from './OrderAssistantParts';
 
 export function OrderAssistant() {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [input, setInput] = useState('');
@@ -75,7 +78,7 @@ export function OrderAssistant() {
         );
       } catch (err) {
         if ((err as Error).name !== 'AbortError') {
-          setError('Не удалось получить ответ. Попробуйте ещё раз.');
+          setError(t('vendor.assistant.errors.requestFailed'));
           setMessages((prev) => prev.slice(0, -1));
         }
       } finally {
@@ -84,7 +87,7 @@ export function OrderAssistant() {
         void fetchCart();
       }
     },
-    [input, streaming, messages, appendToLastAssistant, fetchCart]
+    [input, streaming, messages, appendToLastAssistant, fetchCart, t]
   );
 
   if (!open) {
@@ -94,7 +97,7 @@ export function OrderAssistant() {
   return (
     <div
       role="dialog"
-      aria-label="Помощник заказа"
+      aria-label={t('vendor.assistant.ariaLabel')}
       style={{
         position: 'fixed',
         right: 16,
@@ -122,11 +125,11 @@ export function OrderAssistant() {
       >
         <strong style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <SparkleIcon size={16} weight="fill" color="var(--fire)" />
-          Помощник заказа
+          {t('vendor.assistant.title')}
         </strong>
         <button
           onClick={close}
-          aria-label="Закрыть"
+          aria-label={t('common.actions.close')}
           style={{
             background: 'none',
             border: 'none',
@@ -167,7 +170,7 @@ export function OrderAssistant() {
         <input
           ref={inputRef}
           className="form-input"
-          placeholder="Что хотите заказать?"
+          placeholder={t('vendor.assistant.inputPlaceholder')}
           value={input}
           disabled={streaming}
           onChange={(e) => { setInput(e.target.value); }}
@@ -175,7 +178,7 @@ export function OrderAssistant() {
         />
         <button
           type="submit"
-          aria-label="Отправить сообщение"
+          aria-label={t('vendor.assistant.sendAriaLabel')}
           className="btn btn-primary"
           disabled={streaming || !input.trim()}
           style={{ display: 'flex', alignItems: 'center' }}

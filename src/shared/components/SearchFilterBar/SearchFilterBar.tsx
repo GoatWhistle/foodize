@@ -10,19 +10,20 @@ import {
   CheckIcon,
 } from "@phosphor-icons/react";
 import type { Icon, IconWeight } from "@phosphor-icons/react";
+import { useTranslation } from "@shared/i18n/useTranslation";
 import s from "./SearchFilterBar.module.css";
 
 interface SortOption {
   key: string;
-  label: string;
+  labelKey: string;
   Icon: Icon | null;
   iconWeight?: IconWeight;
 }
 
 const SORT_OPTIONS: SortOption[] = [
-  { key: "default", label: "По умолчанию", Icon: null },
-  { key: "rating", label: "Оценка", Icon: StarIcon, iconWeight: "fill" },
-  { key: "popularity_7d", label: "Популярность", Icon: ChartBarIcon, iconWeight: "bold" },
+  { key: "default", labelKey: "catalog.search.sortDefault", Icon: null },
+  { key: "rating", labelKey: "catalog.search.sortRating", Icon: StarIcon, iconWeight: "fill" },
+  { key: "popularity_7d", labelKey: "catalog.search.sortPopularity", Icon: ChartBarIcon, iconWeight: "bold" },
 ];
 
 interface SearchFilterBarProps {
@@ -49,9 +50,10 @@ export const SearchFilterBar = ({
   direction,
   setDirection,
   searching = false,
-  placeholder = "Поиск заведения или адреса...",
+  placeholder,
   extraChips = null,
 }: SearchFilterBarProps) => {
+  const { t } = useTranslation();
   const [showFilters, setShowFilters] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
 
@@ -84,10 +86,10 @@ export const SearchFilterBar = ({
         <MagnifyingGlassIcon className={s['searchIcon']} size={18} weight="bold" />
         <input
           type="search"
-          placeholder={placeholder}
+          placeholder={placeholder ?? t("catalog.search.placeholderVenue")}
           value={search}
           onChange={(e) => { setSearch(e.target.value); }}
-          aria-label="Поиск заведения"
+          aria-label={t("catalog.search.ariaLabel")}
         />
         {searching && <span className={s['spinner']} aria-hidden="true" />}
       </div>
@@ -98,7 +100,7 @@ export const SearchFilterBar = ({
           className={`${s['filterButton']}${showFilters ? ` ${s['filterButtonOpen']}` : ""}${filtersActive ? ` ${s['filterButtonActive']}` : ""}`}
           onClick={() => { setShowFilters((value) => !value); }}
           aria-expanded={showFilters}
-          aria-label="Открыть фильтры"
+          aria-label={t("catalog.search.openFilters")}
         >
           <FadersIcon size={18} weight="bold" />
         </button>
@@ -111,11 +113,11 @@ export const SearchFilterBar = ({
                 checked={onlyOpen}
                 onChange={() => { setOnlyOpen((value) => !value); }}
               />
-              Открыто
+              {t("catalog.search.onlyOpen")}
             </label>
             <div className={s['sortPanel']}>
-              <div className={s['sortLabel']}>Сортировка</div>
-              {SORT_OPTIONS.map(({ key, label, Icon, iconWeight }) => (
+              <div className={s['sortLabel']}>{t("catalog.search.sortLabel")}</div>
+              {SORT_OPTIONS.map(({ key, labelKey, Icon, iconWeight }) => (
                 <button
                   key={key}
                   type="button"
@@ -128,7 +130,7 @@ export const SearchFilterBar = ({
                     ) : (
                       <span className={s['sortRowIconSpacer']} />
                     )}
-                    {label}
+                    {t(labelKey)}
                   </span>
                   {sort === key &&
                     (key === "default" ? (

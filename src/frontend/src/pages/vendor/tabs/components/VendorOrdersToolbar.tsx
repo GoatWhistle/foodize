@@ -1,14 +1,15 @@
 import type { Dispatch, SetStateAction } from 'react';
 import { ArrowsClockwiseIcon, DownloadSimpleIcon } from '@phosphor-icons/react';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { Restaurant } from '@shared/types/models';
 import styles from './VendorOrders.module.css';
 
-const STATUS_CHIPS: { key: string; label: string }[] = [
-  { key: '', label: 'Все' },
-  { key: 'PENDING', label: 'Новые' },
-  { key: 'ACCEPTED', label: 'Принятые' },
-  { key: 'READY', label: 'Готовые' },
-  { key: 'COMPLETED', label: 'Выданные' },
+const STATUS_CHIPS: { key: string; labelKey: string }[] = [
+  { key: '', labelKey: 'vendor.orders.filters.all' },
+  { key: 'PENDING', labelKey: 'vendor.orders.filters.pending' },
+  { key: 'ACCEPTED', labelKey: 'vendor.orders.filters.accepted' },
+  { key: 'READY', labelKey: 'vendor.orders.filters.ready' },
+  { key: 'COMPLETED', labelKey: 'vendor.orders.filters.completed' },
 ];
 
 interface VendorOrdersToolbarProps {
@@ -50,13 +51,14 @@ export function VendorOrdersToolbar({
   fetchVendorOrders,
   vendorService,
 }: VendorOrdersToolbarProps) {
+  const { t } = useTranslation();
   return (
     <>
       <div className={styles['header']}>
         <div>
-          <div className={styles['headerTitle']}>Заказы заведения</div>
+          <div className={styles['headerTitle']}>{t('vendor.orders.toolbarTitle')}</div>
           <div className={styles['headerSubtitle']}>
-            Новые заказы обновляются автоматически
+            {t('vendor.orders.toolbarHint')}
           </div>
         </div>
         <div className={styles['headerActions']}>
@@ -71,7 +73,7 @@ export function VendorOrdersToolbar({
                     restaurant_id: selectedRestaurant?.id || undefined,
                     status: ordersStatusFilter || undefined,
                   }),
-                `заказы_${todayStr}.csv`
+                t('vendor.exportFiles.orders', { date: todayStr })
               ); }
             }
           >
@@ -84,12 +86,12 @@ export function VendorOrdersToolbar({
             disabled={ordersLoading}
           >
             <ArrowsClockwiseIcon size={14} />
-            {ordersLoading ? '...' : 'Обновить'}
+            {ordersLoading ? '...' : t('common.actions.refresh')}
           </button>
         </div>
       </div>
       <div className={styles['chips']}>
-        {STATUS_CHIPS.map(({ key, label }) => (
+        {STATUS_CHIPS.map(({ key, labelKey }) => (
           <button
             key={key}
             className={`category-chip${ordersStatusFilter === key ? ' active' : ''} ${styles['chip']}`}
@@ -98,7 +100,7 @@ export function VendorOrdersToolbar({
               setOrdersPage(1);
             }}
           >
-            {label}
+            {t(labelKey)}
           </button>
         ))}
       </div>
@@ -111,7 +113,7 @@ export function VendorOrdersToolbar({
             setOrdersDateFromFilter(e.target.value);
             setOrdersPage(1);
           }}
-          aria-label="Дата с"
+          aria-label={t('vendor.orders.dateFrom')}
         />
         <span className={styles['dateDash']}>—</span>
         <input
@@ -122,7 +124,7 @@ export function VendorOrdersToolbar({
             setOrdersDateToFilter(e.target.value);
             setOrdersPage(1);
           }}
-          aria-label="Дата по"
+          aria-label={t('vendor.orders.dateTo')}
         />
         {(ordersDateFromFilter || ordersDateToFilter) && (
           <button
@@ -134,7 +136,7 @@ export function VendorOrdersToolbar({
               setOrdersPage(1);
             }}
           >
-            Сбросить период
+            {t('vendor.orders.resetPeriod')}
           </button>
         )}
       </div>

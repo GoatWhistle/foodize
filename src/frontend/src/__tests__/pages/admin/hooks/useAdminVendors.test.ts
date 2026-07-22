@@ -3,6 +3,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { useAdminVendors } from '../../../../pages/admin/hooks/useAdminVendors';
 import type { ConfirmDialogConfig } from '@shared/store/useModalStore';
 import type { ReasonDialogConfig } from '../../../../pages/admin/useAdminDashboard';
+import { t } from '@shared/i18n/useTranslation';
 
 vi.mock('../../../../services/adminService', () => ({
   adminService: {
@@ -84,7 +85,7 @@ describe('useAdminVendors', () => {
   it('handles load error', async () => {
     vi.mocked(adminService.getVendors).mockRejectedValue(new Error('x'));
     renderHook(() => useAdminVendors(baseArgs()));
-    await waitFor(() => { expect(setActionError).toHaveBeenCalledWith('Не удалось загрузить вендоров'); });
+    await waitFor(() => { expect(setActionError).toHaveBeenCalledWith(t('admin.vendors.errors.loadFailed')); });
   });
 
   it('loads vendor details success and failure', async () => {
@@ -101,7 +102,7 @@ describe('useAdminVendors', () => {
     await act(async () => {
       await result.current.loadVendorDetails('v1');
     });
-    expect(setActionError).toHaveBeenCalledWith('Не удалось загрузить детали вендора');
+    expect(setActionError).toHaveBeenCalledWith(t('admin.vendors.errors.detailsFailed'));
   });
 
   it('deletes vendor on confirm', async () => {
@@ -127,7 +128,7 @@ describe('useAdminVendors', () => {
     await act(async () => {
       await lastConfirm?.onConfirm?.();
     });
-    expect(setActionError).toHaveBeenCalledWith('Не удалось удалить вендора');
+    expect(setActionError).toHaveBeenCalledWith(t('admin.vendors.errors.deleteFailed'));
   });
 
   it('approves vendor on confirm and refreshes list', async () => {
@@ -142,7 +143,7 @@ describe('useAdminVendors', () => {
     await act(async () => {
       await lastConfirm?.onConfirm?.();
     });
-    expect(setActionSuccess).toHaveBeenCalledWith('Вендор одобрен');
+    expect(setActionSuccess).toHaveBeenCalledWith(t('admin.vendors.messages.approved'));
     expect(result.current.selectedVendor?.approval_status).toBe('APPROVED');
   });
 
@@ -155,7 +156,7 @@ describe('useAdminVendors', () => {
     await act(async () => {
       await lastConfirm?.onConfirm?.();
     });
-    expect(setActionError).toHaveBeenCalledWith('Не удалось одобрить вендора');
+    expect(setActionError).toHaveBeenCalledWith(t('admin.vendors.errors.approveFailed'));
   });
 
   it('rejects vendor with reason', async () => {
@@ -170,7 +171,7 @@ describe('useAdminVendors', () => {
       await lastReason?.onConfirm('spam');
     });
     expect(adminService.rejectVendor).toHaveBeenCalledWith('v1', 'spam');
-    expect(setActionSuccess).toHaveBeenCalledWith('Вендор отклонён');
+    expect(setActionSuccess).toHaveBeenCalledWith(t('admin.vendors.messages.rejected'));
   });
 
   it('reports reject failure', async () => {
@@ -182,7 +183,7 @@ describe('useAdminVendors', () => {
     await act(async () => {
       await lastReason?.onConfirm('spam');
     });
-    expect(setActionError).toHaveBeenCalledWith('Не удалось отклонить вендора');
+    expect(setActionError).toHaveBeenCalledWith(t('admin.vendors.errors.rejectFailed'));
   });
 
   it('batch approves and reports success', async () => {
@@ -195,7 +196,7 @@ describe('useAdminVendors', () => {
       await result.current.handleBatchVendors('approve');
     });
     expect(adminService.batchApproveVendors).toHaveBeenCalledWith(['v1', 'v2']);
-    expect(setActionSuccess).toHaveBeenCalledWith('Готово: 2 вендоров');
+    expect(setActionSuccess).toHaveBeenCalledWith(t('admin.vendors.messages.batchDone', { count: 2 }));
   });
 
   it('batch rejects with reason', async () => {
@@ -219,7 +220,7 @@ describe('useAdminVendors', () => {
     await act(async () => {
       await result.current.handleBatchVendors('approve');
     });
-    expect(setActionError).toHaveBeenCalledWith('Ошибка при массовом действии');
+    expect(setActionError).toHaveBeenCalledWith(t('admin.vendors.errors.batchFailed'));
   });
 
   it('exposes page and search setters', () => {

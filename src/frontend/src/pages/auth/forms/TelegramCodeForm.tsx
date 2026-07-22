@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
+import { useTranslation } from '@shared/i18n/useTranslation';
 
 const RESEND_COOLDOWN = 60;
 
@@ -20,6 +21,7 @@ export const TelegramCodeForm = ({
   onBack,
   onResend,
 }: TelegramCodeFormProps) => {
+  const { t } = useTranslation();
   const [secondsLeft, setSecondsLeft] = useState(RESEND_COOLDOWN);
 
   useEffect(() => {
@@ -41,7 +43,7 @@ export const TelegramCodeForm = ({
     <form className="auth-form" onSubmit={onSubmit} noValidate>
       <div className="form-group">
         <label className="form-label" htmlFor="telegram-code">
-          Код из Telegram
+          {t('auth.fields.telegramCode')}
         </label>
         <input
           id="telegram-code"
@@ -49,7 +51,7 @@ export const TelegramCodeForm = ({
           type="text"
           inputMode="numeric"
           autoComplete="one-time-code"
-          placeholder="000000"
+          placeholder={t('auth.placeholders.code')}
           value={telegramCode}
           onChange={(e) => { setTelegramCode(e.target.value.replace(/\D/g, '').slice(0, 6)); }}
           required
@@ -63,7 +65,7 @@ export const TelegramCodeForm = ({
         disabled={isLoading || telegramCode.length < 4}
         style={{ height: '52px', borderRadius: 'var(--r-sm)' }}
       >
-        {isLoading ? 'Проверяем...' : 'Подтвердить код'}
+        {isLoading ? t('auth.buttons.checking') : t('auth.buttons.confirmCode')}
       </button>
 
       <button
@@ -77,7 +79,7 @@ export const TelegramCodeForm = ({
       >
         {secondsLeft > 0 ? (
           <>
-            Отправить повторно
+            {t('auth.buttons.resend')}
             <span
               style={{
                 marginLeft: 8,
@@ -86,11 +88,11 @@ export const TelegramCodeForm = ({
                 fontVariantNumeric: 'tabular-nums',
               }}
             >
-              {secondsLeft}с
+              {t('auth.resendIn', { seconds: secondsLeft })}
             </span>
           </>
         ) : (
-          'Отправить повторно'
+          t('auth.buttons.resend')
         )}
       </button>
 
@@ -100,7 +102,7 @@ export const TelegramCodeForm = ({
         disabled={isLoading}
         onClick={onBack}
       >
-        Назад
+        {t('common.actions.back')}
       </button>
     </form>
   );

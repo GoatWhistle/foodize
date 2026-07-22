@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import { KanbanCard } from './KanbanCard';
 import type { StaffColumnDef } from '../staffColumns';
 import type { StaffOrder } from '../types';
@@ -26,12 +27,14 @@ export const KanbanColumn = ({
   onDragEnd,
   onDrop,
 }: KanbanColumnProps) => {
+  const { t } = useTranslation();
+  const label = t(column.labelKey);
   const [dragOver, setDragOver] = useState(false);
 
   return (
     <div
       role="group"
-      aria-label={`Колонка «${column.label}», заказов: ${orders.length}`}
+      aria-label={t('staff.columns.ariaGroup', { label, count: orders.length })}
       style={{
         flex: 1,
         minWidth: 0,
@@ -72,7 +75,7 @@ export const KanbanColumn = ({
             color: 'var(--text-1)',
           }}
         >
-          {column.label}
+          {label}
         </span>
         <span
           style={{
@@ -91,7 +94,7 @@ export const KanbanColumn = ({
 
       <div
         role="list"
-        aria-label={column.label}
+        aria-label={label}
         style={{
           flex: 1,
           minHeight: 120,
@@ -117,7 +120,7 @@ export const KanbanColumn = ({
               fontSize: "var(--text-sm)",
             }}
           >
-            Пусто
+            {t('staff.columns.empty')}
           </div>
         )}
         {orders.map((order) => (

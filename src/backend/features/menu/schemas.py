@@ -3,6 +3,7 @@ from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from features.menu.exceptions import InvalidSelectionLimitsError
 from shared.enums.category import Category
 from shared.enums.selection_type import SelectionType
 
@@ -71,7 +72,7 @@ class MenuItemOptionGroupCreate(BaseModel):
         if self.is_required and self.min_selected == 0:
             self.min_selected = 1
         if self.max_selected is not None and self.min_selected > self.max_selected:
-            raise ValueError("min_selected cannot be greater than max_selected")
+            raise InvalidSelectionLimitsError()
         return self
 
 

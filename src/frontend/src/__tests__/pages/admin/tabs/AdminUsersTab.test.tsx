@@ -6,6 +6,7 @@ import { AdminUsersTab } from '../../../../pages/admin/tabs/AdminUsersTab';
 import type { AdminUser } from '../../../../pages/admin/hooks/useAdminUsers';
 import type { AuthUser } from '@shared/store/createAuthStore';
 import type { adminService as adminServiceType } from '../../../../services/adminService';
+import { t } from '@shared/i18n/useTranslation';
 import { at } from '../../../testUtils';
 
 const exportUsersCSV = vi.fn().mockResolvedValue(new Blob());
@@ -70,36 +71,42 @@ describe('AdminUsersTab', () => {
     renderTab();
     expect(screen.getByText('Alice')).toBeInTheDocument();
     expect(screen.getByText('+700000001')).toBeInTheDocument();
-    expect(screen.getByText('Без имени')).toBeInTheDocument();
-    expect(screen.getByText('Нет телефона')).toBeInTheDocument();
-    expect(screen.getByText('Активен')).toBeInTheDocument();
-    expect(screen.getByText('Заблокирован')).toBeInTheDocument();
-    expect(screen.getAllByText('Администратор').length).toBeGreaterThan(0);
+    expect(screen.getByText(t('admin.users.card.noName'))).toBeInTheDocument();
+    expect(screen.getByText(t('admin.users.card.noPhone'))).toBeInTheDocument();
+    expect(screen.getByText(t('admin.users.card.active'))).toBeInTheDocument();
+    expect(screen.getByText(t('admin.users.card.blocked'))).toBeInTheDocument();
+    expect(
+      screen.getAllByText(t('enums.permissionPreset.ADMIN')).length,
+    ).toBeGreaterThan(0);
   });
 
   it('renders role options excluding CUSTOMER', () => {
     renderTab();
     const select = screen.getByRole('combobox');
     expect(select).toBeInTheDocument();
-    expect(screen.queryByRole('option', { name: 'Клиент' })).not.toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Администратор' })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('option', { name: t('enums.permissionPreset.CUSTOMER') }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('option', { name: t('enums.permissionPreset.ADMIN') }),
+    ).toBeInTheDocument();
   });
 
   it('shows skeleton when loading and empty', () => {
     renderTab({ users: [], usersLoading: true });
     expect(screen.queryByText('Alice')).not.toBeInTheDocument();
-    expect(screen.queryByText('Пользователей пока нет')).not.toBeInTheDocument();
+    expect(screen.queryByText(t('admin.users.emptyTitle'))).not.toBeInTheDocument();
   });
 
   it('shows empty state when no users', () => {
     renderTab({ users: [], usersTotal: 0 });
-    expect(screen.getByText('Пользователей пока нет')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.users.emptyTitle'))).toBeInTheDocument();
   });
 
   it('updates search and resets page', async () => {
     const user = userEvent.setup();
     renderTab();
-    await user.type(screen.getByPlaceholderText('Поиск по имени или телефону'), 'x');
+    await user.type(screen.getByPlaceholderText(t('admin.users.searchPlaceholder')), 'x');
     expect(setUsersPage).toHaveBeenCalledWith(1);
     expect(setUserSearchRaw).toHaveBeenCalled();
   });
@@ -162,7 +169,7 @@ describe('AdminUsersTab', () => {
   it('shows delete button for regular users and hides it for admins', async () => {
     const user = userEvent.setup();
     renderTab();
-    const deleteButtons = screen.getAllByTitle('Заблокировать');
+    const deleteButtons = screen.getAllByTitle(t('admin.users.card.blockTitle'));
     expect(deleteButtons).toHaveLength(1);
     await user.click(at(deleteButtons, 0));
     expect(handleDeleteUser).toHaveBeenCalledWith('u1');
@@ -174,14 +181,17 @@ describe('AdminUsersTab', () => {
         { id: 'me', name: 'Me', phone_number: '', permissions: [], is_active: true } as unknown as AdminUser,
       ],
     });
-    expect(screen.queryByTitle('Заблокировать')).not.toBeInTheDocument();
+    expect(screen.queryByTitle(t('admin.users.card.blockTitle'))).not.toBeInTheDocument();
   });
 
   it('triggers CSV export', async () => {
     const user = userEvent.setup();
     renderTab();
     await user.click(screen.getByRole('button', { name: /CSV/i }));
-    expect(handleExport).toHaveBeenCalledWith(exportUsersCSV, 'пользователи_2026-07-18.csv');
+    expect(handleExport).toHaveBeenCalledWith(
+      exportUsersCSV,
+      t('admin.exportFiles.users', { date: '2026-07-18' }),
+    );
   });
 
   it('dims the list while reloading with data present', () => {
@@ -217,7 +227,7 @@ describe('AdminUsersTab', () => {
   it('paginates when multiple pages', async () => {
     const user = userEvent.setup();
     renderTab({ usersTotal: 60 });
-    await user.click(screen.getByRole('button', { name: 'Перейти на страницу 2' }));
+    await user.click(screen.getByRole('button', { name: t('catalog.pagination.goToPage', { page: 2 }) }));
     expect(setUsersPage).toHaveBeenCalledWith(2);
   });
 });

@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from "vitest";
 import type { Order } from "@shared/types/models";
 import { ActiveOrderBanner } from "../../components/ActiveOrderBanner/ActiveOrderBanner";
+import { t } from "@shared/i18n/useTranslation";
 const navigateMock = vi.fn();
 
 vi.mock("react-router-dom", async () => {
@@ -64,9 +65,9 @@ describe("ActiveOrderBanner", () => {
   it("renders a banner for an active order with an accessible label", () => {
     storeState = makeStore({ id: "o1", display_id: 42, status: "ACCEPTED" });
     renderAt();
-    const banner = screen.getByRole("button", { name: "Открыть заказ #42" });
+    const banner = screen.getByRole("button", { name: t("order.banner.open", { id: 42 }) });
     expect(banner).toBeInTheDocument();
-    expect(screen.getByText("Заказ #42")).toBeInTheDocument();
+    expect(screen.getByText(t("order.banner.orderNumber", { id: 42 }))).toBeInTheDocument();
   });
 
   it("renders nothing for a terminal (COMPLETED) status", () => {
@@ -90,14 +91,14 @@ describe("ActiveOrderBanner", () => {
   it("navigates to the order page on click", async () => {
     storeState = makeStore({ id: "o1", display_id: 42, status: "ACCEPTED" });
     renderAt();
-    await userEvent.click(screen.getByRole("button", { name: "Открыть заказ #42" }));
+    await userEvent.click(screen.getByRole("button", { name: t("order.banner.open", { id: 42 }) }));
     expect(navigateMock).toHaveBeenCalledWith("/orders/42");
   });
 
   it("navigates when activated via keyboard (Enter)", async () => {
     storeState = makeStore({ id: "o1", display_id: 42, status: "PENDING" });
     renderAt();
-    screen.getByRole("button", { name: "Открыть заказ #42" }).focus();
+    screen.getByRole("button", { name: t("order.banner.open", { id: 42 }) }).focus();
     await userEvent.keyboard("{Enter}");
     expect(navigateMock).toHaveBeenCalledWith("/orders/42");
   });

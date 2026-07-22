@@ -7,12 +7,16 @@ from database import db_helper
 from features.auth.service import get_current_user
 from features.users.models import User
 from features.vendors.crud import get_vendor_by_user_id
-from features.vendors.exceptions import VendorAlreadyExistsException
+from features.vendors.exceptions import (
+    VendorAccessDeniedException,
+    VendorAlreadyExistsException,
+    VendorNotApprovedException,
+    VendorProfileNotFoundException,
+    VendorUserNotFoundException,
+)
 from features.vendors.models import VendorProfile
 from shared.enums.moderation_status import ModerationStatus
 from shared.enums.permissions import Permission
-from shared.exceptions import NotFoundException
-from shared.exceptions.rules import AccessDeniedException
 from shared.permissions import has_permission
 
 
@@ -32,7 +36,7 @@ async def _ensure_admin_vendor_profile(
     result = await session.execute(stmt)
     loaded_user = result.scalar_one_or_none()
     if not loaded_user:
-        raise NotFoundException(detail="User not found")
+        raise VendorUserNotFoundException()
 
     vendor = loaded_user.vendor_profile
     if not vendor:
@@ -58,7 +62,7 @@ async def get_current_vendor(
     user: User = Depends(get_current_user),
 ) -> VendorProfile:
     if not has_permission(user.permissions, Permission.VENDORS_READ_OWN):
-        raise AccessDeniedException(detail="Insufficient permissions to access vendor profile")
+        raise VendorAccessDeniedException()
 
     stmt = (
         select(User)
@@ -70,21 +74,21 @@ async def get_current_vendor(
     if not loaded_user or not loaded_user.vendor_profile:
         if _is_admin(user):
             return await _ensure_admin_vendor_profile(session, user)
-        raise NotFoundException(detail="Vendor profile not found")
+        raise VendorProfileNotFoundException()
     vendor = loaded_user.vendor_profile
     if _is_admin(user) and (
         vendor.approval_status != ModerationStatus.APPROVED.value or vendor.rejection_reason
     ):
         return await _ensure_admin_vendor_profile(session, user)
     if vendor.approval_status != ModerationStatus.APPROVED.value or vendor.rejection_reason:
-        raise AccessDeniedException(detail="Vendor profile is not approved")
+        raise VendorNotApprovedException()
     return vendor
 
 
 async def get_vendor_or_404(user: User, session: AsyncSession) -> VendorProfile:
     vendor = await get_vendor_by_user_id(session, user.id)
     if not vendor:
-        raise NotFoundException()
+        raise VendorProfileNotFoundException()
     return vendor
 
 

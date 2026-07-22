@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import { VendorRestaurantList } from '../../../pages/vendor/VendorRestaurantList';
 import type { Restaurant } from '@shared/types/models';
+import { t } from '@shared/i18n/useTranslation';
 import type { NewRestaurantForm, VendorProfile } from '../../../pages/vendor/hooks/useVendorRestaurants';
 
 const restaurants = [
@@ -46,8 +47,8 @@ describe('VendorRestaurantList', () => {
     setup();
     expect(screen.getByText('Alpha')).toBeInTheDocument();
     expect(screen.getByText('@alpha')).toBeInTheDocument();
-    expect(screen.getByText('На модерации')).toBeInTheDocument();
-    expect(screen.getByText('Отклонён')).toBeInTheDocument();
+    expect(screen.getByText(t('enums.approvalStatus.PENDING'))).toBeInTheDocument();
+    expect(screen.getByText(t('enums.approvalStatus.REJECTED'))).toBeInTheDocument();
   });
 
   it('selects restaurant on row click', async () => {
@@ -63,13 +64,13 @@ describe('VendorRestaurantList', () => {
 
   it('toggles add form via add button', async () => {
     const { setShowAddRestaurant } = setup();
-    await userEvent.click(screen.getByRole('button', { name: /Добавить/ }));
+    await userEvent.click(screen.getByRole('button', { name: t('common.actions.add') }));
     expect(setShowAddRestaurant).toHaveBeenCalledWith(true);
   });
 
   it('disables add button when profile not approved', () => {
     setup({ vendorProfile: { approval_status: 'PENDING' } as unknown as VendorProfile });
-    expect(screen.getByRole('button', { name: /Добавить/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: t('common.actions.add') })).toBeDisabled();
   });
 
   it('shows form with error and edits fields', async () => {
@@ -83,20 +84,20 @@ describe('VendorRestaurantList', () => {
         max_active_orders: '9',
       } as unknown as NewRestaurantForm,
     });
-    expect(screen.getByText('Новое заведение')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.restaurants.newFormTitle'))).toBeInTheDocument();
     expect(screen.getByText('Ошибка')).toBeInTheDocument();
-    await userEvent.type(screen.getByPlaceholderText('Название'), 'Z');
-    await userEvent.type(screen.getByPlaceholderText('Адрес'), 'Z');
-    await userEvent.type(screen.getByPlaceholderText(/Среднее время/), '1');
-    await userEvent.type(screen.getByPlaceholderText(/Мягкий лимит/), '1');
+    await userEvent.type(screen.getByPlaceholderText(t('common.labels.title')), 'Z');
+    await userEvent.type(screen.getByPlaceholderText(t('common.labels.address')), 'Z');
+    await userEvent.type(screen.getByPlaceholderText(t('vendor.restaurants.placeholders.avgPrepTime')), '1');
+    await userEvent.type(screen.getByPlaceholderText(t('vendor.restaurants.placeholders.maxActiveOrders')), '1');
     expect(setNewRestaurant).toHaveBeenCalled();
-    await userEvent.click(screen.getByRole('button', { name: 'Создать' }));
+    await userEvent.click(screen.getByRole('button', { name: t('common.actions.create') }));
     expect(handleCreateRestaurant).toHaveBeenCalled();
   });
 
   it('disables create button when formLoading', () => {
     setup({ showAddRestaurant: true, formLoading: true });
-    expect(screen.getByRole('button', { name: 'Создать' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: t('common.actions.create') })).toBeDisabled();
   });
 
   it('shows skeletons while loading with no restaurants', () => {
@@ -121,6 +122,6 @@ describe('VendorRestaurantList', () => {
 
   it('shows empty state when no restaurants and not loading', () => {
     setup({ restaurants: [] });
-    expect(screen.getByText('Нет заведений')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.restaurants.emptyTitle'))).toBeInTheDocument();
   });
 });

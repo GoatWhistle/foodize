@@ -6,6 +6,12 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 from infra.llm.anthropic_client import AnthropicClient
+from infra.llm.exceptions import (
+    MissingAnthropicAPIKeyError,
+    MissingGigaChatAPIKeyError,
+    MissingOpenAIAPIKeyError,
+    UnsupportedLLMProviderError,
+)
 from infra.llm.openai_compatible import OpenAICompatibleClient
 from settings.config.app_config import settings
 from settings.config.runtime.llm import LLMConfig, LLMProvider
@@ -61,27 +67,27 @@ def _resolve_model(role: AgentRole, provider: LLMProvider, cfg: LLMConfig) -> st
         return cfg.ollama_model
     if provider == LLMProvider.GIGACHAT:
         return cfg.gigachat_model
-    raise ValueError(f"Unsupported LLM provider: {provider}")
+    raise UnsupportedLLMProviderError(f"Unsupported LLM provider: {provider}")
 
 
 def _openai_compatible_credentials(provider: LLMProvider, cfg: LLMConfig) -> tuple[str, str | None]:
     if provider == LLMProvider.OPENAI:
         if not cfg.openai_api_key:
-            raise ValueError("LLM__OPENAI_API_KEY is not set")
+            raise MissingOpenAIAPIKeyError("LLM__OPENAI_API_KEY is not set")
         return cfg.openai_api_key, cfg.openai_base_url
     if provider == LLMProvider.OLLAMA:
         return "ollama", cfg.ollama_base_url
     if provider == LLMProvider.GIGACHAT:
         if not cfg.gigachat_api_key:
-            raise ValueError("LLM__GIGACHAT_API_KEY is not set")
+            raise MissingGigaChatAPIKeyError("LLM__GIGACHAT_API_KEY is not set")
         return cfg.gigachat_api_key, cfg.gigachat_base_url
-    raise ValueError(f"Unsupported LLM provider: {provider}")
+    raise UnsupportedLLMProviderError(f"Unsupported LLM provider: {provider}")
 
 
 def _build(provider: LLMProvider, model: str, cfg: LLMConfig) -> LLMClient:
     if provider == LLMProvider.ANTHROPIC:
         if not cfg.anthropic_api_key:
-            raise ValueError("LLM__ANTHROPIC_API_KEY is not set")
+            raise MissingAnthropicAPIKeyError("LLM__ANTHROPIC_API_KEY is not set")
         return AnthropicClient(
             api_key=cfg.anthropic_api_key,
             model=model,

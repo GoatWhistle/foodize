@@ -1,15 +1,27 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import {
-  WEEKDAYS_SHORT_RU,
+  weekdaysShort,
   toIsoDate,
   presetToDateRange,
 } from "@shared/utils/datetime";
+import { useLanguageStore } from "@shared/store/useLanguageStore";
 
-describe("WEEKDAYS_SHORT_RU", () => {
+describe("weekdaysShort", () => {
+  afterEach(() => {
+    useLanguageStore.setState({ language: "ru" });
+  });
+
   it("has seven days starting with Monday", () => {
-    expect(WEEKDAYS_SHORT_RU).toHaveLength(7);
-    expect(WEEKDAYS_SHORT_RU[0]).toBe("Пн");
-    expect(WEEKDAYS_SHORT_RU[6]).toBe("Вс");
+    useLanguageStore.setState({ language: "ru" });
+    expect(weekdaysShort()).toHaveLength(7);
+    expect(weekdaysShort()[0]).toBe("Пн");
+    expect(weekdaysShort()[6]).toBe("Вс");
+  });
+
+  it("follows the active language", () => {
+    useLanguageStore.setState({ language: "en" });
+    expect(weekdaysShort()[0]).toBe("Mon");
+    expect(weekdaysShort()[6]).toBe("Sun");
   });
 });
 

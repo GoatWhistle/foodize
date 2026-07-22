@@ -4,6 +4,11 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from features.promos.exceptions import (
+    PromoExpiresAtNotFutureError,
+    PromoPercentDiscountOutOfRangeError,
+)
+
 
 class PromoCreate(BaseModel):
     code: str = Field(..., min_length=3, max_length=64)
@@ -20,13 +25,13 @@ class PromoCreate(BaseModel):
     @classmethod
     def expires_at_must_be_future(cls, v: datetime | None) -> datetime | None:
         if v is not None and v <= datetime.now(UTC):
-            raise ValueError("expires_at must be in the future")
+            raise PromoExpiresAtNotFutureError()
         return v
 
     @model_validator(mode="after")
     def percent_discount_within_bounds(self) -> "PromoCreate":
         if self.discount_type == "PERCENT" and self.discount_value > 100:
-            raise ValueError("discount_value for PERCENT must be between 1 and 100")
+            raise PromoPercentDiscountOutOfRangeError()
         return self
 
 

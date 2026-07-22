@@ -47,6 +47,8 @@ import { selectIsAuthenticated } from '@shared/store/createAuthStore';
 import { useThemeEffect } from '@shared/hooks/useThemeEffect';
 import { useCartStore } from './store/useCartStore';
 import { useFavoriteStore } from '@shared/store/useFavoriteStore';
+import { useTranslation } from '@shared/i18n/useTranslation';
+
 
 export const ProtectedRoute = ({ children }: { children: ReactNode }) => {
   const isAuthenticated = useAuthStore(selectIsAuthenticated);
@@ -67,6 +69,52 @@ export const RoleProtectedRoute = ({
   if (!isAuthenticated) return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
   if (permission && !permissions?.includes(permission)) return <Navigate to={ROUTES.HOME} replace />;
   return children;
+};
+
+const NotFoundPage = () => {
+  const { t } = useTranslation();
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 16,
+        fontFamily: 'Manrope, sans-serif',
+      }}
+    >
+      <MapPinIcon
+        className="not-found-pin"
+        size={64}
+        weight="bold"
+        color="var(--fire)"
+      />
+      <h1
+        style={{
+          fontWeight: 800,
+          fontSize: "var(--text-xl)",
+          letterSpacing: '-0.03em',
+        }}
+      >
+        {t('common.errors.pageNotFound')}
+      </h1>
+      <a
+        href="/"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          color: 'var(--fire)',
+          fontWeight: 700,
+          textDecoration: 'none',
+        }}
+      >
+        <ArrowLeftIcon weight="bold" /> {t('common.actions.goHome')}
+      </a>
+    </div>
+  );
 };
 
 const router = createBrowserRouter([
@@ -186,48 +234,7 @@ const router = createBrowserRouter([
   },
   {
     path: '*',
-    element: (
-      <div
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 16,
-          fontFamily: 'Manrope, sans-serif',
-        }}
-      >
-        <MapPinIcon
-          className="not-found-pin"
-          size={64}
-          weight="bold"
-          color="var(--fire)"
-        />
-        <h1
-          style={{
-            fontWeight: 800,
-            fontSize: "var(--text-xl)",
-            letterSpacing: '-0.03em',
-          }}
-        >
-          Страница не найдена
-        </h1>
-        <a
-          href="/"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            color: 'var(--fire)',
-            fontWeight: 700,
-            textDecoration: 'none',
-          }}
-        >
-          <ArrowLeftIcon weight="bold" /> На главную
-        </a>
-      </div>
-    ),
+    element: <NotFoundPage />,
   },
 ]);
 

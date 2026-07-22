@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { VendorSettingsTab } from '../../../../pages/vendor/tabs/VendorSettingsTab';
 import type { Restaurant } from '@shared/types/models';
 import { at } from '../../../testUtils';
+import { t } from '@shared/i18n/useTranslation';
 
 vi.mock('@shared/services/restaurantService', () => ({
   restaurantService: { uploadPhoto: vi.fn(), deletePhoto: vi.fn() },
@@ -60,7 +61,7 @@ describe('VendorSettingsTab', () => {
     expect(screen.getByDisplayValue('My Resto')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Addr 1')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Desc')).toBeInTheDocument();
-    expect(screen.getByText('Настройки ресторана')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.settings.sectionTitle'))).toBeInTheDocument();
   });
 
   it('shows form error', () => {
@@ -84,7 +85,7 @@ describe('VendorSettingsTab', () => {
     await user.click(at(checkboxes, 0));
     await user.click(at(checkboxes, 1));
     await user.click(at(checkboxes, 2));
-    expect(screen.getByText('Заведение открыто')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.settings.isOpen'))).toBeInTheDocument();
   });
 
   it('edits numeric fields and paused-until', async () => {
@@ -95,7 +96,7 @@ describe('VendorSettingsTab', () => {
     await user.type(prep, '30');
     expect((prep as HTMLInputElement).value).toBe('30');
 
-    const maxOrders = screen.getByPlaceholderText('Без лимита');
+    const maxOrders = screen.getByPlaceholderText(t('vendor.settings.noLimit'));
     await user.type(maxOrders, '5');
     expect((maxOrders as HTMLInputElement).value).toBe('5');
     await user.clear(maxOrders);
@@ -117,18 +118,18 @@ describe('VendorSettingsTab', () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn((e: React.FormEvent) => { e.preventDefault(); });
     render(<Harness restaurant={makeRestaurant()} onSubmit={onSubmit} />);
-    await user.click(screen.getByRole('button', { name: 'Сохранить' }));
+    await user.click(screen.getByRole('button', { name: t('common.actions.save') }));
     expect(onSubmit).toHaveBeenCalled();
   });
 
   it('disables submit while loading', () => {
     render(<Harness restaurant={makeRestaurant()} formLoading />);
-    expect(screen.getByRole('button', { name: 'Сохранить' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: t('common.actions.save') })).toBeDisabled();
   });
 
   it('falls back to empty description when null', () => {
     render(<Harness restaurant={makeRestaurant({ description: null })} />);
-    const desc = screen.getByPlaceholderText(/Краткое описание/);
+    const desc = screen.getByPlaceholderText(t('vendor.settings.descriptionPlaceholder'));
     expect((desc as HTMLTextAreaElement).value).toBe('');
   });
 
@@ -174,6 +175,6 @@ describe('VendorSettingsTab', () => {
       await user.click(cb);
     }
     await user.type(dt, '2026-08-01T09:00');
-    expect(screen.getByText('Настройки ресторана')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.settings.sectionTitle'))).toBeInTheDocument();
   });
 });

@@ -4,6 +4,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { OptionGroupCard } from '../../../../../pages/vendor/tabs/components/OptionGroupCard';
 import type { OptionGroupDraft } from '../../../../../pages/vendor/tabs/VendorMenuTab';
 import { at } from '../../../../testUtils';
+import { t } from '@shared/i18n/useTranslation';
 
 const makeGroup = (overrides: Partial<OptionGroupDraft> = {}): OptionGroupDraft => ({
   draftId: 'g1',
@@ -32,7 +33,7 @@ describe('OptionGroupCard', () => {
   it('patches group name', async () => {
     const user = userEvent.setup();
     const h = setup();
-    await user.type(screen.getByPlaceholderText('Название группы'), 'X');
+    await user.type(screen.getByPlaceholderText(t('vendor.menu.options.groupNamePlaceholder')), 'X');
     expect(h.onPatchGroup).toHaveBeenCalledWith({ name: 'СоусыX' });
   });
 
@@ -60,13 +61,13 @@ describe('OptionGroupCard', () => {
 
   it('disables max_selected input when single', () => {
     setup({ selection_type: 'single', max_selected: 1 });
-    expect(screen.getByPlaceholderText('Макс. выборов')).toBeDisabled();
+    expect(screen.getByPlaceholderText(t('vendor.menu.options.maxChoicesPlaceholder'))).toBeDisabled();
   });
 
   it('patches max_selected when multiple', async () => {
     const user = userEvent.setup();
     const h = setup();
-    await user.type(screen.getByPlaceholderText('Макс. выборов'), '3');
+    await user.type(screen.getByPlaceholderText(t('vendor.menu.options.maxChoicesPlaceholder')), '3');
     expect(h.onPatchGroup).toHaveBeenCalledWith({ max_selected: '3' });
   });
 
@@ -92,11 +93,11 @@ describe('OptionGroupCard', () => {
   it('patches and removes option, and adds option', async () => {
     const user = userEvent.setup();
     const h = setup();
-    await user.type(screen.getByPlaceholderText('Опция'), 'Y');
+    await user.type(screen.getByPlaceholderText(t('vendor.menu.options.optionPlaceholder')), 'Y');
     expect(h.onPatchOption).toHaveBeenCalledWith(0, { name: 'КетчупY' });
     await user.type(screen.getByPlaceholderText('+₽'), '5');
     expect(h.onPatchOption).toHaveBeenCalledWith(0, { price_delta: expect.any(String) as unknown });
-    await user.click(screen.getByRole('button', { name: /Опция/ }));
+    await user.click(screen.getByRole('button', { name: new RegExp(t('vendor.menu.options.addOption')) }));
     expect(h.onAddOption).toHaveBeenCalled();
     const buttons = screen.getAllByRole('button');
     await user.click(at(buttons, buttons.length - 2));

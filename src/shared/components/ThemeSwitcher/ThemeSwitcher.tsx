@@ -1,13 +1,15 @@
 import { useThemeStore } from "@shared/store/useThemeStore";
 import type { ThemePreference } from "@shared/store/useThemeStore";
+import { useTranslation } from "@shared/i18n/useTranslation";
 
-const OPTIONS: { value: ThemePreference; label: string }[] = [
-  { value: "light", label: "Светлая" },
-  { value: "system", label: "Системная" },
-  { value: "dark", label: "Тёмная" },
+const OPTIONS: { value: ThemePreference; labelKey: string }[] = [
+  { value: "light", labelKey: "profile.theme.light" },
+  { value: "system", labelKey: "profile.theme.system" },
+  { value: "dark", labelKey: "profile.theme.dark" },
 ];
 
 export const ThemeSwitcher = () => {
+  const { t } = useTranslation();
   const theme = useThemeStore((s) => s.theme);
   const setTheme = useThemeStore((s) => s.setTheme);
 
@@ -28,7 +30,7 @@ export const ThemeSwitcher = () => {
           color: "var(--text-1)",
         }}
       >
-        Тема
+        {t("profile.theme.label")}
       </span>
       <div
         style={{
@@ -40,7 +42,7 @@ export const ThemeSwitcher = () => {
           padding: 3,
         }}
       >
-        {OPTIONS.map(({ value, label }) => (
+        {OPTIONS.map(({ value, labelKey }) => (
           <button
             key={value}
             onClick={() => { setTheme(value); }}
@@ -58,7 +60,7 @@ export const ThemeSwitcher = () => {
               boxShadow: theme === value ? "var(--shadow-sm)" : "none",
             }}
           >
-            {label}
+            {t(labelKey)}
           </button>
         ))}
       </div>

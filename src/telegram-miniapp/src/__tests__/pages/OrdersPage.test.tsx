@@ -21,7 +21,7 @@ vi.mock("../../telegram/sdk", () => ({
 
 interface SharedProps {
   routes: { home: string; orderStatus: string };
-  statusFilters: { key: string; label: string }[];
+  statusFilters: { key: string; labelKey: string }[];
   infiniteScroll: boolean;
 }
 let lastProps: SharedProps | null = null;
@@ -31,7 +31,7 @@ vi.mock("@shared/pages/OrdersPage/OrdersPage", () => ({
     return (
       <div data-testid="shared-orders">
         {props.statusFilters.map((f) => (
-          <span key={f.key || "all"}>{f.label}</span>
+          <span key={f.key || "all"}>{t(f.labelKey)}</span>
         ))}
       </div>
     );
@@ -39,6 +39,7 @@ vi.mock("@shared/pages/OrdersPage/OrdersPage", () => ({
 }));
 
 import { OrdersPage } from "../../pages/orders/OrdersPage";
+import { t } from "@shared/i18n/useTranslation";
 
 const renderPage = () =>
   render(
@@ -57,9 +58,9 @@ describe("OrdersPage", () => {
   it("renders the shared orders page with the status filters", () => {
     renderPage();
     expect(screen.getByTestId("shared-orders")).toBeInTheDocument();
-    expect(screen.getByText("Все")).toBeInTheDocument();
-    expect(screen.getByText("Активные")).toBeInTheDocument();
-    expect(screen.getByText("Выданные")).toBeInTheDocument();
+    expect(screen.getByText(t("order.list.filterAll"))).toBeInTheDocument();
+    expect(screen.getByText(t("order.list.filterActive"))).toBeInTheDocument();
+    expect(screen.getByText(t("order.list.filterCompleted"))).toBeInTheDocument();
   });
 
   it("passes the home and orderStatus routes to the shared page", () => {

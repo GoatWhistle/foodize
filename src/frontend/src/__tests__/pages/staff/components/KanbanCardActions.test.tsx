@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { StaffOrder } from '../../../../pages/staff/types';
 import { KanbanCardActions } from '../../../../pages/staff/components/KanbanCardActions';
+import { t } from '@shared/i18n/useTranslation';
 
 const ORDER = { id: 'o1', status: 'PENDING' } as unknown as StaffOrder;
 
@@ -60,13 +61,13 @@ describe('KanbanCardActions', () => {
     );
     const cancelIconBtn = container.querySelectorAll('button')[1] as HTMLElement;
     await user.click(cancelIconBtn);
-    expect(screen.getByPlaceholderText('Причина отмены (необязательно)')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Назад' }));
-    expect(screen.queryByPlaceholderText('Причина отмены (необязательно)')).toBeNull();
+    expect(screen.getByPlaceholderText(t('staff.card.cancel.reasonPlaceholder'))).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: t('common.actions.back') }));
+    expect(screen.queryByPlaceholderText(t('staff.card.cancel.reasonPlaceholder'))).toBeNull();
 
     await user.click(container.querySelectorAll('button')[1] as HTMLElement);
-    await user.type(screen.getByPlaceholderText('Причина отмены (необязательно)'), 'занят');
-    await user.click(screen.getByRole('button', { name: 'Подтвердить' }));
+    await user.type(screen.getByPlaceholderText(t('staff.card.cancel.reasonPlaceholder')), 'занят');
+    await user.click(screen.getByRole('button', { name: t('common.actions.confirm') }));
     expect(onCancel).toHaveBeenCalledWith('o1', 'занят');
   });
 
@@ -77,7 +78,7 @@ describe('KanbanCardActions', () => {
       <KanbanCardActions {...baseProps} onCancel={onCancel} />
     );
     await user.click(container.querySelectorAll('button')[1] as HTMLElement);
-    await user.click(screen.getByRole('button', { name: 'Подтвердить' }));
+    await user.click(screen.getByRole('button', { name: t('common.actions.confirm') }));
     expect(onCancel).toHaveBeenCalledWith('o1', null);
   });
 

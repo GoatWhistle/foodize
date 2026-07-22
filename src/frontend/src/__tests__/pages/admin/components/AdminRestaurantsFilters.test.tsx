@@ -5,6 +5,7 @@ import { vi, describe, it, expect } from 'vitest';
 import { AdminRestaurantsFilters } from '../../../../pages/admin/components/AdminRestaurantsFilters';
 import type { RestaurantFilters } from '../../../../pages/admin/hooks/useAdminRestaurants';
 import { at } from '../../../testUtils';
+import { t } from '@shared/i18n/useTranslation';
 
 const baseFilters: RestaurantFilters = { is_open: '', moderation_status: '', min_rating: '' };
 
@@ -42,14 +43,14 @@ const setup = () => {
 describe('AdminRestaurantsFilters', () => {
   it('typing restaurant search resets page and updates value', async () => {
     const { setRestaurantSearchRaw, setRestaurantsPage } = setup();
-    await userEvent.type(screen.getByPlaceholderText('Ресторан'), 'a');
+    await userEvent.type(screen.getByPlaceholderText(t('admin.restaurants.filters.restaurantPlaceholder')), 'a');
     expect(setRestaurantsPage).toHaveBeenCalledWith(1);
     expect(setRestaurantSearchRaw).toHaveBeenCalledWith('a');
   });
 
   it('typing vendor search updates value', async () => {
     const { setRestaurantVendorSearchRaw } = setup();
-    await userEvent.type(screen.getByPlaceholderText('Вендор или телефон'), 'b');
+    await userEvent.type(screen.getByPlaceholderText(t('admin.restaurants.filters.vendorPlaceholder')), 'b');
     expect(setRestaurantVendorSearchRaw).toHaveBeenCalledWith('b');
   });
 

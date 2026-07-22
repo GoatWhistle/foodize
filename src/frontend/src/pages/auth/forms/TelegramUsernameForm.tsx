@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
+import { t, useTranslation } from '@shared/i18n/useTranslation';
 
 const TG_USERNAME_RE = /^[a-zA-Z0-9_]{5,32}$/;
 
 const validateUsername = (value: string): string | null => {
   if (!value) return null;
-  if (value.length < 5) return 'Минимум 5 символов';
-  if (value.length > 32) return 'Максимум 32 символа';
-  if (!/^[a-zA-Z0-9_]+$/.test(value)) return 'Только a–z, 0–9 и _';
-  if (value.startsWith('_') || value.endsWith('_')) return 'Не может начинаться или заканчиваться на _';
+  if (value.length < 5) return t('auth.usernameHints.minLength');
+  if (value.length > 32) return t('auth.usernameHints.maxLength');
+  if (!/^[a-zA-Z0-9_]+$/.test(value)) return t('auth.usernameHints.allowedChars');
+  if (value.startsWith('_') || value.endsWith('_')) return t('auth.usernameHints.underscoreEdges');
   return null;
 };
 
@@ -27,6 +28,7 @@ export const TelegramUsernameForm = ({
   onSubmit,
   onBack,
 }: TelegramUsernameFormProps) => {
+  const { t: translate } = useTranslation();
   const [touched, setTouched] = useState(false);
 
   const validationError = validateUsername(telegramUsername);
@@ -49,7 +51,7 @@ export const TelegramUsernameForm = ({
     <form className="auth-form" onSubmit={handleSubmit} noValidate>
       <div className="form-group">
         <label className="form-label" htmlFor="telegram-login-username">
-          Telegram @username
+          {translate('auth.fields.telegramUsername')}
         </label>
         <div style={{ position: 'relative' }}>
           <span
@@ -71,7 +73,7 @@ export const TelegramUsernameForm = ({
             id="telegram-login-username"
             className="form-input"
             type="text"
-            placeholder="username"
+            placeholder={translate('auth.placeholders.username')}
             value={telegramUsername}
             onChange={handleChange}
             onBlur={() => { setTouched(true); }}
@@ -92,7 +94,7 @@ export const TelegramUsernameForm = ({
           </div>
         ) : telegramUsername && !isValid ? (
           <div style={{ marginTop: 6, fontSize: "var(--text-base)", color: 'var(--text-2)' }}>
-            a–z, 0–9 и _ · минимум 5 символов
+            {translate('auth.usernameHints.format')}
           </div>
         ) : null}
       </div>
@@ -103,7 +105,7 @@ export const TelegramUsernameForm = ({
         disabled={isLoading || !isValid}
         style={{ height: '52px', borderRadius: 'var(--r-sm)' }}
       >
-        {isLoading ? 'Отправляем...' : 'Получить код в Telegram'}
+        {isLoading ? translate('auth.buttons.sending') : translate('auth.buttons.getCode')}
       </button>
 
       <button
@@ -112,7 +114,7 @@ export const TelegramUsernameForm = ({
         disabled={isLoading}
         onClick={onBack}
       >
-        Назад
+        {translate('common.actions.back')}
       </button>
     </form>
   );

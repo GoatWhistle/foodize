@@ -4,6 +4,8 @@ import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { RestaurantPage } from '../../../pages/restaurant/RestaurantPage';
 import { at } from '../../testUtils';
+import { t } from '@shared/i18n/useTranslation';
+import { categoryLabel } from '@shared/utils/locales';
 
 const controllerState = vi.hoisted((): { current: Record<string, unknown> } => ({ current: {} }));
 const authState = vi.hoisted((): { current: { user: unknown } } => ({ current: { user: null } }));
@@ -119,13 +121,13 @@ describe('RestaurantPage extra branches', () => {
   it('renders hero, categories and menu item', () => {
     renderPage();
     expect(screen.getByText('Test Resto')).toBeInTheDocument();
-    expect(screen.getByText('Все')).toBeInTheDocument();
+    expect(screen.getByText(t('catalog.restaurantPage.allCategories'))).toBeInTheDocument();
     expect(screen.getByText('ITEM_Shaurma')).toBeInTheDocument();
   });
 
   it('switches category', async () => {
     renderPage();
-    await userEvent.click(screen.getByText('Шаурма'));
+    await userEvent.click(screen.getByText(categoryLabel('SHAURMA')));
     expect(controllerState.current['setActiveCategory'] as Mock).toHaveBeenCalledWith('SHAURMA');
   });
 
@@ -134,7 +136,7 @@ describe('RestaurantPage extra branches', () => {
       restaurantView: { id: 'u1', name: 'Test Resto', address: 'Addr', is_open: false },
     });
     renderPage();
-    expect(screen.getByText(/временно закрыто/)).toBeInTheDocument();
+    expect(screen.getByText(t('catalog.restaurantPage.closedBannerWeb'))).toBeInTheDocument();
   });
 
   it('shows skeletons while loading', () => {
@@ -147,9 +149,9 @@ describe('RestaurantPage extra branches', () => {
     renderPage();
     await userEvent.click(screen.getByText('4.5 (3)'));
     await userEvent.click(screen.getByText('REVIEWS_CLOSE'));
-    await userEvent.click(screen.getByText('Инфо'));
+    await userEvent.click(screen.getByText(t('catalog.restaurantPage.info')));
     await userEvent.click(screen.getByText('INFO_CLOSE'));
-    await userEvent.click(screen.getByRole('button', { name: 'Поделиться рестораном' }));
+    await userEvent.click(screen.getByRole('button', { name: t('catalog.restaurantPage.share') }));
     await userEvent.click(screen.getByText('SHARE_CLOSE'));
     expect(screen.queryByText('SHARE_CLOSE')).not.toBeInTheDocument();
   });
@@ -167,7 +169,7 @@ describe('RestaurantPage extra branches', () => {
   it('shows favorite button and toggles when logged in', async () => {
     authState.current = { user: { id: 'usr', permissions: ['reviews.create'] } };
     renderPage();
-    await userEvent.click(screen.getByRole('button', { name: /избранное/ }));
+    await userEvent.click(screen.getByRole('button', { name: t('catalog.restaurantCard.addToFavorites') }));
     expect(controllerState.current['handleToggleFavorite'] as Mock).toHaveBeenCalled();
   });
 
@@ -177,9 +179,9 @@ describe('RestaurantPage extra branches', () => {
       restaurantView: { id: 'u1', name: 'Test Resto', address: 'Addr', is_open: true, is_hiring: true },
     });
     renderPage();
-    await userEvent.click(screen.getByRole('button', { name: /ищет сотрудников/ }));
-    await userEvent.type(screen.getByPlaceholderText('Расскажите о себе...'), 'Резюме');
-    await userEvent.click(screen.getByRole('button', { name: 'Отправить заявку' }));
+    await userEvent.click(screen.getByRole('button', { name: t('catalog.restaurantPage.hiringHint') }));
+    await userEvent.type(screen.getByPlaceholderText(t('catalog.staffModal.messagePlaceholder')), 'Резюме');
+    await userEvent.click(screen.getByRole('button', { name: t('catalog.staffModal.submit') }));
     await waitFor(() => { expect(staffService.createRequest).toHaveBeenCalledWith('u1', { message: 'Резюме' }); });
   });
 
@@ -189,11 +191,11 @@ describe('RestaurantPage extra branches', () => {
       restaurantView: { id: 'u1', name: 'Test Resto', address: 'Addr', is_open: true, is_hiring: true },
     });
     renderPage();
-    await userEvent.click(screen.getByRole('button', { name: /ищет сотрудников/ }));
-    await userEvent.type(screen.getByPlaceholderText('Расскажите о себе...'), 'Резюме');
-    await userEvent.click(screen.getByRole('button', { name: 'Отправить заявку' }));
+    await userEvent.click(screen.getByRole('button', { name: t('catalog.restaurantPage.hiringHint') }));
+    await userEvent.type(screen.getByPlaceholderText(t('catalog.staffModal.messagePlaceholder')), 'Резюме');
+    await userEvent.click(screen.getByRole('button', { name: t('catalog.staffModal.submit') }));
     await waitFor(() =>
-      { expect(screen.getByText('Ошибка при отправке заявки')).toBeInTheDocument(); },
+      { expect(screen.getByText(t('catalog.staffModal.failed'))).toBeInTheDocument(); },
     );
   });
 
@@ -203,9 +205,9 @@ describe('RestaurantPage extra branches', () => {
       restaurantView: { id: 'u1', name: 'Test Resto', address: 'Addr', is_open: true, is_hiring: true },
     });
     renderPage();
-    await userEvent.click(screen.getByRole('button', { name: /ищет сотрудников/ }));
-    await userEvent.type(screen.getByPlaceholderText('Расскажите о себе...'), 'Резюме');
-    await userEvent.click(screen.getByRole('button', { name: 'Отправить заявку' }));
+    await userEvent.click(screen.getByRole('button', { name: t('catalog.restaurantPage.hiringHint') }));
+    await userEvent.type(screen.getByPlaceholderText(t('catalog.staffModal.messagePlaceholder')), 'Резюме');
+    await userEvent.click(screen.getByRole('button', { name: t('catalog.staffModal.submit') }));
     expect(staffService.createRequest).not.toHaveBeenCalled();
   });
 });

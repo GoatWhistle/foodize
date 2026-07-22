@@ -10,6 +10,7 @@ import {
 } from "react-router-dom";
 import { ShoppingCartIcon } from "@phosphor-icons/react";
 
+import { useTranslation } from "@shared/i18n/useTranslation";
 import { useCartStore } from "./store/useCartStore";
 import { BottomNav } from "./components/BottomNav/BottomNav";
 import { ActiveOrderBanner } from "./components/ActiveOrderBanner/ActiveOrderBanner";
@@ -56,6 +57,7 @@ const LazyLegal = lazy(() =>
 );
 
 const GlobalCartFab = () => {
+  const { t } = useTranslation();
   const count = useCartStore((s) => s.cartCount());
   const navigate = useNavigate();
   const location = useLocation();
@@ -74,7 +76,7 @@ const GlobalCartFab = () => {
       }}
     >
       <ShoppingCartIcon size={22} weight="bold" />
-      <span className="cart-fab-label">Корзина</span>
+      <span className="cart-fab-label">{t("order.cart.fabLabel")}</span>
       <span className="cart-badge">{count}</span>
     </button>
   );

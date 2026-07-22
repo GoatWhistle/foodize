@@ -1,13 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { ORDER_STATUS_RU, translate } from "@shared/utils/locales";
+import { orderStatusLabel, translateEnum } from "@shared/utils/locales";
 import { hasPermission } from "@shared/utils/permissions";
 import { translateApiError } from "@shared/utils/translateApiError";
+import { t } from "@shared/i18n/useTranslation";
 
 describe("locales translate utility", () => {
   it("should translate order status", () => {
-    expect(translate(ORDER_STATUS_RU, "PENDING")).toBe("Ожидается");
-    expect(translate(ORDER_STATUS_RU, "UNKNOWN", "UNKNOWN")).toBe("UNKNOWN");
-    expect(translate(ORDER_STATUS_RU, null, "fallback")).toBe("fallback");
+    expect(orderStatusLabel("PENDING")).toBe(t("enums.orderStatus.PENDING"));
+    expect(orderStatusLabel("UNKNOWN")).toBe("UNKNOWN");
+    expect(translateEnum("orderStatus", null, "fallback")).toBe("fallback");
   });
 });
 
@@ -26,7 +27,7 @@ describe("translateApiError utility", () => {
   it("should translate exact error message", () => {
     const err = { response: { data: { detail: "Invalid credentials" } } };
     expect(translateApiError(err, "fallback")).toBe(
-      "Неверный телефон или пароль",
+      t("apiErrors.byDetail.Invalid credentials"),
     );
   });
 
@@ -40,7 +41,7 @@ describe("translateApiError utility", () => {
       },
     };
     expect(translateApiError(err, "fallback")).toBe(
-      "Можно опубликовать до 5 отзывов на один ресторан",
+      t("apiErrors.byDetail.You can publish up to 5 reviews for one restaurant"),
     );
   });
 

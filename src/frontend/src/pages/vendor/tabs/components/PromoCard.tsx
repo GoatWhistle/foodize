@@ -1,5 +1,6 @@
 import { TagIcon, TrashIcon } from '@phosphor-icons/react';
-import { CATEGORY_RU } from '@shared/utils/locales';
+import { categoryLabel } from '@shared/utils/locales';
+import { t, useTranslation } from '@shared/i18n/useTranslation';
 import { formatPrice } from '@shared/utils/price';
 import type { Promo } from '@shared/types/models';
 import styles from './VendorPromos.module.css';
@@ -12,16 +13,14 @@ interface PromoCardProps {
 
 const getPromoConditionLabels = (promo: Promo): string[] => {
   const labels: string[] = [];
-  if (promo.first_order_only) labels.push('только первый заказ');
-  if (promo.min_order_amount) labels.push(`от ${formatPrice(promo.min_order_amount)}`);
-  if (promo.menu_category) {
-    const categoryLabels = CATEGORY_RU as Record<string, string>;
-    labels.push(categoryLabels[promo.menu_category] || promo.menu_category);
-  }
+  if (promo.first_order_only) labels.push(t('vendor.promos.card.firstOrderOnly'));
+  if (promo.min_order_amount) labels.push(t('vendor.promos.card.minAmount', { amount: formatPrice(promo.min_order_amount) }));
+  if (promo.menu_category) labels.push(categoryLabel(promo.menu_category));
   return labels;
 };
 
 export function PromoCard({ promo, deactivating, onDeactivate }: PromoCardProps) {
+  const { t: translate } = useTranslation();
   const conditionLabels = getPromoConditionLabels(promo);
   return (
     <div
@@ -39,14 +38,14 @@ export function PromoCard({ promo, deactivating, onDeactivate }: PromoCardProps)
             ? `${promo.discount_value}%`
             : formatPrice(promo.discount_value)}
           {' • '}
-          {promo.used_count}/{promo.max_uses ?? '∞'} исп.
+          {translate('vendor.promos.card.usage', { used: promo.used_count, max: promo.max_uses ?? translate('vendor.promos.card.unlimited') })}
           {promo.expires_at
-            ? ` • до ${new Date(promo.expires_at).toLocaleDateString()}`
+            ? translate('vendor.promos.card.expires', { date: new Date(promo.expires_at).toLocaleDateString() })
             : ''}
         </div>
         {conditionLabels.length > 0 && (
           <div className={styles['cardConditions']}>
-            Условия: {conditionLabels.join(' • ')}
+            {translate('vendor.promos.card.conditions', { conditions: conditionLabels.join(' • ') })}
           </div>
         )}
       </div>
@@ -58,14 +57,14 @@ export function PromoCard({ promo, deactivating, onDeactivate }: PromoCardProps)
           border: `1px solid ${promo.is_active ? 'var(--color-success-border)' : 'var(--color-neutral-border)'}`,
         }}
       >
-        {promo.is_active ? 'Активен' : 'Завершён'}
+        {promo.is_active ? translate('vendor.promos.card.active') : translate('vendor.promos.card.finished')}
       </span>
       {promo.is_active && (
         <button
           className="btn-icon-sm danger"
           disabled={deactivating}
           onClick={() => { onDeactivate(promo.code); }}
-          title="Деактивировать"
+          title={translate('vendor.promos.card.deactivate')}
         >
           <TrashIcon size={14} />
         </button>

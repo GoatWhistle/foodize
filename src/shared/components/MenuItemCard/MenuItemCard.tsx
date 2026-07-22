@@ -1,9 +1,11 @@
 import { memo } from "react";
 import { ProhibitInsetIcon, PlusIcon } from "@phosphor-icons/react";
 import { getCategoryIcon } from "@shared/utils/categoryIcons";
+import { categoryLabel } from "@shared/utils/locales";
 import { formatPrice } from "@shared/utils/price";
 import { activateOnKey } from "@shared/utils/a11y";
 import type { MenuItem } from "@shared/types/models";
+import { useTranslation } from "@shared/i18n/useTranslation";
 import s from "./MenuItemCard.module.css";
 
 interface MenuItemCardProps {
@@ -14,6 +16,7 @@ interface MenuItemCardProps {
 }
 
 const MenuItemCardBase = ({ item, onSelect, isRestaurantOpen = true, onHaptic }: MenuItemCardProps) => {
+  const { t } = useTranslation();
   const icon = getCategoryIcon(item.category, { size: 28, fallback: "cooking" });
   const isClosed = !isRestaurantOpen;
   const unavailable = !item.is_available || isClosed;
@@ -32,7 +35,7 @@ const MenuItemCardBase = ({ item, onSelect, isRestaurantOpen = true, onHaptic }:
       role="button"
       tabIndex={unavailable ? -1 : 0}
       onKeyDown={activateOnKey(handleClick)}
-      aria-label={`Открыть ${item.name}`}
+      aria-label={t("catalog.menuItem.openAria", { name: item.name })}
     >
       <div className={s['img']}>
         {item.photo_url ? (
@@ -41,7 +44,7 @@ const MenuItemCardBase = ({ item, onSelect, isRestaurantOpen = true, onHaptic }:
           <div className={s['imgPlaceholder']}>{icon}</div>
         )}
 
-        <span className={s['categoryTag']}>{item.category}</span>
+        <span className={s['categoryTag']}>{categoryLabel(item.category)}</span>
 
         {unavailable && (
           <div className={s['unavailableOverlay']}>
@@ -60,7 +63,7 @@ const MenuItemCardBase = ({ item, onSelect, isRestaurantOpen = true, onHaptic }:
             <button
               className={s['addBtn']}
               onClick={handleClick}
-              aria-label={`Добавить ${item.name}`}
+              aria-label={t("catalog.menuItem.addAria", { name: item.name })}
             >
               <PlusIcon size={14} weight="bold" />
             </button>

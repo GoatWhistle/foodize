@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConfirmDialog } from '@shared/components/ConfirmDialog/ConfirmDialog';
 import { useModalStore } from '@shared/store/useModalStore';
+import { t } from '@shared/i18n/useTranslation';
 
 describe('ConfirmDialog', () => {
   beforeEach(() => {
@@ -41,7 +42,7 @@ describe('ConfirmDialog', () => {
     });
 
     render(<ConfirmDialog />);
-    await user.click(screen.getByRole('button', { name: 'Отмена' }));
+    await user.click(screen.getByRole('button', { name: t('common.actions.cancel') }));
 
     expect(useModalStore.getState().confirmDialog).toBe(null);
   });

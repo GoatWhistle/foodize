@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { streamSseRequest } from '@shared/services/streamRequest.js';
+import { t } from '@shared/i18n/useTranslation';
 
 const mockFetch = vi.fn();
 
@@ -65,7 +66,7 @@ describe('streamSseRequest', () => {
 
     await expect(
       streamSseRequest('http://localhost:8000/api/v1/ai/chat', {}, {})
-    ).rejects.toThrow('Ошибка 500');
+    ).rejects.toThrow(t('common.errors.requestFailed', { status: 500 }));
   });
 
   it('throws when body is null', async () => {
@@ -73,7 +74,7 @@ describe('streamSseRequest', () => {
 
     await expect(
       streamSseRequest('http://localhost:8000/api/v1/ai/chat', {}, {})
-    ).rejects.toThrow('Ошибка 200');
+    ).rejects.toThrow(t('common.errors.requestFailed', { status: 200 }));
   });
 
   it('retries on 401 and streams after refresh', async () => {
@@ -124,7 +125,7 @@ describe('streamSseRequest', () => {
     const mod = await import('@shared/services/streamRequest.js');
     await expect(
       mod.streamSseRequest('http://localhost:8000/api/v1/test', {}, {})
-    ).rejects.toThrow('Ошибка 403');
+    ).rejects.toThrow(t('common.errors.requestFailed', { status: 403 }));
   });
 
   it('attaches Authorization header when getToken returns a token', async () => {

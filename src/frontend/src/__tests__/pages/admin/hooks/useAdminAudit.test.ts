@@ -1,6 +1,7 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { useAdminAudit } from '../../../../pages/admin/hooks/useAdminAudit';
+import { t } from '@shared/i18n/useTranslation';
 
 vi.mock('../../../../services/adminService', () => ({
   adminService: {
@@ -65,7 +66,7 @@ describe('useAdminAudit', () => {
   it('sets error on failure', async () => {
     vi.mocked(adminService.getAuditLogs).mockRejectedValue(new Error('boom'));
     renderHook(() => useAdminAudit(baseArgs()));
-    await waitFor(() => { expect(setActionError).toHaveBeenCalledWith('Не удалось загрузить логи'); });
+    await waitFor(() => { expect(setActionError).toHaveBeenCalledWith(t('admin.audit.errors.loadFailed')); });
   });
 
   it('exposes page and expanded controls', () => {

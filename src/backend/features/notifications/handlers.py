@@ -15,43 +15,37 @@ from features.notifications.outbox_service import enqueue_event
 from features.notifications.schemas import NotificationResponse
 from infra.cache.redis import get_redis_cache
 from shared.enums.order_status import OrderStatus
+from shared.i18n import DEFAULT_LANGUAGE, translate
 from utils.logging_setup import get_logger
 
 logger = get_logger(__name__)
 
 _FEEDBACK_DELAY_SECONDS = 1800
 
-_STATUS_RU = {
-    OrderStatus.PENDING: "Ожидается",
-    OrderStatus.ACCEPTED: "Принят",
-    OrderStatus.READY: "Готово",
-    OrderStatus.COMPLETED: "Выполнено",
-    OrderStatus.CANCELLED: "Отменён",
-}
-
-
-def _status_change_text(event: OrderStatusChangedEvent) -> tuple[str, str]:
+def _status_change_content(event: OrderStatusChangedEvent) -> tuple[str, dict[str, object]]:
     if event.new_status == OrderStatus.READY:
-        return (
-            "Заказ готов!",
-            f"Ваш заказ из {event.restaurant_name} готов к выдаче. Приятного аппетита!",
-        )
-    status_str = _STATUS_RU.get(event.new_status, event.new_status.value)
+        return "notifications.orderReady", {"restaurant": event.restaurant_name}
+    status_label = translate(
+        f"notifications.orderStatus.{event.new_status.value}", DEFAULT_LANGUAGE
+    )
     return (
-        "Статус заказа изменён",
-        f"Ваш заказ из {event.restaurant_name} теперь в статусе: {status_str}.",
+        "notifications.orderStatusChanged",
+        {"restaurant": event.restaurant_name, "status": status_label},
     )
 
 
 async def _create_user_notification(
-    session: AsyncSession, user_id: uuid.UUID, title: str, message: str
+    session: AsyncSession, user_id: uuid.UUID, key: str, params: dict[str, object]
 ) -> str:
     notification = await create_notification(
         session=session,
         user_id=user_id,
-        title=title,
-        message=message,
+        title=translate(f"{key}.title", DEFAULT_LANGUAGE, **params),
+        message=translate(f"{key}.message", DEFAULT_LANGUAGE, **params),
         type=NotificationType.ORDER_STATUS,
+        title_key=f"{key}.title",
+        message_key=f"{key}.message",
+        params=params,
     )
     return NotificationResponse.model_validate(notification).model_dump_json()
 
@@ -67,12 +61,12 @@ async def handle_feedback_requested(session: AsyncSession, event: FeedbackReques
         order_id=str(event.order_id),
         restaurant_id=str(event.restaurant_id),
     )
-    title = "Оцените ваш заказ"
-    message = (
-        f"Как вам заказ из {event.restaurant_name}? Пожалуйста, оставьте отзыв"
-        " в мини-приложении, это поможет ресторану стать лучше!"
+    payload = await _create_user_notification(
+        session,
+        event.user_id,
+        "notifications.feedbackRequested",
+        {"restaurant": event.restaurant_name},
     )
-    payload = await _create_user_notification(session, event.user_id, title, message)
     session.info["notification_payload"] = UserNotificationMessage(
         user_id=event.user_id, payload=payload
     )
@@ -85,9 +79,12 @@ async def handle_order_placed(session: AsyncSession, event: OrderPlacedEvent) ->
         restaurant_id=str(event.restaurant_id),
         items_count=event.items_count,
     )
-    title = f"Заказ в {event.restaurant_name} принят"
-    message = f"Ваш заказ на сумму {event.total_price} ₽ успешно оформлен и ожидает подтверждения."
-    payload = await _create_user_notification(session, event.user_id, title, message)
+    payload = await _create_user_notification(
+        session,
+        event.user_id,
+        "notifications.orderPlaced",
+        {"restaurant": event.restaurant_name, "total": event.total_price},
+    )
     session.info["notification_payload"] = UserNotificationMessage(
         user_id=event.user_id, payload=payload
     )
@@ -104,7 +101,7 @@ async def handle_order_status_changed(
         new_status=event.new_status.value,
     )
 
-    title, message = _status_change_text(event)
+    key, params = _status_change_content(event)
 
     if event.new_status == OrderStatus.COMPLETED:
         run_at = datetime.now(UTC) + timedelta(seconds=_FEEDBACK_DELAY_SECONDS)
@@ -119,7 +116,7 @@ async def handle_order_status_changed(
             run_at=run_at,
         )
 
-    payload = await _create_user_notification(session, event.user_id, title, message)
+    payload = await _create_user_notification(session, event.user_id, key, params)
     session.info["notification_payload"] = UserNotificationMessage(
         user_id=event.user_id, payload=payload
     )

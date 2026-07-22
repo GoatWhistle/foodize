@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { adminService } from '../../../services/adminService';
 import { useDebounce } from '@shared/utils/useDebounce';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { Order } from '@shared/types/models';
 
 const PAGE_SIZE = 20;
@@ -18,6 +19,7 @@ export interface OrderFilters {
 }
 
 export const useAdminOrders = ({ activeTab, setActionError }: UseAdminOrdersArgs) => {
+  const { t } = useTranslation();
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersPage, setOrdersPage] = useState(1);
   const [ordersTotal, setOrdersTotal] = useState(0);
@@ -44,12 +46,12 @@ export const useAdminOrders = ({ activeTab, setActionError }: UseAdminOrdersArgs
         setOrders(items);
         setOrdersTotal(total);
       } catch {
-        setActionError('Не удалось загрузить заказы');
+        setActionError(t('admin.orders.errors.loadFailed'));
       } finally {
         setOrdersLoading(false);
       }
     })();
-  }, [activeTab, ordersPage, orderFilters, orderSearch, setActionError]);
+  }, [activeTab, ordersPage, orderFilters, orderSearch, setActionError, t]);
 
   return {
     orders,

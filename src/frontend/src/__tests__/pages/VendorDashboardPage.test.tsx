@@ -12,6 +12,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import { useRestaurantStore } from '@shared/store/useRestaurantStore.js';
 import { vendorService } from '@shared/services/vendorService.js';
 import type { Restaurant } from '@shared/types/models';
+import { t } from '@shared/i18n/useTranslation';
 
 type AuthState = {
   user: { name: string; phone_number: string };
@@ -117,7 +118,7 @@ describe('VendorDashboardPage', () => {
 
     await waitForVendorEffects();
 
-    expect(screen.getByText('Дашборд вендора')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.dashboard.title'))).toBeInTheDocument();
     expect(screen.getByText('My Resto')).toBeInTheDocument();
   });
 
@@ -129,16 +130,16 @@ describe('VendorDashboardPage', () => {
       </BrowserRouter>
     );
 
-    const addButton = await screen.findByRole('button', { name: /Добавить/ });
+    const addButton = await screen.findByRole('button', { name: new RegExp(t('common.actions.add')) });
     await waitFor(() => { expect(addButton).not.toBeDisabled(); });
     await user.click(addButton);
 
-    expect(screen.getByText('Новое заведение')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.restaurants.newFormTitle'))).toBeInTheDocument();
 
-    await user.type(screen.getByPlaceholderText('Название'), 'New Place');
-    await user.type(screen.getByPlaceholderText('Адрес'), 'New Addr');
+    await user.type(screen.getByPlaceholderText(t('common.labels.title')), 'New Place');
+    await user.type(screen.getByPlaceholderText(t('common.labels.address')), 'New Addr');
 
-    await user.click(screen.getByText('Создать'));
+    await user.click(screen.getByText(t('common.actions.create')));
 
     await waitFor(() => {
       expect(createRestaurantMock).toHaveBeenCalledWith(
@@ -162,7 +163,7 @@ describe('VendorDashboardPage', () => {
 
     await user.click(screen.getByText('My Resto'));
 
-    expect(screen.getByText(/Позиции меню/)).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(t('vendor.menu.sectionTitle')))).toBeInTheDocument();
   });
 
   it('shows pending moderation banner when approval_status is PENDING', async () => {
@@ -177,7 +178,7 @@ describe('VendorDashboardPage', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Профиль на модерации')).toBeInTheDocument();
+      expect(screen.getByText(t('vendor.approvalBanner.pendingTitle'))).toBeInTheDocument();
     });
   });
 
@@ -193,7 +194,7 @@ describe('VendorDashboardPage', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Профиль отклонён')).toBeInTheDocument();
+      expect(screen.getByText(t('vendor.approvalBanner.rejectedTitle'))).toBeInTheDocument();
       expect(screen.getByText(/Неверные документы/)).toBeInTheDocument();
     });
   });
@@ -226,7 +227,7 @@ describe('VendorDashboardPage', () => {
       </BrowserRouter>
     );
 
-    expect(screen.getByText('Дашборд вендора')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.dashboard.title'))).toBeInTheDocument();
 
     await act(async () => {
       resolveProfile({ data: { data: { approval_status: 'APPROVED' } } });

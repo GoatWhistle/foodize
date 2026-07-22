@@ -1,10 +1,13 @@
 import enum
 import uuid
 
-from sqlalchemy import Boolean, ForeignKey, Index, String, text
+from sqlalchemy import JSON, Boolean, ForeignKey, Index, String, text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database import Base, CreatedAtMixin, IdUuidPkMixin
+
+_PARAMS_TYPE = JSON().with_variant(JSONB(), "postgresql")
 
 
 class NotificationType(str, enum.Enum):
@@ -25,6 +28,11 @@ class Notification(Base, IdUuidPkMixin, CreatedAtMixin):
     )
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     message: Mapped[str] = mapped_column(String, nullable=False)
+    title_key: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    message_key: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    params: Mapped[dict[str, object]] = mapped_column(
+        _PARAMS_TYPE, nullable=False, default=dict, server_default=text("'{}'")
+    )
     type: Mapped[str] = mapped_column(
         String(50),
         nullable=False,

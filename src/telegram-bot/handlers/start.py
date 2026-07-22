@@ -38,17 +38,18 @@ async def _call_backend_api[T](
     error_message: str,
     log_context: str,
 ) -> T | _BackendCallFailed:
+    lang = msg.message_language(message)
     try:
         return await call()
     except httpx.HTTPStatusError as exc:
         if exc.response.status_code == HTTPStatus.FORBIDDEN:
-            await message.answer(msg.BOT_ACCESS_DENIED)
+            await message.answer(msg.text("botAccessDenied", lang))
         else:
             logger.warning("%s HTTP error status=%s", log_context, exc.response.status_code)
             await message.answer(error_message)
     except httpx.HTTPError as exc:
         logger.warning("%s network error: %s", log_context, exc)
-        await message.answer(msg.API_UNAVAILABLE)
+        await message.answer(msg.text("apiUnavailable", lang))
     return _BackendCallFailed.TOKEN
 
 
@@ -67,11 +68,12 @@ def _display_name(message: Message) -> str:
 
 
 async def _link_phone(message: Message, phone_number: str) -> bool:
+    lang = msg.message_language(message)
     from_user = message.from_user
     if not from_user:
         return False
 
-    if not await _ensure_bot_configured(message, msg.BOT_NOT_CONFIGURED):
+    if not await _ensure_bot_configured(message, msg.text("botNotConfigured", lang)):
         return False
 
     result = await _call_backend_api(
@@ -82,66 +84,71 @@ async def _link_phone(message: Message, phone_number: str) -> bool:
             phone_number=phone_number,
             name=_display_name(message),
         ),
-        error_message=msg.PHONE_LINK_FAILED,
+        error_message=msg.text("phoneLinkFailed", lang),
         log_context="link_phone",
     )
     if result is _BackendCallFailed.TOKEN:
         return False
 
-    await message.answer(msg.PHONE_LINKED, reply_markup=kb.phone_keyboard())
-    mini_app_markup = kb.mini_app_keyboard()
+    await message.answer(msg.text("phoneLinked", lang), reply_markup=kb.phone_keyboard(lang))
+    mini_app_markup = kb.mini_app_keyboard(lang)
     if mini_app_markup:
-        await message.answer(msg.OPEN_APP, reply_markup=mini_app_markup)
+        await message.answer(msg.text("openApp", lang), reply_markup=mini_app_markup)
     else:
-        await message.answer(msg.MINI_APP_NOT_CONFIGURED)
+        await message.answer(msg.text("miniAppNotConfigured", lang))
     return True
 
 
 @router.message(Command("vendor_status"))
 async def cmd_vendor_status(message: Message) -> None:
+    lang = msg.message_language(message)
     from_user = message.from_user
     if not from_user:
         return
 
-    if not await _ensure_bot_configured(message, msg.VENDOR_STATUS_NOT_CONFIGURED):
+    if not await _ensure_bot_configured(message, msg.text("vendorStatusNotConfigured", lang)):
         return
 
     vendor_status = await _call_backend_api(
         message,
         lambda: backend_client.get_vendor_status(from_user.id),
-        error_message=msg.VENDOR_STATUS_ERROR,
+        error_message=msg.text("vendorStatusError", lang),
         log_context="get_vendor_status",
     )
     if vendor_status is _BackendCallFailed.TOKEN:
         return
 
-    await message.answer(vendor_status_text(vendor_status))
+    await message.answer(vendor_status_text(vendor_status, lang))
 
 
 @router.message(Command("orders"))
 async def cmd_orders(message: Message) -> None:
+    lang = msg.message_language(message)
     from_user = message.from_user
     if not from_user:
         return
 
-    if not await _ensure_bot_configured(message, msg.ORDERS_NOT_CONFIGURED):
+    if not await _ensure_bot_configured(message, msg.text("ordersNotConfigured", lang)):
         return
 
     orders = await _call_backend_api(
         message,
         lambda: backend_client.get_active_orders(from_user.id),
-        error_message=msg.ORDERS_ERROR,
+        error_message=msg.text("ordersError", lang),
         log_context="get_active_orders",
     )
     if orders is _BackendCallFailed.TOKEN:
         return
 
     if not orders:
-        await message.answer(msg.NO_ACTIVE_ORDERS)
+        await message.answer(msg.text("noActiveOrders", lang))
         return
 
-    lines = [msg.ACTIVE_ORDERS_HEADER, *(format_order_line(order) for order in orders)]
-    await message.answer("\n".join(lines), reply_markup=kb.orders_keyboard(orders))
+    lines = [
+        msg.text("activeOrdersHeader", lang),
+        *(format_order_line(order, lang) for order in orders),
+    ]
+    await message.answer("\n".join(lines), reply_markup=kb.orders_keyboard(orders, lang))
 
 
 async def _auto_register(message: Message) -> None:
@@ -168,6 +175,7 @@ async def _auto_register(message: Message) -> None:
 
 
 async def _handle_restaurant_link(message: Message, display_id: str) -> None:
+    lang = msg.message_language(message)
     restaurant_name = ""
     if bot_config.backend_url:
         try:
@@ -179,44 +187,48 @@ async def _handle_restaurant_link(message: Message, display_id: str) -> None:
                 display_id,
                 exc,
             )
-    keyboard = kb.restaurant_keyboard(display_id, restaurant_name)
+    keyboard = kb.restaurant_keyboard(display_id, restaurant_name, lang)
     if not keyboard:
-        await message.answer(msg.WELCOME)
+        await message.answer(msg.text("welcome", lang))
         return
     await message.answer(
-        msg.WELCOME_RESTAURANT.format(name=html.escape(restaurant_name or display_id)),
+        msg.text("welcomeRestaurant", lang, name=html.escape(restaurant_name or display_id)),
         reply_markup=keyboard,
     )
 
 
 async def _handle_order_link(message: Message, order_display_id: str) -> None:
-    keyboard = kb.order_deep_link_keyboard(order_display_id)
+    lang = msg.message_language(message)
+    keyboard = kb.order_deep_link_keyboard(order_display_id, lang)
     if not keyboard:
-        await message.answer(msg.WELCOME)
+        await message.answer(msg.text("welcome", lang))
         return
     await message.answer(
-        msg.OPEN_ORDER.format(display_id=order_display_id),
+        msg.text("openOrder", lang, display_id=order_display_id),
         reply_markup=keyboard,
     )
 
 
 async def _handle_default_start(message: Message) -> None:
+    lang = msg.message_language(message)
     username = message.from_user.username if message.from_user else None
-    username_hint = f"@{html.escape(username)}" if username else "без username"
+    username_hint = f"@{html.escape(username)}" if username else msg.text("noUsername", lang)
     await message.answer(
-        msg.WELCOME + msg.WELCOME_REGISTERED.format(username_hint=username_hint),
-        reply_markup=kb.phone_keyboard(),
+        msg.text("welcome", lang)
+        + msg.text("welcomeRegistered", lang, username_hint=username_hint),
+        reply_markup=kb.phone_keyboard(lang),
     )
-    await message.answer(msg.OPEN_FOODIZE, reply_markup=kb.mini_app_keyboard())
+    await message.answer(msg.text("openFoodize", lang), reply_markup=kb.mini_app_keyboard(lang))
 
 
 async def _dispatch_deep_link(message: Message, link: DeepLink) -> None:
+    lang = msg.message_language(message)
     if link.kind is DeepLinkKind.RESTAURANT:
         await _handle_restaurant_link(message, link.value)
     elif link.kind is DeepLinkKind.ORDER:
         await _handle_order_link(message, link.value)
     elif link.kind is DeepLinkKind.INVALID:
-        await message.answer(msg.WELCOME)
+        await message.answer(msg.text("welcome", lang))
     else:
         await _handle_default_start(message)
 
@@ -235,10 +247,11 @@ async def handle_restart_button(message: Message) -> None:
 
 @router.message(F.contact)
 async def handle_contact(message: Message) -> None:
+    lang = msg.message_language(message)
     contact = message.contact
     if not contact:
         return
     if message.from_user and contact.user_id and contact.user_id != message.from_user.id:
-        await message.answer(msg.SEND_OWN_PHONE)
+        await message.answer(msg.text("sendOwnPhone", lang))
         return
     await _link_phone(message, normalize_phone(contact.phone_number))

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { XIcon } from '@phosphor-icons/react';
+import { t, useTranslation } from '@shared/i18n/useTranslation';
 
 interface DetailFieldProps {
   label: ReactNode;
@@ -16,7 +17,7 @@ interface DetailModalProps {
 }
 
 export const formatDateTime = (value?: string | null) => {
-  if (!value) return '—';
+  if (!value) return t('common.states.dash');
   return new Date(value).toLocaleString('ru-RU', {
     day: '2-digit',
     month: '2-digit',
@@ -26,7 +27,9 @@ export const formatDateTime = (value?: string | null) => {
   });
 };
 
-export const DetailField = ({ label, children, mono = false }: DetailFieldProps) => (
+export const DetailField = ({ label, children, mono = false }: DetailFieldProps) => {
+  const { t: translate } = useTranslation();
+  return (
   <div
     style={{
       background: 'var(--bg-surface)',
@@ -57,12 +60,15 @@ export const DetailField = ({ label, children, mono = false }: DetailFieldProps)
         overflowWrap: 'anywhere',
       }}
     >
-      {children ?? '—'}
+      {children ?? translate('common.states.dash')}
     </div>
   </div>
-);
+  );
+};
 
-export const DetailModal = ({ title, subtitle, onClose, loading, children }: DetailModalProps) => (
+export const DetailModal = ({ title, subtitle, onClose, loading, children }: DetailModalProps) => {
+  const { t: translate } = useTranslation();
+  return (
   <div
     className="modal-overlay"
     onMouseDown={(event) => {
@@ -101,7 +107,7 @@ export const DetailModal = ({ title, subtitle, onClose, loading, children }: Det
         <button
           className="btn btn-secondary btn-sm"
           onClick={onClose}
-          aria-label="Закрыть"
+          aria-label={translate('common.actions.close')}
         >
           <XIcon size={16} />
         </button>
@@ -120,4 +126,5 @@ export const DetailModal = ({ title, subtitle, onClose, loading, children }: Det
       </div>
     </div>
   </div>
-);
+  );
+};

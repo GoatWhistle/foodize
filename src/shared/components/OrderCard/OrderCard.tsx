@@ -5,6 +5,7 @@ import { getOrderStatusStyle, getCustomerOrderStatusLabel } from "@shared/utils/
 import { formatOptionsSummary, formatPrice } from "@shared/utils/price";
 import { activateOnKey } from "@shared/utils/a11y";
 import type { Order } from "@shared/types/models";
+import { useTranslation } from "@shared/i18n/useTranslation";
 import s from "./OrderCard.module.css";
 
 const getDisplayId = (order: Order): string => String(order.display_id);
@@ -27,6 +28,7 @@ interface OrderCardProps {
 }
 
 export const OrderCard = ({ order, onClick, style, expandable = false }: OrderCardProps) => {
+  const { t } = useTranslation();
   const cfg = getOrderStatusStyle(order.status);
   const label = getCustomerOrderStatusLabel(order.status);
   const [open, setOpen] = useState(false);
@@ -48,7 +50,7 @@ export const OrderCard = ({ order, onClick, style, expandable = false }: OrderCa
           <span className={s['statusBadge']} style={{ color: cfg.color, background: cfg.bg }}>
             {label}
           </span>
-          <span className={s['count']}>{order.items.length || 0} поз.</span>
+          <span className={s['count']}>{t("order.card.positionsCount", { count: order.items.length || 0 })}</span>
         </div>
       </div>
 
@@ -61,7 +63,7 @@ export const OrderCard = ({ order, onClick, style, expandable = false }: OrderCa
 
   if (!expandable) {
     return (
-      <div className={s['card']} onClick={onClick} style={style} role="button" tabIndex={0} aria-label={`Заказ #${getDisplayId(order)}`} onKeyDown={activateOnKey(() => onClick?.())}>
+      <div className={s['card']} onClick={onClick} style={style} role="button" tabIndex={0} aria-label={t("order.card.ariaLabel", { id: getDisplayId(order) })} onKeyDown={activateOnKey(() => onClick?.())}>
         {rowContent}
         <CaretRightIcon size={16} className={s['caret']} />
       </div>
@@ -70,7 +72,7 @@ export const OrderCard = ({ order, onClick, style, expandable = false }: OrderCa
 
   return (
     <div className={s['cardCol']} style={style}>
-      <div className={s['row']} onClick={onClick} role="button" tabIndex={0} aria-label={`Заказ #${getDisplayId(order)}`} onKeyDown={activateOnKey(() => onClick?.())}>
+      <div className={s['row']} onClick={onClick} role="button" tabIndex={0} aria-label={t("order.card.ariaLabel", { id: getDisplayId(order) })} onKeyDown={activateOnKey(() => onClick?.())}>
         {rowContent}
         <button
           type="button"
@@ -78,7 +80,7 @@ export const OrderCard = ({ order, onClick, style, expandable = false }: OrderCa
           aria-expanded={open}
           onClick={(e: MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); setOpen((v) => !v); }}
         >
-          детали
+          {t("order.card.detailsToggle")}
           <CaretDownIcon size={12} weight="bold" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s var(--ease-out)" }} />
         </button>
       </div>

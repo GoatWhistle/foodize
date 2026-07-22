@@ -2,8 +2,9 @@ import type { ChangeEvent, Dispatch, ReactNode, SetStateAction } from 'react';
 import { PackageIcon, ClockIcon, CheckCircleIcon, HandPalmIcon, ShieldWarningIcon } from '@phosphor-icons/react';
 import { Pagination } from '@shared/components/Pagination/Pagination';
 import { EmptyState } from '@shared/components/EmptyState/EmptyState';
-import { ORDER_STATUS_RU } from '@shared/utils/locales';
+import { orderStatusLabel } from '@shared/utils/locales';
 import { translateApiError } from '@shared/utils/translateApiError';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { Order } from '@shared/types/models';
 import type { adminService as AdminService } from '../../../services/adminService';
 import type { OrderFilters } from '../hooks/useAdminOrders';
@@ -34,16 +35,15 @@ const filterControlStyle = {
 };
 
 interface StatusConfig {
-  label: string;
   className: string;
   icon: ReactNode;
 }
 
 const STATUS_MAP: Record<string, StatusConfig> = {
-  PENDING: { label: ORDER_STATUS_RU.PENDING, className: 'pending', icon: <ClockIcon /> },
-  ACCEPTED: { label: ORDER_STATUS_RU.ACCEPTED, className: 'pending', icon: <CheckCircleIcon /> },
-  READY: { label: ORDER_STATUS_RU.READY, className: 'ready', icon: <HandPalmIcon /> },
-  COMPLETED: { label: ORDER_STATUS_RU.COMPLETED, className: 'ready', icon: <CheckCircleIcon weight="fill" /> },
+  PENDING: { className: 'pending', icon: <ClockIcon /> },
+  ACCEPTED: { className: 'pending', icon: <CheckCircleIcon /> },
+  READY: { className: 'ready', icon: <HandPalmIcon /> },
+  COMPLETED: { className: 'ready', icon: <CheckCircleIcon weight="fill" /> },
 };
 
 const orderTitle = (order: Order): number => order.display_id;
@@ -81,6 +81,7 @@ export function AdminResolutionTab({
   adminService,
   PAGE_SIZE,
 }: AdminResolutionTabProps) {
+  const { t } = useTranslation();
   const isEmpty = !Array.isArray(orders) || orders.length === 0;
 
   if (ordersLoading && isEmpty) {
@@ -119,9 +120,9 @@ export function AdminResolutionTab({
       >
         <ShieldWarningIcon size={32} color="var(--error)" />
         <div>
-          <h3 style={{ margin: 0, fontSize: "var(--text-md)" }}>Центр Модерации</h3>
+          <h3 style={{ margin: 0, fontSize: "var(--text-md)" }}>{t('admin.resolution.title')}</h3>
           <div style={{ fontSize: "var(--text-base)", color: 'var(--text-3)' }}>
-            Инструменты ручной отмены и возврата средств для любых заказов.
+            {t('admin.resolution.subtitle')}
           </div>
         </div>
       </div>
@@ -130,7 +131,7 @@ export function AdminResolutionTab({
         <input
           className="form-input"
           style={filterControlStyle}
-          placeholder="ID заказа, телефон клиента"
+          placeholder={t('admin.resolution.searchPlaceholder')}
           value={orderSearchRaw}
           onChange={(event: ChangeEvent<HTMLInputElement>) => {
             setOrdersPage(1);
@@ -146,20 +147,16 @@ export function AdminResolutionTab({
             setOrderFilters((prev) => ({ ...prev, status: event.target.value }));
           }}
         >
-          <option value="">Все статусы</option>
-          <option value="PENDING">Новые</option>
-          <option value="ACCEPTED">Принятые</option>
-          <option value="READY">Готовы</option>
-          <option value="COMPLETED">Выданы (Требуют возврата?)</option>
+          <option value="">{t('admin.resolution.allStatuses')}</option>
+          <option value="PENDING">{t('admin.resolution.statuses.pending')}</option>
+          <option value="ACCEPTED">{t('admin.resolution.statuses.accepted')}</option>
+          <option value="READY">{t('admin.resolution.statuses.ready')}</option>
+          <option value="COMPLETED">{t('admin.resolution.statuses.completed')}</option>
         </select>
       </div>
 
       {orders.map((o) => {
-        const cfg = STATUS_MAP[o.status] || {
-          label: o.status,
-          className: 'pending',
-          icon: <PackageIcon />,
-        };
+        const cfg = STATUS_MAP[o.status] ?? { className: 'pending', icon: <PackageIcon /> };
         return (
           <div
             key={o.id}
@@ -183,7 +180,7 @@ export function AdminResolutionTab({
             >
               <div>
                 <div style={{ color: 'var(--text-3)', fontSize: "var(--text-sm)", fontWeight: 800 }}>
-                  Заказ #{orderTitle(o)}
+                  {t('admin.resolution.orderTitle', { displayId: orderTitle(o) })}
                 </div>
                 <div
                   style={{
@@ -197,7 +194,7 @@ export function AdminResolutionTab({
                 </div>
               </div>
               <span className={`order-status-badge ${cfg.className}`}>
-                {cfg.icon} {cfg.label}
+                {cfg.icon} {orderStatusLabel(o.status)}
               </span>
             </div>
             <div
@@ -210,7 +207,7 @@ export function AdminResolutionTab({
               }}
             >
               <div>
-                <b style={{ color: 'var(--text-2)' }}>{o.customer_name || 'Клиент'}</b>
+                <b style={{ color: 'var(--text-2)' }}>{o.customer_name || t('admin.resolution.customerFallback')}</b>
                 {o.customer_phone && <span> · {o.customer_phone}</span>}
               </div>
               {(o.restaurant_name || o.restaurant_address) && (
@@ -226,7 +223,7 @@ export function AdminResolutionTab({
                 className="btn btn-secondary btn-sm"
                 onClick={() => { setSelectedOrder(o); }}
               >
-                Подробности
+                {t('admin.resolution.details')}
               </button>
               {o.status !== 'CANCELLED' && (
                 <button
@@ -234,23 +231,23 @@ export function AdminResolutionTab({
                   style={{ background: 'var(--error)', color: 'white' }}
                   onClick={() => {
                     setReasonDialog({
-                      title: 'Принудительная отмена',
-                      message: `Вы уверены, что хотите отменить заказ #${orderTitle(o)}?`,
-                      confirmLabel: 'Отменить',
+                      title: t('admin.resolution.dialogs.forceCancelTitle'),
+                      message: t('admin.resolution.dialogs.forceCancelMessage', { displayId: orderTitle(o) }),
+                      confirmLabel: t('admin.resolution.dialogs.forceCancelConfirm'),
                       onConfirm: async (reason) => {
                         try {
                           await adminService.forceCancelOrder(o.id, reason);
                           setOrdersPage(1);
                         } catch (error) {
                           setActionError(
-                            translateApiError(error, 'Не удалось отменить заказ. Попробуйте ещё раз.')
+                            translateApiError(error, t('admin.resolution.errors.cancelFailed'))
                           );
                         }
                       },
                     });
                   }}
                 >
-                  Принудительная отмена / Возврат
+                  {t('admin.resolution.forceCancel')}
                 </button>
               )}
             </div>
@@ -260,8 +257,8 @@ export function AdminResolutionTab({
 
       {isEmpty && (
         <EmptyState
-          title="Проблемных заказов не найдено"
-          subtitle="Для выбранных фильтров нет результатов"
+          title={t('admin.resolution.emptyTitle')}
+          subtitle={t('admin.common.emptySubtitle')}
         />
       )}
 

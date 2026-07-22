@@ -1,7 +1,8 @@
 import type { Dispatch, SetStateAction } from 'react';
 import { TrashIcon, CheckCircleIcon, ProhibitIcon } from '@phosphor-icons/react';
 import type { AdminVendor } from '@shared/types/models';
-import { APPROVAL_STATUS_RU, translate } from '@shared/utils/locales';
+import { approvalStatusLabel } from '@shared/utils/locales';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import { DetailField, DetailModal, formatDateTime } from './adminModal.shared';
 
 interface VendorDetailModalProps {
@@ -22,10 +23,12 @@ export const VendorDetailModal = ({
   handleApproveVendor,
   handleRejectVendor,
   handleDeleteVendor,
-}: VendorDetailModalProps) => (
+}: VendorDetailModalProps) => {
+  const { t } = useTranslation();
+  return (
   <DetailModal
-    title={selectedVendor.name || 'Вендор'}
-    subtitle="Детали вендора"
+    title={selectedVendor.name || t('admin.vendors.modal.fallbackTitle')}
+    subtitle={t('admin.vendors.modal.subtitle')}
     loading={vendorDetailsLoading}
     onClose={() => { setSelectedVendor(null); }}
   >
@@ -36,21 +39,21 @@ export const VendorDetailModal = ({
         gap: 10,
       }}
     >
-      <DetailField label="ID профиля" mono>{selectedVendor.id}</DetailField>
-      <DetailField label="ID пользователя" mono>{selectedVendor.user_id}</DetailField>
-      <DetailField label="Имя">{selectedVendor.name}</DetailField>
-      <DetailField label="Телефон">{selectedVendor.phone_number}</DetailField>
-      <DetailField label="Рестораны">{selectedVendor.restaurants_count}</DetailField>
-      <DetailField label="Модерация">
+      <DetailField label={t('admin.vendors.modal.fields.profileId')} mono>{selectedVendor.id}</DetailField>
+      <DetailField label={t('admin.vendors.modal.fields.userId')} mono>{selectedVendor.user_id}</DetailField>
+      <DetailField label={t('common.labels.name')}>{selectedVendor.name}</DetailField>
+      <DetailField label={t('common.labels.phone')}>{selectedVendor.phone_number}</DetailField>
+      <DetailField label={t('admin.vendors.modal.fields.restaurants')}>{selectedVendor.restaurants_count}</DetailField>
+      <DetailField label={t('admin.vendors.modal.fields.moderation')}>
         <span className="order-status-badge pending">
-          {translate(APPROVAL_STATUS_RU, selectedVendor.approval_status)}
+          {approvalStatusLabel(selectedVendor.approval_status)}
         </span>
       </DetailField>
-      <DetailField label="Создан">{formatDateTime(selectedVendor.created_at)}</DetailField>
+      <DetailField label={t('common.labels.createdAt')}>{formatDateTime(selectedVendor.created_at)}</DetailField>
     </div>
     {selectedVendor.rejection_reason && (
       <div style={{ marginTop: 10 }}>
-        <DetailField label="Причина отклонения">
+        <DetailField label={t('common.labels.reason')}>
           {selectedVendor.rejection_reason}
         </DetailField>
       </div>
@@ -63,7 +66,7 @@ export const VendorDetailModal = ({
           onClick={() => { handleApproveVendor(selectedVendor.id); }}
         >
           <CheckCircleIcon size={16} />
-          {approveLoading ? 'Одобрение...' : 'Одобрить'}
+          {approveLoading ? t('common.actions.approving') : t('common.actions.approve')}
         </button>
       )}
       {selectedVendor.approval_status !== 'REJECTED' && (
@@ -74,7 +77,7 @@ export const VendorDetailModal = ({
           style={{ color: 'var(--error)' }}
         >
           <ProhibitIcon size={16} />
-          Отклонить
+          {t('common.actions.reject')}
         </button>
       )}
     </div>
@@ -84,7 +87,8 @@ export const VendorDetailModal = ({
       onClick={() => { handleDeleteVendor(selectedVendor.id); }}
     >
       <TrashIcon size={16} />
-      Удалить вендора
+      {t('admin.vendors.modal.deleteVendor')}
     </button>
   </DetailModal>
-);
+  );
+};

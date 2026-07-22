@@ -3,9 +3,10 @@ import secrets
 
 from fastapi import Header
 
+from features.telegram.exceptions import InvalidBotSecretException
 from infra.cache.redis import get_redis_cache
 from settings.config.app_config import settings
-from shared.exceptions import AccessDeniedException, RateLimitException
+from shared.exceptions import RateLimitException
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +17,7 @@ def verify_bot_secret(
     if not settings.telegram.bot_api_secret or not secrets.compare_digest(
         settings.telegram.bot_api_secret, x_telegram_bot_secret
     ):
-        raise AccessDeniedException(detail="Invalid bot secret")
+        raise InvalidBotSecretException()
 
 
 async def enforce_bot_rate_limit(

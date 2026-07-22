@@ -1,11 +1,15 @@
 import { PackageIcon } from '@phosphor-icons/react';
-import { CATEGORY_RU, translate } from '@shared/utils/locales';
+import { categoryLabel } from '@shared/utils/locales';
+import { useTranslation } from '@shared/i18n/useTranslation';
+
 import type { Order } from '@shared/types/models';
 
 import { optionLabel } from './orderDetails.helpers';
 import { formatPrice } from '@shared/utils/price';
 
-export const OrderItemsList = ({ order }: { order: Order }) => (
+export const OrderItemsList = ({ order }: { order: Order }) => {
+  const { t } = useTranslation();
+  return (
   <div>
     <div
       style={{
@@ -17,7 +21,7 @@ export const OrderItemsList = ({ order }: { order: Order }) => (
       }}
     >
       <PackageIcon size={18} color="var(--fire)" />
-      Состав заказа
+      {t('order.details.composition')}
     </div>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {order.items.map((item) => (
@@ -48,7 +52,7 @@ export const OrderItemsList = ({ order }: { order: Order }) => (
                   marginTop: 2,
                 }}
               >
-                {translate(CATEGORY_RU, item.menu_item_category)}
+                {categoryLabel(item.menu_item_category)}
               </div>
             </div>
             <div style={{ textAlign: 'right', fontWeight: 800 }}>
@@ -80,4 +84,5 @@ export const OrderItemsList = ({ order }: { order: Order }) => (
       ))}
     </div>
   </div>
-);
+  );
+};

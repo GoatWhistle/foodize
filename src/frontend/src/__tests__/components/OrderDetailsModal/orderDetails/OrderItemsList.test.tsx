@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import type { Order } from '@shared/types/models';
+import { t } from '@shared/i18n/useTranslation';
 import { OrderItemsList } from '../../../../components/OrderDetailsModal/orderDetails/OrderItemsList';
 
 const makeOrder = (items: Order['items']): Order =>
@@ -21,7 +22,7 @@ describe('OrderItemsList', () => {
     render(<OrderItemsList order={order} />);
     expect(screen.getByText('Бургер')).toBeInTheDocument();
     expect(screen.getByText('×2')).toBeInTheDocument();
-    expect(screen.getByText('Состав заказа')).toBeInTheDocument();
+    expect(screen.getByText(t('order.details.composition'))).toBeInTheDocument();
   });
 
   it('renders selected options when present', () => {

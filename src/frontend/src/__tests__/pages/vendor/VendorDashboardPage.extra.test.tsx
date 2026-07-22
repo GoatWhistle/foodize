@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { VendorDashboardPage } from '../../../pages/vendor/VendorDashboardPage';
+import { t } from '@shared/i18n/useTranslation';
 
 const dashboardMock = vi.hoisted((): { current: Record<string, unknown> } => ({ current: {} }));
 
@@ -88,7 +89,7 @@ describe('VendorDashboardPage helpers and branches', () => {
 
   it('renders header, banner and restaurant list', () => {
     render(<VendorDashboardPage />);
-    expect(screen.getByText('Дашборд вендора')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.dashboard.title'))).toBeInTheDocument();
     expect(screen.getByText('BANNER')).toBeInTheDocument();
     expect(screen.getByText('CREATE_RESTAURANT')).toBeInTheDocument();
   });
@@ -150,7 +151,7 @@ describe('VendorDashboardPage helpers and branches', () => {
   it('uses fallback restaurant label when name missing', () => {
     dashboardMock.current = makeDashboard({ selectedRestaurant: { id: 'r1', name: '' } });
     render(<VendorDashboardPage />);
-    expect(screen.getByTestId('label')).toHaveTextContent('все');
+    expect(screen.getByTestId('label')).toHaveTextContent(t('vendor.exportFiles.allRestaurants'));
   });
 
   it('invokes create restaurant handler', async () => {

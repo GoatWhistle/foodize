@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 import { ReviewCard } from "@shared/components/ReviewCard/ReviewCard";
 import type { Review } from "@shared/types/models";
+import { t } from "@shared/i18n/useTranslation";
 
 const baseReview: Review = {
   id: "r1",
@@ -25,7 +26,7 @@ describe("ReviewCard", () => {
 
   it("falls back to a default author when name is missing", () => {
     render(<ReviewCard review={{ ...baseReview, user_name: null }} />);
-    expect(screen.getByText("Клиент")).toBeInTheDocument();
+    expect(screen.getByText(t("catalog.reviews.anonymous"))).toBeInTheDocument();
   });
 
   it("omits the text paragraph when there is no review text", () => {
@@ -42,22 +43,22 @@ describe("ReviewCard", () => {
     const { rerender } = render(
       <ReviewCard review={{ ...baseReview, is_verified_purchase: true }} showVerifiedBadge />,
     );
-    expect(screen.getByText("Подтверждённый заказ")).toBeInTheDocument();
+    expect(screen.getByText(t("catalog.reviews.verifiedPurchase"))).toBeInTheDocument();
     rerender(<ReviewCard review={baseReview} showVerifiedBadge />);
-    expect(screen.queryByText("Подтверждённый заказ")).not.toBeInTheDocument();
+    expect(screen.queryByText(t("catalog.reviews.verifiedPurchase"))).not.toBeInTheDocument();
   });
 
   it("renders a delete button and calls onDelete when canDelete is set", async () => {
     const user = userEvent.setup();
     const onDelete = vi.fn();
     render(<ReviewCard review={baseReview} canDelete onDelete={onDelete} />);
-    await user.click(screen.getByRole("button", { name: "Удалить отзыв" }));
+    await user.click(screen.getByRole("button", { name: t("catalog.reviews.deleteAria") }));
     expect(onDelete).toHaveBeenCalledTimes(1);
   });
 
   it("does not render a delete button without canDelete", () => {
     render(<ReviewCard review={baseReview} />);
-    expect(screen.queryByRole("button", { name: "Удалить отзыв" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: t("catalog.reviews.deleteAria") })).not.toBeInTheDocument();
   });
 
   it("renders extra header and action nodes", () => {

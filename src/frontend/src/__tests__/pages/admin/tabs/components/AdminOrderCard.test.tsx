@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { vi, describe, it, expect } from 'vitest';
 import { AdminOrderCard } from '../../../../../pages/admin/tabs/components/AdminOrderCard';
 import type { Order } from '@shared/types/models';
+import { t } from '@shared/i18n/useTranslation';
 
 const makeOrder = (over: Partial<Order> = {}): Order =>
   ({
@@ -20,7 +21,7 @@ const makeOrder = (over: Partial<Order> = {}): Order =>
 describe('AdminOrderCard', () => {
   it('renders known-status order with all fields', () => {
     render(<AdminOrderCard order={makeOrder()} onOpen={vi.fn()} />);
-    expect(screen.getByText('Заказ #42')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.orders.card.title', { displayId: 42 }))).toBeInTheDocument();
     expect(screen.getByText('500 ₽')).toBeInTheDocument();
     expect(screen.getByText('Иван')).toBeInTheDocument();
     expect(screen.getByText(/\+79990001122/)).toBeInTheDocument();
@@ -41,7 +42,7 @@ describe('AdminOrderCard', () => {
         onOpen={vi.fn()}
       />,
     );
-    expect(screen.getByText('Клиент')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.orders.card.customerFallback'))).toBeInTheDocument();
     expect(screen.getByText('WEIRD')).toBeInTheDocument();
   });
 

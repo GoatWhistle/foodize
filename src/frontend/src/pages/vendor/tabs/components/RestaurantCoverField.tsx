@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ImageIcon } from '@phosphor-icons/react';
 import { restaurantService } from '@shared/services/restaurantService';
 import { translateApiError } from '@shared/utils/translateApiError';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { Restaurant } from '@shared/types/models';
 
 interface RestaurantCoverFieldProps {
@@ -9,6 +10,7 @@ interface RestaurantCoverFieldProps {
 }
 
 export function RestaurantCoverField({ selectedRestaurant }: RestaurantCoverFieldProps) {
+  const { t } = useTranslation();
   const [coverUrl, setCoverUrl] = useState(selectedRestaurant.photo_url || '');
   const [coverLoading, setCoverLoading] = useState(false);
   const [coverError, setCoverError] = useState('');
@@ -25,7 +27,7 @@ export function RestaurantCoverField({ selectedRestaurant }: RestaurantCoverFiel
       const res = await restaurantService.uploadPhoto(selectedRestaurant.id, file);
       setCoverUrl(res.data.data.photo_url || '');
     } catch (err) {
-      setCoverError(translateApiError(err, 'Не удалось загрузить фото'));
+      setCoverError(translateApiError(err, t('vendor.settings.cover.uploadFailed')));
     } finally {
       setCoverLoading(false);
     }
@@ -38,7 +40,7 @@ export function RestaurantCoverField({ selectedRestaurant }: RestaurantCoverFiel
       await restaurantService.deletePhoto(selectedRestaurant.id);
       setCoverUrl('');
     } catch (err) {
-      setCoverError(translateApiError(err, 'Не удалось удалить фото'));
+      setCoverError(translateApiError(err, t('vendor.settings.cover.deleteFailed')));
     } finally {
       setCoverLoading(false);
     }
@@ -56,7 +58,7 @@ export function RestaurantCoverField({ selectedRestaurant }: RestaurantCoverFiel
         gap: 8,
       }}
     >
-      <div style={{ fontWeight: 800, fontSize: "var(--text-base)" }}>Обложка ресторана</div>
+      <div style={{ fontWeight: 800, fontSize: "var(--text-base)" }}>{t('vendor.settings.cover.title')}</div>
       {coverError && <div className="form-error">{coverError}</div>}
       <div
         style={{
@@ -75,7 +77,7 @@ export function RestaurantCoverField({ selectedRestaurant }: RestaurantCoverFiel
         {coverUrl ? (
           <img
             src={coverUrl}
-            alt="Обложка ресторана"
+            alt={t('vendor.settings.cover.alt')}
             loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
         ) : (
@@ -87,7 +89,7 @@ export function RestaurantCoverField({ selectedRestaurant }: RestaurantCoverFiel
           className="btn btn-secondary btn-sm"
           style={{ cursor: coverLoading ? 'wait' : 'pointer', margin: 0 }}
         >
-          {coverLoading ? 'Загрузка…' : coverUrl ? 'Заменить обложку' : 'Загрузить обложку'}
+          {coverLoading ? t('vendor.settings.cover.loading') : coverUrl ? t('vendor.settings.cover.replace') : t('vendor.settings.cover.upload')}
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
@@ -110,17 +112,15 @@ export function RestaurantCoverField({ selectedRestaurant }: RestaurantCoverFiel
               void handleCoverDelete();
             }}
           >
-            Удалить
+            {t('common.actions.delete')}
           </button>
         )}
         <span style={{ fontSize: "var(--text-xs)", color: 'var(--text-3)' }}>
-          JPEG, PNG или WebP · до 5 МБ
+          {t('vendor.settings.cover.hint')}
         </span>
       </div>
       <span style={{ fontSize: "var(--text-sm)", color: 'var(--text-3)' }}>
-        Показывается широким баннером в шапке страницы ресторана. Лучше всего
-        подходит горизонтальное фото (например, интерьер или блюдо крупным
-        планом) шириной от 1200 px — вертикальные будут сильно обрезаны.
+        {t('vendor.settings.cover.description')}
       </span>
     </div>
   );

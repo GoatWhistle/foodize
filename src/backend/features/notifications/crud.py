@@ -14,12 +14,18 @@ async def create_notification(
     title: str,
     message: str,
     type: NotificationType = NotificationType.SYSTEM,
+    title_key: str | None = None,
+    message_key: str | None = None,
+    params: dict[str, object] | None = None,
 ) -> Notification:
     notification = Notification(
         user_id=user_id,
         title=title,
         message=message,
         type=type,
+        title_key=title_key,
+        message_key=message_key,
+        params=params or {},
     )
     session.add(notification)
     await session.flush()

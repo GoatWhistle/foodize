@@ -47,6 +47,7 @@ vi.mock("../../services/api", () => ({
 
 import { HomePage } from "../../pages/home/HomePage";
 import type { Restaurant } from "@shared/types/models";
+import { t } from "@shared/i18n/useTranslation";
 
 const makeRestaurant = (id: string, name: string): Restaurant =>
   ({ id, display_id: id, name, is_open: true }) as unknown as Restaurant;
@@ -76,8 +77,8 @@ const renderHome = () =>
   );
 
 const openAiChip = async () => {
-  await userEvent.click(screen.getByLabelText("Открыть фильтры"));
-  await userEvent.click(screen.getByText("AI-помощник"));
+  await userEvent.click(screen.getByLabelText(t("catalog.search.openFilters")));
+  await userEvent.click(screen.getByText(t("catalog.assistant.label")));
 };
 
 beforeEach(() => {
@@ -96,7 +97,7 @@ describe("HomePage", () => {
   it("shows the empty state when there are no restaurants", () => {
     homeLogic = makeLogic({ loading: false, allRestaurants: [] });
     renderHome();
-    expect(screen.getByText("Ничего не найдено")).toBeInTheDocument();
+    expect(screen.getByText(t("catalog.home.emptyTitle"))).toBeInTheDocument();
   });
 
   it("renders the restaurant list and total when populated", () => {
@@ -156,7 +157,7 @@ describe("HomePage", () => {
     await openAiChip();
     await waitFor(() => {
       expect(
-        screen.getByText("Не удалось получить ответ ассистента"),
+        screen.getByText(t("catalog.assistant.failed")),
       ).toBeInTheDocument();
     });
   });
@@ -173,7 +174,7 @@ describe("HomePage", () => {
     await waitFor(() => {
       expect(screen.getByText("Ответ")).toBeInTheDocument();
     });
-    await userEvent.click(screen.getByLabelText("Закрыть"));
+    await userEvent.click(screen.getByLabelText(t("common.actions.close")));
     expect(screen.queryByText("Ответ")).not.toBeInTheDocument();
   });
 });

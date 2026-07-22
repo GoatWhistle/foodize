@@ -8,13 +8,17 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.orders.models.order import Order
+from features.restaurants.exceptions import (
+    RestaurantAddressExistsException,
+    RestaurantAddressOrDisplayIdExistsException,
+    RestaurantDisplayIdGenerationException,
+)
 from features.restaurants.models import Restaurant
 from features.restaurants.schemas import RestaurantCreate, RestaurantUpdate
 from features.restaurants.working_hours import WorkingHours
 from shared.enums.moderation_status import ModerationStatus
 from shared.enums.restaurant_sort import RestaurantSort
 from shared.enums.sort_direction import SortDirection
-from shared.exceptions.existence import AlreadyExistsException
 
 _DISPLAY_ID_GENERATION_ATTEMPTS = 8
 _POPULARITY_WINDOW_DAYS = 7
@@ -25,7 +29,7 @@ async def _generate_unique_display_id(session: AsyncSession) -> str:
         display_id = secrets.token_hex(4)
         if await get_restaurant_by_display_id(session, display_id) is None:
             return display_id
-    raise AlreadyExistsException(detail="Could not generate unique restaurant display id")
+    raise RestaurantDisplayIdGenerationException()
 
 
 async def create_restaurant(
@@ -40,9 +44,7 @@ async def create_restaurant(
         await session.flush()
     except IntegrityError as e:
         await session.rollback()
-        raise AlreadyExistsException(
-            detail="Restaurant with this address or display id already exists"
-        ) from e
+        raise RestaurantAddressOrDisplayIdExistsException() from e
     return new_restaurant
 
 
@@ -55,7 +57,7 @@ async def update_restaurant(
         await session.flush()
     except IntegrityError as e:
         await session.rollback()
-        raise AlreadyExistsException(detail="Restaurant with this address already exists") from e
+        raise RestaurantAddressExistsException() from e
     await session.refresh(restaurant)
     return restaurant
 

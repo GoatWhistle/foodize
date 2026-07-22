@@ -1,3 +1,5 @@
+import { t } from "@shared/i18n/useTranslation";
+
 export const PERMISSIONS = {
   ADMIN_ACCESS: "admin.access",
   VENDORS_READ_OWN: "vendors.read_own",
@@ -8,39 +10,40 @@ export const PERMISSIONS = {
   ORDERS_MANAGE_STATUS: "orders.manage_status",
 };
 
-export const PERMISSION_RU = {
-  "admin.access": "Админ-доступ",
-  "users.read": "Пользователи: просмотр",
-  "users.manage": "Пользователи: управление",
-  "users.assign_permissions": "Пользователи: права",
-  "restaurants.read": "Рестораны: просмотр",
-  "restaurants.create": "Рестораны: создание",
-  "restaurants.update": "Рестораны: изменение",
-  "restaurants.moderate": "Рестораны: модерация",
-  "menu.read": "Меню: просмотр",
-  "menu.manage": "Меню: управление",
-  "cart.manage": "Корзина",
-  "favorites.manage": "Избранное",
-  "orders.create": "Заказы: создание",
-  "orders.read_own": "Заказы: свои",
-  "orders.read_restaurant": "Заказы: ресторан",
-  "orders.manage_status": "Заказы: статусы",
-  "orders.moderate": "Заказы: модерация",
-  "reviews.create": "Отзывы: создание",
-  "reviews.read": "Отзывы: просмотр",
-  "reviews.moderate": "Отзывы: модерация",
-  "promos.validate": "Промокоды: проверка",
-  "promos.manage": "Промокоды: управление",
-  "vendors.create": "Вендор: создание",
-  "vendors.read_own": "Вендор: профиль",
-  "vendors.analytics_read": "Вендор: аналитика",
-  "vendors.moderate": "Вендор: модерация",
-  "staff.requests_create": "Персонал: заявки",
-  "staff.requests_manage": "Персонал: управление заявками",
-  "staff.members_manage": "Персонал: сотрудники",
-  "staff.profile_read": "Персонал: профиль",
-  "telegram.auth": "Telegram",
-};
+export const ALL_PERMISSIONS = [
+  "admin.access",
+  "users.read",
+  "users.manage",
+  "users.assign_permissions",
+  "restaurants.read",
+  "restaurants.create",
+  "restaurants.update",
+  "restaurants.moderate",
+  "menu.read",
+  "menu.manage",
+  "cart.manage",
+  "favorites.manage",
+  "orders.create",
+  "orders.read_own",
+  "orders.read_restaurant",
+  "orders.manage_status",
+  "orders.moderate",
+  "reviews.create",
+  "reviews.read",
+  "reviews.moderate",
+  "promos.validate",
+  "promos.manage",
+  "vendors.create",
+  "vendors.read_own",
+  "vendors.analytics_read",
+  "vendors.moderate",
+  "staff.requests_create",
+  "staff.requests_manage",
+  "staff.members_manage",
+  "staff.profile_read",
+  "telegram.auth",
+];
+
 
 export const CUSTOMER_PERMISSIONS = [
   "cart.manage",
@@ -79,7 +82,7 @@ export const STAFF_PERMISSIONS = [
   "staff.profile_read",
 ];
 
-export const ADMIN_PERMISSIONS = Object.keys(PERMISSION_RU);
+export const ADMIN_PERMISSIONS = ALL_PERMISSIONS;
 
 export const PERMISSION_PRESETS = {
   CUSTOMER: CUSTOMER_PERMISSIONS,
@@ -88,12 +91,8 @@ export const PERMISSION_PRESETS = {
   ADMIN: ADMIN_PERMISSIONS,
 };
 
-export const PERMISSION_PRESET_RU = {
-  CUSTOMER: "Клиент",
-  VENDOR: "Вендор",
-  STAFF: "Персонал",
-  ADMIN: "Администратор",
-};
+export const permissionPresetName = (preset: keyof typeof PERMISSION_PRESETS): string =>
+  t(`enums.permissionPreset.${preset}`);
 
 export const normalizePermissions = (
   permissions: readonly string[] | null | undefined = [],
@@ -119,9 +118,14 @@ export const inferPermissionPreset = (permissions: readonly string[] | null | un
 };
 
 export const permissionPresetLabel = (permissions: readonly string[] | null | undefined = []): string =>
-  PERMISSION_PRESET_RU[inferPermissionPreset(permissions)];
+  permissionPresetName(inferPermissionPreset(permissions));
+
+export const permissionLabel = (permission: string): string => {
+  const resolved = t(`enums.permission.${permission}`);
+  return resolved === `enums.permission.${permission}` ? permission : resolved;
+};
 
 export const formatPermissions = (permissions: readonly string[] | null | undefined = []): string =>
   normalizePermissions(permissions)
-    .map((p) => (PERMISSION_RU as Record<string, string>)[p] || p)
+    .map(permissionLabel)
     .join(", ");

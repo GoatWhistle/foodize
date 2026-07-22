@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { Order, OrderStatus } from "@shared/types/models";
+import { t } from "@shared/i18n/useTranslation";
 
 const mocks = vi.hoisted(() => {
   const storeState: { fetchOrder: ReturnType<typeof vi.fn>; currentOrder: Order | null } = {
@@ -37,7 +38,9 @@ vi.mock("@shared/services/orderService", () => ({
     cancelOrder: (...args: unknown[]) => mocks.cancelOrder(...args) as unknown,
   },
 }));
-vi.mock("@shared/hooks/useEtaText", () => ({ useEtaText: () => "Готовность через 10 мин" }));
+vi.mock("@shared/hooks/useEtaText", () => ({
+  useEtaState: () => ({ text: "Готовность через 10 мин", delayed: false }),
+}));
 vi.mock("@shared/components/HorizontalSteps/HorizontalSteps", () => ({
   HorizontalSteps: () => <div data-testid="horizontal-steps" />,
 }));
@@ -96,7 +99,7 @@ describe("OrderStatusPage", () => {
 
   it("renders the loading skeleton while there is no current order", () => {
     renderPage();
-    expect(screen.getByRole("status", { name: "Загрузка заказа" })).toBeInTheDocument();
+    expect(screen.getByRole("status", { name: t("order.status.loadingLabel") })).toBeInTheDocument();
   });
 
   it("opens the websocket and fetches the order on mount", () => {
@@ -109,9 +112,9 @@ describe("OrderStatusPage", () => {
     storeState.currentOrder = makeOrder("ACCEPTED");
     renderPage();
     expect(screen.getByText("#77")).toBeInTheDocument();
-    expect(screen.getByText("Готовится")).toBeInTheDocument();
+    expect(screen.getByText(t("enums.orderStatusCustomer.ACCEPTED"))).toBeInTheDocument();
     expect(screen.getByTestId("horizontal-steps")).toBeInTheDocument();
-    expect(screen.getByText("Состав заказа")).toBeInTheDocument();
+    expect(screen.getByText(t("order.details.composition"))).toBeInTheDocument();
     expect(screen.getByText("Бургер")).toBeInTheDocument();
   });
 
@@ -119,8 +122,8 @@ describe("OrderStatusPage", () => {
     const user = userEvent.setup();
     storeState.currentOrder = makeOrder("READY");
     renderPage();
-    expect(screen.getByText("Подойдите к стойке — ваш заказ готов!")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Получил заказ" }));
+    expect(screen.getByText(t("order.status.readyCallout"))).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: t("order.status.confirmReceipt") }));
     expect(completeOrder).toHaveBeenCalledWith("77");
   });
 
@@ -128,7 +131,7 @@ describe("OrderStatusPage", () => {
     const user = userEvent.setup();
     storeState.currentOrder = makeOrder("PENDING");
     renderPage();
-    await user.click(screen.getByRole("button", { name: "Отменить" }));
+    await user.click(screen.getByRole("button", { name: t("order.status.cancel") }));
     expect(cancelOrder).toHaveBeenCalledWith("77", null);
   });
 
@@ -136,19 +139,19 @@ describe("OrderStatusPage", () => {
     storeState.currentOrder = makeOrder("CANCELLED", { cancellation_reason: "Нет продуктов" });
     renderPage();
     expect(screen.getByText("Нет продуктов")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Повторить заказ" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: t("order.status.repeat") })).toBeInTheDocument();
   });
 
   it("renders a back button", () => {
     storeState.currentOrder = makeOrder("ACCEPTED");
     renderPage();
-    expect(screen.getByRole("button", { name: /Мои заказы/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: new RegExp(t("order.status.backToOrders")) })).toBeInTheDocument();
   });
 
   it("hides order details when showDetails is false", () => {
     storeState.currentOrder = makeOrder("ACCEPTED");
     renderPage({ showDetails: false });
-    expect(screen.queryByText("Состав заказа")).not.toBeInTheDocument();
+    expect(screen.queryByText(t("order.details.composition"))).not.toBeInTheDocument();
   });
 
   it("repeats a completed order and navigates to the restaurant", async () => {
@@ -159,7 +162,7 @@ describe("OrderStatusPage", () => {
       restaurant_display_id: "R1",
     });
     renderPage();
-    await user.click(screen.getByRole("button", { name: "Повторить заказ" }));
+    await user.click(screen.getByRole("button", { name: t("order.status.repeat") }));
     expect(repeatOrder).toHaveBeenCalled();
   });
 
@@ -168,7 +171,7 @@ describe("OrderStatusPage", () => {
     const onBack = vi.fn();
     storeState.currentOrder = makeOrder("ACCEPTED");
     renderPage({ onBack });
-    await user.click(screen.getByRole("button", { name: /Мои заказы/ }));
+    await user.click(screen.getByRole("button", { name: new RegExp(t("order.status.backToOrders")) }));
     expect(onBack).toHaveBeenCalled();
   });
 
@@ -176,7 +179,7 @@ describe("OrderStatusPage", () => {
     const user = userEvent.setup();
     storeState.currentOrder = makeOrder("ACCEPTED");
     renderPage({ onBack: "/orders" });
-    await user.click(screen.getByRole("button", { name: /Мои заказы/ }));
+    await user.click(screen.getByRole("button", { name: new RegExp(t("order.status.backToOrders")) }));
     expect(createOrderWebSocket).toHaveBeenCalled();
   });
 
@@ -185,9 +188,9 @@ describe("OrderStatusPage", () => {
     completeOrder.mockRejectedValueOnce(new Error("boom"));
     storeState.currentOrder = makeOrder("READY");
     renderPage();
-    await user.click(screen.getByRole("button", { name: "Получил заказ" }));
+    await user.click(screen.getByRole("button", { name: t("order.status.confirmReceipt") }));
     expect(
-      await screen.findByText("Не удалось подтвердить получение"),
+      await screen.findByText(t("order.status.confirmFailed")),
     ).toBeInTheDocument();
   });
 
@@ -196,9 +199,9 @@ describe("OrderStatusPage", () => {
     cancelOrder.mockRejectedValueOnce(new Error("boom"));
     storeState.currentOrder = makeOrder("PENDING");
     renderPage();
-    await user.click(screen.getByRole("button", { name: "Отменить" }));
+    await user.click(screen.getByRole("button", { name: t("order.status.cancel") }));
     expect(
-      await screen.findByText("Не удалось отменить заказ"),
+      await screen.findByText(t("order.status.cancelFailed")),
     ).toBeInTheDocument();
   });
 
@@ -252,8 +255,9 @@ describe("OrderStatusPage", () => {
       requested_pickup_at: "2026-01-15T13:00:00Z",
     });
     renderPage();
-    expect(screen.getByText("Приятного аппетита!")).toBeInTheDocument();
-    expect(screen.getByText(/выдача в/)).toBeInTheDocument();
+    expect(screen.getByText(t("order.status.bonAppetit"))).toBeInTheDocument();
+    const pickupPhrase = t("order.status.pickupAt", { time: "" }).replace("·", "").trim();
+    expect(screen.getByText(new RegExp(pickupPhrase))).toBeInTheDocument();
   });
 
   it("shows a load error in the skeleton when the fetch fails", async () => {
@@ -261,7 +265,7 @@ describe("OrderStatusPage", () => {
     storeState.fetchOrder = vi.fn().mockRejectedValue(new Error("boom"));
     renderPage();
     expect(
-      await screen.findByText("Не удалось загрузить заказ"),
+      await screen.findByText(t("order.status.loadFailed")),
     ).toBeInTheDocument();
   });
 

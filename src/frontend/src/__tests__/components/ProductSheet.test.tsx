@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import type { MenuItem } from '@shared/types/models';
 import { ProductSheet } from '@shared/components/ProductSheet/ProductSheet';
+import { t } from '@shared/i18n/useTranslation';
+import { formatPrice } from '@shared/utils/price';
 const item = {
   id: 'item-1',
   name: 'Bowl',
@@ -48,11 +50,11 @@ describe('ProductSheet', () => {
 
     await user.click(screen.getByText('Spicy'));
     await user.click(screen.getByText('Cheese'));
-    await user.click(screen.getByLabelText('Увеличить'));
+    await user.click(screen.getByLabelText(t('catalog.product.increase')));
 
-    expect(screen.getByText('Добавить · 800 ₽')).toBeInTheDocument();
+    expect(screen.getByText(t('catalog.product.add', { total: formatPrice(800) }))).toBeInTheDocument();
 
-    await user.click(screen.getByText('Добавить · 800 ₽'));
+    await user.click(screen.getByText(t('catalog.product.add', { total: formatPrice(800) })));
 
     expect(onAdd).toHaveBeenCalledWith({
       item,

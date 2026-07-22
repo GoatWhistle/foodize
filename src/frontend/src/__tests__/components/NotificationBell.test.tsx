@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Notification } from '@shared/types/models';
 import { NotificationBell } from '../../components/NotificationBell/NotificationBell';
 import { mockZustandStore } from '../testUtils';
+import { t } from '@shared/i18n/useTranslation';
 type NotificationStoreState = {
   notifications: Notification[];
   unreadCount: number;
@@ -102,7 +103,7 @@ describe('NotificationBell', () => {
     render$();
     await user.click(screen.getByRole('button'));
     await waitFor(() => {
-      expect(screen.getByText('Уведомления')).toBeInTheDocument();
+      expect(screen.getByText(t('profile.notifications.title'))).toBeInTheDocument();
     });
   });
 
@@ -111,7 +112,7 @@ describe('NotificationBell', () => {
     render$();
     await user.click(screen.getByRole('button'));
     await waitFor(() => {
-      expect(screen.getByText('Нет уведомлений')).toBeInTheDocument();
+      expect(screen.getByText(t('profile.notifications.empty'))).toBeInTheDocument();
     });
   });
 
@@ -144,8 +145,8 @@ describe('NotificationBell', () => {
     const user = userEvent.setup();
     render$();
     await user.click(screen.getByRole('button'));
-    await waitFor(() => screen.getByText('Прочитать все'));
-    await user.click(screen.getByText('Прочитать все'));
+    await waitFor(() => screen.getByText(t('profile.notifications.markAllRead')));
+    await user.click(screen.getByText(t('profile.notifications.markAllRead')));
     expect(storeState.markAllAsRead).toHaveBeenCalled();
   });
 
@@ -159,8 +160,8 @@ describe('NotificationBell', () => {
     const user = userEvent.setup();
     render$();
     await user.click(screen.getByRole('button'));
-    await waitFor(() => screen.getByLabelText('Удалить все'));
-    await user.click(screen.getByLabelText('Удалить все'));
+    await waitFor(() => screen.getByLabelText(t('profile.notifications.deleteAll')));
+    await user.click(screen.getByLabelText(t('profile.notifications.deleteAll')));
     expect(storeState.deleteAll).toHaveBeenCalled();
   });
 
@@ -205,7 +206,7 @@ describe('NotificationBell', () => {
     render$();
     await user.click(screen.getByRole('button'));
     await waitFor(() => screen.getByText('Удаляемое'));
-    await user.click(screen.getByLabelText('Удалить'));
+    await user.click(screen.getByLabelText(t('profile.notifications.delete')));
     expect(storeState.deleteNotification).toHaveBeenCalledWith('d1');
     expect(storeState.markAsRead).not.toHaveBeenCalled();
   });
@@ -220,8 +221,8 @@ describe('NotificationBell', () => {
     const user = userEvent.setup();
     render$();
     await user.click(screen.getByRole('button'));
-    await waitFor(() => screen.getByText('Загрузить ещё'));
-    await user.click(screen.getByText('Загрузить ещё'));
+    await waitFor(() => screen.getByText(t('common.actions.loadMore')));
+    await user.click(screen.getByText(t('common.actions.loadMore')));
     expect(storeState.loadMore).toHaveBeenCalled();
   });
 
@@ -236,7 +237,7 @@ describe('NotificationBell', () => {
     render$();
     await user.click(screen.getByRole('button'));
     await waitFor(() => screen.getByText('A'));
-    expect(screen.queryByText('Загрузить ещё')).toBeNull();
+    expect(screen.queryByText(t('common.actions.loadMore'))).toBeNull();
   });
 
   it('groups notifications by day label', async () => {
@@ -255,10 +256,10 @@ describe('NotificationBell', () => {
     const user = userEvent.setup();
     render$();
     await user.click(screen.getByRole('button'));
-    await waitFor(() => screen.getByText('Сегодня'));
-    expect(screen.getByText('Сегодня')).toBeInTheDocument();
-    expect(screen.getByText('Вчера')).toBeInTheDocument();
-    expect(screen.getByText('6 дней назад')).toBeInTheDocument();
+    await waitFor(() => screen.getByText(t('common.time.today')));
+    expect(screen.getByText(t('common.time.today'))).toBeInTheDocument();
+    expect(screen.getByText(t('common.time.yesterday'))).toBeInTheDocument();
+    expect(screen.getByText(t('common.time.daysAgo', { count: 6 }))).toBeInTheDocument();
   });
 
   it('labels notifications with a missing or invalid date as recent', async () => {
@@ -274,17 +275,17 @@ describe('NotificationBell', () => {
     render$();
     await user.click(screen.getByRole('button'));
     await waitFor(() => screen.getByText('Без даты'));
-    expect(screen.getByText('Недавно')).toBeInTheDocument();
+    expect(screen.getByText(t('common.time.recently'))).toBeInTheDocument();
   });
 
   it('closes the dropdown on an outside click', async () => {
     const user = userEvent.setup();
     render$();
     await user.click(screen.getByRole('button'));
-    await waitFor(() => screen.getByText('Уведомления'));
+    await waitFor(() => screen.getByText(t('profile.notifications.title')));
     await user.click(document.body);
     await waitFor(() => {
-      expect(screen.queryByText('Уведомления')).toBeNull();
+      expect(screen.queryByText(t('profile.notifications.title'))).toBeNull();
     });
   });
 

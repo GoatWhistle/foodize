@@ -6,6 +6,7 @@ import { VendorAnalyticsTab } from '../../../../pages/vendor/tabs/VendorAnalytic
 import type { AdvancedAnalytics, FinanceAnalytics, Restaurant } from '@shared/types/models';
 import type { FinanceFilters } from '../../../../pages/vendor/hooks/useVendorFinance';
 import { at } from '../../../testUtils';
+import { t } from '@shared/i18n/useTranslation';
 
 vi.mock('../../../../components/dashboard/DashboardCharts', () => ({
   RevenueChart: () => <div data-testid="revenue-chart" />,
@@ -110,12 +111,12 @@ describe('VendorAnalyticsTab', () => {
   it('applies a day preset and reset preset', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const { container } = render(<Harness />);
-    await user.click(screen.getByRole('button', { name: '7 дней' }));
+    await user.click(screen.getByRole('button', { name: t('vendor.analytics.presets.days7') }));
     const dateInputs = container.querySelectorAll('input[type="date"]');
     expect((dateInputs[1] as HTMLInputElement).value).toBe('2026-07-18');
     expect((dateInputs[0] as HTMLInputElement).value).toBe('2026-07-11');
 
-    await user.click(screen.getByRole('button', { name: 'Сбросить' }));
+    await user.click(screen.getByRole('button', { name: t('vendor.analytics.presets.reset') }));
     expect((dateInputs[0] as HTMLInputElement).value).toBe('');
   });
 
@@ -123,13 +124,13 @@ describe('VendorAnalyticsTab', () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const onExport = vi.fn();
     render(<Harness onExport={onExport} />);
-    await user.click(screen.getByRole('button', { name: /Финансы PDF/ }));
-    expect(onExport).toHaveBeenCalledWith(expect.any(Function), 'финансы_Resto_range.pdf');
+    await user.click(screen.getByRole('button', { name: new RegExp(t('vendor.analytics.financePdf')) }));
+    expect(onExport).toHaveBeenCalledWith(expect.any(Function), t('vendor.exportFiles.finance', { restaurant: 'Resto', range: 'range' }));
     const finFn = at(onExport.mock.calls, 0)[0] as () => Promise<Blob>;
     await finFn();
     expect((vendorServiceMock as { exportFinancePDF: ReturnType<typeof vi.fn> }).exportFinancePDF).toHaveBeenCalled();
 
-    await user.click(screen.getByRole('button', { name: /Аналитика PDF/ }));
+    await user.click(screen.getByRole('button', { name: new RegExp(t('vendor.analytics.analyticsPdf')) }));
     const advFn = at(onExport.mock.calls, 1)[0] as () => Promise<Blob>;
     await advFn();
     expect((vendorServiceMock as { exportAnalyticsPDF: ReturnType<typeof vi.fn> }).exportAnalyticsPDF).toHaveBeenCalled();

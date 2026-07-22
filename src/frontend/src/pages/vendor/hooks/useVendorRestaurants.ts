@@ -5,7 +5,8 @@ import { vendorService } from '@shared/services/vendorService';
 import { restaurantService } from '@shared/services/restaurantService';
 import { translateApiError } from '@shared/utils/translateApiError';
 import { logError } from '@shared/utils/logError';
-import { WEEKDAYS_SHORT_RU } from '@shared/utils/datetime';
+import { weekdaysShort } from '@shared/utils/datetime';
+import { t } from '@shared/i18n/useTranslation';
 import type {
   Restaurant,
   RestaurantCreate,
@@ -57,8 +58,8 @@ const sortByWeekday = <T extends { day_of_week: number }>(rows: readonly T[]): T
   [...rows].sort((a, b) => a.day_of_week - b.day_of_week);
 
 const validateRestaurantPatch = (patch: Restaurant): string => {
-  if (!patch.name.trim()) return 'Укажите название заведения';
-  if (!patch.address.trim()) return 'Укажите адрес заведения';
+  if (!patch.name.trim()) return t('vendor.settings.errors.nameRequired');
+  if (!patch.address.trim()) return t('vendor.settings.errors.addressRequired');
   return '';
 };
 
@@ -78,7 +79,7 @@ const buildRestaurantUpdatePayload = (patch: Restaurant): RestaurantUpdate => ({
 });
 
 const buildDefaultHours = (): WorkingHoursRow[] =>
-  WEEKDAYS_SHORT_RU.map((_, i) => ({
+  weekdaysShort().map((_, i: number) => ({
     day_of_week: i,
     open_time: '09:00',
     close_time: '22:00',
@@ -155,7 +156,7 @@ export const useVendorRestaurants = ({ activeTab, setFormLoading, setFormError }
           setWorkingHours(savedHours.length === 0 ? buildDefaultHours() : sortByWeekday(savedHours));
         } catch (error) {
           if (getErrorStatus(error) !== 404) {
-            setWorkingHoursError('Не удалось загрузить расписание');
+            setWorkingHoursError(t('vendor.schedule.errors.loadFailed'));
           }
           setWorkingHours(buildDefaultHours());
         } finally {
@@ -185,7 +186,7 @@ export const useVendorRestaurants = ({ activeTab, setFormLoading, setFormError }
       setShowAddRestaurant(false);
       setNewRestaurant({ name: '', address: '', avg_prep_time_minutes: DEFAULT_PREP_MINUTES, max_active_orders: '' });
     } catch (error) {
-      setFormError(translateApiError(error, 'Ошибка создания'));
+      setFormError(translateApiError(error, t('vendor.settings.errors.createFailed')));
     } finally {
       setFormLoading(false);
     }
@@ -213,7 +214,7 @@ export const useVendorRestaurants = ({ activeTab, setFormLoading, setFormError }
       setSelectedRestaurant({ ...selectedRestaurant, ...payload } as Restaurant);
       setEditRestaurant(null);
     } catch (err) {
-      setFormError(translateApiError(err, 'Ошибка обновления'));
+      setFormError(translateApiError(err, t('vendor.settings.errors.updateFailed')));
     } finally {
       setFormLoading(false);
     }
@@ -239,7 +240,7 @@ export const useVendorRestaurants = ({ activeTab, setFormLoading, setFormError }
       setWorkingHoursSaved(true);
       setTimeout(() => { setWorkingHoursSaved(false); }, 2000);
     } catch (err) {
-      setWorkingHoursError(translateApiError(err, 'Не удалось сохранить расписание'));
+      setWorkingHoursError(translateApiError(err, t('vendor.schedule.errors.saveFailed')));
     } finally {
       setWorkingHoursLoading(false);
     }

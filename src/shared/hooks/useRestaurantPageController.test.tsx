@@ -11,6 +11,7 @@ vi.mock("@shared/hooks/useRestaurantPage", () => ({
 }));
 
 import { useRestaurantPageController } from "@shared/hooks/useRestaurantPageController";
+import { t } from "@shared/i18n/useTranslation";
 
 const basePage = (overrides: Record<string, unknown> = {}) => ({
   restaurant: { id: "uuid-1", name: "Cafe", address: "Street" },
@@ -74,7 +75,7 @@ describe("useRestaurantPageController", () => {
     const { result } = renderHook(() =>
       useRestaurantPageController(baseArgs()),
     );
-    expect(result.current.reviewsButtonLabel).toBe("4.3 · 2 отзыва");
+    expect(result.current.reviewsButtonLabel).toBe(`4.3 · ${t("catalog.reviews.reviewsCount", { count: 2 })}`);
   });
 
   it("falls back to 'Отзывы' when count is null", () => {
@@ -82,7 +83,7 @@ describe("useRestaurantPageController", () => {
     const { result } = renderHook(() =>
       useRestaurantPageController(baseArgs()),
     );
-    expect(result.current.reviewsButtonLabel).toBe("Отзывы");
+    expect(result.current.reviewsButtonLabel).toBe(t("catalog.reviews.buttonLabel"));
   });
 
   it("marks favorite based on the target restaurant id", () => {

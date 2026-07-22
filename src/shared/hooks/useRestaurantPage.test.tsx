@@ -45,6 +45,7 @@ vi.mock("@shared/services/reviewService", () => ({
 
 import { useRestaurantPage } from "@shared/hooks/useRestaurantPage";
 import type { Restaurant } from "@shared/types/models";
+import { t } from "@shared/i18n/useTranslation";
 
 const RESTAURANT = {
   id: "uuid-1",
@@ -129,7 +130,7 @@ describe("useRestaurantPage", () => {
   it("sets a restaurant error when loading fails", async () => {
     getById.mockRejectedValue({ response: { status: 404, data: { detail: "Restaurant not found" } } });
     const { result } = renderHook(() => useRestaurantPage({ id: "display-1" }));
-    await waitFor(() => { expect(result.current.restaurantError).toBe("Ресторан не найден"); });
+    await waitFor(() => { expect(result.current.restaurantError).toBe(t("apiErrors.byDetail.Restaurant not found")); });
   });
 
   it("submits a new review and reloads", async () => {
@@ -169,7 +170,7 @@ describe("useRestaurantPage", () => {
     await act(async () => {
       await result.current.handleReviewSubmit();
     });
-    expect(result.current.reviewError).toBe("Вы уже оставили отзыв на этот ресторан");
+    expect(result.current.reviewError).toBe(t("apiErrors.byDetail.You have already reviewed this restaurant"));
   });
 
   it("deletes a review and prunes the list", async () => {
@@ -193,7 +194,7 @@ describe("useRestaurantPage", () => {
     await act(async () => {
       await result.current.handleReviewDelete("rev1");
     });
-    expect(result.current.reviewError).toBe("Не удалось удалить отзыв");
+    expect(result.current.reviewError).toBe(t("catalog.reviews.deleteFailed"));
   });
 
   it("calls onSuccess after a successful submit", async () => {
@@ -224,7 +225,7 @@ describe("useRestaurantPage", () => {
       useRestaurantPage({ id: "display-1", initialRestaurant: RESTAURANT }),
     );
     await waitFor(() =>
-      { expect(result.current.reviewError).toBe("Не удалось загрузить отзывы"); },
+      { expect(result.current.reviewError).toBe(t("catalog.reviews.loadFailed")); },
     );
   });
 

@@ -2,7 +2,8 @@ import { PencilSimpleIcon, XIcon } from '@phosphor-icons/react';
 import { useRestaurantStore } from '@shared/store/useRestaurantStore';
 import { menuService } from '@shared/services/menuService';
 import { EmptyState } from '@shared/components/EmptyState/EmptyState';
-import { CATEGORY_RU, translate } from '@shared/utils/locales';
+import { categoryLabel } from '@shared/utils/locales';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { MenuItem, Restaurant } from '@shared/types/models';
 import { normalizeOptionGroups, type MenuItemForm } from './VendorMenuTab';
 import { formatPrice } from '@shared/utils/price';
@@ -24,6 +25,7 @@ export function MenuItemList({
   setMenuItemForm,
   handleDeleteMenuItem,
 }: MenuItemListProps) {
+  const { t } = useTranslation();
   if (loading && selectedMenu.length === 0) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -51,7 +53,7 @@ export function MenuItemList({
   }
 
   if (selectedMenu.length === 0) {
-    return <EmptyState title="Меню пустое" subtitle="Добавьте первую позицию" />;
+    return <EmptyState title={t('vendor.menu.emptyTitle')} subtitle={t('vendor.menu.emptySubtitle')} />;
   }
 
   return (
@@ -87,12 +89,12 @@ export function MenuItemList({
                   className="order-status-badge cancelled"
                   style={{ fontSize: "var(--text-xs)", padding: '2px 6px' }}
                 >
-                  СТОП
+                  {t('vendor.menu.stopBadge')}
                 </span>
               )}
             </div>
             <div style={{ fontSize: "var(--text-sm)", color: 'var(--text-3)' }}>
-              {formatPrice(item.price)} • {translate(CATEGORY_RU, item.category)}
+              {formatPrice(item.price)} • {categoryLabel(item.category)}
             </div>
             {item.option_groups.length > 0 && (
               <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -116,7 +118,7 @@ export function MenuItemList({
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button
               className="btn btn-sm"
-              title={item.is_available ? 'Доступно (сделать недоступным)' : 'Недоступно (сделать доступным)'}
+              title={item.is_available ? t('vendor.menu.availableToggleOn') : t('vendor.menu.availableToggleOff')}
               style={{
                 padding: '4px 12px',
                 height: 28,
@@ -150,7 +152,7 @@ export function MenuItemList({
               }}
             >
               <span style={{ fontSize: "var(--text-sm)", fontWeight: 800 }}>
-                {item.is_available ? 'ВКЛ' : 'ВЫКЛ'}
+                {item.is_available ? t('vendor.menu.on') : t('vendor.menu.off')}
               </span>
             </button>
             <button

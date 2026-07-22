@@ -9,6 +9,7 @@ import { useFavoriteStore } from '@shared/store/useFavoriteStore';
 import { useShallow } from 'zustand/react/shallow';
 import { ROUTES } from '../../constants/routes';
 import { useHomePageLogic } from '@shared/hooks/useHomePageLogic';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { Restaurant } from '@shared/types/models';
 
 const PAGE_SIZE = 20;
@@ -16,6 +17,7 @@ const SKELETON_CARD_COUNT = 8;
 const CARD_FADE_STEP_MS = 40;
 
 export const HomePage = () => {
+  const { t } = useTranslation();
   const isAuthenticated = useAuthStore((s) => s.user !== null);
   const { favoriteIds } = useFavoriteStore(
     useShallow((s) => ({ favoriteIds: s.favoriteIds }))
@@ -59,13 +61,13 @@ export const HomePage = () => {
         setSort={setSort}
         direction={direction}
         setDirection={setDirection}
-        placeholder="Поиск ресторана или адреса..."
+        placeholder={t('catalog.search.placeholderRestaurant')}
       />
 
       <div className="restaurants-section">
         <div className="section-header">
           <StorefrontIcon size={20} weight="bold" color="var(--fire)" />
-          <h1 className="section-title">Все заведения</h1>
+          <h1 className="section-title">{t('catalog.home.allVenuesTitle')}</h1>
           <span
             className="text-muted"
             style={{ fontSize: "var(--text-base)", fontWeight: 600 }}
@@ -75,17 +77,17 @@ export const HomePage = () => {
         </div>
 
         {loading && allRestaurants.length === 0 ? (
-          <div className="restaurants-grid" role="status" aria-busy="true" aria-label="Загрузка ресторанов">
+          <div className="restaurants-grid" role="status" aria-busy="true" aria-label={t('catalog.home.loadingRestaurants')}>
             {Array.from({ length: SKELETON_CARD_COUNT }).map((_, i) => (
               <div key={i} className="restaurant-card-skeleton" />
             ))}
           </div>
         ) : allRestaurants.length === 0 ? (
           <EmptyState
-            title="Ничего не найдено"
-            subtitle="Попробуйте другой поиск или фильтр"
+            title={t('catalog.home.emptyTitle')}
+            subtitle={t('catalog.home.emptySubtitleWeb')}
             action={{
-              label: 'Сбросить',
+              label: t('common.actions.reset'),
               onClick: resetFilters,
             }}
           />

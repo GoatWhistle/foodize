@@ -1,6 +1,6 @@
 import { StorefrontIcon } from '@phosphor-icons/react';
 import type { Order } from '@shared/types/models';
-import { ORDER_STATUS_RU } from '@shared/utils/locales';
+import { t, useTranslation } from '@shared/i18n/useTranslation';
 import { QRCodeModal } from '../../components/QRCodeModal/QRCodeModal';
 import { vendorService } from '@shared/services/vendorService';
 import { VendorRestaurantList } from './VendorRestaurantList';
@@ -8,8 +8,6 @@ import { VendorSidebar } from './VendorSidebar';
 import { VendorApprovalBanner } from './VendorApprovalBanner';
 import { VendorTabContent } from './components/VendorTabContent';
 import { useVendorDashboard } from './useVendorDashboard';
-
-const STATUS_LABEL_RU = ORDER_STATUS_RU;
 
 interface OrderGroup {
   dateKey: string;
@@ -39,9 +37,9 @@ const groupOrdersByDate = (orders: Order[]): OrderGroup[] => {
   yesterday.setDate(today.getDate() - 1);
 
   const formatGroup = (dateKey: string): string => {
-    if (dateKey === 'unknown') return 'Без даты';
-    if (dateKey === toDateInputValue(today)) return 'Сегодня';
-    if (dateKey === toDateInputValue(yesterday)) return 'Вчера';
+    if (dateKey === 'unknown') return t('common.time.noDate');
+    if (dateKey === toDateInputValue(today)) return t('common.time.today');
+    if (dateKey === toDateInputValue(yesterday)) return t('common.time.yesterday');
     return new Intl.DateTimeFormat('ru-RU', {
       day: 'numeric',
       month: 'long',
@@ -69,10 +67,11 @@ const todayStr = (() => {
 })();
 
 export const VendorDashboardPage = () => {
+  const { t: translate } = useTranslation();
   const dashboard = useVendorDashboard();
 
   const getVendorRestaurantLabel = () =>
-    (dashboard.selectedRestaurant?.name || 'все').replace(/\s+/g, '_');
+    (dashboard.selectedRestaurant?.name || translate('vendor.exportFiles.allRestaurants')).replace(/\s+/g, '_');
 
   const getVendorDateRange = () => {
     const from = dashboard.financeFilters.date_from || todayStr;
@@ -102,7 +101,7 @@ export const VendorDashboardPage = () => {
           marginBottom: 16,
         }}
       >
-        <StorefrontIcon /> Дашборд вендора
+        <StorefrontIcon /> {translate('vendor.dashboard.title')}
       </h1>
 
       <VendorApprovalBanner vendorProfile={dashboard.vendorProfile} />
@@ -138,7 +137,6 @@ export const VendorDashboardPage = () => {
           <VendorTabContent
             dashboard={dashboard}
             todayStr={todayStr}
-            statusLabelRu={STATUS_LABEL_RU}
             groupedRestaurantOrders={groupedRestaurantOrders}
             handleVendorExport={handleVendorExport}
             getVendorRestaurantLabel={getVendorRestaurantLabel}

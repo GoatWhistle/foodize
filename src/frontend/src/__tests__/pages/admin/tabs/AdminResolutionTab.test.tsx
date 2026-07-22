@@ -7,6 +7,7 @@ import type { Order } from '@shared/types/models';
 import type { OrderFilters } from '../../../../pages/admin/hooks/useAdminOrders';
 import type { ReasonDialogConfig } from '../../../../pages/admin/useAdminDashboard';
 import type { adminService as adminServiceType } from '../../../../services/adminService';
+import { t } from '@shared/i18n/useTranslation';
 import { at } from '../../../testUtils';
 
 const makeOrder = (over: Partial<Order> = {}): Order =>
@@ -45,14 +46,16 @@ const baseProps = (over: Partial<Parameters<typeof AdminResolutionTab>[0]> = {})
 describe('AdminResolutionTab', () => {
   it('shows skeleton while loading empty', () => {
     render(<AdminResolutionTab {...baseProps({ orders: [], ordersLoading: true })} />);
-    expect(screen.queryByText('Проблемных заказов не найдено')).not.toBeInTheDocument();
-    expect(screen.queryByText('Центр Модерации')).not.toBeInTheDocument();
+    expect(screen.queryByText(t('admin.resolution.emptyTitle'))).not.toBeInTheDocument();
+    expect(screen.queryByText(t('admin.resolution.title'))).not.toBeInTheDocument();
   });
 
   it('renders orders and header', () => {
     render(<AdminResolutionTab {...baseProps()} />);
-    expect(screen.getByText('Центр Модерации')).toBeInTheDocument();
-    expect(screen.getByText('Заказ #42')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.resolution.title'))).toBeInTheDocument();
+    expect(
+      screen.getByText(t('admin.resolution.orderTitle', { displayId: 42 })),
+    ).toBeInTheDocument();
     expect(screen.getByText('500 ₽')).toBeInTheDocument();
     expect(screen.getByText('Иван')).toBeInTheDocument();
   });
@@ -73,19 +76,19 @@ describe('AdminResolutionTab', () => {
       />,
     );
     expect(screen.getByText('WEIRD')).toBeInTheDocument();
-    expect(screen.getByText('Клиент')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.resolution.customerFallback'))).toBeInTheDocument();
   });
 
   it('renders empty state', () => {
     render(<AdminResolutionTab {...baseProps({ orders: [] })} />);
-    expect(screen.getByText('Проблемных заказов не найдено')).toBeInTheDocument();
+    expect(screen.getByText(t('admin.resolution.emptyTitle'))).toBeInTheDocument();
   });
 
   it('opens details', async () => {
     const setSelectedOrder = vi.fn();
     const order = makeOrder();
     render(<AdminResolutionTab {...baseProps({ orders: [order], setSelectedOrder })} />);
-    await userEvent.click(screen.getByRole('button', { name: 'Подробности' }));
+    await userEvent.click(screen.getByRole('button', { name: t('admin.resolution.details') }));
     expect(setSelectedOrder).toHaveBeenCalledWith(order);
   });
 
@@ -110,7 +113,7 @@ describe('AdminResolutionTab', () => {
       );
     };
     render(<Harness />);
-    await userEvent.type(screen.getByPlaceholderText('ID заказа, телефон клиента'), 'x');
+    await userEvent.type(screen.getByPlaceholderText(t('admin.resolution.searchPlaceholder')), 'x');
     expect(setOrdersPage).toHaveBeenCalledWith(1);
     expect(setOrderSearchRaw).toHaveBeenCalledWith('x');
     await userEvent.selectOptions(screen.getByRole('combobox'), 'PENDING');
@@ -121,9 +124,9 @@ describe('AdminResolutionTab', () => {
     const setReasonDialog = vi.fn();
     const setOrdersPage = vi.fn();
     render(<AdminResolutionTab {...baseProps({ setReasonDialog, setOrdersPage })} />);
-    await userEvent.click(screen.getByRole('button', { name: /Принудительная отмена/ }));
+    await userEvent.click(screen.getByRole('button', { name: t('admin.resolution.forceCancel') }));
     const cfg = at(setReasonDialog.mock.calls, 0)[0] as ReasonDialogConfig;
-    expect(cfg.title).toBe('Принудительная отмена');
+    expect(cfg.title).toBe(t('admin.resolution.dialogs.forceCancelTitle'));
     await cfg.onConfirm('дубликат');
     expect(forceCancelOrder).toHaveBeenCalledWith('o1', 'дубликат');
     expect(setOrdersPage).toHaveBeenCalledWith(1);
@@ -134,7 +137,7 @@ describe('AdminResolutionTab', () => {
     const setReasonDialog = vi.fn();
     const setActionError = vi.fn();
     render(<AdminResolutionTab {...baseProps({ setReasonDialog, setActionError })} />);
-    await userEvent.click(screen.getByRole('button', { name: /Принудительная отмена/ }));
+    await userEvent.click(screen.getByRole('button', { name: t('admin.resolution.forceCancel') }));
     const cfg = at(setReasonDialog.mock.calls, 0)[0] as ReasonDialogConfig;
     await cfg.onConfirm('r');
     expect(setActionError).toHaveBeenCalled();
@@ -142,6 +145,6 @@ describe('AdminResolutionTab', () => {
 
   it('hides cancel button for already cancelled order', () => {
     render(<AdminResolutionTab {...baseProps({ orders: [makeOrder({ status: 'CANCELLED' })] })} />);
-    expect(screen.queryByRole('button', { name: /Принудительная отмена/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: t('admin.resolution.forceCancel') })).not.toBeInTheDocument();
   });
 });

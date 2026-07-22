@@ -5,6 +5,7 @@ from features.ai_order_agent.tool_helpers import cart_summary, order_confirm_key
 from features.cart.service import CartService
 from features.users.models import User
 from infra.cache.base import CacheRepository
+from shared.i18n import DEFAULT_LANGUAGE
 
 
 @dataclass(frozen=True)
@@ -13,6 +14,7 @@ class OrderToolContext:
     cart_service: CartService
     cache: CacheRepository
     user_turn: int
+    language: str = DEFAULT_LANGUAGE
 
     @property
     def identifier(self) -> str:

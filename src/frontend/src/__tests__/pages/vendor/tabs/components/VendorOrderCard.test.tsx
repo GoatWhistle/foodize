@@ -3,8 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import { VendorOrderCard } from '../../../../../pages/vendor/tabs/components/VendorOrderCard';
 import type { Order } from '@shared/types/models';
+import { t } from '@shared/i18n/useTranslation';
 
-const STATUS_LABEL_RU = { PENDING: 'Новый', ACCEPTED: 'Принят', READY: 'Готов', COMPLETED: 'Выдан' };
 const nextOrderStatus = { PENDING: 'ACCEPTED', ACCEPTED: 'READY', READY: 'COMPLETED' } as const;
 
 const makeOrder = (overrides: Partial<Order> = {}): Order =>
@@ -29,16 +29,15 @@ describe('VendorOrderCard', () => {
         order={makeOrder()}
         updatingOrderId={null}
         setSelectedOrder={setSelectedOrder}
-        STATUS_LABEL_RU={STATUS_LABEL_RU}
         nextOrderStatus={nextOrderStatus}
         getOrderDisplayId={(o) => o.id}
         formatOrderTime={(v) => (v ? '10:00' : '')}
       />
     );
-    expect(screen.getByText(/Заказ #o1/)).toBeInTheDocument();
-    expect(screen.getByText('Новый')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.orders.card.title', { displayId: 'o1' }))).toBeInTheDocument();
+    expect(screen.getByText(t('enums.orderStatus.PENDING'))).toBeInTheDocument();
     expect(screen.getByText(/×2 Шаурма/)).toBeInTheDocument();
-    await user.click(screen.getByText(/Заказ #o1/));
+    await user.click(screen.getByText(t('vendor.orders.card.title', { displayId: 'o1' })));
     expect(setSelectedOrder).toHaveBeenCalled();
   });
 
@@ -61,32 +60,30 @@ describe('VendorOrderCard', () => {
         order={order}
         updatingOrderId={null}
         setSelectedOrder={setSelectedOrder}
-        STATUS_LABEL_RU={STATUS_LABEL_RU}
         nextOrderStatus={nextOrderStatus}
         getOrderDisplayId={(o) => o.id}
         formatOrderTime={(v) => (v ? '12:00' : '')}
       />
     );
-    expect(screen.getByText(/к выдаче/)).toBeInTheDocument();
-    const detailsBtn = screen.getByRole('button', { name: /Детали/ });
+    expect(screen.getByText(t('vendor.orders.card.pickupAt', { time: '12:00' }).trim(), { exact: false })).toBeInTheDocument();
+    const detailsBtn = screen.getByRole('button', { name: new RegExp(t('common.actions.details')) });
     await user.click(detailsBtn);
     expect(setSelectedOrder).toHaveBeenCalledTimes(1);
   });
 
-  it('renders fallback status label and no time, no details for terminal status', () => {
+  it('renders cancelled status label and no time, no details for terminal status', () => {
     render(
       <VendorOrderCard
         order={makeOrder({ status: 'CANCELLED' as Order['status'], created_at: '', items: [] })}
         updatingOrderId={null}
         setSelectedOrder={vi.fn()}
-        STATUS_LABEL_RU={{}}
         nextOrderStatus={nextOrderStatus}
         getOrderDisplayId={(o) => o.id}
         formatOrderTime={() => ''}
       />
     );
-    expect(screen.getByText('CANCELLED')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Детали/ })).not.toBeInTheDocument();
+    expect(screen.getByText(t('enums.orderStatus.CANCELLED'))).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: new RegExp(t('common.actions.details')) })).not.toBeInTheDocument();
   });
 
   it('renders ACCEPTED badge class branch and disables details while updating', () => {
@@ -95,13 +92,12 @@ describe('VendorOrderCard', () => {
         order={makeOrder({ status: 'ACCEPTED' })}
         updatingOrderId="o1"
         setSelectedOrder={vi.fn()}
-        STATUS_LABEL_RU={STATUS_LABEL_RU}
         nextOrderStatus={nextOrderStatus}
         getOrderDisplayId={(o) => o.id}
         formatOrderTime={() => '10:00'}
       />
     );
-    expect(screen.getByRole('button', { name: /Детали/ })).toBeDisabled();
+    expect(screen.getByRole('button', { name: new RegExp(t('common.actions.details')) })).toBeDisabled();
   });
 
   it('renders READY branch badge', () => {
@@ -110,12 +106,11 @@ describe('VendorOrderCard', () => {
         order={makeOrder({ status: 'READY' })}
         updatingOrderId={null}
         setSelectedOrder={vi.fn()}
-        STATUS_LABEL_RU={STATUS_LABEL_RU}
         nextOrderStatus={nextOrderStatus}
         getOrderDisplayId={(o) => o.id}
         formatOrderTime={() => '10:00'}
       />
     );
-    expect(screen.getByText('Готов')).toBeInTheDocument();
+    expect(screen.getByText(t('enums.orderStatus.READY'))).toBeInTheDocument();
   });
 });

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { MenuItemOptionGroups } from '../../../../../pages/vendor/tabs/components/MenuItemOptionGroups';
 import { EMPTY_MENU_ITEM_FORM, type MenuItemForm, type OptionGroupDraft } from '../../../../../pages/vendor/tabs/VendorMenuTab';
 import { at } from '../../../../testUtils';
+import { t } from '@shared/i18n/useTranslation';
 
 const Harness = ({ groups }: { groups?: OptionGroupDraft[] }) => {
   const [form, setForm] = useState<MenuItemForm>({
@@ -33,16 +34,16 @@ describe('MenuItemOptionGroups', () => {
   it('renders header and adds a new group', async () => {
     const user = userEvent.setup();
     render(<Harness />);
-    expect(screen.getByText('Опции блюда')).toBeInTheDocument();
-    expect(screen.queryByPlaceholderText('Название группы')).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /Группа/ }));
-    expect(screen.getByPlaceholderText('Название группы')).toBeInTheDocument();
+    expect(screen.getByText(t('vendor.menu.options.title'))).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(t('vendor.menu.options.groupNamePlaceholder'))).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: new RegExp(t('vendor.menu.options.addGroup')) }));
+    expect(screen.getByPlaceholderText(t('vendor.menu.options.groupNamePlaceholder'))).toBeInTheDocument();
   });
 
   it('patches group name through card', async () => {
     const user = userEvent.setup();
     render(<Harness groups={oneGroup()} />);
-    const input = screen.getByPlaceholderText('Название группы');
+    const input = screen.getByPlaceholderText(t('vendor.menu.options.groupNamePlaceholder'));
     await user.clear(input);
     await user.type(input, 'Топпинги');
     expect((input as HTMLInputElement).value).toBe('Топпинги');
@@ -53,16 +54,16 @@ describe('MenuItemOptionGroups', () => {
     render(<Harness groups={oneGroup()} />);
     const removeGroupBtn = at(screen.getAllByRole("button"), 1);
     await user.click(removeGroupBtn);
-    expect(screen.queryByPlaceholderText('Название группы')).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(t('vendor.menu.options.groupNamePlaceholder'))).not.toBeInTheDocument();
   });
 
   it('adds and removes an option and patches option fields', async () => {
     const user = userEvent.setup();
     render(<Harness groups={oneGroup()} />);
-    await user.click(screen.getByRole('button', { name: /Опция/ }));
-    expect(screen.getAllByPlaceholderText('Опция')).toHaveLength(3);
+    await user.click(screen.getByRole('button', { name: new RegExp(t('vendor.menu.options.addOption')) }));
+    expect(screen.getAllByPlaceholderText(t('vendor.menu.options.optionPlaceholder'))).toHaveLength(3);
 
-    const optionInputs = screen.getAllByPlaceholderText('Опция');
+    const optionInputs = screen.getAllByPlaceholderText(t('vendor.menu.options.optionPlaceholder'));
     await user.type(at(optionInputs, 0), '!');
     expect((optionInputs[0] as HTMLInputElement).value).toBe('Кетчуп!');
 
@@ -73,14 +74,14 @@ describe('MenuItemOptionGroups', () => {
     const buttons = screen.getAllByRole('button');
     const optionRemoveBtn = buttons.find((b) => b.getAttribute('type') === 'button' && b.previousElementSibling?.getAttribute('placeholder') === '+₽');
     await user.click(optionRemoveBtn as HTMLElement);
-    expect(screen.getAllByPlaceholderText('Опция').length).toBeLessThan(3);
+    expect(screen.getAllByPlaceholderText(t('vendor.menu.options.optionPlaceholder')).length).toBeLessThan(3);
   });
 
   it('changes selection type to single', async () => {
     const user = userEvent.setup();
     render(<Harness groups={oneGroup()} />);
     await user.selectOptions(screen.getByRole('combobox'), 'single');
-    expect(screen.getByPlaceholderText('Макс. выборов')).toBeDisabled();
+    expect(screen.getByPlaceholderText(t('vendor.menu.options.maxChoicesPlaceholder'))).toBeDisabled();
   });
 
   it('toggles required checkbox', async () => {

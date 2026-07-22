@@ -7,6 +7,10 @@ from typing import Any, cast
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.ai_order_agent import crud
+from features.ai_order_agent.exceptions import (
+    EmbeddingDimensionMismatchError,
+    QueryEmbeddingDimensionMismatchError,
+)
 from infra.cache.base import CacheRepository
 from infra.llm import EmbeddingClient, get_embedding_client
 from settings.config.app_config import settings
@@ -94,7 +98,7 @@ def _build_embedding_rows(
     embedding_rows = []
     for (item_id, _, digest), vector in zip(stale, vectors, strict=True):
         if len(vector) != expected_dim:
-            raise ValueError(
+            raise EmbeddingDimensionMismatchError(
                 f"embedding dimension mismatch: model={model} "
                 f"got={len(vector)} expected={expected_dim}"
             )
@@ -134,7 +138,7 @@ async def _semantic_ranked_search(
     query_embedding = await _get_query_embedding(client, cache, model, query)
     expected_dim = settings.llm.embedding_dim
     if len(query_embedding) != expected_dim:
-        raise ValueError(
+        raise QueryEmbeddingDimensionMismatchError(
             f"query embedding dimension mismatch: model={model} "
             f"got={len(query_embedding)} expected={expected_dim}"
         )

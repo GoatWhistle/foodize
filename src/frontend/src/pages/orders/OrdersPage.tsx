@@ -2,9 +2,9 @@ import { OrdersPage as SharedOrdersPage } from "@shared/pages/OrdersPage/OrdersP
 import { ROUTES } from "../../constants/routes";
 
 const STATUS_FILTERS = [
-  { key: "",       label: "Все" },
-  { key: "ACTIVE", label: "Активные" },
-  { key: "DONE",   label: "Завершённые" },
+  { key: "",       labelKey: "order.list.filterAll" },
+  { key: "ACTIVE", labelKey: "order.list.filterActive" },
+  { key: "DONE",   labelKey: "order.list.filterDone" },
 ];
 
 export const OrdersPage = () => (

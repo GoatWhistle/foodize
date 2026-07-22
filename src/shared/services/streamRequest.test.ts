@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { streamSseRequest } from "@shared/services/streamRequest";
+import { t } from "@shared/i18n/useTranslation";
 
 const makeStreamResponse = (
   chunks: string[],
@@ -108,7 +109,7 @@ describe("streamSseRequest", () => {
     globalThis.fetch = fetchMock;
     await expect(
       streamSseRequest("https://api/chat", {}),
-    ).rejects.toThrow(/Ошибка/);
+    ).rejects.toThrow(t("common.errors.requestFailed", { status: 200 }));
   });
 
   it("rejects with an idle timeout when no chunk arrives in time", async () => {
@@ -125,6 +126,6 @@ describe("streamSseRequest", () => {
     globalThis.fetch = fetchMock;
     await expect(
       streamSseRequest("https://api/chat", {}, { idleTimeoutMs: 10 }),
-    ).rejects.toThrow(/вовремя/);
+    ).rejects.toThrow(t("common.errors.timeout"));
   });
 });

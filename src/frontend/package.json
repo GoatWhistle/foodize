@@ -15,7 +15,8 @@
     "preview": "vite preview",
     "test": "vitest",
     "api:types": "openapi-typescript ../../openapi/foodize.openapi.json -o ../shared/types/api.ts",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:ru": "vitest run --config vitest.ru.config.ts"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",

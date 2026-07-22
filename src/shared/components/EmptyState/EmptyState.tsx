@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { CookingPotIcon } from "@phosphor-icons/react";
+import { useTranslation } from "@shared/i18n/useTranslation";
 
 interface EmptyStateAction {
   label: string;
@@ -14,11 +15,12 @@ interface EmptyStateProps {
 }
 
 export const EmptyState = ({
-  title = "Здесь пусто",
+  title,
   subtitle,
   action,
   icon,
 }: EmptyStateProps) => {
+  const { t } = useTranslation();
   return (
     <div className="empty-state page-enter">
       {icon !== false && (
@@ -26,7 +28,7 @@ export const EmptyState = ({
           {icon ?? <CookingPotIcon size={32} weight="bold" />}
         </div>
       )}
-      <p className="empty-title">{title}</p>
+      <p className="empty-title">{title ?? t("common.states.empty")}</p>
       {subtitle && <p className="empty-subtitle">{subtitle}</p>}
       {action && (
         <button

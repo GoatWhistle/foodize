@@ -1,5 +1,6 @@
 import { formatOptionsSummary } from "@shared/utils/price";
 import type { Order } from "@shared/types/models";
+import { useTranslation } from "@shared/i18n/useTranslation";
 import styles from "./OrderStatusSections.module.css";
 import { formatPrice } from "@shared/utils/price";
 
@@ -8,8 +9,10 @@ interface OrderStatusSkeletonProps {
   loadError: string;
 }
 
-export const OrderStatusSkeleton = ({ screenClassName, loadError }: OrderStatusSkeletonProps) => (
-  <div className={screenClassName} role="status" aria-busy="true" aria-label="Загрузка заказа">
+export const OrderStatusSkeleton = ({ screenClassName, loadError }: OrderStatusSkeletonProps) => {
+  const { t } = useTranslation();
+  return (
+  <div className={screenClassName} role="status" aria-busy="true" aria-label={t("order.status.loadingLabel")}>
     {loadError && (
       <div className={`form-error ${styles['skeletonError']}`}>{loadError}</div>
     )}
@@ -25,16 +28,19 @@ export const OrderStatusSkeleton = ({ screenClassName, loadError }: OrderStatusS
       ))}
     </div>
   </div>
-);
+  );
+};
 
 interface OrderDetailsProps {
   order: Order;
 }
 
-export const OrderDetails = ({ order }: OrderDetailsProps) => (
+export const OrderDetails = ({ order }: OrderDetailsProps) => {
+  const { t } = useTranslation();
+  return (
   <>
     <div className={styles['detailsCard']}>
-      <div className={styles['detailsTitle']}>Состав заказа</div>
+      <div className={styles['detailsTitle']}>{t("order.details.composition")}</div>
       {Array.isArray(order.items) && order.items.map((item) => (
         <div key={item.id} className={styles['itemRow']}>
           <span className={styles['itemQty']}>×{item.quantity}</span>
@@ -48,7 +54,7 @@ export const OrderDetails = ({ order }: OrderDetailsProps) => (
         </div>
       ))}
       <div className={styles['totalRow']}>
-        <span className={styles['totalLabel']}>Итого</span>
+        <span className={styles['totalLabel']}>{t("order.details.total")}</span>
         <span className={styles['totalValue']}>{formatPrice(order.total_price)}</span>
       </div>
     </div>
@@ -64,4 +70,5 @@ export const OrderDetails = ({ order }: OrderDetailsProps) => (
       </div>
     )}
   </>
-);
+  );
+};

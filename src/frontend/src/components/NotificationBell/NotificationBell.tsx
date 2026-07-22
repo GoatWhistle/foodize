@@ -4,6 +4,8 @@ import type { Notification } from "@shared/types/models";
 import { useNotificationStore } from "../../store/useNotificationStore";
 import { useAuthStore } from "../../store/useAuthStore";
 import { useShallow } from "zustand/react/shallow";
+import { t, useTranslation } from "@shared/i18n/useTranslation";
+import { notificationTitle, notificationMessage } from '@shared/utils/notificationText';
 
 interface NotificationGroup {
   label: string;
@@ -16,16 +18,15 @@ const getDateStart = (date: Date): Date =>
   new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
 const getDayLabel = (value: string | null | undefined): string => {
-  if (!value) return "Недавно";
+  if (!value) return t("common.time.recently");
   const date = new Date(value);
-  if (isNaN(date.getTime())) return "Недавно";
+  if (isNaN(date.getTime())) return t("common.time.recently");
   const today = getDateStart(new Date());
   const day = getDateStart(date);
   const diff = Math.round((today.getTime() - day.getTime()) / MS_PER_DAY);
-  if (diff <= 0) return "Сегодня";
-  if (diff === 1) return "Вчера";
-  if (diff < 5) return `${diff} дня назад`;
-  return `${diff} дней назад`;
+  if (diff <= 0) return t("common.time.today");
+  if (diff === 1) return t("common.time.yesterday");
+  return t("common.time.daysAgo", { count: diff });
 };
 
 const groupByDay = (items: Notification[]): NotificationGroup[] => {
@@ -42,6 +43,7 @@ const groupByDay = (items: Notification[]): NotificationGroup[] => {
 };
 
 export const NotificationBell = () => {
+  const { t: translate } = useTranslation();
   const { user, isAuthenticated } = useAuthStore(
     useShallow((s) => ({ user: s.user, isAuthenticated: s.user !== null }))
   );
@@ -86,7 +88,7 @@ export const NotificationBell = () => {
       <button
         style={{ background: "none", border: "none", cursor: "pointer", position: "relative", padding: 8, color: "var(--text-1)", display: "flex", alignItems: "center", justifyContent: "center" }}
         onClick={() => { setIsOpen((v) => !v); }}
-        aria-label="Уведомления"
+        aria-label={translate('profile.notifications.title')}
       >
         <BellIcon size={20} weight={unreadCount > 0 ? "fill" : "bold"} />
         {unreadCount > 0 && (
@@ -99,15 +101,15 @@ export const NotificationBell = () => {
       {isOpen && (
         <div style={{ position: "absolute", top: "100%", right: 0, width: 320, maxHeight: 400, background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--r-md)", boxShadow: "var(--shadow-md)", zIndex: 100, display: "flex", flexDirection: "column", overflow: "hidden", marginTop: 8 }}>
           <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--bg-surface)" }}>
-            <span style={{ fontWeight: 800, fontSize: "var(--text-base)", color: "var(--text-1)" }}>Уведомления</span>
+            <span style={{ fontWeight: 800, fontSize: "var(--text-base)", color: "var(--text-1)" }}>{translate('profile.notifications.title')}</span>
             {notifications.length > 0 && (
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 {unreadCount > 0 && (
                   <button onClick={() => { void markAllAsRead(); }} style={{ background: "none", border: "none", color: "var(--accent)", fontSize: "var(--text-base)", fontWeight: 700, cursor: "pointer", padding: 0 }}>
-                    Прочитать все
+                    {translate('profile.notifications.markAllRead')}
                   </button>
                 )}
-                <button onClick={() => { void deleteAll(); }} aria-label="Удалить все" style={{ width: 28, height: 28, borderRadius: "var(--r-xs)", border: "1px solid var(--border)", background: "var(--bg-card)", color: "var(--text-3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                <button onClick={() => { void deleteAll(); }} aria-label={translate('profile.notifications.deleteAll')} style={{ width: 28, height: 28, borderRadius: "var(--r-xs)", border: "1px solid var(--border)", background: "var(--bg-card)", color: "var(--text-3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
                   <TrashIcon size={14} weight="bold" />
                 </button>
               </div>
@@ -117,7 +119,7 @@ export const NotificationBell = () => {
           <div style={{ overflowY: "auto", flex: 1 }}>
             {notifications.length === 0 ? (
               <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--text-3)", fontSize: "var(--text-base)" }}>
-                Нет уведомлений
+                {translate('profile.notifications.empty')}
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column" }}>
@@ -134,28 +136,28 @@ export const NotificationBell = () => {
                         style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", background: n.is_read ? "transparent" : "var(--accent-subtle)", cursor: n.is_read ? "default" : "pointer", transition: "background 0.2s" }}
                       >
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, gap: 8 }}>
-                          <strong style={{ fontSize: "var(--text-base)", color: "var(--text-1)", lineHeight: 1.2 }}>{n.title}</strong>
+                          <strong style={{ fontSize: "var(--text-base)", color: "var(--text-1)", lineHeight: 1.2 }}>{notificationTitle(n)}</strong>
                           <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                             <span style={{ fontSize: "var(--text-xs)", color: "var(--text-3)", whiteSpace: "nowrap" }}>
                               {n.created_at ? new Date(n.created_at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }) : ""}
                             </span>
                             <button
                               onClick={(e) => { e.stopPropagation(); void deleteNotification(n.id); }}
-                              aria-label="Удалить"
+                              aria-label={translate('profile.notifications.delete')}
                               style={{ width: 24, height: 24, borderRadius: "var(--r-xs)", border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text-3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
                             >
                               <TrashIcon size={12} weight="bold" />
                             </button>
                           </div>
                         </div>
-                        <p style={{ margin: 0, fontSize: "var(--text-base)", color: "var(--text-2)", lineHeight: 1.4 }}>{n.message}</p>
+                        <p style={{ margin: 0, fontSize: "var(--text-base)", color: "var(--text-2)", lineHeight: 1.4 }}>{notificationMessage(n)}</p>
                       </div>
                     ))}
                   </div>
                 ))}
                 {hasMore && (
                   <button onClick={() => { void handleLoadMore(); }} disabled={loadingMore} style={{ width: "100%", padding: "10px 16px", background: "none", border: "none", borderTop: "1px solid var(--border)", color: "var(--accent)", fontSize: "var(--text-base)", fontWeight: 700, cursor: loadingMore ? "default" : "pointer", opacity: loadingMore ? 0.6 : 1 }}>
-                    {loadingMore ? "Загрузка..." : "Загрузить ещё"}
+                    {loadingMore ? translate('common.states.loading') : translate('common.actions.loadMore')}
                   </button>
                 )}
               </div>

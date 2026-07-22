@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ComponentProps } from 'react';
 import { describe, it, expect, vi } from 'vitest';
+import { t } from '@shared/i18n/useTranslation';
 import { BatchActionBar } from '../../components/BatchActionBar/BatchActionBar';
 type BatchProps = Omit<Partial<ComponentProps<typeof BatchActionBar>>, 'count'> & {
   count?: number | null;
@@ -32,14 +33,16 @@ describe('BatchActionBar', () => {
 
   it('shows selected count and label', () => {
     render$({ count: 3, label: 'товара' });
-    expect(screen.getByText('Выбрано: 3 товара')).toBeInTheDocument();
+    expect(
+      screen.getByText(t('admin.batch.selected', { count: 3, label: 'товара' }))
+    ).toBeInTheDocument();
   });
 
-  it('calls onClear when "Снять выделение" clicked', async () => {
+  it('calls onClear when clear-selection clicked', async () => {
     const user = userEvent.setup();
     const onClear = vi.fn();
     render$({ onClear });
-    await user.click(screen.getByText('Снять выделение'));
+    await user.click(screen.getByText(t('common.actions.clearSelection')));
     expect(onClear).toHaveBeenCalledOnce();
   });
 

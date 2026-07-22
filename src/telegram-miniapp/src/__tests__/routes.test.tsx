@@ -66,6 +66,7 @@ vi.mock("react-router-dom", async () => {
 
 import { createMemoryRouter, RouterProvider, Navigate } from "react-router-dom";
 import { isValidElement } from "react";
+import { t } from "@shared/i18n/useTranslation";
 import "../routes";
 
 const renderAt = async (path: string) => {
@@ -109,7 +110,7 @@ describe("routes", () => {
     });
     render(<RouterProvider router={router} />);
 
-    const fab = await screen.findByRole("button", { name: /Корзина/ });
+    const fab = await screen.findByRole("button", { name: new RegExp(t("order.cart.fabLabel")) });
     expect(fab).toHaveTextContent("3");
 
     await userEvent.click(fab);
@@ -126,7 +127,7 @@ describe("routes", () => {
 
     await screen.findByText("page-restaurant");
     expect(
-      screen.queryByRole("button", { name: /Корзина/ }),
+      screen.queryByRole("button", { name: new RegExp(t("order.cart.fabLabel")) }),
     ).not.toBeInTheDocument();
   });
 

@@ -3,13 +3,14 @@ import { CheckCircleIcon, HourglassMediumIcon, XCircleIcon } from '@phosphor-ico
 import type { Icon } from '@phosphor-icons/react';
 import { staffService } from '@shared/services/staffService';
 import { EmptyState } from '@shared/components/EmptyState/EmptyState';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { StaffRequest, StaffRequestStatus } from '@shared/types/models';
 
 interface ApplicationStatusConfigEntry {
   Icon: Icon;
   iconColor: string;
-  title: string;
-  description: string;
+  titleKey: string;
+  descriptionKey: string;
   color: string;
   bg: string;
 }
@@ -18,33 +19,31 @@ const APPLICATION_STATUS_CONFIG: Record<StaffRequestStatus, ApplicationStatusCon
   PENDING: {
     Icon: HourglassMediumIcon,
     iconColor: 'var(--color-warning)',
-    title: 'Заявка на рассмотрении',
-    description:
-      'Ваша заявка отправлена и ожидает решения менеджера. Обычно это занимает несколько часов.',
+    titleKey: 'staff.application.pending.title',
+    descriptionKey: 'staff.application.pending.description',
     color: 'var(--color-warning-dim)',
     bg: 'var(--color-warning-bg)',
   },
   ACCEPTED: {
     Icon: CheckCircleIcon,
     iconColor: 'var(--color-success)',
-    title: 'Заявка одобрена',
-    description:
-      'Ваша заявка принята. Обратитесь к менеджеру для завершения оформления.',
+    titleKey: 'staff.application.accepted.title',
+    descriptionKey: 'staff.application.accepted.description',
     color: 'var(--color-success-dim)',
     bg: 'var(--color-success-bg)',
   },
   REJECTED: {
     Icon: XCircleIcon,
     iconColor: 'var(--color-error)',
-    title: 'Заявка отклонена',
-    description:
-      'К сожалению, ваша заявка была отклонена. Вы можете попробовать снова через 24 часа.',
+    titleKey: 'staff.application.rejected.title',
+    descriptionKey: 'staff.application.rejected.description',
     color: 'var(--color-error)',
     bg: 'var(--color-error-bg)',
   },
 };
 
 export const ApplicationStatus = () => {
+  const { t } = useTranslation();
   const [application, setApplication] = useState<StaffRequest | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -73,8 +72,8 @@ export const ApplicationStatus = () => {
     return (
       <div style={{ padding: '40px 20px', maxWidth: 500, margin: '0 auto' }}>
         <EmptyState
-          title="Нет профиля сотрудника"
-          subtitle="Вы не привязаны ни к одному заведению. Обратитесь к менеджеру."
+          title={t('staff.application.noProfileTitle')}
+          subtitle={t('staff.application.noProfileSubtitle')}
         />
       </div>
     );
@@ -107,7 +106,7 @@ export const ApplicationStatus = () => {
               marginBottom: 8,
             }}
           >
-            {config.title}
+            {t(config.titleKey)}
           </h2>
           <p
             style={{
@@ -117,7 +116,7 @@ export const ApplicationStatus = () => {
               margin: 0,
             }}
           >
-            {config.description}
+            {t(config.descriptionKey)}
           </p>
         </div>
         <div
@@ -131,7 +130,7 @@ export const ApplicationStatus = () => {
             fontFamily: 'monospace',
           }}
         >
-          Заявка #{application.id.slice(0, 8)}
+          {t('staff.application.number', { id: application.id.slice(0, 8) })}
         </div>
       </div>
     </div>

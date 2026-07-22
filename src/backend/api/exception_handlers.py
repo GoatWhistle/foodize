@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from shared.exceptions.base import AppException
+from shared.exceptions.validation import FieldValidationError
 from shared.schemas.error import ErrorDescriptionSchema, ErrorSchema
 from utils.logging_setup import get_logger
 
@@ -42,6 +43,14 @@ def _extract_constraint_name(exc: IntegrityError) -> str:
     return "unknown"
 
 
+def _first_validation_error(exc: RequestValidationError) -> FieldValidationError | None:
+    for error in exc.errors():
+        original = error.get("ctx", {}).get("error") if error.get("ctx") else None
+        if isinstance(original, FieldValidationError):
+            return original
+    return None
+
+
 async def request_validation_error_handler(
     request: Request, exc: RequestValidationError
 ) -> JSONResponse:
@@ -52,9 +61,16 @@ async def request_validation_error_handler(
         f"{'.'.join(str(part) for part in (e['loc'] or []) if part != 'body')}: {e['msg']}"
         for e in errors
     )
+    first = _first_validation_error(exc)
     return JSONResponse(
         status_code=HTTPStatus.BAD_REQUEST,
-        content=ErrorSchema(detail=ErrorDescriptionSchema(error=message)).model_dump(),
+        content=ErrorSchema(
+            detail=ErrorDescriptionSchema(
+                error=message,
+                code=first.code if first else "VALIDATION_ERROR",
+                params=first.params if first else {},
+            )
+        ).model_dump(),
     )
 
 
@@ -68,7 +84,9 @@ async def app_exception_handler(request: Request, exc: AppException) -> JSONResp
     )
     return JSONResponse(
         status_code=int(exc.status_code),
-        content=ErrorSchema(detail=ErrorDescriptionSchema(error=exc.detail)).model_dump(),
+        content=ErrorSchema(
+            detail=ErrorDescriptionSchema(error=exc.detail, code=exc.code, params=exc.params)
+        ).model_dump(),
         headers={"X-Request-ID": request_id} if request_id else {},
     )
 
@@ -84,7 +102,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
     return JSONResponse(
         status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
         content=ErrorSchema(
-            detail=ErrorDescriptionSchema(error="Internal server error")
+            detail=ErrorDescriptionSchema(error="Internal server error", code="INTERNAL_ERROR")
         ).model_dump(),
         headers={"X-Request-ID": request_id} if request_id else {},
     )
@@ -93,7 +111,9 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
     return JSONResponse(
         status_code=exc.status_code,
-        content=ErrorSchema(detail=ErrorDescriptionSchema(error=exc.detail)).model_dump(),
+        content=ErrorSchema(
+            detail=ErrorDescriptionSchema(error=str(exc.detail), code="HTTP_ERROR")
+        ).model_dump(),
     )
 
 

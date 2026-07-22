@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 import type { MenuItem } from "@shared/types/models";
 import { MenuItemCard } from "./MenuItemCard";
+import { t } from "@shared/i18n/useTranslation";
 
 const makeItem = (overrides: Partial<MenuItem> = {}): MenuItem =>
   ({
@@ -35,7 +36,7 @@ describe("MenuItemCard", () => {
     const onHaptic = vi.fn();
     const item = makeItem();
     render(<MenuItemCard item={item} onSelect={onSelect} onHaptic={onHaptic} />);
-    await user.click(screen.getByLabelText("Открыть Шаурма"));
+    await user.click(screen.getByLabelText(t("catalog.menuItem.openAria", { name: "Шаурма" })));
     expect(onSelect).toHaveBeenCalledWith(item);
     expect(onHaptic).toHaveBeenCalled();
   });
@@ -45,7 +46,7 @@ describe("MenuItemCard", () => {
     const onSelect = vi.fn();
     const item = makeItem();
     render(<MenuItemCard item={item} onSelect={onSelect} />);
-    await user.click(screen.getByLabelText("Добавить Шаурма"));
+    await user.click(screen.getByLabelText(t("catalog.menuItem.addAria", { name: "Шаурма" })));
     expect(onSelect).toHaveBeenCalledWith(item);
   });
 
@@ -53,16 +54,16 @@ describe("MenuItemCard", () => {
     const user = userEvent.setup();
     const onSelect = vi.fn();
     render(<MenuItemCard item={makeItem({ is_available: false })} onSelect={onSelect} />);
-    await user.click(screen.getByLabelText("Открыть Шаурма"));
+    await user.click(screen.getByLabelText(t("catalog.menuItem.openAria", { name: "Шаурма" })));
     expect(onSelect).not.toHaveBeenCalled();
-    expect(screen.queryByLabelText("Добавить Шаурма")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(t("catalog.menuItem.addAria", { name: "Шаурма" }))).not.toBeInTheDocument();
   });
 
   it("does not select when the restaurant is closed", async () => {
     const user = userEvent.setup();
     const onSelect = vi.fn();
     render(<MenuItemCard item={makeItem()} onSelect={onSelect} isRestaurantOpen={false} />);
-    await user.click(screen.getByLabelText("Открыть Шаурма"));
+    await user.click(screen.getByLabelText(t("catalog.menuItem.openAria", { name: "Шаурма" })));
     expect(onSelect).not.toHaveBeenCalled();
   });
 });

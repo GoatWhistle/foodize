@@ -6,6 +6,10 @@ import jwt
 from fastapi import WebSocket, WebSocketDisconnect
 from uvicorn.protocols.utils import ClientDisconnected
 
+from features.notifications.exceptions import (
+    WsInvalidTokenTypeError,
+    WsTokenSubjectMissingError,
+)
 from infra.cache.redis import get_redis_cache
 from utils.jwt_tokens import decode_jwt
 
@@ -29,10 +33,10 @@ async def resolve_ws_token_user_id(token: str) -> uuid.UUID | None:
     try:
         payload = decode_jwt(token)
         if payload.get("typ") != "access":
-            raise ValueError("wrong token type")
+            raise WsInvalidTokenTypeError()
         user_id = payload.get("sub")
         if user_id is None:
-            raise ValueError
+            raise WsTokenSubjectMissingError()
         parsed_user_id = uuid.UUID(user_id)
     except (jwt.InvalidTokenError, ValueError, AttributeError):
         return None

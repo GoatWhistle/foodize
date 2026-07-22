@@ -1,11 +1,16 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import {
+  ALL_PERMISSIONS,
   normalizePermissions,
   hasPermission,
   inferPermissionPreset,
+  permissionLabel,
+  permissionPresetName,
   permissionPresetLabel,
   formatPermissions,
 } from "@shared/utils/permissions";
+import { t } from "@shared/i18n/useTranslation";
+import { useLanguageStore } from "@shared/store/useLanguageStore";
 
 describe("normalizePermissions", () => {
   it("returns the array when given one", () => {
@@ -63,17 +68,58 @@ describe("inferPermissionPreset", () => {
 });
 
 describe("permissionPresetLabel", () => {
-  it("maps preset to its Russian label", () => {
-    expect(permissionPresetLabel(["admin.access"])).toBe("Администратор");
-    expect(permissionPresetLabel(["vendors.read_own"])).toBe("Вендор");
-    expect(permissionPresetLabel([])).toBe("Клиент");
+  afterEach(() => {
+    useLanguageStore.setState({ language: "ru" });
+  });
+
+  it("maps preset to its localized label", () => {
+    expect(permissionPresetLabel(["admin.access"])).toBe(
+      t("enums.permissionPreset.ADMIN"),
+    );
+    expect(permissionPresetLabel(["vendors.read_own"])).toBe(
+      t("enums.permissionPreset.VENDOR"),
+    );
+    expect(permissionPresetLabel([])).toBe(t("enums.permissionPreset.CUSTOMER"));
+  });
+
+  it("follows the active language", () => {
+    useLanguageStore.setState({ language: "ru" });
+    const ru = permissionPresetLabel(["admin.access"]);
+    useLanguageStore.setState({ language: "en" });
+    const en = permissionPresetLabel(["admin.access"]);
+    expect(ru).toBe("Администратор");
+    expect(en).toBe("Administrator");
+  });
+});
+
+describe("permissionPresetName", () => {
+  it("resolves every preset to a non-key label", () => {
+    for (const preset of ["CUSTOMER", "VENDOR", "STAFF", "ADMIN"] as const) {
+      const label = permissionPresetName(preset);
+      expect(label).toBe(t(`enums.permissionPreset.${preset}`));
+      expect(label).not.toBe(`enums.permissionPreset.${preset}`);
+    }
+  });
+});
+
+describe("permissionLabel", () => {
+  it("resolves every known permission to a translated label", () => {
+    for (const permission of ALL_PERMISSIONS) {
+      const label = permissionLabel(permission);
+      expect(label).toBe(t(`enums.permission.${permission}`));
+      expect(label).not.toBe(`enums.permission.${permission}`);
+    }
+  });
+
+  it("keeps an unknown permission key as-is", () => {
+    expect(permissionLabel("custom.thing")).toBe("custom.thing");
   });
 });
 
 describe("formatPermissions", () => {
-  it("maps known permissions to Russian and joins them", () => {
+  it("maps known permissions to labels and joins them", () => {
     expect(formatPermissions(["menu.manage", "orders.create"])).toBe(
-      "Меню: управление, Заказы: создание",
+      `${t("enums.permission.menu.manage")}, ${t("enums.permission.orders.create")}`,
     );
   });
 

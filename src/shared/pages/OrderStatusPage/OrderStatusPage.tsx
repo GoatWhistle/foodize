@@ -6,13 +6,14 @@ import { useCartStore } from "@shared/store/useCartStore.instance";
 import { useOrdersStore } from "@shared/store/useOrdersStore.instance";
 import type { OrdersStoreState } from "@shared/store/createOrdersStore";
 import { orderService } from "@shared/services/orderService";
-import { useEtaText } from "@shared/hooks/useEtaText";
+import { useEtaState } from "@shared/hooks/useEtaText";
 import { translateApiError } from "@shared/utils/translateApiError";
 import { HorizontalSteps } from "@shared/components/HorizontalSteps/HorizontalSteps";
 import { getOrderStatusStyle, getCustomerOrderStatusLabel } from "@shared/utils/orderStatus";
 import { parseOrderMessage } from "@shared/utils/wsMessages";
 import { OrderStatusSkeleton, OrderDetails } from "./OrderStatusSections";
 import type { OrderStatus } from "@shared/types/models";
+import { useTranslation } from "@shared/i18n/useTranslation";
 import styles from "./OrderStatusPage.module.css";
 
 interface OrderWebSocket {
@@ -39,6 +40,7 @@ const fmtTime = (iso: string | null | undefined): string => {
 };
 
 export const OrderStatusPage = ({ createOrderWebSocket, onBack, screenClassName = "status-screen", showDetails = true }: OrderStatusPageProps) => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const orderId = id ?? "";
   const navigate = useNavigate();
@@ -59,7 +61,7 @@ export const OrderStatusPage = ({ createOrderWebSocket, onBack, screenClassName 
       try {
         await fetchOrder(orderId);
       } catch (error) {
-        setLoadError(translateApiError(error, "Не удалось загрузить заказ"));
+        setLoadError(translateApiError(error, t("order.status.loadFailed")));
       }
     })();
   }, [orderId, fetchOrder]);
@@ -101,7 +103,10 @@ export const OrderStatusPage = ({ createOrderWebSocket, onBack, screenClassName 
     }
   }, [currentOrder?.status, orderId]);
 
-  const etaText = useEtaText(currentOrder?.estimated_ready_at, currentOrder?.status ?? "PENDING");
+  const { text: etaText, delayed } = useEtaState(
+    currentOrder?.estimated_ready_at,
+    currentOrder?.status ?? "PENDING",
+  );
 
   if (!currentOrder) {
     return <OrderStatusSkeleton screenClassName={screenClassName} loadError={loadError} />;
@@ -120,7 +125,7 @@ export const OrderStatusPage = ({ createOrderWebSocket, onBack, screenClassName 
       await orderService.completeOrder(orderId);
       await fetchOrder(orderId);
     } catch {
-      setCompleteError("Не удалось подтвердить получение");
+      setCompleteError(t("order.status.confirmFailed"));
     } finally {
       setCompleting(false);
     }
@@ -133,7 +138,7 @@ export const OrderStatusPage = ({ createOrderWebSocket, onBack, screenClassName 
       await orderService.cancelOrder(orderId, null);
       await fetchOrder(orderId);
     } catch (err) {
-      setCancelError(translateApiError(err, "Не удалось отменить заказ"));
+      setCancelError(translateApiError(err, t("order.status.cancelFailed")));
     } finally {
       setCancelling(false);
     }
@@ -142,7 +147,7 @@ export const OrderStatusPage = ({ createOrderWebSocket, onBack, screenClassName 
   return (
     <div className={`${screenClassName} page-enter${isReady ? " status-ready-flash" : ""}`}>
       <div className={styles['header']}>
-        <div className={styles['headerLabel']}>Заказ</div>
+        <div className={styles['headerLabel']}>{t("order.status.headerLabel")}</div>
         <div className={`${styles['orderNumber']}${currentOrder.status === "CANCELLED" ? ` ${styles['orderNumberCancelled']}` : ""}`}>
           #{currentOrder.display_id}
         </div>
@@ -163,16 +168,18 @@ export const OrderStatusPage = ({ createOrderWebSocket, onBack, screenClassName 
 
       <div className={styles['etaBlock']}>
         {isReady ? (
-          <div className={styles['etaReady']}>Подойдите к стойке — ваш заказ готов!</div>
+          <div className={styles['etaReady']}>{t("order.status.readyCallout")}</div>
         ) : etaText ? (
-          <div className={`${styles['etaText']}${etaText.startsWith("Задерж") ? ` ${styles['etaTextDelayed']}` : ""}`}>
+          <div className={`${styles['etaText']}${delayed ? ` ${styles['etaTextDelayed']}` : ""}`}>
             {etaText}
           </div>
         ) : null}
-        {showBonAppetit && <div className={styles['bonAppetit']}>Приятного аппетита!</div>}
+        {showBonAppetit && <div className={styles['bonAppetit']}>{t("order.status.bonAppetit")}</div>}
         <div className={styles['etaMeta']}>
-          Оформлен в {fmtTime(currentOrder.created_at)}
-          {currentOrder.requested_pickup_at ? ` · выдача в ${fmtTime(currentOrder.requested_pickup_at)}` : ""}
+          {t("order.status.placedAt", { time: fmtTime(currentOrder.created_at) })}
+          {currentOrder.requested_pickup_at
+            ? t("order.status.pickupAt", { time: fmtTime(currentOrder.requested_pickup_at) })
+            : ""}
         </div>
       </div>
 
@@ -192,7 +199,7 @@ export const OrderStatusPage = ({ createOrderWebSocket, onBack, screenClassName 
             onClick={() => { void handleComplete(); }}
             disabled={completing}
           >
-            {completing ? "Подтверждение..." : "Получил заказ"}
+            {completing ? t("order.status.confirming") : t("order.status.confirmReceipt")}
           </button>
         )}
         {isDone && (
@@ -206,7 +213,7 @@ export const OrderStatusPage = ({ createOrderWebSocket, onBack, screenClassName 
               })();
             }}
           >
-            Повторить заказ
+            {t("order.status.repeat")}
           </button>
         )}
         {currentOrder.status === "PENDING" && (
@@ -215,14 +222,14 @@ export const OrderStatusPage = ({ createOrderWebSocket, onBack, screenClassName 
             onClick={() => { void handleCancel(); }}
             disabled={cancelling}
           >
-            {cancelling ? "Отмена..." : "Отменить"}
+            {cancelling ? t("order.status.cancelling") : t("order.status.cancel")}
           </button>
         )}
         <button
           className={`btn btn-secondary ${styles['backBtn']}${isDone ? ` ${styles['actionBtn']}` : ` ${styles['backBtnWide']}`}`}
           onClick={() => { if (typeof backPath === "function") backPath(); else void navigate(backPath); }}
         >
-          <ArrowLeftIcon size={16} weight="bold" /> Мои заказы
+          <ArrowLeftIcon size={16} weight="bold" /> {t("order.status.backToOrders")}
         </button>
       </div>
     </div>

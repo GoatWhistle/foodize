@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import type { Order } from '@shared/types/models';
+import { t } from '@shared/i18n/useTranslation';
 import { OrdersPage } from '../../pages/orders/OrdersPage';
 type OrdersLogic = {
   visibleOrders: Order[];
@@ -62,7 +63,7 @@ describe('OrdersPage', () => {
   it('renders orders list', () => {
     render(<BrowserRouter><OrdersPage /></BrowserRouter>);
 
-    expect(screen.getByText('Мои заказы')).toBeInTheDocument();
+    expect(screen.getByText(t('order.list.title'))).toBeInTheDocument();
     expect(screen.getByText('500 ₽')).toBeInTheDocument();
     expect(screen.getByText('1000 ₽')).toBeInTheDocument();
   });
@@ -71,7 +72,7 @@ describe('OrdersPage', () => {
     const user = userEvent.setup();
     render(<BrowserRouter><OrdersPage /></BrowserRouter>);
 
-    await user.click(screen.getByRole('button', { name: 'Заказ #order-1' }));
+    await user.click(screen.getByRole('button', { name: t('order.card.ariaLabel', { id: 'order-1' }) }));
     expect(mockNavigate).toHaveBeenCalledWith('/orders/order-1');
   });
 
@@ -86,6 +87,6 @@ describe('OrdersPage', () => {
 
     render(<BrowserRouter><OrdersPage /></BrowserRouter>);
 
-    expect(screen.getByText('Заказов пока нет')).toBeInTheDocument();
+    expect(screen.getByText(t('order.list.emptyTitle'))).toBeInTheDocument();
   });
 });

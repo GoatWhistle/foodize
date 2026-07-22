@@ -1,4 +1,5 @@
 import { StarIcon } from "@phosphor-icons/react";
+import { useTranslation } from "@shared/i18n/useTranslation";
 
 interface StarRatingInputProps {
   value?: number;
@@ -18,7 +19,9 @@ export const StarRatingInput = ({
   activeColor = "var(--star)",
   inactiveColor = "var(--border-mid)",
   gap = 6,
-}: StarRatingInputProps) => (
+}: StarRatingInputProps) => {
+  const { t } = useTranslation();
+  return (
   <div style={{ display: "flex", gap, justifyContent: "center", alignItems: "center" }}>
     {[1, 2, 3, 4, 5].map((s) => {
       const filled = s <= value;
@@ -37,7 +40,7 @@ export const StarRatingInput = ({
           key={s}
           role="button"
           tabIndex={0}
-          aria-label={`Оценка ${s}`}
+          aria-label={t("catalog.reviews.ratingAria", { value: s })}
           style={{ cursor: "pointer", display: "inline-flex" }}
           onClick={() => onChange?.(s)}
           onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onChange?.(s)}
@@ -47,4 +50,5 @@ export const StarRatingInput = ({
       );
     })}
   </div>
-);
+  );
+};

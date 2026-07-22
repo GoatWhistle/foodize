@@ -10,6 +10,7 @@ import { getGreeting } from "@shared/utils/restaurant";
 import { aiOrderService } from "@shared/services/aiOrderService";
 import { refreshAccessToken } from "../../services/api";
 import type { Restaurant } from "@shared/types/models";
+import { useTranslation } from "@shared/i18n/useTranslation";
 import styles from "./HomePage.module.css";
 
 interface AiReplyState {
@@ -18,6 +19,7 @@ interface AiReplyState {
 }
 
 export const HomePage = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const [aiReply, setAiReply] = useState<AiReplyState | null>(null);
@@ -43,7 +45,7 @@ export const HomePage = () => {
     let reply = "";
     try {
       await aiOrderService.streamChat(
-        [{ role: "user", content: "Что можно заказать быстро и недорого?" }],
+        [{ role: "user", content: t("catalog.assistant.prompt") }],
         {
           onChunk: (chunk) => {
             reply += chunk;
@@ -53,9 +55,9 @@ export const HomePage = () => {
           withCredentials: true,
         }
       );
-      setAiReply({ text: reply || "Ответ пуст", error: false });
+      setAiReply({ text: reply || t("catalog.assistant.emptyReply"), error: false });
     } catch {
-      setAiReply({ text: "Не удалось получить ответ ассистента", error: true });
+      setAiReply({ text: t("catalog.assistant.failed"), error: true });
     } finally {
       setAiLoading(false);
     }
@@ -82,7 +84,7 @@ export const HomePage = () => {
         direction={direction}
         setDirection={setDirection}
         searching={searching}
-        placeholder="Поиск заведения..."
+        placeholder={t("catalog.search.placeholderShort")}
         extraChips={(chipClass: string) => (
           <button
             type="button"
@@ -93,7 +95,7 @@ export const HomePage = () => {
           >
             <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
               <SparkleIcon size={15} weight="fill" />
-              AI-помощник
+              {t("catalog.assistant.label")}
             </span>
           </button>
         )}
@@ -104,12 +106,12 @@ export const HomePage = () => {
           <div className={styles['aiPanelHead']}>
             <span className={styles['aiPanelTitle']}>
               <SparkleIcon size={15} weight="fill" />
-              AI-помощник
+              {t("catalog.assistant.label")}
             </span>
             <button
               type="button"
               className={styles['aiPanelClose']}
-              aria-label="Закрыть"
+              aria-label={t("common.actions.close")}
               onClick={() => { setAiReply(null); }}
             >
               <XIcon size={16} weight="bold" />
@@ -118,14 +120,14 @@ export const HomePage = () => {
           <div
             className={`${styles['aiPanelBody']}${aiReply.error ? ` ${styles['aiPanelError']}` : ""}`}
           >
-            {aiReply.text || (aiLoading ? "Думаю…" : "")}
+            {aiReply.text || (aiLoading ? t("catalog.assistant.thinking") : "")}
           </div>
         </div>
       )}
 
       <div className={styles['section']}>
         <div className={styles['sectionHeader']}>
-          <h1 className={styles['sectionTitle']}>Заведения</h1>
+          <h1 className={styles['sectionTitle']}>{t("catalog.home.venuesTitle")}</h1>
           {publicRestaurantsTotal > 0 && (
             <span style={{ fontSize: "var(--text-base)", color: "var(--text-3)", fontWeight: 600 }}>
               {publicRestaurantsTotal}
@@ -139,8 +141,8 @@ export const HomePage = () => {
           </div>
         ) : allRestaurants.length === 0 ? (
           <EmptyState
-            title="Ничего не найдено"
-            subtitle="Попробуйте другой запрос или уберите фильтры"
+            title={t("catalog.home.emptyTitle")}
+            subtitle={t("catalog.home.emptySubtitleMiniapp")}
           />
         ) : (
           <>

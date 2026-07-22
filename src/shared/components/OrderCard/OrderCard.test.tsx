@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 import { OrderCard } from "@shared/components/OrderCard/OrderCard";
 import type { Order } from "@shared/types/models";
+import { t } from "@shared/i18n/useTranslation";
 
 const baseOrder: Order = {
   id: "o1",
@@ -33,8 +34,8 @@ describe("OrderCard", () => {
     render(<OrderCard order={baseOrder} />);
     expect(screen.getByText("#42")).toBeInTheDocument();
     expect(screen.getByText("Шаурма №1")).toBeInTheDocument();
-    expect(screen.getByText("Готовится")).toBeInTheDocument();
-    expect(screen.getByText("1 поз.")).toBeInTheDocument();
+    expect(screen.getByText(t("enums.orderStatusCustomer.ACCEPTED"))).toBeInTheDocument();
+    expect(screen.getByText(t("order.card.positionsCount", { count: 1 }))).toBeInTheDocument();
     expect(screen.getByText("550 ₽")).toBeInTheDocument();
   });
 
@@ -57,14 +58,14 @@ describe("OrderCard", () => {
 
   it("does not render details toggle in non-expandable mode", () => {
     render(<OrderCard order={baseOrder} />);
-    expect(screen.queryByRole("button", { name: /детали/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: new RegExp(t("order.card.detailsToggle")) })).not.toBeInTheDocument();
   });
 
   it("toggles item details in expandable mode", async () => {
     const user = userEvent.setup();
     render(<OrderCard order={baseOrder} expandable />);
     expect(screen.queryByText("Шаурма классическая")).not.toBeInTheDocument();
-    const toggle = screen.getByRole("button", { name: /детали/ });
+    const toggle = screen.getByRole("button", { name: new RegExp(t("order.card.detailsToggle")) });
     await user.click(toggle);
     expect(screen.getByText("Шаурма классическая")).toBeInTheDocument();
     expect(screen.getByText("Острый соус +25 ₽")).toBeInTheDocument();
@@ -77,12 +78,12 @@ describe("OrderCard", () => {
     const user = userEvent.setup();
     const onClick = vi.fn();
     render(<OrderCard order={baseOrder} expandable onClick={onClick} />);
-    await user.click(screen.getByRole("button", { name: /детали/ }));
+    await user.click(screen.getByRole("button", { name: new RegExp(t("order.card.detailsToggle")) }));
     expect(onClick).not.toHaveBeenCalled();
   });
 
   it("renders a cancelled status label", () => {
     render(<OrderCard order={{ ...baseOrder, status: "CANCELLED" }} />);
-    expect(screen.getByText("Отменён")).toBeInTheDocument();
+    expect(screen.getByText(t("enums.orderStatusCustomer.CANCELLED"))).toBeInTheDocument();
   });
 });

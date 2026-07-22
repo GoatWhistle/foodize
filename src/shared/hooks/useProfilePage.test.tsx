@@ -27,6 +27,7 @@ vi.mock("@shared/services/userService", () => ({
 }));
 
 import { useProfilePage } from "@shared/hooks/useProfilePage";
+import { t } from "@shared/i18n/useTranslation";
 
 describe("useProfilePage", () => {
   beforeEach(() => {
@@ -40,7 +41,7 @@ describe("useProfilePage", () => {
   it("falls back to a default display name", () => {
     storeUser = null;
     const { result } = renderHook(() => useProfilePage());
-    expect(result.current.displayName).toBe("Пользователь");
+    expect(result.current.displayName).toBe(t("profile.page.fallbackName"));
   });
 
   it("uses first + last name when available", () => {
@@ -107,7 +108,7 @@ describe("useProfilePage", () => {
     await act(async () => {
       await result.current.handleSave();
     });
-    expect(result.current.editError).toBe("Некорректный запрос");
+    expect(result.current.editError).toBe(t("apiErrors.byDetail.Bad request"));
     expect(result.current.editSuccess).toBe(false);
   });
 
@@ -137,7 +138,7 @@ describe("useProfilePage", () => {
     await act(async () => {
       await result.current.handlePasswordChange();
     });
-    expect(result.current.pwError).toBe("Неверный телефон или пароль");
+    expect(result.current.pwError).toBe(t("apiErrors.byDetail.Invalid credentials"));
     expect(result.current.pwSuccess).toBe(false);
   });
 

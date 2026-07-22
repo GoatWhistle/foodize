@@ -2,6 +2,7 @@ import type { ChangeEvent, Dispatch, SetStateAction } from 'react';
 import { DownloadSimpleIcon } from '@phosphor-icons/react';
 import { Pagination } from '@shared/components/Pagination/Pagination';
 import { EmptyState } from '@shared/components/EmptyState/EmptyState';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { Order } from '@shared/types/models';
 import type { adminService as AdminService } from '../../../services/adminService';
 import type { OrderFilters } from '../hooks/useAdminOrders';
@@ -9,11 +10,11 @@ import { AdminOrderCard } from './components/AdminOrderCard';
 import styles from './components/adminTable.module.css';
 
 const STATUS_CHIPS = [
-  ['', 'Все'],
-  ['PENDING', 'Новые'],
-  ['ACCEPTED', 'Принятые'],
-  ['READY', 'Готовы'],
-  ['COMPLETED', 'Выданы'],
+  ['', 'admin.orders.filters.all'],
+  ['PENDING', 'admin.orders.filters.pending'],
+  ['ACCEPTED', 'admin.orders.filters.accepted'],
+  ['READY', 'admin.orders.filters.ready'],
+  ['COMPLETED', 'admin.orders.filters.completed'],
 ] as const;
 
 export interface AdminOrdersTabProps {
@@ -51,6 +52,7 @@ export function AdminOrdersTab({
   adminService,
   PAGE_SIZE,
 }: AdminOrdersTabProps) {
+  const { t } = useTranslation();
   const isEmpty = !Array.isArray(orders) || orders.length === 0;
 
   if (ordersLoading && isEmpty) {
@@ -71,7 +73,7 @@ export function AdminOrdersTab({
       <div className={styles['wideFilterGrid']}>
         <input
           className={`form-input ${styles['filterControl']}`}
-          placeholder="Клиент, телефон или ресторан"
+          placeholder={t('admin.orders.searchPlaceholder')}
           value={orderSearchRaw}
           onChange={(event: ChangeEvent<HTMLInputElement>) => {
             setOrdersPage(1);
@@ -99,7 +101,7 @@ export function AdminOrdersTab({
       </div>
 
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
-        {STATUS_CHIPS.map(([key, label]) => (
+        {STATUS_CHIPS.map(([key, labelKey]) => (
           <button
             key={key}
             className={`category-chip${orderFilters.status === key ? ' active' : ''}`}
@@ -109,7 +111,7 @@ export function AdminOrdersTab({
               setOrdersPage(1);
             }}
           >
-            {label}
+            {t(labelKey)}
           </button>
         ))}
       </div>
@@ -126,7 +128,7 @@ export function AdminOrdersTab({
                   date_to: orderFilters.date_to || undefined,
                   status: orderFilters.status || undefined,
                 }),
-              `заказы_${todayStr}.csv`
+              t('admin.exportFiles.orders', { date: todayStr })
             ); }
           }
         >
@@ -140,8 +142,8 @@ export function AdminOrdersTab({
 
       {isEmpty && (
         <EmptyState
-          title="Заказов пока нет"
-          subtitle="Для выбранных фильтров нет результатов"
+          title={t('admin.orders.emptyTitle')}
+          subtitle={t('admin.common.emptySubtitle')}
         />
       )}
 

@@ -1,8 +1,4 @@
-import {
-  ORDER_STATUS_RU,
-  ORDER_STATUS_CUSTOMER_RU,
-  translate,
-} from "./locales";
+import { orderStatusLabel, customerOrderStatusLabel } from "./locales";
 
 const STATUS_STYLE = {
   PENDING: {
@@ -44,9 +40,9 @@ export function getOrderStatusStyle(status: string | null | undefined): StatusSt
 }
 
 export function getOrderStatusLabel(status: string | null | undefined): string {
-  return translate(ORDER_STATUS_RU, status, status ?? "");
+  return orderStatusLabel(status);
 }
 
 export function getCustomerOrderStatusLabel(status: string | null | undefined): string {
-  return translate(ORDER_STATUS_CUSTOMER_RU, status, status ?? "");
+  return customerOrderStatusLabel(status);
 }

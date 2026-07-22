@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { useCartStore } from "../../store/useCartStore";
 import { cartService } from "@shared/services/cartService";
 import type { CartLine } from "@shared/store/createCartStore";
+import { t } from "@shared/i18n/useTranslation";
 
 vi.mock("@shared/services/cartService", () => ({
   cartService: {
@@ -186,7 +187,7 @@ describe("useCartStore cart", () => {
     await useCartStore.getState().addToCart(newItem, "rest-2", [], 1);
 
     expect(showConfirm).toHaveBeenCalledWith(
-      "Заменить корзину?\nТекущие товары будут удалены.",
+      t("order.cart.replaceConfirmMultiline"),
       expect.any(Function),
     );
     const state = useCartStore.getState();

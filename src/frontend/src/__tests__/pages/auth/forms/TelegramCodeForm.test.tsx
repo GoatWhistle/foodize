@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
+import { t } from '@shared/i18n/useTranslation';
 import { TelegramCodeForm } from '../../../../pages/auth/forms/TelegramCodeForm';
 
 const Harness = ({
@@ -32,14 +33,14 @@ const Harness = ({
 describe('TelegramCodeForm interactions', () => {
   it('renders code input and disables submit under 4 chars', () => {
     render(<Harness />);
-    expect(screen.getByLabelText('Код из Telegram')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Подтвердить код' })).toBeDisabled();
+    expect(screen.getByLabelText(t('auth.fields.telegramCode'))).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: t('auth.buttons.confirmCode') })).toBeDisabled();
   });
 
   it('sanitizes input to digits only, max 6', async () => {
     const user = userEvent.setup();
     render(<Harness />);
-    const input = screen.getByLabelText('Код из Telegram');
+    const input = screen.getByLabelText(t('auth.fields.telegramCode'));
     await user.type(input, 'a1b2c3d4e5f6g7');
     expect(input).toHaveValue('123456');
   });
@@ -48,8 +49,8 @@ describe('TelegramCodeForm interactions', () => {
     const onSubmit = vi.fn((e: FormEvent<HTMLFormElement>) => { e.preventDefault(); });
     const user = userEvent.setup();
     render(<Harness onSubmit={onSubmit} />);
-    await user.type(screen.getByLabelText('Код из Telegram'), '1234');
-    const submit = screen.getByRole('button', { name: 'Подтвердить код' });
+    await user.type(screen.getByLabelText(t('auth.fields.telegramCode')), '1234');
+    const submit = screen.getByRole('button', { name: t('auth.buttons.confirmCode') });
     expect(submit).toBeEnabled();
     await user.click(submit);
     expect(onSubmit).toHaveBeenCalled();
@@ -59,14 +60,14 @@ describe('TelegramCodeForm interactions', () => {
     const onBack = vi.fn();
     const user = userEvent.setup();
     render(<Harness onBack={onBack} />);
-    await user.click(screen.getByRole('button', { name: 'Назад' }));
+    await user.click(screen.getByRole('button', { name: t('common.actions.back') }));
     expect(onBack).toHaveBeenCalled();
   });
 
   it('disables all controls while loading', () => {
     render(<Harness isLoading />);
-    expect(screen.getByRole('button', { name: 'Проверяем...' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Назад' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: t('auth.buttons.checking') })).toBeDisabled();
+    expect(screen.getByRole('button', { name: t('common.actions.back') })).toBeDisabled();
   });
 });
 
@@ -81,11 +82,11 @@ describe('TelegramCodeForm resend cooldown', () => {
 
   it('shows resend cooldown countdown and disables resend while counting', () => {
     render(<Harness />);
-    expect(screen.getByText('60с')).toBeInTheDocument();
-    const resend = screen.getByRole('button', { name: /Отправить повторно/ });
+    expect(screen.getByText(t('auth.resendIn', { seconds: 60 }))).toBeInTheDocument();
+    const resend = screen.getByRole('button', { name: new RegExp(t('auth.buttons.resend')) });
     expect(resend).toBeDisabled();
     act(() => { vi.advanceTimersByTime(1000); });
-    expect(screen.getByText('59с')).toBeInTheDocument();
+    expect(screen.getByText(t('auth.resendIn', { seconds: 59 }))).toBeInTheDocument();
   });
 
   it('enables resend after cooldown reaches zero and calls onResend', async () => {
@@ -94,7 +95,7 @@ describe('TelegramCodeForm resend cooldown', () => {
     for (let i = 0; i < 61; i += 1) {
       await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
     }
-    const resend = screen.getAllByRole('button', { name: /Отправить повторно/ })[0];
+    const resend = screen.getAllByRole('button', { name: new RegExp(t('auth.buttons.resend')) })[0];
     if (!resend) throw new Error('resend button not found');
     expect(resend).toBeEnabled();
     await act(async () => {
@@ -102,6 +103,6 @@ describe('TelegramCodeForm resend cooldown', () => {
       await Promise.resolve();
     });
     expect(onResend).toHaveBeenCalled();
-    expect(screen.getByText('60с')).toBeInTheDocument();
+    expect(screen.getByText(t('auth.resendIn', { seconds: 60 }))).toBeInTheDocument();
   });
 });

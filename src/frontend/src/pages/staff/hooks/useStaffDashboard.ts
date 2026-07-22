@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { staffService } from '@shared/services/staffService';
 import { translateApiError } from '@shared/utils/translateApiError';
 import { logError } from '@shared/utils/logError';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import { createRestaurantOrdersWebSocket } from '../../../services/api';
 import type { ReliableWebSocket } from '@shared/services/api';
 import { COLUMN_DEFS } from '../staffColumns';
@@ -12,6 +13,7 @@ import type { StaffOrder, EtaPayload } from '../types';
 type StaffTab = 'orders' | 'menu';
 
 export const useStaffDashboard = () => {
+  const { t } = useTranslation();
   const [profile, setProfile] = useState<StaffProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileError, setProfileError] = useState('');
@@ -56,11 +58,11 @@ export const useStaffDashboard = () => {
       const res = await staffService.getMenu(restaurantId);
       setMenuItems(res.data.data);
     } catch {
-      setMenuError('Не удалось загрузить меню');
+      setMenuError(t('staff.errors.menuLoadFailed'));
     } finally {
       setMenuLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void (async () => {
@@ -103,7 +105,7 @@ export const useStaffDashboard = () => {
       await staffService.updateOrderStatus(orderId, status);
       await fetchOrders(profile.restaurant_id, true);
     } catch (err) {
-      setOrderActionError(translateApiError(err, 'Не удалось обновить статус'));
+      setOrderActionError(translateApiError(err, t('staff.errors.statusUpdateFailed')));
     } finally {
       setUpdating(null);
     }
@@ -116,7 +118,7 @@ export const useStaffDashboard = () => {
       await staffService.updateOrderStatus(orderId, 'ACCEPTED', etaPayload);
       await fetchOrders(profile.restaurant_id, true);
     } catch (err) {
-      setOrderActionError(translateApiError(err, 'Не удалось принять заказ'));
+      setOrderActionError(translateApiError(err, t('staff.errors.acceptOrderFailed')));
     } finally {
       setUpdating(null);
     }
@@ -147,7 +149,7 @@ export const useStaffDashboard = () => {
       await staffService.cancelOrder(orderId, reason);
       await fetchOrders(profile.restaurant_id, true);
     } catch (err) {
-      setOrderActionError(translateApiError(err, 'Не удалось отменить заказ'));
+      setOrderActionError(translateApiError(err, t('staff.errors.cancelOrderFailed')));
     } finally {
       setUpdating(null);
     }
@@ -190,7 +192,7 @@ export const useStaffDashboard = () => {
           i.id === item.id ? { ...i, is_available: !newVal } : i
         )
       );
-      setMenuError('Не удалось изменить статус блюда');
+      setMenuError(t('staff.errors.toggleAvailabilityFailed'));
     }
   };
 

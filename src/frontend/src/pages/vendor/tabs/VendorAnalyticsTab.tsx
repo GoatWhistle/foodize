@@ -9,7 +9,8 @@ import {
   TopItemsChart,
   OrderStatusPieChart,
 } from '../../../components/dashboard/DashboardCharts';
-import { CATEGORY_RU, translate } from '@shared/utils/locales';
+import { categoryLabel } from '@shared/utils/locales';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import { vendorService } from '@shared/services/vendorService';
 import type {
   AdvancedAnalytics,
@@ -76,6 +77,7 @@ export function VendorAnalyticsTab({
   getVendorRestaurantLabel,
   getVendorDateRange,
 }: VendorAnalyticsTabProps) {
+  const { t } = useTranslation();
   return (
     <div
       className={financeLoading || analyticsLoading ? 'loading-dim' : undefined}
@@ -110,16 +112,16 @@ export function VendorAnalyticsTab({
         }}
       >
         {[
-          { label: 'Сегодня', days: 0 },
-          { label: '3 дня', days: 3 },
-          { label: '7 дней', days: 7 },
-          { label: '30 дней', days: 30 },
-          { label: 'Полгода', days: 180 },
-          { label: 'Год', days: 365 },
-          { label: 'Сбросить', days: null },
+          { labelKey: 'vendor.analytics.presets.today', days: 0 },
+          { labelKey: 'vendor.analytics.presets.days3', days: 3 },
+          { labelKey: 'vendor.analytics.presets.days7', days: 7 },
+          { labelKey: 'vendor.analytics.presets.days30', days: 30 },
+          { labelKey: 'vendor.analytics.presets.halfYear', days: 180 },
+          { labelKey: 'vendor.analytics.presets.year', days: 365 },
+          { labelKey: 'vendor.analytics.presets.reset', days: null },
         ].map((preset) => (
           <button
-            key={preset.label}
+            key={preset.labelKey}
             className={`btn btn-sm ${activePreset === preset.days ? 'btn-primary' : 'btn-secondary'}`}
             style={{ whiteSpace: 'nowrap' }}
             onClick={() => {
@@ -143,7 +145,7 @@ export function VendorAnalyticsTab({
               }
             }}
           >
-            {preset.label}
+            {t(preset.labelKey)}
           </button>
         ))}
       </div>
@@ -167,11 +169,11 @@ export function VendorAnalyticsTab({
                   date_to: financeFilters.date_to || undefined,
                   restaurant_id: selectedRestaurant?.id || undefined,
                 }),
-              `финансы_${getVendorRestaurantLabel()}_${getVendorDateRange()}.pdf`
+              t('vendor.exportFiles.finance', { restaurant: getVendorRestaurantLabel(), range: getVendorDateRange() })
             ); }
           }
         >
-          {exportLoading ? '...' : <><DownloadSimpleIcon size={16} weight="bold" /> Финансы PDF</>}
+          {exportLoading ? '...' : <><DownloadSimpleIcon size={16} weight="bold" /> {t('vendor.analytics.financePdf')}</>}
         </button>
         <button
           className="btn btn-secondary btn-sm"
@@ -184,11 +186,11 @@ export function VendorAnalyticsTab({
                   date_to: financeFilters.date_to || undefined,
                   restaurant_id: selectedRestaurant?.id || undefined,
                 }),
-              `аналитика_${getVendorRestaurantLabel()}_${getVendorDateRange()}.pdf`
+              t('vendor.exportFiles.analytics', { restaurant: getVendorRestaurantLabel(), range: getVendorDateRange() })
             ); }
           }
         >
-          {exportLoading ? '...' : <><DownloadSimpleIcon size={16} weight="bold" /> Аналитика PDF</>}
+          {exportLoading ? '...' : <><DownloadSimpleIcon size={16} weight="bold" /> {t('vendor.analytics.analyticsPdf')}</>}
         </button>
       </div>
       {financeLoading && !finance && <AnalyticsSkeleton />}
@@ -206,12 +208,12 @@ export function VendorAnalyticsTab({
           <>
             <OrderStatusPieChart
               data={{
-                Завершены: finance.completed_orders,
-                'В процессе': Math.max(
+                [t('vendor.analytics.orderStatus.completed')]: finance.completed_orders,
+                [t('vendor.analytics.orderStatus.inProgress')]: Math.max(
                   0,
                   finance.total_orders - finance.completed_orders - finance.cancelled_orders
                 ),
-                Отменены: finance.cancelled_orders,
+                [t('vendor.analytics.orderStatus.cancelled')]: finance.cancelled_orders,
               }}
             />
             <TopItemsChart data={finance.top_items} />
@@ -223,7 +225,7 @@ export function VendorAnalyticsTab({
             <CategoryRevenueChart
               data={advancedAnalytics.category_revenue.map((item: AnalyticsPoint) => ({
                 ...item,
-                label: translate(CATEGORY_RU, item.label),
+                label: categoryLabel(item.label),
               }))}
             />
             <AOVDynamicsChart data={advancedAnalytics.aov_dynamics} />

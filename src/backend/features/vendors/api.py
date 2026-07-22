@@ -12,15 +12,19 @@ from features.users.models import User
 from features.vendors import export as vendor_export
 from features.vendors import service
 from features.vendors.dependencies import get_current_vendor
+from features.vendors.exceptions import UnknownOrderStatusException
 from features.vendors.models import VendorProfile
 from features.vendors.schemas import (
     VendorCreate,
     VendorResponse,
 )
-from shared.dependencies import ensure_restaurant_belongs_to_vendor, require_permission
+from shared.dependencies import (
+    ensure_restaurant_belongs_to_vendor,
+    get_language,
+    require_permission,
+)
 from shared.enums.order_status import OrderStatus
 from shared.enums.permissions import Permission
-from shared.exceptions import BadRequestException
 from shared.response import build_response
 from shared.schemas.response import SuccessResponse
 
@@ -44,7 +48,7 @@ def _parse_order_status(status: str | None) -> OrderStatus | None:
     try:
         return OrderStatus(status)
     except ValueError as exc:
-        raise BadRequestException(detail=f"Unknown order status: {status}") from exc
+        raise UnknownOrderStatusException(status=status) from exc
 
 
 @router.post(
@@ -117,6 +121,7 @@ async def export_orders_csv(
     _user: User = Depends(require_permission(Permission.VENDORS_ANALYTICS_READ)),
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
+    language: str = Depends(get_language),
 ) -> Response:
     data = await vendor_export.export_orders_csv(
         session,
@@ -125,6 +130,7 @@ async def export_orders_csv(
         date_to=date_to,
         status=_parse_order_status(status),
         restaurant_id=restaurant_id,
+        language=language,
     )
     return _file_response(data, _CSV_MEDIA_TYPE, "orders.csv")
 
@@ -135,9 +141,10 @@ async def export_menu_csv(
     _user: User = Depends(require_permission(Permission.MENU_MANAGE)),
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
+    language: str = Depends(get_language),
 ) -> Response:
     data = await vendor_export.export_menu_csv(
-        session, vendor=current_vendor, restaurant_id=restaurant_id
+        session, vendor=current_vendor, restaurant_id=restaurant_id, language=language
     )
     return _file_response(data, _CSV_MEDIA_TYPE, "menu.csv")
 
@@ -148,9 +155,10 @@ async def export_promos_csv(
     _user: User = Depends(require_permission(Permission.PROMOS_MANAGE)),
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
+    language: str = Depends(get_language),
 ) -> Response:
     data = await vendor_export.export_promos_csv(
-        session, vendor=current_vendor, restaurant_id=restaurant_id
+        session, vendor=current_vendor, restaurant_id=restaurant_id, language=language
     )
     return _file_response(data, _CSV_MEDIA_TYPE, "promos.csv")
 
@@ -163,6 +171,7 @@ async def export_finance_pdf(
     _user: User = Depends(require_permission(Permission.VENDORS_ANALYTICS_READ)),
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
+    language: str = Depends(get_language),
 ) -> Response:
     data = await vendor_export.export_finance_pdf(
         session,
@@ -170,6 +179,7 @@ async def export_finance_pdf(
         date_from=date_from,
         date_to=date_to,
         restaurant_id=restaurant_id,
+        language=language,
     )
     return _file_response(data, _PDF_MEDIA_TYPE, "finance.pdf")
 
@@ -182,6 +192,7 @@ async def export_analytics_pdf(
     _user: User = Depends(require_permission(Permission.VENDORS_ANALYTICS_READ)),
     current_vendor: VendorProfile = Depends(get_current_vendor),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
+    language: str = Depends(get_language),
 ) -> Response:
     data = await vendor_export.export_analytics_pdf(
         session,
@@ -189,5 +200,6 @@ async def export_analytics_pdf(
         date_from=date_from,
         date_to=date_to,
         restaurant_id=restaurant_id,
+        language=language,
     )
     return _file_response(data, _PDF_MEDIA_TYPE, "analytics.pdf")

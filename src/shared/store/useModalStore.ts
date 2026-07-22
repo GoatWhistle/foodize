@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { ReactNode } from "react";
 
 export interface ConfirmDialogConfig {
   title?: string;
@@ -6,6 +7,7 @@ export interface ConfirmDialogConfig {
   confirmLabel?: string;
   cancelLabel?: string;
   danger?: boolean;
+  icon?: ReactNode;
   onConfirm?: () => void | Promise<void>;
 }
 

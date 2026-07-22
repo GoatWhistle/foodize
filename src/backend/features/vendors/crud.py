@@ -5,11 +5,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from features.users.models import User
+from features.vendors.exceptions import VendorProfileNotFoundException
 from features.vendors.models import VendorProfile
 from features.vendors.schemas import VendorCreate
 from shared.enums.moderation_status import ModerationStatus
 from shared.enums.permissions import Permission
-from shared.exceptions import NotFoundException
 from shared.permissions import has_permission
 
 
@@ -43,5 +43,5 @@ async def get_vendor_by_id_with_user(
 async def get_vendor_by_user_id_or_404(session: AsyncSession, user_id: uuid.UUID) -> VendorProfile:
     vendor = await get_vendor_by_user_id(session, user_id)
     if not vendor:
-        raise NotFoundException()
+        raise VendorProfileNotFoundException()
     return vendor

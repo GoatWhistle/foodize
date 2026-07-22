@@ -1,4 +1,5 @@
 import { FireIcon } from '@phosphor-icons/react';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import { KanbanColumn } from './KanbanColumn';
 import { COLUMN_DEFS } from '../staffColumns';
 import type { StaffColumnDef } from '../staffColumns';
@@ -27,6 +28,7 @@ export const StaffOrdersTab = ({
   onDragEnd,
   onDrop,
 }: StaffOrdersTabProps) => {
+  const { t } = useTranslation();
   if (ordersLoading) {
     return (
       <div className="loading-center">
@@ -59,13 +61,9 @@ export const StaffOrdersTab = ({
             gap: 8,
           }}
         >
-          <FireIcon size={16} weight="fill" /> {criticalOrders.length}{' '}
-          {criticalOrders.length === 1
-            ? 'заказ задерживается'
-            : criticalOrders.length < 5
-              ? 'заказа задерживается'
-              : 'заказов задерживается'}{' '}
-          — проверьте принятые
+          <FireIcon size={16} weight="fill" />{' '}
+          {t('staff.delayedBanner.orders', { count: criticalOrders.length })}{' '}
+          {t('staff.delayedBanner.hint')}
         </div>
       )}
       <div

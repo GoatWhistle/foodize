@@ -6,6 +6,7 @@ import { useModalStore, type ConfirmDialogConfig } from '@shared/store/useModalS
 import { EMPTY_MENU_ITEM_FORM } from '../../../../pages/vendor/tabs/VendorMenuTab';
 import type { MenuItem, Restaurant } from '@shared/types/models';
 import { at } from '../../../testUtils';
+import { t } from '@shared/i18n/useTranslation';
 
 vi.mock('@shared/services/menuService', () => ({
   menuService: {
@@ -81,7 +82,7 @@ describe('useVendorMenu', () => {
     expect(params.addMenuItem).toHaveBeenCalledWith('r1', expect.objectContaining({ price: 500 }));
     expect(menuService.uploadItemPhoto).toHaveBeenCalledWith('r1', 'new1', expect.any(File));
     expect(params.fetchMenu).toHaveBeenCalledWith('r1', { force: true });
-    expect(result.current.menuSuccess).toBe('Позиция добавлена');
+    expect(result.current.menuSuccess).toBe(t('vendor.menu.messages.itemAdded'));
     void act(() => vi.advanceTimersByTime(2000));
     expect(result.current.menuSuccess).toBe('');
     vi.useRealTimers();
@@ -138,7 +139,7 @@ describe('useVendorMenu', () => {
     expect(menuService.deleteOptionGroup).toHaveBeenCalledWith('r1', 'i1', 'g0');
     expect(menuService.createOptionGroup).toHaveBeenCalledTimes(1);
     expect(menuService.deleteItemPhoto).toHaveBeenCalledWith('r1', 'i1');
-    expect(result.current.menuSuccess).toBe('Позиция обновлена');
+    expect(result.current.menuSuccess).toBe(t('vendor.menu.messages.itemUpdated'));
   });
 
   it('builds single-type group with max_selected 1 and required min_selected', async () => {
@@ -186,7 +187,7 @@ describe('useVendorMenu', () => {
     await act(async () => {
       await result.current.handleSaveMenuItem(submitEvent());
     });
-    expect(params.setFormError).toHaveBeenCalledWith('Ошибка сохранения');
+    expect(params.setFormError).toHaveBeenCalledWith(t('vendor.menu.errors.saveFailed'));
   });
 
   it('deletes a menu item after confirmation', async () => {
@@ -210,7 +211,7 @@ describe('useVendorMenu', () => {
     await act(async () => {
       await confirmConfig?.onConfirm?.();
     });
-    await waitFor(() => { expect(result.current.menuError).toBe('Не удалось удалить позицию'); });
+    await waitFor(() => { expect(result.current.menuError).toBe(t('vendor.menu.errors.deleteFailed')); });
   });
 
   it('delete confirm returns early with no restaurant', async () => {

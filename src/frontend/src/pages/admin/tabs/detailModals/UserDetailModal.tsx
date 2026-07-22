@@ -1,7 +1,8 @@
 import type { Dispatch, SetStateAction } from 'react';
 import type { AuthUser } from '@shared/store/createAuthStore';
 import type { AdminUser } from '@shared/types/models';
-import { PERMISSION_PRESET_RU, PERMISSION_PRESETS, hasPermission, permissionPresetLabel, PERMISSIONS } from '@shared/utils/permissions';
+import { PERMISSION_PRESETS, hasPermission, permissionPresetLabel, permissionPresetName, PERMISSIONS } from '@shared/utils/permissions';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import { DetailField, DetailModal, formatDateTime } from './adminModal.shared';
 
 type PresetKey = keyof typeof PERMISSION_PRESETS;
@@ -30,10 +31,12 @@ export const UserDetailModal = ({
   handleMakeAdmin,
   handleActivateUser,
   handleDeleteUser,
-}: UserDetailModalProps) => (
+}: UserDetailModalProps) => {
+  const { t } = useTranslation();
+  return (
   <DetailModal
-    title={selectedUser.name || 'Пользователь'}
-    subtitle="Детали профиля"
+    title={selectedUser.name || t('admin.users.modal.fallbackTitle')}
+    subtitle={t('admin.users.modal.subtitle')}
     loading={userDetailsLoading}
     onClose={() => { setSelectedUser(null); }}
   >
@@ -45,34 +48,34 @@ export const UserDetailModal = ({
       }}
     >
       <DetailField label="ID" mono>{selectedUser.id}</DetailField>
-      <DetailField label="ФИО">
+      <DetailField label={t('common.labels.fullName')}>
         {[selectedUser.first_name, selectedUser.last_name]
           .filter(Boolean)
-          .join(' ') || 'Не указано'}
+          .join(' ') || t('common.states.notSpecified')}
       </DetailField>
-      <DetailField label="Отображаемое имя">
-        {selectedUser.name || 'Не указано'}
+      <DetailField label={t('common.labels.displayName')}>
+        {selectedUser.name || t('common.states.notSpecified')}
       </DetailField>
-      <DetailField label="Телефон">
-        {selectedUser.phone_number || 'Не указан'}
+      <DetailField label={t('common.labels.phone')}>
+        {selectedUser.phone_number || t('common.states.notSpecifiedMale')}
       </DetailField>
       {selectedUser.telegram_username && (
         <DetailField label="Telegram">@{selectedUser.telegram_username}</DetailField>
       )}
       {selectedUser.email && (
-        <DetailField label="Email">{selectedUser.email}</DetailField>
+        <DetailField label={t('common.labels.email')}>{selectedUser.email}</DetailField>
       )}
-      <DetailField label="Создан">{formatDateTime(selectedUser.created_at)}</DetailField>
-      <DetailField label="Роль">
+      <DetailField label={t('common.labels.createdAt')}>{formatDateTime(selectedUser.created_at)}</DetailField>
+      <DetailField label={t('common.labels.role')}>
         <span className="order-status-badge pending">
           {permissionPresetLabel(selectedUser.permissions)}
         </span>
       </DetailField>
-      <DetailField label="Статус">
+      <DetailField label={t('common.labels.status')}>
         <span
           className={`order-status-badge ${selectedUser.is_active ? 'ready' : 'cancelled'}`}
         >
-          {selectedUser.is_active ? 'Активен' : 'Заблокирован'}
+          {selectedUser.is_active ? t('admin.users.card.active') : t('admin.users.card.blocked')}
         </span>
       </DetailField>
     </div>
@@ -88,19 +91,19 @@ export const UserDetailModal = ({
       {selectedUser.id !== currentUser?.id &&
         !hasPermission(selectedUser, PERMISSIONS.ADMIN_ACCESS) && (
           <div style={{ marginBottom: 8 }}>
-            <div style={{ fontWeight: 800, marginBottom: 8 }}>Управление ролью</div>
+            <div style={{ fontWeight: 800, marginBottom: 8 }}>{t('admin.users.modal.roleManagement')}</div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {ROLE_PRESETS.map(
                 (role) =>
                   permissionPresetLabel(selectedUser.permissions) !==
-                    PERMISSION_PRESET_RU[role] && (
+                    permissionPresetName(role) && (
                     <button
                       key={role}
                       className="btn btn-secondary btn-sm"
                       disabled={permissionActionLoading}
                       onClick={() => { handleSetPermissionPreset(selectedUser.id, role); }}
                     >
-                      {PERMISSION_PRESET_RU[role]}
+                      {permissionPresetName(role)}
                     </button>
                   )
               )}
@@ -110,7 +113,7 @@ export const UserDetailModal = ({
                 onClick={() => { handleMakeAdmin(selectedUser.id); }}
                 style={{ color: 'var(--error)' }}
               >
-                Сделать админом
+                {t('admin.users.modal.makeAdmin')}
               </button>
             </div>
           </div>
@@ -123,7 +126,7 @@ export const UserDetailModal = ({
             onClick={() => { handleActivateUser(selectedUser.id); }}
             style={{ color: 'var(--success)' }}
           >
-            {permissionActionLoading ? 'Применяю...' : 'Разблокировать'}
+            {permissionActionLoading ? t('common.actions.applying') : t('admin.users.modal.unblock')}
           </button>
         )}
         {selectedUser.is_active &&
@@ -135,10 +138,11 @@ export const UserDetailModal = ({
               onClick={() => { handleDeleteUser(selectedUser.id); }}
               style={{ color: 'var(--error)' }}
             >
-              Заблокировать пользователя
+              {t('admin.users.modal.block')}
             </button>
           )}
       </div>
     </div>
   </DetailModal>
-);
+  );
+};

@@ -1,4 +1,5 @@
 import type { Dispatch, FormEvent, SetStateAction } from 'react';
+import { t, useTranslation } from '@shared/i18n/useTranslation';
 import type { ProfileForm } from '../types';
 
 interface PasswordStrengthResult {
@@ -15,10 +16,10 @@ const getPasswordStrength = (value: string): PasswordStrengthResult => {
   if (/\d/.test(value)) score += 1;
   if (/[^A-Za-z0-9]/.test(value)) score += 1;
 
-  if (!value) return { score: 0, label: 'Введите пароль', color: 'var(--border-mid)' };
-  if (score <= 2) return { score, label: 'Слабый пароль', color: 'var(--color-error)' };
-  if (score <= 4) return { score, label: 'Средний пароль', color: 'var(--color-warning)' };
-  return { score, label: 'Сильный пароль', color: 'var(--color-success)' };
+  if (!value) return { score: 0, label: t('auth.passwordStrength.empty'), color: 'var(--border-mid)' };
+  if (score <= 2) return { score, label: t('auth.passwordStrength.weak'), color: 'var(--color-error)' };
+  if (score <= 4) return { score, label: t('auth.passwordStrength.medium'), color: 'var(--color-warning)' };
+  return { score, label: t('auth.passwordStrength.strong'), color: 'var(--color-success)' };
 };
 
 const PasswordStrength = ({ value }: { value: string }) => {
@@ -53,17 +54,19 @@ export const SetPasswordForm = ({
   setConfirmPassword,
   isLoading,
   onSubmit,
-}: SetPasswordFormProps) => (
+}: SetPasswordFormProps) => {
+  const { t: translate } = useTranslation();
+  return (
   <form className="auth-form" onSubmit={onSubmit} noValidate>
     <div className="form-group">
       <label className="form-label" htmlFor="telegram-first-name">
-        Имя
+        {translate('auth.placeholders.name')}
       </label>
       <input
         id="telegram-first-name"
         className="form-input"
         type="text"
-        placeholder="Имя"
+        placeholder={translate('auth.placeholders.name')}
         value={profileForm.first_name}
         onChange={(e) => { setProfileForm((f) => ({ ...f, first_name: e.target.value })); }}
         autoComplete="given-name"
@@ -72,13 +75,13 @@ export const SetPasswordForm = ({
 
     <div className="form-group">
       <label className="form-label" htmlFor="telegram-last-name">
-        Фамилия
+        {translate('auth.placeholders.surname')}
       </label>
       <input
         id="telegram-last-name"
         className="form-input"
         type="text"
-        placeholder="Фамилия"
+        placeholder={translate('auth.placeholders.surname')}
         value={profileForm.last_name}
         onChange={(e) => { setProfileForm((f) => ({ ...f, last_name: e.target.value })); }}
         autoComplete="family-name"
@@ -87,13 +90,13 @@ export const SetPasswordForm = ({
 
     <div className="form-group">
       <label className="form-label" htmlFor="telegram-new-password">
-        Новый пароль
+        {translate('auth.fields.newPassword')}
       </label>
       <input
         id="telegram-new-password"
         className="form-input"
         type="password"
-        placeholder="Минимум 8 символов"
+        placeholder={translate('auth.placeholders.passwordMin')}
         value={newPassword}
         onChange={(e) => { setNewPassword(e.target.value); }}
         required
@@ -106,13 +109,13 @@ export const SetPasswordForm = ({
 
     <div className="form-group">
       <label className="form-label" htmlFor="telegram-confirm-password">
-        Повторите пароль
+        {translate('auth.fields.repeatPassword')}
       </label>
       <input
         id="telegram-confirm-password"
         className="form-input"
         type="password"
-        placeholder="Ещё раз новый пароль"
+        placeholder={translate('auth.placeholders.repeatPassword')}
         value={confirmPassword}
         onChange={(e) => { setConfirmPassword(e.target.value); }}
         required
@@ -127,9 +130,10 @@ export const SetPasswordForm = ({
       disabled={isLoading || newPassword.length < 8 || newPassword !== confirmPassword}
       style={{ height: '52px', borderRadius: 'var(--r-sm)' }}
     >
-      {isLoading ? 'Сохраняем...' : 'Сохранить пароль'}
+      {isLoading ? translate('common.actions.saving') : translate('auth.buttons.savePassword')}
     </button>
   </form>
-);
+  );
+};
 
 export { getPasswordStrength };

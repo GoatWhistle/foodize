@@ -4,6 +4,7 @@ import { MapPinIcon, StarIcon, CircleIcon, HeartIcon } from "@phosphor-icons/rea
 import { getCategoryIcon } from "@shared/utils/categoryIcons";
 import { activateOnKey } from "@shared/utils/a11y";
 import type { Restaurant } from "@shared/types/models";
+import { useTranslation } from "@shared/i18n/useTranslation";
 import s from "./RestaurantCard.module.css";
 
 interface RestaurantCardProps {
@@ -23,6 +24,7 @@ const RestaurantCardBase = ({
   viewTransition = true,
   favPosition = "top",
 }: RestaurantCardProps) => {
+  const { t } = useTranslation();
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -48,7 +50,7 @@ const RestaurantCardBase = ({
     <button
       className={`${s['favBtn']}${favPosition === "bottom" ? ` ${s['favBtnBottom']}` : ""}${isFavorite ? ` ${s['active']}` : ""}`}
       onClick={(e: MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); onFavoriteToggle(restaurant.id); }}
-      aria-label={isFavorite ? "Убрать из избранного" : "В избранное"}
+      aria-label={isFavorite ? t("catalog.restaurantCard.removeFromFavorites") : t("catalog.restaurantCard.addToFavorites")}
       aria-pressed={isFavorite}
     >
       <HeartIcon size={14} weight={isFavorite ? "fill" : "regular"} color={isFavorite ? "var(--color-error)" : "var(--on-photo)"} />
@@ -63,7 +65,7 @@ const RestaurantCardBase = ({
       role="button"
       tabIndex={0}
       onKeyDown={activateOnKey(() => onClick?.())}
-      aria-label={`Ресторан ${restaurant.name}`}
+      aria-label={t("catalog.restaurantCard.ariaLabel", { name: restaurant.name })}
     >
       <div className={s['photoWrap']}>
         {restaurant.photo_url ? (
@@ -80,8 +82,8 @@ const RestaurantCardBase = ({
 
         <div className={s['topRow']}>
           <div className={`${s['openBadge']}${restaurant.is_open ? ` ${s['open']}` : ""}`}>
-            <CircleIcon size={7} weight="fill" color={restaurant.is_open ? "var(--color-success)" : "var(--on-photo-dim)"} />
-            {restaurant.is_open ? "Открыто" : "Закрыто"}
+            <CircleIcon size={7} weight="fill" color={restaurant.is_open ? "var(--badge-success-fg)" : "var(--badge-fg-dim)"} />
+            {restaurant.is_open ? t("catalog.restaurantCard.open") : t("catalog.restaurantCard.closed")}
           </div>
           <div className={s['rightBadges']}>
             <div className={s['ratingBadge']}>

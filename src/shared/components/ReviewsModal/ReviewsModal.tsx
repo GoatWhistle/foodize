@@ -6,6 +6,7 @@ import { ReviewCard } from "@shared/components/ReviewCard/ReviewCard";
 import { StarRatingInput } from "@shared/components/StarRatingInput/StarRatingInput";
 import { useFocusTrap } from "@shared/hooks/useFocusTrap";
 import type { Review } from "@shared/types/models";
+import { useTranslation } from "@shared/i18n/useTranslation";
 import s from "./ReviewsModal.module.css";
 
 interface ReviewForm {
@@ -78,9 +79,10 @@ export const ReviewsModal = ({
   splitOwnReviews = false,
   showRatingInHeader = false,
   pageSize = 10,
-  successText = "Отзыв успешно опубликован",
-  submitLabel = "Опубликовать",
+  successText,
+  submitLabel,
 }: ReviewsModalProps) => {
+  const { t } = useTranslation();
   const contentRef = useFocusTrap<HTMLDivElement>({ onEscape: onClose });
   const openReviewForm = () => {
     setReviewForm(
@@ -104,12 +106,12 @@ export const ReviewsModal = ({
         canDelete={isOwn}
         onDelete={() => { onDeleteWithConfirm(review.id); }}
         className={isOwn ? "review-card--own" : undefined}
-        headerExtra={isOwn ? <span className={s['ownBadge']}>Вы</span> : null}
+        headerExtra={isOwn ? <span className={s['ownBadge']}>{t("catalog.reviews.ownBadge")}</span> : null}
         actionsExtra={
           ownActions && isOwn ? (
             <button
               type="button"
-              aria-label="Редактировать отзыв"
+              aria-label={t("catalog.reviews.editAria")}
               onClick={openReviewForm}
               className={s['editBtn']}
             >
@@ -141,7 +143,7 @@ export const ReviewsModal = ({
       >
         <div className={s['header']}>
           <div className={s['headerTitle']}>
-            <h2 id="reviews-modal-title" className={s['title']}>Отзывы</h2>
+            <h2 id="reviews-modal-title" className={s['title']}>{t("catalog.reviews.title")}</h2>
             {showRatingInHeader && rating != null && (
               <span className={s['headerRating']}>
                 <StarIcon size={14} weight="fill" color="var(--star)" />
@@ -157,13 +159,13 @@ export const ReviewsModal = ({
                 style={{ display: "flex", alignItems: "center", gap: 5 }}
               >
                 {myReview ? (
-                  <><PencilSimpleIcon size={13} weight="bold" /> Редактировать</>
+                  <><PencilSimpleIcon size={13} weight="bold" /> {t("catalog.reviews.edit")}</>
                 ) : (
-                  <><StarIcon size={13} weight="bold" /> Оставить отзыв</>
+                  <><StarIcon size={13} weight="bold" /> {t("catalog.reviews.leave")}</>
                 )}
               </button>
             )}
-            <button onClick={onClose} className={s['closeBtn']} aria-label="Закрыть">
+            <button onClick={onClose} className={s['closeBtn']} aria-label={t("common.actions.close")}>
               <XIcon size={24} weight="bold" />
             </button>
           </div>
@@ -175,7 +177,7 @@ export const ReviewsModal = ({
               {editableForm && (
                 <div className={s['formHead']}>
                   <span className={s['formHeadTitle']}>
-                    {myReview ? "Редактировать отзыв" : "Оставить отзыв"}
+                    {myReview ? t("catalog.reviews.editTitle") : t("catalog.reviews.leave")}
                   </span>
                   <button
                     type="button"
@@ -197,28 +199,28 @@ export const ReviewsModal = ({
                 </div>
                 <textarea
                   className="form-input"
-                  placeholder="Ваш отзыв..."
+                  placeholder={t("catalog.reviews.textPlaceholder")}
                   value={reviewForm.text}
                   onChange={(e) => { setReviewForm({ ...reviewForm, text: e.target.value }); }}
                   style={{ minHeight: 72 }}
                 />
                 {reviewError && <div className="form-error">{reviewError}</div>}
                 <button type="submit" className="btn btn-primary btn-full">
-                  {myReview ? "Сохранить" : submitLabel}
+                  {myReview ? t("common.actions.save") : (submitLabel ?? t("catalog.reviews.submit"))}
                 </button>
               </form>
             </div>
           )}
 
-          {reviewSuccess && <div className={s['success']}>{successText}</div>}
+          {reviewSuccess && <div className={s['success']}>{successText ?? t("catalog.reviews.published")}</div>}
 
           {reviewsLoading && reviewsList.length === 0 ? (
             <div className="loading-center"><div className="spinner" /></div>
           ) : reviewsList.length === 0 ? (
             <div className={s['empty']}>
               <ChatCircleTextIcon size={36} style={{ opacity: 0.4 }} />
-              <div className={s['emptyTitle']}>Отзывов пока нет</div>
-              <div className={s['emptyHint']}>Будьте первым, кто оставит отзыв!</div>
+              <div className={s['emptyTitle']}>{t("catalog.reviews.emptyTitle")}</div>
+              <div className={s['emptyHint']}>{t("catalog.reviews.emptyHint")}</div>
             </div>
           ) : (
             <div className={s['list']}>

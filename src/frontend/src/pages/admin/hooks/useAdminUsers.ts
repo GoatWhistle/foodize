@@ -5,9 +5,10 @@ import { useModalStore } from '@shared/store/useModalStore';
 import { useDebounce } from '@shared/utils/useDebounce';
 import {
   ADMIN_PERMISSIONS,
-  PERMISSION_PRESET_RU,
   PERMISSION_PRESETS,
+  permissionPresetName,
 } from '@shared/utils/permissions';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type { AdminUser } from '@shared/types/models';
 import { createDetailLoader } from '../../../utils/createDetailLoader';
 
@@ -35,6 +36,7 @@ export const useAdminUsers = ({
   setActionSuccess,
   setPermissionActionLoading,
 }: UseAdminUsersArgs) => {
+  const { t } = useTranslation();
   const requestConfirm = useModalStore((s) => s.requestConfirm);
 
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -68,7 +70,7 @@ export const useAdminUsers = ({
         setUsers(items);
         setUsersTotal(total);
       } catch {
-        if (!controller.signal.aborted) setActionError('Не удалось загрузить пользователей');
+        if (!controller.signal.aborted) setActionError(t('admin.users.errors.loadFailed'));
       } finally {
         if (!controller.signal.aborted) setUsersLoading(false);
       }
@@ -76,21 +78,21 @@ export const useAdminUsers = ({
     return () => {
       controller.abort();
     };
-  }, [activeTab, usersPage, userFilters, userSearch, setActionError]);
+  }, [activeTab, usersPage, userFilters, userSearch, setActionError, t]);
 
   const loadUserDetails = createDetailLoader<AdminUser | null>(
     setUserDetailsLoading,
     setSelectedUser,
     adminService.getUser,
-    'Не удалось загрузить детали пользователя',
+    t('admin.users.errors.detailsFailed'),
     setActionError
   );
 
   const handleDeleteUser = (id: string) => {
     requestConfirm({
-      title: 'Заблокировать пользователя?',
-      message: 'Пользователь больше не сможет пользоваться аккаунтом, пока вы его не разблокируете.',
-      confirmLabel: 'Заблокировать',
+      title: t('admin.users.dialogs.blockTitle'),
+      message: t('admin.users.dialogs.blockMessage'),
+      confirmLabel: t('admin.users.dialogs.blockConfirm'),
       danger: true,
       onConfirm: async () => {
         setActionError('');
@@ -99,7 +101,7 @@ export const useAdminUsers = ({
           setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, is_active: false } : u)));
           setSelectedUser((prev) => (prev?.id === id ? { ...prev, is_active: false } : prev));
         } catch {
-          setActionError('Не удалось заблокировать пользователя');
+          setActionError(t('admin.users.errors.blockFailed'));
         }
       },
     });
@@ -113,7 +115,7 @@ export const useAdminUsers = ({
       setSelectedUser((prev) => (prev ? { ...prev, is_active: true } : prev));
       setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, is_active: true } : u)));
     } catch {
-      setActionError('Не удалось разблокировать пользователя');
+      setActionError(t('admin.users.errors.unblockFailed'));
     } finally {
       setPermissionActionLoading(false);
     }
@@ -121,9 +123,9 @@ export const useAdminUsers = ({
 
   const handleMakeAdmin = (userId: string) => {
     requestConfirm({
-      title: 'Сделать пользователя админом?',
-      message: 'Точно ли вы хотите дать этому пользователю права администратора?',
-      confirmLabel: 'Сделать админом',
+      title: t('admin.users.dialogs.makeAdminTitle'),
+      message: t('admin.users.dialogs.makeAdminMessage'),
+      confirmLabel: t('admin.users.dialogs.makeAdminConfirm'),
       onConfirm: async () => {
         setPermissionActionLoading(true);
         setActionError('');
@@ -135,7 +137,7 @@ export const useAdminUsers = ({
             prev.map((u) => (u.id === userId ? { ...u, permissions: adminPerms } : u))
           );
         } catch {
-          setActionError('Не удалось изменить роль');
+          setActionError(t('admin.users.errors.roleChangeFailed'));
         } finally {
           setPermissionActionLoading(false);
         }
@@ -146,9 +148,9 @@ export const useAdminUsers = ({
   const handleSetPermissionPreset = (userId: string, preset: PresetKey) => {
     const permissions = PERMISSION_PRESETS[preset] as AdminUser['permissions'];
     requestConfirm({
-      title: `Установить роль: ${PERMISSION_PRESET_RU[preset]}?`,
-      message: `Права пользователя будут заменены на пресет «${PERMISSION_PRESET_RU[preset]}».`,
-      confirmLabel: 'Изменить',
+      title: t('admin.users.dialogs.setPresetTitle', { preset: permissionPresetName(preset) }),
+      message: t('admin.users.dialogs.setPresetMessage', { preset: permissionPresetName(preset) }),
+      confirmLabel: t('admin.users.dialogs.setPresetConfirm'),
       onConfirm: async () => {
         setPermissionActionLoading(true);
         setActionError('');
@@ -157,7 +159,7 @@ export const useAdminUsers = ({
           setSelectedUser((prev) => (prev ? { ...prev, permissions } : prev));
           setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, permissions } : u)));
         } catch {
-          setActionError('Не удалось изменить роль');
+          setActionError(t('admin.users.errors.roleChangeFailed'));
         } finally {
           setPermissionActionLoading(false);
         }
@@ -171,11 +173,11 @@ export const useAdminUsers = ({
       if (action === 'deactivate') await adminService.batchDeactivateUsers(ids);
       else await adminService.batchActivateUsers(ids);
       setSelectedUserIds(new Set());
-      setActionSuccess(`Готово: ${ids.length} пользователей`);
+      setActionSuccess(t('admin.users.messages.batchDone', { count: ids.length }));
       setUsersPage(1);
       setUserFilters((f) => ({ ...f }));
     } catch {
-      setActionError('Ошибка при массовом действии');
+      setActionError(t('admin.users.errors.batchFailed'));
     } finally {
       setBatchUsersLoading(false);
     }
@@ -185,9 +187,9 @@ export const useAdminUsers = ({
     const ids = Array.from(selectedUserIds);
     if (action === 'deactivate') {
       requestConfirm({
-        title: `Деактивировать ${ids.length} пользователей?`,
-        message: 'Они потеряют доступ к аккаунту.',
-        confirmLabel: 'Деактивировать',
+        title: t('admin.users.dialogs.batchDeactivateTitle', { count: ids.length }),
+        message: t('admin.users.dialogs.batchDeactivateMessage'),
+        confirmLabel: t('admin.users.dialogs.batchDeactivateConfirm'),
         danger: true,
         onConfirm: () => handleBatchUsers_execute('deactivate', ids),
       });

@@ -3,10 +3,13 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.menu import crud
-from features.menu.exceptions import MenuItemNotFoundException
+from features.menu.exceptions import (
+    MenuItemNotFoundException,
+    OptionGroupNotFoundException,
+    OptionNotFoundException,
+)
 from features.menu.models import MenuItem, MenuItemOption, MenuItemOptionGroup
 from features.restaurants.dependencies import get_restaurant_and_check_ownership
-from shared.exceptions import NotFoundException
 
 
 async def get_owned_menu_item(
@@ -34,7 +37,7 @@ async def get_owned_option_group(
     await get_owned_menu_item(session, restaurant_id, item_id, vendor_id)
     group = await crud.get_option_group_by_id(session, group_id)
     if not group or group.menu_item_id != item_id:
-        raise NotFoundException(detail="Option group not found")
+        raise OptionGroupNotFoundException()
     return group
 
 
@@ -45,5 +48,5 @@ async def get_owned_option(
 ) -> MenuItemOption:
     option = await crud.get_option_by_id(session, option_id)
     if not option or option.group_id != group_id:
-        raise NotFoundException(detail="Option not found")
+        raise OptionNotFoundException()
     return option

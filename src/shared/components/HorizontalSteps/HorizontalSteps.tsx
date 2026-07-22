@@ -1,6 +1,6 @@
 import { Fragment } from "react";
-import { ORDER_STATUS_RU } from "@shared/utils/locales";
 import type { Order, OrderStatus } from "@shared/types/models";
+import { useTranslation } from "@shared/i18n/useTranslation";
 
 const STATUS_FLOW: OrderStatus[] = ["PENDING", "ACCEPTED", "READY", "COMPLETED"];
 
@@ -9,6 +9,7 @@ interface HorizontalStepsProps {
 }
 
 export const HorizontalSteps = ({ order }: HorizontalStepsProps) => {
+  const { t } = useTranslation();
   const currentIndex = order.status === "CANCELLED" ? -1 : STATUS_FLOW.indexOf(order.status);
 
   return (
@@ -78,7 +79,7 @@ export const HorizontalSteps = ({ order }: HorizontalStepsProps) => {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {ORDER_STATUS_RU[status]}
+                  {t(`enums.orderStatus.${status}`)}
                 </div>
               </div>
             </Fragment>

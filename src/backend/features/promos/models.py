@@ -12,7 +12,6 @@ if TYPE_CHECKING:
 
 
 class Promo(Base, IdUuidPkMixin, CreatedAtMixin):
-    __tablename__ = "promos"
     __table_args__ = (
         CheckConstraint("discount_type IN ('PERCENT', 'FIXED')", name="ck_promos_discount_type"),
     )
@@ -35,7 +34,6 @@ class Promo(Base, IdUuidPkMixin, CreatedAtMixin):
 
 
 class PromoUsage(Base, IdUuidPkMixin, CreatedAtMixin):
-    __tablename__ = "promo_usages"
     __table_args__ = (UniqueConstraint("promo_id", "user_id", name="uq_promo_usages_promo_user"),)
 
     promo_id: Mapped[uuid.UUID] = mapped_column(

@@ -5,6 +5,7 @@ import axios, {
 } from "axios";
 import { API_BASE_URL as SHARED_API_BASE_URL } from "@shared/config";
 import { makeId } from "@shared/utils/id";
+import { useLanguageStore } from "@shared/store/useLanguageStore";
 import type { TokenGetter } from "@shared/services/reliableWebSocket";
 
 export interface CreateApiOptions {
@@ -87,6 +88,7 @@ export function createApi({
       if (token) config.headers.Authorization = `Bearer ${token}`;
     }
     config.headers["X-Request-Id"] = makeId();
+    config.headers["Accept-Language"] = useLanguageStore.getState().language;
     if (withCredentials && MUTATING_METHODS.has((config.method ?? "").toLowerCase())) {
       const csrfToken = readCsrfToken();
       if (csrfToken) config.headers[CSRF_HEADER_NAME] = csrfToken;

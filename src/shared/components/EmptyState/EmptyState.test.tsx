@@ -2,11 +2,12 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 import { EmptyState } from "@shared/components/EmptyState/EmptyState";
+import { t } from "@shared/i18n/useTranslation";
 
 describe("EmptyState", () => {
   it("renders the default title", () => {
     render(<EmptyState />);
-    expect(screen.getByText("Здесь пусто")).toBeInTheDocument();
+    expect(screen.getByText(t("common.states.empty"))).toBeInTheDocument();
   });
 
   it("renders a custom title and subtitle", () => {

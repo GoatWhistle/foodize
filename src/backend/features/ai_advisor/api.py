@@ -9,7 +9,11 @@ from features.vendors.models import VendorProfile
 from infra.cache.redis import get_redis_cache
 from middlewares.limiter import limiter, user_or_ip_key
 from settings.config.app_config import settings
-from shared.dependencies import ensure_restaurant_belongs_to_vendor, require_permission
+from shared.dependencies import (
+    ensure_restaurant_belongs_to_vendor,
+    get_language,
+    require_permission,
+)
 from shared.enums.permissions import Permission
 from shared.response import build_response
 from shared.schemas.response import SuccessResponse
@@ -28,10 +32,11 @@ async def advisor_chat(
     body: AdvisorChatRequest,
     _user: User = Depends(require_permission(Permission.VENDORS_ANALYTICS_READ)),
     current_vendor: VendorProfile = Depends(get_current_vendor),
+    language: str = Depends(get_language),
 ) -> StreamingResponse:
     ensure_restaurant_belongs_to_vendor(current_vendor, body.restaurant_id)
     return StreamingResponse(
-        service.stream_chat(current_vendor, body.messages, body.restaurant_id),
+        service.stream_chat(current_vendor, body.messages, body.restaurant_id, language),
         media_type="text/plain; charset=utf-8",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
@@ -44,6 +49,9 @@ async def advisor_insights(
     refresh: bool = Query(False),
     _user: User = Depends(require_permission(Permission.VENDORS_ANALYTICS_READ)),
     current_vendor: VendorProfile = Depends(get_current_vendor),
+    language: str = Depends(get_language),
 ) -> SuccessResponse[AdvisorInsightsResponse]:
-    result = await service.get_insights(current_vendor, get_redis_cache(), refresh=refresh)
+    result = await service.get_insights(
+        current_vendor, get_redis_cache(), refresh=refresh, language=language
+    )
     return build_response(result)

@@ -20,6 +20,7 @@ vi.mock("zustand/react/shallow", () => ({
 }));
 
 import { ConfirmDialog } from "./ConfirmDialog";
+import { t } from "@shared/i18n/useTranslation";
 
 const openDialog = (overrides: Record<string, unknown> = {}) => {
   mocks.state.confirmDialog = {
@@ -58,7 +59,7 @@ describe("ConfirmDialog", () => {
     const user = userEvent.setup();
     openDialog();
     render(<ConfirmDialog />);
-    await user.click(screen.getByRole("button", { name: "Отмена" }));
+    await user.click(screen.getByRole("button", { name: t("common.actions.cancel") }));
     expect(mocks.state.cancelConfirm).toHaveBeenCalled();
   });
 
@@ -82,8 +83,8 @@ describe("ConfirmDialog", () => {
     openDialog();
     mocks.state.confirmLoading = true;
     render(<ConfirmDialog />);
-    expect(screen.getByText("Выполняю...")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Отмена" })).toBeDisabled();
+    expect(screen.getByText(t("common.actions.running"))).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: t("common.actions.cancel") })).toBeDisabled();
   });
 
   it("renders a non-danger dialog with the fire accent", () => {

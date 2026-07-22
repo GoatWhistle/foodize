@@ -2,6 +2,7 @@ import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useVendorExport } from '../../../../pages/vendor/hooks/useVendorExport';
 import { downloadBlob } from '../../../../utils/download';
+import { t } from '@shared/i18n/useTranslation';
 
 vi.mock('../../../../utils/download', () => ({ downloadBlob: vi.fn() }));
 
@@ -34,7 +35,7 @@ describe('useVendorExport', () => {
       );
     });
 
-    expect(setOrdersError).toHaveBeenCalledWith('Не удалось выполнить экспорт');
+    expect(setOrdersError).toHaveBeenCalledWith(t('vendor.errors.exportFailed'));
     expect(downloadBlob).not.toHaveBeenCalled();
     expect(result.current.exportLoading).toBe(false);
   });

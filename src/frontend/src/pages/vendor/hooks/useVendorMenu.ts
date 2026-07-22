@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { menuService } from '@shared/services/menuService';
 import { useModalStore } from '@shared/store/useModalStore';
 import { translateApiError } from '@shared/utils/translateApiError';
+import { useTranslation } from '@shared/i18n/useTranslation';
 import type {
   MenuItem,
   MenuItemCreate,
@@ -31,6 +32,7 @@ export const useVendorMenu = ({
   setFormLoading,
   setFormError,
 }: UseVendorMenuParams) => {
+  const { t } = useTranslation();
   const requestConfirm = useModalStore((s) => s.requestConfirm);
 
   const [showAddItem, setShowAddItem] = useState(false);
@@ -120,10 +122,10 @@ export const useVendorMenu = ({
 
       await fetchMenu(selectedRestaurant.id, { force: true });
       setMenuItemForm(EMPTY_MENU_ITEM_FORM);
-      setMenuSuccess(editingItem ? 'Позиция обновлена' : 'Позиция добавлена');
+      setMenuSuccess(editingItem ? t('vendor.menu.messages.itemUpdated') : t('vendor.menu.messages.itemAdded'));
       setTimeout(() => { setMenuSuccess(''); }, 2000);
     } catch (err) {
-      setFormError(translateApiError(err, 'Ошибка сохранения'));
+      setFormError(translateApiError(err, t('vendor.menu.errors.saveFailed')));
     } finally {
       setFormLoading(false);
     }
@@ -131,9 +133,9 @@ export const useVendorMenu = ({
 
   const handleDeleteMenuItem = (itemId: string) => {
     requestConfirm({
-      title: 'Удалить позицию?',
-      message: 'Вы уверены, что хотите удалить эту позицию из меню?',
-      confirmLabel: 'Удалить',
+      title: t('vendor.menu.messages.deleteTitle'),
+      message: t('vendor.menu.messages.deleteMessage'),
+      confirmLabel: t('common.actions.delete'),
       danger: true,
       onConfirm: async () => {
         if (!selectedRestaurant) return;
@@ -142,7 +144,7 @@ export const useVendorMenu = ({
           await menuService.deleteItem(selectedRestaurant.id, itemId);
           await fetchMenu(selectedRestaurant.id, { force: true });
         } catch {
-          setMenuError('Не удалось удалить позицию');
+          setMenuError(t('vendor.menu.errors.deleteFailed'));
         }
       },
     });

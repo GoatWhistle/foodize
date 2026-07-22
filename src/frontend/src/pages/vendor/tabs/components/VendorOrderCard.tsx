@@ -1,12 +1,13 @@
 import { CaretRightIcon } from '@phosphor-icons/react';
 import type { Order, OrderStatus } from '@shared/types/models';
 import { formatPrice, formatOptionsSummary } from '@shared/utils/price';
+import { orderStatusLabel } from '@shared/utils/locales';
+import { useTranslation } from '@shared/i18n/useTranslation';
 
 interface VendorOrderCardProps {
   order: Order;
   updatingOrderId: string | null;
   setSelectedOrder: (order: Order) => void;
-  STATUS_LABEL_RU: Record<string, string>;
   nextOrderStatus: Partial<Record<OrderStatus, OrderStatus>>;
   getOrderDisplayId: (order: Order) => string | number;
   formatOrderTime: (value?: string | null) => string;
@@ -16,11 +17,11 @@ export function VendorOrderCard({
   order,
   updatingOrderId,
   setSelectedOrder,
-  STATUS_LABEL_RU,
   nextOrderStatus,
   getOrderDisplayId,
   formatOrderTime,
 }: VendorOrderCardProps) {
+  const { t } = useTranslation();
   return (
     <div
       className="order-card"
@@ -29,15 +30,15 @@ export function VendorOrderCard({
     >
       <div style={{ flex: 1 }}>
         <div style={{ fontWeight: 700, marginBottom: 4 }}>
-          Заказ #{getOrderDisplayId(order)}
+          {t('vendor.orders.card.title', { displayId: getOrderDisplayId(order) })}
         </div>
         <div style={{ fontSize: "var(--text-base)", color: 'var(--text-3)' }}>
           {formatOrderTime(order.created_at) && (
             <>{formatOrderTime(order.created_at)} • </>
           )}
-          {order.items.length || 0} позиц. • {formatPrice(order.total_price)}
+          {t('vendor.orders.card.itemsAndTotal', { count: order.items.length || 0, total: formatPrice(order.total_price) })}
           {order.requested_pickup_at && (
-            <> • к выдаче {formatOrderTime(order.requested_pickup_at)}</>
+            <>{t('vendor.orders.card.pickupAt', { time: formatOrderTime(order.requested_pickup_at) })}</>
           )}
         </div>
         {order.items.length > 0 && (
@@ -83,7 +84,7 @@ export function VendorOrderCard({
                 : 'ready'
           }`}
         >
-          {STATUS_LABEL_RU[order.status] ?? order.status}
+          {orderStatusLabel(order.status)}
         </span>
         {nextOrderStatus[order.status] && (
           <button
@@ -94,7 +95,7 @@ export function VendorOrderCard({
               setSelectedOrder(order);
             }}
           >
-            Детали
+            {t('common.actions.details')}
             <CaretRightIcon size={16} />
           </button>
         )}

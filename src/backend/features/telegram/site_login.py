@@ -9,11 +9,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from features.auth.service import issue_user_tokens
 from features.telegram._shared import normalize_username
 from features.telegram.crud import get_user_by_phone, get_user_by_telegram_username
+from features.telegram.exceptions import (
+    InvalidTelegramCodeException,
+    PasswordAlreadySetException,
+    TooManyFailedLoginAttemptsException,
+    TooManyLoginCodeRequestsException,
+)
 from features.telegram.schemas import TelegramSiteLoginResponse
 from features.users.models import User
 from infra.cache.redis import get_redis_cache
 from settings.config.app_config import settings
-from shared.exceptions.existence import AuthException
+from shared.i18n import DEFAULT_LANGUAGE, translate
 from utils.jwt_tokens import hash_password
 
 _SITE_LOGIN_CODE_TTL = 300
@@ -64,7 +70,7 @@ async def request_site_login_code(session: AsyncSession, phone_number: str) -> N
     rate_key = f"{_SITE_LOGIN_RATE_PREFIX}{phone_number}"
     requests_count = await cache.incr_with_expire(rate_key, 300)
     if requests_count > 5:
-        raise AuthException(detail="Too many code requests")
+        raise TooManyLoginCodeRequestsException()
 
     user = await get_user_by_phone(session, phone_number)
     if not user or not user.telegram_id or not settings.telegram.bot_token:
@@ -73,10 +79,7 @@ async def request_site_login_code(session: AsyncSession, phone_number: str) -> N
     code = f"{secrets.randbelow(1_000_000):06d}"
     await cache.set(f"{_SITE_LOGIN_CODE_PREFIX}{phone_number}", code, ttl=_SITE_LOGIN_CODE_TTL)
 
-    message = (
-        f"Код входа на сайт Foodize: {code}\n\n"
-        "Если это были не вы, просто проигнорируйте сообщение."
-    )
+    message = translate("telegram.siteLoginCode.plain", DEFAULT_LANGUAGE, code=code)
 
     await _send_telegram_message({"chat_id": user.telegram_id, "text": message})
 
@@ -91,7 +94,7 @@ async def verify_site_login_code(
     fail_key = f"{_SITE_LOGIN_FAIL_PREFIX}{phone_number}"
     fail_count = await cache.get(fail_key)
     if fail_count and int(fail_count) >= _SITE_LOGIN_MAX_ATTEMPTS:
-        raise AuthException(detail="Too many failed attempts. Try again later.")
+        raise TooManyFailedLoginAttemptsException()
 
     key = f"{_SITE_LOGIN_CODE_PREFIX}{phone_number}"
     stored_code = await cache.get(key)
@@ -99,11 +102,11 @@ async def verify_site_login_code(
         raw_client = cache.get_raw_client()
         await raw_client.incr(fail_key)
         await raw_client.expire(fail_key, _SITE_LOGIN_CODE_TTL)
-        raise AuthException(detail="Invalid Telegram code")
+        raise InvalidTelegramCodeException()
 
     user = await get_user_by_phone(session, phone_number)
     if not user or not user.telegram_id:
-        raise AuthException(detail="Invalid Telegram code")
+        raise InvalidTelegramCodeException()
 
     await cache.delete(key)
     await cache.delete(fail_key)
@@ -118,7 +121,7 @@ async def verify_site_login_code(
 
 async def set_site_password(session: AsyncSession, user: User, password: str) -> User:
     if user.hashed_password:
-        raise AuthException(detail="Password is already set")
+        raise PasswordAlreadySetException()
 
     user.hashed_password = await hash_password(password)
     await session.flush()
@@ -135,7 +138,7 @@ async def request_site_login_code_by_username(
     rate_key = f"{_SITE_LOGIN_RATE_PREFIX}u:{username}"
     requests_count = await cache.incr_with_expire(rate_key, 300)
     if requests_count > 5:
-        raise AuthException(detail="Too many code requests")
+        raise TooManyLoginCodeRequestsException()
 
     user = await get_user_by_telegram_username(session, username)
     if not user or not user.telegram_id or not settings.telegram.bot_token:
@@ -144,10 +147,7 @@ async def request_site_login_code_by_username(
     code = f"{secrets.randbelow(1_000_000):06d}"
     await cache.set(f"{_SITE_LOGIN_CODE_PREFIX}u:{username}", code, ttl=_SITE_LOGIN_CODE_TTL)
 
-    message = (
-        f"Код входа на сайт Foodize: <b>{code}</b>\n\n"
-        "Если это были не вы, просто проигнорируйте сообщение."
-    )
+    message = translate("telegram.siteLoginCode.html", DEFAULT_LANGUAGE, code=code)
 
     await _send_telegram_message(
         {"chat_id": user.telegram_id, "text": message, "parse_mode": "HTML"}
@@ -164,7 +164,7 @@ async def verify_site_login_code_by_username(
     fail_key = f"{_SITE_LOGIN_FAIL_PREFIX}u:{username}"
     fail_count = await cache.get(fail_key)
     if fail_count and int(fail_count) >= _SITE_LOGIN_MAX_ATTEMPTS:
-        raise AuthException(detail="Too many failed attempts. Try again later.")
+        raise TooManyFailedLoginAttemptsException()
 
     key = f"{_SITE_LOGIN_CODE_PREFIX}u:{username}"
     stored_code = await cache.get(key)
@@ -172,11 +172,11 @@ async def verify_site_login_code_by_username(
         raw_client = cache.get_raw_client()
         await raw_client.incr(fail_key)
         await raw_client.expire(fail_key, _SITE_LOGIN_CODE_TTL)
-        raise AuthException(detail="Invalid Telegram code")
+        raise InvalidTelegramCodeException()
 
     user = await get_user_by_telegram_username(session, username)
     if not user or not user.telegram_id:
-        raise AuthException(detail="Invalid Telegram code")
+        raise InvalidTelegramCodeException()
 
     await cache.delete(key)
     await cache.delete(fail_key)

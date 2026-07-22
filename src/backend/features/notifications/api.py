@@ -7,12 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import db_helper
 from features.auth.service import get_current_user
 from features.notifications import crud
+from features.notifications.exceptions import NotificationNotFoundException
 from features.notifications.schemas import (
     NotificationListResponse,
     NotificationResponse,
 )
 from features.users.models import User
-from shared.exceptions import NotFoundException
 
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
 
@@ -43,7 +43,7 @@ async def read_notification(
 ) -> NotificationResponse:
     notification = await crud.mark_as_read(session, notification_id, user.id)
     if not notification:
-        raise NotFoundException(detail="Notification not found")
+        raise NotificationNotFoundException()
     return NotificationResponse.model_validate(notification)
 
 
@@ -63,7 +63,7 @@ async def delete_notification(
 ) -> None:
     deleted = await crud.delete_notification(session, notification_id, user.id)
     if not deleted:
-        raise NotFoundException(detail="Notification not found")
+        raise NotificationNotFoundException()
 
 
 @router.delete("", status_code=HTTPStatus.NO_CONTENT)

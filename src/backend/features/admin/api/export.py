@@ -9,6 +9,7 @@ from database import db_helper
 from features.admin import export as admin_export
 from features.admin.dependencies import require_admin
 from features.users.models import User
+from shared.dependencies import get_language
 from shared.enums.order_status import OrderStatus
 
 router = APIRouter()
@@ -31,8 +32,11 @@ async def export_users_csv(
     date_to: date | None = None,
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
+    language: str = Depends(get_language),
 ) -> Response:
-    csv_bytes = await admin_export.export_users_csv(session, date_from=date_from, date_to=date_to)
+    csv_bytes = await admin_export.export_users_csv(
+        session, date_from=date_from, date_to=date_to, language=language
+    )
     return _attachment_response(csv_bytes, _CSV_MEDIA_TYPE, "users.csv")
 
 
@@ -43,13 +47,14 @@ async def export_orders_csv(
     status: str | None = Query(None),
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
+    language: str = Depends(get_language),
 ) -> Response:
     order_status = None
     if status:
         with contextlib.suppress(ValueError):
             order_status = OrderStatus(status)
     csv_bytes = await admin_export.export_orders_csv(
-        session, date_from=date_from, date_to=date_to, status=order_status
+        session, date_from=date_from, date_to=date_to, status=order_status, language=language
     )
     return _attachment_response(csv_bytes, _CSV_MEDIA_TYPE, "orders.csv")
 
@@ -58,8 +63,9 @@ async def export_orders_csv(
 async def export_restaurants_csv(
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
+    language: str = Depends(get_language),
 ) -> Response:
-    csv_bytes = await admin_export.export_restaurants_csv(session)
+    csv_bytes = await admin_export.export_restaurants_csv(session, language=language)
     return _attachment_response(csv_bytes, _CSV_MEDIA_TYPE, "restaurants.csv")
 
 
@@ -67,8 +73,9 @@ async def export_restaurants_csv(
 async def export_vendors_csv(
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
+    language: str = Depends(get_language),
 ) -> Response:
-    csv_bytes = await admin_export.export_vendors_csv(session)
+    csv_bytes = await admin_export.export_vendors_csv(session, language=language)
     return _attachment_response(csv_bytes, _CSV_MEDIA_TYPE, "vendors.csv")
 
 
@@ -78,9 +85,10 @@ async def export_reviews_csv(
     max_rating: int | None = Query(None),
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
+    language: str = Depends(get_language),
 ) -> Response:
     csv_bytes = await admin_export.export_reviews_csv(
-        session, min_rating=min_rating, max_rating=max_rating
+        session, min_rating=min_rating, max_rating=max_rating, language=language
     )
     return _attachment_response(csv_bytes, _CSV_MEDIA_TYPE, "reviews.csv")
 
@@ -91,8 +99,11 @@ async def export_finance_pdf(
     date_to: date | None = Query(None),
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
+    language: str = Depends(get_language),
 ) -> Response:
-    pdf_bytes = await admin_export.export_finance_pdf(session, date_from=date_from, date_to=date_to)
+    pdf_bytes = await admin_export.export_finance_pdf(
+        session, date_from=date_from, date_to=date_to, language=language
+    )
     return _attachment_response(pdf_bytes, _PDF_MEDIA_TYPE, "finance.pdf")
 
 
@@ -102,9 +113,10 @@ async def export_analytics_pdf(
     date_to: date | None = Query(None),
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
+    language: str = Depends(get_language),
 ) -> Response:
     pdf_bytes = await admin_export.export_analytics_pdf(
-        session, date_from=date_from, date_to=date_to
+        session, date_from=date_from, date_to=date_to, language=language
     )
     return _attachment_response(pdf_bytes, _PDF_MEDIA_TYPE, "analytics.pdf")
 
@@ -115,8 +127,9 @@ async def export_overview_pdf(
     date_to: date | None = Query(None),
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
+    language: str = Depends(get_language),
 ) -> Response:
     pdf_bytes = await admin_export.export_overview_pdf(
-        session, date_from=date_from, date_to=date_to
+        session, date_from=date_from, date_to=date_to, language=language
     )
     return _attachment_response(pdf_bytes, _PDF_MEDIA_TYPE, "overview.pdf")

@@ -15,6 +15,7 @@ vi.mock("@shared/utils/translateApiError", () => ({
 }));
 
 import { createOrdersStore } from "./createOrdersStore";
+import { t } from "@shared/i18n/useTranslation";
 
 const order = (id: string, status: string): Order => ({ id, status } as unknown as Order);
 
@@ -41,7 +42,7 @@ describe("createOrdersStore", () => {
     mocks.getMyOrders.mockRejectedValue(new Error("net"));
     const store = createOrdersStore();
     await store.getState().fetchMyOrders();
-    expect(store.getState().ordersError).toBe("Не удалось загрузить заказы");
+    expect(store.getState().ordersError).toBe(t("order.list.loadFailed"));
     expect(store.getState().ordersLoading).toBe(false);
   });
 
@@ -97,6 +98,6 @@ describe("createOrdersStore", () => {
     mocks.getMyOrders.mockRejectedValue(new Error("net"));
     const store = createOrdersStore();
     await store.getState().fetchActiveOrder();
-    expect(store.getState().activeOrderError).toBe("Не удалось загрузить активный заказ");
+    expect(store.getState().activeOrderError).toBe(t("order.status.activeLoadFailed"));
   });
 });
