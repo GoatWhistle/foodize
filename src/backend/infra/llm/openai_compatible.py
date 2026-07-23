@@ -32,6 +32,7 @@ if TYPE_CHECKING:
 
 logger = get_logger("ai.openai_compatible")
 
+
 class OpenAICompatibleClient(LLMClient):
     def __init__(
         self,

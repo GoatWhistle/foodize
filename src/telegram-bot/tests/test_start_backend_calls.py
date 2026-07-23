@@ -36,9 +36,7 @@ async def test_link_phone_failure_no_secret(
     res = await _link_phone(message, "+79990000000")
 
     assert res is False
-    answer_of(message).assert_called_with(
-        msg.text("botNotConfigured")
-    )
+    answer_of(message).assert_called_with(msg.text("botNotConfigured"))
 
 
 @pytest.mark.parametrize(
@@ -73,9 +71,7 @@ async def test_link_phone_http_errors(
     answer_of(message).assert_called_with(expected)
 
 
-async def test_link_phone_success(
-    mocker: MockerFixture, message_factory: MessageFactory
-) -> None:
+async def test_link_phone_success(mocker: MockerFixture, message_factory: MessageFactory) -> None:
     mocker.patch("handlers.start.backend_client.link_phone", return_value=None)
     message = message_factory()
 
@@ -189,9 +185,7 @@ async def test_cmd_orders_http_errors(
     answer_of(message).assert_called_with(expected)
 
 
-async def test_cmd_orders_empty(
-    mocker: MockerFixture, message_factory: MessageFactory
-) -> None:
+async def test_cmd_orders_empty(mocker: MockerFixture, message_factory: MessageFactory) -> None:
     mocker.patch("handlers.start.backend_client.get_active_orders", return_value=[])
     message = message_factory()
     await cmd_orders(message)

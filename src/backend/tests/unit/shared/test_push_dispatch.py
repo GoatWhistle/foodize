@@ -30,9 +30,7 @@ class TestSendNativePush:
         apns.enabled = False
         fcm = MagicMock(spec=FcmProvider)
         fcm.enabled = False
-        with patch(
-            "features.notifications.push_dispatch._PROVIDERS", (apns, fcm)
-        ):
+        with patch("features.notifications.push_dispatch._PROVIDERS", (apns, fcm)):
             delivered = await send_native_push([device], "t", "b", None)
         assert delivered == 0
 

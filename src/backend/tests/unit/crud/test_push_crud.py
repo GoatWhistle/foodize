@@ -28,9 +28,7 @@ class TestUpsertDevice:
         result_mock.scalar_one.return_value = device
         session.execute = AsyncMock(return_value=result_mock)
 
-        returned = await upsert_device(
-            session, uid, "tok-1", PushPlatform.IOS.value, "en"
-        )
+        returned = await upsert_device(session, uid, "tok-1", PushPlatform.IOS.value, "en")
 
         assert returned is device
         session.execute.assert_awaited_once()

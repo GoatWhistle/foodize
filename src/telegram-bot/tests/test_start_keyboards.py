@@ -1,4 +1,3 @@
-
 import pytest
 from aiogram.types import InlineKeyboardMarkup, ReplyKeyboardMarkup
 

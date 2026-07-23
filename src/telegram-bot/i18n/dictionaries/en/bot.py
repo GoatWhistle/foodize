@@ -24,9 +24,7 @@ BOT: TranslationTree = {
             "Done, your phone is linked to Telegram.\n\n"
             "You can now open Foodize and start using it."
         ),
-        "phoneLinkFailed": (
-            "Could not link the phone number. Check the number and try again."
-        ),
+        "phoneLinkFailed": ("Could not link the phone number. Check the number and try again."),
         "sendOwnPhone": "Please send your own phone number.",
         "vendorStatusNotConfigured": "Vendor status check is not configured yet.",
         "vendorStatusError": "Could not fetch the status. Please try again later.",

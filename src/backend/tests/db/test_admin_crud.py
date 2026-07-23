@@ -100,9 +100,7 @@ async def seeded_db(db_session: AsyncSession) -> AdminCrudSeed:
 
 @pytest.mark.usefixtures("seeded_db")
 @pytest.mark.usefixtures("seeded_db")
-async def test_get_all_users_returns_all(
-    db_session: AsyncSession
-) -> None:
+async def test_get_all_users_returns_all(db_session: AsyncSession) -> None:
     users = await get_all_users(db_session)
     assert len(users) == 2
 
@@ -151,9 +149,7 @@ async def test_get_all_orders(db_session: AsyncSession, seeded_db: AdminCrudSeed
 
 @pytest.mark.usefixtures("seeded_db")
 @pytest.mark.usefixtures("seeded_db")
-async def test_get_all_orders_filter_by_status(
-    db_session: AsyncSession
-) -> None:
+async def test_get_all_orders_filter_by_status(db_session: AsyncSession) -> None:
     pending = await get_all_orders(db_session, status=OrderStatus.PENDING)
     assert len(pending) == 1
 

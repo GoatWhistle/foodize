@@ -97,9 +97,7 @@ class TestOrderEventsAPI:
         assert response.status_code == HTTPStatus.UNAUTHORIZED
 
     @pytest.mark.usefixtures("as_user")
-    async def test_read_order_events_customer_denied(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_read_order_events_customer_denied(self, client: AsyncClient) -> None:
         order_id = uuid.uuid4()
         mock_order = _make_mock_order(order_id, user_id=uuid.uuid4())
 
@@ -126,9 +124,7 @@ class TestOrderEventsAPI:
 
 class TestUpdateOrderStatusWithTransitionValidation:
     @pytest.mark.usefixtures("as_vendor")
-    async def test_invalid_transition_returns_422(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_invalid_transition_returns_422(self, client: AsyncClient) -> None:
         order_id = uuid.uuid4()
         mock_order = Order()
         mock_order.id = order_id

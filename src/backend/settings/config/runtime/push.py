@@ -18,9 +18,7 @@ class PushConfig(BaseConfig):
 
     @property
     def apns_enabled(self) -> bool:
-        return bool(
-            self.apns_key and self.apns_key_id and self.apns_team_id and self.apns_topic
-        )
+        return bool(self.apns_key and self.apns_key_id and self.apns_team_id and self.apns_topic)
 
     @property
     def fcm_enabled(self) -> bool:

@@ -51,8 +51,6 @@ async def deactivate_device(session: AsyncSession, user_id: uuid.UUID, token: st
 async def get_active_devices_for_user(
     session: AsyncSession, user_id: uuid.UUID
 ) -> list[PushDevice]:
-    stmt = select(PushDevice).where(
-        PushDevice.user_id == user_id, PushDevice.is_active.is_(True)
-    )
+    stmt = select(PushDevice).where(PushDevice.user_id == user_id, PushDevice.is_active.is_(True))
     result = await session.execute(stmt)
     return list(result.scalars().all())

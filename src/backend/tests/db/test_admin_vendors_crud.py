@@ -49,9 +49,7 @@ async def test_get_all_vendors_and_filters(db_session: AsyncSession) -> None:
 
 @pytest.mark.usefixtures("seeded_db")
 @pytest.mark.usefixtures("seeded_db")
-async def test_count_all_vendors_with_filters(
-    db_session: AsyncSession
-) -> None:
+async def test_count_all_vendors_with_filters(db_session: AsyncSession) -> None:
     assert await count_all_vendors(db_session) == 1
     assert await count_all_vendors(db_session, search="Alice") == 1
     assert await count_all_vendors(db_session, search="ghost") == 0

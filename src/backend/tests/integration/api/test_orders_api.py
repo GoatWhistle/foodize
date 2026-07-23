@@ -232,9 +232,7 @@ class TestCancelOrderAPI:
         assert response.status_code == HTTPStatus.NOT_FOUND
 
     @pytest.mark.usefixtures("as_user")
-    async def test_update_order_cancel_non_pending(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_update_order_cancel_non_pending(self, client: AsyncClient) -> None:
         order_id = uuid.uuid4()
 
         with patch(

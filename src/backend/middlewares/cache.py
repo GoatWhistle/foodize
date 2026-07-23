@@ -20,6 +20,7 @@ class _StreamingBody(Protocol):
     @property
     def body_iterator(self) -> AsyncIterable[bytes | str]: ...
 
+
 _MUTATING_METHODS = {"POST", "PUT", "DELETE", "PATCH"}
 
 _EXCLUDED_CACHE_HEADERS = {"content-length", "content-encoding", "transfer-encoding"}

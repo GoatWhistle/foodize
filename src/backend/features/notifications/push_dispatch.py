@@ -126,9 +126,7 @@ class FcmProvider:
             "Content-Type": "application/json",
         }
         try:
-            async with httpx.AsyncClient(
-                timeout=settings.push.request_timeout_seconds
-            ) as client:
+            async with httpx.AsyncClient(timeout=settings.push.request_timeout_seconds) as client:
                 response = await client.post(
                     "https://fcm.googleapis.com/fcm/send", json=payload, headers=headers
                 )
@@ -164,9 +162,7 @@ async def send_native_push(
     payload_data = data or {}
     delivered = 0
     for device in devices:
-        provider = next(
-            (p for p in active_providers if p.handles(device.platform)), None
-        )
+        provider = next((p for p in active_providers if p.handles(device.platform)), None)
         if provider is None:
             continue
         if await provider.send(device, title, body, payload_data):

@@ -62,11 +62,11 @@ lint:
 
 test:
 	cd "$(BACKEND_DIR)" && uv run pytest --cov=. --cov-report=term-missing
-	cd "$(BOT_DIR)" && uv run pytest
+	cd "$(BOT_DIR)" && uv run pytest --cov=. --cov-report=term-missing
 	cd "$(SHARED_DIR)" && npm run test:coverage
 	cd "$(FRONTEND_DIR)" && npm run test:coverage
 	cd "$(MINIAPP_DIR)" && npm run test:coverage
-	cd "$(MOBILE_DIR)" && npm run test
+	cd "$(MOBILE_DIR)" && npm run test:coverage
 	@echo " "
 	@echo "Tests completed!"
 

@@ -76,8 +76,8 @@ PROMPTS: TranslationTree = {
             " the cart_has_other_restaurant error — explain this and offer to clear the"
             " cart.\n"
             "5) MANDATORY: before calling place_order, first show the cart contents and total"
-            " (view_cart) and wait for the user's explicit confirmation (for example \"yes\","
-            " \"place it\"). Never call place_order in the same reply where the user first"
+            ' (view_cart) and wait for the user\'s explicit confirmation (for example "yes",'
+            ' "place it"). Never call place_order in the same reply where the user first'
             " asked to order — only after their explicit confirmation in the latest"
             " message.\n"
             "6) After a successful checkout, report the order number and total.\n"

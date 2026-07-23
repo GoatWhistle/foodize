@@ -189,9 +189,7 @@ async def test_get_finance_analytics_filter_by_restaurant(
 
 @pytest.mark.usefixtures("finance_db")
 @pytest.mark.usefixtures("finance_db")
-async def test_get_finance_analytics_default_window(
-    db_session: AsyncSession
-) -> None:
+async def test_get_finance_analytics_default_window(db_session: AsyncSession) -> None:
     result = await get_finance_analytics(db_session)
     assert result.total_orders >= 2
     assert len(result.revenue_by_day) == 14

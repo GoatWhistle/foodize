@@ -22,9 +22,7 @@ async def seeded_db(db_session: AsyncSession) -> AdminSeed:
 
 @pytest.mark.usefixtures("seeded_db")
 @pytest.mark.usefixtures("seeded_db")
-async def test_get_all_restaurants_maps_aggregates(
-    db_session: AsyncSession
-) -> None:
+async def test_get_all_restaurants_maps_aggregates(db_session: AsyncSession) -> None:
     results = await get_all_restaurants(db_session)
     assert len(results) == 2
     by_name = {r.name: r for r in results}
@@ -39,9 +37,7 @@ async def test_get_all_restaurants_maps_aggregates(
 
 @pytest.mark.usefixtures("seeded_db")
 @pytest.mark.usefixtures("seeded_db")
-async def test_get_all_restaurants_search_filter(
-    db_session: AsyncSession
-) -> None:
+async def test_get_all_restaurants_search_filter(db_session: AsyncSession) -> None:
     results = await get_all_restaurants(db_session, search="sushi")
     assert len(results) == 1
     assert results[0].name == "Sushi Palace"
@@ -49,9 +45,7 @@ async def test_get_all_restaurants_search_filter(
 
 @pytest.mark.usefixtures("seeded_db")
 @pytest.mark.usefixtures("seeded_db")
-async def test_get_all_restaurants_vendor_search_filter(
-    db_session: AsyncSession
-) -> None:
+async def test_get_all_restaurants_vendor_search_filter(db_session: AsyncSession) -> None:
     by_name = await get_all_restaurants(db_session, vendor_search="Alice")
     assert len(by_name) == 2
     by_phone = await get_all_restaurants(db_session, vendor_search="79009001001")
@@ -62,9 +56,7 @@ async def test_get_all_restaurants_vendor_search_filter(
 
 @pytest.mark.usefixtures("seeded_db")
 @pytest.mark.usefixtures("seeded_db")
-async def test_get_all_restaurants_is_open_filter(
-    db_session: AsyncSession
-) -> None:
+async def test_get_all_restaurants_is_open_filter(db_session: AsyncSession) -> None:
     open_only = await get_all_restaurants(db_session, is_open=True)
     assert [r.name for r in open_only] == ["Sushi Palace"]
     closed_only = await get_all_restaurants(db_session, is_open=False)
@@ -73,9 +65,7 @@ async def test_get_all_restaurants_is_open_filter(
 
 @pytest.mark.usefixtures("seeded_db")
 @pytest.mark.usefixtures("seeded_db")
-async def test_get_all_restaurants_moderation_and_min_rating(
-    db_session: AsyncSession
-) -> None:
+async def test_get_all_restaurants_moderation_and_min_rating(db_session: AsyncSession) -> None:
     approved = await get_all_restaurants(
         db_session, moderation_status=ModerationStatus.APPROVED.value
     )
@@ -90,9 +80,7 @@ async def test_get_all_restaurants_moderation_and_min_rating(
 
 @pytest.mark.usefixtures("seeded_db")
 @pytest.mark.usefixtures("seeded_db")
-async def test_count_all_restaurants_with_filters(
-    db_session: AsyncSession
-) -> None:
+async def test_count_all_restaurants_with_filters(db_session: AsyncSession) -> None:
     assert await count_all_restaurants(db_session) == 2
     assert await count_all_restaurants(db_session, is_open=True) == 1
     assert await count_all_restaurants(db_session, search="pizza") == 1

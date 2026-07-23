@@ -21,9 +21,10 @@ def id_matches(model: type[IdentifiedModel], id: EntityId) -> ColumnElement[bool
     return model.id == id
 
 
-async def get_or_404[T: (IdUuidPkMixin, IdIntPkMixin)](
-    session: AsyncSession, model: type[T], id: EntityId, detail: str | None = None
-) -> T:
+async def get_or_404[T: (
+    IdUuidPkMixin,
+    IdIntPkMixin,
+)](session: AsyncSession, model: type[T], id: EntityId, detail: str | None = None) -> T:
     result = await session.execute(select(model).where(id_matches(model, id)))
     obj = result.scalars().first()
     if obj is None:

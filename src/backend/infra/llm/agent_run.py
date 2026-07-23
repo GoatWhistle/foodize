@@ -140,9 +140,7 @@ class AgentRun:
         response = await self.complete(tool_choice="none")
         truncated = self.absorb(response)
         notice = (
-            truncated_notice(self.language)
-            if truncated
-            else steps_exhausted_notice(self.language)
+            truncated_notice(self.language) if truncated else steps_exhausted_notice(self.language)
         )
         text = response.text + notice
         self.history.append(Message(role=Role.ASSISTANT, content=text))
@@ -179,6 +177,4 @@ def start_run(
     language: str,
 ) -> AgentRun:
     deadline = asyncio.get_running_loop().time() + deadline_seconds
-    return AgentRun(
-        client, system, list(messages), tools, execute, max_tokens, deadline, language
-    )
+    return AgentRun(client, system, list(messages), tools, execute, max_tokens, deadline, language)

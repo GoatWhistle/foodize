@@ -42,9 +42,7 @@ class TestVendorsAPI:
         assert data["approval_status"] == ModerationStatus.APPROVED.value
 
     @pytest.mark.usefixtures("as_user")
-    async def test_create_vendor_requires_permission(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_create_vendor_requires_permission(self, client: AsyncClient) -> None:
         response = await client.post("/api/v1/vendors/", json={})
         assert response.status_code == HTTPStatus.FORBIDDEN
 
