@@ -124,6 +124,12 @@ export const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCod
               cursor: 'pointer',
               color: 'var(--text-3)',
               display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 44,
+              height: 44,
+              margin: -11,
+              flexShrink: 0,
             }}
           >
             <XIcon size={22} weight="bold" />
@@ -161,7 +167,7 @@ export const QRCodeModal = ({ restaurant, onClose, initialType = 'site' }: QRCod
                 type === value ? 'btn btn-primary' : 'btn btn-secondary'
               }
               onClick={() => { setType(value); }}
-              style={{ height: 36, fontSize: "var(--text-sm)" }}
+              style={{ height: 44, fontSize: "var(--text-sm)" }}
             >
               {t(labelKey)}
             </button>

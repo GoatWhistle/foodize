@@ -1,8 +1,9 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from http import HTTPStatus
 from unittest.mock import AsyncMock, patch
 
+import pytest
 from httpx import AsyncClient
 
 from features.notifications.models import NotificationType
@@ -17,7 +18,7 @@ class _FakeNotification:
         self.message = "Ресторан принял ваш заказ"
         self.type = NotificationType.ORDER_STATUS
         self.is_read = is_read
-        self.created_at = datetime(2026, 1, 1, 0, 0, 0)
+        self.created_at = datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC)
 
 
 def _make_mock_notification(
@@ -33,7 +34,8 @@ class TestNotificationsAPIAccess:
 
 
 class TestGetNotifications:
-    async def test_returns_empty_list(self, client: AsyncClient, as_user: User) -> None:
+    @pytest.mark.usefixtures("as_user")
+    async def test_returns_empty_list(self, client: AsyncClient) -> None:
         with (
             patch(
                 "features.notifications.api.crud.get_user_notifications",
@@ -79,7 +81,8 @@ class TestGetNotifications:
         assert data["unread_count"] == 1
         assert len(data["items"]) == 1
 
-    async def test_pagination_params(self, client: AsyncClient, as_user: User) -> None:
+    @pytest.mark.usefixtures("as_user")
+    async def test_pagination_params(self, client: AsyncClient) -> None:
         with (
             patch(
                 "features.notifications.api.crud.get_user_notifications",
@@ -114,7 +117,8 @@ class TestMarkAsRead:
 
         assert response.status_code == HTTPStatus.OK
 
-    async def test_returns_404_when_not_found(self, client: AsyncClient, as_user: User) -> None:
+    @pytest.mark.usefixtures("as_user")
+    async def test_returns_404_when_not_found(self, client: AsyncClient) -> None:
         with patch(
             "features.notifications.api.crud.mark_as_read",
             new_callable=AsyncMock,
@@ -126,7 +130,8 @@ class TestMarkAsRead:
 
 
 class TestMarkAllAsRead:
-    async def test_marks_all_read(self, client: AsyncClient, as_user: User) -> None:
+    @pytest.mark.usefixtures("as_user")
+    async def test_marks_all_read(self, client: AsyncClient) -> None:
         with patch(
             "features.notifications.api.crud.mark_all_as_read",
             new_callable=AsyncMock,
@@ -138,7 +143,8 @@ class TestMarkAllAsRead:
 
 
 class TestDeleteNotification:
-    async def test_deletes_notification(self, client: AsyncClient, as_user: User) -> None:
+    @pytest.mark.usefixtures("as_user")
+    async def test_deletes_notification(self, client: AsyncClient) -> None:
         with patch(
             "features.notifications.api.crud.delete_notification",
             new_callable=AsyncMock,
@@ -148,7 +154,8 @@ class TestDeleteNotification:
 
         assert response.status_code == HTTPStatus.NO_CONTENT
 
-    async def test_returns_404_when_not_found(self, client: AsyncClient, as_user: User) -> None:
+    @pytest.mark.usefixtures("as_user")
+    async def test_returns_404_when_not_found(self, client: AsyncClient) -> None:
         with patch(
             "features.notifications.api.crud.delete_notification",
             new_callable=AsyncMock,
@@ -160,7 +167,8 @@ class TestDeleteNotification:
 
 
 class TestDeleteAllNotifications:
-    async def test_deletes_all(self, client: AsyncClient, as_user: User) -> None:
+    @pytest.mark.usefixtures("as_user")
+    async def test_deletes_all(self, client: AsyncClient) -> None:
         with patch(
             "features.notifications.api.crud.delete_all_notifications",
             new_callable=AsyncMock,
@@ -169,3 +177,75 @@ class TestDeleteAllNotifications:
 
         assert response.status_code == HTTPStatus.NO_CONTENT
         mock_del.assert_awaited_once()
+
+
+class _FakeDevice:
+    def __init__(self, user_id: uuid.UUID, token: str, platform: str) -> None:
+        self.id = uuid.uuid4()
+        self.user_id = user_id
+        self.token = token
+        self.platform = platform
+        self.language = "en"
+        self.is_active = True
+        self.created_at = datetime(2026, 1, 1, 0, 0, 0, tzinfo=UTC)
+
+
+class TestRegisterDevice:
+    async def test_requires_auth(self, client: AsyncClient) -> None:
+        response = await client.post(
+            "/api/v1/notifications/devices",
+            json={"token": "tok", "platform": "ios"},
+        )
+        assert response.status_code == HTTPStatus.UNAUTHORIZED
+
+    async def test_registers_device(self, client: AsyncClient, as_user: User) -> None:
+        device = _FakeDevice(as_user.id, "tok-abc", "ios")
+        with patch(
+            "features.notifications.api.push_crud.upsert_device",
+            new_callable=AsyncMock,
+            return_value=device,
+        ) as mock_upsert:
+            response = await client.post(
+                "/api/v1/notifications/devices",
+                json={"token": "tok-abc", "platform": "ios", "language": "en"},
+            )
+
+        assert response.status_code == HTTPStatus.CREATED
+        data = response.json()
+        assert data["token"] == "tok-abc"
+        assert data["platform"] == "ios"
+        mock_upsert.assert_awaited_once()
+
+    @pytest.mark.usefixtures("as_user")
+    async def test_rejects_invalid_platform(self, client: AsyncClient) -> None:
+        response = await client.post(
+            "/api/v1/notifications/devices",
+            json={"token": "tok", "platform": "windows_phone"},
+        )
+        assert response.status_code == HTTPStatus.BAD_REQUEST
+
+    @pytest.mark.usefixtures("as_user")
+    async def test_rejects_empty_token(self, client: AsyncClient) -> None:
+        response = await client.post(
+            "/api/v1/notifications/devices",
+            json={"token": "", "platform": "ios"},
+        )
+        assert response.status_code == HTTPStatus.BAD_REQUEST
+
+
+class TestUnregisterDevice:
+    async def test_requires_auth(self, client: AsyncClient) -> None:
+        response = await client.delete("/api/v1/notifications/devices/tok")
+        assert response.status_code == HTTPStatus.UNAUTHORIZED
+
+    @pytest.mark.usefixtures("as_user")
+    async def test_deactivates_device(self, client: AsyncClient) -> None:
+        with patch(
+            "features.notifications.api.push_crud.deactivate_device",
+            new_callable=AsyncMock,
+            return_value=True,
+        ) as mock_deactivate:
+            response = await client.delete("/api/v1/notifications/devices/tok-xyz")
+
+        assert response.status_code == HTTPStatus.NO_CONTENT
+        mock_deactivate.assert_awaited_once()

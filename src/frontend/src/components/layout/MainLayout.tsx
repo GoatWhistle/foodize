@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Outlet } from 'react-router-dom';
-import { UserIcon, SignInIcon, ShoppingCartIcon } from '@phosphor-icons/react';
+import { SignInIcon, ShoppingCartIcon } from '@phosphor-icons/react';
 
 import { FoodizeLogo } from '@shared/components/FoodizeLogo/FoodizeLogo';
 import { CartDrawer } from '@shared/components/CartDrawer/CartDrawer';
 import { NotificationBell } from '../NotificationBell/NotificationBell';
 import { OrderAssistant } from '../OrderAssistant/OrderAssistant';
+import { AccountMenu } from './AccountMenu';
+import { BottomNav } from './BottomNav';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useCartStore } from '../../store/useCartStore';
 import { ROUTES } from '../../constants/routes';
@@ -18,7 +20,6 @@ const DEEP_LINK_ID_RE = /^[a-zA-Z0-9-]{1,64}$/;
 
 export const MainLayout = () => {
   const { t } = useTranslation();
-  const location = useLocation();
   const navigate = useNavigate();
 
   const isAuthenticated = useAuthStore((s) => s.user !== null);
@@ -79,17 +80,8 @@ export const MainLayout = () => {
         </Link>
 
         <div className="header-actions">
-          {isAuthenticated && (
-            <Link
-              to={ROUTES.PROFILE}
-              className={`nav-link${location.pathname.startsWith(ROUTES.PROFILE) ? ' active' : ''}`}
-              aria-label={t('profile.nav.profile')}
-            >
-              <UserIcon size={18} weight="bold" />
-              {t('profile.nav.profile')}
-            </Link>
-          )}
           {isAuthenticated && <NotificationBell />}
+          {isAuthenticated && <AccountMenu />}
           {!isAuthenticated && (
             <Link
               to={ROUTES.LOGIN}
@@ -124,6 +116,12 @@ export const MainLayout = () => {
           <span style={{ fontWeight: 800 }}>{formatPrice(total)}</span>
         </button>
       )}
+
+      <BottomNav
+        cartCount={cartItemsCount}
+        onCartClick={() => { setIsCartOpen(true); }}
+        isAuthenticated={isAuthenticated}
+      />
 
       {isCartOpen && <CartDrawer onClose={() => { setIsCartOpen(false); }} />}
 

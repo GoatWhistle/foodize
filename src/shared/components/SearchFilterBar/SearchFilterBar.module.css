@@ -223,4 +223,17 @@
     padding: 10px var(--gutter);
     gap: 8px;
   }
+
+  .sortRow,
+  .checkbox {
+    min-height: 44px;
+  }
+}
+
+.sortRow:active {
+  background: var(--bg-surface);
+}
+
+.checkbox:active {
+  background: var(--bg-surface);
 }

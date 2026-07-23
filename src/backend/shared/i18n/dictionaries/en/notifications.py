@@ -1,6 +1,6 @@
-from typing import Any
+from shared.i18n.types import TranslationTree
 
-NOTIFICATIONS: dict[str, Any] = {
+NOTIFICATIONS: TranslationTree = {
     "orderReady": {
         "title": "Your order is ready!",
         "message": "Your order from {restaurant} is ready for pickup. Enjoy your meal!",

@@ -96,6 +96,12 @@ export const ShareModal = ({ restaurant, onClose }: ShareModalProps) => {
               cursor: 'pointer',
               color: 'var(--text-3)',
               display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 44,
+              height: 44,
+              margin: -11,
+              flexShrink: 0,
             }}
           >
             <XIcon size={22} weight="bold" aria-hidden="true" />

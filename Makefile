@@ -5,6 +5,7 @@ FRONTEND_DIR := $(CURDIR)/src/frontend
 MINIAPP_DIR := $(CURDIR)/src/telegram-miniapp
 BOT_DIR := $(CURDIR)/src/telegram-bot
 SHARED_DIR := $(CURDIR)/src/shared
+MOBILE_DIR := $(CURDIR)/src/mobile
 CERTS_DIR := $(BACKEND_DIR)/certs
 JWT_PRIVATE_KEY := $(CERTS_DIR)/jwt-private.pem
 JWT_PUBLIC_KEY := $(CERTS_DIR)/jwt-public.pem
@@ -44,6 +45,7 @@ sync:
 	cd "$(SHARED_DIR)" && npm install --silent
 	cd "$(FRONTEND_DIR)" && npm install --silent
 	cd "$(MINIAPP_DIR)" && npm install --silent
+	cd "$(MOBILE_DIR)" && npm install --silent
 	@echo " "
 	@echo "Dependencies synced!"
 
@@ -54,6 +56,7 @@ lint:
 	cd "$(SHARED_DIR)" && npm run lint && npm run typecheck
 	cd "$(FRONTEND_DIR)" && npm run lint && npm run typecheck
 	cd "$(MINIAPP_DIR)" && npm run lint && npm run typecheck
+	cd "$(MOBILE_DIR)" && npm run lint && npm run typecheck
 	@echo " "
 	@echo "Linting completed!"
 
@@ -63,13 +66,13 @@ test:
 	cd "$(SHARED_DIR)" && npm run test:coverage
 	cd "$(FRONTEND_DIR)" && npm run test:coverage
 	cd "$(MINIAPP_DIR)" && npm run test:coverage
+	cd "$(MOBILE_DIR)" && npm run test
 	@echo " "
 	@echo "Tests completed!"
 
 openapi:
 	cd "$(BACKEND_DIR)" && uv run python ../../tools/export_openapi.py --output "$(CURDIR)/openapi/foodize.openapi.json"
-	cd "$(FRONTEND_DIR)" && npm run api:generate
-	cd "$(MINIAPP_DIR)" && npm run api:generate
+	cd "$(FRONTEND_DIR)" && npm run api:types
 	@echo " "
 	@echo "OpenAPI schema and typed clients generated!"
 

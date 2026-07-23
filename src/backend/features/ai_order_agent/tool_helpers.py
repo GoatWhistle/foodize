@@ -2,7 +2,8 @@ import hashlib
 import json
 import re
 import uuid
-from typing import Any
+
+from pydantic import JsonValue
 
 from features.cart.schemas import CartItemIn, CartResponse, CartSelectedOption
 from features.orders.exceptions import (
@@ -33,15 +34,15 @@ def order_confirm_key(identifier: str) -> str:
 _ITEM_MARKER_RE = re.compile(r"<<<\s*/?\s*(?:END_)?ITEM\s*>>>", re.IGNORECASE)
 
 
-def _strip_item_markers(text: str) -> str:
+def strip_item_markers(text: str) -> str:
     return _ITEM_MARKER_RE.sub("", text)
 
 
-def _dumps(payload: object) -> str:
+def dumps(payload: object) -> str:
     return json.dumps(payload, ensure_ascii=False, default=str)
 
 
-def _parse_uuid(value: object) -> uuid.UUID | None:
+def parse_uuid(value: object) -> uuid.UUID | None:
     if not value:
         return None
     try:
@@ -50,15 +51,15 @@ def _parse_uuid(value: object) -> uuid.UUID | None:
         return None
 
 
-def _existing_items(cart: CartResponse) -> list[CartItemIn]:
+def existing_items(cart: CartResponse) -> list[CartItemIn]:
     items: list[CartItemIn] = []
     for it in cart.items:
         items.append(
             CartItemIn(
-                menu_item_id=it.menuItem.id,
-                name=it.menuItem.name,
-                price=it.menuItem.price,
-                image_url=it.menuItem.image_url,
+                menu_item_id=it.menu_item.id,
+                name=it.menu_item.name,
+                price=it.menu_item.price,
+                image_url=it.menu_item.image_url,
                 quantity=it.quantity,
                 selected_option_ids=list(it.selected_option_ids),
                 selected_options=[
@@ -72,7 +73,7 @@ def _existing_items(cart: CartResponse) -> list[CartItemIn]:
     return items
 
 
-def _parse_confirm(stored: str | None) -> tuple[int | None, str | None, str | None]:
+def parse_confirm(stored: str | None) -> tuple[int | None, str | None, str | None]:
     if not stored or ":" not in stored:
         return None, None, None
     parts = stored.split(":", 2)
@@ -88,24 +89,24 @@ def _parse_confirm(stored: str | None) -> tuple[int | None, str | None, str | No
 
 def cart_state_hash(cart: CartResponse) -> str:
     parts = [str(cart.restaurant_id) if cart.restaurant_id else ""]
-    for it in sorted(cart.items, key=lambda x: str(x.menuItem.id)):
+    for it in sorted(cart.items, key=lambda x: str(x.menu_item.id)):
         option_ids = ",".join(sorted(str(o) for o in it.selected_option_ids))
-        parts.append(f"{it.menuItem.id}x{it.quantity}:{option_ids}")
+        parts.append(f"{it.menu_item.id}x{it.quantity}:{option_ids}")
     return hashlib.sha256("|".join(parts).encode()).hexdigest()[:16]
 
 
-def cart_summary(cart: CartResponse) -> dict[str, Any]:
-    items = []
+def cart_summary(cart: CartResponse) -> dict[str, JsonValue]:
+    items: list[JsonValue] = []
     total = 0
     for it in cart.items:
         options_sum = sum(o.price_delta for o in it.selected_options)
-        unit = it.menuItem.price + options_sum
+        unit = it.menu_item.price + options_sum
         line_total = unit * it.quantity
         total += line_total
         items.append(
             {
-                "menu_item_id": str(it.menuItem.id),
-                "name": it.menuItem.name,
+                "menu_item_id": str(it.menu_item.id),
+                "name": it.menu_item.name,
                 "quantity": it.quantity,
                 "unit_price": unit,
                 "options": [o.name for o in it.selected_options],

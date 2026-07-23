@@ -1,21 +1,23 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { TrashIcon, TagIcon, XIcon } from "@phosphor-icons/react";
+import { TrashIcon } from "@phosphor-icons/react";
 import { useShallow } from "zustand/react/shallow";
 import { useCartStore } from "@shared/store/useCartStore.instance";
 import { useOrdersStore } from "@shared/store/useOrdersStore.instance";
+import { useAuthStore } from "@shared/store/useAuthStore.instance";
 import { OrderButton } from "@shared/components/OrderButton/OrderButton";
-import { promoService } from "@shared/services/promoService";
 import { orderService } from "@shared/services/orderService";
 import { translateApiError } from "@shared/utils/translateApiError";
 import { useFocusTrap } from "@shared/hooks/useFocusTrap";
 import { useTranslation } from "@shared/i18n/useTranslation";
-import type { PromoValidate, OrderLoadEstimate } from "@shared/types/models";
+import type { OrderLoadEstimate } from "@shared/types/models";
 import {
   CartItemsList,
   PickupTimeSection,
   LoadEstimateSection,
 } from "./CartDrawerSections";
+import { useCartPromo, CartPromoSection } from "./CartDrawerPromo";
+import { useCartLoyalty, CartLoyaltySections } from "./CartDrawerLoyalty";
 import s from "./CartDrawer.module.css";
 import { formatPrice } from "@shared/utils/price";
 
@@ -24,8 +26,6 @@ const QUEUE_WARNING_EXTRA_MINUTES = 10;
 const MAX_PICKUP_DAYS = 7;
 const MS_PER_MINUTE = 60_000;
 const MS_PER_DAY = 24 * 60 * MS_PER_MINUTE;
-
-type AppliedPromo = PromoValidate & { originalTotal: number };
 
 interface CartDrawerProps {
   onClose: () => void;
@@ -60,13 +60,11 @@ export const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartD
     );
   const total = useCartStore((s) => s.cartTotal());
   const orders = useOrdersStore((s) => s.orders);
+  const authUser = useAuthStore((s) => s.user);
+  const canLoyalty = authUser?.permissions.includes("loyalty.read") ?? false;
   const isFirstOrder = orders.length === 0;
   const drawerRef = useFocusTrap<HTMLDivElement>({ onEscape: onClose });
 
-  const [promoCode, setPromoCode] = useState("");
-  const [appliedPromo, setAppliedPromo] = useState<AppliedPromo | null>(null);
-  const [promoError, setPromoError] = useState("");
-  const [promoLoading, setPromoLoading] = useState(false);
   const [comment, setComment] = useState("");
   const [pickupMode, setPickupMode] = useState<"asap" | "scheduled">("asap");
   const [requestedPickupAt, setRequestedPickupAt] = useState("");
@@ -76,18 +74,18 @@ export const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartD
   const [estimateLoading, setEstimateLoading] = useState(false);
   const isClosed = !isRestaurantOpen;
 
+  const promo = useCartPromo({ cartRestaurantId, cart, total, isFirstOrder });
+  const { appliedPromo } = promo;
+  const finalTotal = appliedPromo?.discounted_amount != null ? appliedPromo.discounted_amount : total;
+  const loyalty = useCartLoyalty({ cartRestaurantId, canLoyalty, cart, finalTotal });
+  const { redeemPoints, effectiveRewardId } = loyalty;
+  const displayTotal = Math.max(0, finalTotal - redeemPoints);
+
   useEffect(() => {
-    setAppliedPromo(null);
-    setPromoCode("");
-    setPromoError("");
     setComment("");
     setPickupMode("asap");
     setRequestedPickupAt("");
   }, [cartRestaurantId]);
-
-  useEffect(() => {
-    if (appliedPromo) setAppliedPromo(null);
-  }, [cart, appliedPromo]);
 
   useEffect(() => {
     if (!cartRestaurantId) { setLoadEstimate(null); return; }
@@ -106,24 +104,6 @@ export const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartD
     return () => { state.cancelled = true; };
   }, [cartRestaurantId]);
 
-  const handleApplyPromo = async () => {
-    if (!promoCode.trim() || !cartRestaurantId) return;
-    setPromoLoading(true);
-    setPromoError("");
-    try {
-      const response = await promoService.validate(promoCode.trim(), cartRestaurantId, total, isFirstOrder);
-      setAppliedPromo({ ...response.data.data, originalTotal: total });
-    } catch (err) {
-      setPromoError(translateApiError(err, t("order.cart.promoInvalid")));
-      setAppliedPromo(null);
-    } finally {
-      setPromoLoading(false);
-    }
-  };
-
-  const handleRemovePromo = () => { setAppliedPromo(null); setPromoCode(""); setPromoError(""); };
-
-  const finalTotal = appliedPromo?.discounted_amount != null ? appliedPromo.discounted_amount : total;
   const orderingUnavailable = Boolean(loadEstimate && !loadEstimate.ordering_available);
   const hasQueueWarning = Boolean(
     loadEstimate &&
@@ -149,7 +129,13 @@ export const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartD
     setPlacing(true);
     setError("");
     try {
-      const order = await placeOrder(appliedPromo?.code ?? null, comment, selectedPickupIso);
+      const order = await placeOrder(
+        appliedPromo?.code ?? null,
+        comment,
+        selectedPickupIso,
+        redeemPoints,
+        effectiveRewardId,
+      );
       onClose();
       if (order) void navigate(`/orders/${order.display_id}`);
     } catch (err) {
@@ -185,40 +171,9 @@ export const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartD
             onIncrease={(menuItem, selectedOptions) => { void addToCart(menuItem, cartRestaurantId as string, selectedOptions); }}
           />
 
-          {!appliedPromo ? (
-            <div style={{ marginTop: 16 }}>
-              <div style={{ display: "flex", gap: 8 }}>
-                <input
-                  className="form-input"
-                  placeholder={t("order.cart.promoPlaceholder")}
-                  value={promoCode}
-                  onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); }}
-                  onKeyDown={(e) => { if (e.key === "Enter") void handleApplyPromo(); }}
-                  style={{ flex: 1, height: 40, fontSize: "var(--text-base)", borderRadius: "var(--r-md)", letterSpacing: "0.05em" }}
-                />
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => { void handleApplyPromo(); }}
-                  disabled={promoLoading || !promoCode.trim()}
-                  style={{ height: 40, padding: "0 14px", fontSize: "var(--text-base)" }}
-                >
-                  {promoLoading ? "..." : t("common.actions.apply")}
-                </button>
-              </div>
-              {promoError && <div className="form-error" style={{ marginTop: 6, fontSize: "var(--text-base)" }}>{promoError}</div>}
-            </div>
-          ) : (
-            <div style={{ marginTop: 16, padding: "10px 14px", background: "var(--color-success-bg)", border: "1px solid var(--color-success-border)", borderRadius: "var(--r-md)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "var(--text-base)", color: "var(--color-success)", fontWeight: 700 }}>
-                <TagIcon size={14} weight="fill" />
-                {appliedPromo.code}
-                {appliedPromo.discount_type === "PERCENT" ? ` −${appliedPromo.discount_value}%` : ` −${appliedPromo.discount_value} ₽`}
-              </div>
-              <button onClick={handleRemovePromo} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-success)", display: "flex" }}>
-                <XIcon size={14} weight="bold" />
-              </button>
-            </div>
-          )}
+          <CartPromoSection promo={promo} />
+
+          <CartLoyaltySections loyalty={loyalty} />
 
           <div className={s['total']} style={{ marginTop: 16 }}>
             {appliedPromo && (
@@ -227,8 +182,8 @@ export const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartD
                 <span>{formatPrice(total)}</span>
               </div>
             )}
-            <span className={s['totalLabel']}>{appliedPromo ? t("order.cart.totalWithDiscount") : t("order.cart.total")}</span>
-            <span className={s['totalValue']} style={appliedPromo ? { color: "var(--color-success)" } : undefined}>{formatPrice(finalTotal)}</span>
+            <span className={s['totalLabel']}>{appliedPromo || redeemPoints > 0 ? t("order.cart.totalWithDiscount") : t("order.cart.total")}</span>
+            <span className={s['totalValue']} style={appliedPromo || redeemPoints > 0 ? { color: "var(--color-success)" } : undefined}>{formatPrice(displayTotal)}</span>
           </div>
 
           <textarea
@@ -237,7 +192,7 @@ export const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartD
             value={comment}
             maxLength={500}
             onChange={(e) => { setComment(e.target.value); }}
-            style={{ marginTop: 14, minHeight: 72, resize: "vertical", fontSize: "var(--text-base)", lineHeight: 1.45 }}
+            style={{ marginTop: 14, minHeight: 72, resize: "vertical", fontSize: "var(--text-md)", lineHeight: 1.45 }}
           />
 
           <PickupTimeSection
@@ -260,7 +215,7 @@ export const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartD
           />
 
           <OrderButton
-            className="btn-full"
+            className={`btn-full ${s['submit'] ?? ''}`}
             style={{ marginTop: 16 }}
             onClick={() => { void handlePlaceOrder(); }}
             isLoading={placing}
@@ -268,7 +223,7 @@ export const CartDrawer = ({ onClose, isRestaurantOpen = true, onHaptic }: CartD
           >
             {isClosed || orderingUnavailable
               ? t("order.checkout.paused")
-              : t("order.checkout.submit", { total: formatPrice(finalTotal) })}
+              : t("order.checkout.submit", { total: formatPrice(displayTotal) })}
           </OrderButton>
 
           {error && <div className="form-error" style={{ marginTop: "12px" }}>{error}</div>}

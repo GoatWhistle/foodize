@@ -1,11 +1,11 @@
-from typing import Any
+from pydantic import JsonValue
 
 from infra.llm.base import LLMResponse, ToolCall, ToolSpec, Usage
 
 LOOP_TOOLS = [ToolSpec(name="loop", description="d", input_schema={"type": "object"})]
 
 
-def tool_response(name: str, args: dict[str, Any], call_id: str = "call-1") -> LLMResponse:
+def tool_response(name: str, args: dict[str, JsonValue], call_id: str = "call-1") -> LLMResponse:
     return LLMResponse(
         text="",
         tool_calls=[ToolCall(id=call_id, name=name, arguments=args)],

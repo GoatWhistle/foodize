@@ -39,27 +39,10 @@
   box-shadow: none;
 }
 
-.btn-secondary {
-  background: var(--bg-card);
-  color: var(--text-1);
-  border: 1px solid var(--border-mid);
-  box-shadow: var(--shadow-sm);
-}
-
-.btn-secondary:hover {
-  background: var(--bg-raised);
-  border-color: var(--border-hi);
-}
-
 .btn-ghost {
   background: transparent;
   color: var(--text-3);
   padding: 10px 16px;
-}
-
-.btn-ghost:hover {
-  color: var(--text-1);
-  background: var(--bg-surface);
 }
 
 .btn-sm {
@@ -67,10 +50,6 @@
   padding: 8px 12px;
   min-height: 40px;
   letter-spacing: 0.04em;
-}
-
-.btn-full {
-  width: 100%;
 }
 
 .btn-icon {
@@ -81,11 +60,6 @@
 }
 
 @media (max-width: 599px) {
-  .btn {
-    padding: 12px 20px;
-    min-height: 44px;
-  }
-
   .btn-sm {
     padding: 7px 12px;
   }

@@ -89,6 +89,10 @@ class TestHandlers:
                 new_callable=AsyncMock,
                 return_value="{}",
             ),
+            patch(
+                "features.notifications.handlers._dispatch_native_push",
+                new_callable=AsyncMock,
+            ),
         ):
             await handle_order_status_changed(session, event)
         assert "order.status_changed" in caplog.text
@@ -104,6 +108,10 @@ class TestHandlers:
                 return_value="{}",
             ),
             patch("features.notifications.handlers.enqueue_event", enqueue),
+            patch(
+                "features.notifications.handlers._dispatch_native_push",
+                new_callable=AsyncMock,
+            ),
         ):
             await handle_order_status_changed(session, event)
         enqueue.assert_awaited_once()
@@ -119,9 +127,79 @@ class TestHandlers:
                 return_value="{}",
             ),
             patch("features.notifications.handlers.enqueue_event", enqueue),
+            patch(
+                "features.notifications.handlers._dispatch_native_push",
+                new_callable=AsyncMock,
+            ),
         ):
             await handle_order_status_changed(session, event)
         enqueue.assert_not_awaited()
+
+    async def test_status_changed_dispatches_native_push(self) -> None:
+        event = _make_status_event()
+        session = _make_session()
+        devices = [object()]
+        send = AsyncMock(return_value=1)
+        with (
+            patch(
+                "features.notifications.handlers._create_user_notification",
+                new_callable=AsyncMock,
+                return_value="{}",
+            ),
+            patch(
+                "features.notifications.handlers.get_active_devices_for_user",
+                new_callable=AsyncMock,
+                return_value=devices,
+            ),
+            patch("features.notifications.handlers.send_native_push", send),
+        ):
+            await handle_order_status_changed(session, event)
+        send.assert_awaited_once()
+
+    async def test_status_changed_survives_push_failure(self) -> None:
+        event = _make_status_event()
+        session = _make_session()
+        with (
+            patch(
+                "features.notifications.handlers._create_user_notification",
+                new_callable=AsyncMock,
+                return_value="{}",
+            ),
+            patch(
+                "features.notifications.handlers.get_active_devices_for_user",
+                new_callable=AsyncMock,
+                return_value=[object()],
+            ),
+            patch(
+                "features.notifications.handlers.send_native_push",
+                new_callable=AsyncMock,
+                side_effect=RuntimeError("provider down"),
+            ),
+        ):
+            await handle_order_status_changed(session, event)
+        assert session.info["notification_payload"] == UserNotificationMessage(
+            user_id=event.user_id, payload="{}"
+        )
+
+    async def test_status_changed_skips_push_without_devices(self) -> None:
+        event = _make_status_event()
+        session = _make_session()
+        send = AsyncMock()
+        with (
+            patch(
+                "features.notifications.handlers._create_user_notification",
+                new_callable=AsyncMock,
+                return_value="{}",
+            ),
+            patch(
+                "features.notifications.handlers.get_active_devices_for_user",
+                new_callable=AsyncMock,
+                return_value=[],
+            ),
+            patch("features.notifications.handlers.send_native_push", send),
+        ):
+            await handle_order_status_changed(session, event)
+        send.assert_not_awaited()
 
     async def test_handle_feedback_requested_stages_payload(self) -> None:
         event = FeedbackRequestedEvent(

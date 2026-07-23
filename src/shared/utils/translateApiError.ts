@@ -52,7 +52,8 @@ const toParams = (params: Record<string, unknown> | undefined): Record<string, s
   const result: Record<string, string | number> = {};
   for (const [key, value] of Object.entries(params ?? {})) {
     if (typeof value === "string" || typeof value === "number") result[key] = value;
-    else if (value != null) result[key] = String(value);
+    else if (typeof value === "boolean" || typeof value === "bigint") result[key] = String(value);
+    else if (value != null) result[key] = JSON.stringify(value);
   }
   return result;
 };

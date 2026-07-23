@@ -8,14 +8,12 @@ import type {
   SuccessResponse,
 } from "@shared/types/models";
 
-type VendorCreate = components["schemas"]["VendorCreate"];
 type VendorResponse = components["schemas"]["VendorResponse"];
 type FinanceAnalytics = components["schemas"]["FinanceAnalytics"];
 type AdvancedAnalytics = components["schemas"]["AdvancedAnalytics"];
 
 export const vendorService = {
-  createProfile: (data: VendorCreate) =>
-    api.post<SuccessResponse<VendorResponse>>("/vendors/", data),
+  createProfile: () => api.post<SuccessResponse<VendorResponse>>("/vendors/"),
   getMyProfile: () => api.get<SuccessResponse<VendorResponse>>("/vendors/"),
   getFinance: (params?: Record<string, unknown>) =>
     api.get<SuccessResponse<FinanceAnalytics>>("/vendors/finance", { params }),

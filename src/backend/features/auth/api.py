@@ -14,7 +14,7 @@ from settings.config.app_config import settings
 from shared.response import build_response
 from shared.schemas.response import SuccessResponse
 
-router = APIRouter(tags=["Auth"])
+router = APIRouter(prefix=settings.api.v1.auth.prefix, tags=[settings.api.v1.auth.tag])
 
 
 @router.post("/register", response_model=SuccessResponse[UserRead])

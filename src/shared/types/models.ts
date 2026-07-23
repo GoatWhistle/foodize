@@ -69,6 +69,16 @@ export type AdminVendor = Schemas["AdminVendorResponse"];
 export type AdminReview = Schemas["AdminReviewResponse"];
 export type PlatformStats = Schemas["PlatformStats"];
 
+export type LoyaltyProgram = Schemas["LoyaltyProgramResponse"];
+export type LoyaltyProgramUpsert = Schemas["LoyaltyProgramUpsert"];
+export type LoyaltyProgramType = Schemas["LoyaltyProgramType"];
+export type LoyaltyTierBasis = Schemas["LoyaltyTierBasis"];
+export type LoyaltyTier = Schemas["LoyaltyTierResponse"];
+export type LoyaltyTierInput = Schemas["LoyaltyTierInput"];
+export type LoyaltyReward = Schemas["LoyaltyRewardResponse"];
+export type LoyaltyRewardType = Schemas["LoyaltyRewardType"];
+export type LoyaltyStatus = Schemas["LoyaltyStatusResponse"];
+
 export type Permission = Schemas["Permission"];
 export type Pagination = Schemas["Pagination"];
 export type Meta = Schemas["Meta"];

@@ -9,15 +9,13 @@ from features.users.models import User
 from features.vendors import crud
 from features.vendors.exceptions import VendorAlreadyExistsException
 from features.vendors.models import VendorProfile
-from features.vendors.schemas import VendorCreate, VendorResponse
+from features.vendors.schemas import VendorResponse
 
 
-async def register_vendor(
-    session: AsyncSession, user: User, vendor_in: VendorCreate
-) -> VendorResponse:
+async def register_vendor(session: AsyncSession, user: User) -> VendorResponse:
     if await crud.get_vendor_by_user_id(session, user.id):
         raise VendorAlreadyExistsException()
-    vendor = await crud.create_vendor_profile(session=session, user=user, vendor_in=vendor_in)
+    vendor = await crud.create_vendor_profile(session=session, user=user)
     return VendorResponse.model_validate(vendor)
 
 

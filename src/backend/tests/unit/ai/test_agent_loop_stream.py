@@ -1,6 +1,7 @@
 import pytest
 
-from infra.llm.agent import LLMBudgetExceededError, stream_agent
+from infra.llm.agent import stream_agent
+from infra.llm.agent_run import LLMBudgetExceededError
 from infra.llm.base import LLMResponse, Message, Role, ToolCall, Usage
 
 from .agent_responses import (
@@ -19,7 +20,7 @@ async def test_stream_agent_forced_final_step_counts_against_budget() -> None:
         [tool_response("loop", {}), tool_response("loop", {}), heavy_text_response("forced")]
     )
 
-    async def execute(call: ToolCall) -> str:
+    async def execute(_call: ToolCall) -> str:
         return "again"
 
     with pytest.raises(LLMBudgetExceededError):
@@ -63,7 +64,7 @@ async def test_stream_agent_streams_deltas_with_single_generation_per_step() -> 
 async def test_stream_agent_emits_text_incrementally_without_tools() -> None:
     client = FakeLLMClient([text_response("Привет, мир!")], delta_size=3)
 
-    async def execute(call: ToolCall) -> str:  # pragma: no cover
+    async def execute(_call: ToolCall) -> str:  # pragma: no cover
         raise AssertionError("execute should not be called")
 
     chunks = [
@@ -117,7 +118,7 @@ async def test_stream_agent_streams_interstitial_text_before_tools() -> None:
     )
     client = FakeLLMClient([thinking, text_response("Готово")])
 
-    async def execute(call: ToolCall) -> str:
+    async def execute(_call: ToolCall) -> str:
         return "{}"
 
     chunks = [
@@ -138,7 +139,7 @@ async def test_stream_agent_appends_truncated_notice() -> None:
     truncated = LLMResponse(text="обрыв", tool_calls=[], stop_reason="max_tokens", usage=Usage())
     client = FakeLLMClient([truncated])
 
-    async def execute(call: ToolCall) -> str:  # pragma: no cover
+    async def execute(_call: ToolCall) -> str:  # pragma: no cover
         raise AssertionError("execute should not be called")
 
     chunks = [
@@ -162,7 +163,7 @@ async def test_stream_agent_forces_final_answer_when_step_budget_exhausted() -> 
         [*(tool_response("loop", {}) for _ in range(2)), text_response("Привет")]
     )
 
-    async def execute(call: ToolCall) -> str:
+    async def execute(_call: ToolCall) -> str:
         return "{}"
 
     chunks = [
@@ -186,7 +187,7 @@ async def test_stream_agent_forces_final_answer_when_step_budget_exhausted() -> 
 async def test_stream_agent_notices_when_exhausted_final_answer_is_empty() -> None:
     client = FakeLLMClient([*(tool_response("loop", {}) for _ in range(2)), text_response("")])
 
-    async def execute(call: ToolCall) -> str:
+    async def execute(_call: ToolCall) -> str:
         return "{}"
 
     chunks = [
@@ -208,7 +209,7 @@ async def test_stream_agent_notices_when_exhausted_final_answer_is_empty() -> No
 async def test_stream_agent_raises_when_token_budget_exceeded() -> None:
     client = FakeLLMClient([heavy_tool_response(), heavy_tool_response(), heavy_tool_response()])
 
-    async def execute(call: ToolCall) -> str:
+    async def execute(_call: ToolCall) -> str:
         return "again"
 
     with pytest.raises(LLMBudgetExceededError):

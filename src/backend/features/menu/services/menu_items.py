@@ -1,4 +1,5 @@
 import uuid
+from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,9 +15,12 @@ from features.menu.schemas import (
     MenuItemResponse,
     MenuItemUpdate,
 )
-from features.menu.services._shared import get_owned_menu_item
+from features.menu.services.shared import get_owned_menu_item
 from features.restaurants.dependencies import get_restaurant_and_check_ownership
 from infra.storage import UnsupportedImageType, delete_image, upload_image
+
+if TYPE_CHECKING:
+    from features.admin.audit_log.schemas import AuditDetails
 
 
 async def add_menu_item(
@@ -64,7 +68,7 @@ async def update_menu_item_for_vendor(
     actor_id: uuid.UUID | None = None,
 ) -> MenuItemResponse:
     item = await get_owned_menu_item(session, restaurant_id, item_id, vendor_id)
-    old_data = {
+    old_data: AuditDetails = {
         "name": item.name,
         "price": item.price,
         "is_available": item.is_available,

@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Iterator
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -15,37 +16,58 @@ from shared.enums.order_status import OrderStatus
 from .order_helpers import make_order, make_session
 
 
-async def test_complete_order_raises_not_found() -> None:
-    with patch(
-        "features.orders.crud.order.get_order_by_identifier_for_update",
-        new_callable=AsyncMock,
-        return_value=None,
+@pytest.fixture(autouse=True)
+def _loyalty_noop() -> Iterator[None]:
+    with (
+        patch(
+            "features.orders.services.order_status.loyalty_service.accrue_for_order",
+            new_callable=AsyncMock,
+        ),
+        patch(
+            "features.orders.services.order_status.loyalty_service.release_for_order",
+            new_callable=AsyncMock,
+        ),
     ):
-        with pytest.raises(OrderNotFoundException):
-            await complete_order(make_session(), uuid.uuid4(), uuid.uuid4())
+        yield
+
+
+async def test_complete_order_raises_not_found() -> None:
+    with (
+        patch(
+            "features.orders.crud.order.get_order_by_identifier_for_update",
+            new_callable=AsyncMock,
+            return_value=None,
+        ),
+        pytest.raises(OrderNotFoundException),
+    ):
+        await complete_order(make_session(), uuid.uuid4(), uuid.uuid4())
 
 
 async def test_complete_order_raises_access_denied() -> None:
     order = make_order(status=OrderStatus.READY)
-    with patch(
-        "features.orders.crud.order.get_order_by_identifier_for_update",
-        new_callable=AsyncMock,
-        return_value=order,
+    with (
+        patch(
+            "features.orders.crud.order.get_order_by_identifier_for_update",
+            new_callable=AsyncMock,
+            return_value=order,
+        ),
+        pytest.raises(OrderAccessDeniedException),
     ):
-        with pytest.raises(OrderAccessDeniedException):
-            await complete_order(make_session(), order.id, uuid.uuid4())
+        await complete_order(make_session(), order.id, uuid.uuid4())
 
 
 async def test_complete_order_raises_not_completable() -> None:
     user_id = uuid.uuid4()
     order = make_order(status=OrderStatus.PENDING, user_id=user_id)
-    with patch(
-        "features.orders.crud.order.get_order_by_identifier_for_update",
-        new_callable=AsyncMock,
-        return_value=order,
+    with (
+        patch(
+            "features.orders.crud.order.get_order_by_identifier_for_update",
+            new_callable=AsyncMock,
+            return_value=order,
+        ),
+        pytest.raises(OrderNotCompletableException),
     ):
-        with pytest.raises(OrderNotCompletableException):
-            await complete_order(make_session(), order.id, user_id)
+        await complete_order(make_session(), order.id, user_id)
 
 
 async def test_complete_order_success() -> None:

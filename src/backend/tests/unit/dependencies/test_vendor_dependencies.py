@@ -49,13 +49,13 @@ class TestVendorDependencies:
         mock_session.execute.return_value = mock_result
 
         with patch(
-            "features.vendors.dependencies._ensure_admin_vendor_profile",
+            "features.vendors.dependencies.ensure_admin_vendor_profile",
             new_callable=AsyncMock,
             return_value="ADMIN_PROFILE",
         ) as ensure_admin_vendor:
             res = await get_current_vendor(mock_session, current_user)
 
-        assert res == "ADMIN_PROFILE"  # type: ignore[comparison-overlap]
+        assert res is ensure_admin_vendor.return_value
         ensure_admin_vendor.assert_awaited_once_with(mock_session, current_user)
 
     async def test_get_current_vendor_approves_admin_profile(self) -> None:
@@ -76,13 +76,13 @@ class TestVendorDependencies:
         mock_session.execute.return_value = mock_result
 
         with patch(
-            "features.vendors.dependencies._ensure_admin_vendor_profile",
+            "features.vendors.dependencies.ensure_admin_vendor_profile",
             new_callable=AsyncMock,
             return_value="ADMIN_PROFILE",
         ) as ensure_admin_vendor:
             res = await get_current_vendor(mock_session, current_user)
 
-        assert res == "ADMIN_PROFILE"  # type: ignore[comparison-overlap]
+        assert res is ensure_admin_vendor.return_value
         ensure_admin_vendor.assert_awaited_once_with(mock_session, current_user)
 
     async def test_get_current_vendor_requires_permission(self) -> None:
@@ -92,19 +92,23 @@ class TestVendorDependencies:
             await get_current_vendor(AsyncMock(), current_user)
 
     async def test_ensure_no_vendor_profile_raises(self) -> None:
-        with patch(
-            "features.vendors.dependencies.get_vendor_by_user_id",
-            new_callable=AsyncMock,
-            return_value=MagicMock(),
+        with (
+            patch(
+                "features.vendors.dependencies.get_vendor_by_user_id",
+                new_callable=AsyncMock,
+                return_value=MagicMock(),
+            ),
+            pytest.raises(VendorAlreadyExistsException),
         ):
-            with pytest.raises(VendorAlreadyExistsException):
-                await ensure_no_vendor_profile(MagicMock(id=uuid.uuid4()), MagicMock())
+            await ensure_no_vendor_profile(MagicMock(id=uuid.uuid4()), MagicMock())
 
     async def test_get_vendor_or_404_raises(self) -> None:
-        with patch(
-            "features.vendors.dependencies.get_vendor_by_user_id",
-            new_callable=AsyncMock,
-            return_value=None,
+        with (
+            patch(
+                "features.vendors.dependencies.get_vendor_by_user_id",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
+            pytest.raises(NotFoundException),
         ):
-            with pytest.raises(NotFoundException):
-                await get_vendor_or_404(MagicMock(id=uuid.uuid4()), MagicMock())
+            await get_vendor_or_404(MagicMock(id=uuid.uuid4()), MagicMock())

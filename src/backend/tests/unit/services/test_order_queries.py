@@ -39,13 +39,15 @@ def _restaurant(
 
 
 async def test_estimate_load_raises_if_restaurant_not_found() -> None:
-    with patch(
-        "features.restaurants.crud.get_restaurant_by_id",
-        new_callable=AsyncMock,
-        return_value=None,
+    with (
+        patch(
+            "features.restaurants.crud.get_restaurant_by_id",
+            new_callable=AsyncMock,
+            return_value=None,
+        ),
+        pytest.raises(RestaurantNotFoundException),
     ):
-        with pytest.raises(RestaurantNotFoundException):
-            await estimate_restaurant_load(AsyncMock(), uuid.uuid4())
+        await estimate_restaurant_load(AsyncMock(), uuid.uuid4())
 
 
 async def test_estimate_load_restaurant_closed() -> None:
@@ -143,22 +145,26 @@ async def test_get_user_orders_returns_list() -> None:
 
 
 async def test_get_order_raises_if_not_found() -> None:
-    with patch(
-        "features.orders.crud.order.get_order_by_id", new_callable=AsyncMock, return_value=None
+    with (
+        patch(
+            "features.orders.crud.order.get_order_by_id", new_callable=AsyncMock, return_value=None
+        ),
+        pytest.raises(OrderNotFoundException),
     ):
-        with pytest.raises(OrderNotFoundException):
-            await get_order(AsyncMock(), uuid.uuid4(), uuid.uuid4())
+        await get_order(AsyncMock(), uuid.uuid4(), uuid.uuid4())
 
 
 async def test_get_order_raises_if_not_owner() -> None:
     order = MagicMock()
     order.user_id = uuid.uuid4()
 
-    with patch(
-        "features.orders.crud.order.get_order_by_id", new_callable=AsyncMock, return_value=order
+    with (
+        patch(
+            "features.orders.crud.order.get_order_by_id", new_callable=AsyncMock, return_value=order
+        ),
+        pytest.raises(OrderAccessDeniedException),
     ):
-        with pytest.raises(OrderAccessDeniedException):
-            await get_order(AsyncMock(), order.id, uuid.uuid4())
+        await get_order(AsyncMock(), order.id, uuid.uuid4())
 
 
 async def test_get_order_returns_response() -> None:

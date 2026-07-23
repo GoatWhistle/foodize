@@ -23,6 +23,9 @@ describe("components barrel", () => {
       "StarRatingInput",
       "ReviewCard",
       "ReviewsModal",
+      "BottomNav",
+      "CategoryChips",
+      "RestaurantHeroShell",
     ];
     for (const name of expected) {
       expect(components[name as keyof typeof components]).toBeTruthy();

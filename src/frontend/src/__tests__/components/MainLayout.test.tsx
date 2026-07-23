@@ -35,7 +35,7 @@ describe('MainLayout', () => {
     );
 
     expect(screen.getByLabelText(t('profile.nav.home'))).toBeInTheDocument();
-    expect(screen.getByLabelText(t('profile.nav.profile'))).toBeInTheDocument();
+    expect(screen.getByLabelText(t('profile.nav.account'))).toBeInTheDocument();
     expect(screen.getByLabelText(t('profile.notifications.title'))).toBeInTheDocument();
   });
 

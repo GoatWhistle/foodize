@@ -18,7 +18,7 @@ describe('orderService', () => {
     const mockData = { id: '1', status: 'PENDING' };
     mock.onPost('/orders/').reply(201, mockData);
 
-    const result = await orderService.create({ restaurant_id: '2', items: [] });
+    const result = await orderService.create({ restaurant_id: '2', items: [], redeem_points: 0 });
     expect(result.data).toEqual(mockData);
   });
 
@@ -70,7 +70,7 @@ describe('orderService', () => {
   it('create rejects on 422 response', async () => {
     mock.onPost('/orders/').reply(422, { detail: 'invalid order' });
     await expect(
-      orderService.create({ restaurant_id: '2', items: [] })
+      orderService.create({ restaurant_id: '2', items: [], redeem_points: 0 })
     ).rejects.toMatchObject({ response: { status: 422 } });
   });
 

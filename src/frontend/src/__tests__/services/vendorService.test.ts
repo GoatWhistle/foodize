@@ -2,9 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import MockAdapter from 'axios-mock-adapter';
 import { api } from '../../services/api';
 import { vendorService } from '@shared/services/vendorService.js';
-import type { StaffRequestStatus, Schemas } from '@shared/types/models';
-
-type VendorCreate = Schemas['VendorCreate'];
+import type { StaffRequestStatus } from '@shared/types/models';
 
 describe('vendorService', () => {
   let mock: MockAdapter;
@@ -18,10 +16,9 @@ describe('vendorService', () => {
   });
 
   it('createProfile sends POST to /vendors/', async () => {
-    const mockData = { name: 'My Resto', description: 'Good food' };
-    mock.onPost('/vendors/').reply(200, { id: 'v1', ...mockData });
+    mock.onPost('/vendors/').reply(200, { id: 'v1', name: 'My Resto' });
 
-    const result = await vendorService.createProfile(mockData as unknown as VendorCreate);
+    const result = await vendorService.createProfile();
     expect((result.data as unknown as { name: string }).name).toBe('My Resto');
   });
 
@@ -85,7 +82,7 @@ describe('vendorService', () => {
   it('createProfile rejects on 422 response', async () => {
     mock.onPost('/vendors/').reply(422, { detail: 'invalid' });
     await expect(
-      vendorService.createProfile({})
+      vendorService.createProfile()
     ).rejects.toMatchObject({ response: { status: 422 } });
   });
 });

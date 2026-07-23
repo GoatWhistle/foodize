@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from features.admin.export import (
@@ -20,7 +20,7 @@ def _make_restaurant(rid: uuid.UUID | None = None) -> MagicMock:
     r.average_rating = 4.5
     r.review_count = 10
     r.orders_count = 200
-    r.created_at = datetime(2026, 1, 1, 0, 0)
+    r.created_at = datetime(2026, 1, 1, 0, 0, tzinfo=UTC)
     return r
 
 
@@ -29,7 +29,7 @@ def _make_vendor(vid: uuid.UUID | None = None) -> MagicMock:
     v.id = vid or uuid.uuid4()
     v.approval_status = "APPROVED"
     v.restaurants = [MagicMock(), MagicMock()]
-    v.created_at = datetime(2026, 1, 5, 9, 0)
+    v.created_at = datetime(2026, 1, 5, 9, 0, tzinfo=UTC)
     v.user = MagicMock()
     v.user.name = "Вендор Иван"
     v.user.phone_number = "79002222222"
@@ -44,7 +44,7 @@ def _make_review(rvid: uuid.UUID | None = None) -> MagicMock:
     rv.rating = 5
     rv.text = "Отлично!"
     rv.is_verified_purchase = True
-    rv.created_at = datetime(2026, 1, 20, 14, 0)
+    rv.created_at = datetime(2026, 1, 20, 14, 0, tzinfo=UTC)
     return rv
 
 

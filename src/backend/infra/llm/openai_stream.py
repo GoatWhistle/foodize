@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from collections.abc import Callable
-from typing import Any
+from collections.abc import Callable, Sequence
+from typing import TYPE_CHECKING
 
-from infra.llm.base import LLMResponse, TextDelta, ToolCall, ToolUseStart, Usage
+from infra.llm.base import JsonObject, LLMResponse, TextDelta, ToolCall, ToolUseStart, Usage
 
-_ArgumentsParser = Callable[[str, str | None], dict[str, Any]]
+if TYPE_CHECKING:
+    from infra.llm.protocols import StreamChunk, ToolCallFragment
+
+type ArgumentsParser = Callable[[str, str | None], JsonObject]
 
 
 class OpenAIStreamAccumulator:
@@ -20,7 +23,7 @@ class OpenAIStreamAccumulator:
     def usage(self) -> Usage:
         return self._usage
 
-    def absorb(self, chunk: Any) -> list[TextDelta | ToolUseStart]:
+    def absorb(self, chunk: StreamChunk) -> list[TextDelta | ToolUseStart]:
         self._absorb_usage(chunk)
         if not chunk.choices:
             return []
@@ -42,7 +45,7 @@ class OpenAIStreamAccumulator:
             events.append(TextDelta(delta.content))
         return events
 
-    def _absorb_usage(self, chunk: Any) -> None:
+    def _absorb_usage(self, chunk: StreamChunk) -> None:
         chunk_usage = getattr(chunk, "usage", None)
         if chunk_usage is not None:
             self._usage = Usage(
@@ -50,7 +53,7 @@ class OpenAIStreamAccumulator:
                 output_tokens=getattr(chunk_usage, "completion_tokens", 0) or 0,
             )
 
-    def _absorb_tool_calls(self, fragments: list[Any]) -> None:
+    def _absorb_tool_calls(self, fragments: Sequence[ToolCallFragment]) -> None:
         for fragment in fragments:
             acc = self._calls.setdefault(fragment.index, {"id": "", "name": "", "arguments": ""})
             if fragment.id:
@@ -62,7 +65,7 @@ class OpenAIStreamAccumulator:
                 if function.arguments:
                     acc["arguments"] += function.arguments
 
-    def build_response(self, parse_arguments: _ArgumentsParser) -> LLMResponse:
+    def build_response(self, parse_arguments: ArgumentsParser) -> LLMResponse:
         calls = [
             ToolCall(
                 id=acc["id"] or f"call_{index}",

@@ -1,12 +1,12 @@
 import uuid
 from datetime import date
-from typing import Any
 
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
 from features.admin import crud
+from features.admin.api.schemas import AuditLogEntry
 from features.admin.dependencies import require_admin
 from features.admin.schemas import AdvancedAnalytics, FinanceAnalytics, PlatformStats
 from features.admin.service import analytics, catalog
@@ -45,7 +45,13 @@ async def read_orders(
         offset=offset,
         limit=size,
     )
-    return build_list_response(data=orders, total=total, page=page, size=size, request=request)
+    return build_list_response(
+        data=[OrderResponse.model_validate(order) for order in orders],
+        total=total,
+        page=page,
+        size=size,
+        request=request,
+    )
 
 
 @router.get("/stats", response_model=SuccessResponse[PlatformStats])
@@ -85,7 +91,7 @@ async def read_advanced_analytics(
     return build_response(result)
 
 
-@router.get("/audit-logs")
+@router.get("/audit-logs", response_model=SuccessListResponse[AuditLogEntry])
 async def get_audit_logs(
     request: Request,
     action: str | None = Query(None),
@@ -97,7 +103,7 @@ async def get_audit_logs(
     size: int = Query(50, ge=1, le=200),
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-) -> SuccessListResponse[dict[str, Any]]:
+) -> SuccessListResponse[AuditLogEntry]:
     rows, total = await crud.get_audit_logs(
         session,
         action=action,
@@ -109,15 +115,15 @@ async def get_audit_logs(
         limit=size,
     )
     audit_entries = [
-        {
-            "id": str(r.id),
-            "actor_id": str(r.actor_id) if r.actor_id else None,
-            "action": r.action,
-            "entity_type": r.entity_type,
-            "entity_id": str(r.entity_id) if r.entity_id else None,
-            "details": r.details,
-            "created_at": r.created_at.isoformat(),
-        }
+        AuditLogEntry(
+            id=str(r.id),
+            actor_id=str(r.actor_id) if r.actor_id else None,
+            action=r.action,
+            entity_type=r.entity_type,
+            entity_id=str(r.entity_id) if r.entity_id else None,
+            details=r.details,
+            created_at=r.created_at.isoformat(),
+        )
         for r in rows
     ]
     return build_list_response(

@@ -3,21 +3,20 @@ import sys
 import uuid
 from collections.abc import AsyncIterator
 from pathlib import Path
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from ws_test_helpers import FakeWebSocket
 
-from features.notifications.ws import _forward_notifications, user_notifications_ws
+from features.notifications.ws import forward_notifications, user_notifications_ws
 
 
 class TestForwardNotifications:
     async def test_forwards_message_events(self) -> None:
         websocket = MagicMock()
 
-        async def _listen() -> AsyncIterator[dict[str, Any]]:
+        async def _listen() -> AsyncIterator[dict[str, object]]:
             yield {"type": "message", "data": json.dumps({"n": 1})}
             yield {"type": "subscribe", "data": "1"}
             yield {"type": "message", "data": b'{"n": 2}'}
@@ -26,7 +25,7 @@ class TestForwardNotifications:
         pubsub.listen = MagicMock(return_value=_listen())
 
         with patch("features.notifications.ws.safe_send_json", new_callable=AsyncMock) as send_json:
-            await _forward_notifications(websocket, pubsub)
+            await forward_notifications(websocket, pubsub)
 
         assert send_json.await_count == 2
         assert send_json.await_args_list[0].args[1] == {"n": 1}
@@ -35,14 +34,14 @@ class TestForwardNotifications:
     async def test_skips_invalid_json(self) -> None:
         websocket = MagicMock()
 
-        async def _listen() -> AsyncIterator[dict[str, Any]]:
+        async def _listen() -> AsyncIterator[dict[str, object]]:
             yield {"type": "message", "data": "{not json"}
 
         pubsub = MagicMock()
         pubsub.listen = MagicMock(return_value=_listen())
 
         with patch("features.notifications.ws.safe_send_json", new_callable=AsyncMock) as send_json:
-            await _forward_notifications(websocket, pubsub)
+            await forward_notifications(websocket, pubsub)
 
         send_json.assert_not_awaited()
 

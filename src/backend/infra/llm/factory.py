@@ -58,7 +58,7 @@ def _config_fingerprint(provider: LLMProvider, cfg: LLMConfig) -> str:
     return hashlib.sha256("|".join(parts).encode()).hexdigest()[:16]
 
 
-def _resolve_model(role: AgentRole, provider: LLMProvider, cfg: LLMConfig) -> str:
+def resolve_model(role: AgentRole, provider: LLMProvider, cfg: LLMConfig) -> str:
     if provider == LLMProvider.ANTHROPIC:
         return cfg.anthropic_order_model if role == AgentRole.ORDER else cfg.anthropic_advisor_model
     if provider == LLMProvider.OPENAI:
@@ -109,7 +109,7 @@ def _build(provider: LLMProvider, model: str, cfg: LLMConfig) -> LLMClient:
 async def get_llm_client(role: AgentRole, *, provider: LLMProvider | None = None) -> LLMClient:
     cfg = settings.llm
     provider = provider or cfg.provider
-    model = _resolve_model(role, provider, cfg)
+    model = resolve_model(role, provider, cfg)
     key = (provider.value, model, _config_fingerprint(provider, cfg))
     if key in _clients:
         return _clients[key]

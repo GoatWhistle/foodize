@@ -16,7 +16,7 @@ describe("vendorService", () => {
 
   it("createProfile posts to /vendors/", async () => {
     mock.onPost("/vendors/").reply(201, { data: { id: "v1" } });
-    const res = await vendorService.createProfile({});
+    const res = await vendorService.createProfile();
     expect(res.data).toEqual({ data: { id: "v1" } });
     expect(mock.history.post[0]?.url).toBe("/vendors/");
   });

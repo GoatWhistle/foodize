@@ -12,6 +12,7 @@ from settings.config.runtime import (
     DocsConfig,
     LLMConfig,
     LogsConfig,
+    PushConfig,
     RunConfig,
     TelegramConfig,
 )
@@ -33,6 +34,7 @@ class AppConfig(BaseConfig):
     logs: LogsConfig = LogsConfig()
     telegram: TelegramConfig = TelegramConfig()
     llm: LLMConfig = LLMConfig()
+    push: PushConfig = PushConfig()
     s3: S3Config = S3Config()
     debug: bool = False
 

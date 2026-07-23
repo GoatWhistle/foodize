@@ -7,3 +7,8 @@
 @import "./theme-dark.css";
 @import "./charts.css";
 @import "./aliases.css";
+@import "./base.css";
+@import "./animations.css";
+@import "./buttons.css";
+@import "./forms.css";
+@import "./utilities.css";

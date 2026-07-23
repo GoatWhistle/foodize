@@ -1,6 +1,25 @@
-from infra.llm.anthropic_client import _to_messages as anthropic_messages
+from anthropic.types import MessageParam
+from openai.types.chat import ChatCompletionMessageParam
+
+from infra.llm.anthropic_client import to_messages as anthropic_messages
 from infra.llm.base import Message, Role, ToolCall
-from infra.llm.openai_compatible import _to_messages as openai_messages
+from infra.llm.openai_mapping import to_messages as openai_messages
+
+
+def _blocks(message: MessageParam) -> list[dict[str, object]]:
+    content = message["content"]
+    assert not isinstance(content, str)
+    blocks = list(content)
+    for block in blocks:
+        assert isinstance(block, dict)
+    return [dict(block) for block in blocks]
+
+
+def _tool_calls(message: ChatCompletionMessageParam) -> list[dict[str, object]]:
+    assert message["role"] == "assistant"
+    raw = message.get("tool_calls")
+    assert raw is not None
+    return [dict(call) for call in raw]
 
 
 def _conversation() -> list[Message]:
@@ -31,10 +50,10 @@ def test_anthropic_merges_parallel_tool_results_into_one_user_turn() -> None:
     out = anthropic_messages(messages)
 
     assert out[0]["role"] == "assistant"
-    assert [b["type"] for b in out[0]["content"]] == ["tool_use", "tool_use"]
+    assert [b["type"] for b in _blocks(out[0])] == ["tool_use", "tool_use"]
     assert out[1]["role"] == "user"
-    assert [b["type"] for b in out[1]["content"]] == ["tool_result", "tool_result"]
-    assert {b["tool_use_id"] for b in out[1]["content"]} == {"a", "b"}
+    assert [b["type"] for b in _blocks(out[1])] == ["tool_result", "tool_result"]
+    assert {b["tool_use_id"] for b in _blocks(out[1])} == {"a", "b"}
 
 
 def test_anthropic_assistant_text_and_tool_use_in_one_turn() -> None:
@@ -43,9 +62,10 @@ def test_anthropic_assistant_text_and_tool_use_in_one_turn() -> None:
     assert out[0] == {"role": "user", "content": "найди пиццу"}
     assistant = out[1]
     assert assistant["role"] == "assistant"
-    assert assistant["content"][0] == {"type": "text", "text": "ищу"}
-    assert assistant["content"][1]["type"] == "tool_use"
-    assert assistant["content"][1]["name"] == "search"
+    blocks = _blocks(assistant)
+    assert blocks[0] == {"type": "text", "text": "ищу"}
+    assert blocks[1]["type"] == "tool_use"
+    assert blocks[1]["name"] == "search"
 
 
 def test_openai_prepends_system_and_uses_tool_role() -> None:
@@ -54,10 +74,11 @@ def test_openai_prepends_system_and_uses_tool_role() -> None:
     assert out[0] == {"role": "system", "content": "you are a bot"}
     assert out[1] == {"role": "user", "content": "найди пиццу"}
 
-    assistant = out[2]
-    assert assistant["role"] == "assistant"
-    assert assistant["tool_calls"][0]["id"] == "t1"
-    assert assistant["tool_calls"][0]["function"]["name"] == "search"
+    calls = _tool_calls(out[2])
+    assert calls[0]["id"] == "t1"
+    function = calls[0]["function"]
+    assert isinstance(function, dict)
+    assert function["name"] == "search"
 
     tool = out[3]
     assert tool["role"] == "tool"
@@ -74,5 +95,8 @@ def test_openai_serializes_tool_arguments_as_json_without_ascii_escaping() -> No
 
     out = openai_messages("sys", messages)
 
-    raw_args = out[1]["tool_calls"][0]["function"]["arguments"]
+    function = _tool_calls(out[1])[0]["function"]
+    assert isinstance(function, dict)
+    raw_args = function["arguments"]
+    assert isinstance(raw_args, str)
     assert "пицца" in raw_args

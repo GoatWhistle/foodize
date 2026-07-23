@@ -1,10 +1,10 @@
 import json
 import time
 import uuid
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from pydantic import JsonValue
 
 from features.telegram.exceptions import InvalidTelegramInitDataException
 from features.telegram.schemas import TelegramCheckResponse
@@ -19,8 +19,8 @@ from features.users.models import User
 
 def _parsed(
     telegram_id: int = 123, username: str = "user", phone: str | None = None
-) -> dict[str, Any]:
-    user: dict[str, Any] = {"id": telegram_id, "username": username}
+) -> dict[str, JsonValue]:
+    user: dict[str, JsonValue] = {"id": telegram_id, "username": username}
     if phone is not None:
         user["phone_number"] = phone
     return {
@@ -41,7 +41,7 @@ def _user() -> User:
 async def test_telegram_check_registered() -> None:
     with (
         patch(
-            "features.telegram.webapp_auth._validate_init_data",
+            "features.telegram.webapp_auth.validate_init_data",
             return_value=_parsed(),
         ),
         patch(
@@ -58,7 +58,7 @@ async def test_telegram_check_registered() -> None:
 async def test_telegram_check_new_user_returns_phone() -> None:
     with (
         patch(
-            "features.telegram.webapp_auth._validate_init_data",
+            "features.telegram.webapp_auth.validate_init_data",
             return_value=_parsed(phone="+79990001122"),
         ),
         patch(
@@ -77,11 +77,11 @@ async def test_telegram_register_creates_and_returns_tokens() -> None:
     tokens = MagicMock(access_token="a", refresh_token="r", token_type="Bearer")
     with (
         patch(
-            "features.telegram.webapp_auth._validate_init_data",
+            "features.telegram.webapp_auth.validate_init_data",
             return_value=_parsed(),
         ),
         patch(
-            "features.telegram.webapp_auth._consume_init_data_nonce",
+            "features.telegram.webapp_auth.consume_init_data_nonce",
             new_callable=AsyncMock,
         ) as consume,
         patch(
@@ -106,11 +106,11 @@ async def test_telegram_auth_existing_success() -> None:
     tokens = MagicMock(access_token="a")
     with (
         patch(
-            "features.telegram.webapp_auth._validate_init_data",
+            "features.telegram.webapp_auth.validate_init_data",
             return_value=_parsed(),
         ),
         patch(
-            "features.telegram.webapp_auth._consume_init_data_nonce",
+            "features.telegram.webapp_auth.consume_init_data_nonce",
             new_callable=AsyncMock,
         ),
         patch(
@@ -133,11 +133,11 @@ async def test_telegram_auth_existing_success() -> None:
 async def test_telegram_auth_existing_user_not_found() -> None:
     with (
         patch(
-            "features.telegram.webapp_auth._validate_init_data",
+            "features.telegram.webapp_auth.validate_init_data",
             return_value=_parsed(),
         ),
         patch(
-            "features.telegram.webapp_auth._consume_init_data_nonce",
+            "features.telegram.webapp_auth.consume_init_data_nonce",
             new_callable=AsyncMock,
         ),
         patch(
@@ -145,9 +145,9 @@ async def test_telegram_auth_existing_user_not_found() -> None:
             new_callable=AsyncMock,
             return_value=None,
         ),
+        pytest.raises(InvalidTelegramInitDataException, match="User not found"),
     ):
-        with pytest.raises(InvalidTelegramInitDataException, match="User not found"):
-            await telegram_auth_existing(AsyncMock(), "init")
+        await telegram_auth_existing(AsyncMock(), "init")
 
 
 async def test_unlink_telegram_clears_fields() -> None:

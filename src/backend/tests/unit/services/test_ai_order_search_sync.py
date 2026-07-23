@@ -2,7 +2,7 @@ import json
 import uuid
 from unittest.mock import AsyncMock, patch
 
-from features.ai_order_agent.search import _item_text, _text_hash, semantic_search
+from features.ai_order_agent.search import build_item_text, semantic_search, text_hash
 
 from .ai_search_helpers import apply_llm_settings, candidate, mock_embedding_client, ranked
 
@@ -12,7 +12,7 @@ class TestSemanticSearchEmbeddingSync:
         session = AsyncMock()
         cache = AsyncMock()
         item = candidate("Бургер", "Вкусный")
-        digest = _text_hash(_item_text(item))
+        digest = text_hash(build_item_text(item))
         query_embedding = [0.5, 0.5]
         cache.get = AsyncMock(return_value=json.dumps(query_embedding))
         client = mock_embedding_client()
@@ -92,14 +92,15 @@ class TestSemanticSearchEmbeddingSync:
             apply_llm_settings(mock_settings)
             result = await semantic_search(session, cache, query="пицца")
 
-        client.embed.assert_awaited_once_with([_item_text(item)])
+        client.embed.assert_awaited_once_with([build_item_text(item)])
         upsert.assert_awaited_once()
-        rows = upsert.await_args.args[1]  # type: ignore[union-attr]
+        assert upsert.await_args is not None
+        rows = upsert.await_args.args[1]
         assert rows == [
             {
                 "menu_item_id": uuid.UUID(item["menu_item_id"]),
                 "model": "model-x",
-                "text_hash": _text_hash(_item_text(item)),
+                "text_hash": text_hash(build_item_text(item)),
                 "embedding": item_embedding,
             }
         ]
@@ -110,7 +111,7 @@ class TestSemanticSearchEmbeddingSync:
         session = AsyncMock()
         cache = AsyncMock()
         item = candidate("Суп", "Горячий")
-        digest = _text_hash(_item_text(item))
+        digest = text_hash(build_item_text(item))
         cache.get = AsyncMock(return_value=json.dumps([0.5, 0.5]))
         client = mock_embedding_client()
 

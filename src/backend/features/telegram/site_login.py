@@ -1,13 +1,12 @@
 import asyncio
 import secrets
 from http import HTTPStatus
-from typing import Any
 
 import httpx
+from pydantic import JsonValue
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.auth.service import issue_user_tokens
-from features.telegram._shared import normalize_username
 from features.telegram.crud import get_user_by_phone, get_user_by_telegram_username
 from features.telegram.exceptions import (
     InvalidTelegramCodeException,
@@ -16,6 +15,7 @@ from features.telegram.exceptions import (
     TooManyLoginCodeRequestsException,
 )
 from features.telegram.schemas import TelegramSiteLoginResponse
+from features.telegram.shared import normalize_username
 from features.users.models import User
 from infra.cache.redis import get_redis_cache
 from settings.config.app_config import settings
@@ -40,7 +40,7 @@ _TELEGRAM_SEND_RETRIES = 3
 _RETRY_SLEEP_CAP_SECONDS = 10.0
 
 
-async def _send_telegram_message(payload: dict[str, Any]) -> None:
+async def send_telegram_message(payload: dict[str, JsonValue]) -> None:
     url = f"https://api.telegram.org/bot{settings.telegram.bot_token}/sendMessage"
     async with httpx.AsyncClient(timeout=10, proxy=settings.telegram.proxy_url or None) as client:
         for attempt in range(_TELEGRAM_SEND_RETRIES):
@@ -81,7 +81,7 @@ async def request_site_login_code(session: AsyncSession, phone_number: str) -> N
 
     message = translate("telegram.siteLoginCode.plain", DEFAULT_LANGUAGE, code=code)
 
-    await _send_telegram_message({"chat_id": user.telegram_id, "text": message})
+    await send_telegram_message({"chat_id": user.telegram_id, "text": message})
 
 
 async def verify_site_login_code(
@@ -149,7 +149,7 @@ async def request_site_login_code_by_username(
 
     message = translate("telegram.siteLoginCode.html", DEFAULT_LANGUAGE, code=code)
 
-    await _send_telegram_message(
+    await send_telegram_message(
         {"chat_id": user.telegram_id, "text": message, "parse_mode": "HTML"}
     )
 

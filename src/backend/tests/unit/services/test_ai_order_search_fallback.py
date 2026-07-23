@@ -1,17 +1,16 @@
 import json
-import uuid
 from unittest.mock import AsyncMock, patch
 
 from features.ai_order_agent.search import semantic_search
 
-from .ai_search_helpers import apply_llm_settings, mock_embedding_client
+from .ai_search_helpers import apply_llm_settings, candidate, mock_embedding_client
 
 
 class TestSemanticSearchFallback:
     async def test_embeddings_disabled_falls_back(self) -> None:
         session = AsyncMock()
         cache = AsyncMock()
-        items = [{"menu_item_id": str(uuid.uuid4()), "name": "Бургер", "price": 200}]
+        items = [candidate("Бургер")]
 
         with (
             patch("features.ai_order_agent.search.settings") as mock_settings,
@@ -29,7 +28,7 @@ class TestSemanticSearchFallback:
     async def test_empty_query_falls_back(self) -> None:
         session = AsyncMock()
         cache = AsyncMock()
-        items = [{"menu_item_id": str(uuid.uuid4()), "name": "Пицца"}]
+        items = [candidate("Пицца")]
 
         with (
             patch("features.ai_order_agent.search.settings") as mock_settings,
@@ -49,7 +48,7 @@ class TestSemanticSearchFallback:
         cache = AsyncMock()
         cache.get = AsyncMock(return_value=json.dumps([0.1, 0.2, 0.3]))
         client = mock_embedding_client()
-        fallback = [{"menu_item_id": str(uuid.uuid4()), "name": "Шаурма"}]
+        fallback = [candidate("Шаурма")]
 
         with (
             patch("features.ai_order_agent.search.settings") as mock_settings,
@@ -77,7 +76,7 @@ class TestSemanticSearchFallback:
     async def test_exception_falls_back_to_keyword(self) -> None:
         session = AsyncMock()
         cache = AsyncMock()
-        fallback = [{"menu_item_id": str(uuid.uuid4()), "name": "Шаурма"}]
+        fallback = [candidate("Шаурма")]
 
         with (
             patch("features.ai_order_agent.search.settings") as mock_settings,

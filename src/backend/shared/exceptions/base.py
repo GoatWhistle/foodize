@@ -1,5 +1,4 @@
 from http import HTTPStatus
-from typing import Any
 
 
 class AppException(Exception):
@@ -12,13 +11,13 @@ class AppException(Exception):
         status_code: int | None = None,
         detail: str | None = None,
         code: str | None = None,
-        **params: Any,
+        **params: object,
     ):
         if status_code is not None:
             self.status_code = status_code
         if code is not None:
             self.code = code
-        self.params: dict[str, Any] = params
+        self.params: dict[str, object] = params
         self.detail = detail if detail is not None else self._render_detail()
         super().__init__(self.detail)
 

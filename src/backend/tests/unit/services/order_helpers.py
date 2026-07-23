@@ -1,6 +1,5 @@
 import uuid
 from datetime import UTC, datetime
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 from features.orders.schemas.order import OrderCreate, OrderLoadEstimate
@@ -49,7 +48,7 @@ def make_session() -> AsyncMock:
     return session
 
 
-def make_order_data(restaurant_id: uuid.UUID | None = None, **kwargs: Any) -> OrderCreate:
+def make_order_data(restaurant_id: uuid.UUID | None = None, **kwargs: object) -> OrderCreate:
     rid = restaurant_id or uuid.uuid4()
     item_id = uuid.uuid4()
     return OrderCreate(

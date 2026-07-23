@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -36,7 +36,7 @@ def _make_mock_vendor(vendor_id: uuid.UUID | None = None) -> MagicMock:
     v.user = _make_mock_user()
     v.user.id = v.user_id
     v.restaurants = []
-    v.created_at = datetime(2026, 1, 1)
+    v.created_at = datetime(2026, 1, 1, tzinfo=UTC)
     return v
 
 
@@ -51,7 +51,7 @@ def _make_mock_review(review_id: uuid.UUID | None = None) -> MagicMock:
     rv.user_id = uuid.uuid4()
     rv.user_phone = "79001234567"
     rv.is_verified_purchase = True
-    rv.created_at = datetime(2026, 1, 1)
+    rv.created_at = datetime(2026, 1, 1, tzinfo=UTC)
     return rv
 
 
@@ -89,13 +89,15 @@ class TestGetRestaurantsList:
             assert total == 2
 
     async def test_restaurant_not_found(self) -> None:
-        with patch(
-            "features.admin.crud.get_restaurant_by_id",
-            new_callable=AsyncMock,
-            return_value=None,
+        with (
+            patch(
+                "features.admin.crud.get_restaurant_by_id",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
+            pytest.raises(NotFoundException),
         ):
-            with pytest.raises(NotFoundException):
-                await get_restaurant_or_404(MagicMock(), uuid.uuid4())
+            await get_restaurant_or_404(MagicMock(), uuid.uuid4())
 
 
 class TestDeleteRestaurantService:
@@ -118,13 +120,15 @@ class TestDeleteRestaurantService:
             assert result is rest
 
     async def test_not_found(self) -> None:
-        with patch(
-            "features.admin.crud.get_restaurant_by_id",
-            new_callable=AsyncMock,
-            return_value=None,
+        with (
+            patch(
+                "features.admin.crud.get_restaurant_by_id",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
+            pytest.raises(NotFoundException),
         ):
-            with pytest.raises(NotFoundException):
-                await delete_restaurant_service(MagicMock(), uuid.uuid4())
+            await delete_restaurant_service(MagicMock(), uuid.uuid4())
 
 
 class TestGetVendorsList:
@@ -146,13 +150,15 @@ class TestGetVendorsList:
             assert total == 1
 
     async def test_vendor_not_found(self) -> None:
-        with patch(
-            "features.admin.crud.get_vendor_by_id",
-            new_callable=AsyncMock,
-            return_value=None,
+        with (
+            patch(
+                "features.admin.crud.get_vendor_by_id",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
+            pytest.raises(NotFoundException),
         ):
-            with pytest.raises(NotFoundException):
-                await get_vendor_or_404(MagicMock(), uuid.uuid4())
+            await get_vendor_or_404(MagicMock(), uuid.uuid4())
 
 
 class TestDeleteVendorService:
@@ -173,13 +179,15 @@ class TestDeleteVendorService:
             assert result is not None
 
     async def test_not_found(self) -> None:
-        with patch(
-            "features.admin.crud.get_vendor_by_id",
-            new_callable=AsyncMock,
-            return_value=None,
+        with (
+            patch(
+                "features.admin.crud.get_vendor_by_id",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
+            pytest.raises(NotFoundException),
         ):
-            with pytest.raises(NotFoundException):
-                await delete_vendor_service(MagicMock(), uuid.uuid4())
+            await delete_vendor_service(MagicMock(), uuid.uuid4())
 
 
 class TestGetReviewsList:
@@ -219,8 +227,10 @@ class TestDeleteReviewService:
             assert result is not None
 
     async def test_not_found(self) -> None:
-        with patch(
-            "features.admin.crud.get_review_by_id", new_callable=AsyncMock, return_value=None
+        with (
+            patch(
+                "features.admin.crud.get_review_by_id", new_callable=AsyncMock, return_value=None
+            ),
+            pytest.raises(NotFoundException),
         ):
-            with pytest.raises(NotFoundException):
-                await delete_review_service(MagicMock(), uuid.uuid4())
+            await delete_review_service(MagicMock(), uuid.uuid4())

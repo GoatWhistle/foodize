@@ -1,4 +1,4 @@
-from typing import Any
+from dataclasses import dataclass
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,19 +15,28 @@ from features.admin.crud import (
 from features.menu.models import MenuItem
 from features.orders.models import Order, OrderItem
 from features.restaurants.crud import create_restaurant
+from features.restaurants.models import Restaurant
 from features.restaurants.schemas import RestaurantCreate
 from features.users.crud import create_user
+from features.users.models import User
 from features.users.schemas import UserCreate
 from features.vendors.crud import create_vendor_profile
-from features.vendors.schemas import VendorCreate
 from shared.enums.category import Category
 from shared.enums.order_status import OrderStatus
 from shared.enums.roles import UserRole
 from shared.permissions import VENDOR_PERMISSIONS, serialize_permissions
 
 
+@dataclass(frozen=True)
+class AdminCrudSeed:
+    vendor_user: User
+    customer: User
+    restaurant: Restaurant
+    order: Order
+
+
 @pytest.fixture
-async def seeded_db(db_session: AsyncSession) -> dict[str, Any]:
+async def seeded_db(db_session: AsyncSession) -> AdminCrudSeed:
     vendor_user = await create_user(
         db_session,
         UserCreate(
@@ -37,7 +46,7 @@ async def seeded_db(db_session: AsyncSession) -> dict[str, Any]:
         ),
     )
     vendor_user.permissions = serialize_permissions(VENDOR_PERMISSIONS)
-    vendor_profile = await create_vendor_profile(db_session, vendor_user, VendorCreate())
+    vendor_profile = await create_vendor_profile(db_session, vendor_user)
 
     customer = await create_user(
         db_session,
@@ -81,47 +90,51 @@ async def seeded_db(db_session: AsyncSession) -> dict[str, Any]:
     db_session.add(order_item)
     await db_session.commit()
 
-    return {
-        "vendor_user": vendor_user,
-        "customer": customer,
-        "restaurant": restaurant,
-        "order": order,
-    }
+    return AdminCrudSeed(
+        vendor_user=vendor_user,
+        customer=customer,
+        restaurant=restaurant,
+        order=order,
+    )
 
 
+@pytest.mark.usefixtures("seeded_db")
+@pytest.mark.usefixtures("seeded_db")
 async def test_get_all_users_returns_all(
-    db_session: AsyncSession, seeded_db: dict[str, Any]
+    db_session: AsyncSession
 ) -> None:
     users = await get_all_users(db_session)
     assert len(users) == 2
 
 
 async def test_get_all_users_filter_by_role(
-    db_session: AsyncSession, seeded_db: dict[str, Any]
+    db_session: AsyncSession, seeded_db: AdminCrudSeed
 ) -> None:
     vendors = await get_all_users(db_session, role=UserRole.VENDOR)
     assert len(vendors) == 1
-    assert vendors[0].id == seeded_db["vendor_user"].id
+    assert vendors[0].id == seeded_db.vendor_user.id
 
     customers = await get_all_users(db_session, role=UserRole.CUSTOMER)
     assert len(customers) == 1
-    assert customers[0].id == seeded_db["customer"].id
+    assert customers[0].id == seeded_db.customer.id
 
 
-async def test_count_all_users(db_session: AsyncSession, seeded_db: dict[str, Any]) -> None:
+@pytest.mark.usefixtures("seeded_db")
+@pytest.mark.usefixtures("seeded_db")
+async def test_count_all_users(db_session: AsyncSession) -> None:
     assert await count_all_users(db_session) == 2
     assert await count_all_users(db_session, role=UserRole.CUSTOMER) == 1
 
 
-async def test_get_user_by_id(db_session: AsyncSession, seeded_db: dict[str, Any]) -> None:
-    customer = seeded_db["customer"]
+async def test_get_user_by_id(db_session: AsyncSession, seeded_db: AdminCrudSeed) -> None:
+    customer = seeded_db.customer
     fetched = await get_user_by_id(db_session, customer.id)
     assert fetched is not None
     assert fetched.id == customer.id
 
 
-async def test_deactivate_user(db_session: AsyncSession, seeded_db: dict[str, Any]) -> None:
-    customer = seeded_db["customer"]
+async def test_deactivate_user(db_session: AsyncSession, seeded_db: AdminCrudSeed) -> None:
+    customer = seeded_db.customer
     deactivated = await deactivate_user(db_session, customer)
     assert deactivated.is_active is False
 
@@ -130,14 +143,16 @@ async def test_deactivate_user(db_session: AsyncSession, seeded_db: dict[str, An
     assert fetched.is_active is False
 
 
-async def test_get_all_orders(db_session: AsyncSession, seeded_db: dict[str, Any]) -> None:
+async def test_get_all_orders(db_session: AsyncSession, seeded_db: AdminCrudSeed) -> None:
     orders = await get_all_orders(db_session)
     assert len(orders) == 1
-    assert orders[0].id == seeded_db["order"].id
+    assert orders[0].id == seeded_db.order.id
 
 
+@pytest.mark.usefixtures("seeded_db")
+@pytest.mark.usefixtures("seeded_db")
 async def test_get_all_orders_filter_by_status(
-    db_session: AsyncSession, seeded_db: dict[str, Any]
+    db_session: AsyncSession
 ) -> None:
     pending = await get_all_orders(db_session, status=OrderStatus.PENDING)
     assert len(pending) == 1
@@ -146,12 +161,16 @@ async def test_get_all_orders_filter_by_status(
     assert len(accepted) == 0
 
 
-async def test_count_all_orders(db_session: AsyncSession, seeded_db: dict[str, Any]) -> None:
+@pytest.mark.usefixtures("seeded_db")
+@pytest.mark.usefixtures("seeded_db")
+async def test_count_all_orders(db_session: AsyncSession) -> None:
     assert await count_all_orders(db_session) == 1
     assert await count_all_orders(db_session, status=OrderStatus.ACCEPTED) == 0
 
 
-async def test_get_platform_stats(db_session: AsyncSession, seeded_db: dict[str, Any]) -> None:
+@pytest.mark.usefixtures("seeded_db")
+@pytest.mark.usefixtures("seeded_db")
+async def test_get_platform_stats(db_session: AsyncSession) -> None:
     stats = await get_platform_stats(db_session)
 
     assert stats.total_restaurants == 1

@@ -1,6 +1,5 @@
 import uuid
 from datetime import date, datetime
-from typing import Any
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
@@ -127,21 +126,22 @@ class AdminVendorResponse(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def flatten_user(cls, data: Any) -> Any:
+    def flatten_user(cls, data: object) -> object:
         if isinstance(data, dict):
             return data
 
         user = getattr(data, "user", None)
         if user is not None:
+            restaurants = getattr(data, "restaurants", None)
             return {
-                "id": data.id,
-                "user_id": data.user_id,
-                "name": user.name,
-                "phone_number": user.phone_number,
-                "restaurants_count": len(data.restaurants or []),
-                "approval_status": data.approval_status,
-                "rejection_reason": data.rejection_reason,
-                "created_at": data.created_at,
+                "id": getattr(data, "id", None),
+                "user_id": getattr(data, "user_id", None),
+                "name": getattr(user, "name", None),
+                "phone_number": getattr(user, "phone_number", None),
+                "restaurants_count": len(restaurants) if restaurants else 0,
+                "approval_status": getattr(data, "approval_status", None),
+                "rejection_reason": getattr(data, "rejection_reason", None),
+                "created_at": getattr(data, "created_at", None),
             }
         return data
 

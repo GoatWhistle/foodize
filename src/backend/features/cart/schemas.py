@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from features.cart.exceptions import DuplicateCartOptionsError
 
@@ -19,7 +19,9 @@ class CartSelectedOption(BaseModel):
 
 
 class CartItemResponse(BaseModel):
-    menuItem: MenuItemShort  # noqa: N815
+    model_config = ConfigDict(populate_by_name=True)
+
+    menu_item: MenuItemShort = Field(serialization_alias="menuItem", validation_alias="menuItem")
     quantity: int
     selected_option_ids: list[uuid.UUID] = []
     selected_options: list[CartSelectedOption] = []

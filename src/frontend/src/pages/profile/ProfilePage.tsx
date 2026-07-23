@@ -1,19 +1,11 @@
-import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { StorefrontIcon, CookingPotIcon, SparkleIcon } from "@phosphor-icons/react";
 import { ProfilePage as SharedProfilePage } from "@shared/pages/ProfilePage/ProfilePage";
 import { ROUTES } from "../../constants/routes";
-import { vendorService } from "@shared/services/vendorService";
-import { staffService } from "@shared/services/staffService";
-import { translateApiError } from "@shared/utils/translateApiError";
-import { hasPermission, PERMISSIONS } from "@shared/utils/permissions";
-import { useAuthStore } from "../../store/useAuthStore";
+import { useAccountRoles } from "../../hooks/useAccountRoles";
 import { useNotificationStore } from "../../store/useNotificationStore";
 import { useTranslation } from "@shared/i18n/useTranslation";
-import type { Schemas } from "@shared/types/models";
-
-type VendorProfile = Schemas["VendorResponse"];
 
 interface ExtraMenuItem {
   icon?: ReactNode;
@@ -25,59 +17,18 @@ interface ExtraMenuItem {
 export const ProfilePage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const user = useAuthStore((s) => s.user);
   const unreadCount = useNotificationStore((s) => s.unreadCount);
-
-  const [isVendor, setIsVendor] = useState(false);
-  const [checkingVendor, setCheckingVendor] = useState(true);
-  const [vendorProfile, setVendorProfile] = useState<VendorProfile | null>(null);
-  const [isStaff, setIsStaff] = useState(false);
-  const [checkingStaff, setCheckingStaff] = useState(true);
-  const [vendorLoading, setVendorLoading] = useState(false);
-  const [vendorError, setVendorError] = useState("");
-
-  const isAdmin = hasPermission(user, PERMISSIONS.ADMIN_ACCESS);
-  const canOpenVendorDashboard = isAdmin || vendorProfile?.approval_status === "APPROVED";
-
-  useEffect(() => {
-    const detectVendor = async (): Promise<void> => {
-      try {
-        const profileResponse = await vendorService.getMyProfile();
-        setIsVendor(true);
-        setVendorProfile(profileResponse.data.data);
-      } catch {
-        setIsVendor(false);
-        setVendorProfile(null);
-      } finally {
-        setCheckingVendor(false);
-      }
-    };
-    const detectStaff = async (): Promise<void> => {
-      try {
-        await staffService.getMyProfile();
-        setIsStaff(true);
-      } catch {
-        setIsStaff(false);
-      } finally {
-        setCheckingStaff(false);
-      }
-    };
-    void Promise.all([detectVendor(), detectStaff()]);
-  }, []);
-
-  const handleBecomeVendor = async () => {
-    setVendorLoading(true);
-    setVendorError("");
-    try {
-      const profile = await vendorService.createProfile({});
-      setIsVendor(true);
-      setVendorProfile(profile.data.data);
-    } catch (err) {
-      setVendorError(translateApiError(err, t("profile.roles.becomeVendorFailed")));
-    } finally {
-      setVendorLoading(false);
-    }
-  };
+  const {
+    checkingVendor,
+    checkingStaff,
+    isVendor,
+    isStaff,
+    isAdmin,
+    canOpenVendorDashboard,
+    vendorLoading,
+    vendorError,
+    becomeVendor,
+  } = useAccountRoles(true);
 
   const extraMenuItems: ExtraMenuItem[] = [];
 
@@ -123,7 +74,7 @@ export const ProfilePage = () => {
         onClick: vendorLoading
           ? undefined
           : () => {
-              void handleBecomeVendor();
+              void becomeVendor();
             },
       });
     }

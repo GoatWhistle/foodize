@@ -1,4 +1,4 @@
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 from fpdf import FPDF
 
@@ -6,6 +6,22 @@ from shared.i18n import DEFAULT_LANGUAGE, translate
 
 _FONT_PATH = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 _FONT_BOLD_PATH = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+
+
+def _date_format(language: str) -> str:
+    return translate("reports.common.dateFormat", language)
+
+
+def _period_line(date_from: date | None, date_to: date | None, language: str) -> str:
+    date_format = _date_format(language)
+    dash = translate("reports.common.dash", language)
+    start = date_from.strftime(date_format) if date_from else dash
+    end = date_to.strftime(date_format) if date_to else dash
+    return f"{start} {dash} {end}"
+
+
+def _format_rub(amount: float) -> str:
+    return f"{int(amount):,}".replace(",", " ")
 
 
 class _PDF(FPDF):

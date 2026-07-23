@@ -1,6 +1,6 @@
-from typing import Any
+from shared.i18n.types import TranslationTree
 
-PROMPTS: dict[str, Any] = {
+PROMPTS: TranslationTree = {
     "common": {
         "languageInstruction": "Reply in English.",
         "emptyResponse": "(empty response)",

@@ -123,13 +123,9 @@ async def export_analytics_pdf(
 
 @router.get("/export/overview.pdf")
 async def export_overview_pdf(
-    date_from: date | None = Query(None),
-    date_to: date | None = Query(None),
     _: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
     language: str = Depends(get_language),
 ) -> Response:
-    pdf_bytes = await admin_export.export_overview_pdf(
-        session, date_from=date_from, date_to=date_to, language=language
-    )
+    pdf_bytes = await admin_export.export_overview_pdf(session, language=language)
     return _attachment_response(pdf_bytes, _PDF_MEDIA_TYPE, "overview.pdf")

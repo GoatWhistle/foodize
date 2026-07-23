@@ -19,7 +19,6 @@ from features.reviews.service import (
 
 
 def _mock_review(user_id: uuid.UUID, restaurant_id: uuid.UUID) -> MagicMock:
-
     r = MagicMock()
     r.id = uuid.uuid4()
     r.user_id = user_id

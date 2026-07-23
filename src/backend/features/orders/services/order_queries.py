@@ -51,8 +51,6 @@ async def estimate_restaurant_load(
         raise RestaurantNotFoundException()
 
     active_orders = await order_crud.count_active_orders_by_restaurant_id(session, restaurant.id)
-    if not isinstance(active_orders, int):
-        active_orders = 0
     avg_prep_time, max_active_orders = _coerced_capacity(restaurant)
     hours = await get_working_hours(session, restaurant.id)
     is_open = restaurant.is_open

@@ -1,5 +1,5 @@
 import uuid
-from typing import Any
+from collections.abc import Sequence
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -20,7 +20,9 @@ from shared.exceptions.existence import AlreadyExistsException
 
 
 def _mock_session_with(
-    scalar_result: Any = None, scalars_list: Any = None, scalar_one: Any = None
+    scalar_result: object = None,
+    scalars_list: Sequence[object] | None = None,
+    scalar_one: object = None,
 ) -> AsyncMock:
     session = AsyncMock()
     mock_result = MagicMock()
@@ -145,9 +147,9 @@ async def test_create_restaurant_integrity_error() -> None:
             return_value="xyz",
         ),
         patch("features.restaurants.crud.Restaurant", return_value=MagicMock()),
+        pytest.raises(AlreadyExistsException),
     ):
-        with pytest.raises(AlreadyExistsException):
-            await create_restaurant(session, data, uuid.uuid4())
+        await create_restaurant(session, data, uuid.uuid4())
 
     session.rollback.assert_awaited_once()
 

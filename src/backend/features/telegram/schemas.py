@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import TypedDict
 
 from pydantic import BaseModel, Field
 
@@ -95,3 +96,9 @@ class TelegramSitePasswordRequest(BaseModel):
 
 
 TelegramAuthResponse = TokenResponse
+
+
+class TelegramUserPayload(TypedDict):
+    id: int | str
+    username: str | None
+    phone_number: str | None

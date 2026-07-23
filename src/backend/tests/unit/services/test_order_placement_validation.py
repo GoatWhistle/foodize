@@ -18,16 +18,20 @@ from .order_helpers import make_menu_item, make_order_data, make_restaurant
 async def test_place_order_restaurant_not_found() -> None:
     data = make_order_data()
 
-    with patch(
-        "features.restaurants.crud.get_restaurant_by_id", new_callable=AsyncMock, return_value=None
-    ):
-        with patch(
+    with (
+        patch(
+            "features.restaurants.crud.get_restaurant_by_id",
+            new_callable=AsyncMock,
+            return_value=None,
+        ),
+        patch(
             "features.orders.services.order_placement.start_idempotency_record",
             new_callable=AsyncMock,
             return_value=None,
-        ):
-            with pytest.raises(RestaurantNotFoundException):
-                await place_order(AsyncMock(), data, uuid.uuid4())
+        ),
+        pytest.raises(RestaurantNotFoundException),
+    ):
+        await place_order(AsyncMock(), data, uuid.uuid4())
 
 
 async def test_place_order_restaurant_closed() -> None:
@@ -45,9 +49,9 @@ async def test_place_order_restaurant_closed() -> None:
             new_callable=AsyncMock,
             return_value=restaurant,
         ),
+        pytest.raises(RestaurantClosedException),
     ):
-        with pytest.raises(RestaurantClosedException):
-            await place_order(AsyncMock(), data, uuid.uuid4())
+        await place_order(AsyncMock(), data, uuid.uuid4())
 
 
 async def test_place_order_ordering_paused() -> None:
@@ -66,9 +70,9 @@ async def test_place_order_ordering_paused() -> None:
             new_callable=AsyncMock,
             return_value=restaurant,
         ),
+        pytest.raises(RestaurantClosedException),
     ):
-        with pytest.raises(RestaurantClosedException):
-            await place_order(AsyncMock(), data, uuid.uuid4())
+        await place_order(AsyncMock(), data, uuid.uuid4())
 
 
 async def test_place_order_menu_items_not_found() -> None:
@@ -96,9 +100,9 @@ async def test_place_order_menu_items_not_found() -> None:
             new_callable=AsyncMock,
             return_value={},
         ),
+        pytest.raises(MenuItemsNotFoundException),
     ):
-        with pytest.raises(MenuItemsNotFoundException):
-            await place_order(AsyncMock(), data, uuid.uuid4())
+        await place_order(AsyncMock(), data, uuid.uuid4())
 
 
 async def test_place_order_menu_item_restaurant_mismatch() -> None:
@@ -130,9 +134,9 @@ async def test_place_order_menu_item_restaurant_mismatch() -> None:
             new_callable=AsyncMock,
             return_value={item_id: mi},
         ),
+        pytest.raises(MenuItemRestaurantMismatchException),
     ):
-        with pytest.raises(MenuItemRestaurantMismatchException):
-            await place_order(AsyncMock(), data, uuid.uuid4())
+        await place_order(AsyncMock(), data, uuid.uuid4())
 
 
 async def test_place_order_menu_item_unavailable() -> None:
@@ -164,9 +168,9 @@ async def test_place_order_menu_item_unavailable() -> None:
             new_callable=AsyncMock,
             return_value={item_id: mi},
         ),
+        pytest.raises(MenuItemUnavailableException),
     ):
-        with pytest.raises(MenuItemUnavailableException):
-            await place_order(AsyncMock(), data, uuid.uuid4())
+        await place_order(AsyncMock(), data, uuid.uuid4())
 
 
 async def test_place_order_soft_deleted_menu_item_rejected() -> None:
@@ -194,6 +198,6 @@ async def test_place_order_soft_deleted_menu_item_rejected() -> None:
             new_callable=AsyncMock,
             return_value={},
         ),
+        pytest.raises(MenuItemsNotFoundException),
     ):
-        with pytest.raises(MenuItemsNotFoundException):
-            await place_order(AsyncMock(), data, uuid.uuid4())
+        await place_order(AsyncMock(), data, uuid.uuid4())

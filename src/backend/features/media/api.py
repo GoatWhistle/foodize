@@ -6,8 +6,9 @@ from fastapi.responses import StreamingResponse
 from features.media.exceptions import MediaFileNotFoundException
 from infra.storage import fetch_object_stream
 from middlewares.limiter import limiter
+from settings.config.app_config import settings
 
-router = APIRouter(prefix="/media", tags=["Media"])
+router = APIRouter(prefix=settings.api.v1.media.prefix, tags=[settings.api.v1.media.tag])
 
 _KEY_RE = re.compile(r"^(menu|restaurants)/[a-f0-9]{32}\.(jpg|png|webp)$")
 

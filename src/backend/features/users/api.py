@@ -11,10 +11,11 @@ from features.users import service as users_service
 from features.users.models import User
 from features.users.schemas import ChangePasswordRequest, UserPublicRead, UserRead, UserUpdate
 from middlewares.limiter import limiter
+from settings.config.app_config import settings
 from shared.response import build_response
 from shared.schemas.response import SuccessResponse
 
-router = APIRouter(prefix="/users", tags=["Users"])
+router = APIRouter(prefix=settings.api.v1.users.prefix, tags=[settings.api.v1.users.tag])
 
 
 @router.get("/me", response_model=SuccessResponse[UserRead])
@@ -49,12 +50,12 @@ async def change_my_password(
 
 @router.get(
     "/{user_id}",
-    response_model=SuccessResponse[UserRead] | SuccessResponse[UserPublicRead],
+    response_model=SuccessResponse[UserRead | UserPublicRead],
 )
 async def read_user(
     user_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-) -> SuccessResponse[UserRead] | SuccessResponse[UserPublicRead]:
+) -> SuccessResponse[UserRead | UserPublicRead]:
     profile = await users_service.read_user_profile(session, current_user, user_id)
     return build_response(profile)

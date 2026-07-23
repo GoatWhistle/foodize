@@ -1,10 +1,15 @@
 import uuid
 from datetime import UTC, date, datetime
-from typing import Any
 
 from sqlalchemy import Case, ColumnElement, Select, and_, case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from features.ai_advisor.schemas_tools import (
+    BottomItemRow,
+    MenuOverviewRow,
+    RecentReview,
+    ReviewsSummary,
+)
 from features.menu.models import MenuItem
 from features.orders.models import Order, OrderItem
 from features.restaurants.models import Restaurant
@@ -21,7 +26,7 @@ def _sanitize_review_text(text: str | None) -> str:
     return f"<<<REVIEW>>>{trimmed}<<<END_REVIEW>>>"
 
 
-def _day_bounds(start_date: date, end_date: date) -> tuple[datetime, datetime]:
+def day_bounds(start_date: date, end_date: date) -> tuple[datetime, datetime]:
     start = datetime.combine(start_date, datetime.min.time(), tzinfo=UTC)
     end = datetime.combine(end_date, datetime.max.time(), tzinfo=UTC)
     return start, end
@@ -86,17 +91,17 @@ async def get_bottom_items(
     end_date: date,
     restaurant_id: uuid.UUID | None = None,
     limit: int = 10,
-) -> list[dict[str, Any]]:
-    start, end = _day_bounds(start_date, end_date)
+) -> list[BottomItemRow]:
+    start, end = day_bounds(start_date, end_date)
     rows = await session.execute(_bottom_items_stmt(vendor_id, start, end, restaurant_id, limit))
     return [
-        {
-            "name": name,
-            "category": category,
-            "price": price,
-            "is_available": is_available,
-            "sold_qty": int(sold_qty or 0),
-        }
+        BottomItemRow(
+            name=name,
+            category=category,
+            price=price,
+            is_available=is_available,
+            sold_qty=int(sold_qty or 0),
+        )
         for name, category, price, is_available, sold_qty in rows.all()
     ]
 
@@ -107,7 +112,7 @@ async def get_menu_overview(
     vendor_id: uuid.UUID,
     restaurant_id: uuid.UUID | None = None,
     limit: int = 100,
-) -> list[dict[str, Any]]:
+) -> list[MenuOverviewRow]:
     filters = [Restaurant.vendor_id == vendor_id, MenuItem.is_deleted.is_(False)]
     if restaurant_id is not None:
         filters.append(MenuItem.restaurant_id == restaurant_id)
@@ -127,20 +132,20 @@ async def get_menu_overview(
     )
     rows = await session.execute(stmt)
     return [
-        {
-            "restaurant": restaurant,
-            "name": item_name,
-            "category": category,
-            "price": price,
-            "is_available": is_available,
-        }
+        MenuOverviewRow(
+            restaurant=restaurant,
+            name=item_name,
+            category=category,
+            price=price,
+            is_available=is_available,
+        )
         for restaurant, item_name, category, price, is_available in rows.all()
     ]
 
 
 async def _recent_reviews(
     session: AsyncSession, filters: list[ColumnElement[bool]], recent_limit: int
-) -> list[dict[str, Any]]:
+) -> list[RecentReview]:
     recent_rows = await session.execute(
         select(Review.rating, Review.text)
         .join(Restaurant, Restaurant.id == Review.restaurant_id)
@@ -149,7 +154,7 @@ async def _recent_reviews(
         .limit(recent_limit)
     )
     return [
-        {"rating": int(rating), "text": _sanitize_review_text(text)}
+        RecentReview(rating=int(rating), text=_sanitize_review_text(text))
         for rating, text in recent_rows.all()
     ]
 
@@ -160,7 +165,7 @@ async def get_reviews_summary(
     vendor_id: uuid.UUID,
     restaurant_id: uuid.UUID | None = None,
     recent_limit: int = 5,
-) -> dict[str, Any]:
+) -> ReviewsSummary:
     filters = [Restaurant.vendor_id == vendor_id, Review.deleted_at.is_(None)]
     if restaurant_id is not None:
         filters.append(Review.restaurant_id == restaurant_id)
@@ -182,9 +187,9 @@ async def get_reviews_summary(
 
     recent = await _recent_reviews(session, filters, recent_limit)
 
-    return {
-        "average_rating": round(float(avg_rating or 0), 2),
-        "review_count": int(review_count or 0),
-        "distribution": distribution,
-        "recent": recent,
-    }
+    return ReviewsSummary(
+        average_rating=round(float(avg_rating or 0), 2),
+        review_count=int(review_count or 0),
+        distribution=distribution,
+        recent=recent,
+    )

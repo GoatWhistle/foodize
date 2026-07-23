@@ -30,7 +30,13 @@ from features.users.models import User
 from features.users.schemas import UserCreate, UserRead
 from infra.cache.redis import RedisCache, get_redis_cache, redis_cache_dependency
 from shared.exceptions.existence import AuthException, NotAuthenticatedException
-from utils.jwt_tokens import create_access_token, create_refresh_token, decode_jwt
+from utils.jwt_tokens import (
+    claim_int,
+    claim_str,
+    create_access_token,
+    create_refresh_token,
+    decode_jwt,
+)
 from utils.logging_setup import get_logger
 
 logger = get_logger()
@@ -39,7 +45,7 @@ _REFRESH_BLACKLIST_PREFIX = "refresh_blacklist:"
 _ACCESS_BLACKLIST_PREFIX = "access_blacklist:"
 
 
-async def _get_bearer_token(request: Request) -> str | None:
+async def get_bearer_token(request: Request) -> str | None:
     token = await OAuth2PasswordBearer.__call__(OAuth2_scheme, request)
     return token or None
 
@@ -70,7 +76,7 @@ async def get_current_user(
         raise NotAuthenticatedException()
     try:
         payload = decode_jwt(token)
-        user_id = payload.get("sub")
+        user_id = claim_str(payload, "sub")
     except jwt.ExpiredSignatureError:
         raise TokenExpiredException() from None
     except jwt.InvalidTokenError:
@@ -124,8 +130,8 @@ async def _blacklist_token(
         return
     try:
         payload = decode_jwt(token)
-        ttl = payload.get("exp", 0) - int(time.time())
-        jti = payload.get("jti")
+        ttl = (claim_int(payload, "exp") or 0) - int(time.time())
+        jti = claim_str(payload, "jti")
         if ttl > 0 and jti:
             await cache.set(f"{prefix}{jti}", "1", ttl=ttl)
     except jwt.InvalidTokenError:
@@ -141,7 +147,7 @@ async def logout_user(
     if cache is None:
         cache = get_redis_cache()
 
-    access_token = request.cookies.get("access_token") or await _get_bearer_token(request)
+    access_token = request.cookies.get("access_token") or await get_bearer_token(request)
     await _blacklist_token(cache, access_token, _ACCESS_BLACKLIST_PREFIX, "access")
     refresh_token = request.cookies.get("refresh_token")
     await _blacklist_token(cache, refresh_token, _REFRESH_BLACKLIST_PREFIX, "refresh")
@@ -150,7 +156,7 @@ async def logout_user(
 def _decode_refresh_payload(token: str) -> tuple[dict[str, object], uuid.UUID]:
     try:
         payload = decode_jwt(token)
-        user_id = payload.get("sub")
+        user_id = claim_str(payload, "sub")
     except jwt.ExpiredSignatureError:
         raise RefreshTokenExpiredException() from None
     except jwt.InvalidTokenError:
@@ -160,21 +166,20 @@ def _decode_refresh_payload(token: str) -> tuple[dict[str, object], uuid.UUID]:
     if user_id is None:
         raise AuthException()
     try:
-        return payload, uuid.UUID(str(user_id))
+        return payload, uuid.UUID(user_id)
     except ValueError:
         raise InvalidRefreshTokenException() from None
 
 
 async def _consume_refresh_token(cache: RedisCache, payload: dict[str, object]) -> None:
     now = int(time.time())
-    session_exp = payload.get("session_exp")
-    if isinstance(session_exp, int) and session_exp < now:
+    session_exp = claim_int(payload, "session_exp")
+    if session_exp is not None and session_exp < now:
         raise SessionExpiredException()
-    jti = payload.get("jti")
+    jti = claim_str(payload, "jti")
     if not jti:
         raise InvalidRefreshTokenException()
-    expires_at = payload.get("exp")
-    ttl = (expires_at if isinstance(expires_at, int) else 0) - now
+    ttl = (claim_int(payload, "exp") or 0) - now
     if ttl <= 0:
         raise RefreshTokenExpiredException()
     blacklisted = await cache.set_nx(f"{_REFRESH_BLACKLIST_PREFIX}{jti}", "1", ttl=ttl)
@@ -187,7 +192,7 @@ async def refresh_user_token(
     session: AsyncSession,
     cache: RedisCache | None = None,
 ) -> TokenResponse:
-    token = request.cookies.get("refresh_token") or await _get_bearer_token(request)
+    token = request.cookies.get("refresh_token") or await get_bearer_token(request)
     if not token:
         raise RefreshTokenMissingException()
     payload, parsed_user_id = _decode_refresh_payload(token)
@@ -200,11 +205,8 @@ async def refresh_user_token(
     if not user.is_active:
         raise AccountDeactivatedException()
 
-    session_exp = payload.get("session_exp")
     access_token = create_access_token(user.id)
-    new_refresh_token = create_refresh_token(
-        user.id, session_exp=session_exp if isinstance(session_exp, int) else None
-    )
+    new_refresh_token = create_refresh_token(user.id, session_exp=claim_int(payload, "session_exp"))
     return TokenResponse(
         access_token=access_token, refresh_token=new_refresh_token, token_type="Bearer"
     )

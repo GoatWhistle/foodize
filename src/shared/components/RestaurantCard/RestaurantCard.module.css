@@ -142,6 +142,13 @@
   background: var(--on-photo-mute);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.favBtn::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
 }
 
 .favBtn.active {

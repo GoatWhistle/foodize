@@ -22,7 +22,6 @@ from features.users.models import User
 from features.users.schemas import UserCreate
 from features.vendors.crud import create_vendor_profile
 from features.vendors.models import VendorProfile
-from features.vendors.schemas import VendorCreate
 from shared.enums.roles import UserRole
 from shared.enums.staff_request_status import StaffRequestStatus
 from shared.exceptions import NotFoundException
@@ -37,7 +36,7 @@ async def vendor_and_restaurant(db_session: AsyncSession) -> tuple[VendorProfile
         user_role=UserRole.VENDOR,
     )
     vendor_user = await create_user(db_session, vendor_data)
-    vendor_profile = await create_vendor_profile(db_session, vendor_user, VendorCreate())
+    vendor_profile = await create_vendor_profile(db_session, vendor_user)
 
     rest_data = RestaurantCreate(name="Rest", address="Addr")
     restaurant = await create_restaurant(db_session, rest_data, vendor_profile.id)

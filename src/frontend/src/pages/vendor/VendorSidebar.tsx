@@ -8,6 +8,7 @@ import {
   QrCodeIcon,
   UsersIcon,
   TagIcon,
+  MedalIcon,
 } from '@phosphor-icons/react';
 import type { Dispatch, SetStateAction } from 'react';
 import { ROUTES } from '../../constants/routes';
@@ -30,6 +31,7 @@ const TABS = [
   { id: 'analytics', labelKey: 'vendor.sidebar.tabs.analytics', icon: <ChartLineUpIcon size={18} /> },
   { id: 'ai', labelKey: 'vendor.sidebar.tabs.ai', icon: <ChartLineUpIcon size={18} /> },
   { id: 'promos', labelKey: 'vendor.sidebar.tabs.promos', icon: <TagIcon size={18} /> },
+  { id: 'loyalty', labelKey: 'vendor.sidebar.tabs.loyalty', icon: <MedalIcon size={18} /> },
   { id: 'schedule', labelKey: 'vendor.sidebar.tabs.schedule', icon: <ClockIcon size={18} /> },
   { id: 'staff', labelKey: 'vendor.sidebar.tabs.staff', icon: <UsersIcon size={18} /> },
   { id: 'settings', labelKey: 'vendor.sidebar.tabs.settings', icon: <GearIcon size={18} /> },

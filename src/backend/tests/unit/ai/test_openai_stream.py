@@ -1,6 +1,5 @@
 from collections.abc import AsyncIterator
 from types import SimpleNamespace
-from typing import Any
 
 from infra.llm.base import LLMResponse, TextDelta
 from infra.llm.openai_compatible import OpenAICompatibleClient
@@ -34,9 +33,9 @@ def _fragment(
 class _FakeCompletions:
     def __init__(self, chunks: list[SimpleNamespace]) -> None:
         self._chunks = chunks
-        self.kwargs: dict[str, Any] | None = None
+        self.kwargs: dict[str, object] | None = None
 
-    async def create(self, **kwargs: Any) -> AsyncIterator[SimpleNamespace]:
+    async def create(self, **kwargs: object) -> AsyncIterator[SimpleNamespace]:
         self.kwargs = kwargs
 
         async def _iter() -> AsyncIterator[SimpleNamespace]:
@@ -49,7 +48,7 @@ class _FakeCompletions:
 def _client(chunks: list[SimpleNamespace]) -> tuple[OpenAICompatibleClient, _FakeCompletions]:
     client = OpenAICompatibleClient(api_key="k", model="m")
     fake = _FakeCompletions(chunks)
-    client._client = SimpleNamespace(chat=SimpleNamespace(completions=fake))  # type: ignore[assignment]
+    object.__setattr__(client, "_client", SimpleNamespace(chat=SimpleNamespace(completions=fake)))
     return client, fake
 
 

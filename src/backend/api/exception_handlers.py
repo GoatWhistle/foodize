@@ -1,11 +1,12 @@
+from collections.abc import Awaitable, Callable
 from http import HTTPStatus
-from typing import cast
 
-from fastapi import Request
+from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.responses import Response
 
 from shared.exceptions.base import AppException
 from shared.exceptions.validation import FieldValidationError
@@ -31,11 +32,27 @@ def _resolve_integrity_message(error_msg: str) -> str:
     return _DEFAULT_INTEGRITY_MESSAGE
 
 
+def register_exception_handler[ExcT: Exception](
+    app: FastAPI,
+    exc_class: type[ExcT],
+    handler: Callable[[Request, ExcT], Awaitable[Response] | Response],
+) -> None:
+    async def adapter(request: Request, exc: Exception) -> Response:
+        if not isinstance(exc, exc_class):
+            raise exc
+        result = handler(request, exc)
+        if isinstance(result, Response):
+            return result
+        return await result
+
+    app.add_exception_handler(exc_class, adapter)
+
+
 def _extract_constraint_name(exc: IntegrityError) -> str:
     constraint = getattr(getattr(exc, "orig", None), "diag", None)
     name = getattr(constraint, "constraint_name", None)
-    if name:
-        return cast("str", name)
+    if isinstance(name, str) and name:
+        return name
     error_msg = str(exc.orig) if getattr(exc, "orig", None) else str(exc)
     for known in _CONSTRAINT_MESSAGES:
         if known in error_msg:

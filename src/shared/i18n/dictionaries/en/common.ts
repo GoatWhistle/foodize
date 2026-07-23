@@ -44,6 +44,12 @@ export const common = {
     all: "All",
     allLower: "all",
   },
+  network: {
+    offline: "No internet connection",
+    offlineHint: "Check your connection — data will refresh automatically",
+    backOnline: "Connection restored",
+    queued: "Action saved and will run once you are back online",
+  },
   labels: {
     name: "First name",
     surname: "Last name",

@@ -1,3 +1,5 @@
+from typing import cast
+
 import pytest
 
 from infra.llm import factory
@@ -7,7 +9,7 @@ from infra.llm.exceptions import (
     MissingOpenAIAPIKeyError,
     UnsupportedLLMProviderError,
 )
-from infra.llm.factory import AgentRole, _resolve_model, get_llm_client
+from infra.llm.factory import AgentRole, get_llm_client, resolve_model
 from settings.config.runtime.llm import LLMConfig, LLMProvider
 
 _CFG = LLMConfig(
@@ -32,12 +34,12 @@ _CFG = LLMConfig(
 def test_resolve_model_maps_role_and_provider(
     role: AgentRole, provider: LLMProvider, expected: str
 ) -> None:
-    assert _resolve_model(role, provider, _CFG) == expected
+    assert resolve_model(role, provider, _CFG) == expected
 
 
 def test_resolve_model_rejects_unknown_provider() -> None:
     with pytest.raises(UnsupportedLLMProviderError, match="Unsupported LLM provider"):
-        _resolve_model(AgentRole.ORDER, "telepathy", _CFG)  # type: ignore[arg-type]
+        resolve_model(AgentRole.ORDER, cast("LLMProvider", "telepathy"), _CFG)
 
 
 async def test_get_llm_client_is_cached_per_role_and_provider() -> None:

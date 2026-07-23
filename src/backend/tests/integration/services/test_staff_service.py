@@ -5,11 +5,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from features.staff.dependencies import get_valid_staff_request
 from features.staff.exceptions import (
     AlreadyStaffException,
     RestaurantNotHiringException,
     StaffRequestActiveExistsException,
     StaffRequestCooldownException,
+    StaffRequestNotFoundException,
 )
 from features.staff.schemas import StaffRequestCreate
 from features.staff.service import create_staff_request, process_staff_request
@@ -124,9 +126,21 @@ class TestProcessStaffRequest:
 
         patch.stopall()
 
-    async def test_not_found(self, mock_db_session: AsyncMock) -> None:
-        res = await process_staff_request(mock_db_session, None, StaffRequestStatus.ACCEPTED)  # type: ignore[arg-type]
-        assert res is None
+    async def test_missing_request_rejected_by_dependency(self, mock_db_session: AsyncMock) -> None:
+        with (
+            patch(
+                "features.staff.crud.get_request_by_id",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
+            pytest.raises(StaffRequestNotFoundException),
+        ):
+            await get_valid_staff_request(
+                request_id=uuid.uuid4(),
+                session=mock_db_session,
+                current_vendor=MagicMock(),
+                _user=MagicMock(),
+            )
 
     async def test_accepted_creates_profile(self, mock_db_session: AsyncMock) -> None:
         await process_staff_request(mock_db_session, self.req, StaffRequestStatus.ACCEPTED)

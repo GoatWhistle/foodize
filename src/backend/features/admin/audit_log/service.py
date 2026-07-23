@@ -1,9 +1,9 @@
 import uuid
-from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.admin.audit_log.models import AuditLog
+from features.admin.audit_log.schemas import AuditDetails
 
 
 async def log_action(
@@ -12,13 +12,13 @@ async def log_action(
     action: str,
     entity_type: str,
     entity_id: uuid.UUID | None = None,
-    details: dict[str, Any] | None = None,
+    details: AuditDetails | None = None,
 ) -> None:
     entry = AuditLog(
         actor_id=actor_id,
         action=action,
         entity_type=entity_type,
         entity_id=entity_id,
-        details=details or {},
+        details=dict(details) if details else {},
     )
     session.add(entry)

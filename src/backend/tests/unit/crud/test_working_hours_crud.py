@@ -49,7 +49,6 @@ async def test_get_working_hours_empty() -> None:
 
 
 async def test_set_working_hours() -> None:
-
     entries = [
         WorkingHoursEntry(day_of_week=0, open_time="09:00", close_time="22:00", is_closed=False),
         WorkingHoursEntry(day_of_week=1, open_time="10:00", close_time="20:00", is_closed=False),

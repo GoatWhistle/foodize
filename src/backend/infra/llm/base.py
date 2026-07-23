@@ -3,10 +3,14 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
+
+from pydantic import JsonValue
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
+
+type JsonObject = dict[str, JsonValue]
 
 
 class ToolInputError(Exception):
@@ -23,14 +27,14 @@ class Role(str, Enum):
 class ToolSpec:
     name: str
     description: str
-    input_schema: dict[str, Any]
+    input_schema: JsonObject
 
 
 @dataclass
 class ToolCall:
     id: str
     name: str
-    arguments: dict[str, Any]
+    arguments: JsonObject
 
 
 @dataclass

@@ -18,7 +18,7 @@ from shared.enums.permissions import Permission
 from shared.response import build_response
 from shared.schemas.response import SuccessResponse
 
-router = APIRouter(prefix="/ai/advisor", tags=["AI Advisor"])
+router = APIRouter(prefix=settings.api.v1.ai_advisor.prefix, tags=[settings.api.v1.ai_advisor.tag])
 
 
 def _user_rate_limit() -> str:

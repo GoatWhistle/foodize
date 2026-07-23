@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, NotRequired, TypedDict
+
+from pydantic import JsonValue, TypeAdapter, ValidationError
 
 from infra.llm.base import (
+    JsonObject,
     LLMClient,
     LLMResponse,
     Message,
@@ -20,19 +23,51 @@ from shared.i18n import DEFAULT_LANGUAGE, translate
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
 
+    from anthropic.types import (
+        ContentBlockParam,
+        MessageParam,
+        ToolChoiceParam,
+        ToolParam,
+        ToolResultBlockParam,
+        ToolUseBlockParam,
+    )
+
+    from infra.llm.protocols import AnthropicMessage, ContentBlock
+
 _EMPTY_PLACEHOLDER = translate("prompts.common.emptyResponse", DEFAULT_LANGUAGE)
 
+_ARGUMENTS_ADAPTER: TypeAdapter[JsonObject] = TypeAdapter(dict[str, JsonValue])
 
-def _to_tools(tools: list[ToolSpec]) -> list[dict[str, Any]]:
+
+class RequestKwargs(TypedDict):
+    model: str
+    max_tokens: int
+    system: str
+    messages: list[MessageParam]
+    tools: NotRequired[list[ToolParam]]
+    tool_choice: NotRequired[ToolChoiceParam]
+
+
+def _to_tool_choice(tool_choice: str) -> ToolChoiceParam:
+    match tool_choice:
+        case "any":
+            return {"type": "any"}
+        case "none":
+            return {"type": "none"}
+        case _:
+            return {"type": "auto"}
+
+
+def to_tools(tools: list[ToolSpec]) -> list[ToolParam]:
     return [
-        {"name": t.name, "description": t.description, "input_schema": t.input_schema}
+        {"name": t.name, "description": t.description, "input_schema": dict(t.input_schema)}
         for t in tools
     ]
 
 
-def _to_messages(messages: list[Message]) -> list[dict[str, Any]]:
-    out: list[dict[str, Any]] = []
-    pending_results: list[dict[str, Any]] = []
+def to_messages(messages: list[Message]) -> list[MessageParam]:
+    out: list[MessageParam] = []
+    pending_results: list[ToolResultBlockParam] = []
 
     def flush() -> None:
         if pending_results:
@@ -44,7 +79,7 @@ def _to_messages(messages: list[Message]) -> list[dict[str, Any]]:
             pending_results.append(
                 {
                     "type": "tool_result",
-                    "tool_use_id": message.tool_call_id,
+                    "tool_use_id": message.tool_call_id or "",
                     "content": message.content,
                 }
             )
@@ -55,13 +90,17 @@ def _to_messages(messages: list[Message]) -> list[dict[str, Any]]:
             content_text = message.content or _EMPTY_PLACEHOLDER
             out.append({"role": "user", "content": content_text})
         elif message.role == Role.ASSISTANT:
-            content: list[dict[str, Any]] = []
+            content: list[ContentBlockParam] = []
             if message.content:
                 content.append({"type": "text", "text": message.content})
             for call in message.tool_calls:
-                content.append(
-                    {"type": "tool_use", "id": call.id, "name": call.name, "input": call.arguments}
-                )
+                tool_use: ToolUseBlockParam = {
+                    "type": "tool_use",
+                    "id": call.id,
+                    "name": call.name,
+                    "input": dict(call.arguments),
+                }
+                content.append(tool_use)
             if not content:
                 content.append({"type": "text", "text": _EMPTY_PLACEHOLDER})
             out.append({"role": "assistant", "content": content})
@@ -70,14 +109,35 @@ def _to_messages(messages: list[Message]) -> list[dict[str, Any]]:
     return out
 
 
-def _parse_message(response: Any) -> LLMResponse:
+def _block_str(block: ContentBlock, field: str) -> str:
+    value = getattr(block, field, "")
+    return value if isinstance(value, str) else ""
+
+
+def _to_arguments(raw: object) -> JsonObject:
+    try:
+        return _ARGUMENTS_ADAPTER.validate_python(raw)
+    except ValidationError:
+        return {}
+
+
+def parse_message(response: AnthropicMessage) -> LLMResponse:
     text_parts: list[str] = []
     calls: list[ToolCall] = []
     for block in response.content:
-        if block.type == "text":
-            text_parts.append(block.text)
-        elif block.type == "tool_use":
-            calls.append(ToolCall(id=block.id, name=block.name, arguments=dict(block.input or {})))
+        match block.type:
+            case "text":
+                text_parts.append(_block_str(block, "text"))
+            case "tool_use":
+                calls.append(
+                    ToolCall(
+                        id=_block_str(block, "id"),
+                        name=_block_str(block, "name"),
+                        arguments=_to_arguments(getattr(block, "input", None)),
+                    )
+                )
+            case _:
+                continue
 
     return LLMResponse(
         text="".join(text_parts),
@@ -117,17 +177,17 @@ class AnthropicClient(LLMClient):
         messages: list[Message],
         tools: list[ToolSpec] | None,
         tool_choice: str | None,
-    ) -> dict[str, Any]:
-        kwargs: dict[str, Any] = {
+    ) -> RequestKwargs:
+        kwargs: RequestKwargs = {
             "model": self._model,
             "max_tokens": self._max_tokens,
             "system": system,
-            "messages": _to_messages(messages),
+            "messages": to_messages(messages),
         }
         if tools:
-            kwargs["tools"] = _to_tools(tools)
+            kwargs["tools"] = to_tools(tools)
         if tool_choice is not None:
-            kwargs["tool_choice"] = {"type": tool_choice}
+            kwargs["tool_choice"] = _to_tool_choice(tool_choice)
         return kwargs
 
     async def complete(
@@ -140,7 +200,7 @@ class AnthropicClient(LLMClient):
     ) -> LLMResponse:
         kwargs = self._request_kwargs(system, messages, tools, tool_choice)
         response = await self._client.messages.create(**kwargs)
-        return _parse_message(response)
+        return parse_message(response)
 
     async def stream(
         self,
@@ -165,7 +225,7 @@ class AnthropicClient(LLMClient):
                 elif event.type == "content_block_start" and event.content_block.type == "tool_use":
                     yield ToolUseStart(name=event.content_block.name)
             message = await asyncio.wait_for(stream.get_final_message(), timeout=self._timeout)
-        yield _parse_message(message)
+        yield parse_message(message)
 
     async def aclose(self) -> None:
         await self._client.close()

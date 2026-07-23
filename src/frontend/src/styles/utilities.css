@@ -1,38 +1,9 @@
-.text-muted {
-  color: var(--text-3);
-}
-
 .text-accent {
   color: var(--fire);
 }
 
 .font-bold {
   font-weight: var(--weight-display);
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
-}
-
-.glass {
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border);
-}
-
-.divider {
-  height: 1px;
-  background: var(--border);
-  margin: 12px 0;
 }
 
 .not-found-pin {

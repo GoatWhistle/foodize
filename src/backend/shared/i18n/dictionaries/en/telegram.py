@@ -1,6 +1,6 @@
-from typing import Any
+from shared.i18n.types import TranslationTree
 
-TELEGRAM: dict[str, Any] = {
+TELEGRAM: TranslationTree = {
     "siteLoginCode": {
         "plain": (
             "Your Foodize website login code: {code}\n\n"

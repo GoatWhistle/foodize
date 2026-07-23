@@ -39,7 +39,6 @@ class TestMenuService:
             assert total == 0
 
     async def test_get_menu_with_items(self) -> None:
-
         restaurant_id = uuid.uuid4()
         item = MagicMock()
         item.id = uuid.uuid4()
@@ -70,7 +69,6 @@ class TestMenuService:
             assert total == 1
 
     async def test_add_menu_item_success(self) -> None:
-
         restaurant_id = uuid.uuid4()
         vendor_id = uuid.uuid4()
         item_data = MenuItemCreate(name="Burger", description="Tasty", price=800)
@@ -101,7 +99,6 @@ class TestMenuService:
             assert result.name == "Burger"
 
     async def test_update_menu_item_success(self) -> None:
-
         restaurant_id = uuid.uuid4()
         vendor_id = uuid.uuid4()
         item_id = uuid.uuid4()
@@ -134,7 +131,7 @@ class TestMenuService:
 
         with (
             patch(
-                "features.menu.services._shared.get_restaurant_and_check_ownership",
+                "features.menu.services.shared.get_restaurant_and_check_ownership",
                 new_callable=AsyncMock,
             ),
             patch(
@@ -162,7 +159,7 @@ class TestMenuService:
 
         with (
             patch(
-                "features.menu.services._shared.get_restaurant_and_check_ownership",
+                "features.menu.services.shared.get_restaurant_and_check_ownership",
                 new_callable=AsyncMock,
             ),
             patch(
@@ -175,14 +172,13 @@ class TestMenuService:
             await delete_menu_item_for_vendor(_mock_session(), restaurant_id, item_id, vendor_id)
 
     async def test_delete_menu_item_not_found(self) -> None:
-
         restaurant_id = uuid.uuid4()
         vendor_id = uuid.uuid4()
         item_id = uuid.uuid4()
 
         with (
             patch(
-                "features.menu.services._shared.get_restaurant_and_check_ownership",
+                "features.menu.services.shared.get_restaurant_and_check_ownership",
                 new_callable=AsyncMock,
             ),
             patch(
@@ -190,6 +186,6 @@ class TestMenuService:
                 new_callable=AsyncMock,
                 return_value=None,
             ),
+            pytest.raises(MenuItemNotFoundException),
         ):
-            with pytest.raises(MenuItemNotFoundException):
-                await delete_menu_item_for_vendor(MagicMock(), restaurant_id, item_id, vendor_id)
+            await delete_menu_item_for_vendor(MagicMock(), restaurant_id, item_id, vendor_id)

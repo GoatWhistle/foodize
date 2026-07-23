@@ -1,9 +1,10 @@
-from typing import Any
+from dataclasses import dataclass
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.restaurants.crud import create_restaurant
+from features.restaurants.models import Restaurant
 from features.restaurants.schemas import RestaurantCreate
 from features.reviews.crud import (
     count_reviews_by_restaurant,
@@ -14,14 +15,21 @@ from features.reviews.crud import (
 )
 from features.reviews.schemas import ReviewCreate
 from features.users.crud import create_user
+from features.users.models import User
 from features.users.schemas import UserCreate
 from features.vendors.crud import create_vendor_profile
-from features.vendors.schemas import VendorCreate
 from shared.enums.roles import UserRole
 
 
+@dataclass(frozen=True)
+class ReviewSeed:
+    restaurant: Restaurant
+    user1: User
+    user2: User
+
+
 @pytest.fixture
-async def seeded(db_session: AsyncSession) -> dict[str, Any]:
+async def seeded(db_session: AsyncSession) -> ReviewSeed:
     vendor_user = await create_user(
         db_session,
         UserCreate(
@@ -31,7 +39,7 @@ async def seeded(db_session: AsyncSession) -> dict[str, Any]:
             user_role=UserRole.VENDOR,
         ),
     )
-    vendor_profile = await create_vendor_profile(db_session, vendor_user, VendorCreate())
+    vendor_profile = await create_vendor_profile(db_session, vendor_user)
     restaurant = await create_restaurant(
         db_session,
         RestaurantCreate(name="Review Rest", address="R St"),
@@ -56,12 +64,12 @@ async def seeded(db_session: AsyncSession) -> dict[str, Any]:
             user_role=UserRole.CUSTOMER,
         ),
     )
-    return {"restaurant": restaurant, "user1": user1, "user2": user2}
+    return ReviewSeed(restaurant=restaurant, user1=user1, user2=user2)
 
 
-async def test_create_and_get_review(db_session: AsyncSession, seeded: dict[str, Any]) -> None:
-    restaurant = seeded["restaurant"]
-    user = seeded["user1"]
+async def test_create_and_get_review(db_session: AsyncSession, seeded: ReviewSeed) -> None:
+    restaurant = seeded.restaurant
+    user = seeded.user1
 
     review = await create_review(
         db_session, ReviewCreate(rating=5, text="Amazing!"), user.id, restaurant.id
@@ -74,32 +82,28 @@ async def test_create_and_get_review(db_session: AsyncSession, seeded: dict[str,
     assert review.restaurant_id == restaurant.id
 
 
-async def test_get_reviews_by_restaurant(db_session: AsyncSession, seeded: dict[str, Any]) -> None:
-    restaurant = seeded["restaurant"]
+async def test_get_reviews_by_restaurant(db_session: AsyncSession, seeded: ReviewSeed) -> None:
+    restaurant = seeded.restaurant
 
-    await create_review(db_session, ReviewCreate(rating=4), seeded["user1"].id, restaurant.id)
-    await create_review(db_session, ReviewCreate(rating=2), seeded["user2"].id, restaurant.id)
+    await create_review(db_session, ReviewCreate(rating=4), seeded.user1.id, restaurant.id)
+    await create_review(db_session, ReviewCreate(rating=2), seeded.user2.id, restaurant.id)
 
     reviews = await get_reviews_by_restaurant(db_session, restaurant.id)
     assert len(reviews) == 2
 
 
-async def test_count_reviews_by_restaurant(
-    db_session: AsyncSession, seeded: dict[str, Any]
-) -> None:
-    restaurant = seeded["restaurant"]
+async def test_count_reviews_by_restaurant(db_session: AsyncSession, seeded: ReviewSeed) -> None:
+    restaurant = seeded.restaurant
 
     assert await count_reviews_by_restaurant(db_session, restaurant.id) == 0
 
-    await create_review(db_session, ReviewCreate(rating=3), seeded["user1"].id, restaurant.id)
+    await create_review(db_session, ReviewCreate(rating=3), seeded.user1.id, restaurant.id)
     assert await count_reviews_by_restaurant(db_session, restaurant.id) == 1
 
 
-async def test_get_user_review_for_restaurant(
-    db_session: AsyncSession, seeded: dict[str, Any]
-) -> None:
-    restaurant = seeded["restaurant"]
-    user = seeded["user1"]
+async def test_get_user_review_for_restaurant(db_session: AsyncSession, seeded: ReviewSeed) -> None:
+    restaurant = seeded.restaurant
+    user = seeded.user1
 
     assert await get_user_review_for_restaurant(db_session, user.id, restaurant.id) is None
 
@@ -110,15 +114,15 @@ async def test_get_user_review_for_restaurant(
     assert found.user_id == user.id
 
 
-async def test_get_restaurant_avg_rating(db_session: AsyncSession, seeded: dict[str, Any]) -> None:
-    restaurant = seeded["restaurant"]
+async def test_get_restaurant_avg_rating(db_session: AsyncSession, seeded: ReviewSeed) -> None:
+    restaurant = seeded.restaurant
 
     avg, count = await get_restaurant_avg_rating(db_session, restaurant.id)
     assert avg is None
     assert count == 0
 
-    await create_review(db_session, ReviewCreate(rating=4), seeded["user1"].id, restaurant.id)
-    await create_review(db_session, ReviewCreate(rating=2), seeded["user2"].id, restaurant.id)
+    await create_review(db_session, ReviewCreate(rating=4), seeded.user1.id, restaurant.id)
+    await create_review(db_session, ReviewCreate(rating=2), seeded.user2.id, restaurant.id)
 
     avg, count = await get_restaurant_avg_rating(db_session, restaurant.id)
     assert count == 2

@@ -1,5 +1,4 @@
 from io import BytesIO
-from typing import Any
 
 import pytest
 from PIL import Image
@@ -36,10 +35,10 @@ def test_detect_image_ext_rejects_non_image() -> None:
 def test_upload_uses_detected_ext_not_client_type(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    captured: dict[str, Any] = {}
+    captured: dict[str, object] = {}
 
     class _FakeClient:
-        def put_object(self, **kwargs: Any) -> None:
+        def put_object(self, **kwargs: object) -> None:
             captured.update(kwargs)
 
     monkeypatch.setattr(s3, "_client", lambda: _FakeClient())
@@ -47,9 +46,11 @@ def test_upload_uses_detected_ext_not_client_type(
 
     url = s3._upload_image_sync(_png_bytes(), "image/jpeg", "menu")
 
-    assert captured["Key"].endswith(".png")
+    key = captured["Key"]
+    assert isinstance(key, str)
+    assert key.endswith(".png")
     assert captured["ContentType"] == "image/png"
-    assert url.endswith(captured["Key"])
+    assert url.endswith(key)
 
 
 def test_upload_rejects_disallowed_client_type() -> None:
@@ -58,14 +59,14 @@ def test_upload_rejects_disallowed_client_type() -> None:
 
 
 def test_delete_ignores_untrusted_key(monkeypatch: pytest.MonkeyPatch) -> None:
-    deleted: list[Any] = []
+    deleted: list[dict[str, object]] = []
 
     class _FakeClient:
-        def delete_object(self, **kwargs: Any) -> None:
+        def delete_object(self, **kwargs: object) -> None:
             deleted.append(kwargs)
 
     monkeypatch.setattr(s3, "_client", lambda: _FakeClient())
-    monkeypatch.setattr(s3, "_key_from_url", lambda url: "menu/../../etc/passwd")
+    monkeypatch.setattr(s3, "_key_from_url", lambda _url: "menu/../../etc/passwd")
 
     s3._delete_image_sync("http://x/menu/../../etc/passwd")
     assert deleted == []

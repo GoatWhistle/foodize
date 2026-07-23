@@ -39,16 +39,10 @@
   box-shadow: none;
 }
 
-.btn-secondary {
-  background: var(--bg-card);
-  color: var(--text-1);
-  border: 1px solid var(--border-mid);
-  box-shadow: var(--shadow-sm);
-}
-
-.btn-secondary:hover {
+.btn-secondary:active {
   background: var(--bg-raised);
   border-color: var(--border-hi);
+  transform: scale(0.97);
 }
 
 .btn-ghost {
@@ -57,9 +51,10 @@
   padding: 10px 16px;
 }
 
-.btn-ghost:hover {
+.btn-ghost:active {
   color: var(--text-1);
   background: var(--bg-surface);
+  transform: scale(0.97);
 }
 
 .btn-sm {
@@ -67,10 +62,6 @@
   padding: 8px 12px;
   min-height: 36px;
   letter-spacing: 0.04em;
-}
-
-.btn-full {
-  width: 100%;
 }
 
 .btn-icon {
@@ -118,12 +109,14 @@
 }
 
 @media (max-width: 599px) {
-  .btn {
-    padding: 12px 20px;
-    min-height: 44px;
-  }
-
   .btn-sm {
     padding: 7px 12px;
+    min-height: 40px;
+  }
+
+  .btn-icon-sm {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
   }
 }

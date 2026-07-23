@@ -7,13 +7,14 @@ from database import db_helper
 from features.favorites import service
 from features.favorites.schemas import FavoriteResponse
 from features.users.models import User
+from settings.config.app_config import settings
 from shared.dependencies import require_permission
 from shared.enums.permissions import Permission
 from shared.response import build_list_response, build_response
 from shared.restaurant_resolver import resolve_restaurant_uuid
 from shared.schemas.response import SuccessListResponse, SuccessResponse
 
-router = APIRouter(prefix="/favorites", tags=["Favorites"])
+router = APIRouter(prefix=settings.api.v1.favorites.prefix, tags=[settings.api.v1.favorites.tag])
 
 
 @router.get("", response_model=SuccessListResponse[FavoriteResponse])

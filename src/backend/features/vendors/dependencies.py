@@ -24,7 +24,7 @@ def _is_admin(user: User) -> bool:
     return has_permission(user.permissions, Permission.ADMIN_ACCESS)
 
 
-async def _ensure_admin_vendor_profile(
+async def ensure_admin_vendor_profile(
     session: AsyncSession,
     user: User,
 ) -> VendorProfile:
@@ -73,13 +73,13 @@ async def get_current_vendor(
     loaded_user = result.scalar_one_or_none()
     if not loaded_user or not loaded_user.vendor_profile:
         if _is_admin(user):
-            return await _ensure_admin_vendor_profile(session, user)
+            return await ensure_admin_vendor_profile(session, user)
         raise VendorProfileNotFoundException()
     vendor = loaded_user.vendor_profile
     if _is_admin(user) and (
         vendor.approval_status != ModerationStatus.APPROVED.value or vendor.rejection_reason
     ):
-        return await _ensure_admin_vendor_profile(session, user)
+        return await ensure_admin_vendor_profile(session, user)
     if vendor.approval_status != ModerationStatus.APPROVED.value or vendor.rejection_reason:
         raise VendorNotApprovedException()
     return vendor

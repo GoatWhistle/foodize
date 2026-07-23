@@ -1,76 +1,41 @@
-.restaurant-hero {
-  position: relative;
-  width: 100%;
-  aspect-ratio: var(--img-ratio-hero);
-  max-height: clamp(240px, 42vh, 420px);
-  overflow: hidden;
-  background: var(--bg-surface);
-}
-
-.restaurant-hero-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-  filter: saturate(1.04) contrast(1.02);
-}
-
-.restaurant-hero-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 5rem;
-  background: linear-gradient(135deg, var(--bg-surface), var(--bg-raised));
-}
-
-.restaurant-hero-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 74%;
-  background: linear-gradient(
-    to top,
-    var(--overlay-scrim-strong) 0%,
-    transparent 100%
-  );
-}
-
-.restaurant-hero-info {
-  position: absolute;
-  bottom: 24px;
-  left: 24px;
-  right: 24px;
-  color: var(--white);
-}
-
-.restaurant-hero-name {
-  font-family: var(--font-sans);
-  font-size: var(--text-2xl);
-  font-weight: var(--weight-display);
-  letter-spacing: -0.03em;
-  line-height: var(--lh-tight);
-  margin-bottom: 12px;
-  text-wrap: balance;
-}
-
 .restaurant-content {
   padding: 0 var(--gutter);
   padding-bottom: 120px;
 }
 
-.menu-categories-scroll {
+.restaurant-hero-actions {
   display: flex;
-  gap: var(--space-sm);
-  padding: var(--space-lg) 0 var(--space-md);
-  overflow-x: auto;
-  scrollbar-width: none;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.menu-categories-scroll::-webkit-scrollbar {
-  display: none;
+.hero-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--on-photo-fill);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--on-photo-line);
+  color: var(--on-photo);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all var(--dur-sm);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hero-icon-btn:active {
+  transform: scale(0.92);
+}
+
+.hero-icon-btn.active {
+  background: var(--color-error-bg);
+  border-color: var(--error);
+  color: var(--error);
 }
 
 .menu-category-group {
@@ -102,9 +67,11 @@
   gap: var(--space-md);
 }
 
-.review-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--border-mid) !important;
+@media (hover: hover) {
+  .review-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--border-mid) !important;
+  }
 }
 
 .rating-star {
@@ -118,9 +85,11 @@
     transform var(--dur-sm) var(--ease-out);
 }
 
-.rating-star:hover {
-  transform: scale(1.1);
-  filter: drop-shadow(0 2px 8px var(--fire-glow));
+@media (hover: hover) {
+  .rating-star:hover {
+    transform: scale(1.1);
+    filter: drop-shadow(0 2px 8px var(--fire-glow));
+  }
 }
 
 .rating-star--selected {
@@ -133,6 +102,33 @@
 .review-card--own {
   background: var(--fire-subtle);
   border-color: var(--fire);
+}
+
+.hiring-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 10px 14px;
+  margin-top: var(--space-md);
+  border-radius: var(--r-sm);
+  border: 1px dashed var(--border-mid);
+  background: var(--bg-card);
+  color: var(--text-3);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-strong);
+  transition:
+    color var(--dur-sm),
+    border-color var(--dur-sm),
+    background var(--dur-sm);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hiring-hint:hover,
+.hiring-hint:active {
+  color: var(--text-1);
+  border-color: var(--border-hi);
+  background: var(--bg-surface);
 }
 
 .verified-purchase-badge {
@@ -150,22 +146,15 @@
 }
 
 @media (max-width: 599px) {
-  .restaurant-hero {
-    max-height: clamp(196px, 34vh, 300px);
-  }
-
-  .restaurant-hero-name {
-    font-size: clamp(var(--text-lg), 4vw, var(--text-2xl));
-  }
-
-  .restaurant-hero-info {
-    bottom: 16px;
-    left: 16px;
-    right: 16px;
-  }
-
   .restaurant-content {
     padding: 0 var(--gutter);
-    padding-bottom: 100px;
+    padding-bottom: calc(
+      var(--bottom-tab-h) + env(safe-area-inset-bottom, 0px) + 80px
+    );
+  }
+
+  .hero-icon-btn {
+    width: 44px;
+    height: 44px;
   }
 }

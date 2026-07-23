@@ -89,18 +89,20 @@ class TestUpdateRestaurantForVendor:
         mock_update.assert_awaited_once_with(mock_db_session, mock_restaurant, update_data)
 
     async def test_update_wrong_vendor_raises(self, mock_db_session: AsyncMock) -> None:
-        with patch(
-            "features.restaurants.service.get_restaurant_and_check_ownership",
-            new_callable=AsyncMock,
-            side_effect=NotFoundException(),
+        with (
+            patch(
+                "features.restaurants.service.get_restaurant_and_check_ownership",
+                new_callable=AsyncMock,
+                side_effect=NotFoundException(),
+            ),
+            pytest.raises(NotFoundException),
         ):
-            with pytest.raises(NotFoundException):
-                await update_restaurant_for_vendor(
-                    mock_db_session,
-                    uuid.uuid4(),
-                    RestaurantUpdate(name="x"),
-                    uuid.uuid4(),
-                )
+            await update_restaurant_for_vendor(
+                mock_db_session,
+                uuid.uuid4(),
+                RestaurantUpdate(name="x"),
+                uuid.uuid4(),
+            )
 
 
 class TestGetMyRestaurants:

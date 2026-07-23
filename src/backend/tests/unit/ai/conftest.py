@@ -1,5 +1,4 @@
 from collections.abc import AsyncIterator
-from typing import Any
 
 from infra.llm.base import (
     LLMClient,
@@ -22,8 +21,8 @@ class FakeLLMClient(LLMClient):
         self._responses = list(responses)
         self._delta_size = delta_size
         self._tool_use_before_text = tool_use_before_text
-        self.complete_calls: list[dict[str, Any]] = []
-        self.stream_calls: list[dict[str, Any]] = []
+        self.complete_calls: list[dict[str, object]] = []
+        self.stream_calls: list[dict[str, object]] = []
 
     @property
     def model(self) -> str:

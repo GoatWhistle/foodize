@@ -2,6 +2,7 @@ import uuid
 from http import HTTPStatus
 from unittest.mock import AsyncMock, patch
 
+import pytest
 from httpx import AsyncClient
 
 from features.users.models import User
@@ -40,8 +41,9 @@ class TestVendorsAPI:
         data = response.json()["data"]
         assert data["approval_status"] == ModerationStatus.APPROVED.value
 
+    @pytest.mark.usefixtures("as_user")
     async def test_create_vendor_requires_permission(
-        self, client: AsyncClient, as_user: User
+        self, client: AsyncClient
     ) -> None:
         response = await client.post("/api/v1/vendors/", json={})
         assert response.status_code == HTTPStatus.FORBIDDEN

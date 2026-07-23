@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Foodize API",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
   "paths": {
     "/api/v1/admin/users": {
@@ -1448,7 +1448,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessResponse_dict_str__Any__"
+                  "$ref": "#/components/schemas/SuccessResponse_BatchAffectedResult_"
                 }
               }
             }
@@ -2011,7 +2011,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessListResponse_dict_str__Any__"
+                  "$ref": "#/components/schemas/SuccessListResponse_AuditLogEntry_"
                 }
               }
             }
@@ -2590,40 +2590,6 @@
           }
         ],
         "parameters": [
-          {
-            "name": "date_from",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "date"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Date From"
-            }
-          },
-          {
-            "name": "date_to",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "date"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Date To"
-            }
-          },
           {
             "name": "accept-language",
             "in": "header",
@@ -3392,6 +3358,158 @@
         }
       }
     },
+    "/api/v1/loyalty/programs/{restaurant_id}": {
+      "get": {
+        "tags": [
+          "Loyalty"
+        ],
+        "summary": "Get Program",
+        "operationId": "get_program_api_v1_loyalty_programs__restaurant_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearerWithCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "restaurant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Restaurant Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_LoyaltyProgramResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Loyalty"
+        ],
+        "summary": "Upsert Program",
+        "operationId": "upsert_program_api_v1_loyalty_programs__restaurant_id__put",
+        "security": [
+          {
+            "OAuth2PasswordBearerWithCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "restaurant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Restaurant Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoyaltyProgramUpsert"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_LoyaltyProgramResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/loyalty/restaurants/{restaurant_id}/status": {
+      "get": {
+        "tags": [
+          "Loyalty"
+        ],
+        "summary": "Get Status",
+        "operationId": "get_status_api_v1_loyalty_restaurants__restaurant_id__status_get",
+        "security": [
+          {
+            "OAuth2PasswordBearerWithCookie": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "restaurant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Restaurant Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse_LoyaltyStatusResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/staff/me": {
       "get": {
         "tags": [
@@ -3831,16 +3949,6 @@
         ],
         "summary": "Create Vendor",
         "operationId": "create_vendor_api_v1_vendors__post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/VendorCreate"
-              }
-            }
-          },
-          "required": true
-        },
         "responses": {
           "201": {
             "description": "Successful Response",
@@ -3848,16 +3956,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SuccessResponse_VendorResponse_"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -7587,15 +7685,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/components/schemas/SuccessResponse_UserRead_"
-                    },
-                    {
-                      "$ref": "#/components/schemas/SuccessResponse_UserPublicRead_"
-                    }
-                  ],
-                  "title": "Response Read User Api V1 Users  User Id  Get"
+                  "$ref": "#/components/schemas/SuccessResponse_Union_UserRead__UserPublicRead__"
                 }
               }
             }
@@ -8365,6 +8455,66 @@
         ],
         "title": "AnalyticsPoint"
       },
+      "AuditLogEntry": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "actor_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Id"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "entity_type": {
+            "type": "string",
+            "title": "Entity Type"
+          },
+          "entity_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Id"
+          },
+          "details": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Details"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "actor_id",
+          "action",
+          "entity_type",
+          "entity_id",
+          "details",
+          "created_at"
+        ],
+        "title": "AuditLogEntry"
+      },
       "AvailabilityUpdate": {
         "properties": {
           "is_available": {
@@ -8982,6 +9132,427 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "JsonValue": {},
+      "LoyaltyProgramResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "restaurant_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Restaurant Id"
+          },
+          "type": {
+            "$ref": "#/components/schemas/LoyaltyProgramType"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "tier_basis": {
+            "$ref": "#/components/schemas/LoyaltyTierBasis"
+          },
+          "min_order_amount": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Order Amount"
+          },
+          "punches_required": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Punches Required"
+          },
+          "reward_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LoyaltyRewardType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reward_value": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reward Value"
+          },
+          "reward_menu_item_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reward Menu Item Id"
+          },
+          "max_redeem_percent": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Redeem Percent"
+          },
+          "tiers": {
+            "items": {
+              "$ref": "#/components/schemas/LoyaltyTierResponse"
+            },
+            "type": "array",
+            "title": "Tiers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "restaurant_id",
+          "type",
+          "is_active",
+          "tier_basis",
+          "min_order_amount",
+          "punches_required",
+          "reward_type",
+          "reward_value",
+          "reward_menu_item_id",
+          "max_redeem_percent",
+          "tiers"
+        ],
+        "title": "LoyaltyProgramResponse"
+      },
+      "LoyaltyProgramType": {
+        "type": "string",
+        "enum": [
+          "PUNCH_CARD",
+          "CASHBACK"
+        ],
+        "title": "LoyaltyProgramType"
+      },
+      "LoyaltyProgramUpsert": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/LoyaltyProgramType"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          },
+          "tier_basis": {
+            "$ref": "#/components/schemas/LoyaltyTierBasis",
+            "default": "ORDERS"
+          },
+          "min_order_amount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Order Amount"
+          },
+          "punches_required": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Punches Required"
+          },
+          "reward_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LoyaltyRewardType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reward_value": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reward Value"
+          },
+          "reward_menu_item_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reward Menu Item Id"
+          },
+          "max_redeem_percent": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Max Redeem Percent",
+            "default": 100
+          },
+          "tiers": {
+            "items": {
+              "$ref": "#/components/schemas/LoyaltyTierInput"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Tiers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "title": "LoyaltyProgramUpsert"
+      },
+      "LoyaltyRewardResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "reward_type": {
+            "$ref": "#/components/schemas/LoyaltyRewardType"
+          },
+          "reward_value": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reward Value"
+          },
+          "reward_menu_item_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reward Menu Item Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/LoyaltyRewardStatus"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "reward_type",
+          "reward_value",
+          "reward_menu_item_id",
+          "status",
+          "created_at"
+        ],
+        "title": "LoyaltyRewardResponse"
+      },
+      "LoyaltyRewardStatus": {
+        "type": "string",
+        "enum": [
+          "AVAILABLE",
+          "USED"
+        ],
+        "title": "LoyaltyRewardStatus"
+      },
+      "LoyaltyRewardType": {
+        "type": "string",
+        "enum": [
+          "FREE_ITEM",
+          "DISCOUNT_PERCENT",
+          "DISCOUNT_FIXED"
+        ],
+        "title": "LoyaltyRewardType"
+      },
+      "LoyaltyStatusResponse": {
+        "properties": {
+          "program": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LoyaltyProgramResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "points_balance": {
+            "type": "integer",
+            "title": "Points Balance"
+          },
+          "punches_count": {
+            "type": "integer",
+            "title": "Punches Count"
+          },
+          "orders_count": {
+            "type": "integer",
+            "title": "Orders Count"
+          },
+          "total_spent": {
+            "type": "integer",
+            "title": "Total Spent"
+          },
+          "current_tier": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LoyaltyTierResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "next_tier": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LoyaltyTierResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rewards": {
+            "items": {
+              "$ref": "#/components/schemas/LoyaltyRewardResponse"
+            },
+            "type": "array",
+            "title": "Rewards"
+          }
+        },
+        "type": "object",
+        "required": [
+          "program",
+          "points_balance",
+          "punches_count",
+          "orders_count",
+          "total_spent",
+          "current_tier",
+          "next_tier",
+          "rewards"
+        ],
+        "title": "LoyaltyStatusResponse"
+      },
+      "LoyaltyTierBasis": {
+        "type": "string",
+        "enum": [
+          "ORDERS",
+          "SPENT"
+        ],
+        "title": "LoyaltyTierBasis"
+      },
+      "LoyaltyTierInput": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "threshold": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Threshold"
+          },
+          "cashback_percent": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Cashback Percent"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "threshold",
+          "cashback_percent"
+        ],
+        "title": "LoyaltyTierInput"
+      },
+      "LoyaltyTierResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "threshold": {
+            "type": "integer",
+            "title": "Threshold"
+          },
+          "cashback_percent": {
+            "type": "integer",
+            "title": "Cashback Percent"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "threshold",
+          "cashback_percent"
+        ],
+        "title": "LoyaltyTierResponse"
       },
       "MenuItemCreate": {
         "properties": {
@@ -9809,6 +10380,24 @@
               }
             ],
             "title": "Requested Pickup At"
+          },
+          "redeem_points": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Redeem Points",
+            "default": 0
+          },
+          "loyalty_reward_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Loyalty Reward Id"
           }
         },
         "type": "object",
@@ -10357,6 +10946,8 @@
           "reviews.moderate",
           "promos.validate",
           "promos.manage",
+          "loyalty.read",
+          "loyalty.manage",
           "vendors.create",
           "vendors.read_own",
           "vendors.analytics_read",
@@ -11467,6 +12058,29 @@
         ],
         "title": "SuccessListResponse[AdminVendorResponse]"
       },
+      "SuccessListResponse_AuditLogEntry_": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/AuditLogEntry"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "title": "SuccessListResponse[AuditLogEntry]"
+      },
       "SuccessListResponse_FavoriteResponse_": {
         "properties": {
           "data": {
@@ -11697,30 +12311,6 @@
         ],
         "title": "SuccessListResponse[TelegramBotOrderSummary]"
       },
-      "SuccessListResponse_dict_str__Any__": {
-        "properties": {
-          "data": {
-            "items": {
-              "additionalProperties": true,
-              "type": "object"
-            },
-            "type": "array",
-            "title": "Data"
-          },
-          "pagination": {
-            "$ref": "#/components/schemas/Pagination"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/Meta"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data",
-          "pagination"
-        ],
-        "title": "SuccessListResponse[dict[str, Any]]"
-      },
       "SuccessResponse_AdminRestaurantResponse_": {
         "properties": {
           "data": {
@@ -11885,6 +12475,36 @@
           "data"
         ],
         "title": "SuccessResponse[FinanceAnalytics]"
+      },
+      "SuccessResponse_LoyaltyProgramResponse_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/LoyaltyProgramResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessResponse[LoyaltyProgramResponse]"
+      },
+      "SuccessResponse_LoyaltyStatusResponse_": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/LoyaltyStatusResponse"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SuccessResponse[LoyaltyStatusResponse]"
       },
       "SuccessResponse_MenuItemOptionGroupResponse_": {
         "properties": {
@@ -12171,10 +12791,18 @@
         ],
         "title": "SuccessResponse[TokenResponse]"
       },
-      "SuccessResponse_UserPublicRead_": {
+      "SuccessResponse_Union_UserRead__UserPublicRead__": {
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/UserPublicRead"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserRead"
+              },
+              {
+                "$ref": "#/components/schemas/UserPublicRead"
+              }
+            ],
+            "title": "Data"
           },
           "meta": {
             "$ref": "#/components/schemas/Meta"
@@ -12184,7 +12812,7 @@
         "required": [
           "data"
         ],
-        "title": "SuccessResponse[UserPublicRead]"
+        "title": "SuccessResponse[Union[UserRead, UserPublicRead]]"
       },
       "SuccessResponse_UserRead_": {
         "properties": {
@@ -12215,23 +12843,6 @@
           "data"
         ],
         "title": "SuccessResponse[VendorResponse]"
-      },
-      "SuccessResponse_dict_str__Any__": {
-        "properties": {
-          "data": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Data"
-          },
-          "meta": {
-            "$ref": "#/components/schemas/Meta"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "title": "SuccessResponse[dict[str, Any]]"
       },
       "SuccessResponse_list_WorkingHoursRead__": {
         "properties": {
@@ -12978,11 +13589,6 @@
           "type"
         ],
         "title": "ValidationError"
-      },
-      "VendorCreate": {
-        "properties": {},
-        "type": "object",
-        "title": "VendorCreate"
       },
       "VendorResponse": {
         "properties": {

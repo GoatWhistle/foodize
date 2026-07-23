@@ -2,6 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import type { BootAction } from "../telegram/bootFlow";
+import { ready, resetDom, type AuthState } from "./appTestState";
 
 const runBootFlowMock = vi.hoisted(() => vi.fn());
 vi.mock("../telegram/bootFlow", () => ({
@@ -77,13 +78,8 @@ vi.mock("react-router-dom", () => ({
   RouterProvider: () => <div data-testid="router-provider" />,
 }));
 
-interface AuthState {
-  fetchMe: Mock;
-  user: { id: string } | null;
-}
 const authState = vi.hoisted(
-  () =>
-    ({ fetchMe: vi.fn(), user: null as { id: string } | null }),
+  () => ({ fetchMe: vi.fn(), user: null as { id: string } | null }),
 );
 vi.mock("../store/useAuthStore", () => {
   const useAuthStore = ((sel: (s: AuthState) => unknown) =>
@@ -131,22 +127,17 @@ vi.mock("../store/useNotificationStore", () => ({
 
 import { App } from "../App";
 
-const ready = (startParam?: string | null): BootAction =>
-  ({ type: "ready", startParam }) as BootAction;
-
 beforeEach(() => {
   vi.clearAllMocks();
-  localStorage.clear();
+  resetDom();
   authState.user = null;
   authState.fetchMe.mockResolvedValue(undefined);
   cartState.cart = [];
   sdk.colorScheme = "dark";
-  document.documentElement.removeAttribute("data-theme");
-  window.history.replaceState(null, "", "/");
   runBootFlowMock.mockResolvedValue(ready(null));
 });
 
-describe("App", () => {
+describe("App boot and auth screens", () => {
   it("shows the spinner while booting", async () => {
     let resolveBoot!: (a: BootAction) => void;
     runBootFlowMock.mockReturnValueOnce(
@@ -203,108 +194,12 @@ describe("App", () => {
     );
   });
 
-  it("applies a deep link to an order start param on ready", async () => {
-    runBootFlowMock.mockResolvedValueOnce(ready("order_a1b2"));
-    render(<App />);
-    await screen.findByTestId("router-provider");
-    await waitFor(() => {
-      expect(window.location.pathname).toBe("/orders/a1b2");
-    });
-  });
-
-  it("applies a deep link to a restaurant start param on ready", async () => {
-    runBootFlowMock.mockResolvedValueOnce(ready("restaurant_77"));
-    render(<App />);
-    await screen.findByTestId("router-provider");
-    await waitFor(() => {
-      expect(window.location.pathname).toBe("/restaurant/77");
-    });
-  });
-
-  it("ignores a deep link with an invalid id", async () => {
-    runBootFlowMock.mockResolvedValueOnce(ready("order_bad id!"));
-    render(<App />);
-    await screen.findByTestId("router-provider");
-    expect(window.location.pathname).toBe("/");
-  });
-
-  it("navigates via the deep link captured during registration on success", async () => {
-    runBootFlowMock.mockResolvedValueOnce({
-      type: "register",
-      initData: "i",
-      phoneNumber: null,
-      startParam: "restaurant_55",
-    });
-    render(<App />);
-    await userEvent.click(await screen.findByText("register-success"));
-    await waitFor(() => {
-      expect(window.location.pathname).toBe("/restaurant/55");
-    });
-  });
-
   it("falls back to the login page when boot throws", async () => {
     runBootFlowMock.mockRejectedValueOnce(new Error("boot failed"));
     render(<App />);
     expect(await screen.findByTestId("login-page")).toHaveTextContent(
       "login:",
     );
-  });
-
-  it("enables closing confirmation when the cart is not empty", async () => {
-    cartState.cart = [{ id: "x" }];
-    render(<App />);
-    await screen.findByTestId("router-provider");
-    expect(sdk.enableClosingConfirmation).toHaveBeenCalled();
-  });
-
-  it("disables closing confirmation when the cart is empty", async () => {
-    render(<App />);
-    await screen.findByTestId("router-provider");
-    expect(sdk.disableClosingConfirmation).toHaveBeenCalled();
-  });
-
-  it("subscribes to safe-area insets and telegram theme changes", async () => {
-    render(<App />);
-    await screen.findByTestId("router-provider");
-    expect(sdk.subscribeSafeAreaInsets).toHaveBeenCalled();
-    expect(sdk.onEvent).toHaveBeenCalledWith(
-      "themeChanged",
-      expect.any(Function),
-    );
-    expect(sdk.onEvent).toHaveBeenCalledWith(
-      "viewportChanged",
-      expect.any(Function),
-    );
-  });
-
-  it("applies the telegram color scheme as the theme when none is saved", async () => {
-    sdk.colorScheme = "light";
-    render(<App />);
-    await screen.findByTestId("router-provider");
-    expect(document.documentElement.getAttribute("data-theme")).toBe("light");
-  });
-
-  it("keeps the saved theme over the telegram color scheme", async () => {
-    localStorage.setItem("foodize-theme", "dark");
-    sdk.colorScheme = "light";
-    render(<App />);
-    await screen.findByTestId("router-provider");
-    expect(document.documentElement.getAttribute("data-theme")).not.toBe(
-      "light",
-    );
-  });
-
-  it("loads the authenticated user's data once ready and authenticated", async () => {
-    authState.user = { id: "u1" };
-    render(<App />);
-    await screen.findByTestId("router-provider");
-    await waitFor(() => {
-      expect(cartState.fetchCart).toHaveBeenCalled();
-    });
-    expect(favState.loadFavorites).toHaveBeenCalled();
-    expect(ordersState.fetchActiveOrder).toHaveBeenCalled();
-    expect(notifState.fetchNotifications).toHaveBeenCalled();
-    expect(notifState.connectWs).toHaveBeenCalledWith("u1");
   });
 
   it("passes working boot dependencies that read auth and forced-logout state", async () => {
@@ -333,24 +228,16 @@ describe("App", () => {
     expect(capturedDeps.isForcedLogout()).toBe(true);
   });
 
-  it("falls back to the window viewport height when Telegram reports none", async () => {
-    sdk.viewportHeight = 0;
+  it("loads the authenticated user's data once ready and authenticated", async () => {
+    authState.user = { id: "u1" };
     render(<App />);
     await screen.findByTestId("router-provider");
-    expect(
-      document.documentElement.style.getPropertyValue("--tg-viewport-h"),
-    ).not.toBe("");
-    sdk.viewportHeight = 640;
-  });
-
-  it("disconnects the notification socket on unmount", async () => {
-    authState.user = { id: "u1" };
-    const { unmount } = render(<App />);
-    await screen.findByTestId("router-provider");
     await waitFor(() => {
-      expect(notifState.connectWs).toHaveBeenCalled();
+      expect(cartState.fetchCart).toHaveBeenCalled();
     });
-    unmount();
-    expect(notifState.disconnectWs).toHaveBeenCalled();
+    expect(favState.loadFavorites).toHaveBeenCalled();
+    expect(ordersState.fetchActiveOrder).toHaveBeenCalled();
+    expect(notifState.fetchNotifications).toHaveBeenCalled();
+    expect(notifState.connectWs).toHaveBeenCalledWith("u1");
   });
 });

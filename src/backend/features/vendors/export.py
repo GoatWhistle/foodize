@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.admin import crud as admin_crud
 from features.admin.crud import translate_category, translate_status
-from features.admin.export import _build_analytics_pdf, _build_finance_pdf, _make_csv
+from features.admin.export import build_analytics_pdf, build_finance_pdf, make_csv
 from features.menu.crud import get_menu_items
 from features.promos.crud import get_promos_by_restaurant_ids
 from features.vendors.models import VendorProfile
@@ -15,6 +15,7 @@ from shared.enums.order_status import OrderStatus
 from shared.i18n import DEFAULT_LANGUAGE, translate
 
 if TYPE_CHECKING:
+    from features.admin.export.csv_exports import CsvRow
     from features.menu.models import MenuItem
     from features.orders.models import Order
 
@@ -40,16 +41,14 @@ def _boolean_label(value: bool, language: str) -> str:
     return translate("reports.common.yes" if value else "reports.common.no", language)
 
 
-def _owned_restaurant_ids(
-    vendor: VendorProfile, restaurant_id: uuid.UUID | None
-) -> list[uuid.UUID]:
+def owned_restaurant_ids(vendor: VendorProfile, restaurant_id: uuid.UUID | None) -> list[uuid.UUID]:
     vendor_restaurant_ids = get_vendor_restaurant_ids(vendor)
     if restaurant_id and restaurant_id in vendor_restaurant_ids:
         return [restaurant_id]
     return list(vendor_restaurant_ids)
 
 
-def _order_row(order: "Order", language: str) -> list[object]:
+def order_row(order: "Order", language: str) -> list[object]:
     return [
         str(order.id),
         getattr(order, "display_id", None) or str(order.id)[:8],
@@ -74,7 +73,7 @@ async def export_orders_csv(
     headers = _order_headers(language)
     vendor_restaurant_ids = get_vendor_restaurant_ids(vendor)
     if restaurant_id and restaurant_id not in vendor_restaurant_ids:
-        return _make_csv(headers, [])
+        return make_csv(headers, [])
     query_restaurant_id = restaurant_id or None
 
     if date_from is None and date_to is None:
@@ -92,7 +91,7 @@ async def export_orders_csv(
     )
     if query_restaurant_id is None:
         orders = [order for order in orders if order.restaurant_id in vendor_restaurant_ids]
-    return _make_csv(headers, [_order_row(order, language) for order in orders])
+    return make_csv(headers, [order_row(order, language) for order in orders])
 
 
 async def export_menu_csv(
@@ -101,7 +100,7 @@ async def export_menu_csv(
     restaurant_id: uuid.UUID | None = None,
     language: str = DEFAULT_LANGUAGE,
 ) -> bytes:
-    restaurant_ids = _owned_restaurant_ids(vendor, restaurant_id)
+    restaurant_ids = owned_restaurant_ids(vendor, restaurant_id)
 
     all_items: list[MenuItem] = []
     for owned_restaurant_id in restaurant_ids:
@@ -128,7 +127,7 @@ async def export_menu_csv(
         for item in all_items
         if not item.is_deleted
     ]
-    return _make_csv(headers, rows)
+    return make_csv(headers, rows)
 
 
 async def export_promos_csv(
@@ -137,7 +136,7 @@ async def export_promos_csv(
     restaurant_id: uuid.UUID | None = None,
     language: str = DEFAULT_LANGUAGE,
 ) -> bytes:
-    target_ids = _owned_restaurant_ids(vendor, restaurant_id)
+    target_ids = owned_restaurant_ids(vendor, restaurant_id)
 
     promos = await get_promos_by_restaurant_ids(
         session, target_ids, offset=0, limit=_EXPORT_ROW_LIMIT
@@ -153,7 +152,7 @@ async def export_promos_csv(
         translate("reports.csv.promos.createdAt", language),
     ]
     unlimited = translate("reports.common.infinity", language)
-    rows = [
+    rows: list[CsvRow] = [
         [
             p.code,
             p.discount_type,
@@ -165,7 +164,7 @@ async def export_promos_csv(
         ]
         for p in promos
     ]
-    return _make_csv(headers, rows)
+    return make_csv(headers, rows)
 
 
 async def export_finance_pdf(
@@ -183,7 +182,7 @@ async def export_finance_pdf(
         vendor_id=vendor.id,
         restaurant_id=restaurant_id,
     )
-    return _build_finance_pdf(
+    return build_finance_pdf(
         translate("reports.finance.vendorTitle", language),
         analytics,
         date_from,
@@ -208,7 +207,7 @@ async def export_analytics_pdf(
         restaurant_id=restaurant_id,
         language=language,
     )
-    return _build_analytics_pdf(
+    return build_analytics_pdf(
         translate("reports.analytics.vendorTitle", language),
         analytics,
         date_from,

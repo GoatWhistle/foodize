@@ -1,0 +1,18 @@
+.scroll {
+  display: flex;
+  gap: var(--space-sm, 8px);
+  padding: var(--space-lg, 18px) 0 var(--space-md, 14px);
+  overflow-x: auto;
+  scrollbar-width: none;
+  overscroll-behavior: contain;
+}
+
+.scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}

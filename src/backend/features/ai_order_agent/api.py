@@ -9,7 +9,7 @@ from settings.config.app_config import settings
 from shared.dependencies import get_language, require_permission
 from shared.enums.permissions import Permission
 
-router = APIRouter(prefix="/ai/order", tags=["AI Order"])
+router = APIRouter(prefix=settings.api.v1.ai_order.prefix, tags=[settings.api.v1.ai_order.tag])
 
 
 def _user_rate_limit() -> str:

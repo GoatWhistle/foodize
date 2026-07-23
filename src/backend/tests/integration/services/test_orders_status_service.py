@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Iterator
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -10,6 +11,21 @@ from features.orders.schemas.order import OrderStatusUpdate
 from features.orders.services.order import change_order_status, validate_transition
 from shared.enums.order_status import OrderStatus
 from shared.enums.roles import UserRole
+
+
+@pytest.fixture(autouse=True)
+def _loyalty_noop() -> Iterator[None]:
+    with (
+        patch(
+            "features.orders.services.order_status.loyalty_service.accrue_for_order",
+            new_callable=AsyncMock,
+        ),
+        patch(
+            "features.orders.services.order_status.loyalty_service.release_for_order",
+            new_callable=AsyncMock,
+        ),
+    ):
+        yield
 
 
 def make_mock_order(status: OrderStatus) -> MagicMock:
@@ -124,11 +140,13 @@ class TestChangeOrderStatus:
         order = make_mock_order(OrderStatus.READY)
         status_data = OrderStatusUpdate(status=OrderStatus.PENDING)
 
-        with patch(
-            "features.orders.crud.order.create_order_event",
-            new_callable=AsyncMock,
-        ) as mock_event:
-            with pytest.raises(InvalidStatusTransitionException):
-                await change_order_status(mock_db_session, order, status_data, actor=actor)
+        with (
+            patch(
+                "features.orders.crud.order.create_order_event",
+                new_callable=AsyncMock,
+            ) as mock_event,
+            pytest.raises(InvalidStatusTransitionException),
+        ):
+            await change_order_status(mock_db_session, order, status_data, actor=actor)
 
         mock_event.assert_not_awaited()

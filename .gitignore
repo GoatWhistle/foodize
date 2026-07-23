@@ -36,3 +36,20 @@ shots/
 
 # Impeccable design-hook cache
 .impeccable/
+
+# Mobile (Expo / React Native)
+.expo/
+web-build/
+src/mobile/ios/
+src/mobile/android/
+src/mobile/expo-env.d.ts
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+.env*.local
+npm-debug.*
+yarn-debug.*
+yarn-error.*

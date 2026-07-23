@@ -71,13 +71,15 @@ class TestVerifyOrderReadAccess:
         order = _make_order(user_id=uuid.uuid4())
         session = AsyncMock()
 
-        with patch(
-            "features.orders.api.order.verify_restaurant_access",
-            new_callable=AsyncMock,
-            side_effect=AccessDeniedException(),
+        with (
+            patch(
+                "features.orders.api.order.verify_restaurant_access",
+                new_callable=AsyncMock,
+                side_effect=AccessDeniedException(),
+            ),
+            pytest.raises(AccessDeniedException),
         ):
-            with pytest.raises(AccessDeniedException):
-                await verify_order_read_access(session, order, user)
+            await verify_order_read_access(session, order, user)
 
     async def test_staff_with_restaurant_permission_allowed(self) -> None:
         user = _make_user(STAFF_PERMISSIONS)
@@ -97,13 +99,15 @@ class TestVerifyOrderReadAccess:
         order = _make_order(user_id=uuid.uuid4())
         session = AsyncMock()
 
-        with patch(
-            "features.orders.api.order.verify_restaurant_access",
-            new_callable=AsyncMock,
-            side_effect=AccessDeniedException(),
+        with (
+            patch(
+                "features.orders.api.order.verify_restaurant_access",
+                new_callable=AsyncMock,
+                side_effect=AccessDeniedException(),
+            ),
+            pytest.raises(AccessDeniedException),
         ):
-            with pytest.raises(AccessDeniedException):
-                await verify_order_read_access(session, order, user)
+            await verify_order_read_access(session, order, user)
 
     async def test_no_permissions_denied(self) -> None:
         user = _make_user(frozenset(), user_id=uuid.uuid4())

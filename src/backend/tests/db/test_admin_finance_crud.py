@@ -1,6 +1,6 @@
 import uuid
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import Any
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,22 +9,31 @@ from features.admin.crud.finance import get_finance_analytics
 from features.menu.models import MenuItem
 from features.orders.models import Order, OrderItem
 from features.restaurants.crud import create_restaurant
+from features.restaurants.models import Restaurant
 from features.restaurants.schemas import RestaurantCreate
 from features.users.crud import create_user
 from features.users.schemas import UserCreate
 from features.vendors.crud import create_vendor_profile
-from features.vendors.schemas import VendorCreate
+from features.vendors.models import VendorProfile
 from shared.enums.category import Category
 from shared.enums.order_status import OrderStatus
 
 
+@dataclass(frozen=True)
+class FinanceSeed:
+    vendor_profile: VendorProfile
+    restaurant: Restaurant
+    menu_item: MenuItem
+    now: datetime
+
+
 @pytest.fixture
-async def finance_db(db_session: AsyncSession) -> dict[str, Any]:
+async def finance_db(db_session: AsyncSession) -> FinanceSeed:
     vendor_user = await create_user(
         db_session,
         UserCreate(name="Vendor", phone_number="79009009001", password="strongpassword1"),
     )
-    vendor_profile = await create_vendor_profile(db_session, vendor_user, VendorCreate())
+    vendor_profile = await create_vendor_profile(db_session, vendor_user)
     customer = await create_user(
         db_session,
         UserCreate(name="Customer", phone_number="79009009002", password="strongpassword1"),
@@ -78,18 +87,18 @@ async def finance_db(db_session: AsyncSession) -> dict[str, Any]:
     db_session.add(item)
     await db_session.commit()
 
-    return {
-        "vendor_profile": vendor_profile,
-        "restaurant": restaurant,
-        "menu_item": menu_item,
-        "now": now,
-    }
+    return FinanceSeed(
+        vendor_profile=vendor_profile,
+        restaurant=restaurant,
+        menu_item=menu_item,
+        now=now,
+    )
 
 
 async def test_get_finance_analytics_full_path(
-    db_session: AsyncSession, finance_db: dict[str, Any]
+    db_session: AsyncSession, finance_db: FinanceSeed
 ) -> None:
-    now = finance_db["now"]
+    now = finance_db.now
     result = await get_finance_analytics(
         db_session,
         date_from=(now - timedelta(days=5)).date(),
@@ -110,9 +119,9 @@ async def test_get_finance_analytics_full_path(
 
 
 async def test_get_finance_analytics_prev_window_growth(
-    db_session: AsyncSession, finance_db: dict[str, Any]
+    db_session: AsyncSession, finance_db: FinanceSeed
 ) -> None:
-    now = finance_db["now"]
+    now = finance_db.now
     result = await get_finance_analytics(
         db_session,
         date_from=(now - timedelta(days=14)).date(),
@@ -123,9 +132,9 @@ async def test_get_finance_analytics_prev_window_growth(
 
 
 async def test_get_finance_analytics_growth_100_when_no_prev(
-    db_session: AsyncSession, finance_db: dict[str, Any]
+    db_session: AsyncSession, finance_db: FinanceSeed
 ) -> None:
-    now = finance_db["now"]
+    now = finance_db.now
     result = await get_finance_analytics(
         db_session,
         date_from=(now - timedelta(days=3)).date(),
@@ -135,14 +144,14 @@ async def test_get_finance_analytics_growth_100_when_no_prev(
 
 
 async def test_get_finance_analytics_filter_by_vendor(
-    db_session: AsyncSession, finance_db: dict[str, Any]
+    db_session: AsyncSession, finance_db: FinanceSeed
 ) -> None:
-    now = finance_db["now"]
+    now = finance_db.now
     result = await get_finance_analytics(
         db_session,
         date_from=(now - timedelta(days=5)).date(),
         date_to=now.date(),
-        vendor_id=finance_db["vendor_profile"].id,
+        vendor_id=finance_db.vendor_profile.id,
     )
     assert result.total_orders == 2
 
@@ -158,14 +167,14 @@ async def test_get_finance_analytics_filter_by_vendor(
 
 
 async def test_get_finance_analytics_filter_by_restaurant(
-    db_session: AsyncSession, finance_db: dict[str, Any]
+    db_session: AsyncSession, finance_db: FinanceSeed
 ) -> None:
-    now = finance_db["now"]
+    now = finance_db.now
     result = await get_finance_analytics(
         db_session,
         date_from=(now - timedelta(days=5)).date(),
         date_to=now.date(),
-        restaurant_id=finance_db["restaurant"].id,
+        restaurant_id=finance_db.restaurant.id,
     )
     assert result.total_revenue == 500
 
@@ -178,8 +187,10 @@ async def test_get_finance_analytics_filter_by_restaurant(
     assert empty.total_orders == 0
 
 
+@pytest.mark.usefixtures("finance_db")
+@pytest.mark.usefixtures("finance_db")
 async def test_get_finance_analytics_default_window(
-    db_session: AsyncSession, finance_db: dict[str, Any]
+    db_session: AsyncSession
 ) -> None:
     result = await get_finance_analytics(db_session)
     assert result.total_orders >= 2

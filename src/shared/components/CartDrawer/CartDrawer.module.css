@@ -85,6 +85,7 @@
 }
 
 .qtyBtn {
+  position: relative;
   width: 36px;
   height: 36px;
   border-radius: var(--r-xs);
@@ -97,6 +98,13 @@
   transition: all var(--dur-sm);
   border: 1px solid var(--border);
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.qtyBtn::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
 }
 
 .qtyBtn:active {
@@ -185,8 +193,11 @@
     right: 14px;
     bottom: calc(var(--bottom-tab-h) + env(safe-area-inset-bottom, 0px) + 16px);
   }
+  .drawer {
+    max-height: calc(var(--tg-viewport-h, 100dvh) - 8px);
+  }
   .inner {
-    padding: 20px 14px 28px;
+    padding: 20px 14px calc(28px + env(safe-area-inset-bottom, 0px));
   }
   .item {
     align-items: flex-start;
@@ -195,5 +206,10 @@
   .itemControls {
     order: 3;
     margin-left: auto;
+  }
+  .submit {
+    position: sticky;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+    z-index: 2;
   }
 }

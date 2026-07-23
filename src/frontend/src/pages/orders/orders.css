@@ -11,11 +11,18 @@
   transition: all var(--dur-sm);
 }
 
-.order-card:hover {
+@media (hover: hover) {
+  .order-card:hover {
+    border-color: var(--border-mid);
+    background: var(--bg-card);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+}
+
+.order-card:active {
   border-color: var(--border-mid);
-  background: var(--bg-card);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
+  transform: scale(0.99);
 }
 
 .order-status-badge {

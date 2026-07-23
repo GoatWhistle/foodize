@@ -1,12 +1,12 @@
 import uuid
 from datetime import UTC, date, datetime, timedelta
-from typing import Any, cast
 
-from sqlalchemy import ColumnElement, CursorResult, Select, func, select, update
+from sqlalchemy import ColumnElement, Select, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import json_array_contains_string
 from features.users.models import User
+from shared.crud import execute_rowcount
 from shared.enums.permissions import Permission
 from shared.enums.roles import UserRole
 
@@ -29,7 +29,7 @@ _ROLE_PERMISSION_MARKER: dict[str, str] = {
 }
 
 
-def _apply_role_filter(stmt: Select[Any], role: str) -> Select[Any]:
+def _apply_role_filter[RowT: tuple[object, ...]](stmt: Select[RowT], role: str) -> Select[RowT]:
     def _has_permission(perm: str) -> ColumnElement[bool]:
         return json_array_contains_string(User.permissions, perm)
 
@@ -118,16 +118,12 @@ async def activate_user(session: AsyncSession, user: User) -> User:
 
 
 async def batch_deactivate_users(session: AsyncSession, ids: list[uuid.UUID]) -> int:
-    result = cast(
-        "CursorResult[Any]",
-        await session.execute(update(User).where(User.id.in_(ids)).values(is_active=False)),
+    return await execute_rowcount(
+        session, update(User).where(User.id.in_(ids)).values(is_active=False)
     )
-    return result.rowcount
 
 
 async def batch_activate_users(session: AsyncSession, ids: list[uuid.UUID]) -> int:
-    result = cast(
-        "CursorResult[Any]",
-        await session.execute(update(User).where(User.id.in_(ids)).values(is_active=True)),
+    return await execute_rowcount(
+        session, update(User).where(User.id.in_(ids)).values(is_active=True)
     )
-    return result.rowcount

@@ -24,11 +24,11 @@ class TestUserLoginSchema:
 
     def test_missing_phone(self) -> None:
         with pytest.raises(ValidationError):
-            UserLogin(password="strongpass123")  # type: ignore[call-arg]
+            UserLogin.model_validate({"password": "strongpass123"})
 
     def test_missing_password(self) -> None:
         with pytest.raises(ValidationError):
-            UserLogin(phone_number="79001234567")  # type: ignore[call-arg]
+            UserLogin.model_validate({"phone_number": "79001234567"})
 
 
 class TestUserCreateSchema:

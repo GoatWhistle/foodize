@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Iterator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -12,6 +13,21 @@ from features.orders.exceptions import (
 from features.orders.schemas.order import OrderCancelRequest, OrderResponse
 from features.orders.services.order import cancel_order
 from shared.enums.order_status import OrderStatus
+
+
+@pytest.fixture(autouse=True)
+def _loyalty_noop() -> Iterator[None]:
+    with (
+        patch(
+            "features.orders.services.order_status.loyalty_service.accrue_for_order",
+            new_callable=AsyncMock,
+        ),
+        patch(
+            "features.orders.services.order_status.loyalty_service.release_for_order",
+            new_callable=AsyncMock,
+        ),
+    ):
+        yield
 
 
 class TestCancelOrder:
@@ -56,34 +72,38 @@ class TestCancelOrder:
         order_id = uuid.uuid4()
         mock_order = make_mock_order(order_id, owner_id, OrderStatus.PENDING.value)
 
-        with patch(
-            "features.orders.crud.order.get_order_by_identifier_for_update",
-            new_callable=AsyncMock,
-            return_value=mock_order,
+        with (
+            patch(
+                "features.orders.crud.order.get_order_by_identifier_for_update",
+                new_callable=AsyncMock,
+                return_value=mock_order,
+            ),
+            pytest.raises(OrderAccessDeniedException),
         ):
-            with pytest.raises(OrderAccessDeniedException):
-                await cancel_order(mock_db_session, order_id, other_id, OrderCancelRequest())
+            await cancel_order(mock_db_session, order_id, other_id, OrderCancelRequest())
 
     async def test_cancel_non_pending_raises(self, mock_db_session: AsyncMock) -> None:
         user_id = uuid.uuid4()
         order_id = uuid.uuid4()
         mock_order = make_mock_order(order_id, user_id, OrderStatus.COMPLETED.value)
 
-        with patch(
-            "features.orders.crud.order.get_order_by_identifier_for_update",
-            new_callable=AsyncMock,
-            return_value=mock_order,
+        with (
+            patch(
+                "features.orders.crud.order.get_order_by_identifier_for_update",
+                new_callable=AsyncMock,
+                return_value=mock_order,
+            ),
+            pytest.raises(OrderNotCancellableException),
         ):
-            with pytest.raises(OrderNotCancellableException):
-                await cancel_order(mock_db_session, order_id, user_id, OrderCancelRequest())
+            await cancel_order(mock_db_session, order_id, user_id, OrderCancelRequest())
 
     async def test_cancel_not_found_raises(self, mock_db_session: AsyncMock) -> None:
-        with patch(
-            "features.orders.crud.order.get_order_by_identifier_for_update",
-            new_callable=AsyncMock,
-            return_value=None,
+        with (
+            patch(
+                "features.orders.crud.order.get_order_by_identifier_for_update",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
+            pytest.raises(OrderNotFoundException),
         ):
-            with pytest.raises(OrderNotFoundException):
-                await cancel_order(
-                    mock_db_session, uuid.uuid4(), uuid.uuid4(), OrderCancelRequest()
-                )
+            await cancel_order(mock_db_session, uuid.uuid4(), uuid.uuid4(), OrderCancelRequest())

@@ -64,7 +64,7 @@ export const OrderStatusPage = ({ createOrderWebSocket, onBack, screenClassName 
         setLoadError(translateApiError(error, t("order.status.loadFailed")));
       }
     })();
-  }, [orderId, fetchOrder]);
+  }, [orderId, fetchOrder, t]);
 
   useEffect(() => {
     loadOrder();

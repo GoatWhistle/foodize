@@ -29,7 +29,7 @@ def test_validate_transition_invalid() -> None:
 
 
 def test_as_aware_utc_naive() -> None:
-    dt = datetime(2024, 1, 1, 12, 0, 0)
+    dt = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
     result = as_aware_utc(dt)
     assert result.tzinfo is not None
     assert result.tzinfo == UTC

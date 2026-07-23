@@ -1,13 +1,13 @@
 import uuid
-from typing import Any, cast
 
-from sqlalchemy import CursorResult, delete, func, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.promos.models import Promo, PromoUsage
 from features.promos.schemas import PromoCreate
 from features.restaurants.models import Restaurant
+from shared.crud import execute_rowcount
 
 
 async def get_restaurant_ids_by_vendor(
@@ -73,11 +73,10 @@ async def increment_used_count(session: AsyncSession, promo: Promo) -> bool:
     stmt = (
         update(Promo)
         .where(Promo.id == promo.id)
-        .where((Promo.max_uses == None) | (Promo.used_count < Promo.max_uses))  # noqa: E711
+        .where(Promo.max_uses.is_(None) | (Promo.used_count < Promo.max_uses))
         .values(used_count=Promo.used_count + 1)
     )
-    result = cast("CursorResult[Any]", await session.execute(stmt))
-    return result.rowcount == 1
+    return await execute_rowcount(session, stmt) == 1
 
 
 async def has_used_promo(session: AsyncSession, promo_id: uuid.UUID, user_id: uuid.UUID) -> bool:
@@ -106,13 +105,14 @@ async def reserve_promo_usage(
 async def release_promo_usage(
     session: AsyncSession, promo_id: uuid.UUID, user_id: uuid.UUID
 ) -> None:
-    result = await session.execute(
+    deleted = await execute_rowcount(
+        session,
         delete(PromoUsage).where(
             PromoUsage.promo_id == promo_id,
             PromoUsage.user_id == user_id,
-        )
+        ),
     )
-    if result.rowcount:  # type: ignore[attr-defined]
+    if deleted:
         await session.execute(
             update(Promo)
             .where(Promo.id == promo_id, Promo.used_count > 0)

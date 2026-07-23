@@ -1,7 +1,8 @@
 import hashlib
 import json
+from collections.abc import AsyncIterable
 from http import HTTPStatus
-from typing import TYPE_CHECKING, cast
+from typing import Protocol, runtime_checkable
 
 from fastapi import Request, Response
 from redis.exceptions import RedisError
@@ -11,10 +12,13 @@ from starlette.types import ASGIApp
 from infra.cache.redis import get_redis_cache
 from utils.logging_setup import get_logger
 
-if TYPE_CHECKING:
-    from starlette.responses import StreamingResponse
-
 logger = get_logger(__name__)
+
+
+@runtime_checkable
+class _StreamingBody(Protocol):
+    @property
+    def body_iterator(self) -> AsyncIterable[bytes | str]: ...
 
 _MUTATING_METHODS = {"POST", "PUT", "DELETE", "PATCH"}
 
@@ -118,9 +122,11 @@ class AutoCacheMiddleware(BaseHTTPMiddleware):
         except (json.JSONDecodeError, KeyError):
             return Response(content=cached, media_type="application/json")
 
-    async def _store_and_rebuild(self, response: Response, cache_key: str, path: str) -> Response:
+    async def _store_and_rebuild(
+        self, response: Response, body_source: _StreamingBody, cache_key: str, path: str
+    ) -> Response:
         chunks: list[bytes] = []
-        async for chunk in cast("StreamingResponse", response).body_iterator:
+        async for chunk in body_source.body_iterator:
             chunks.append(chunk.encode() if isinstance(chunk, str) else bytes(chunk))
         body = b"".join(chunks)
         response.headers["Vary"] = "Cookie, Authorization"
@@ -165,6 +171,6 @@ class AutoCacheMiddleware(BaseHTTPMiddleware):
             return cached_response
 
         response = await call_next(request)
-        if response.status_code != HTTPStatus.OK:
+        if response.status_code != HTTPStatus.OK or not isinstance(response, _StreamingBody):
             return response
-        return await self._store_and_rebuild(response, cache_key, path)
+        return await self._store_and_rebuild(response, response, cache_key, path)

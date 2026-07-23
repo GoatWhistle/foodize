@@ -64,6 +64,18 @@
   cursor: pointer;
   color: var(--text-3);
   display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: -10px;
+  flex-shrink: 0;
+  border-radius: var(--r-sm);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.closeBtn:active {
+  background: var(--bg-surface);
 }
 
 .scroll {
@@ -144,6 +156,7 @@
 }
 
 .editBtn {
+  position: relative;
   width: 28px;
   height: 28px;
   border-radius: var(--r-xs);
@@ -154,4 +167,11 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.editBtn::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
 }

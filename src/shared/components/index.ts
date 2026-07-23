@@ -17,3 +17,6 @@ export { InfoModal } from "./InfoModal/InfoModal";
 export { StarRatingInput } from "./StarRatingInput/StarRatingInput";
 export { ReviewCard } from "./ReviewCard/ReviewCard";
 export { ReviewsModal } from "./ReviewsModal/ReviewsModal";
+export { BottomNav } from "./BottomNav/BottomNav";
+export { CategoryChips } from "./CategoryChips/CategoryChips";
+export { RestaurantHeroShell } from "./RestaurantHero/RestaurantHeroShell";

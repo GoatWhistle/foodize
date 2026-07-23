@@ -36,9 +36,9 @@ class TestResolveWsTokenUserId:
         with (
             patch("features.notifications.ws_auth.decode_jwt", return_value=payload),
             patch("features.notifications.ws_auth.get_redis_cache", return_value=cache),
+            pytest.raises(PermissionError),
         ):
-            with pytest.raises(PermissionError):
-                await resolve_ws_token_user_id("raw.jwt.token")
+            await resolve_ws_token_user_id("raw.jwt.token")
 
         cache.exists.assert_awaited_once_with("access_blacklist:jti-revoked")
 

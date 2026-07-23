@@ -5,6 +5,7 @@ import aio_pika.abc
 from prometheus_client import Gauge
 
 from settings.config.app_config import settings
+from shared.exceptions.internal import BrokerNotConnectedError
 from utils.logging_setup import get_logger
 
 logger = get_logger(__name__)
@@ -15,7 +16,7 @@ dlq_depth = Gauge(
 )
 
 
-def _sanitize_amqp_url(url: str) -> str:
+def sanitize_amqp_url(url: str) -> str:
     parts = urlsplit(url)
     host = parts.hostname or ""
     if parts.port:
@@ -74,7 +75,7 @@ class RabbitMQBroker:
             },
         )
         await retry_queue.bind(self._retry_exchange, routing_key="#")
-        logger.info("rabbitmq_connected", url=_sanitize_amqp_url(self._url))
+        logger.info("rabbitmq_connected", url=sanitize_amqp_url(self._url))
 
     async def disconnect(self) -> None:
         if self._connection and not self._connection.is_closed:
@@ -88,19 +89,19 @@ class RabbitMQBroker:
     @property
     def exchange(self) -> aio_pika.abc.AbstractExchange:
         if self._exchange is None:
-            raise RuntimeError("RabbitMQ broker is not connected. Call connect() first.")
+            raise BrokerNotConnectedError
         return self._exchange
 
     @property
     def channel(self) -> aio_pika.abc.AbstractChannel:
         if self._channel is None:
-            raise RuntimeError("RabbitMQ broker is not connected. Call connect() first.")
+            raise BrokerNotConnectedError
         return self._channel
 
     @property
     def retry_exchange(self) -> aio_pika.abc.AbstractExchange:
         if self._retry_exchange is None:
-            raise RuntimeError("RabbitMQ broker is not connected. Call connect() first.")
+            raise BrokerNotConnectedError
         return self._retry_exchange
 
     async def sample_dlq_depth(self) -> None:

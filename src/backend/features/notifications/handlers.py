@@ -12,6 +12,8 @@ from features.notifications.events import (
 )
 from features.notifications.models import NotificationType
 from features.notifications.outbox_service import enqueue_event
+from features.notifications.push_crud import get_active_devices_for_user
+from features.notifications.push_dispatch import send_native_push
 from features.notifications.schemas import NotificationResponse
 from infra.cache.redis import get_redis_cache
 from shared.enums.order_status import OrderStatus
@@ -21,6 +23,7 @@ from utils.logging_setup import get_logger
 logger = get_logger(__name__)
 
 _FEEDBACK_DELAY_SECONDS = 1800
+
 
 def _status_change_content(event: OrderStatusChangedEvent) -> tuple[str, dict[str, object]]:
     if event.new_status == OrderStatus.READY:
@@ -50,9 +53,29 @@ async def _create_user_notification(
     return NotificationResponse.model_validate(notification).model_dump_json()
 
 
-async def _publish_user_notification(message: UserNotificationMessage) -> None:
+async def publish_user_notification(message: UserNotificationMessage) -> None:
     redis_client = get_redis_cache()
     await redis_client.publish(f"user_notifications:{message.user_id}", message.payload)
+
+
+async def _dispatch_native_push(
+    session: AsyncSession,
+    user_id: uuid.UUID,
+    key: str,
+    params: dict[str, object],
+) -> None:
+    try:
+        devices = await get_active_devices_for_user(session, user_id)
+        if not devices:
+            return
+        await send_native_push(
+            devices,
+            title=translate(f"{key}.title", DEFAULT_LANGUAGE, **params),
+            body=translate(f"{key}.message", DEFAULT_LANGUAGE, **params),
+            data={"type": NotificationType.ORDER_STATUS.value},
+        )
+    except Exception:
+        logger.exception("native_push_dispatch_failed", user_id=str(user_id))
 
 
 async def handle_feedback_requested(session: AsyncSession, event: FeedbackRequestedEvent) -> None:
@@ -120,3 +143,4 @@ async def handle_order_status_changed(
     session.info["notification_payload"] = UserNotificationMessage(
         user_id=event.user_id, payload=payload
     )
+    await _dispatch_native_push(session, event.user_id, key, params)

@@ -2,12 +2,12 @@ import uuid
 from http import HTTPStatus
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from httpx import AsyncClient
 
 from features.telegram.schemas import (
     TelegramCheckResponse,
 )
-from features.users.models import User
 
 
 def _make_tokens() -> MagicMock:
@@ -174,7 +174,8 @@ class TestTelegramSetPassword:
         )
         assert response.status_code == HTTPStatus.UNAUTHORIZED
 
-    async def test_set_password_as_user(self, client: AsyncClient, as_user: User) -> None:
+    @pytest.mark.usefixtures("as_user")
+    async def test_set_password_as_user(self, client: AsyncClient) -> None:
         user = _make_user_read()
         with patch(
             "features.telegram.api.webapp.site_login.set_site_password",
@@ -193,7 +194,8 @@ class TestTelegramLogout:
         response = await client.post("/api/v1/telegram/logout")
         assert response.status_code == HTTPStatus.UNAUTHORIZED
 
-    async def test_logout_as_user(self, client: AsyncClient, as_user: User) -> None:
+    @pytest.mark.usefixtures("as_user")
+    async def test_logout_as_user(self, client: AsyncClient) -> None:
         user = _make_user_read()
         with patch(
             "features.telegram.api.webapp.webapp_auth.unlink_telegram_for_user",

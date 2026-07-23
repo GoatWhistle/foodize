@@ -1,7 +1,7 @@
 import json
-from typing import Any
 
 import aio_pika
+from pydantic import JsonValue
 
 from features.notifications.broker import RabbitMQBroker, broker
 from infra.messaging.base import MessagePublisher
@@ -14,11 +14,10 @@ class RabbitMQPublisher(MessagePublisher):
     def __init__(self, broker: RabbitMQBroker) -> None:
         self._broker = broker
 
-    async def publish(self, routing_key: str, body: bytes | dict[str, Any]) -> None:
-        if isinstance(body, dict):
-            body = json.dumps(body).encode()
+    async def publish(self, routing_key: str, body: bytes | dict[str, JsonValue]) -> None:
+        payload = json.dumps(body).encode() if isinstance(body, dict) else body
         message = aio_pika.Message(
-            body=body,
+            body=payload,
             content_type="application/json",
             delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
         )

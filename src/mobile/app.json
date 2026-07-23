@@ -1,0 +1,79 @@
+{
+  "expo": {
+    "name": "Foodize",
+    "slug": "foodize",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "foodize",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#f8f6f4"
+    },
+    "updates": {
+      "enabled": true,
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.foodize.app",
+      "associatedDomains": ["applinks:foodize.app"],
+      "infoPlist": {
+        "UIBackgroundModes": ["remote-notification"],
+        "NSFaceIDUsageDescription": "Face ID используется для быстрого и безопасного входа в аккаунт."
+      }
+    },
+    "android": {
+      "package": "com.foodize.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#f8f6f4"
+      },
+      "permissions": ["POST_NOTIFICATIONS", "USE_BIOMETRIC", "USE_FINGERPRINT"],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [{ "scheme": "https", "host": "foodize.app" }],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-font",
+      "expo-localization",
+      "@sentry/react-native",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#e8562a"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": { "deploymentTarget": "15.1" },
+          "android": { "minSdkVersion": 24 }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "00000000-0000-0000-0000-000000000000"
+      }
+    }
+  }
+}

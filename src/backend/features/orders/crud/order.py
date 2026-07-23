@@ -1,11 +1,11 @@
 import uuid
 from collections.abc import Sequence
 from datetime import UTC, date, datetime, time, timedelta
-from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from sqlalchemy.sql.base import ExecutableOption
 
 from features.orders.models import Order, OrderEvent, OrderItem
 from shared.enums.order_status import OrderStatus
@@ -21,7 +21,7 @@ def _day_end_exclusive(value: date) -> datetime:
     return datetime.combine(value + timedelta(days=1), time.min, tzinfo=UTC)
 
 
-def _items_options() -> Any:
+def _items_options() -> tuple[ExecutableOption, ...]:
     return (
         selectinload(Order.items).selectinload(OrderItem.menu_item),
         selectinload(Order.items).selectinload(OrderItem.selected_options),
@@ -29,7 +29,7 @@ def _items_options() -> Any:
     )
 
 
-def _full_options() -> tuple[Any, Any]:
+def _full_options() -> tuple[ExecutableOption, ...]:
     return *_items_options(), selectinload(Order.restaurant)
 
 

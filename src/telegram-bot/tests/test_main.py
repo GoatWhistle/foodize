@@ -1,6 +1,6 @@
 import asyncio
 from http import HTTPStatus
-from typing import Any, NoReturn
+from typing import NoReturn
 
 import pytest
 from _pytest.logging import LogCaptureFixture
@@ -74,7 +74,7 @@ async def test_webhook_handler_configured_with_secret_token(
 
     handler_spy = mocker.patch("main.SimpleRequestHandler", wraps=SimpleRequestHandler)
 
-    async def _stop_after_setup(*args: Any, **kwargs: Any) -> NoReturn:
+    async def _stop_after_setup(*args: object, **kwargs: object) -> NoReturn:
         raise _StopMain
 
     mocker.patch("main.web.TCPSite.start", side_effect=_stop_after_setup)

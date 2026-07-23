@@ -45,6 +45,12 @@ repos:
         pass_filenames: false
         files: ^src/telegram-miniapp/.*\.(ts|tsx|js|jsx)$
         exclude: ^src/telegram-miniapp/(eslint|vite|vitest)\.config\.(js|ts)$
+      - id: eslint-mobile
+        name: eslint (mobile)
+        entry: bash -c 'cd src/mobile && ./node_modules/.bin/eslint .'
+        language: system
+        pass_filenames: false
+        files: ^src/mobile/.*\.(ts|tsx)$
       - id: typecheck-shared
         name: typecheck (shared)
         entry: bash -c 'cd src/shared && ./node_modules/.bin/tsc --noEmit'
@@ -63,6 +69,12 @@ repos:
         language: system
         pass_filenames: false
         files: ^src/telegram-miniapp/.*\.(ts|tsx)$
+      - id: typecheck-mobile
+        name: typecheck (mobile)
+        entry: bash -c 'cd src/mobile && ./node_modules/.bin/tsc --noEmit'
+        language: system
+        pass_filenames: false
+        files: ^src/mobile/.*\.(ts|tsx)$
       - id: prettier-frontend
         name: prettier (frontend)
         entry: bash -c './src/frontend/node_modules/.bin/prettier --write "$@"' --

@@ -1,14 +1,15 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useRestaurantStore } from "@shared/store/useRestaurantStore";
 import type { RestaurantStoreState } from "@shared/store/useRestaurantStore";
-import { reviewService } from "@shared/services/reviewService";
 import { restaurantService } from "@shared/services/restaurantService";
 import { translateApiError } from "@shared/utils/translateApiError";
 import { logError } from "@shared/utils/logError";
 import { useTranslation } from "@shared/i18n/useTranslation";
 import { isRestaurantOpen } from "../utils/restaurant";
+import { useRestaurantReviews } from "@shared/hooks/useRestaurantReviews";
+import type { ReviewForm, HandleReviewSubmitArgs } from "@shared/hooks/useRestaurantReviews";
 import type { MenuItem, Restaurant, Review } from "@shared/types/models";
 import type { components } from "@shared/types/api";
 
@@ -16,20 +17,10 @@ type WorkingHoursRead = components["schemas"]["WorkingHoursRead"];
 
 type RestaurantView = Restaurant | { id: string; name: string; address: string };
 
-interface ReviewForm {
-  rating: number;
-  text: string;
-}
-
 export interface UseRestaurantPageOptions {
   id: string;
   initialRestaurant?: Restaurant | null;
   reviewsPageSize?: number;
-}
-
-export interface HandleReviewSubmitArgs {
-  myReview?: boolean;
-  onSuccess?: () => void;
 }
 
 export interface UseRestaurantPageResult {
@@ -71,19 +62,10 @@ export const useRestaurantPage = ({
 }: UseRestaurantPageOptions): UseRestaurantPageResult => {
   const { t } = useTranslation();
   const [restaurantData, setRestaurantData] = useState<Restaurant | null>(initialRestaurant);
-  const [rating, setRating] = useState<number | null>(null);
-  const [reviewCount, setReviewCount] = useState<number | null>(null);
   const [workingHours, setWorkingHours] = useState<WorkingHoursRead[]>([]);
   const [activeCategory, setActiveCategory] = useState("ALL");
-  const [reviewsList, setReviewsList] = useState<Review[]>([]);
-  const [reviewsPage, setReviewsPage] = useState(1);
-  const [reviewsTotal, setReviewsTotal] = useState(0);
-  const [reviewForm, setReviewForm] = useState<ReviewForm>({ rating: 5, text: "" });
   const [restaurantLoading, setRestaurantLoading] = useState(!initialRestaurant);
   const [restaurantError, setRestaurantError] = useState("");
-  const [reviewsLoading, setReviewsLoading] = useState(false);
-  const [reviewError, setReviewError] = useState("");
-  const [reviewSuccess, setReviewSuccess] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<MenuItem | null>(null);
 
   const { fetchMenu, menus, loading } = useRestaurantStore(
@@ -99,6 +81,9 @@ export const useRestaurantPage = ({
   const menuItems = menus[restaurantUUID ?? id] || [];
   const restaurantOpen = isRestaurantOpen(restaurantData);
 
+  const reviews = useRestaurantReviews({ restaurantUUID, fallbackId: id, reviewsPageSize });
+  const { refreshRating } = reviews;
+
   const availableMenuItems = menuItems.filter((i) => i.is_available);
   const categories: string[] = [
     "ALL",
@@ -112,49 +97,6 @@ export const useRestaurantPage = ({
     activeCategory === "ALL"
       ? availableMenuItems
       : availableMenuItems.filter((i) => i.category === activeCategory);
-
-  const refreshRating = useCallback(
-    (rid?: string | null) => {
-      const target = rid ?? restaurantUUID;
-      if (!target) return;
-      void (async () => {
-        try {
-          const response = await reviewService.getRating(target);
-          const ratingData = response.data.data;
-          setRating(ratingData.average_rating);
-          setReviewCount(ratingData.review_count);
-        } catch (error) {
-          logError("useRestaurantPage.refreshRating", error);
-        }
-      })();
-    },
-    [restaurantUUID],
-  );
-
-  const loadReviews = useCallback(
-    (rid?: string | null) => {
-      const target = rid ?? restaurantUUID;
-      if (!target) return;
-      setReviewsLoading(true);
-      void (async () => {
-        try {
-          const response = await reviewService.getReviews(target, {
-            page: reviewsPage,
-            size: reviewsPageSize,
-          });
-          const body = response.data;
-          const list = Array.isArray(body.data) ? body.data : [];
-          setReviewsList(list);
-          setReviewsTotal(body.pagination.total || 0);
-        } catch (error) {
-          setReviewError(translateApiError(error, t("catalog.reviews.loadFailed")));
-        } finally {
-          setReviewsLoading(false);
-        }
-      })();
-    },
-    [restaurantUUID, reviewsPage, reviewsPageSize],
-  );
 
   useEffect(() => {
     if (initialRestaurant) return;
@@ -176,7 +118,7 @@ export const useRestaurantPage = ({
     return () => {
       state.stale = true;
     };
-  }, [id, initialRestaurant]);
+  }, [id, initialRestaurant, t]);
 
   useEffect(() => {
     if (!restaurantUUID) return;
@@ -197,54 +139,11 @@ export const useRestaurantPage = ({
     };
   }, [restaurantUUID, fetchMenu, refreshRating]);
 
-  useEffect(() => {
-    if (!restaurantUUID) return;
-    loadReviews(restaurantUUID);
-  }, [restaurantUUID, loadReviews]);
-
-  const handleReviewSubmit = async ({ myReview, onSuccess }: HandleReviewSubmitArgs = {}): Promise<void> => {
-    setReviewError("");
-    try {
-      const rid = restaurantUUID ?? id;
-      if (myReview) {
-        await reviewService.updateMyReview(rid, {
-          text: reviewForm.text || null,
-          rating: reviewForm.rating,
-        });
-      } else {
-        await reviewService.createReview(rid, {
-          text: reviewForm.text || null,
-          rating: reviewForm.rating,
-        });
-      }
-      setReviewSuccess(true);
-      loadReviews(rid);
-      refreshRating(rid);
-      window.setTimeout(() => { setReviewSuccess(false); }, 2200);
-      onSuccess?.();
-    } catch (err) {
-      setReviewError(translateApiError(err, t("catalog.reviews.submitFailed")));
-    }
-  };
-
-  const handleReviewDelete = async (reviewId: string): Promise<void> => {
-    const rid = restaurantUUID ?? id;
-    try {
-      await reviewService.deleteReview(rid, reviewId);
-      setReviewsList((prev) => prev.filter((r) => r.id !== reviewId));
-      refreshRating(rid);
-    } catch (err) {
-      setReviewError(translateApiError(err, t("catalog.reviews.deleteFailed")));
-    }
-  };
-
   return {
     restaurant,
     restaurantUUID,
     restaurantLoading,
     restaurantError,
-    rating,
-    reviewCount,
     workingHours,
     loading,
     isRestaurantOpen: restaurantOpen,
@@ -252,21 +151,8 @@ export const useRestaurantPage = ({
     activeCategory,
     setActiveCategory,
     filteredMenuItems,
-    reviewsList,
-    reviewsPage,
-    setReviewsPage,
-    reviewsTotal,
-    reviewForm,
-    setReviewForm,
-    reviewsLoading,
-    reviewError,
-    setReviewError,
-    reviewSuccess,
     selectedProduct,
     setSelectedProduct,
-    handleReviewSubmit,
-    handleReviewDelete,
-    loadReviews,
-    refreshRating,
+    ...reviews,
   };
 };

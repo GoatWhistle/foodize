@@ -1,7 +1,6 @@
 import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Any, cast
 
 from sqlalchemy import ColumnElement, Select, Subquery, asc, desc, func, select
 from sqlalchemy.exc import IntegrityError
@@ -150,12 +149,12 @@ def _popularity_subquery() -> Subquery:
     )
 
 
-def _apply_public_filters(
-    stmt: Select[Any],
+def _apply_public_filters[RowT: tuple[object, ...]](
+    stmt: Select[RowT],
     name: str | None,
     is_hiring: bool | None,
     is_open: bool | None,
-) -> Select[Any]:
+) -> Select[RowT]:
     stmt = stmt.where(Restaurant.is_active.is_(True), Restaurant.deleted_at.is_(None))
     if name:
         stmt = stmt.where(Restaurant.name.ilike(f"%{name}%"))
@@ -225,7 +224,7 @@ async def count_public_restaurants(
     is_open: bool | None,
 ) -> int:
     stmt = _apply_public_filters(select(func.count(Restaurant.id)), name, is_hiring, is_open)
-    return cast("int", (await session.execute(stmt)).scalar_one())
+    return (await session.execute(stmt)).scalar_one()
 
 
 async def get_working_hours_for_restaurants(

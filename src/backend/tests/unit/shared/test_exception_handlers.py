@@ -1,6 +1,4 @@
 from http import HTTPStatus
-from typing import cast
-from unittest.mock import MagicMock
 
 from sqlalchemy.exc import IntegrityError
 from starlette.requests import Request
@@ -14,10 +12,17 @@ from shared.exceptions.base import AppException
 
 
 def _make_request() -> Request:
-    request = MagicMock()
+    request = Request(
+        {
+            "type": "http",
+            "method": "GET",
+            "path": "/test",
+            "headers": [],
+            "query_string": b"",
+        }
+    )
     request.state.request_id = None
-    request.url.path = "/test"
-    return cast("Request", request)
+    return request
 
 
 class TestAppExceptionHandler:
@@ -43,23 +48,20 @@ class TestUnhandledExceptionHandler:
 
 class TestIntegrityErrorHandler:
     async def test_restaurants_address_constraint(self) -> None:
-        exc = MagicMock(spec=IntegrityError)
-        exc.orig = Exception("uq_restaurants_address violation")
+        exc = IntegrityError("stmt", {}, Exception("uq_restaurants_address violation"))
         response = await integrity_error_handler(_make_request(), exc)
         assert response.status_code == HTTPStatus.BAD_REQUEST
         assert b"restaurant with this address" in response.body
 
     async def test_users_phone_number_constraint(self) -> None:
-        exc = MagicMock(spec=IntegrityError)
-        exc.orig = Exception("uq_users_phone_number violation")
+        exc = IntegrityError("stmt", {}, Exception("uq_users_phone_number violation"))
         response = await integrity_error_handler(_make_request(), exc)
         assert response.status_code == HTTPStatus.BAD_REQUEST
         assert b"phone number" not in response.body
         assert b"Duplicate entry" in response.body
 
     async def test_unknown_constraint(self) -> None:
-        exc = MagicMock(spec=IntegrityError)
-        exc.orig = Exception("some_unknown_constraint violation")
+        exc = IntegrityError("stmt", {}, Exception("some_unknown_constraint violation"))
         response = await integrity_error_handler(_make_request(), exc)
         assert response.status_code == HTTPStatus.BAD_REQUEST
         assert b"Duplicate entry" in response.body

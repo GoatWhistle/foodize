@@ -1,6 +1,5 @@
 import uuid
-from datetime import date
-from typing import Any
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,32 +22,32 @@ from features.admin.schemas import (
 
 
 class DummyPDF:
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *_args: object, **_kwargs: object) -> None:
         self.page = 1
 
-    def section(self, *args: Any, **kwargs: Any) -> None:
+    def section(self, *args: object, **kwargs: object) -> None:
         pass
 
-    def row(self, *args: Any, **kwargs: Any) -> None:
+    def row(self, *args: object, **kwargs: object) -> None:
         pass
 
-    def info_row(self, *args: Any, **kwargs: Any) -> None:
+    def info_row(self, *args: object, **kwargs: object) -> None:
         pass
 
-    def ln(self, *args: Any, **kwargs: Any) -> None:
+    def ln(self, *args: object, **kwargs: object) -> None:
         pass
 
-    def set_font(self, *args: Any, **kwargs: Any) -> None:
+    def set_font(self, *args: object, **kwargs: object) -> None:
         pass
 
-    def output(self, *args: Any, **kwargs: Any) -> bytes:
+    def output(self, *_args: object, **_kwargs: object) -> bytes:
         return b"mock_pdf_bytes"
 
 
 async def test_export_finance_pdf() -> None:
     mock_session = AsyncMock(spec=AsyncSession)
     mock_analytics = FinanceAnalytics(
-        revenue_by_day=[FinanceSeriesPoint(date=date.today(), value=1000)],
+        revenue_by_day=[FinanceSeriesPoint(date=datetime.now(UTC).date(), value=1000)],
         average_check=500.0,
         top_restaurants=[
             FinanceTopRestaurant(
@@ -71,9 +70,10 @@ async def test_export_finance_pdf() -> None:
             new_callable=AsyncMock,
             return_value=mock_analytics,
         ),
-        patch("features.admin.export.pdf_reports._PDF", DummyPDF),
+        patch("features.admin.export.pdf_finance._PDF", DummyPDF),
     ):
-        res = await export_finance_pdf(mock_session, date.today(), date.today())
+        today = datetime.now(UTC).date()
+        res = await export_finance_pdf(mock_session, today, today)
         assert res == b"mock_pdf_bytes"
 
 
@@ -82,7 +82,7 @@ async def test_export_analytics_pdf() -> None:
     mock_analytics = AdvancedAnalytics(
         hourly_load=[AnalyticsPoint(label="12", value=5)],
         category_revenue=[AnalyticsPoint(label="Pizza", value=2000)],
-        aov_dynamics=[FinanceSeriesPoint(date=date.today(), value=500)],
+        aov_dynamics=[FinanceSeriesPoint(date=datetime.now(UTC).date(), value=500)],
         retention=[],
     )
     with (
@@ -91,7 +91,7 @@ async def test_export_analytics_pdf() -> None:
             new_callable=AsyncMock,
             return_value=mock_analytics,
         ),
-        patch("features.admin.export.pdf_reports._PDF", DummyPDF),
+        patch("features.admin.export.pdf_analytics._PDF", DummyPDF),
     ):
         res = await export_analytics_pdf(mock_session)
         assert res == b"mock_pdf_bytes"
@@ -106,7 +106,7 @@ async def test_export_overview_pdf() -> None:
         orders_by_status={"COMPLETED": 5},
         total_restaurants=1,
         total_vendors=1,
-        growth={"users": [StatsGrowthPoint(date=date.today(), count=1)]},
+        growth={"users": [StatsGrowthPoint(date=datetime.now(UTC).date(), count=1)]},
     )
     with (
         patch(
@@ -114,7 +114,7 @@ async def test_export_overview_pdf() -> None:
             new_callable=AsyncMock,
             return_value=mock_stats,
         ),
-        patch("features.admin.export.pdf_reports._PDF", DummyPDF),
+        patch("features.admin.export.pdf_overview._PDF", DummyPDF),
     ):
         res = await export_overview_pdf(mock_session)
         assert res == b"mock_pdf_bytes"

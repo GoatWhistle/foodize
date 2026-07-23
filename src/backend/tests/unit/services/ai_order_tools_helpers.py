@@ -1,61 +1,45 @@
 import uuid
 from collections.abc import Iterator
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from features.ai_order_agent.tools import build_order_executor
+from features.cart.schemas import (
+    CartItemResponse,
+    CartResponse,
+    CartSelectedOption,
+    MenuItemShort,
+)
+from features.users.models import User
 from infra.llm import ToolExecutor
+from tests.fake_cache import FakeCache
+from tests.fake_cart_service import FakeCartService
 
 
-def make_user() -> MagicMock:
-    user = MagicMock()
-    user.id = uuid.uuid4()
-    return user
+def make_user() -> User:
+    return User(id=uuid.uuid4())
 
 
 def make_cart_item(
     item_id: uuid.UUID | None = None,
-    restaurant_id: uuid.UUID | None = None,
     name: str = "Бургер",
     price: int = 250,
     qty: int = 1,
-    options: list[Any] | None = None,
-) -> MagicMock:
-    item = MagicMock()
-    item.menuItem = MagicMock()
-    item.menuItem.id = item_id or uuid.uuid4()
-    item.menuItem.name = name
-    item.menuItem.price = price
-    item.menuItem.image_url = None
-    item.menuItem.photo_url = None
-    item.menuItem.restaurant_id = restaurant_id or uuid.uuid4()
-    item.quantity = qty
-    item.selected_option_ids = []
-    item.selected_options = options or []
-    return item
+    options: list[CartSelectedOption] | None = None,
+) -> CartItemResponse:
+    return CartItemResponse(
+        menu_item=MenuItemShort(id=item_id or uuid.uuid4(), name=name, price=price),
+        quantity=qty,
+        selected_option_ids=[],
+        selected_options=options or [],
+    )
 
 
-def make_cart(items: list[Any] | None = None, restaurant_id: uuid.UUID | None = None) -> MagicMock:
-    cart = MagicMock()
-    cart.items = items or []
-    cart.restaurant_id = restaurant_id
-    return cart
-
-
-class FakeCache:
-    def __init__(self) -> None:
-        self.store: dict[str, Any] = {}
-
-    async def get(self, key: str) -> Any:
-        return self.store.get(key)
-
-    async def set(self, key: str, value: Any, ttl: int | None = None) -> None:
-        self.store[key] = value
-
-    async def delete(self, key: str) -> None:
-        self.store.pop(key, None)
+def make_cart(
+    items: list[CartItemResponse] | None = None, restaurant_id: uuid.UUID | None = None
+) -> CartResponse:
+    return CartResponse(restaurant_id=restaurant_id, items=items or [])
 
 
 class OrderExecutorTestBase:
@@ -77,21 +61,17 @@ class OrderExecutorTestBase:
             yield mock_db
 
     @pytest.fixture
-    def user(self) -> MagicMock:
+    def user(self) -> User:
         return make_user()
 
     @pytest.fixture
-    def cart_service(self) -> AsyncMock:
-        svc = AsyncMock()
-        svc.get_cart = AsyncMock(return_value=make_cart())
-        svc.clear_cart = AsyncMock()
-        svc.update_cart = AsyncMock()
-        return svc
+    def cart_service(self) -> FakeCartService:
+        return FakeCartService()
 
     @pytest.fixture
     def cache(self) -> FakeCache:
         return FakeCache()
 
     @pytest.fixture
-    def executor(self, user: MagicMock, cart_service: AsyncMock, cache: FakeCache) -> ToolExecutor:
-        return build_order_executor(user, cart_service, cache)  # type: ignore[arg-type]
+    def executor(self, user: User, cart_service: FakeCartService, cache: FakeCache) -> ToolExecutor:
+        return build_order_executor(user, cart_service, cache)

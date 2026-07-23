@@ -1,5 +1,5 @@
 import { create, type StateCreator, type StoreApi, type UseBoundStore } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage, type StateStorage } from "zustand/middleware";
 import { logError } from "@shared/utils/logError";
 import type { UserRead } from "@shared/types/models";
 
@@ -43,6 +43,7 @@ export interface CreateAuthStoreOptions<
 > {
   authService: TService;
   persistKey?: string | null;
+  storage?: StateStorage;
   onLogout?: () => void;
   extraActions?: (
     set: SetAuthState<TService>,
@@ -56,6 +57,7 @@ export function createAuthStore<
 >({
   authService,
   persistKey = null,
+  storage,
   onLogout,
   extraActions = () => ({}) as TExtra,
 }: CreateAuthStoreOptions<TService, TExtra>): UseBoundStore<
@@ -115,6 +117,7 @@ export function createAuthStore<
       persist(storeFactory, {
         name: persistKey,
         partialize: (state) => ({ user: state.user }),
+        ...(storage ? { storage: createJSONStorage(() => storage) } : {}),
       }),
     );
   }

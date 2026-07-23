@@ -1,6 +1,5 @@
 import uuid
 from datetime import datetime
-from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -14,6 +13,8 @@ class OrderCreate(BaseModel):
     promo_code: str | None = Field(None, min_length=3, max_length=64)
     comment: str | None = Field(None, max_length=500)
     requested_pickup_at: datetime | None = None
+    redeem_points: int = Field(0, ge=0)
+    loyalty_reward_id: uuid.UUID | None = None
 
 
 class OrderLoadEstimate(BaseModel):
@@ -62,38 +63,40 @@ class OrderResponse(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def flatten_relations(cls, data: Any) -> Any:
+    def flatten_relations(cls, data: object) -> object:
         if isinstance(data, dict):
             return data
 
-        result = {
-            "id": data.id,
-            "display_id": data.display_id,
-            "user_id": data.user_id,
-            "restaurant_id": data.restaurant_id,
-            "status": data.status,
-            "total_price": data.total_price,
-            "comment": data.comment,
+        result: dict[str, object] = {
+            "id": getattr(data, "id", None),
+            "display_id": getattr(data, "display_id", None),
+            "user_id": getattr(data, "user_id", None),
+            "restaurant_id": getattr(data, "restaurant_id", None),
+            "status": getattr(data, "status", None),
+            "total_price": getattr(data, "total_price", None),
+            "comment": getattr(data, "comment", None),
             "cancellation_reason": getattr(data, "cancellation_reason", None),
             "requested_pickup_at": getattr(data, "requested_pickup_at", None),
-            "created_at": data.created_at,
+            "created_at": getattr(data, "created_at", None),
             "estimated_ready_at": getattr(data, "estimated_ready_at", None),
             "ready_at": getattr(data, "ready_at", None),
-            "items": data.items,
+            "items": getattr(data, "items", None),
         }
 
         user = getattr(data, "user", None)
         if user is not None:
             first_last = " ".join(
-                part for part in [user.first_name, user.last_name] if part
+                part
+                for part in [getattr(user, "first_name", None), getattr(user, "last_name", None)]
+                if part
             ).strip()
-            result["customer_name"] = first_last or user.name
-            result["customer_phone"] = user.phone_number
+            result["customer_name"] = first_last or getattr(user, "name", None)
+            result["customer_phone"] = getattr(user, "phone_number", None)
 
         restaurant = getattr(data, "restaurant", None)
         if restaurant is not None:
-            result["restaurant_display_id"] = restaurant.display_id
-            result["restaurant_name"] = restaurant.name
-            result["restaurant_address"] = restaurant.address
+            result["restaurant_display_id"] = getattr(restaurant, "display_id", None)
+            result["restaurant_name"] = getattr(restaurant, "name", None)
+            result["restaurant_address"] = getattr(restaurant, "address", None)
 
         return result

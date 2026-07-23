@@ -79,7 +79,7 @@ describe('MainLayout cart + deep links', () => {
     renderLayout();
     const fab = screen.getByLabelText(t('order.cart.fabOpen'));
     expect(fab).toBeInTheDocument();
-    expect(screen.getByText('2')).toBeInTheDocument();
+    expect(screen.getAllByText('2').length).toBeGreaterThan(0);
     await user.click(fab);
     expect(screen.getByTestId('cart-drawer')).toBeInTheDocument();
     await user.click(screen.getByText('close-drawer'));

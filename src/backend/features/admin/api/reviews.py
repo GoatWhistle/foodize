@@ -1,12 +1,11 @@
 import uuid
-from typing import Any
 
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
 from features.admin import crud
-from features.admin.api.schemas import BatchIdsRequest
+from features.admin.api.schemas import BatchAffectedResult, BatchIdsRequest
 from features.admin.audit_log import service as audit_service
 from features.admin.dependencies import require_admin
 from features.admin.schemas import AdminReviewResponse
@@ -32,17 +31,17 @@ async def read_reviews(
     return build_list_response(data=data, total=total, page=page, size=size, request=request)
 
 
-@router.delete("/reviews/batch")
+@router.delete("/reviews/batch", response_model=SuccessResponse[BatchAffectedResult])
 async def batch_delete_reviews(
     body: BatchIdsRequest,
     actor: User = Depends(require_admin),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
-) -> SuccessResponse[dict[str, Any]]:
+) -> SuccessResponse[BatchAffectedResult]:
     count = await crud.batch_delete_reviews(session, body.ids)
     for rid in body.ids:
         await audit_service.log_action(session, actor.id, "DELETE_REVIEW", "review", rid)
     await session.flush()
-    return build_response({"affected": count})
+    return build_response(BatchAffectedResult(affected=count))
 
 
 @router.delete("/reviews/{review_id}", response_model=SuccessResponse[AdminReviewResponse])

@@ -1,12 +1,12 @@
 import logging
 import uuid
 from collections.abc import Awaitable, Callable
-from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.admin.api.schemas import BatchModerationResult
 from features.admin.audit_log import service as audit_service
+from features.admin.audit_log.schemas import AuditDetails
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ async def run_batch_moderation(
     moderate: ModerateCallable,
     audit_action: str,
     entity_type: str,
-    audit_details: dict[str, Any] | None = None,
+    audit_details: AuditDetails | None = None,
 ) -> BatchModerationResult:
     succeeded: list[str] = []
     failed: list[dict[str, str]] = []

@@ -89,7 +89,7 @@ class TestPlaceOrderOptions:
                 return_value=make_load_estimate(restaurant_id),
             ),
             patch(
-                "features.orders.services.order_placement._create_order",
+                "features.orders.services.order_pricing._create_order",
                 new_callable=AsyncMock,
                 return_value=mock_order,
             ) as create_order_mock,
@@ -154,6 +154,6 @@ class TestPlaceOrderOptions:
                 new_callable=AsyncMock,
                 return_value=[],
             ),
+            pytest.raises(BadRequestException),
         ):
-            with pytest.raises(BadRequestException):
-                await place_order(mock_db_session, order_data, uuid.uuid4())
+            await place_order(mock_db_session, order_data, uuid.uuid4())

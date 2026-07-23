@@ -1,6 +1,6 @@
 import asyncio
+from collections.abc import Callable
 from types import SimpleNamespace
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -9,7 +9,9 @@ import infra.llm.embeddings as embeddings_mod
 from infra.llm.embeddings import EmbeddingClient, get_embedding_client
 
 
-def _make_client(embed_side_effect: Any = None) -> tuple[EmbeddingClient, MagicMock]:
+def _make_client(
+    embed_side_effect: BaseException | Callable[..., object] | None = None,
+) -> tuple[EmbeddingClient, MagicMock]:
     with patch("openai.AsyncOpenAI") as fake_openai:
         inner = MagicMock()
         inner.embeddings.create = AsyncMock()
@@ -55,6 +57,7 @@ class TestEmbeddingClient:
         texts = [f"t{i}" for i in range(total)]
 
         async def _create(*, model: str, input: list[str]) -> SimpleNamespace:
+            del model
             return _embedding_response([[float(len(input))]] * len(input))
 
         inner.embeddings.create.side_effect = _create
@@ -68,6 +71,7 @@ class TestEmbeddingClient:
         texts = [str(i) for i in range(total)]
 
         async def _create(*, model: str, input: list[str]) -> SimpleNamespace:
+            del model
             return _embedding_response([[float(value)] for value in input])
 
         inner.embeddings.create.side_effect = _create
@@ -117,7 +121,7 @@ class TestGetEmbeddingClient:
         self._reset_singleton()
         created: list[MagicMock] = []
 
-        def _factory(**kwargs: Any) -> MagicMock:
+        def _factory(**_kwargs: object) -> MagicMock:
             instance = MagicMock()
             instance.aclose = AsyncMock()
             created.append(instance)
@@ -135,7 +139,7 @@ class TestGetEmbeddingClient:
         self._reset_singleton()
         created: list[MagicMock] = []
 
-        def _factory(**kwargs: Any) -> MagicMock:
+        def _factory(**_kwargs: object) -> MagicMock:
             instance = MagicMock()
             instance.aclose = AsyncMock()
             created.append(instance)

@@ -51,9 +51,6 @@ async def create_staff_request(
 async def process_staff_request(
     session: AsyncSession, request: StaffRequest, new_status: StaffRequestStatus
 ) -> StaffRequestResponse:
-    if request is None:
-        return None
-
     if new_status == StaffRequestStatus.ACCEPTED:
         if await crud.staff_profile_exists(session, request.user_id):
             await crud.update_request_status(session, request, StaffRequestStatus.REJECTED)

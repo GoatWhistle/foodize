@@ -1,6 +1,6 @@
 [project]
 name = "foodize"
-version = "0.1.0"
+version = "1.0.0"
 description = ""
 authors = [
     { name = "Mikhail Khorokhorin", email = "mikhailkhorokhorin@gmail.com" },
@@ -119,27 +119,44 @@ select = [
     "ARG",
     "DTZ",
     "T20",
+    "ANN401",
 ]
 ignore = [
     "N818",
-    "B008",
     "RUF001",
     "RUF002",
     "RUF003",
-    "ARG001",
-    "ARG002",
-    "ARG005",
+]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.Query",
+    "fastapi.Path",
+    "fastapi.Body",
+    "fastapi.Header",
+    "fastapi.Cookie",
+    "fastapi.Form",
+    "fastapi.File",
+    "fastapi.Security",
+    "shared.dependencies.require_permission",
+    "shared.dependencies.permissions.require_permission",
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["ARG", "DTZ", "N802", "N803", "N806", "SIM117", "B017"]
-"alembic/**" = ["N999"]
-"settings/config/**" = ["RUF012"]
+"tests/**" = ["B017"]
+"features/*/api.py" = ["ARG001"]
+"features/*/api/*.py" = ["ARG001"]
+"api/exception_handlers.py" = ["ARG001"]
 
 [tool.mypy]
 python_version = "3.13"
 strict = true
 ignore_missing_imports = true
+disallow_any_generics = true
+warn_unused_ignores = true
+warn_unreachable = true
+
 plugins = ["pydantic.mypy"]
 
 [build-system]

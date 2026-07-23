@@ -63,6 +63,12 @@
   transition: background var(--dur-sm);
 }
 
+.close::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+}
+
 .close:active {
   background: var(--overlay-scrim-strong);
 }

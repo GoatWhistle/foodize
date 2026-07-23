@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import Any
+
+from pydantic import JsonValue
 
 from features.ai_order_agent.tool_helpers import cart_summary, order_confirm_key
 from features.cart.service import CartService
@@ -24,7 +25,7 @@ class OrderToolContext:
     def confirm_key(self) -> str:
         return order_confirm_key(self.identifier)
 
-    async def cart_summary_payload(self) -> dict[str, Any]:
+    async def cart_summary_payload(self) -> dict[str, JsonValue]:
         cart = await self.cart_service.get_cart(self.identifier)
         return cart_summary(cart)
 

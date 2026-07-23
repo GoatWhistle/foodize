@@ -29,13 +29,15 @@ class TestGetOrder:
         assert result.id == order_id
 
     async def test_get_order_not_found_raises_404(self, mock_db_session: AsyncMock) -> None:
-        with patch(
-            "features.orders.crud.order.get_order_by_id",
-            new_callable=AsyncMock,
-            return_value=None,
+        with (
+            patch(
+                "features.orders.crud.order.get_order_by_id",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
+            pytest.raises(OrderNotFoundException),
         ):
-            with pytest.raises(OrderNotFoundException):
-                await get_order(mock_db_session, uuid.uuid4(), uuid.uuid4())
+            await get_order(mock_db_session, uuid.uuid4(), uuid.uuid4())
 
     async def test_get_order_wrong_user_raises_403(self, mock_db_session: AsyncMock) -> None:
         owner_id = uuid.uuid4()
@@ -43,13 +45,15 @@ class TestGetOrder:
         order_id = uuid.uuid4()
         mock_order = make_mock_order(order_id, owner_id)
 
-        with patch(
-            "features.orders.crud.order.get_order_by_id",
-            new_callable=AsyncMock,
-            return_value=mock_order,
+        with (
+            patch(
+                "features.orders.crud.order.get_order_by_id",
+                new_callable=AsyncMock,
+                return_value=mock_order,
+            ),
+            pytest.raises(OrderAccessDeniedException),
         ):
-            with pytest.raises(OrderAccessDeniedException):
-                await get_order(mock_db_session, order_id, other_user_id)
+            await get_order(mock_db_session, order_id, other_user_id)
 
 
 class TestGetUserOrders:

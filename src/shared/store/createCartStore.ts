@@ -55,6 +55,8 @@ export interface CartStoreState {
     promoCode?: string | null,
     comment?: string,
     requestedPickupAt?: string | null,
+    redeemPoints?: number,
+    loyaltyRewardId?: string | null,
   ) => Promise<Order | undefined>;
 }
 
@@ -196,7 +198,13 @@ export function createCartStore({
       get().cart.reduce((sum, i) => sum + getLinePrice(i) * i.quantity, 0),
     cartCount: () => get().cart.reduce((sum, i) => sum + i.quantity, 0),
 
-    placeOrder: async (promoCode = null, comment = "", requestedPickupAt = null) => {
+    placeOrder: async (
+      promoCode = null,
+      comment = "",
+      requestedPickupAt = null,
+      redeemPoints = 0,
+      loyaltyRewardId = null,
+    ) => {
       if (get().orderPlacing) return;
       set({ orderPlacing: true });
       try {
@@ -216,6 +224,8 @@ export function createCartStore({
           ...(promoCode ? { promo_code: promoCode } : {}),
           ...(trimmedComment ? { comment: trimmedComment } : {}),
           ...(requestedPickupAt ? { requested_pickup_at: requestedPickupAt } : {}),
+          redeem_points: redeemPoints,
+          ...(loyaltyRewardId ? { loyalty_reward_id: loyaltyRewardId } : {}),
         };
         const response = await orderService.create(payload, {
           headers: { "Idempotency-Key": makeIdempotencyKey() },

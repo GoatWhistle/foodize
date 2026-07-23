@@ -1,5 +1,3 @@
-from typing import Any
-
 from fastapi import Request
 
 from shared.schemas.response import (
@@ -10,17 +8,17 @@ from shared.schemas.response import (
 )
 
 
-def build_response(data: Any) -> SuccessResponse[Any]:
+def build_response[T](data: T) -> SuccessResponse[T]:
     return SuccessResponse(data=data, meta=Meta())
 
 
-def build_list_response(
-    data: list[Any],
+def build_list_response[T](
+    data: list[T],
     total: int,
     page: int,
     size: int,
     request: Request,
-) -> SuccessListResponse[Any]:
+) -> SuccessListResponse[T]:
     total_pages = max(1, (total + size - 1) // size)
 
     base_url = str(request.url.remove_query_params(["page", "size"]))

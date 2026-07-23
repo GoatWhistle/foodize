@@ -1,6 +1,6 @@
-from typing import Any
+from shared.i18n.types import TranslationTree
 
-REPORTS: dict[str, Any] = {
+REPORTS: TranslationTree = {
     "common": {
         "dash": "—",
         "yes": "Да",

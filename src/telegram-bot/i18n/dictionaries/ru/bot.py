@@ -1,6 +1,6 @@
-from typing import Any
+from i18n.types import TranslationTree
 
-BOT: dict[str, Any] = {
+BOT: TranslationTree = {
     "messages": {
         "welcome": "Добро пожаловать в <b>Foodize</b>!",
         "welcomeRestaurant": (

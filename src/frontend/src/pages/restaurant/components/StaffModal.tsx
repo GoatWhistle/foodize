@@ -21,7 +21,7 @@ export const StaffModal = ({ restaurantName, message, setMessage, onClose, onSub
         <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: "var(--text-xl)", fontWeight: 800, color: 'var(--text-1)', margin: 0 }}>
           {t('catalog.staffModal.title')}
         </h2>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', display: 'flex' }}>
+        <button onClick={onClose} aria-label={t('common.actions.close')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44, margin: -11, flexShrink: 0 }}>
           <XIcon size={28} weight="bold" />
         </button>
       </div>

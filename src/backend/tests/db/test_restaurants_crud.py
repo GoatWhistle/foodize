@@ -18,7 +18,6 @@ from features.users.crud import create_user
 from features.users.schemas import UserCreate
 from features.vendors.crud import create_vendor_profile
 from features.vendors.models import VendorProfile
-from features.vendors.schemas import VendorCreate
 
 
 async def _make_vendor(db_session: AsyncSession, phone: str) -> VendorProfile:
@@ -30,7 +29,7 @@ async def _make_vendor(db_session: AsyncSession, phone: str) -> VendorProfile:
             password="strongpassword1",
         ),
     )
-    return await create_vendor_profile(db_session, user, VendorCreate())
+    return await create_vendor_profile(db_session, user)
 
 
 async def test_create_restaurant_crud(db_session: AsyncSession) -> None:

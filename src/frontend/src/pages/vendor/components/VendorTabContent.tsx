@@ -3,6 +3,7 @@ import { vendorService } from '@shared/services/vendorService';
 import { VendorMenuTab } from '../tabs/VendorMenuTab';
 import { VendorOrdersTab } from '../tabs/VendorOrdersTab';
 import { VendorPromosTab } from '../tabs/VendorPromosTab';
+import { VendorLoyaltyTab } from '../tabs/VendorLoyaltyTab';
 import { VendorScheduleTab } from '../tabs/VendorScheduleTab';
 import { VendorStaffTab } from '../tabs/VendorStaffTab';
 import { VendorAnalyticsTab } from '../tabs/VendorAnalyticsTab';
@@ -122,6 +123,13 @@ export function VendorTabContent({
           handleDeactivatePromo={(code) => {
             void dashboard.handleDeactivatePromo(code);
           }}
+        />
+      )}
+
+      {dashboard.activeTab === 'loyalty' && (
+        <VendorLoyaltyTab
+          selectedRestaurant={dashboard.selectedRestaurant}
+          selectedMenu={dashboard.selectedMenu}
         />
       )}
 

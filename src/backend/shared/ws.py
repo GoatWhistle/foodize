@@ -1,10 +1,10 @@
 import asyncio
 import json
-from collections.abc import AsyncIterator, Callable, Coroutine
+from collections.abc import AsyncIterator, Awaitable, Callable, Coroutine
 from contextlib import asynccontextmanager, suppress
-from typing import Any
 
 from fastapi import WebSocket, WebSocketDisconnect
+from pydantic import JsonValue
 from redis.asyncio.client import PubSub
 from uvicorn.protocols.utils import ClientDisconnected
 
@@ -33,7 +33,7 @@ async def safe_send_text(websocket: WebSocket, payload: str) -> None:
         raise WebSocketDisconnect from exc
 
 
-async def safe_send_json(websocket: WebSocket, payload: dict[str, Any]) -> None:
+async def safe_send_json(websocket: WebSocket, payload: dict[str, JsonValue]) -> None:
     await safe_send_text(websocket, json.dumps(payload))
 
 
@@ -95,7 +95,7 @@ async def consume_client_messages(websocket: WebSocket) -> None:
         pass
 
 
-async def run_ws_tasks(*coros: Coroutine[Any, Any, None]) -> None:
+async def run_ws_tasks(*coros: Coroutine[object, object, None]) -> None:
     tasks = [asyncio.create_task(coro) for coro in coros]
     try:
         done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
@@ -110,6 +110,11 @@ async def run_ws_tasks(*coros: Coroutine[Any, Any, None]) -> None:
             _logger.exception("WS task failed", exc_info=task.exception())
 
 
+async def close_pubsub(pubsub: PubSub) -> None:
+    closer: Callable[[], Awaitable[None]] = pubsub.aclose
+    await closer()
+
+
 @asynccontextmanager
 async def subscribed_pubsub(channel: str) -> AsyncIterator[PubSub]:
     pubsub = get_redis_cache().get_raw_client().pubsub()
@@ -118,13 +123,13 @@ async def subscribed_pubsub(channel: str) -> AsyncIterator[PubSub]:
         yield pubsub
     finally:
         await pubsub.unsubscribe(channel)
-        await pubsub.aclose()  # type: ignore[no-untyped-call]
+        await close_pubsub(pubsub)
 
 
 async def run_channel_ws(
     websocket: WebSocket,
     channel: str,
-    make_producer: Callable[[PubSub], Coroutine[Any, Any, None]],
+    make_producer: Callable[[PubSub], Coroutine[object, object, None]],
 ) -> None:
     async with subscribed_pubsub(channel) as pubsub:
         with suppress(WebSocketDisconnect):

@@ -15,6 +15,7 @@ from features.menu.services import menu_items as service
 from features.users.models import User
 from features.vendors.dependencies import get_current_vendor
 from features.vendors.models import VendorProfile
+from settings.config.app_config import settings
 from shared.dependencies import require_permission
 from shared.enums.permissions import Permission
 from shared.response import build_list_response, build_response
@@ -22,7 +23,7 @@ from shared.restaurant_resolver import resolve_restaurant_uuid
 from shared.schemas.response import SuccessListResponse, SuccessResponse
 from shared.uploads import read_image_upload
 
-router = APIRouter(prefix="/menu", tags=["Menu"])
+router = APIRouter(prefix=settings.api.v1.menu.prefix, tags=[settings.api.v1.menu.tag])
 
 
 @router.post(

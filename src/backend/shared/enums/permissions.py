@@ -32,6 +32,9 @@ class Permission(enum.Enum):
     PROMOS_VALIDATE = "promos.validate"
     PROMOS_MANAGE = "promos.manage"
 
+    LOYALTY_READ = "loyalty.read"
+    LOYALTY_MANAGE = "loyalty.manage"
+
     VENDORS_CREATE = "vendors.create"
     VENDORS_READ_OWN = "vendors.read_own"
     VENDORS_ANALYTICS_READ = "vendors.analytics_read"

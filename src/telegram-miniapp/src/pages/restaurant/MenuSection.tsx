@@ -1,10 +1,8 @@
-import { ListIcon } from "@phosphor-icons/react";
 import { MenuItemCard } from "@shared/components/MenuItemCard/MenuItemCard";
+import { CategoryChips } from "@shared/components/CategoryChips/CategoryChips";
 import { hapticSelection } from "../../telegram/sdk";
 import s from "./RestaurantPage.module.css";
-import { getCategoryIcon } from "@shared/utils/categoryIcons";
 import type { MenuItem } from "@shared/types/models";
-import { categoryLabel } from "@shared/utils/locales";
 import { useTranslation } from "@shared/i18n/useTranslation";
 
 interface MenuSectionProps {
@@ -45,19 +43,11 @@ export const MenuSection = ({
         {t("catalog.restaurantPage.closedBannerMiniapp")}
       </div>
     )}
-    <div className={s['categoriesScroll']}>
-      {categories.map((cat) => (
-        <button
-          key={cat}
-          className={`category-chip${activeCategory === cat ? " active" : ""}`}
-          onClick={() => { setActiveCategory(cat); }}
-          style={{ display: "flex", alignItems: "center", gap: 5 }}
-        >
-          {cat === "ALL" ? <ListIcon size={14} /> : getCategoryIcon(cat, { size: 14 })}
-          {cat === "ALL" ? t("catalog.restaurantPage.allCategories") : categoryLabel(cat)}
-        </button>
-      ))}
-    </div>
+    <CategoryChips
+      categories={categories}
+      activeCategory={activeCategory}
+      onSelect={setActiveCategory}
+    />
 
     {loading ? (
       <div className={s['menuList']}>

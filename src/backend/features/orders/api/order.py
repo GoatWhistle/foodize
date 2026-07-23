@@ -25,6 +25,7 @@ from features.orders.services import order as service
 from features.restaurants.models import Restaurant
 from features.users.models import User
 from middlewares.limiter import limiter
+from settings.config.app_config import settings
 from shared.dependencies import require_permission
 from shared.enums.order_status import OrderStatus
 from shared.enums.permissions import Permission
@@ -34,7 +35,7 @@ from shared.response import build_list_response, build_response
 from shared.restaurant_resolver import resolve_restaurant_uuid
 from shared.schemas.response import SuccessListResponse, SuccessResponse
 
-router = APIRouter(prefix="/orders", tags=["Orders"])
+router = APIRouter(prefix=settings.api.v1.orders.prefix, tags=[settings.api.v1.orders.tag])
 
 
 async def verify_order_read_access(session: AsyncSession, order: Order, current_user: User) -> None:

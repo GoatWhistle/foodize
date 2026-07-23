@@ -1,13 +1,13 @@
-from collections.abc import Callable
 from unittest.mock import AsyncMock
 
 import pytest
 from aiogram import Bot, Dispatcher
-from aiogram.types import Message, Update
+from aiogram.types import Message
 from pytest_mock import MockerFixture
 
 from config import bot_config
 from keyboards.start_keyboards import restart_text
+from tests.conftest import UpdateFactory
 from utils import messages as msg
 
 
@@ -27,7 +27,7 @@ def _configured(monkeypatch: pytest.MonkeyPatch, mocker: MockerFixture) -> None:
 async def test_start_command_reaches_handler(
     dispatcher: Dispatcher,
     bot: Bot,
-    update_factory: Callable[..., Update],
+    update_factory: UpdateFactory,
     answer_spy: AsyncMock,
 ) -> None:
     update = update_factory(text="/start")
@@ -40,7 +40,7 @@ async def test_start_command_reaches_handler(
 async def test_orders_command_reaches_handler(
     dispatcher: Dispatcher,
     bot: Bot,
-    update_factory: Callable[..., Update],
+    update_factory: UpdateFactory,
     answer_spy: AsyncMock,
     mocker: MockerFixture,
 ) -> None:
@@ -55,7 +55,7 @@ async def test_orders_command_reaches_handler(
 async def test_vendor_status_command_reaches_handler(
     dispatcher: Dispatcher,
     bot: Bot,
-    update_factory: Callable[..., Update],
+    update_factory: UpdateFactory,
     answer_spy: AsyncMock,
     mocker: MockerFixture,
 ) -> None:
@@ -73,7 +73,7 @@ async def test_vendor_status_command_reaches_handler(
 async def test_restart_button_reaches_handler(
     dispatcher: Dispatcher,
     bot: Bot,
-    update_factory: Callable[..., Update],
+    update_factory: UpdateFactory,
     answer_spy: AsyncMock,
 ) -> None:
     update = update_factory(text=restart_text())
@@ -86,7 +86,7 @@ async def test_restart_button_reaches_handler(
 async def test_unknown_text_is_not_handled(
     dispatcher: Dispatcher,
     bot: Bot,
-    update_factory: Callable[..., Update],
+    update_factory: UpdateFactory,
     answer_spy: AsyncMock,
 ) -> None:
     update = update_factory(text="just some text")

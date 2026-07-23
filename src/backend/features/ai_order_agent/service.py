@@ -21,7 +21,7 @@ def build_system_prompt(language: str = DEFAULT_LANGUAGE) -> str:
     )
 
 
-def _to_messages(items: Iterable[OrderChatMessageIn]) -> list[Message]:
+def to_messages(items: Iterable[OrderChatMessageIn]) -> list[Message]:
     return [Message(role=Role(item.role), content=item.content) for item in items]
 
 
@@ -41,7 +41,7 @@ async def stream_chat(
     client = await get_llm_client(AgentRole.ORDER)
     cache = get_redis_cache()
     cart_service = CartService(cache)
-    messages = _to_messages(history)
+    messages = to_messages(history)
     try:
         execute = build_order_executor(
             user,

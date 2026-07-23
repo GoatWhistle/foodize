@@ -1,6 +1,5 @@
 import uuid
 from datetime import UTC, date, datetime, timedelta
-from typing import Any
 
 from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,15 +11,15 @@ from features.users.models import User
 from shared.enums.order_status import OrderStatus
 
 
-def _apply_order_filters[SelectT: Select[Any]](
-    stmt: SelectT,
+def _apply_order_filters[RowT: tuple[object, ...]](
+    stmt: Select[RowT],
     status: OrderStatus | None,
     restaurant_id: uuid.UUID | None,
     user_id: uuid.UUID | None,
     search: str | None,
     date_from: date | None,
     date_to: date | None,
-) -> SelectT:
+) -> Select[RowT]:
     if status is not None:
         stmt = stmt.where(Order.status == status.value)
     if restaurant_id is not None:

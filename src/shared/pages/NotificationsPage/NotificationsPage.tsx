@@ -169,7 +169,7 @@ export const NotificationsPage = ({
                   </div>
                   <button
                     className="btn btn-ghost"
-                    style={{ padding: 4, flexShrink: 0 }}
+                    style={{ padding: 4, flexShrink: 0, minWidth: 44, minHeight: 44 }}
                     aria-label={t("profile.notifications.delete")}
                     onClick={(e) => { e.stopPropagation(); deleteNotification(n.id); }}
                   >

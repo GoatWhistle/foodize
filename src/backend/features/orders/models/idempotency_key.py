@@ -1,7 +1,8 @@
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
+from pydantic import JsonValue
 from sqlalchemy import DateTime, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -18,7 +19,7 @@ class IdempotencyKey(Base, IdUuidPkMixin, CreatedAtMixin):
     key: Mapped[str] = mapped_column(String(128), nullable=False)
     request_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     order_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("orders.id"), nullable=True)
-    response_json: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    response_json: Mapped[dict[str, JsonValue] | None] = mapped_column(JSONB, nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     order: Mapped["Order | None"] = relationship()

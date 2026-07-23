@@ -59,15 +59,16 @@ async def test_get_user_by_id_or_404_found() -> None:
 
 
 async def test_get_user_by_id_or_404_not_found() -> None:
-    with patch(
-        "features.users.dependencies.get_user_by_id", new_callable=AsyncMock, return_value=None
+    with (
+        patch(
+            "features.users.dependencies.get_user_by_id", new_callable=AsyncMock, return_value=None
+        ),
+        pytest.raises(NotFoundException),
     ):
-        with pytest.raises(NotFoundException):
-            await get_user_by_id_or_404(AsyncMock(), uuid.uuid4())
+        await get_user_by_id_or_404(AsyncMock(), uuid.uuid4())
 
 
 async def test_get_user_by_phone_or_401_success() -> None:
-
     user = MagicMock()
     user.hashed_password = "hashed"
     user_data = UserLogin(phone_number="+79001234567", password="password123")
@@ -89,31 +90,36 @@ async def test_get_user_by_phone_or_401_success() -> None:
 
 
 async def test_get_user_by_phone_or_401_user_not_found() -> None:
-
     user_data = UserLogin(phone_number="+79001234567", password="password123")
 
-    with patch(
-        "features.users.dependencies.get_user_by_phone", new_callable=AsyncMock, return_value=None
+    with (
+        patch(
+            "features.users.dependencies.get_user_by_phone",
+            new_callable=AsyncMock,
+            return_value=None,
+        ),
+        pytest.raises(InvalidCredentialsException),
     ):
-        with pytest.raises(InvalidCredentialsException):
-            await get_user_by_phone_or_401(AsyncMock(), user_data)
+        await get_user_by_phone_or_401(AsyncMock(), user_data)
 
 
 async def test_get_user_by_phone_or_401_no_password() -> None:
-
     user = MagicMock()
     user.hashed_password = None
     user_data = UserLogin(phone_number="+79001234567", password="password123")
 
-    with patch(
-        "features.users.dependencies.get_user_by_phone", new_callable=AsyncMock, return_value=user
+    with (
+        patch(
+            "features.users.dependencies.get_user_by_phone",
+            new_callable=AsyncMock,
+            return_value=user,
+        ),
+        pytest.raises(InvalidCredentialsException),
     ):
-        with pytest.raises(InvalidCredentialsException):
-            await get_user_by_phone_or_401(AsyncMock(), user_data)
+        await get_user_by_phone_or_401(AsyncMock(), user_data)
 
 
 async def test_get_user_by_phone_or_401_wrong_password() -> None:
-
     user = MagicMock()
     user.hashed_password = "hashed"
     user_data = UserLogin(phone_number="+79001234567", password="wrongpassword")
@@ -129,9 +135,9 @@ async def test_get_user_by_phone_or_401_wrong_password() -> None:
             new_callable=AsyncMock,
             return_value=False,
         ),
+        pytest.raises(InvalidCredentialsException),
     ):
-        with pytest.raises(InvalidCredentialsException):
-            await get_user_by_phone_or_401(AsyncMock(), user_data)
+        await get_user_by_phone_or_401(AsyncMock(), user_data)
 
 
 async def test_ensure_user_not_exists_by_phone_ok() -> None:
@@ -143,8 +149,12 @@ async def test_ensure_user_not_exists_by_phone_ok() -> None:
 
 async def test_ensure_user_not_exists_by_phone_raises() -> None:
     user = MagicMock()
-    with patch(
-        "features.users.dependencies.get_user_by_phone", new_callable=AsyncMock, return_value=user
+    with (
+        patch(
+            "features.users.dependencies.get_user_by_phone",
+            new_callable=AsyncMock,
+            return_value=user,
+        ),
+        pytest.raises(UserAlreadyExistsException),
     ):
-        with pytest.raises(UserAlreadyExistsException):
-            await ensure_user_not_exists_by_phone(AsyncMock(), "+79001234567")
+        await ensure_user_not_exists_by_phone(AsyncMock(), "+79001234567")

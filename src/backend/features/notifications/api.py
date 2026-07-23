@@ -6,15 +6,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import db_helper
 from features.auth.service import get_current_user
-from features.notifications import crud
+from features.notifications import crud, push_crud
 from features.notifications.exceptions import NotificationNotFoundException
+from features.notifications.push_schemas import (
+    PushDeviceRegisterRequest,
+    PushDeviceResponse,
+)
 from features.notifications.schemas import (
     NotificationListResponse,
     NotificationResponse,
 )
 from features.users.models import User
+from settings.config.app_config import settings
 
-router = APIRouter(prefix="/notifications", tags=["Notifications"])
+router = APIRouter(
+    prefix=settings.api.v1.notifications.prefix, tags=[settings.api.v1.notifications.tag]
+)
 
 
 @router.get("", response_model=NotificationListResponse)
@@ -72,3 +79,28 @@ async def delete_all_notifications(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> None:
     await crud.delete_all_notifications(session, user.id)
+
+
+@router.post("/devices", response_model=PushDeviceResponse, status_code=HTTPStatus.CREATED)
+async def register_device(
+    payload: PushDeviceRegisterRequest,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> PushDeviceResponse:
+    device = await push_crud.upsert_device(
+        session,
+        user_id=user.id,
+        token=payload.token,
+        platform=payload.platform.value,
+        language=payload.language,
+    )
+    return PushDeviceResponse.model_validate(device)
+
+
+@router.delete("/devices/{token}", status_code=HTTPStatus.NO_CONTENT)
+async def unregister_device(
+    token: str,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(db_helper.dependency_session_getter),
+) -> None:
+    await push_crud.deactivate_device(session, user.id, token)

@@ -15,6 +15,7 @@ from features.telegram.schemas import (
     TelegramBotVendorStatusResponse,
 )
 from features.users.schemas import UserRead
+from settings.config.app_config import settings
 from shared.response import build_response
 from shared.schemas.response import (
     Pagination,
@@ -22,7 +23,9 @@ from shared.schemas.response import (
     SuccessResponse,
 )
 
-router = APIRouter(prefix="/telegram/bot", tags=["Telegram"])
+router = APIRouter(
+    prefix=settings.api.v1.telegram_bot.prefix, tags=[settings.api.v1.telegram_bot.tag]
+)
 
 
 @router.post(

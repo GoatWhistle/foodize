@@ -1,7 +1,7 @@
 import type { Dispatch, SetStateAction } from 'react';
 import { weekdaysShort } from '@shared/utils/datetime';
 import { useTranslation } from '@shared/i18n/useTranslation';
-import type { WorkingHoursRow } from '../hooks/useVendorRestaurants';
+import type { WorkingHoursRow } from '../hooks/useVendorWorkingHours';
 
 interface ListSkeletonProps {
   rows?: number;

@@ -1,22 +1,13 @@
-import type { ChangeEvent, Dispatch, ReactNode, SetStateAction } from 'react';
-import { PackageIcon, ClockIcon, CheckCircleIcon, HandPalmIcon, ShieldWarningIcon } from '@phosphor-icons/react';
+import type { ChangeEvent, Dispatch, SetStateAction } from 'react';
+import { ShieldWarningIcon } from '@phosphor-icons/react';
 import { Pagination } from '@shared/components/Pagination/Pagination';
 import { EmptyState } from '@shared/components/EmptyState/EmptyState';
-import { orderStatusLabel } from '@shared/utils/locales';
-import { translateApiError } from '@shared/utils/translateApiError';
 import { useTranslation } from '@shared/i18n/useTranslation';
 import type { Order } from '@shared/types/models';
 import type { adminService as AdminService } from '../../../services/adminService';
 import type { OrderFilters } from '../hooks/useAdminOrders';
 import type { ReasonDialogConfig } from '../useAdminDashboard';
-import { formatPrice } from '@shared/utils/price';
-
-const cardStyle = {
-  background: 'var(--bg-card)',
-  border: '1px solid var(--border)',
-  borderRadius: 'var(--r-md)',
-  boxShadow: 'var(--shadow-sm)',
-};
+import { AdminResolutionOrderCard } from './AdminResolutionOrderCard';
 
 const wideFilterGridStyle = {
   display: 'grid',
@@ -33,20 +24,6 @@ const filterControlStyle = {
   fontSize: "var(--text-base)",
   lineHeight: 1.2,
 };
-
-interface StatusConfig {
-  className: string;
-  icon: ReactNode;
-}
-
-const STATUS_MAP: Record<string, StatusConfig> = {
-  PENDING: { className: 'pending', icon: <ClockIcon /> },
-  ACCEPTED: { className: 'pending', icon: <CheckCircleIcon /> },
-  READY: { className: 'ready', icon: <HandPalmIcon /> },
-  COMPLETED: { className: 'ready', icon: <CheckCircleIcon weight="fill" /> },
-};
-
-const orderTitle = (order: Order): number => order.display_id;
 
 export interface AdminResolutionTabProps {
   orders: Order[];
@@ -155,105 +132,17 @@ export function AdminResolutionTab({
         </select>
       </div>
 
-      {orders.map((o) => {
-        const cfg = STATUS_MAP[o.status] ?? { className: 'pending', icon: <PackageIcon /> };
-        return (
-          <div
-            key={o.id}
-            style={{
-              ...cardStyle,
-              padding: 16,
-              textAlign: 'left',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 10,
-              width: '100%',
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                gap: 12,
-                alignItems: 'flex-start',
-              }}
-            >
-              <div>
-                <div style={{ color: 'var(--text-3)', fontSize: "var(--text-sm)", fontWeight: 800 }}>
-                  {t('admin.resolution.orderTitle', { displayId: orderTitle(o) })}
-                </div>
-                <div
-                  style={{
-                    color: 'var(--text-1)',
-                    fontWeight: 900,
-                    fontSize: "var(--text-md)",
-                    marginTop: 2,
-                  }}
-                >
-                  {formatPrice(o.total_price)}
-                </div>
-              </div>
-              <span className={`order-status-badge ${cfg.className}`}>
-                {cfg.icon} {orderStatusLabel(o.status)}
-              </span>
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 3,
-                color: 'var(--text-3)',
-                fontSize: "var(--text-base)",
-              }}
-            >
-              <div>
-                <b style={{ color: 'var(--text-2)' }}>{o.customer_name || t('admin.resolution.customerFallback')}</b>
-                {o.customer_phone && <span> · {o.customer_phone}</span>}
-              </div>
-              {(o.restaurant_name || o.restaurant_address) && (
-                <div>
-                  {o.restaurant_name && (
-                    <b style={{ color: 'var(--text-2)' }}>{o.restaurant_name}</b>
-                  )}
-                </div>
-              )}
-            </div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-              <button
-                className="btn btn-secondary btn-sm"
-                onClick={() => { setSelectedOrder(o); }}
-              >
-                {t('admin.resolution.details')}
-              </button>
-              {o.status !== 'CANCELLED' && (
-                <button
-                  className="btn btn-sm"
-                  style={{ background: 'var(--error)', color: 'white' }}
-                  onClick={() => {
-                    setReasonDialog({
-                      title: t('admin.resolution.dialogs.forceCancelTitle'),
-                      message: t('admin.resolution.dialogs.forceCancelMessage', { displayId: orderTitle(o) }),
-                      confirmLabel: t('admin.resolution.dialogs.forceCancelConfirm'),
-                      onConfirm: async (reason) => {
-                        try {
-                          await adminService.forceCancelOrder(o.id, reason);
-                          setOrdersPage(1);
-                        } catch (error) {
-                          setActionError(
-                            translateApiError(error, t('admin.resolution.errors.cancelFailed'))
-                          );
-                        }
-                      },
-                    });
-                  }}
-                >
-                  {t('admin.resolution.forceCancel')}
-                </button>
-              )}
-            </div>
-          </div>
-        );
-      })}
+      {orders.map((o) => (
+        <AdminResolutionOrderCard
+          key={o.id}
+          order={o}
+          setOrdersPage={setOrdersPage}
+          setSelectedOrder={setSelectedOrder}
+          setReasonDialog={setReasonDialog}
+          setActionError={setActionError}
+          adminService={adminService}
+        />
+      ))}
 
       {isEmpty && (
         <EmptyState

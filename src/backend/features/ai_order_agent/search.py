@@ -2,7 +2,6 @@ import hashlib
 import json
 import logging
 import uuid
-from typing import Any, cast
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,6 +9,11 @@ from features.ai_order_agent import crud
 from features.ai_order_agent.exceptions import (
     EmbeddingDimensionMismatchError,
     QueryEmbeddingDimensionMismatchError,
+)
+from features.ai_order_agent.schemas_search import (
+    MenuEmbeddingRow,
+    MenuItemText,
+    MenuSearchItem,
 )
 from infra.cache.base import CacheRepository
 from infra.llm import EmbeddingClient, get_embedding_client
@@ -22,15 +26,15 @@ _RERANK_POOL = 50
 _NAME_MATCH_BONUS = 0.05
 
 
-def _item_text(item: dict[str, Any]) -> str:
+def build_item_text(item: MenuItemText) -> str:
     return f"{item['name']}. {item.get('description') or ''}".strip()
 
 
-def _text_hash(text: str) -> str:
+def text_hash(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def _query_cache_key(model: str, query: str) -> str:
+def query_cache_key(model: str, query: str) -> str:
     digest = hashlib.sha256(query.encode("utf-8")).hexdigest()
     return f"emb:query:{model}:{digest}"
 
@@ -41,10 +45,12 @@ async def _get_query_embedding(
     model: str,
     query: str,
 ) -> list[float]:
-    key = _query_cache_key(model, query)
+    key = query_cache_key(model, query)
     cached = await cache.get(key)
     if cached:
-        return cast("list[float]", json.loads(cached))
+        decoded: object = json.loads(cached)
+        if isinstance(decoded, list):
+            return [float(value) for value in decoded]
     result = await client.embed([query])
     embedding = result[0]
     await cache.set(key, json.dumps(embedding), ttl=_QUERY_EMBED_TTL_SECONDS)
@@ -68,14 +74,14 @@ async def _sync_item_embeddings(
     if not candidates:
         return
 
-    item_by_id = {uuid.UUID(item["menu_item_id"]): item for item in candidates}
+    item_by_id = {uuid.UUID(str(item["menu_item_id"])): item for item in candidates}
     await crud.acquire_embedding_sync_lock(session, model)
     stored = await crud.get_embedding_meta(session, list(item_by_id), model)
 
     stale: list[tuple[uuid.UUID, str, str]] = []
     for item_id, item in item_by_id.items():
-        item_text = _item_text(item)
-        digest = _text_hash(item_text)
+        item_text = build_item_text(item)
+        digest = text_hash(item_text)
         if stored.get(item_id) != digest:
             stale.append((item_id, item_text, digest))
     if not stale:
@@ -93,9 +99,9 @@ def _build_embedding_rows(
     model: str,
     stale: list[tuple[uuid.UUID, str, str]],
     vectors: list[list[float]],
-) -> list[dict[str, Any]]:
+) -> list[MenuEmbeddingRow]:
     expected_dim = settings.llm.embedding_dim
-    embedding_rows = []
+    embedding_rows: list[MenuEmbeddingRow] = []
     for (item_id, _, digest), vector in zip(stale, vectors, strict=True):
         if len(vector) != expected_dim:
             raise EmbeddingDimensionMismatchError(
@@ -108,9 +114,9 @@ def _build_embedding_rows(
     return embedding_rows
 
 
-def _rerank_by_score(ranked: list[dict[str, Any]], query: str, limit: int) -> list[dict[str, Any]]:
+def _rerank_by_score(ranked: list[MenuSearchItem], query: str, limit: int) -> list[MenuSearchItem]:
     query_lower = query.lower()
-    scored: list[tuple[float, dict[str, Any]]] = []
+    scored: list[tuple[float, MenuSearchItem]] = []
     for menu_item in ranked:
         score = 1.0 - menu_item.pop("_distance")
         if query_lower in (menu_item["name"] or "").lower():
@@ -128,7 +134,7 @@ async def _semantic_ranked_search(
     max_price: int | None,
     restaurant_id: uuid.UUID | None,
     limit: int,
-) -> list[dict[str, Any]]:
+) -> list[MenuSearchItem]:
     client = await get_embedding_client()
     model = client.model
 
@@ -164,7 +170,7 @@ async def semantic_search(
     max_price: int | None = None,
     restaurant_id: uuid.UUID | None = None,
     limit: int = 15,
-) -> list[dict[str, Any]]:
+) -> list[MenuSearchItem]:
     cfg = settings.llm
     if not cfg.embeddings_enabled or not query or not query.strip():
         return await crud.search_menu_items(

@@ -26,12 +26,12 @@ _order_display_id = 1000
 
 @event.listens_for(Order, "before_insert")
 def _set_order_display_id_for_sqlite_tests(
-    mapper: Mapper[Order], connection: Connection, target: Order
+    _mapper: Mapper[Order], connection: Connection, target: Order
 ) -> None:
     global _order_display_id
     if connection.dialect.name != "sqlite":
         return
-    if target.display_id is None:
+    if getattr(target, "display_id", None) is None:
         target.display_id = _order_display_id
         _order_display_id += 1
 

@@ -1,4 +1,3 @@
-from collections.abc import Callable
 from datetime import datetime
 from http import HTTPStatus
 
@@ -8,13 +7,9 @@ from aiogram.types import Contact, Message
 from pytest_mock import MockerFixture
 
 from config import bot_config
-from handlers.start import (
-    _auto_register,
-    cmd_start,
-    handle_contact,
-    handle_restart_button,
-)
-from tests.conftest import answer_of, make_chat, make_user
+from handlers.start import cmd_start, handle_contact, handle_restart_button
+from handlers.start_flow import _auto_register
+from tests.conftest import MessageFactory, answer_of, make_chat, make_user
 from utils import messages as msg
 
 
@@ -26,7 +21,7 @@ def _configured(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 async def test_cmd_start_deep_link_restaurant(
-    mocker: MockerFixture, message_factory: Callable[..., Message]
+    mocker: MockerFixture, message_factory: MessageFactory
 ) -> None:
     mocker.patch("handlers.start.backend_client.register_by_telegram", return_value={})
     mocker.patch(
@@ -42,7 +37,7 @@ async def test_cmd_start_deep_link_restaurant(
 
 
 async def test_cmd_start_restaurant_network_error_falls_back(
-    mocker: MockerFixture, message_factory: Callable[..., Message]
+    mocker: MockerFixture, message_factory: MessageFactory
 ) -> None:
     mocker.patch("handlers.start.backend_client.register_by_telegram", return_value={})
     mocker.patch(
@@ -57,7 +52,7 @@ async def test_cmd_start_restaurant_network_error_falls_back(
 
 
 async def test_cmd_start_deep_link_order(
-    mocker: MockerFixture, message_factory: Callable[..., Message]
+    mocker: MockerFixture, message_factory: MessageFactory
 ) -> None:
     mocker.patch("handlers.start.backend_client.register_by_telegram", return_value={})
     message = message_factory(text="/start order_456")
@@ -69,7 +64,7 @@ async def test_cmd_start_deep_link_order(
 
 
 async def test_cmd_start_default_sends_welcome_and_app(
-    mocker: MockerFixture, message_factory: Callable[..., Message]
+    mocker: MockerFixture, message_factory: MessageFactory
 ) -> None:
     mocker.patch("handlers.start.backend_client.register_by_telegram", return_value={})
     message = message_factory(text="/start")
@@ -80,7 +75,7 @@ async def test_cmd_start_default_sends_welcome_and_app(
 
 
 async def test_cmd_start_triggers_auto_register(
-    mocker: MockerFixture, message_factory: Callable[..., Message]
+    mocker: MockerFixture, message_factory: MessageFactory
 ) -> None:
     register = mocker.patch("handlers.start.backend_client.register_by_telegram", return_value={})
     message = message_factory(text="/start")
@@ -91,7 +86,7 @@ async def test_cmd_start_triggers_auto_register(
 
 
 async def test_handle_restart_button_behaves_like_start(
-    mocker: MockerFixture, message_factory: Callable[..., Message]
+    mocker: MockerFixture, message_factory: MessageFactory
 ) -> None:
     mocker.patch("handlers.start.backend_client.register_by_telegram", return_value={})
     message = message_factory(text="/start")
@@ -113,7 +108,7 @@ async def test_auto_register_no_user_does_nothing(mocker: MockerFixture) -> None
 
 
 async def test_auto_register_skips_without_bot_api_secret(
-    mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch, message_factory: Callable[..., Message]
+    mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch, message_factory: MessageFactory
 ) -> None:
     monkeypatch.setattr(bot_config, "bot_api_secret", "")
     register = mocker.patch("handlers.start.backend_client.register_by_telegram")
@@ -124,7 +119,7 @@ async def test_auto_register_skips_without_bot_api_secret(
 
 
 async def test_auto_register_calls_backend_with_expected_args(
-    mocker: MockerFixture, message_factory: Callable[..., Message]
+    mocker: MockerFixture, message_factory: MessageFactory
 ) -> None:
     register = mocker.patch("handlers.start.backend_client.register_by_telegram", return_value={})
     message = message_factory(
@@ -155,7 +150,7 @@ async def test_auto_register_calls_backend_with_expected_args(
     ],
 )
 async def test_auto_register_swallows_errors(
-    mocker: MockerFixture, message_factory: Callable[..., Message], error: Exception
+    mocker: MockerFixture, message_factory: MessageFactory, error: Exception
 ) -> None:
     mocker.patch("handlers.start.backend_client.register_by_telegram", side_effect=error)
     message = message_factory()
@@ -166,7 +161,7 @@ async def test_auto_register_swallows_errors(
 
 
 async def test_handle_contact_no_contact_does_nothing(
-    message_factory: Callable[..., Message],
+    message_factory: MessageFactory,
 ) -> None:
     message = message_factory(contact=None)
     await handle_contact(message)
@@ -174,7 +169,7 @@ async def test_handle_contact_no_contact_does_nothing(
 
 
 async def test_handle_contact_rejects_foreign_number(
-    message_factory: Callable[..., Message],
+    message_factory: MessageFactory,
 ) -> None:
     contact = Contact.model_construct(
         first_name="Foreign", phone_number="+79990000000", user_id=999
@@ -187,7 +182,7 @@ async def test_handle_contact_rejects_foreign_number(
 
 
 async def test_handle_contact_links_own_number(
-    mocker: MockerFixture, message_factory: Callable[..., Message]
+    mocker: MockerFixture, message_factory: MessageFactory
 ) -> None:
     link = mocker.patch("handlers.start.backend_client.link_phone", return_value=None)
     contact = Contact.model_construct(

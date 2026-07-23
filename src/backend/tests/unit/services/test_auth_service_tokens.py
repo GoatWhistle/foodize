@@ -5,7 +5,7 @@ from starlette.requests import Request
 
 from features.auth.service import (
     OAuth2PasswordBearerWithCookie,
-    _get_bearer_token,
+    get_bearer_token,
     issue_user_tokens,
 )
 
@@ -53,19 +53,19 @@ class TestOAuth2PasswordBearerWithCookie:
 class TestGetBearerToken:
     async def test_valid_bearer(self) -> None:
         request = _make_request(headers={"Authorization": "Bearer mytoken"})
-        assert await _get_bearer_token(request) == "mytoken"
+        assert await get_bearer_token(request) == "mytoken"
 
     async def test_no_header(self) -> None:
         request = _make_request()
-        assert await _get_bearer_token(request) is None
+        assert await get_bearer_token(request) is None
 
     async def test_non_bearer_scheme(self) -> None:
         request = _make_request(headers={"Authorization": "Basic abc123"})
-        assert await _get_bearer_token(request) is None
+        assert await get_bearer_token(request) is None
 
     async def test_bearer_empty_token(self) -> None:
         request = _make_request(headers={"Authorization": "Bearer "})
-        assert await _get_bearer_token(request) is None
+        assert await get_bearer_token(request) is None
 
 
 class TestIssueUserTokens:

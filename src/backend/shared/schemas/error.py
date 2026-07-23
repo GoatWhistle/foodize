@@ -1,12 +1,10 @@
-from typing import Any
-
-from pydantic import BaseModel
+from pydantic import BaseModel, JsonValue
 
 
 class ErrorDescriptionSchema(BaseModel):
     error: str
     code: str = "APP_ERROR"
-    params: dict[str, Any] = {}
+    params: dict[str, JsonValue] = {}
 
 
 class ErrorSchema(BaseModel):

@@ -1,12 +1,3 @@
-.pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 32px 0 16px;
-  flex-wrap: wrap;
-}
-
 .page-btn {
   min-width: 36px;
   height: 36px;
@@ -37,9 +28,9 @@
   color: var(--fire-text);
 }
 
-.page-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
+.page-btn:active:not(:disabled) {
+  background: var(--bg-raised);
+  transform: scale(0.95);
 }
 
 @media (max-width: 599px) {
@@ -49,8 +40,8 @@
   }
 
   .page-btn {
-    min-width: 32px;
-    height: 32px;
-    font-size: var(--text-xs);
+    min-width: 44px;
+    height: 44px;
+    font-size: var(--text-sm);
   }
 }

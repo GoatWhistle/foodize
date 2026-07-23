@@ -105,7 +105,7 @@ describe('ProfilePage extra branches', () => {
     const user = userEvent.setup();
     await user.click(become);
     await waitFor(() => {
-      expect(vendorService.createProfile).toHaveBeenCalledWith({});
+      expect(vendorService.createProfile).toHaveBeenCalled();
     });
     expect(await screen.findByText(t('profile.roles.vendorDashboard'))).toBeInTheDocument();
   });

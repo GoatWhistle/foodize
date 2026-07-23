@@ -1,5 +1,5 @@
 import builtins
-from typing import TYPE_CHECKING, cast
+from collections.abc import Awaitable
 
 import redis.asyncio as aioredis
 from redis.asyncio import Redis
@@ -7,8 +7,12 @@ from redis.asyncio import Redis
 from infra.cache.base import CacheRepository
 from settings.config.app_config import settings
 
-if TYPE_CHECKING:
-    from collections.abc import Awaitable
+
+async def _resolve[T](value: Awaitable[T] | T) -> T:
+    if isinstance(value, Awaitable):
+        return await value
+    return value
+
 
 _pool: aioredis.ConnectionPool | None = None
 _redis_cache: "RedisCache | None" = None
@@ -34,7 +38,8 @@ class RedisCache(CacheRepository):
         self._client = client
 
     async def get(self, key: str) -> str | None:
-        return cast("str | None", await self._client.get(key))
+        value = await _resolve(self._client.get(key))
+        return value if value is None or isinstance(value, str) else str(value)
 
     async def set(self, key: str, value: str, ttl: int | None = None) -> None:
         await self._client.set(key, value, ex=ttl)
@@ -49,10 +54,10 @@ class RedisCache(CacheRepository):
         return bool(await self._client.set(key, value, ex=ttl, nx=True))
 
     async def sadd(self, key: str, *values: str) -> None:
-        await cast("Awaitable[int]", self._client.sadd(key, *values))
+        await _resolve(self._client.sadd(key, *values))
 
     async def expire(self, key: str, ttl: int) -> None:
-        await cast("Awaitable[bool]", self._client.expire(key, ttl))
+        await _resolve(self._client.expire(key, ttl))
 
     async def sadd_with_expire(self, key: str, value: str, ttl: int) -> None:
         async with self._client.pipeline(transaction=True) as pipe:
@@ -61,14 +66,14 @@ class RedisCache(CacheRepository):
             await pipe.execute()
 
     async def incr_with_expire(self, key: str, ttl: int) -> int:
-        count = await cast("Awaitable[int]", self._client.incr(key))
+        count = int(await _resolve(self._client.incr(key)))
         if count == 1:
-            await cast("Awaitable[bool]", self._client.expire(key, ttl))
+            await _resolve(self._client.expire(key, ttl))
         return count
 
     async def smembers(self, key: str) -> builtins.set[str]:
-        result = await cast("Awaitable[builtins.set[str]]", self._client.smembers(key))
-        return set(result)
+        result = await _resolve(self._client.smembers(key))
+        return {member if isinstance(member, str) else str(member) for member in result}
 
     async def delete_many(self, *keys: str) -> None:
         if keys:
@@ -77,7 +82,8 @@ class RedisCache(CacheRepository):
     async def mget(self, *keys: str) -> list[str | None]:
         if not keys:
             return []
-        return cast("list[str | None]", await self._client.mget(*keys))
+        values = await _resolve(self._client.mget(*keys))
+        return [v if v is None or isinstance(v, str) else str(v) for v in values]
 
     async def mset(self, mapping: dict[str, str], ttl: int | None = None) -> None:
         if not mapping:

@@ -14,10 +14,8 @@ from features.vendors import service
 from features.vendors.dependencies import get_current_vendor
 from features.vendors.exceptions import UnknownOrderStatusException
 from features.vendors.models import VendorProfile
-from features.vendors.schemas import (
-    VendorCreate,
-    VendorResponse,
-)
+from features.vendors.schemas import VendorResponse
+from settings.config.app_config import settings
 from shared.dependencies import (
     ensure_restaurant_belongs_to_vendor,
     get_language,
@@ -28,7 +26,7 @@ from shared.enums.permissions import Permission
 from shared.response import build_response
 from shared.schemas.response import SuccessResponse
 
-router = APIRouter(prefix="/vendors", tags=["Vendors"])
+router = APIRouter(prefix=settings.api.v1.vendors.prefix, tags=[settings.api.v1.vendors.tag])
 
 _CSV_MEDIA_TYPE = "text/csv"
 _PDF_MEDIA_TYPE = "application/pdf"
@@ -57,11 +55,10 @@ def _parse_order_status(status: str | None) -> OrderStatus | None:
     status_code=HTTPStatus.CREATED,
 )
 async def create_vendor(
-    vendor_in: VendorCreate,
     user: User = Depends(require_permission(Permission.VENDORS_CREATE)),
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[VendorResponse]:
-    result = await service.register_vendor(user=user, session=session, vendor_in=vendor_in)
+    result = await service.register_vendor(user=user, session=session)
     return build_response(result)
 
 

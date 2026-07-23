@@ -19,7 +19,6 @@ def make_user(
     hashed_password: str = "hashed_secret",
     user_role: str | None = None,
 ) -> User:
-
     user = User()
     user.id = user_id or uuid.uuid4()
     user.name = name

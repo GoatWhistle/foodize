@@ -1,7 +1,7 @@
 import os
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncIterator
 from datetime import datetime
-from typing import cast
+from typing import Protocol, cast
 from unittest.mock import AsyncMock
 
 os.environ["BOT_TOKEN"] = "test_bot_token"
@@ -47,8 +47,26 @@ def answer_of(message: Message) -> AsyncMock:
     return cast("AsyncMock", message.answer)
 
 
+class MessageFactory(Protocol):
+    def __call__(
+        self,
+        text: str | None = None,
+        from_user: User | None | _Unset = ...,
+        contact: Contact | None = None,
+    ) -> Message: ...
+
+
+class UpdateFactory(Protocol):
+    def __call__(
+        self,
+        text: str | None = None,
+        from_user: User | None | _Unset = ...,
+        contact: Contact | None = None,
+    ) -> Update: ...
+
+
 @pytest.fixture
-def message_factory() -> Callable[..., Message]:
+def message_factory() -> MessageFactory:
     def _factory(
         text: str | None = None,
         from_user: User | None | _Unset = _UNSET,
@@ -70,9 +88,13 @@ def message_factory() -> Callable[..., Message]:
 
 
 @pytest.fixture
-def update_factory(message_factory: Callable[..., Message]) -> Callable[..., Update]:
-    def _factory(**message_kwargs: object) -> Update:
-        message = message_factory(**message_kwargs)
+def update_factory(message_factory: MessageFactory) -> UpdateFactory:
+    def _factory(
+        text: str | None = None,
+        from_user: User | None | _Unset = _UNSET,
+        contact: Contact | None = None,
+    ) -> Update:
+        message = message_factory(text=text, from_user=from_user, contact=contact)
         return Update.model_construct(update_id=1, message=message)
 
     return _factory

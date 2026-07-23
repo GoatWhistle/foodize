@@ -76,10 +76,18 @@
   color: var(--text-1);
 }
 
-.profile-menu-item:hover {
+@media (hover: hover) {
+  .profile-menu-item:hover {
+    border-color: var(--border-mid);
+    background: var(--bg-surface);
+    transform: translateX(2px);
+  }
+}
+
+.profile-menu-item:active {
   border-color: var(--border-mid);
   background: var(--bg-surface);
-  transform: translateX(2px);
+  transform: scale(0.99);
 }
 
 .profile-menu-item.danger {

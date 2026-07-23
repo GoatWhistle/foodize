@@ -5,12 +5,15 @@ import uuid
 from fastapi import APIRouter, WebSocket
 from redis.asyncio.client import PubSub
 
+from settings.config.app_config import settings
 from shared.ws import authenticate_ws_user, run_channel_ws, safe_send_json, safe_send_text
 
-router = APIRouter(prefix="/ws", tags=["WebSockets"])
+router = APIRouter(
+    prefix=settings.api.v1.notifications_ws.prefix, tags=[settings.api.v1.notifications_ws.tag]
+)
 
 
-async def _forward_notifications(websocket: WebSocket, pubsub: PubSub) -> None:
+async def forward_notifications(websocket: WebSocket, pubsub: PubSub) -> None:
     async for message in pubsub.listen():
         if message["type"] != "message":
             continue
@@ -40,5 +43,5 @@ async def user_notifications_ws(
     await run_channel_ws(
         websocket,
         f"user_notifications:{user_id}",
-        lambda pubsub: _forward_notifications(websocket, pubsub),
+        lambda pubsub: forward_notifications(websocket, pubsub),
     )

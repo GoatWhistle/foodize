@@ -1,0 +1,80 @@
+.form {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+}
+
+.typeToggle {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 3px;
+  align-self: flex-start;
+}
+
+.typeBtn {
+  padding: 5px 10px;
+  border-radius: calc(var(--r-sm) - 2px);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--text-3);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.typeBtnActive {
+  color: var(--text-1);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-sm);
+}
+
+.tiersTitle {
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+.tierRow {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+}
+
+.formActions {
+  display: flex;
+  gap: 8px;
+}
+
+.submitBtn {
+  flex: 1;
+}

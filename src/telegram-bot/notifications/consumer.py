@@ -3,13 +3,13 @@ import functools
 import json
 import logging
 from collections.abc import Awaitable, Callable
-from typing import Any
 
 import aio_pika
 from aio_pika.abc import AbstractExchange
 from aiogram import Bot
 
 from config import bot_config
+from notifications.events import EventPayload
 from notifications.handlers import handle_order_placed, handle_order_status_changed
 from services import redis_client
 from utils.enums import EventType
@@ -24,7 +24,7 @@ _RETRY_COUNT_HEADER = "x-retry-count"
 _EVENTS_EXCHANGE = "foodize.events"
 _DLX_EXCHANGE = "foodize.dlx"
 
-_EventHandler = Callable[[dict[str, Any], Bot], Awaitable[None]]
+type _EventHandler = Callable[[EventPayload, Bot], Awaitable[None]]
 
 
 def _dedup_key(event_id: str) -> str:

@@ -1,10 +1,10 @@
-from pydantic import field_validator
+from pydantic import Field, field_validator
 
 from settings.config.base import BaseConfig
 
 
 class CorsConfig(BaseConfig):
-    allowed_origins: list[str] = []
+    allowed_origins: list[str] = Field(default_factory=list)
 
     @field_validator("allowed_origins", mode="before")
     @classmethod

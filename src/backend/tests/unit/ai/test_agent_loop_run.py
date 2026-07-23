@@ -1,6 +1,7 @@
 import pytest
 
-from infra.llm.agent import LLMBudgetExceededError, run_agent
+from infra.llm.agent import run_agent
+from infra.llm.agent_run import LLMBudgetExceededError
 from infra.llm.base import Message, Role, ToolCall, ToolInputError
 
 from .agent_responses import (
@@ -41,7 +42,7 @@ async def test_run_agent_executes_tool_then_returns_final_text() -> None:
 async def test_run_agent_without_tool_calls_returns_immediately() -> None:
     client = FakeLLMClient([text_response("hello")])
 
-    async def execute(call: ToolCall) -> str:  # pragma: no cover
+    async def execute(_call: ToolCall) -> str:  # pragma: no cover
         raise AssertionError("execute should not be called")
 
     text, _history = await run_agent(
@@ -59,7 +60,7 @@ async def test_run_agent_without_tool_calls_returns_immediately() -> None:
 async def test_run_agent_hides_internal_tool_errors_from_model() -> None:
     client = FakeLLMClient([tool_response("boom", {}), text_response("recovered")])
 
-    async def execute(call: ToolCall) -> str:
+    async def execute(_call: ToolCall) -> str:
         raise RuntimeError("kaboom secret detail")
 
     text, history = await run_agent(
@@ -80,7 +81,7 @@ async def test_run_agent_hides_internal_tool_errors_from_model() -> None:
 async def test_run_agent_surfaces_validation_errors_to_model() -> None:
     client = FakeLLMClient([tool_response("boom", {}), text_response("recovered")])
 
-    async def execute(call: ToolCall) -> str:
+    async def execute(_call: ToolCall) -> str:
         raise ToolInputError("invalid restaurant_id")
 
     text, history = await run_agent(
@@ -101,7 +102,7 @@ async def test_run_agent_forces_final_answer_when_budget_exhausted() -> None:
     final = text_response("forced final")
     client = FakeLLMClient([*looping, final])
 
-    async def execute(call: ToolCall) -> str:
+    async def execute(_call: ToolCall) -> str:
         return "again"
 
     text, _ = await run_agent(
@@ -124,7 +125,7 @@ async def test_run_agent_forced_final_step_counts_against_budget() -> None:
         [tool_response("loop", {}), tool_response("loop", {}), heavy_text_response("forced")]
     )
 
-    async def execute(call: ToolCall) -> str:
+    async def execute(_call: ToolCall) -> str:
         return "again"
 
     with pytest.raises(LLMBudgetExceededError):
@@ -169,7 +170,7 @@ async def test_run_agent_executes_step_tools_sequentially() -> None:
 async def test_run_agent_raises_when_token_budget_exceeded() -> None:
     client = FakeLLMClient([heavy_tool_response(), heavy_tool_response(), heavy_tool_response()])
 
-    async def execute(call: ToolCall) -> str:
+    async def execute(_call: ToolCall) -> str:
         return "again"
 
     with pytest.raises(LLMBudgetExceededError):

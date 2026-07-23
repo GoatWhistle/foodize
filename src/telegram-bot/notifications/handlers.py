@@ -2,7 +2,6 @@ import asyncio
 import html
 import logging
 from collections.abc import Callable
-from typing import Any
 
 from aiogram import Bot
 from aiogram.exceptions import TelegramForbiddenError, TelegramNetworkError, TelegramRetryAfter
@@ -12,6 +11,12 @@ from config import bot_config
 from exceptions import RateLimitExhaustedError
 from i18n import DEFAULT_LANGUAGE, normalize_language
 from keyboards.start_keyboards import web_app_keyboard
+from notifications.events import (
+    EventPayload,
+    event_int,
+    event_optional_str,
+    event_str,
+)
 from services import backend_client, redis_client
 from utils import messages as msg
 from utils.formatting import format_price, format_status
@@ -99,44 +104,44 @@ async def _send_notification(
     raise RateLimitExhaustedError(user_id)
 
 
-def _event_language(event: dict[str, Any]) -> str:
-    return normalize_language(event.get("language"))
+def _event_language(event: EventPayload) -> str:
+    return normalize_language(event_optional_str(event, "language"))
 
 
-def _order_ref(display_id: object) -> str:
-    return f" <b>#{html.escape(str(display_id))}</b>" if display_id else ""
+def _order_ref(display_id: str | None) -> str:
+    return f" <b>#{html.escape(display_id)}</b>" if display_id else ""
 
 
-def _order_placed_text(event: dict[str, Any]) -> str:
+def _order_placed_text(event: EventPayload) -> str:
     language = _event_language(event)
     return msg.notification(
         "orderPlaced",
         language,
-        order_ref=_order_ref(event.get("order_display_id")),
-        restaurant=html.escape(str(event.get("restaurant_name", ""))),
-        items_count=event.get("items_count", 0),
-        total=format_price(event.get("total_price", 0)),
+        order_ref=_order_ref(event_optional_str(event, "order_display_id")),
+        restaurant=html.escape(event_str(event, "restaurant_name")),
+        items_count=event_int(event, "items_count"),
+        total=format_price(event_int(event, "total_price")),
     )
 
 
-def _order_status_text(event: dict[str, Any]) -> str:
+def _order_status_text(event: EventPayload) -> str:
     language = _event_language(event)
     return msg.notification(
         "orderStatusChanged",
         language,
-        order_ref=_order_ref(event.get("order_display_id")),
-        restaurant=html.escape(str(event.get("restaurant_name", ""))),
-        status=html.escape(format_status(event.get("new_status", ""), language)),
-        total=format_price(event.get("total_price", 0)),
+        order_ref=_order_ref(event_optional_str(event, "order_display_id")),
+        restaurant=html.escape(event_str(event, "restaurant_name")),
+        status=html.escape(format_status(event_str(event, "new_status"), language)),
+        total=format_price(event_int(event, "total_price")),
     )
 
 
 async def _notify_user(
-    event: dict[str, Any],
+    event: EventPayload,
     bot: Bot,
-    build_text: Callable[[dict[str, Any]], str],
+    build_text: Callable[[EventPayload], str],
 ) -> None:
-    user_id = str(event.get("user_id", ""))
+    user_id = event_str(event, "user_id")
     telegram_id = await _get_telegram_id(user_id)
     if not telegram_id:
         return
@@ -145,14 +150,14 @@ async def _notify_user(
         user_id=user_id,
         telegram_id=telegram_id,
         text=build_text(event),
-        display_id=event.get("order_display_id"),
+        display_id=event_optional_str(event, "order_display_id"),
         language=_event_language(event),
     )
 
 
-async def handle_order_placed(event: dict[str, Any], bot: Bot) -> None:
+async def handle_order_placed(event: EventPayload, bot: Bot) -> None:
     await _notify_user(event, bot, _order_placed_text)
 
 
-async def handle_order_status_changed(event: dict[str, Any], bot: Bot) -> None:
+async def handle_order_status_changed(event: EventPayload, bot: Bot) -> None:
     await _notify_user(event, bot, _order_status_text)

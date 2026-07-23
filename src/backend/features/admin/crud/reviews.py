@@ -1,14 +1,14 @@
 import uuid
 from datetime import UTC, datetime
-from typing import Any, cast
 
-from sqlalchemy import CursorResult, func, select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.admin.schemas import AdminReviewResponse
 from features.restaurants.models import Restaurant
 from features.reviews.models import Review
 from features.users.models import User
+from shared.crud import execute_rowcount
 
 
 async def get_all_reviews(
@@ -73,12 +73,9 @@ async def delete_review(session: AsyncSession, review: Review) -> Review:
 
 
 async def batch_delete_reviews(session: AsyncSession, ids: list[uuid.UUID]) -> int:
-    result = cast(
-        "CursorResult[Any]",
-        await session.execute(
-            update(Review)
-            .where(Review.id.in_(ids), Review.deleted_at.is_(None))
-            .values(deleted_at=datetime.now(UTC))
-        ),
+    return await execute_rowcount(
+        session,
+        update(Review)
+        .where(Review.id.in_(ids), Review.deleted_at.is_(None))
+        .values(deleted_at=datetime.now(UTC)),
     )
-    return result.rowcount

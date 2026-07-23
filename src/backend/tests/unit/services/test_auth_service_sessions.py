@@ -99,38 +99,44 @@ class TestRefreshUserToken:
         request.cookies = {"refresh_token": "old"}
         request.headers = {}
 
-        with patch("features.auth.service.decode_jwt", side_effect=jwt.ExpiredSignatureError):
-            with pytest.raises(AuthException, match="expired"):
-                await refresh_user_token(request, AsyncMock())
+        with (
+            patch("features.auth.service.decode_jwt", side_effect=jwt.ExpiredSignatureError),
+            pytest.raises(AuthException, match="expired"),
+        ):
+            await refresh_user_token(request, AsyncMock())
 
     async def test_wrong_type_raises(self) -> None:
         request = MagicMock()
         request.cookies = {"refresh_token": "tok"}
         request.headers = {}
 
-        with patch(
-            "features.auth.service.decode_jwt",
-            return_value={"typ": "access", "sub": "id", "exp": 9999999999},
+        with (
+            patch(
+                "features.auth.service.decode_jwt",
+                return_value={"typ": "access", "sub": "id", "exp": 9999999999},
+            ),
+            pytest.raises(AuthException, match="token type"),
         ):
-            with pytest.raises(AuthException, match="token type"):
-                await refresh_user_token(request, AsyncMock())
+            await refresh_user_token(request, AsyncMock())
 
     async def test_session_expired_raises(self) -> None:
         request = MagicMock()
         request.cookies = {"refresh_token": "tok"}
         request.headers = {}
 
-        with patch(
-            "features.auth.service.decode_jwt",
-            return_value={
-                "typ": "refresh",
-                "sub": "00000000-0000-0000-0000-000000000001",
-                "exp": 9999999999,
-                "session_exp": int(time.time()) - 1000,
-            },
+        with (
+            patch(
+                "features.auth.service.decode_jwt",
+                return_value={
+                    "typ": "refresh",
+                    "sub": "00000000-0000-0000-0000-000000000001",
+                    "exp": 9999999999,
+                    "session_exp": int(time.time()) - 1000,
+                },
+            ),
+            pytest.raises(AuthException, match="Session has expired"),
         ):
-            with pytest.raises(AuthException, match="Session has expired"):
-                await refresh_user_token(request, AsyncMock())
+            await refresh_user_token(request, AsyncMock())
 
     async def test_already_used_raises(self) -> None:
         request = MagicMock()
@@ -151,9 +157,9 @@ class TestRefreshUserToken:
                 },
             ),
             patch("features.auth.service.get_redis_cache", return_value=mock_cache),
+            pytest.raises(AuthException, match="already used"),
         ):
-            with pytest.raises(AuthException, match="already used"):
-                await refresh_user_token(request, AsyncMock(), cache=mock_cache)
+            await refresh_user_token(request, AsyncMock(), cache=mock_cache)
 
     async def test_success(self) -> None:
         request = MagicMock()

@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -26,7 +26,7 @@ def _make_mock_vendor(vendor_id: uuid.UUID | None = None) -> MagicMock:
     v.user = _make_mock_user()
     v.user.id = v.user_id
     v.restaurants = []
-    v.created_at = datetime(2026, 1, 1)
+    v.created_at = datetime(2026, 1, 1, tzinfo=UTC)
     return v
 
 
@@ -65,11 +65,13 @@ class TestModerateVendor:
             assert mock_log.call_args[1]["action"] == "MODERATE_VENDOR"
 
     async def test_not_found(self) -> None:
-        with patch(
-            "features.admin.crud.get_vendor_by_id", new_callable=AsyncMock, return_value=None
+        with (
+            patch(
+                "features.admin.crud.get_vendor_by_id", new_callable=AsyncMock, return_value=None
+            ),
+            pytest.raises(NotFoundException),
         ):
-            with pytest.raises(NotFoundException):
-                await moderate_vendor(MagicMock(), uuid.uuid4(), "APPROVED")
+            await moderate_vendor(MagicMock(), uuid.uuid4(), "APPROVED")
 
 
 class TestModerateRestaurant:

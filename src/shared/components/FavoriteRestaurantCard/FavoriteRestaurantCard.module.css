@@ -14,11 +14,13 @@
   text-align: left;
 }
 
-.card:hover {
-  border-color: var(--border-mid);
-  transform: translateX(3px);
-  background: var(--bg-surface);
-  box-shadow: var(--shadow-md);
+@media (hover: hover) {
+  .card:hover {
+    border-color: var(--border-mid);
+    transform: translateX(3px);
+    background: var(--bg-surface);
+    box-shadow: var(--shadow-md);
+  }
 }
 
 .card:active {
@@ -27,6 +29,7 @@
 }
 
 .unfavBtn {
+  position: relative;
   width: 34px;
   height: 34px;
   border-radius: 50%;
@@ -38,6 +41,17 @@
   cursor: pointer;
   flex-shrink: 0;
   transition: background var(--dur-sm);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.unfavBtn::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+}
+
+.unfavBtn:active {
+  transform: scale(0.92);
 }
 
 .unfavBtn:hover {

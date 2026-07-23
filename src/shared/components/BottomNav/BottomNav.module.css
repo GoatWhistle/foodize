@@ -1,0 +1,120 @@
+.bar {
+  display: flex;
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  height: var(--bottom-tab-h);
+  z-index: 200;
+  background: var(--bg-card);
+  backdrop-filter: blur(20px) saturate(1.25);
+  -webkit-backdrop-filter: blur(20px) saturate(1.25);
+  border-top: 1px solid var(--border);
+  padding-bottom: max(
+    var(--tg-safe-area-inset-bottom, 0px),
+    env(safe-area-inset-bottom, 0px)
+  );
+}
+
+.constrained {
+  max-width: 480px;
+}
+
+@media (min-width: 600px) {
+  .mobileOnly {
+    display: none;
+  }
+}
+
+.tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--text-3);
+  text-decoration: none;
+  transition: color var(--dur-sm);
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tab:active {
+  transform: scale(0.9);
+  transition: transform 80ms var(--ease-out);
+}
+
+.tab:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.tab.active {
+  color: var(--ink-1);
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  font-size: 22px;
+  transition: transform var(--dur-md) var(--ease-spring);
+  position: relative;
+}
+
+.tab.active .icon {
+  transform: translateY(-1px) scale(1.08);
+}
+
+.badge {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ink-1);
+  color: var(--ink-inv);
+  border-radius: var(--r-pill);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.dot {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  width: 9px;
+  height: 9px;
+  background: var(--color-error);
+  border-radius: 50%;
+  border: 2px solid var(--bg);
+}
+
+.pill {
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%) scaleX(0);
+  width: 40px;
+  height: 3px;
+  background: var(--ink-1);
+  border-radius: var(--r-pill) var(--r-pill) 0 0;
+  transition: transform var(--dur-md) var(--ease-spring);
+}
+
+.tab.active .pill {
+  transform: translateX(-50%) scaleX(1);
+}
+
+.label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}

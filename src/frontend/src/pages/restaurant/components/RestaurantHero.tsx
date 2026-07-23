@@ -1,4 +1,5 @@
-import { StarIcon, ForkKnifeIcon, HeartIcon, ShareNetworkIcon, InfoIcon } from '@phosphor-icons/react';
+import { StarIcon, HeartIcon, ShareNetworkIcon, InfoIcon } from '@phosphor-icons/react';
+import { RestaurantHeroShell } from '@shared/components/RestaurantHero/RestaurantHeroShell';
 import { useTranslation } from '@shared/i18n/useTranslation';
 import type { Restaurant } from '@shared/types/models';
 
@@ -27,63 +28,51 @@ export function RestaurantHero({
 }: RestaurantHeroProps) {
   const { t } = useTranslation();
   return (
-    <div className="restaurant-hero">
-      {restaurantView.photo_url ? (
-        <img
-          className="restaurant-hero-img"
-          src={restaurantView.photo_url}
-          alt={restaurant.name}
-          style={{ viewTransitionName: `restaurant-image-${restaurant.id}` }}
-        />
-      ) : (
-        <div className="restaurant-hero-placeholder">
-          <ForkKnifeIcon size={48} color="var(--on-photo-mute)" />
-        </div>
+    <RestaurantHeroShell
+      name={restaurant.name}
+      photoUrl={restaurantView.photo_url}
+      viewTransitionName={`restaurant-image-${restaurant.id}`}
+    >
+      {restaurantView.description && (
+        <p style={{ color: 'var(--on-photo)', fontSize: "var(--text-base)", margin: '4px 0 8px', lineHeight: 1.4 }}>
+          {restaurantView.description}
+        </p>
       )}
-      <div className="restaurant-hero-overlay" />
-      <div className="restaurant-hero-info">
-        <h1 className="restaurant-hero-name">{restaurant.name}</h1>
-        {restaurantView.description && (
-          <p style={{ color: 'var(--on-photo)', fontSize: "var(--text-base)", margin: '4px 0 8px', lineHeight: 1.4 }}>
-            {restaurantView.description}
-          </p>
+      <div className="restaurant-hero-actions">
+        <button
+          className="btn btn-secondary btn-sm"
+          onClick={onOpenReviews}
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--on-photo-fill)', backdropFilter: 'blur(8px)', border: '1px solid var(--on-photo-line)', color: 'var(--on-photo)' }}
+        >
+          <StarIcon size={14} weight="fill" color="var(--color-warning)" />
+          {reviewsButtonLabel}
+        </button>
+        <button
+          className="btn btn-secondary btn-sm"
+          onClick={onOpenInfo}
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--on-photo-fill)', backdropFilter: 'blur(8px)', border: '1px solid var(--on-photo-line)', color: 'var(--on-photo)' }}
+        >
+          <InfoIcon size={14} weight="bold" />
+          {t('catalog.restaurantPage.info')}
+        </button>
+        <button
+          className="hero-icon-btn"
+          onClick={onOpenShare}
+          aria-label={t('catalog.restaurantPage.share')}
+        >
+          <ShareNetworkIcon size={16} weight="bold" />
+        </button>
+        {showFavorite && (
+          <button
+            className={`hero-icon-btn${isFav ? ' active' : ''}`}
+            onClick={onToggleFavorite}
+            aria-label={isFav ? t('catalog.restaurantCard.removeFromFavorites') : t('catalog.restaurantCard.addToFavorites')}
+            aria-pressed={isFav}
+          >
+            <HeartIcon size={16} weight={isFav ? 'fill' : 'regular'} />
+          </button>
         )}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={onOpenReviews}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--on-photo-fill)', backdropFilter: 'blur(8px)', border: '1px solid var(--on-photo-line)', color: 'var(--on-photo)' }}
-          >
-            <StarIcon size={14} weight="fill" color="var(--color-warning)" />
-            {reviewsButtonLabel}
-          </button>
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={onOpenInfo}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--on-photo-fill)', backdropFilter: 'blur(8px)', border: '1px solid var(--on-photo-line)', color: 'var(--on-photo)' }}
-          >
-            <InfoIcon size={14} weight="bold" />
-            {t('catalog.restaurantPage.info')}
-          </button>
-          <button
-            onClick={onOpenShare}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: '50%', background: 'var(--on-photo-fill)', backdropFilter: 'blur(8px)', border: '1px solid var(--on-photo-line)', color: 'var(--on-photo)', cursor: 'pointer', transition: 'all 0.15s', flexShrink: 0 }}
-            aria-label={t('catalog.restaurantPage.share')}
-          >
-            <ShareNetworkIcon size={16} weight="bold" />
-          </button>
-          {showFavorite && (
-            <button
-              onClick={onToggleFavorite}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: '50%', background: isFav ? 'var(--color-error-bg)' : 'var(--on-photo-fill)', backdropFilter: 'blur(8px)', border: isFav ? '1px solid var(--error)' : '1px solid var(--on-photo-line)', color: isFav ? 'var(--error)' : 'var(--on-photo)', cursor: 'pointer', transition: 'all 0.15s', flexShrink: 0 }}
-              aria-label={isFav ? t('catalog.restaurantCard.removeFromFavorites') : t('catalog.restaurantCard.addToFavorites')}
-              aria-pressed={isFav}
-            >
-              <HeartIcon size={16} weight={isFav ? 'fill' : 'regular'} />
-            </button>
-          )}
-        </div>
       </div>
-    </div>
+    </RestaurantHeroShell>
   );
 }

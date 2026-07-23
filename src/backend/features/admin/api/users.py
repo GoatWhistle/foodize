@@ -34,7 +34,13 @@ async def read_users(
 ) -> SuccessListResponse[AdminUserResponse]:
     offset = (page - 1) * size
     data, total = await users_service.get_users_list(session, role, offset, size, search=search)
-    return build_list_response(data=data, total=total, page=page, size=size, request=request)
+    return build_list_response(
+        data=[AdminUserResponse.model_validate(user) for user in data],
+        total=total,
+        page=page,
+        size=size,
+        request=request,
+    )
 
 
 @router.post("/users/batch-deactivate", response_model=SuccessResponse[BatchAffectedResult])
@@ -66,7 +72,7 @@ async def read_user(
     session: AsyncSession = Depends(db_helper.dependency_session_getter),
 ) -> SuccessResponse[AdminUserResponse]:
     result = await users_service.get_user_or_404(session, user_id)
-    return build_response(result)
+    return build_response(AdminUserResponse.model_validate(result))
 
 
 @router.delete("/users/{user_id}", response_model=SuccessResponse[AdminUserResponse])
@@ -78,7 +84,7 @@ async def delete_user(
     result = await users_service.deactivate_user_service(session, user_id)
     await audit_service.log_action(session, actor.id, "DEACTIVATE_USER", "user", user_id)
     await session.flush()
-    return build_response(result)
+    return build_response(AdminUserResponse.model_validate(result))
 
 
 @router.post("/users/{user_id}/activate", response_model=SuccessResponse[AdminUserResponse])
@@ -90,7 +96,7 @@ async def activate_user(
     result = await users_service.activate_user_service(session, user_id)
     await audit_service.log_action(session, actor.id, "ACTIVATE_USER", "user", user_id)
     await session.flush()
-    return build_response(result)
+    return build_response(AdminUserResponse.model_validate(result))
 
 
 @router.post("/users/{user_id}/grant-admin", response_model=SuccessResponse[AdminUserResponse])
@@ -102,7 +108,7 @@ async def grant_admin_permissions(
     result = await users_service.set_user_permissions(
         session, user_id, serialize_permissions(ADMIN_PERMISSIONS), actor=actor
     )
-    return build_response(result)
+    return build_response(AdminUserResponse.model_validate(result))
 
 
 @router.post("/users/{user_id}/permissions", response_model=SuccessResponse[AdminUserResponse])
@@ -115,7 +121,7 @@ async def change_user_permissions(
     result = await users_service.set_user_permissions(
         session, user_id, body.permissions, actor=actor
     )
-    return build_response(result)
+    return build_response(AdminUserResponse.model_validate(result))
 
 
 @router.post("/me/reset-permissions", response_model=SuccessResponse[AdminUserResponse])
@@ -126,4 +132,4 @@ async def reset_my_permissions(
     result = await users_service.reset_own_permissions(
         session, user, serialize_permissions(CUSTOMER_PERMISSIONS)
     )
-    return build_response(result)
+    return build_response(AdminUserResponse.model_validate(result))

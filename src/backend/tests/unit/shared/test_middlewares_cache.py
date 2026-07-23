@@ -1,8 +1,8 @@
 from http import HTTPStatus
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from fastapi import FastAPI, HTTPException
+from pydantic import JsonValue
 from redis.exceptions import RedisError
 from starlette.testclient import TestClient
 
@@ -13,7 +13,7 @@ def _make_cache_app() -> FastAPI:
     app = FastAPI()
 
     @app.get("/api/v1/restaurants")
-    async def list_restaurants() -> dict[str, list[Any]]:
+    async def list_restaurants() -> dict[str, list[JsonValue]]:
         return {"data": []}
 
     @app.post("/api/v1/restaurants")

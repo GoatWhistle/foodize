@@ -15,28 +15,34 @@ from shared.exceptions.existence import InvalidCredentialsException
 
 class TestUserDependencies:
     async def test_get_by_phone_401(self) -> None:
-        with patch(
-            "features.users.dependencies.get_user_by_phone",
-            new_callable=AsyncMock,
-            return_value=None,
+        with (
+            patch(
+                "features.users.dependencies.get_user_by_phone",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
+            pytest.raises(InvalidCredentialsException),
         ):
-            with pytest.raises(InvalidCredentialsException):
-                await get_user_by_phone_or_401(MagicMock(), MagicMock())
+            await get_user_by_phone_or_401(MagicMock(), MagicMock())
 
     async def test_get_by_id_404(self) -> None:
-        with patch(
-            "features.users.dependencies.get_user_by_id",
-            new_callable=AsyncMock,
-            return_value=None,
+        with (
+            patch(
+                "features.users.dependencies.get_user_by_id",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
+            pytest.raises(NotFoundException),
         ):
-            with pytest.raises(NotFoundException):
-                await get_user_by_id_or_404(MagicMock(), uuid.uuid4())
+            await get_user_by_id_or_404(MagicMock(), uuid.uuid4())
 
     async def test_ensure_not_exists_raises(self) -> None:
-        with patch(
-            "features.users.dependencies.get_user_by_phone",
-            new_callable=AsyncMock,
-            return_value=MagicMock(),
+        with (
+            patch(
+                "features.users.dependencies.get_user_by_phone",
+                new_callable=AsyncMock,
+                return_value=MagicMock(),
+            ),
+            pytest.raises(UserAlreadyExistsException),
         ):
-            with pytest.raises(UserAlreadyExistsException):
-                await ensure_user_not_exists_by_phone(MagicMock(), "123")
+            await ensure_user_not_exists_by_phone(MagicMock(), "123")

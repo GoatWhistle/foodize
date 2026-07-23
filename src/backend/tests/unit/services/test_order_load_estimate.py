@@ -1,7 +1,6 @@
 import uuid
 from datetime import UTC, datetime, timedelta
 from datetime import time as _dt_time
-from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -40,14 +39,14 @@ def _working_hours_entry(
     close_time: str = "21:00",
     is_closed: bool = False,
 ) -> WorkingHours:
-    entry = MagicMock()
-    entry.day_of_week = day_of_week
     open_h, open_m = (int(p) for p in open_time.split(":"))
     close_h, close_m = (int(p) for p in close_time.split(":"))
-    entry.open_time = _dt_time(open_h, open_m)
-    entry.close_time = _dt_time(close_h, close_m)
-    entry.is_closed = is_closed
-    return cast("WorkingHours", entry)
+    return WorkingHours(
+        day_of_week=day_of_week,
+        open_time=_dt_time(open_h, open_m),
+        close_time=_dt_time(close_h, close_m),
+        is_closed=is_closed,
+    )
 
 
 async def test_estimate_restaurant_load_warns_with_later_window() -> None:

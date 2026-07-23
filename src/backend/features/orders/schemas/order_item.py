@@ -1,5 +1,4 @@
 import uuid
-from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -30,15 +29,15 @@ class OrderItemOptionResponse(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def flatten_option_snapshot(cls, data: Any) -> Any:
-        if hasattr(data, "name_snapshot"):
-            return {
-                "id": data.id,
-                "option_id": data.option_id,
-                "name": data.name_snapshot,
-                "price_delta": data.price_delta_snapshot,
-            }
-        return data
+    def flatten_option_snapshot(cls, data: object) -> object:
+        if not hasattr(data, "name_snapshot"):
+            return data
+        return {
+            "id": getattr(data, "id", None),
+            "option_id": getattr(data, "option_id", None),
+            "name": getattr(data, "name_snapshot", None),
+            "price_delta": getattr(data, "price_delta_snapshot", None),
+        }
 
 
 class OrderItemResponse(BaseModel):
@@ -55,17 +54,17 @@ class OrderItemResponse(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def flatten_menu_item(cls, data: Any) -> Any:
-        if hasattr(data, "menu_item"):
-            mi = data.menu_item
-            return {
-                "id": data.id,
-                "menu_item_id": data.menu_item_id,
-                "menu_item_name": mi.name,
-                "menu_item_category": mi.category,
-                "menu_item_prep_time": mi.prep_time_minutes,
-                "quantity": data.quantity,
-                "price_at_purchase": data.price_at_purchase,
-                "selected_options": data.selected_options,
-            }
-        return data
+    def flatten_menu_item(cls, data: object) -> object:
+        if not hasattr(data, "menu_item"):
+            return data
+        mi = getattr(data, "menu_item", None)
+        return {
+            "id": getattr(data, "id", None),
+            "menu_item_id": getattr(data, "menu_item_id", None),
+            "menu_item_name": getattr(mi, "name", None),
+            "menu_item_category": getattr(mi, "category", None),
+            "menu_item_prep_time": getattr(mi, "prep_time_minutes", None),
+            "quantity": getattr(data, "quantity", None),
+            "price_at_purchase": getattr(data, "price_at_purchase", None),
+            "selected_options": getattr(data, "selected_options", None),
+        }

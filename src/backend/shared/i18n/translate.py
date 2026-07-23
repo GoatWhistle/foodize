@@ -1,6 +1,5 @@
-from typing import Any
-
 from shared.i18n.dictionaries import DICTIONARIES
+from shared.i18n.types import TranslationNode, TranslationTree
 
 DEFAULT_LANGUAGE = "ru"
 SUPPORTED_LANGUAGES = ("ru", "en")
@@ -16,8 +15,8 @@ def normalize_language(raw: str | None) -> str:
     return DEFAULT_LANGUAGE
 
 
-def _lookup(tree: dict[str, Any], key: str) -> Any:
-    current: Any = tree
+def _lookup(tree: TranslationTree, key: str) -> TranslationNode | None:
+    current: TranslationNode | None = tree
     for segment in key.split("."):
         if not isinstance(current, dict):
             return None
@@ -25,7 +24,7 @@ def _lookup(tree: dict[str, Any], key: str) -> Any:
     return current
 
 
-def translate(key: str, language: str = DEFAULT_LANGUAGE, **params: Any) -> str:
+def translate(key: str, language: str = DEFAULT_LANGUAGE, **params: object) -> str:
     lang = language if language in SUPPORTED_LANGUAGES else DEFAULT_LANGUAGE
     value = _lookup(DICTIONARIES[lang], key)
     if value is None:

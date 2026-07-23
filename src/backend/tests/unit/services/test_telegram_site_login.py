@@ -1,9 +1,9 @@
 import uuid
 from http import HTTPStatus
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from pydantic import JsonValue
 
 from features.telegram.site_login import (
     request_site_login_code,
@@ -30,20 +30,20 @@ class _HttpResponse:
     def raise_for_status(self) -> None:
         return None
 
-    def json(self) -> dict[str, Any]:
+    def json(self) -> dict[str, JsonValue]:
         return {}
 
 
 class _HttpClient:
     post = AsyncMock(return_value=_HttpResponse())
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args: object, **kwargs: object) -> None:
         pass
 
     async def __aenter__(self) -> "_HttpClient":
         return self
 
-    async def __aexit__(self, *args: Any) -> None:
+    async def __aexit__(self, *args: object) -> None:
         return None
 
 
@@ -141,9 +141,11 @@ async def test_verify_site_login_code_rejects_wrong_code() -> None:
     raw_client.expire = AsyncMock()
     cache.get_raw_client = MagicMock(return_value=raw_client)
 
-    with patch("features.telegram.site_login.get_redis_cache", return_value=cache):
-        with pytest.raises(AuthException, match="Invalid Telegram code"):
-            await verify_site_login_code(AsyncMock(), "79001234567", "000000")
+    with (
+        patch("features.telegram.site_login.get_redis_cache", return_value=cache),
+        pytest.raises(AuthException, match="Invalid Telegram code"),
+    ):
+        await verify_site_login_code(AsyncMock(), "79001234567", "000000")
 
 
 async def test_set_site_password_hashes_only_empty_password() -> None:

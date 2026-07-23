@@ -2,10 +2,9 @@ import asyncio
 import contextlib
 import random
 from datetime import UTC, datetime, timedelta
-from typing import Any, cast
 
 from prometheus_client import Gauge
-from sqlalchemy import CursorResult, Delete, delete, func, select
+from sqlalchemy import Delete, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.db_helper import db_helper
@@ -16,6 +15,7 @@ from features.notifications.processed_event import ProcessedEvent
 from features.orders.models.idempotency_key import IdempotencyKey
 from infra.messaging.base import MessagePublisher
 from infra.messaging.rabbitmq import get_rabbitmq_publisher
+from shared.crud import execute_rowcount
 from shared.enums.event_type import EventType
 from shared.enums.outbox_status import OutboxStatus
 from utils.logging_setup import get_logger
@@ -28,7 +28,7 @@ _ROUTING = {
     EventType.FEEDBACK_REQUESTED.value: EventType.FEEDBACK_REQUESTED.value,
 }
 
-_MAX_ATTEMPTS = 10
+MAX_ATTEMPTS = 10
 _BACKOFF_BASE_SECONDS = 2
 _BACKOFF_MAX_SECONDS = 300
 _BACKOFF_MAX_EXPONENT = 8
@@ -48,7 +48,7 @@ outbox_failed_total = Gauge(
 )
 
 
-async def _update_outbox_metrics(session: AsyncSession) -> None:
+async def update_outbox_metrics(session: AsyncSession) -> None:
     now = datetime.now(UTC)
     oldest = await session.scalar(
         select(func.min(OutboxEvent.created_at))
@@ -84,15 +84,15 @@ async def enqueue_event(
     return outbox_event
 
 
-def _backoff_delay(attempts: int) -> float:
+def backoff_delay(attempts: int) -> float:
     base = min(_BACKOFF_MAX_SECONDS, _BACKOFF_BASE_SECONDS ** min(attempts, _BACKOFF_MAX_EXPONENT))
     return float(base) + random.uniform(0, _BACKOFF_JITTER_SECONDS)
 
 
-def _mark_publish_failure(event: OutboxEvent, exc: Exception, now: datetime) -> None:
+def mark_publish_failure(event: OutboxEvent, exc: Exception, now: datetime) -> None:
     event.attempts += 1
     event.last_error = str(exc)
-    if event.attempts >= _MAX_ATTEMPTS:
+    if event.attempts >= MAX_ATTEMPTS:
         event.status = OutboxStatus.FAILED.value
         logger.error(
             "outbox_event_permanently_failed",
@@ -100,7 +100,7 @@ def _mark_publish_failure(event: OutboxEvent, exc: Exception, now: datetime) -> 
             attempts=event.attempts,
         )
     else:
-        event.next_attempt_at = now + timedelta(seconds=_backoff_delay(event.attempts))
+        event.next_attempt_at = now + timedelta(seconds=backoff_delay(event.attempts))
         logger.exception("outbox_publish_failed", event_id=event.event_id)
 
 
@@ -129,7 +129,7 @@ async def publish_pending_events(
         try:
             await publisher.publish(event.routing_key, event.payload)
         except Exception as exc:
-            _mark_publish_failure(event, exc, now)
+            mark_publish_failure(event, exc, now)
         else:
             event.status = OutboxStatus.PUBLISHED.value
             event.published_at = datetime.now(UTC)
@@ -140,8 +140,7 @@ async def publish_pending_events(
 
 
 async def _execute_delete(session: AsyncSession, stmt: Delete) -> int:
-    result = cast("CursorResult[Any]", await session.execute(stmt))
-    return result.rowcount or 0
+    return await execute_rowcount(session, stmt)
 
 
 async def purge_stale_records(session: AsyncSession) -> int:
@@ -185,7 +184,7 @@ async def run_outbox_publisher(
         try:
             async with db_helper.session_factory() as session:
                 await publish_pending_events(session)
-                await _update_outbox_metrics(session)
+                await update_outbox_metrics(session)
             await broker.sample_dlq_depth()
         except Exception:
             logger.exception("outbox_publisher_tick_failed")

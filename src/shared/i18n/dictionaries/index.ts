@@ -8,6 +8,7 @@ import { auth as authRu } from "./ru/auth";
 import { admin as adminRu } from "./ru/admin";
 import { vendor as vendorRu } from "./ru/vendor";
 import { staff as staffRu } from "./ru/staff";
+import { loyalty as loyaltyRu } from "./ru/loyalty";
 import { legal as legalRu } from "./ru/legal";
 import { notifications as notificationsRu } from "./ru/notifications";
 
@@ -21,6 +22,7 @@ import { auth as authEn } from "./en/auth";
 import { admin as adminEn } from "./en/admin";
 import { vendor as vendorEn } from "./en/vendor";
 import { staff as staffEn } from "./en/staff";
+import { loyalty as loyaltyEn } from "./en/loyalty";
 import { legal as legalEn } from "./en/legal";
 import { notifications as notificationsEn } from "./en/notifications";
 
@@ -38,9 +40,10 @@ export const dictionaries: Record<Language, TranslationTree> = {
     admin: adminRu,
     vendor: vendorRu,
     staff: staffRu,
+    loyalty: loyaltyRu,
     legal: legalRu,
     notifications: notificationsRu,
-  } as unknown as TranslationTree,
+  },
   en: {
     common: commonEn,
     enums: enumsEn,
@@ -52,7 +55,8 @@ export const dictionaries: Record<Language, TranslationTree> = {
     admin: adminEn,
     vendor: vendorEn,
     staff: staffEn,
+    loyalty: loyaltyEn,
     legal: legalEn,
     notifications: notificationsEn,
-  } as unknown as TranslationTree,
+  },
 };

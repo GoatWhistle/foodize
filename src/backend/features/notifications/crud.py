@@ -1,11 +1,11 @@
 import uuid
 from datetime import datetime
-from typing import Any, cast
 
-from sqlalchemy import CursorResult, delete, func, select, tuple_, update
+from sqlalchemy import delete, func, select, tuple_, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.notifications.models import Notification, NotificationType
+from shared.crud import execute_rowcount
 
 
 async def create_notification(
@@ -106,9 +106,9 @@ async def delete_notification(
     stmt = delete(Notification).where(
         Notification.id == notification_id, Notification.user_id == user_id
     )
-    result = cast("CursorResult[Any]", await session.execute(stmt))
+    deleted = await execute_rowcount(session, stmt)
     await session.flush()
-    return result.rowcount > 0
+    return deleted > 0
 
 
 async def delete_all_notifications(session: AsyncSession, user_id: uuid.UUID) -> None:

@@ -1,10 +1,10 @@
 import uuid
+from collections.abc import Sequence
 from datetime import date
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 from features.ai_advisor.crud import (
-    _day_bounds,
+    day_bounds,
     get_bottom_items,
     get_menu_overview,
     get_reviews_summary,
@@ -13,10 +13,9 @@ from features.ai_advisor.crud import (
 
 class TestDayBounds:
     def test_returns_datetime_bounds(self) -> None:
-
         start_date = date(2024, 1, 1)
         end_date = date(2024, 1, 31)
-        start, end = _day_bounds(start_date, end_date)
+        start, end = day_bounds(start_date, end_date)
 
         assert start.date() == start_date
         assert end.date() == end_date
@@ -24,13 +23,12 @@ class TestDayBounds:
         assert end.tzinfo is not None
 
     def test_start_at_midnight(self) -> None:
-
-        start, _ = _day_bounds(date(2024, 6, 1), date(2024, 6, 30))
+        start, _ = day_bounds(date(2024, 6, 1), date(2024, 6, 30))
         assert start.hour == 0
         assert start.minute == 0
 
 
-def _make_session_with_rows(rows: list[Any]) -> AsyncMock:
+def _make_session_with_rows(rows: Sequence[object]) -> AsyncMock:
     session = AsyncMock()
     result = MagicMock()
     result.all.return_value = rows
@@ -39,7 +37,7 @@ def _make_session_with_rows(rows: list[Any]) -> AsyncMock:
 
 
 def _make_reviews_session(
-    totals_row: Any, dist_rows: list[Any], recent_rows: list[Any]
+    totals_row: object, dist_rows: list[object], recent_rows: list[object]
 ) -> AsyncMock:
     session = AsyncMock()
     totals_result = MagicMock()

@@ -21,7 +21,7 @@ vi.mock('@shared/store/createAuthStore', () => ({
   selectIsAuthenticated: (s: { user: unknown }) => s.user !== null,
 }));
 
-import { ProtectedRoute, RoleProtectedRoute } from '../App';
+import { ProtectedRoute, RoleProtectedRoute } from '../AppGuards';
 
 const renderRoute = (element: React.ReactNode, initial = '/target') =>
   render(

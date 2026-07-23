@@ -1,9 +1,7 @@
-from collections.abc import Callable
 from http import HTTPStatus
 
 import httpx
 import pytest
-from aiogram.types import Message
 from pytest_mock import MockerFixture
 
 from config import bot_config
@@ -12,7 +10,7 @@ from handlers.start import (
     cmd_orders,
     cmd_vendor_status,
 )
-from tests.conftest import answer_of
+from tests.conftest import MessageFactory, answer_of
 from utils import messages as msg
 
 
@@ -30,7 +28,7 @@ def _http_status_error(status: int, path: str) -> httpx.HTTPStatusError:
 
 
 async def test_link_phone_failure_no_secret(
-    monkeypatch: pytest.MonkeyPatch, message_factory: Callable[..., Message]
+    monkeypatch: pytest.MonkeyPatch, message_factory: MessageFactory
 ) -> None:
     monkeypatch.setattr(bot_config, "bot_api_secret", "")
     message = message_factory()
@@ -62,7 +60,7 @@ async def test_link_phone_failure_no_secret(
 )
 async def test_link_phone_http_errors(
     mocker: MockerFixture,
-    message_factory: Callable[..., Message],
+    message_factory: MessageFactory,
     error: Exception,
     expected: str,
 ) -> None:
@@ -76,7 +74,7 @@ async def test_link_phone_http_errors(
 
 
 async def test_link_phone_success(
-    mocker: MockerFixture, message_factory: Callable[..., Message]
+    mocker: MockerFixture, message_factory: MessageFactory
 ) -> None:
     mocker.patch("handlers.start.backend_client.link_phone", return_value=None)
     message = message_factory()
@@ -88,7 +86,7 @@ async def test_link_phone_success(
 
 
 async def test_cmd_vendor_status_no_user_does_nothing(
-    message_factory: Callable[..., Message],
+    message_factory: MessageFactory,
 ) -> None:
     message = message_factory(from_user=None)
     await cmd_vendor_status(message)
@@ -96,7 +94,7 @@ async def test_cmd_vendor_status_no_user_does_nothing(
 
 
 async def test_cmd_vendor_status_not_configured(
-    monkeypatch: pytest.MonkeyPatch, message_factory: Callable[..., Message]
+    monkeypatch: pytest.MonkeyPatch, message_factory: MessageFactory
 ) -> None:
     monkeypatch.setattr(bot_config, "bot_api_secret", "")
     message = message_factory()
@@ -123,7 +121,7 @@ async def test_cmd_vendor_status_not_configured(
 )
 async def test_cmd_vendor_status_http_errors(
     mocker: MockerFixture,
-    message_factory: Callable[..., Message],
+    message_factory: MessageFactory,
     error: Exception,
     expected: str,
 ) -> None:
@@ -134,7 +132,7 @@ async def test_cmd_vendor_status_http_errors(
 
 
 async def test_cmd_vendor_status_success(
-    mocker: MockerFixture, message_factory: Callable[..., Message]
+    mocker: MockerFixture, message_factory: MessageFactory
 ) -> None:
     mocker.patch(
         "handlers.start.backend_client.get_vendor_status",
@@ -146,7 +144,7 @@ async def test_cmd_vendor_status_success(
 
 
 async def test_cmd_orders_no_user_does_nothing(
-    message_factory: Callable[..., Message],
+    message_factory: MessageFactory,
 ) -> None:
     message = message_factory(from_user=None)
     await cmd_orders(message)
@@ -154,7 +152,7 @@ async def test_cmd_orders_no_user_does_nothing(
 
 
 async def test_cmd_orders_not_configured(
-    monkeypatch: pytest.MonkeyPatch, message_factory: Callable[..., Message]
+    monkeypatch: pytest.MonkeyPatch, message_factory: MessageFactory
 ) -> None:
     monkeypatch.setattr(bot_config, "bot_api_secret", "")
     message = message_factory()
@@ -181,7 +179,7 @@ async def test_cmd_orders_not_configured(
 )
 async def test_cmd_orders_http_errors(
     mocker: MockerFixture,
-    message_factory: Callable[..., Message],
+    message_factory: MessageFactory,
     error: Exception,
     expected: str,
 ) -> None:
@@ -192,7 +190,7 @@ async def test_cmd_orders_http_errors(
 
 
 async def test_cmd_orders_empty(
-    mocker: MockerFixture, message_factory: Callable[..., Message]
+    mocker: MockerFixture, message_factory: MessageFactory
 ) -> None:
     mocker.patch("handlers.start.backend_client.get_active_orders", return_value=[])
     message = message_factory()
@@ -201,7 +199,7 @@ async def test_cmd_orders_empty(
 
 
 async def test_cmd_orders_with_orders(
-    mocker: MockerFixture, message_factory: Callable[..., Message]
+    mocker: MockerFixture, message_factory: MessageFactory
 ) -> None:
     mocker.patch(
         "handlers.start.backend_client.get_active_orders",

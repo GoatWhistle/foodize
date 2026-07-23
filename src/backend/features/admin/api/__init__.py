@@ -8,8 +8,13 @@ from features.admin.api.stats import router as stats_router
 from features.admin.api.users import router as users_router
 from features.admin.api.vendors import router as vendors_router
 from features.admin.dependencies import require_admin
+from settings.config.app_config import settings
 
-router = APIRouter(prefix="/admin", tags=["Admin"], dependencies=[Depends(require_admin)])
+router = APIRouter(
+    prefix=settings.api.v1.admin.prefix,
+    tags=[settings.api.v1.admin.tag],
+    dependencies=[Depends(require_admin)],
+)
 router.include_router(users_router)
 router.include_router(restaurants_router)
 router.include_router(vendors_router)

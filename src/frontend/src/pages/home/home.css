@@ -14,19 +14,10 @@
   display: none;
 }
 
-.category-chip {
-  flex-shrink: 0;
-  padding: 8px 16px;
-  border-radius: var(--r-sm);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-strong);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  border: 1px solid var(--border-mid);
-  background: var(--bg-card);
-  color: var(--text-3);
-  transition: all var(--dur-sm);
-  cursor: pointer;
+.category-chip::after {
+  content: '';
+  position: absolute;
+  inset: -6px 0;
 }
 
 .category-chip:hover {

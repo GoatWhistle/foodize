@@ -1,0 +1,17 @@
+appId: com.foodize.app
+name: Auth — login flow
+---
+- launchApp:
+    clearState: true
+- assertVisible:
+    id: "login-phone"
+- tapOn:
+    id: "login-phone"
+- inputText: "9990000000"
+- tapOn:
+    id: "login-password"
+- inputText: "password123"
+- tapOn:
+    id: "login-submit"
+- assertVisible:
+    id: "home-search"

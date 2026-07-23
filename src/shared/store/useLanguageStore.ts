@@ -5,10 +5,25 @@ import type { Language } from "@shared/i18n/types";
 
 const STORAGE_KEY = "foodize-language";
 
+interface NavigatorLike {
+  language?: string;
+  languages?: readonly string[];
+}
+
+interface GlobalWithLocale {
+  Telegram?: { WebApp?: { initDataUnsafe?: { user?: { language_code?: string } } } };
+  navigator?: NavigatorLike;
+}
+
 export const detectLanguage = (): Language => {
-  const telegram = (globalThis as { Telegram?: { WebApp?: { initDataUnsafe?: { user?: { language_code?: string } } } } })
-    .Telegram?.WebApp?.initDataUnsafe?.user?.language_code;
-  const candidates = [telegram, globalThis.navigator?.language, ...(globalThis.navigator?.languages ?? [])];
+  const globalWithLocale = globalThis as GlobalWithLocale;
+  const telegram = globalWithLocale.Telegram?.WebApp?.initDataUnsafe?.user?.language_code;
+  const navigatorLike = globalWithLocale.navigator;
+  const candidates = [
+    telegram,
+    navigatorLike?.language,
+    ...(navigatorLike?.languages ?? []),
+  ];
   for (const candidate of candidates) {
     const code = candidate?.slice(0, 2).toLowerCase();
     if (isLanguage(code)) return code;

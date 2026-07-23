@@ -14,13 +14,15 @@ from shared.exceptions import AccessDeniedException, NotFoundException
 
 class TestGetValidStaffRequest:
     async def test_not_found(self) -> None:
-        with patch(
-            "features.staff.dependencies.crud.get_request_by_id",
-            new_callable=AsyncMock,
-            return_value=None,
+        with (
+            patch(
+                "features.staff.dependencies.crud.get_request_by_id",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
+            pytest.raises(StaffRequestNotFoundException),
         ):
-            with pytest.raises(StaffRequestNotFoundException):
-                await get_valid_staff_request(uuid.uuid4(), MagicMock(), MagicMock())
+            await get_valid_staff_request(uuid.uuid4(), MagicMock(), MagicMock())
 
     async def test_forbidden(self) -> None:
         req = MagicMock(restaurant_id=uuid.uuid4())
@@ -40,9 +42,9 @@ class TestGetValidStaffRequest:
                 new_callable=AsyncMock,
                 return_value=mock_rest,
             ),
+            pytest.raises(AccessDeniedException),
         ):
-            with pytest.raises(AccessDeniedException):
-                await get_valid_staff_request(uuid.uuid4(), mock_session, mock_vendor)
+            await get_valid_staff_request(uuid.uuid4(), mock_session, mock_vendor)
 
     async def test_success(self) -> None:
         req = MagicMock(restaurant_id=uuid.uuid4())

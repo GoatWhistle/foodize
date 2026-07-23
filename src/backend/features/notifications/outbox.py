@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, datetime
-from typing import Any
 
+from pydantic import JsonValue
 from sqlalchemy import DateTime, Index, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -25,7 +25,7 @@ class OutboxEvent(Base, IdUuidPkMixin, CreatedAtMixin):
     event_id: Mapped[uuid.UUID] = mapped_column(unique=True, index=True)
     event_type: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     routing_key: Mapped[str] = mapped_column(String(100), nullable=False)
-    payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    payload: Mapped[dict[str, JsonValue]] = mapped_column(JSONB, nullable=False)
     status: Mapped[str] = mapped_column(
         String(20),
         default=OutboxStatus.PENDING.value,

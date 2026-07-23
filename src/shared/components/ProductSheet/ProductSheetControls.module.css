@@ -96,6 +96,7 @@
 }
 
 .qty button {
+  position: relative;
   width: 38px;
   height: 38px;
   border: 0;
@@ -105,6 +106,13 @@
   font-size: 1rem;
   font-weight: 700;
   transition: background var(--dur-xs);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.qty button::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
 }
 
 .qty button:active {

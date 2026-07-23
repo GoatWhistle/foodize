@@ -1,7 +1,7 @@
 from datetime import date, datetime, timedelta
-from typing import Any, cast
 
 from features.admin.schemas import FinanceSeriesPoint
+from shared.exceptions.internal import UnexpectedTypeError
 from shared.i18n import DEFAULT_LANGUAGE, translate
 
 
@@ -31,9 +31,11 @@ def finance_points(
     ]
 
 
-def parse_day(value: Any) -> date:
+def parse_day(value: object) -> date:
     if isinstance(value, str):
         return date.fromisoformat(value)
     if isinstance(value, datetime):
         return value.date()
-    return cast("date", value)
+    if isinstance(value, date):
+        return value
+    raise UnexpectedTypeError("date or datetime", value)

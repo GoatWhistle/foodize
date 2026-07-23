@@ -44,7 +44,7 @@ export const InfoModal = ({ restaurant, workingHours, onClose, usePortal = false
           <button
             onClick={onClose}
             aria-label={t("common.actions.close")}
-            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-2)", display: "flex" }}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-2)", display: "flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, margin: -11, flexShrink: 0 }}
           >
             <XIcon size={20} weight="bold" />
           </button>

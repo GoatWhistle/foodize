@@ -1,7 +1,6 @@
 import logging
 import sys
 import traceback
-from typing import cast
 
 import sentry_sdk
 import structlog
@@ -38,7 +37,9 @@ _LEVEL_COLORS = {
 }
 
 
-def _compact_exception(logger: WrappedLogger, method_name: str, event_dict: EventDict) -> EventDict:
+def _compact_exception(
+    _logger: WrappedLogger, _method_name: str, event_dict: EventDict
+) -> EventDict:
     exc_info = event_dict.pop("exc_info", None)
     if not exc_info:
         return event_dict
@@ -55,7 +56,7 @@ def _compact_exception(logger: WrappedLogger, method_name: str, event_dict: Even
 
 
 def _colored_console_renderer(
-    logger: WrappedLogger, method_name: str, event_dict: EventDict
+    _logger: WrappedLogger, _method_name: str, event_dict: EventDict
 ) -> str:
     timestamp = event_dict.pop("timestamp", "")
     level = event_dict.pop("level", "info")
@@ -126,5 +127,5 @@ def configure_logging() -> None:
     )
 
 
-def get_logger(name: str = LOGGER_NAME) -> structlog.BoundLogger:
-    return cast("structlog.BoundLogger", structlog.get_logger(name).bind(service="foodize"))
+def get_logger(name: str = LOGGER_NAME) -> structlog.stdlib.BoundLogger:
+    return structlog.stdlib.get_logger(name).bind(service="foodize")

@@ -73,13 +73,15 @@ class TestVerifyRestaurantAccess:
         session = AsyncMock()
         session.execute = AsyncMock(return_value=_execute_result(restaurant))
 
-        with patch(
-            "features.orders.dependencies.get_vendor_by_user_id",
-            new_callable=AsyncMock,
-            return_value=vendor_mock,
+        with (
+            patch(
+                "features.orders.dependencies.get_vendor_by_user_id",
+                new_callable=AsyncMock,
+                return_value=vendor_mock,
+            ),
+            pytest.raises(AccessDeniedException),
         ):
-            with pytest.raises(AccessDeniedException):
-                await verify_restaurant_access(session, restaurant.id, user)
+            await verify_restaurant_access(session, restaurant.id, user)
 
     async def test_staff_at_correct_restaurant(self) -> None:
         restaurant_id = uuid.uuid4()
@@ -133,10 +135,12 @@ class TestVerifyRestaurantAccess:
 
 class TestGetOrderForStaffOrVendor:
     async def test_order_not_found(self) -> None:
-        with patch(
-            "features.orders.dependencies.get_order_by_id_for_update",
-            new_callable=AsyncMock,
-            return_value=None,
+        with (
+            patch(
+                "features.orders.dependencies.get_order_by_id_for_update",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
+            pytest.raises(NotFoundException),
         ):
-            with pytest.raises(NotFoundException):
-                await get_order_for_staff_or_vendor(uuid.uuid4(), AsyncMock(), MagicMock())
+            await get_order_for_staff_or_vendor(uuid.uuid4(), AsyncMock(), MagicMock())

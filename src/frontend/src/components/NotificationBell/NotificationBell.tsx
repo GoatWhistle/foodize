@@ -86,7 +86,7 @@ export const NotificationBell = () => {
   return (
     <div style={{ position: "relative" }} ref={dropdownRef}>
       <button
-        style={{ background: "none", border: "none", cursor: "pointer", position: "relative", padding: 8, color: "var(--text-1)", display: "flex", alignItems: "center", justifyContent: "center" }}
+        style={{ background: "none", border: "none", cursor: "pointer", position: "relative", width: 44, height: 44, padding: 0, color: "var(--text-1)", display: "flex", alignItems: "center", justifyContent: "center" }}
         onClick={() => { setIsOpen((v) => !v); }}
         aria-label={translate('profile.notifications.title')}
       >
@@ -99,18 +99,18 @@ export const NotificationBell = () => {
       </button>
 
       {isOpen && (
-        <div style={{ position: "absolute", top: "100%", right: 0, width: 320, maxHeight: 400, background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--r-md)", boxShadow: "var(--shadow-md)", zIndex: 100, display: "flex", flexDirection: "column", overflow: "hidden", marginTop: 8 }}>
+        <div style={{ position: "absolute", top: "100%", right: 0, width: "min(320px, calc(100vw - 88px))", maxHeight: "min(400px, 60vh)", background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--r-md)", boxShadow: "var(--shadow-md)", zIndex: 100, display: "flex", flexDirection: "column", overflow: "hidden", marginTop: 8 }}>
           <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--bg-surface)" }}>
             <span style={{ fontWeight: 800, fontSize: "var(--text-base)", color: "var(--text-1)" }}>{translate('profile.notifications.title')}</span>
             {notifications.length > 0 && (
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 {unreadCount > 0 && (
-                  <button onClick={() => { void markAllAsRead(); }} style={{ background: "none", border: "none", color: "var(--accent)", fontSize: "var(--text-base)", fontWeight: 700, cursor: "pointer", padding: 0 }}>
+                  <button onClick={() => { void markAllAsRead(); }} style={{ background: "none", border: "none", color: "var(--accent)", fontSize: "var(--text-base)", fontWeight: 700, cursor: "pointer", padding: "12px 4px", margin: "-12px 0" }}>
                     {translate('profile.notifications.markAllRead')}
                   </button>
                 )}
-                <button onClick={() => { void deleteAll(); }} aria-label={translate('profile.notifications.deleteAll')} style={{ width: 28, height: 28, borderRadius: "var(--r-xs)", border: "1px solid var(--border)", background: "var(--bg-card)", color: "var(--text-3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-                  <TrashIcon size={14} weight="bold" />
+                <button onClick={() => { void deleteAll(); }} aria-label={translate('profile.notifications.deleteAll')} style={{ width: 40, height: 40, margin: "-6px 0", borderRadius: "var(--r-xs)", border: "1px solid var(--border)", background: "var(--bg-card)", color: "var(--text-3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                  <TrashIcon size={16} weight="bold" />
                 </button>
               </div>
             )}
@@ -144,9 +144,9 @@ export const NotificationBell = () => {
                             <button
                               onClick={(e) => { e.stopPropagation(); void deleteNotification(n.id); }}
                               aria-label={translate('profile.notifications.delete')}
-                              style={{ width: 24, height: 24, borderRadius: "var(--r-xs)", border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text-3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+                              style={{ width: 36, height: 36, margin: "-8px -6px -8px 0", borderRadius: "var(--r-xs)", border: "1px solid var(--border)", background: "var(--bg-surface)", color: "var(--text-3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}
                             >
-                              <TrashIcon size={12} weight="bold" />
+                              <TrashIcon size={14} weight="bold" />
                             </button>
                           </div>
                         </div>

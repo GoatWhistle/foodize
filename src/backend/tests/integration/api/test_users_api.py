@@ -2,6 +2,7 @@ import uuid
 from http import HTTPStatus
 from unittest.mock import AsyncMock, patch
 
+import pytest
 from factories import make_user
 from httpx import AsyncClient
 
@@ -56,7 +57,8 @@ class TestUsersAPI:
         response = await client.get(f"/api/v1/users/{uuid.uuid4()}")
         assert response.status_code == HTTPStatus.UNAUTHORIZED
 
-    async def test_change_password_no_content(self, client: AsyncClient, as_user: User) -> None:
+    @pytest.mark.usefixtures("as_user")
+    async def test_change_password_no_content(self, client: AsyncClient) -> None:
         with (
             patch(
                 "features.users.service.validate_password",
@@ -74,7 +76,8 @@ class TestUsersAPI:
             )
         assert response.status_code == HTTPStatus.NO_CONTENT
 
-    async def test_change_password_wrong_old(self, client: AsyncClient, as_user: User) -> None:
+    @pytest.mark.usefixtures("as_user")
+    async def test_change_password_wrong_old(self, client: AsyncClient) -> None:
         with patch(
             "features.users.service.validate_password",
             new_callable=AsyncMock,

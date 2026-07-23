@@ -7,6 +7,7 @@ from database import db_helper
 from features.ai_order_agent.tool_helpers import order_confirm_key
 from features.users.models import User
 from infra.cache.redis import get_redis_cache
+from settings.config.app_config import settings
 from shared.dependencies import require_permission
 from shared.enums.permissions import Permission
 from shared.response import build_response
@@ -15,7 +16,7 @@ from shared.schemas.response import SuccessResponse
 from .schemas import CartResponse, CartUpdate
 from .service import CartService, get_cart_service
 
-router = APIRouter(prefix="/cart", tags=["Cart"])
+router = APIRouter(prefix=settings.api.v1.cart.prefix, tags=[settings.api.v1.cart.tag])
 
 
 async def _invalidate_order_confirm(identifier: str) -> None:

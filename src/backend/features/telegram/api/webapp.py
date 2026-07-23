@@ -29,10 +29,13 @@ from features.users.models import User
 from features.users.schemas import UserRead
 from infra.cache.redis import RedisCache, redis_cache_dependency
 from middlewares.limiter import limiter
+from settings.config.app_config import settings
 from shared.response import build_response
 from shared.schemas.response import SuccessResponse
 
-router = APIRouter(prefix="/telegram", tags=["Telegram"])
+router = APIRouter(
+    prefix=settings.api.v1.telegram_webapp.prefix, tags=[settings.api.v1.telegram_webapp.tag]
+)
 
 
 @router.post("/check", response_model=SuccessResponse[TelegramCheckResponse])

@@ -1,8 +1,7 @@
 from collections.abc import Awaitable, Callable
-from typing import Any
 
 from features.ai_order_agent.tool_context import OrderToolContext
-from features.ai_order_agent.tool_helpers import _dumps
+from features.ai_order_agent.tool_helpers import dumps
 from features.ai_order_agent.tool_specs import build_order_tools
 from features.ai_order_agent.tools_cart import (
     add_to_cart,
@@ -16,11 +15,12 @@ from features.cart.service import CartService
 from features.users.models import User
 from infra.cache.base import CacheRepository
 from infra.llm import ToolCall, ToolExecutor
+from infra.llm.base import JsonObject
 from shared.i18n import DEFAULT_LANGUAGE
 
 __all__ = ["build_order_executor", "build_order_tools"]
 
-_ToolHandler = Callable[[OrderToolContext, dict[str, Any]], Awaitable[str]]
+_ToolHandler = Callable[[OrderToolContext, JsonObject], Awaitable[str]]
 
 _HANDLERS: dict[str, _ToolHandler] = {
     "search_menu": search_menu,
@@ -51,7 +51,7 @@ def build_order_executor(
     async def execute(call: ToolCall) -> str:
         handler = _HANDLERS.get(call.name)
         if handler is None:
-            return _dumps({"error": f"Unknown tool: {call.name}"})
+            return dumps({"error": f"Unknown tool: {call.name}"})
         return await handler(context, call.arguments or {})
 
     return execute

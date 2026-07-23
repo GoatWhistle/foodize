@@ -1,6 +1,5 @@
 import uuid
 from datetime import UTC, date, datetime, timedelta
-from typing import Any, cast
 
 from sqlalchemy import ColumnElement, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -55,7 +54,7 @@ async def _fetch_revenue_by_day(
 
 async def _fetch_order_totals(
     session: AsyncSession, order_filters: list[ColumnElement[bool]]
-) -> tuple[Any, ...]:
+) -> tuple[int, int, int, float]:
     result = await session.execute(
         select(
             func.count(Order.id),
@@ -70,7 +69,8 @@ async def _fetch_order_totals(
         .join(Restaurant, Restaurant.id == Order.restaurant_id)
         .where(*order_filters)
     )
-    return cast("tuple[Any, ...]", result.one())
+    total, completed, cancelled, average = result.one()
+    return int(total), int(completed), int(cancelled), float(average or 0)
 
 
 async def _fetch_top_restaurants(

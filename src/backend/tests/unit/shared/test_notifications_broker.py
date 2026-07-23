@@ -9,8 +9,9 @@ from features.notifications.broker import (
     EXCHANGE_NAME,
     RETRY_QUEUE_NAME,
     RabbitMQBroker,
-    _sanitize_amqp_url,
+    sanitize_amqp_url,
 )
+from shared.exceptions.internal import BrokerNotConnectedError
 
 
 def _make_channel() -> MagicMock:
@@ -39,13 +40,13 @@ def _make_connection(channel: MagicMock) -> MagicMock:
 
 class TestSanitizeAmqpUrl:
     def test_strips_credentials(self) -> None:
-        sanitized = _sanitize_amqp_url("amqp://user:secret@rabbit:5672/vhost")
+        sanitized = sanitize_amqp_url("amqp://user:secret@rabbit:5672/vhost")
         assert "secret" not in sanitized
         assert "user" not in sanitized
         assert "rabbit:5672" in sanitized
 
     def test_handles_url_without_port(self) -> None:
-        sanitized = _sanitize_amqp_url("amqp://host/path")
+        sanitized = sanitize_amqp_url("amqp://host/path")
         assert sanitized == "amqp://host/path"
 
 
@@ -88,17 +89,17 @@ class TestConnect:
 class TestPropertiesBeforeConnect:
     def test_exchange_raises_when_not_connected(self) -> None:
         instance = RabbitMQBroker(url="amqp://localhost/")
-        with pytest.raises(RuntimeError):
+        with pytest.raises(BrokerNotConnectedError):
             _ = instance.exchange
 
     def test_channel_raises_when_not_connected(self) -> None:
         instance = RabbitMQBroker(url="amqp://localhost/")
-        with pytest.raises(RuntimeError):
+        with pytest.raises(BrokerNotConnectedError):
             _ = instance.channel
 
     def test_retry_exchange_raises_when_not_connected(self) -> None:
         instance = RabbitMQBroker(url="amqp://localhost/")
-        with pytest.raises(RuntimeError):
+        with pytest.raises(BrokerNotConnectedError):
             _ = instance.retry_exchange
 
     def test_is_connected_false_when_no_connection(self) -> None:

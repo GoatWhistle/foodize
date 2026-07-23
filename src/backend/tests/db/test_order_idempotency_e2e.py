@@ -13,7 +13,6 @@ from features.restaurants.schemas import RestaurantCreate
 from features.users.crud import create_user
 from features.users.schemas import UserCreate
 from features.vendors.crud import create_vendor_profile
-from features.vendors.schemas import VendorCreate
 from shared.enums.category import Category
 from shared.enums.roles import UserRole
 from shared.exceptions import BadRequestException
@@ -31,7 +30,7 @@ async def _seed_menu(db_session: AsyncSession) -> tuple[Restaurant, MenuItem]:
             user_role=UserRole.VENDOR,
         ),
     )
-    vendor_profile = await create_vendor_profile(db_session, vendor_user, VendorCreate())
+    vendor_profile = await create_vendor_profile(db_session, vendor_user)
     restaurant = await create_restaurant(
         db_session,
         RestaurantCreate(name="Idem Restaurant", address="2 Main St"),

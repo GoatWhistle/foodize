@@ -1,9 +1,10 @@
 import uuid
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
+from features.ai_order_agent.schemas_search import MenuSearchItem
 
-def candidate(name: str, description: str | None = None) -> dict[str, Any]:
+
+def candidate(name: str, description: str | None = None) -> MenuSearchItem:
     return {
         "menu_item_id": str(uuid.uuid4()),
         "name": name,
@@ -16,7 +17,7 @@ def candidate(name: str, description: str | None = None) -> dict[str, Any]:
     }
 
 
-def ranked(item: dict[str, Any], distance: float) -> dict[str, Any]:
+def ranked(item: MenuSearchItem, distance: float) -> MenuSearchItem:
     return {**item, "_distance": distance}
 
 

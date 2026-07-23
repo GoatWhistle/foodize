@@ -32,18 +32,20 @@ async def test_admin_force_cancel_order_calls_service() -> None:
 
 
 async def test_admin_force_cancel_order_propagates_service_error() -> None:
-    with patch(
-        "features.orders.services.order_status.force_cancel_order",
-        new_callable=AsyncMock,
-        side_effect=OrderNotCancellableException(),
+    with (
+        patch(
+            "features.orders.services.order_status.force_cancel_order",
+            new_callable=AsyncMock,
+            side_effect=OrderNotCancellableException(),
+        ),
+        pytest.raises(OrderNotCancellableException),
     ):
-        with pytest.raises(OrderNotCancellableException):
-            await force_cancel_order_route(
-                uuid.uuid4(),
-                ForceCancelOrderRequest(reason="fraud"),
-                MagicMock(),
-                AsyncMock(),
-            )
+        await force_cancel_order_route(
+            uuid.uuid4(),
+            ForceCancelOrderRequest(reason="fraud"),
+            MagicMock(),
+            AsyncMock(),
+        )
 
 
 def test_admin_force_cancel_route_mounted() -> None:

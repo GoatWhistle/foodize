@@ -16,14 +16,16 @@ const PLURAL_RULES: Record<Language, (n: number) => keyof PluralForms> = {
 };
 
 const isPluralForms = (value: TranslationValue | TranslationTree): value is PluralForms =>
-  typeof value === "object" && value !== null && "one" in value && "many" in value;
+  typeof value === "object" && "one" in value && "many" in value;
 
 const lookup = (tree: TranslationTree, path: string): TranslationValue | TranslationTree | undefined => {
   let current: TranslationValue | TranslationTree | undefined = tree;
   const segments = path.split(".");
   for (let index = 0; index < segments.length; index += 1) {
-    if (typeof current !== "object" || current === null || isPluralForms(current)) return undefined;
-    const node = current as TranslationTree;
+    if (current === undefined || typeof current !== "object" || isPluralForms(current)) {
+      return undefined;
+    }
+    const node: TranslationTree = current;
     const literal = segments.slice(index).join(".");
     if (literal in node) return node[literal];
     current = node[segments[index] as string];
@@ -39,8 +41,8 @@ export const interpolate = (template: string, params?: TranslationParams): strin
 };
 
 export const selectPlural = (forms: PluralForms, count: number, language: Language): string => {
-  const category = (PLURAL_RULES[language] ?? PLURAL_RULES[DEFAULT_LANGUAGE])(count);
-  return forms[category] ?? forms.many;
+  const category = PLURAL_RULES[language](count);
+  return forms[category];
 };
 
 export const resolveTranslation = (

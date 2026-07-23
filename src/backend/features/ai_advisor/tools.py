@@ -1,89 +1,40 @@
 import json
 import uuid
 from datetime import UTC, date, datetime, timedelta
-from typing import Any
 
 from database import db_helper
 from features.admin.crud import get_advanced_analytics, get_finance_analytics, translate_category
 from features.admin.schemas import AdvancedAnalytics, FinanceAnalytics
 from features.ai_advisor import crud
+from features.ai_advisor.schemas_tools import LocalizableCategoryRow
 from features.vendors.models import VendorProfile
-from infra.llm import ToolCall, ToolExecutor, ToolSpec
-from infra.llm.base import ToolInputError
+from infra.llm import ToolCall, ToolExecutor
+from infra.llm.base import JsonObject, ToolInputError
 from shared.dependencies.vendor_restaurant import get_vendor_restaurant_ids
-from shared.i18n import DEFAULT_LANGUAGE, translate
+from shared.i18n import DEFAULT_LANGUAGE
 
 _DEFAULT_PERIOD_DAYS = 30
 _MAX_PERIOD_DAYS = 365
 
 
-def build_advisor_tools(language: str = DEFAULT_LANGUAGE) -> list[ToolSpec]:
-    period = {
-        "type": "integer",
-        "description": translate("prompts.advisor.tools.periodDays", language),
-    }
-    restaurant = {
-        "type": "string",
-        "description": translate("prompts.advisor.tools.restaurantId", language),
-    }
-    period_schema: dict[str, Any] = {
-        "type": "object",
-        "properties": {"period_days": period, "restaurant_id": restaurant},
-    }
-    restaurant_schema: dict[str, Any] = {
-        "type": "object",
-        "properties": {"restaurant_id": restaurant},
-    }
-    return [
-        ToolSpec(
-            name="get_sales_summary",
-            description=translate("prompts.advisor.tools.salesSummary", language),
-            input_schema=period_schema,
-        ),
-        ToolSpec(
-            name="get_peak_hours",
-            description=translate("prompts.advisor.tools.peakHours", language),
-            input_schema=period_schema,
-        ),
-        ToolSpec(
-            name="get_category_breakdown",
-            description=translate("prompts.advisor.tools.categoryBreakdown", language),
-            input_schema=period_schema,
-        ),
-        ToolSpec(
-            name="get_top_and_bottom_items",
-            description=translate("prompts.advisor.tools.topAndBottomItems", language),
-            input_schema=period_schema,
-        ),
-        ToolSpec(
-            name="get_menu",
-            description=translate("prompts.advisor.tools.menu", language),
-            input_schema=restaurant_schema,
-        ),
-        ToolSpec(
-            name="get_reviews_summary",
-            description=translate("prompts.advisor.tools.reviewsSummary", language),
-            input_schema=restaurant_schema,
-        ),
-    ]
-
-
-def _dumps(payload: object) -> str:
+def dumps(payload: object) -> str:
     return json.dumps(payload, ensure_ascii=False, default=str)
 
 
-def _period_range(args: dict[str, Any]) -> tuple[date, date]:
-    period = args.get("period_days") or _DEFAULT_PERIOD_DAYS
-    try:
-        period = max(1, min(int(period), _MAX_PERIOD_DAYS))
-    except (TypeError, ValueError):
-        period = _DEFAULT_PERIOD_DAYS
+def period_range(args: JsonObject) -> tuple[date, date]:
+    raw = args.get("period_days") or _DEFAULT_PERIOD_DAYS
+    period = _DEFAULT_PERIOD_DAYS
+    if isinstance(raw, int | float | str):
+        try:
+            period = max(1, min(int(raw), _MAX_PERIOD_DAYS))
+        except (TypeError, ValueError):
+            period = _DEFAULT_PERIOD_DAYS
     end = datetime.now(UTC).date()
     start = end - timedelta(days=period - 1)
     return start, end
 
 
-def _restaurant_id(args: dict[str, Any]) -> uuid.UUID | None:
+def parse_restaurant_id(args: JsonObject) -> uuid.UUID | None:
     raw = args.get("restaurant_id")
     if not raw:
         return None
@@ -93,7 +44,7 @@ def _restaurant_id(args: dict[str, Any]) -> uuid.UUID | None:
         raise ToolInputError(f"invalid restaurant_id: {raw!r} — provide a valid UUID") from None
 
 
-def _localize_categories(rows: list[dict[str, Any]], language: str) -> None:
+def _localize_categories[RowT: LocalizableCategoryRow](rows: list[RowT], language: str) -> None:
     for row in rows:
         row["category"] = translate_category(row["category"], language)
 
@@ -106,17 +57,17 @@ class _AdvisorToolRunner:
         language: str = DEFAULT_LANGUAGE,
     ) -> None:
         self._vendor_id = vendor.id
-        self._owned_restaurant_ids = get_vendor_restaurant_ids(vendor)
+        self.owned_restaurant_ids = get_vendor_restaurant_ids(vendor)
         self._default_restaurant_id = default_restaurant_id
         self._language = language
         self._advanced_cache: dict[tuple[date, date, uuid.UUID | None], AdvancedAnalytics] = {}
         self._finance_cache: dict[tuple[date, date, uuid.UUID | None], FinanceAnalytics] = {}
 
-    def _resolve_restaurant(self, args: dict[str, Any]) -> uuid.UUID | None:
-        restaurant_id = _restaurant_id(args)
+    def _resolve_restaurant(self, args: JsonObject) -> uuid.UUID | None:
+        restaurant_id = parse_restaurant_id(args)
         if restaurant_id is None:
             return self._default_restaurant_id
-        if restaurant_id not in self._owned_restaurant_ids:
+        if restaurant_id not in self.owned_restaurant_ids:
             raise ToolInputError(f"restaurant {restaurant_id} does not belong to this vendor")
         return restaurant_id
 
@@ -151,10 +102,10 @@ class _AdvisorToolRunner:
                 )
         return self._finance_cache[key]
 
-    async def sales_summary(self, args: dict[str, Any]) -> str:
-        start, end = _period_range(args)
+    async def sales_summary(self, args: JsonObject) -> str:
+        start, end = period_range(args)
         finance = await self._finance(start, end, self._resolve_restaurant(args))
-        return _dumps(
+        return dumps(
             {
                 "period": {"from": str(start), "to": str(end)},
                 "total_revenue": finance.total_revenue,
@@ -175,10 +126,10 @@ class _AdvisorToolRunner:
             }
         )
 
-    async def peak_hours(self, args: dict[str, Any]) -> str:
-        start, end = _period_range(args)
+    async def peak_hours(self, args: JsonObject) -> str:
+        start, end = period_range(args)
         analytics = await self._advanced(start, end, self._resolve_restaurant(args))
-        return _dumps(
+        return dumps(
             {
                 "period": {"from": str(start), "to": str(end)},
                 "hourly_load": [
@@ -187,10 +138,10 @@ class _AdvisorToolRunner:
             }
         )
 
-    async def category_breakdown(self, args: dict[str, Any]) -> str:
-        start, end = _period_range(args)
+    async def category_breakdown(self, args: JsonObject) -> str:
+        start, end = period_range(args)
         analytics = await self._advanced(start, end, self._resolve_restaurant(args))
-        return _dumps(
+        return dumps(
             {
                 "period": {"from": str(start), "to": str(end)},
                 "category_revenue": [
@@ -199,8 +150,8 @@ class _AdvisorToolRunner:
             }
         )
 
-    async def top_and_bottom_items(self, args: dict[str, Any]) -> str:
-        start, end = _period_range(args)
+    async def top_and_bottom_items(self, args: JsonObject) -> str:
+        start, end = period_range(args)
         restaurant_id = self._resolve_restaurant(args)
         finance = await self._finance(start, end, restaurant_id)
         async with db_helper.session_factory() as session:
@@ -212,7 +163,7 @@ class _AdvisorToolRunner:
                 restaurant_id=restaurant_id,
             )
         _localize_categories(bottom_items, self._language)
-        return _dumps(
+        return dumps(
             {
                 "period": {"from": str(start), "to": str(end)},
                 "top_items": [
@@ -223,20 +174,20 @@ class _AdvisorToolRunner:
             }
         )
 
-    async def menu(self, args: dict[str, Any]) -> str:
+    async def menu(self, args: JsonObject) -> str:
         async with db_helper.session_factory() as session:
             menu_items = await crud.get_menu_overview(
                 session, vendor_id=self._vendor_id, restaurant_id=self._resolve_restaurant(args)
             )
         _localize_categories(menu_items, self._language)
-        return _dumps({"items": menu_items})
+        return dumps({"items": menu_items})
 
-    async def reviews_summary(self, args: dict[str, Any]) -> str:
+    async def reviews_summary(self, args: JsonObject) -> str:
         async with db_helper.session_factory() as session:
             summary = await crud.get_reviews_summary(
                 session, vendor_id=self._vendor_id, restaurant_id=self._resolve_restaurant(args)
             )
-        return _dumps(summary)
+        return dumps(summary)
 
 
 def build_advisor_executor(
@@ -257,7 +208,7 @@ def build_advisor_executor(
     async def execute(call: ToolCall) -> str:
         handler = handlers.get(call.name)
         if handler is None:
-            return _dumps({"error": f"Unknown tool: {call.name}"})
+            return dumps({"error": f"Unknown tool: {call.name}"})
         return await handler(call.arguments or {})
 
     return execute

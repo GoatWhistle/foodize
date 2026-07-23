@@ -1,11 +1,10 @@
-from typing import Any
-
 from shared.i18n.dictionaries.ru.notifications import NOTIFICATIONS
 from shared.i18n.dictionaries.ru.prompts import PROMPTS
 from shared.i18n.dictionaries.ru.reports import REPORTS
 from shared.i18n.dictionaries.ru.telegram import TELEGRAM
+from shared.i18n.types import TranslationTree
 
-DICTIONARY: dict[str, Any] = {
+DICTIONARY: TranslationTree = {
     "notifications": NOTIFICATIONS,
     "prompts": PROMPTS,
     "reports": REPORTS,

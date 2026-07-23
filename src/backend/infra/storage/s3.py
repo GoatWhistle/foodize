@@ -4,7 +4,7 @@ import uuid
 from collections.abc import AsyncIterator
 from functools import lru_cache
 from io import BytesIO
-from typing import Any
+from typing import Protocol
 
 import boto3
 from botocore.config import Config
@@ -12,6 +12,43 @@ from botocore.exceptions import ClientError
 from PIL import Image, UnidentifiedImageError
 
 from settings.config.app_config import settings
+
+
+class S3Body(Protocol):
+    def read(self, amt: int | None = ...) -> bytes: ...
+
+    def close(self) -> None: ...
+
+
+class S3GetObjectResponse(Protocol):
+    def __getitem__(self, key: str) -> S3Body: ...
+
+    def get(self, key: str, default: object = ...) -> object: ...
+
+
+class S3Client(Protocol):
+    def put_object(self, **kwargs: object) -> object: ...
+
+    def delete_object(self, **kwargs: object) -> object: ...
+
+    def get_object(self, **kwargs: object) -> S3GetObjectResponse: ...
+
+
+def _put_object_kwargs(
+    bucket: str, key: str, body: bytes, content_type: str, cache_control: str
+) -> dict[str, object]:
+    return {
+        "Bucket": bucket,
+        "Key": key,
+        "Body": body,
+        "ContentType": content_type,
+        "CacheControl": cache_control,
+    }
+
+
+def _object_kwargs(bucket: str, key: str) -> dict[str, object]:
+    return {"Bucket": bucket, "Key": key}
+
 
 _ALLOWED_TYPES: dict[str, str] = {
     "image/jpeg": "jpg",
@@ -56,9 +93,9 @@ def _detect_image_ext(data: bytes) -> str:
 
 
 @lru_cache(maxsize=1)
-def _client() -> Any:
+def _client() -> S3Client:
     cfg = settings.s3
-    return boto3.client(
+    client: S3Client = boto3.client(
         "s3",
         endpoint_url=cfg.endpoint_url or None,
         region_name=cfg.region,
@@ -72,6 +109,7 @@ def _client() -> Any:
             read_timeout=30,
         ),
     )
+    return client
 
 
 def _public_url(key: str) -> str:
@@ -95,11 +133,13 @@ def _upload_image_sync(data: bytes, content_type: str, prefix: str) -> str:
     stored_content_type = _EXT_TO_CONTENT_TYPE[ext]
     key = f"{prefix}/{uuid.uuid4().hex}.{ext}"
     _client().put_object(
-        Bucket=settings.s3.bucket,
-        Key=key,
-        Body=data,
-        ContentType=stored_content_type,
-        CacheControl="public, max-age=31536000, immutable",
+        **_put_object_kwargs(
+            settings.s3.bucket,
+            key,
+            data,
+            stored_content_type,
+            "public, max-age=31536000, immutable",
+        )
     )
     return _public_url(key)
 
@@ -108,36 +148,41 @@ def _delete_image_sync(url: str) -> None:
     key = _key_from_url(url)
     if not key or not _KEY_RE.fullmatch(key):
         return
-    _client().delete_object(Bucket=settings.s3.bucket, Key=key)
+    _client().delete_object(**_object_kwargs(settings.s3.bucket, key))
 
 
 def _fetch_object_sync(key: str) -> tuple[bytes, str] | None:
     try:
-        obj = _client().get_object(Bucket=settings.s3.bucket, Key=key)
+        obj = _client().get_object(**_object_kwargs(settings.s3.bucket, key))
     except ClientError as e:
         code = e.response.get("Error", {}).get("Code", "")
         if code in ("NoSuchKey", "404", "NotFound"):
             return None
         raise
-    return obj["Body"].read(), obj.get("ContentType") or "application/octet-stream"
+    content_type = obj.get("ContentType")
+    return (
+        obj["Body"].read(),
+        content_type if isinstance(content_type, str) else "application/octet-stream",
+    )
 
 
 async def fetch_object(key: str) -> tuple[bytes, str] | None:
     return await asyncio.to_thread(_fetch_object_sync, key)
 
 
-def _open_object_sync(key: str) -> tuple[Any, str, str | None] | None:
+def _open_object_sync(key: str) -> tuple[S3Body, str, str | None] | None:
     try:
-        obj = _client().get_object(Bucket=settings.s3.bucket, Key=key)
+        obj = _client().get_object(**_object_kwargs(settings.s3.bucket, key))
     except ClientError as e:
         code = e.response.get("Error", {}).get("Code", "")
         if code in ("NoSuchKey", "404", "NotFound"):
             return None
         raise
     content_length = obj.get("ContentLength")
+    content_type = obj.get("ContentType")
     return (
         obj["Body"],
-        obj.get("ContentType") or "application/octet-stream",
+        content_type if isinstance(content_type, str) else "application/octet-stream",
         str(content_length) if content_length is not None else None,
     )
 

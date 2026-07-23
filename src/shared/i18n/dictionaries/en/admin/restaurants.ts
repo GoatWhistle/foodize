@@ -1,0 +1,71 @@
+export const adminRestaurants = {
+  emptyTitle: "No restaurants yet",
+  filters: {
+    restaurantPlaceholder: "Restaurant",
+    vendorPlaceholder: "Vendor or phone",
+    open: "Open",
+    closed: "Closed",
+    moderation: "Moderation",
+    anyRating: "Any rating",
+    ratingFrom4: "4 stars and up",
+    ratingFrom3: "3 stars and up",
+    ratingFrom2: "2 stars and up",
+  },
+  row: {
+    open: "Open",
+    closed: "Closed",
+    hiring: "Hiring",
+    notHiring: "Not hiring",
+    ordersCount: {
+      one: "{count} order",
+      few: "{count} orders",
+      many: "{count} orders",
+    },
+    displayBoard: "Board",
+  },
+  modal: {
+    subtitle: "Restaurant details",
+    vendorSection: "Vendor",
+    venueSection: "Venue",
+    fields: {
+      orders: "Orders",
+      reviews: "Reviews",
+      rating: "Rating",
+      moderation: "Moderation",
+      work: "Operation",
+    },
+    open: "Open",
+    closed: "Closed",
+    openDisplayBoard: "Open display board",
+    qrSite: "QR for the website",
+    qrTelegram: "QR for Telegram",
+    deleteRestaurant: "Delete restaurant",
+  },
+  dialogs: {
+    deleteTitle: "Delete this restaurant?",
+    deleteMessage:
+      "Are you sure you want to delete this restaurant? It will disappear from active listings and be closed.",
+    deleteConfirm: "Delete restaurant",
+    rejectTitle: "Reject restaurant",
+    rejectMessage:
+      "Give a reason. The vendor will see what needs fixing before the next review.",
+    rejectReasonTitle: "Rejection reason",
+  },
+  messages: {
+    approved: "Restaurant approved",
+    rejected: "Restaurant rejected",
+    batchDone: {
+      one: "Done: {count} restaurant",
+      few: "Done: {count} restaurants",
+      many: "Done: {count} restaurants",
+    },
+  },
+  errors: {
+    loadFailed: "Could not load restaurants",
+    detailsFailed: "Could not load restaurant details",
+    deleteFailed: "Could not delete the restaurant",
+    approveFailed: "Could not approve the restaurant",
+    rejectFailed: "Could not reject the restaurant",
+    batchFailed: "Bulk action failed",
+  },
+} as const;

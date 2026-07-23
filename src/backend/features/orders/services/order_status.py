@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.admin.audit_log import service as audit_service
+from features.loyalty import order_integration as loyalty_service
 from features.notifications.events import OrderStatusChangedEvent
 from features.notifications.outbox_service import enqueue_event
 from features.orders.crud import order as order_crud
@@ -56,8 +57,12 @@ async def _finalize_order(
     actor_permissions: list[str],
 ) -> OrderResponse:
     old_status = OrderStatus(order.status)
-    if new_status == OrderStatus.CANCELLED and order.promo_id is not None:
-        await promo_crud.release_promo_usage(session, order.promo_id, order.user_id)
+    if new_status == OrderStatus.CANCELLED:
+        if order.promo_id is not None:
+            await promo_crud.release_promo_usage(session, order.promo_id, order.user_id)
+        await loyalty_service.release_for_order(session, order)
+    if new_status == OrderStatus.COMPLETED:
+        await loyalty_service.accrue_for_order(session, order)
     updated = await order_crud.update_order_status(session, order, new_status)
     await order_crud.create_order_event(
         session,
@@ -195,6 +200,7 @@ async def force_cancel_order(
     order.cancellation_reason = reason
     if order.promo_id is not None:
         await promo_crud.release_promo_usage(session, order.promo_id, order.user_id)
+    await loyalty_service.release_for_order(session, order)
     updated = await order_crud.update_order_status(session, order, OrderStatus.CANCELLED)
 
     await _record_forced_cancellation(session, order, actor, old_status, reason)

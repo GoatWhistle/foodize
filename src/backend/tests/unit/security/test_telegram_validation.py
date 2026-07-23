@@ -12,10 +12,10 @@ from features.telegram.exceptions import (
     MalformedTelegramInitDataException,
 )
 from features.telegram.webapp_auth import (
-    _INIT_DATA_MAX_AGE,
-    _consume_init_data_nonce,
-    _extract_tg_user,
-    _validate_init_data,
+    INIT_DATA_MAX_AGE,
+    consume_init_data_nonce,
+    extract_tg_user,
+    validate_init_data,
 )
 from settings.config.app_config import settings
 
@@ -54,10 +54,9 @@ def generate_valid_init_data(
 
 
 class TestValidateInitData:
-
     def test_valid_init_data(self) -> None:
         init_data = generate_valid_init_data()
-        result = _validate_init_data(init_data)
+        result = validate_init_data(init_data)
 
         assert result is not None
         assert result["user"]
@@ -83,14 +82,14 @@ class TestValidateInitData:
         init_data = urlencode(data_dict)
 
         with pytest.raises(InvalidTelegramInitDataException):
-            _validate_init_data(init_data)
+            validate_init_data(init_data)
 
     def test_expired_init_data(self) -> None:
         expired_auth_date = int(time.time()) - (86400 + 3600)
         init_data = generate_valid_init_data(override_auth_date=expired_auth_date)
 
         with pytest.raises(InvalidTelegramInitDataException):
-            _validate_init_data(init_data)
+            validate_init_data(init_data)
 
     def test_missing_hash(self) -> None:
         auth_date = int(time.time())
@@ -105,7 +104,7 @@ class TestValidateInitData:
         init_data = urlencode(data_dict)
 
         with pytest.raises(MalformedTelegramInitDataException):
-            _validate_init_data(init_data)
+            validate_init_data(init_data)
 
     def test_missing_auth_date(self) -> None:
         user_data = json.dumps({"id": 123456, "first_name": "Test"})
@@ -127,13 +126,13 @@ class TestValidateInitData:
         init_data = urlencode(data_dict)
 
         with pytest.raises(MalformedTelegramInitDataException):
-            _validate_init_data(init_data)
+            validate_init_data(init_data)
 
     def test_malformed_init_data(self) -> None:
         malformed_data = "not_a_valid_url_encoded_string!!!@@@"
 
         with pytest.raises(MalformedTelegramInitDataException):
-            _validate_init_data(malformed_data)
+            validate_init_data(malformed_data)
 
     def test_invalid_user_json_is_not_validated_by_init_data(self) -> None:
         auth_date = int(time.time())
@@ -155,28 +154,27 @@ class TestValidateInitData:
 
         init_data = urlencode(data_dict)
 
-        result = _validate_init_data(init_data)
+        result = validate_init_data(init_data)
         assert result is not None
 
 
 class TestExtractTgUser:
-
     def test_valid_user(self) -> None:
         user_data = {"id": 123456, "first_name": "Test"}
         parsed = {"user": json.dumps(user_data)}
-        result = _extract_tg_user(parsed)
+        result = extract_tg_user(parsed)
         assert result["id"] == 123456
 
     def test_missing_user_id(self) -> None:
         user_data = {"first_name": "Test"}
         parsed = {"user": json.dumps(user_data)}
         with pytest.raises(MalformedTelegramInitDataException, match="Missing user id"):
-            _extract_tg_user(parsed)
+            extract_tg_user(parsed)
 
     def test_invalid_json(self) -> None:
         parsed = {"user": "not_json"}
         with pytest.raises(MalformedTelegramInitDataException, match="Invalid user payload"):
-            _extract_tg_user(parsed)
+            extract_tg_user(parsed)
 
 
 class _FakeRedisCache:
@@ -184,6 +182,7 @@ class _FakeRedisCache:
         self.store: dict[str, str] = {}
 
     async def set_nx(self, key: str, value: str, ttl: int | None = None) -> bool:
+        del ttl
         if key in self.store:
             return False
         self.store[key] = value
@@ -198,16 +197,16 @@ class TestConsumeInitDataNonce:
         cache = _FakeRedisCache()
         parsed = self._parsed()
         with patch("features.telegram.webapp_auth.get_redis_cache", return_value=cache):
-            await _consume_init_data_nonce(parsed, "auth")
+            await consume_init_data_nonce(parsed, "auth")
             with pytest.raises(InvalidTelegramInitDataException, match="already used"):
-                await _consume_init_data_nonce(parsed, "auth")
+                await consume_init_data_nonce(parsed, "auth")
 
     async def test_auth_and_register_do_not_conflict(self) -> None:
         cache = _FakeRedisCache()
         parsed = self._parsed()
         with patch("features.telegram.webapp_auth.get_redis_cache", return_value=cache):
-            await _consume_init_data_nonce(parsed, "auth")
-            await _consume_init_data_nonce(parsed, "register")
+            await consume_init_data_nonce(parsed, "auth")
+            await consume_init_data_nonce(parsed, "register")
 
         assert len(cache.store) == 2
 
@@ -215,11 +214,13 @@ class TestConsumeInitDataNonce:
         cache = _FakeRedisCache()
         parsed = {
             "hash": "deadbeef",
-            "auth_date": str(int(time.time()) - _INIT_DATA_MAX_AGE - 10),
+            "auth_date": str(int(time.time()) - INIT_DATA_MAX_AGE - 10),
         }
-        with patch("features.telegram.webapp_auth.get_redis_cache", return_value=cache):
-            with pytest.raises(InvalidTelegramInitDataException, match="expired"):
-                await _consume_init_data_nonce(parsed, "auth")
+        with (
+            patch("features.telegram.webapp_auth.get_redis_cache", return_value=cache),
+            pytest.raises(InvalidTelegramInitDataException, match="expired"),
+        ):
+            await consume_init_data_nonce(parsed, "auth")
 
 
 class TestEdgeCases:
@@ -228,11 +229,11 @@ class TestEdgeCases:
         init_data = generate_valid_init_data(override_auth_date=auth_date)
 
         with pytest.raises(InvalidTelegramInitDataException):
-            _validate_init_data(init_data)
+            validate_init_data(init_data)
 
     def test_edge_case_auth_date_within_limit(self) -> None:
         auth_date = int(time.time()) - 1800
         init_data = generate_valid_init_data(override_auth_date=auth_date)
 
-        result = _validate_init_data(init_data)
+        result = validate_init_data(init_data)
         assert result is not None

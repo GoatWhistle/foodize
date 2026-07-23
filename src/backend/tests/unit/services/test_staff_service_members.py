@@ -89,13 +89,15 @@ class TestGetVendorStaffMembers:
 class TestRemoveStaffMember:
     async def test_raises_not_found_when_profile_missing(self) -> None:
         session = AsyncMock()
-        with patch(
-            "features.staff.service.crud.get_staff_profile_by_id",
-            new_callable=AsyncMock,
-            return_value=None,
+        with (
+            patch(
+                "features.staff.service.crud.get_staff_profile_by_id",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
+            pytest.raises(NotFoundException),
         ):
-            with pytest.raises(NotFoundException):
-                await remove_staff_member(session, uuid.uuid4(), uuid.uuid4())
+            await remove_staff_member(session, uuid.uuid4(), uuid.uuid4())
 
     async def test_raises_access_denied_when_wrong_vendor(self) -> None:
         session = AsyncMock()
@@ -105,13 +107,15 @@ class TestRemoveStaffMember:
         result = MagicMock()
         result.scalar_one_or_none.return_value = restaurant
         session.execute = AsyncMock(return_value=result)
-        with patch(
-            "features.staff.service.crud.get_staff_profile_by_id",
-            new_callable=AsyncMock,
-            return_value=profile,
+        with (
+            patch(
+                "features.staff.service.crud.get_staff_profile_by_id",
+                new_callable=AsyncMock,
+                return_value=profile,
+            ),
+            pytest.raises(NotFoundException),
         ):
-            with pytest.raises(NotFoundException):
-                await remove_staff_member(session, profile.id, uuid.uuid4())
+            await remove_staff_member(session, profile.id, uuid.uuid4())
 
     async def test_raises_not_found_when_restaurant_not_found(self) -> None:
         session = AsyncMock()
@@ -119,13 +123,15 @@ class TestRemoveStaffMember:
         result = MagicMock()
         result.scalar_one_or_none.return_value = None
         session.execute = AsyncMock(return_value=result)
-        with patch(
-            "features.staff.service.crud.get_staff_profile_by_id",
-            new_callable=AsyncMock,
-            return_value=profile,
+        with (
+            patch(
+                "features.staff.service.crud.get_staff_profile_by_id",
+                new_callable=AsyncMock,
+                return_value=profile,
+            ),
+            pytest.raises(NotFoundException),
         ):
-            with pytest.raises(NotFoundException):
-                await remove_staff_member(session, profile.id, uuid.uuid4())
+            await remove_staff_member(session, profile.id, uuid.uuid4())
 
     async def test_deletes_profile_when_authorized(self) -> None:
         session = AsyncMock()

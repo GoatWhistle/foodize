@@ -1,5 +1,4 @@
 from datetime import UTC, date, datetime, timedelta
-from typing import cast
 
 from sqlalchemy import ColumnElement, func, select, true, type_coerce
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -62,7 +61,7 @@ async def _count_users_by_permission(session: AsyncSession) -> dict[str, int]:
             .where(User.permissions.isnot(None))
             .group_by(permission_element.c.value)
         )
-        return dict(cast("list[tuple[str, int]]", rows.all()))
+        return {str(value): int(count) for value, count in rows.all()}
 
     result = await session.execute(select(User.permissions).where(User.permissions.isnot(None)))
     counts: dict[str, int] = {}

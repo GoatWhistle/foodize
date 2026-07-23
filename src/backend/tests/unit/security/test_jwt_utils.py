@@ -6,6 +6,7 @@ import pytest
 
 from settings.config.app_config import settings
 from utils.jwt_tokens import (
+    claim_int,
     create_access_token,
     create_refresh_token,
     decode_jwt,
@@ -79,7 +80,9 @@ class TestCreateJwtToken:
         user_id = uuid.uuid4()
         token = create_access_token(user_id=user_id)
         decoded = decode_jwt(token)
-        assert decoded["exp"] > int(datetime.now(UTC).timestamp())
+        exp = claim_int(decoded, "exp")
+        assert exp is not None
+        assert exp > int(datetime.now(UTC).timestamp())
 
 
 class TestAccessRefreshTokens:
@@ -103,6 +106,8 @@ class TestAccessRefreshTokens:
 
     def test_access_expires_before_refresh(self) -> None:
         user_id = uuid.uuid4()
-        access = decode_jwt(create_access_token(user_id=user_id))
-        refresh = decode_jwt(create_refresh_token(user_id=user_id))
-        assert access["exp"] < refresh["exp"]
+        access = claim_int(decode_jwt(create_access_token(user_id=user_id)), "exp")
+        refresh = claim_int(decode_jwt(create_refresh_token(user_id=user_id)), "exp")
+        assert access is not None
+        assert refresh is not None
+        assert access < refresh

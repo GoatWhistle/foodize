@@ -1,0 +1,24 @@
+appId: com.foodize.app
+name: Order — browse, add to cart, checkout
+---
+- launchApp
+- assertVisible:
+    id: "home-search"
+- tapOn:
+    id: "restaurant-.*"
+    index: 0
+- assertVisible:
+    id: "restaurant-menu"
+- tapOn:
+    id: "menu-item-.*"
+    index: 0
+- assertVisible:
+    id: "product-add"
+- tapOn:
+    id: "product-add"
+- assertVisible:
+    id: "restaurant-cart-fab"
+- tapOn:
+    id: "restaurant-cart-fab"
+- assertVisible:
+    id: "cart-checkout"

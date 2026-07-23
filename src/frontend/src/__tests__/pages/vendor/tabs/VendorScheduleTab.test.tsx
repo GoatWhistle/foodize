@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import { useState } from 'react';
 import { VendorScheduleTab } from '../../../../pages/vendor/tabs/VendorScheduleTab';
-import type { WorkingHoursRow } from '../../../../pages/vendor/hooks/useVendorRestaurants';
+import type { WorkingHoursRow } from '../../../../pages/vendor/hooks/useVendorWorkingHours';
 import { at } from '../../../testUtils';
 import { t } from '@shared/i18n/useTranslation';
 

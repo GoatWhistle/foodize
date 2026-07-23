@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -19,25 +19,23 @@ def _make_favorite() -> MagicMock:
     restaurant.is_open = True
     restaurant.is_hiring = False
     f.restaurant = restaurant
-    f.created_at = datetime.now()
+    f.created_at = datetime.now(UTC)
     return f
 
 
 class TestAddFavorite:
     async def test_restaurant_not_found(self) -> None:
-
         with (
             patch(
                 "features.favorites.service.restaurant_crud.get_restaurant_by_id",
                 new_callable=AsyncMock,
                 return_value=None,
             ),
+            pytest.raises(RestaurantNotFoundException),
         ):
-            with pytest.raises(RestaurantNotFoundException):
-                await add_favorite(MagicMock(), uuid.uuid4(), uuid.uuid4())
+            await add_favorite(MagicMock(), uuid.uuid4(), uuid.uuid4())
 
     async def test_already_favorited(self) -> None:
-
         with (
             patch(
                 "features.favorites.service.restaurant_crud.get_restaurant_by_id",
@@ -49,9 +47,9 @@ class TestAddFavorite:
                 new_callable=AsyncMock,
                 return_value=MagicMock(),
             ),
+            pytest.raises(AlreadyFavoritedException),
         ):
-            with pytest.raises(AlreadyFavoritedException):
-                await add_favorite(MagicMock(), uuid.uuid4(), uuid.uuid4())
+            await add_favorite(MagicMock(), uuid.uuid4(), uuid.uuid4())
 
     async def test_success(self) -> None:
         fav = _make_favorite()
@@ -79,14 +77,15 @@ class TestAddFavorite:
 
 class TestRemoveFavorite:
     async def test_not_found(self) -> None:
-
-        with patch(
-            "features.favorites.service.favorites_crud.get_favorite",
-            new_callable=AsyncMock,
-            return_value=None,
+        with (
+            patch(
+                "features.favorites.service.favorites_crud.get_favorite",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
+            pytest.raises(FavoriteNotFoundException),
         ):
-            with pytest.raises(FavoriteNotFoundException):
-                await remove_favorite(MagicMock(), uuid.uuid4(), uuid.uuid4())
+            await remove_favorite(MagicMock(), uuid.uuid4(), uuid.uuid4())
 
     async def test_success(self) -> None:
         fav = MagicMock()

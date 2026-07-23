@@ -1,23 +1,23 @@
 import uuid
-from typing import Any
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from features.telegram._shared import (
-    cache_telegram_id,
-    delete_cached_telegram_id,
-    find_or_create_telegram_user,
-    make_tokens,
-    normalize_username,
-)
 from features.telegram.crud import (
     get_telegram_id_by_user_id,
     get_user_by_phone,
     get_user_by_telegram_id,
     get_user_by_telegram_username,
 )
+from features.telegram.shared import (
+    cache_telegram_id,
+    delete_cached_telegram_id,
+    find_or_create_telegram_user,
+    make_tokens,
+    normalize_username,
+)
 from features.users.crud import create_user
+from features.users.models import User
 from features.users.schemas import UserCreate
 from shared.enums.roles import UserRole
 
@@ -25,13 +25,13 @@ from shared.enums.roles import UserRole
 @pytest.fixture(autouse=True)
 def _no_redis(monkeypatch: pytest.MonkeyPatch) -> None:
     class _Cache:
-        async def set(self, *args: Any, **kwargs: Any) -> None:
+        async def set(self, *_args: object, **_kwargs: object) -> None:
             return None
 
-        async def delete(self, *args: Any, **kwargs: Any) -> None:
+        async def delete(self, *_args: object, **_kwargs: object) -> None:
             return None
 
-    monkeypatch.setattr("features.telegram._shared.get_redis_cache", lambda: _Cache())
+    monkeypatch.setattr("features.telegram.shared.get_redis_cache", lambda: _Cache())
 
 
 def test_normalize_username_strips_and_lowers() -> None:
@@ -48,7 +48,7 @@ def test_make_tokens_returns_bearer() -> None:
     assert tokens.refresh_token
 
 
-async def _seed_user(session: AsyncSession, phone: str) -> Any:
+async def _seed_user(session: AsyncSession, phone: str) -> User:
     return await create_user(
         session,
         UserCreate(
@@ -171,6 +171,7 @@ async def test_get_user_by_phone_and_username_crud(db_session: AsyncSession) -> 
     assert await get_telegram_id_by_user_id(db_session, user.id) == 999005
 
 
-async def test_cache_helpers_no_error(db_session: AsyncSession) -> None:
+@pytest.mark.usefixtures("db_session")
+async def test_cache_helpers_no_error() -> None:
     await cache_telegram_id("uid", 5)
     await delete_cached_telegram_id("uid")

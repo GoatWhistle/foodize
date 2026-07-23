@@ -861,6 +861,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/loyalty/programs/{restaurant_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Program */
+        get: operations["get_program_api_v1_loyalty_programs__restaurant_id__get"];
+        /** Upsert Program */
+        put: operations["upsert_program_api_v1_loyalty_programs__restaurant_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/loyalty/restaurants/{restaurant_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Status */
+        get: operations["get_status_api_v1_loyalty_restaurants__restaurant_id__status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/staff/me": {
         parameters: {
             query?: never;
@@ -2294,6 +2329,25 @@ export interface components {
             /** Value */
             value: number;
         };
+        /** AuditLogEntry */
+        AuditLogEntry: {
+            /** Id */
+            id: string;
+            /** Actor Id */
+            actor_id: string | null;
+            /** Action */
+            action: string;
+            /** Entity Type */
+            entity_type: string;
+            /** Entity Id */
+            entity_id: string | null;
+            /** Details */
+            details: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Created At */
+            created_at: string;
+        };
         /** AvailabilityUpdate */
         AvailabilityUpdate: {
             /** Is Available */
@@ -2540,6 +2594,142 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        JsonValue: unknown;
+        /** LoyaltyProgramResponse */
+        LoyaltyProgramResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Restaurant Id
+             * Format: uuid
+             */
+            restaurant_id: string;
+            type: components["schemas"]["LoyaltyProgramType"];
+            /** Is Active */
+            is_active: boolean;
+            tier_basis: components["schemas"]["LoyaltyTierBasis"];
+            /** Min Order Amount */
+            min_order_amount: number | null;
+            /** Punches Required */
+            punches_required: number | null;
+            reward_type: components["schemas"]["LoyaltyRewardType"] | null;
+            /** Reward Value */
+            reward_value: number | null;
+            /** Reward Menu Item Id */
+            reward_menu_item_id: string | null;
+            /** Max Redeem Percent */
+            max_redeem_percent: number | null;
+            /** Tiers */
+            tiers: components["schemas"]["LoyaltyTierResponse"][];
+        };
+        /**
+         * LoyaltyProgramType
+         * @enum {string}
+         */
+        LoyaltyProgramType: "PUNCH_CARD" | "CASHBACK";
+        /** LoyaltyProgramUpsert */
+        LoyaltyProgramUpsert: {
+            type: components["schemas"]["LoyaltyProgramType"];
+            /**
+             * Is Active
+             * @default true
+             */
+            is_active: boolean;
+            /** @default ORDERS */
+            tier_basis: components["schemas"]["LoyaltyTierBasis"];
+            /** Min Order Amount */
+            min_order_amount?: number | null;
+            /** Punches Required */
+            punches_required?: number | null;
+            reward_type?: components["schemas"]["LoyaltyRewardType"] | null;
+            /** Reward Value */
+            reward_value?: number | null;
+            /** Reward Menu Item Id */
+            reward_menu_item_id?: string | null;
+            /**
+             * Max Redeem Percent
+             * @default 100
+             */
+            max_redeem_percent: number;
+            /** Tiers */
+            tiers?: components["schemas"]["LoyaltyTierInput"][];
+        };
+        /** LoyaltyRewardResponse */
+        LoyaltyRewardResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            reward_type: components["schemas"]["LoyaltyRewardType"];
+            /** Reward Value */
+            reward_value: number | null;
+            /** Reward Menu Item Id */
+            reward_menu_item_id: string | null;
+            status: components["schemas"]["LoyaltyRewardStatus"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * LoyaltyRewardStatus
+         * @enum {string}
+         */
+        LoyaltyRewardStatus: "AVAILABLE" | "USED";
+        /**
+         * LoyaltyRewardType
+         * @enum {string}
+         */
+        LoyaltyRewardType: "FREE_ITEM" | "DISCOUNT_PERCENT" | "DISCOUNT_FIXED";
+        /** LoyaltyStatusResponse */
+        LoyaltyStatusResponse: {
+            program: components["schemas"]["LoyaltyProgramResponse"] | null;
+            /** Points Balance */
+            points_balance: number;
+            /** Punches Count */
+            punches_count: number;
+            /** Orders Count */
+            orders_count: number;
+            /** Total Spent */
+            total_spent: number;
+            current_tier: components["schemas"]["LoyaltyTierResponse"] | null;
+            next_tier: components["schemas"]["LoyaltyTierResponse"] | null;
+            /** Rewards */
+            rewards: components["schemas"]["LoyaltyRewardResponse"][];
+        };
+        /**
+         * LoyaltyTierBasis
+         * @enum {string}
+         */
+        LoyaltyTierBasis: "ORDERS" | "SPENT";
+        /** LoyaltyTierInput */
+        LoyaltyTierInput: {
+            /** Name */
+            name: string;
+            /** Threshold */
+            threshold: number;
+            /** Cashback Percent */
+            cashback_percent: number;
+        };
+        /** LoyaltyTierResponse */
+        LoyaltyTierResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Threshold */
+            threshold: number;
+            /** Cashback Percent */
+            cashback_percent: number;
         };
         /** MenuItemCreate */
         MenuItemCreate: {
@@ -2839,6 +3029,13 @@ export interface components {
             comment?: string | null;
             /** Requested Pickup At */
             requested_pickup_at?: string | null;
+            /**
+             * Redeem Points
+             * @default 0
+             */
+            redeem_points: number;
+            /** Loyalty Reward Id */
+            loyalty_reward_id?: string | null;
         };
         /** OrderEventResponse */
         OrderEventResponse: {
@@ -3026,7 +3223,7 @@ export interface components {
          * Permission
          * @enum {string}
          */
-        Permission: "admin.access" | "users.read" | "users.manage" | "users.assign_permissions" | "restaurants.read" | "restaurants.create" | "restaurants.update" | "restaurants.moderate" | "menu.read" | "menu.manage" | "cart.manage" | "favorites.manage" | "orders.create" | "orders.read_own" | "orders.read_restaurant" | "orders.manage_status" | "orders.moderate" | "reviews.create" | "reviews.read" | "reviews.moderate" | "promos.validate" | "promos.manage" | "vendors.create" | "vendors.read_own" | "vendors.analytics_read" | "vendors.moderate" | "staff.requests_create" | "staff.requests_manage" | "staff.members_manage" | "staff.profile_read" | "telegram.auth" | "display_board.view";
+        Permission: "admin.access" | "users.read" | "users.manage" | "users.assign_permissions" | "restaurants.read" | "restaurants.create" | "restaurants.update" | "restaurants.moderate" | "menu.read" | "menu.manage" | "cart.manage" | "favorites.manage" | "orders.create" | "orders.read_own" | "orders.read_restaurant" | "orders.manage_status" | "orders.moderate" | "reviews.create" | "reviews.read" | "reviews.moderate" | "promos.validate" | "promos.manage" | "loyalty.read" | "loyalty.manage" | "vendors.create" | "vendors.read_own" | "vendors.analytics_read" | "vendors.moderate" | "staff.requests_create" | "staff.requests_manage" | "staff.members_manage" | "staff.profile_read" | "telegram.auth" | "display_board.view";
         /** PlatformStats */
         PlatformStats: {
             /** Users By Permission */
@@ -3458,6 +3655,13 @@ export interface components {
             pagination: components["schemas"]["Pagination"];
             meta?: components["schemas"]["Meta"];
         };
+        /** SuccessListResponse[AuditLogEntry] */
+        SuccessListResponse_AuditLogEntry_: {
+            /** Data */
+            data: components["schemas"]["AuditLogEntry"][];
+            pagination: components["schemas"]["Pagination"];
+            meta?: components["schemas"]["Meta"];
+        };
         /** SuccessListResponse[FavoriteResponse] */
         SuccessListResponse_FavoriteResponse_: {
             /** Data */
@@ -3528,15 +3732,6 @@ export interface components {
             pagination: components["schemas"]["Pagination"];
             meta?: components["schemas"]["Meta"];
         };
-        /** SuccessListResponse[dict[str, Any]] */
-        SuccessListResponse_dict_str__Any__: {
-            /** Data */
-            data: {
-                [key: string]: unknown;
-            }[];
-            pagination: components["schemas"]["Pagination"];
-            meta?: components["schemas"]["Meta"];
-        };
         /** SuccessResponse[AdminRestaurantResponse] */
         SuccessResponse_AdminRestaurantResponse_: {
             data: components["schemas"]["AdminRestaurantResponse"];
@@ -3590,6 +3785,16 @@ export interface components {
         /** SuccessResponse[FinanceAnalytics] */
         SuccessResponse_FinanceAnalytics_: {
             data: components["schemas"]["FinanceAnalytics"];
+            meta?: components["schemas"]["Meta"];
+        };
+        /** SuccessResponse[LoyaltyProgramResponse] */
+        SuccessResponse_LoyaltyProgramResponse_: {
+            data: components["schemas"]["LoyaltyProgramResponse"];
+            meta?: components["schemas"]["Meta"];
+        };
+        /** SuccessResponse[LoyaltyStatusResponse] */
+        SuccessResponse_LoyaltyStatusResponse_: {
+            data: components["schemas"]["LoyaltyStatusResponse"];
             meta?: components["schemas"]["Meta"];
         };
         /** SuccessResponse[MenuItemOptionGroupResponse] */
@@ -3687,9 +3892,10 @@ export interface components {
             data: components["schemas"]["TokenResponse"];
             meta?: components["schemas"]["Meta"];
         };
-        /** SuccessResponse[UserPublicRead] */
-        SuccessResponse_UserPublicRead_: {
-            data: components["schemas"]["UserPublicRead"];
+        /** SuccessResponse[Union[UserRead, UserPublicRead]] */
+        SuccessResponse_Union_UserRead__UserPublicRead__: {
+            /** Data */
+            data: components["schemas"]["UserRead"] | components["schemas"]["UserPublicRead"];
             meta?: components["schemas"]["Meta"];
         };
         /** SuccessResponse[UserRead] */
@@ -3700,14 +3906,6 @@ export interface components {
         /** SuccessResponse[VendorResponse] */
         SuccessResponse_VendorResponse_: {
             data: components["schemas"]["VendorResponse"];
-            meta?: components["schemas"]["Meta"];
-        };
-        /** SuccessResponse[dict[str, Any]] */
-        SuccessResponse_dict_str__Any__: {
-            /** Data */
-            data: {
-                [key: string]: unknown;
-            };
             meta?: components["schemas"]["Meta"];
         };
         /** SuccessResponse[list[WorkingHoursRead]] */
@@ -3951,8 +4149,6 @@ export interface components {
             /** Error Type */
             type: string;
         };
-        /** VendorCreate */
-        VendorCreate: Record<string, never>;
         /** VendorResponse */
         VendorResponse: {
             /**
@@ -4850,7 +5046,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SuccessResponse_dict_str__Any__"];
+                    "application/json": components["schemas"]["SuccessResponse_BatchAffectedResult_"];
                 };
             };
             /** @description Validation Error */
@@ -5042,7 +5238,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SuccessListResponse_dict_str__Any__"];
+                    "application/json": components["schemas"]["SuccessListResponse_AuditLogEntry_"];
                 };
             };
             /** @description Validation Error */
@@ -5291,10 +5487,7 @@ export interface operations {
     };
     export_overview_pdf_api_v1_admin_export_overview_pdf_get: {
         parameters: {
-            query?: {
-                date_from?: string | null;
-                date_to?: string | null;
-            };
+            query?: never;
             header?: {
                 "accept-language"?: string | null;
             };
@@ -5820,6 +6013,103 @@ export interface operations {
             };
         };
     };
+    get_program_api_v1_loyalty_programs__restaurant_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                restaurant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuccessResponse_LoyaltyProgramResponse_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upsert_program_api_v1_loyalty_programs__restaurant_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                restaurant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoyaltyProgramUpsert"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuccessResponse_LoyaltyProgramResponse_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_status_api_v1_loyalty_restaurants__restaurant_id__status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                restaurant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuccessResponse_LoyaltyStatusResponse_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_my_staff_profile_api_v1_staff_me_get: {
         parameters: {
             query?: never;
@@ -6086,11 +6376,7 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["VendorCreate"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             201: {
@@ -6099,15 +6385,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SuccessResponse_VendorResponse_"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -8195,7 +8472,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SuccessResponse_UserRead_"] | components["schemas"]["SuccessResponse_UserPublicRead_"];
+                    "application/json": components["schemas"]["SuccessResponse_Union_UserRead__UserPublicRead__"];
                 };
             };
             /** @description Validation Error */

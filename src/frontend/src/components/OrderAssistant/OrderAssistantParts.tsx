@@ -18,7 +18,8 @@ export const SUGGESTION_KEYS = [
 const launcherStyle: CSSProperties = {
   position: 'fixed',
   right: 16,
-  bottom: 80,
+  bottom: 'calc(var(--bottom-tab-h, 68px) + env(safe-area-inset-bottom, 0px) + 12px)',
+  minHeight: 44,
   zIndex: 'var(--z-banner)',
   display: 'flex',
   alignItems: 'center',

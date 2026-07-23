@@ -101,10 +101,10 @@ export function OrderAssistant() {
       style={{
         position: 'fixed',
         right: 16,
-        bottom: 80,
+        bottom: 'calc(var(--bottom-tab-h, 68px) + env(safe-area-inset-bottom, 0px) + 12px)',
         zIndex: 'var(--z-banner)',
         width: 'min(380px, calc(100vw - 32px))',
-        maxHeight: '70vh',
+        maxHeight: 'min(70vh, calc(100dvh - var(--nav-h, 64px) - var(--bottom-tab-h, 68px) - 32px))',
         display: 'flex',
         flexDirection: 'column',
         background: 'var(--bg-card)',
@@ -136,6 +136,12 @@ export function OrderAssistant() {
             cursor: 'pointer',
             color: 'var(--text-2)',
             display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 44,
+            height: 44,
+            margin: -13,
+            flexShrink: 0,
           }}
         >
           <XIcon size={18} />

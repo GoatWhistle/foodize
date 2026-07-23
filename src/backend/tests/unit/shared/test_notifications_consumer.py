@@ -2,13 +2,13 @@ import uuid
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from features.notifications.consumer import (
-    _BINDINGS_BY_ROUTING_KEY,
-    _handle_event,
-    _parse_message_event,
-    _process_message,
-    _retry_count,
-    _send_to_retry,
+    handle_event,
+    parse_message_event,
+    process_message,
+    retry_count,
+    send_to_retry,
 )
+from features.notifications.consumer_bindings import BINDINGS_BY_ROUTING_KEY
 from features.notifications.events import (
     OrderPlacedEvent,
     OrderStatusChangedEvent,
@@ -62,13 +62,13 @@ class TestConsumer:
         staged = UserNotificationMessage(user_id=event.user_id, payload="{}")
         with (
             patch(
-                "features.notifications.consumer._handle_event",
+                "features.notifications.consumer.handle_event",
                 new_callable=AsyncMock,
                 return_value=staged,
             ),
-            patch("features.notifications.consumer._publish_user_notification", publish),
+            patch("features.notifications.consumer.publish_user_notification", publish),
         ):
-            await _process_message(message, "order.placed")
+            await process_message(message, "order.placed")
         publish.assert_awaited_once_with(staged)
 
     async def test_process_message_skips_duplicate_event(self) -> None:
@@ -78,24 +78,24 @@ class TestConsumer:
         publish = AsyncMock()
         with (
             patch(
-                "features.notifications.consumer._handle_event",
+                "features.notifications.consumer.handle_event",
                 new_callable=AsyncMock,
                 return_value=None,
             ),
-            patch("features.notifications.consumer._publish_user_notification", publish),
+            patch("features.notifications.consumer.publish_user_notification", publish),
         ):
-            await _process_message(message, "order.placed")
+            await process_message(message, "order.placed")
         publish.assert_not_awaited()
         message.nack.assert_not_awaited()
 
     async def test_process_message_rejects_oversized_body(self) -> None:
         message = _make_message(b"x" * (64 * 1024 + 1))
-        await _process_message(message, "order.placed")
+        await process_message(message, "order.placed")
         message.nack.assert_awaited_once()
 
     async def test_process_message_unknown_routing_key_no_crash(self) -> None:
         message = _make_message(b"{}")
-        await _process_message(message, "unknown.routing.key")
+        await process_message(message, "unknown.routing.key")
         message.nack.assert_awaited_once()
 
     async def test_process_message_handler_error_goes_to_retry(self) -> None:
@@ -105,13 +105,13 @@ class TestConsumer:
         send_retry = AsyncMock()
         with (
             patch(
-                "features.notifications.consumer._handle_event",
+                "features.notifications.consumer.handle_event",
                 new_callable=AsyncMock,
                 side_effect=RuntimeError("fail"),
             ),
-            patch("features.notifications.consumer._send_to_retry", send_retry),
+            patch("features.notifications.consumer.send_to_retry", send_retry),
         ):
-            await _process_message(message, "order.placed")
+            await process_message(message, "order.placed")
         send_retry.assert_awaited_once()
         message.ack.assert_awaited_once()
         message.nack.assert_not_awaited()
@@ -124,35 +124,35 @@ class TestConsumer:
         send_retry = AsyncMock()
         with (
             patch(
-                "features.notifications.consumer._handle_event",
+                "features.notifications.consumer.handle_event",
                 new_callable=AsyncMock,
                 side_effect=RuntimeError("fail"),
             ),
-            patch("features.notifications.consumer._send_to_retry", send_retry),
+            patch("features.notifications.consumer.send_to_retry", send_retry),
         ):
-            await _process_message(message, "order.placed")
+            await process_message(message, "order.placed")
         send_retry.assert_not_awaited()
         message.nack.assert_awaited_once_with(requeue=False)
 
     def test_retry_count_parses_header(self) -> None:
         message = MagicMock()
         message.headers = {"x-retry-count": 3}
-        assert _retry_count(message) == 3
+        assert retry_count(message) == 3
 
     def test_retry_count_defaults_to_zero(self) -> None:
         message = MagicMock()
         message.headers = None
-        assert _retry_count(message) == 0
+        assert retry_count(message) == 0
 
     def test_retry_count_parses_string_header(self) -> None:
         message = MagicMock()
         message.headers = {"x-retry-count": "4"}
-        assert _retry_count(message) == 4
+        assert retry_count(message) == 4
 
     def test_retry_count_invalid_string_defaults_zero(self) -> None:
         message = MagicMock()
         message.headers = {"x-retry-count": "not-a-number"}
-        assert _retry_count(message) == 0
+        assert retry_count(message) == 0
 
 
 class TestSendToRetry:
@@ -166,7 +166,7 @@ class TestSendToRetry:
         retry_exchange.publish = AsyncMock()
 
         with patch("features.notifications.consumer.broker._retry_exchange", retry_exchange):
-            await _send_to_retry(message, "order.placed", 2)
+            await send_to_retry(message, "order.placed", 2)
 
         retry_exchange.publish.assert_awaited_once()
         published = retry_exchange.publish.call_args.args[0]
@@ -192,7 +192,7 @@ class TestHandleEvent:
         with patch(
             "features.notifications.consumer.db_helper.session_factory", return_value=session_ctx
         ):
-            result = await _handle_event(binding, event, "order.placed")
+            result = await handle_event(binding, event, "order.placed")
 
         assert result == staged
         binding.dispatch.assert_awaited_once()
@@ -214,7 +214,7 @@ class TestHandleEvent:
         with patch(
             "features.notifications.consumer.db_helper.session_factory", return_value=session_ctx
         ):
-            result = await _handle_event(binding, event, "order.placed")
+            result = await handle_event(binding, event, "order.placed")
 
         assert result is None
         session.rollback.assert_awaited_once()
@@ -223,22 +223,22 @@ class TestHandleEvent:
 class TestParseMessageEvent:
     async def test_rejects_oversized_message(self) -> None:
         message = _make_message(b"x" * (64 * 1024 + 1))
-        binding = _BINDINGS_BY_ROUTING_KEY["order.placed"]
-        result = await _parse_message_event(message, binding, "order.placed")
+        binding = BINDINGS_BY_ROUTING_KEY["order.placed"]
+        result = await parse_message_event(message, binding, "order.placed")
         assert result is None
         message.nack.assert_awaited_once_with(requeue=False)
 
     async def test_rejects_invalid_payload(self) -> None:
         message = _make_message(b"{not valid json")
-        binding = _BINDINGS_BY_ROUTING_KEY["order.placed"]
-        result = await _parse_message_event(message, binding, "order.placed")
+        binding = BINDINGS_BY_ROUTING_KEY["order.placed"]
+        result = await parse_message_event(message, binding, "order.placed")
         assert result is None
         message.nack.assert_awaited_once_with(requeue=False)
 
     async def test_parses_valid_payload(self) -> None:
         event = _make_placed_event()
         message = _make_message(event.model_dump_json().encode())
-        binding = _BINDINGS_BY_ROUTING_KEY["order.placed"]
-        result = await _parse_message_event(message, binding, "order.placed")
+        binding = BINDINGS_BY_ROUTING_KEY["order.placed"]
+        result = await parse_message_event(message, binding, "order.placed")
         assert result is not None
         assert result.event_id == event.event_id

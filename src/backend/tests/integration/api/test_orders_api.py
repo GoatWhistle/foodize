@@ -1,9 +1,10 @@
 import uuid
 from http import HTTPStatus
-from typing import Any
 from unittest.mock import AsyncMock, patch
 
+import pytest
 from httpx import AsyncClient
+from pydantic import JsonValue
 
 from features.orders.dependencies import (
     get_order_for_staff_or_vendor,
@@ -27,8 +28,8 @@ def _make_mock_order_dict(
     user_id: uuid.UUID,
     restaurant_id: uuid.UUID,
     status: OrderStatus = OrderStatus.PENDING,
-    items: list[dict[str, Any]] | None = None,
-) -> dict[str, Any]:
+    items: list[JsonValue] | None = None,
+) -> dict[str, JsonValue]:
     return {
         "id": str(order_id),
         "display_id": 1001,
@@ -84,7 +85,8 @@ class TestOrdersAPI:
         assert data["id"] == str(order_id)
         mock_place.assert_awaited_once()
 
-    async def test_read_my_orders(self, client: AsyncClient, as_user: User) -> None:
+    @pytest.mark.usefixtures("as_user")
+    async def test_read_my_orders(self, client: AsyncClient) -> None:
         with patch(
             "features.orders.api.order.service.get_user_orders",
             new_callable=AsyncMock,
@@ -142,7 +144,8 @@ class TestRestaurantOrdersAPI:
         r.is_hiring = True
         return r
 
-    async def test_read_restaurant_orders(self, client: AsyncClient, as_vendor: User) -> None:
+    @pytest.mark.usefixtures("as_vendor")
+    async def test_read_restaurant_orders(self, client: AsyncClient) -> None:
         restaurant_id = uuid.uuid4()
         mock_restaurant = self._make_mock_restaurant(restaurant_id)
 
@@ -166,7 +169,8 @@ class TestRestaurantOrdersAPI:
         assert body["pagination"]["total"] == 1
         mock_get.assert_awaited_once()
 
-    async def test_update_order_status(self, client: AsyncClient, as_vendor: User) -> None:
+    @pytest.mark.usefixtures("as_vendor")
+    async def test_update_order_status(self, client: AsyncClient) -> None:
         order_id = uuid.uuid4()
         restaurant_id = uuid.uuid4()
         mock_order_response = _make_mock_order_dict(
@@ -214,7 +218,8 @@ class TestCancelOrderAPI:
         assert response.json()["data"]["status"] == OrderStatus.CANCELLED.value
         mock_cancel.assert_awaited_once()
 
-    async def test_update_order_cancel_not_found(self, client: AsyncClient, as_user: User) -> None:
+    @pytest.mark.usefixtures("as_user")
+    async def test_update_order_cancel_not_found(self, client: AsyncClient) -> None:
         order_id = uuid.uuid4()
 
         with patch(
@@ -226,8 +231,9 @@ class TestCancelOrderAPI:
 
         assert response.status_code == HTTPStatus.NOT_FOUND
 
+    @pytest.mark.usefixtures("as_user")
     async def test_update_order_cancel_non_pending(
-        self, client: AsyncClient, as_user: User
+        self, client: AsyncClient
     ) -> None:
         order_id = uuid.uuid4()
 

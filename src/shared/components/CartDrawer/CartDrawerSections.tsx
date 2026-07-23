@@ -109,7 +109,7 @@ export const PickupTimeSection = ({
           min={minPickupValue}
           max={maxPickupValue}
           onChange={(e) => { onChangePickupAt(e.target.value); }}
-          style={{ height: 40, fontSize: "var(--text-base)" }}
+          style={{ height: 44, fontSize: "var(--text-md)" }}
         />
         <div style={{ marginTop: 6, fontSize: "var(--text-sm)", color: pickupTooSoon ? "var(--error)" : "var(--text-3)" }}>
           {t("order.pickup.minimum", { time: minPickupDate.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }) })}

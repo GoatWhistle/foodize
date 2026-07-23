@@ -15,6 +15,7 @@ from features.menu.schemas import (
     MenuItemUpdate,
 )
 from shared.enums.selection_type import SelectionType
+from shared.exceptions.internal import PersistedEntityMissingError
 
 
 def _option_groups_options() -> LoaderOption:
@@ -33,14 +34,14 @@ async def create_menu_item(
     await session.flush()
     loaded = await get_menu_item_by_id(session, new_item.id)
     if loaded is None:
-        raise RuntimeError("Created menu item was not found")
+        raise PersistedEntityMissingError("MenuItem")
     return loaded
 
 
 async def get_menu_item_by_id(session: AsyncSession, item_id: uuid.UUID) -> MenuItem | None:
     result = await session.execute(
         select(MenuItem)
-        .where(MenuItem.id == item_id, MenuItem.is_deleted == False)  # noqa: E712
+        .where(MenuItem.id == item_id, MenuItem.is_deleted.is_(False))
         .options(_option_groups_options())
     )
     return result.scalar_one_or_none()
@@ -56,7 +57,7 @@ async def get_menu_items(
         select(MenuItem)
         .where(
             MenuItem.restaurant_id == restaurant_id,
-            MenuItem.is_deleted == False,  # noqa: E712
+            MenuItem.is_deleted.is_(False),
         )
         .options(_option_groups_options())
         .offset(offset)
@@ -71,7 +72,7 @@ async def count_menu_items(session: AsyncSession, restaurant_id: uuid.UUID) -> i
         .select_from(MenuItem)
         .where(
             MenuItem.restaurant_id == restaurant_id,
-            MenuItem.is_deleted == False,  # noqa: E712
+            MenuItem.is_deleted.is_(False),
         )
     )
     return result.scalar_one()
@@ -93,7 +94,7 @@ async def update_menu_item(
     await session.flush()
     loaded = await get_menu_item_by_id(session, item.id)
     if loaded is None:
-        raise RuntimeError("Updated menu item was not found")
+        raise PersistedEntityMissingError("MenuItem")
     return loaded
 
 
@@ -195,7 +196,7 @@ async def get_menu_items_by_ids_simple(
         return {}
     result = await session.execute(
         select(MenuItem)
-        .where(MenuItem.id.in_(item_ids), MenuItem.is_deleted == False)  # noqa: E712
+        .where(MenuItem.id.in_(item_ids), MenuItem.is_deleted.is_(False))
         .options(_option_groups_options())
     )
     return {item.id: item for item in result.scalars().all()}

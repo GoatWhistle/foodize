@@ -2,6 +2,7 @@ import uuid
 from http import HTTPStatus
 from unittest.mock import ANY, AsyncMock, MagicMock, patch
 
+import pytest
 from httpx import AsyncClient
 
 from features.staff.dependencies import get_valid_staff_request
@@ -38,7 +39,8 @@ class TestStaffAPI:
         assert res.json()["data"]["id"] == str(req_id)
         mock_create.assert_awaited_once()
 
-    async def test_update_staff_status(self, client: AsyncClient, as_vendor: User) -> None:
+    @pytest.mark.usefixtures("as_vendor")
+    async def test_update_staff_status(self, client: AsyncClient) -> None:
         req_id = uuid.uuid4()
 
         mock_response = {

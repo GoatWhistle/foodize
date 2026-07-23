@@ -12,7 +12,7 @@ from features.menu.schemas import (
     MenuItemOptionResponse,
     MenuItemOptionUpdate,
 )
-from features.menu.services._shared import (
+from features.menu.services.shared import (
     get_owned_menu_item,
     get_owned_option,
     get_owned_option_group,

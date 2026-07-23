@@ -98,6 +98,7 @@ describe('useCartStore', () => {
       {
         restaurant_id: 'rest-1',
         items: [{ menu_item_id: '1', quantity: 2, selected_option_ids: [] }],
+        redeem_points: 0,
       },
       {
         headers: { 'Idempotency-Key': expect.any(String) as unknown },

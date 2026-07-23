@@ -1,8 +1,8 @@
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from features.notifications.domain_event import DomainEvent
 from features.notifications.events import (
     FeedbackRequestedEvent,
     OrderPlacedEvent,
@@ -60,13 +60,13 @@ class TestOutboxService:
         assert outbox.run_at == run_at
 
     async def test_completed_status_enqueues_future_feedback_run_at(self) -> None:
-
         event = _make_completed_event()
-        captured: dict[str, Any] = {}
+        captured: dict[str, object] = {}
 
         async def _fake_enqueue(
-            session: AsyncMock, evt: Any, run_at: datetime | None = None
+            session: AsyncMock, evt: DomainEvent, run_at: datetime | None = None
         ) -> None:
+            del session
             captured["event"] = evt
             captured["run_at"] = run_at
 
@@ -86,7 +86,9 @@ class TestOutboxService:
 
         assert isinstance(captured["event"], FeedbackRequestedEvent)
         assert captured["event"].order_id == event.order_id
-        assert captured["run_at"] >= before + timedelta(seconds=1799)
+        run_at = captured["run_at"]
+        assert isinstance(run_at, datetime)
+        assert run_at >= before + timedelta(seconds=1799)
 
     async def test_publish_pending_events_marks_successful_events_published(self) -> None:
         event = MagicMock()

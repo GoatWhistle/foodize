@@ -1,12 +1,12 @@
 import uuid
 import zlib
-from typing import Any
 
-from sqlalchemy import ColumnElement, bindparam, func, or_, select, text
+from sqlalchemy import ColumnElement, Row, bindparam, func, or_, select, text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.ai_order_agent.models import MenuItemEmbedding
+from features.ai_order_agent.schemas_search import MenuEmbeddingRow, MenuSearchItem
 from features.menu.models import MenuItem
 from features.restaurants.models import Restaurant
 from shared.enums.moderation_status import ModerationStatus
@@ -32,7 +32,10 @@ def _escape_like(value: str) -> str:
     return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
-def _row_to_dict(row: Any) -> dict[str, Any]:
+type MenuItemRow = Row[tuple[uuid.UUID, str, str | None, int, str, uuid.UUID, str, str]]
+
+
+def _row_to_dict(row: MenuItemRow) -> MenuSearchItem:
     return {
         "menu_item_id": str(row.id),
         "name": row.name,
@@ -63,7 +66,7 @@ async def list_orderable_items(
     max_price: int | None = None,
     restaurant_id: uuid.UUID | None = None,
     limit: int = 300,
-) -> list[dict[str, Any]]:
+) -> list[MenuSearchItem]:
     stmt = (
         select(*_SELECT_COLUMNS)
         .join(Restaurant, Restaurant.id == MenuItem.restaurant_id)
@@ -82,7 +85,7 @@ async def search_menu_items(
     max_price: int | None = None,
     restaurant_id: uuid.UUID | None = None,
     limit: int = 15,
-) -> list[dict[str, Any]]:
+) -> list[MenuSearchItem]:
     filters = _orderable_filters(max_price, restaurant_id)
     if query:
         pattern = f"%{_escape_like(query.strip())}%"
@@ -143,7 +146,7 @@ async def get_embedding_meta(
     return {row.menu_item_id: row.text_hash for row in rows.all()}
 
 
-async def upsert_embeddings(session: AsyncSession, rows: list[dict[str, Any]]) -> None:
+async def upsert_embeddings(session: AsyncSession, rows: list[MenuEmbeddingRow]) -> None:
     if not rows:
         return
     stmt = pg_insert(MenuItemEmbedding).values(rows)
@@ -167,7 +170,7 @@ async def semantic_rank_items(
     max_price: int | None = None,
     restaurant_id: uuid.UUID | None = None,
     limit: int = 50,
-) -> list[dict[str, Any]]:
+) -> list[MenuSearchItem]:
     distance = MenuItemEmbedding.embedding.cosine_distance(query_embedding).label("distance")
     stmt = (
         select(*_SELECT_COLUMNS, distance)

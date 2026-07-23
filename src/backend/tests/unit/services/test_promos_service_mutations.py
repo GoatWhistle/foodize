@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -36,7 +36,7 @@ def _make_promo(
     p.used_count = used_count
     p.expires_at = expires_at
     p.is_active = is_active
-    p.created_at = datetime.now()
+    p.created_at = datetime.now(UTC)
     p.first_order_only = False
     p.min_order_amount = None
     p.menu_category = None
@@ -51,7 +51,6 @@ def _mock_session() -> AsyncMock:
 
 class TestCreatePromo:
     async def test_restaurant_not_in_vendor_list(self) -> None:
-
         data = PromoCreate(
             code="CODE1",
             discount_type="PERCENT",
@@ -62,7 +61,6 @@ class TestCreatePromo:
             await create_promo(MagicMock(), data, [])
 
     async def test_promo_already_exists(self) -> None:
-
         restaurant_id = uuid.uuid4()
         data = PromoCreate(
             code="EXIST",
@@ -71,16 +69,17 @@ class TestCreatePromo:
             restaurant_id=restaurant_id,
         )
 
-        with patch(
-            "features.promos.crud.get_promo_by_code",
-            new_callable=AsyncMock,
-            return_value=MagicMock(),
+        with (
+            patch(
+                "features.promos.crud.get_promo_by_code",
+                new_callable=AsyncMock,
+                return_value=MagicMock(),
+            ),
+            pytest.raises(PromoAlreadyExistsException),
         ):
-            with pytest.raises(PromoAlreadyExistsException):
-                await create_promo(MagicMock(), data, [restaurant_id])
+            await create_promo(MagicMock(), data, [restaurant_id])
 
     async def test_success(self) -> None:
-
         restaurant_id = uuid.uuid4()
         data = PromoCreate(
             code="NEW10",
@@ -147,25 +146,27 @@ class TestGetVendorPromos:
 
 class TestDeactivatePromo:
     async def test_not_found(self) -> None:
-
-        with patch(
-            "features.promos.crud.get_promo_by_code",
-            new_callable=AsyncMock,
-            return_value=None,
+        with (
+            patch(
+                "features.promos.crud.get_promo_by_code",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
+            pytest.raises(PromoNotFoundException),
         ):
-            with pytest.raises(PromoNotFoundException):
-                await deactivate_promo(MagicMock(), "NOCODE", [uuid.uuid4()])
+            await deactivate_promo(MagicMock(), "NOCODE", [uuid.uuid4()])
 
     async def test_wrong_restaurant(self) -> None:
-
         promo = _make_promo()
-        with patch(
-            "features.promos.crud.get_promo_by_code",
-            new_callable=AsyncMock,
-            return_value=promo,
+        with (
+            patch(
+                "features.promos.crud.get_promo_by_code",
+                new_callable=AsyncMock,
+                return_value=promo,
+            ),
+            pytest.raises(PromoNotFoundException),
         ):
-            with pytest.raises(PromoNotFoundException):
-                await deactivate_promo(MagicMock(), "TEST10", [uuid.uuid4()])
+            await deactivate_promo(MagicMock(), "TEST10", [uuid.uuid4()])
 
     async def test_success(self) -> None:
         promo = _make_promo()
@@ -190,14 +191,15 @@ class TestDeactivatePromo:
 
 class TestApplyPromo:
     async def test_not_found(self) -> None:
-
-        with patch(
-            "features.promos.crud.get_promo_by_code",
-            new_callable=AsyncMock,
-            return_value=None,
+        with (
+            patch(
+                "features.promos.crud.get_promo_by_code",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
+            pytest.raises(PromoNotFoundException),
         ):
-            with pytest.raises(PromoNotFoundException):
-                await apply_promo(MagicMock(), "NOCODE", uuid.uuid4(), 1000)
+            await apply_promo(MagicMock(), "NOCODE", uuid.uuid4(), 1000)
 
     async def test_percent_discount(self) -> None:
         promo = _make_promo(discount_type="PERCENT", discount_value=20)

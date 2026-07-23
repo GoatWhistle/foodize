@@ -1,10 +1,18 @@
 import json
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 from fastapi import WebSocketDisconnect
+from pydantic import JsonValue
+
+type JsonObject = dict[str, JsonValue]
+
+
+def _as_object(raw: object) -> JsonObject:
+    if not isinstance(raw, dict):
+        raise TypeError("expected a JSON object")
+    return raw
 
 
 class FakeWebSocket:
@@ -23,7 +31,7 @@ class FakeWebSocket:
     async def send_text(self, payload: str) -> None:
         self.sent.append(payload)
 
-    async def send_json(self, payload: dict[str, Any]) -> None:
+    async def send_json(self, payload: JsonObject) -> None:
         self.sent.append(json.dumps(payload))
 
     async def receive_text(self) -> str:
@@ -33,15 +41,14 @@ class FakeWebSocket:
         self.closed = True
         self.close_code = code
 
-    def messages(self) -> list[dict[str, Any]]:
-        return [json.loads(item) for item in self.sent]
+    def messages(self) -> list[JsonObject]:
+        return [_as_object(json.loads(item)) for item in self.sent]
 
-    def first_message(self) -> dict[str, Any]:
-        result: dict[str, Any] = json.loads(self.sent[0])
-        return result
+    def first_message(self) -> JsonObject:
+        return _as_object(json.loads(self.sent[0]))
 
 
-def _empty_pubsub() -> AsyncMock:
+def empty_pubsub() -> AsyncMock:
     async def _listen() -> AsyncGenerator[None]:
         return
         yield
@@ -57,7 +64,7 @@ def _empty_pubsub() -> AsyncMock:
 
 def make_redis_cache(pubsub: AsyncMock | None = None) -> AsyncMock:
     redis_client = MagicMock()
-    redis_client.pubsub = MagicMock(return_value=pubsub or _empty_pubsub())
+    redis_client.pubsub = MagicMock(return_value=pubsub or empty_pubsub())
     cache = AsyncMock()
     cache.exists = AsyncMock(return_value=False)
     cache.get_raw_client = MagicMock(return_value=redis_client)

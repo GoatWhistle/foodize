@@ -1,5 +1,3 @@
-from typing import Any, cast
-
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,7 +14,6 @@ from features.telegram.bot_api import (
 from features.users.crud import create_user
 from features.users.schemas import UserCreate
 from features.vendors.crud import create_vendor_profile
-from features.vendors.schemas import VendorCreate
 from shared.enums.order_status import OrderStatus
 from shared.enums.roles import UserRole
 
@@ -24,13 +21,13 @@ from shared.enums.roles import UserRole
 @pytest.fixture(autouse=True)
 def _no_redis(monkeypatch: pytest.MonkeyPatch) -> None:
     class _Cache:
-        async def set(self, *args: Any, **kwargs: Any) -> None:
+        async def set(self, *_args: object, **_kwargs: object) -> None:
             return None
 
-        async def delete(self, *args: Any, **kwargs: Any) -> None:
+        async def delete(self, *_args: object, **_kwargs: object) -> None:
             return None
 
-    monkeypatch.setattr("features.telegram._shared.get_redis_cache", lambda: _Cache())
+    monkeypatch.setattr("features.telegram.shared.get_redis_cache", lambda: _Cache())
 
 
 async def test_register_from_bot_creates_user(db_session: AsyncSession) -> None:
@@ -67,7 +64,7 @@ async def test_get_vendor_status_returns_profile(db_session: AsyncSession) -> No
     )
     vendor_user.telegram_id = 700003
     await db_session.flush()
-    profile = await create_vendor_profile(db_session, vendor_user, VendorCreate())
+    profile = await create_vendor_profile(db_session, vendor_user)
 
     result = await get_vendor_status_for_telegram_id(db_session, 700003)
     assert result is not None
@@ -87,7 +84,7 @@ async def test_get_telegram_id_for_user_id(db_session: AsyncSession) -> None:
     user.telegram_id = 700005
     await db_session.flush()
 
-    assert await get_telegram_id_for_user_id(db_session, cast("str", user.id)) == 700005
+    assert await get_telegram_id_for_user_id(db_session, user.id) == 700005
 
 
 async def test_get_active_orders_empty_when_no_user(db_session: AsyncSession) -> None:
@@ -104,7 +101,7 @@ async def test_get_active_orders_returns_active_only(db_session: AsyncSession) -
             user_role=UserRole.VENDOR,
         ),
     )
-    profile = await create_vendor_profile(db_session, vendor_user, VendorCreate())
+    profile = await create_vendor_profile(db_session, vendor_user)
     restaurant = await create_restaurant(
         db_session, RestaurantCreate(name="Rest", address="Addr"), profile.id
     )

@@ -8,13 +8,14 @@ from database import db_helper
 from features.reviews import service
 from features.reviews.schemas import RatingResponse, ReviewCreate, ReviewResponse
 from features.users.models import User
+from settings.config.app_config import settings
 from shared.dependencies import require_permission
 from shared.enums.permissions import Permission
 from shared.response import build_list_response, build_response
 from shared.restaurant_resolver import resolve_restaurant_uuid
 from shared.schemas.response import SuccessListResponse, SuccessResponse
 
-router = APIRouter(prefix="/restaurants", tags=["Reviews"])
+router = APIRouter(prefix=settings.api.v1.reviews.prefix, tags=[settings.api.v1.reviews.tag])
 
 
 @router.post(

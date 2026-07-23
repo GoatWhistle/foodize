@@ -2,18 +2,11 @@ import hashlib
 import hmac
 import json
 import time
-from typing import Any, cast
 from urllib.parse import parse_qsl
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from features.auth.schemas import TokenResponse
-from features.telegram._shared import (
-    cache_telegram_id,
-    delete_cached_telegram_id,
-    find_or_create_telegram_user,
-    make_tokens,
-)
 from features.telegram.crud import get_user_by_telegram_id
 from features.telegram.exceptions import (
     InvalidTelegramInitDataException,
@@ -27,16 +20,22 @@ from features.telegram.exceptions import (
     TelegramInitDataUserPayloadInvalidException,
     TelegramUserNotFoundException,
 )
-from features.telegram.schemas import TelegramCheckResponse
+from features.telegram.schemas import TelegramCheckResponse, TelegramUserPayload
+from features.telegram.shared import (
+    cache_telegram_id,
+    delete_cached_telegram_id,
+    find_or_create_telegram_user,
+    make_tokens,
+)
 from features.users.models import User
 from infra.cache.redis import get_redis_cache
 from settings.config.app_config import settings
 
-_INIT_DATA_MAX_AGE = 3600
+INIT_DATA_MAX_AGE = 3600
 _INIT_DATA_NONCE_PREFIX = "telegram_initdata_nonce:"
 
 
-def _validate_init_data(init_data: str) -> dict[str, str]:
+def validate_init_data(init_data: str) -> dict[str, str]:
     try:
         parsed = dict(parse_qsl(init_data, strict_parsing=True))
     except Exception as exc:
@@ -55,7 +54,7 @@ def _validate_init_data(init_data: str) -> dict[str, str]:
     except (ValueError, TypeError) as exc:
         raise TelegramInitDataAuthDateInvalidException() from exc
 
-    if time.time() - auth_date > _INIT_DATA_MAX_AGE:
+    if time.time() - auth_date > INIT_DATA_MAX_AGE:
         raise TelegramInitDataExpiredException()
 
     data_check_string = "\n".join(f"{k}={v}" for k, v in sorted(parsed.items()))
@@ -75,11 +74,11 @@ def _validate_init_data(init_data: str) -> dict[str, str]:
     return parsed
 
 
-async def _consume_init_data_nonce(parsed: dict[str, str], purpose: str) -> None:
+async def consume_init_data_nonce(parsed: dict[str, str], purpose: str) -> None:
     received_hash = parsed.get("hash")
     auth_date = int(parsed["auth_date"])
     now = int(time.time())
-    ttl = auth_date + _INIT_DATA_MAX_AGE - now
+    ttl = auth_date + INIT_DATA_MAX_AGE - now
     if ttl <= 0:
         raise TelegramInitDataExpiredException()
     cache = get_redis_cache()
@@ -89,20 +88,37 @@ async def _consume_init_data_nonce(parsed: dict[str, str], purpose: str) -> None
         raise TelegramInitDataAlreadyUsedException()
 
 
-def _extract_tg_user(parsed: dict[str, str]) -> dict[str, Any]:
+def extract_tg_user(parsed: dict[str, str]) -> TelegramUserPayload:
     raw = parsed.get("user", "{}")
     try:
-        data = json.loads(raw)
+        data: object = json.loads(raw)
     except (json.JSONDecodeError, TypeError) as exc:
         raise TelegramInitDataUserPayloadInvalidException() from exc
+    if not isinstance(data, dict):
+        raise TelegramInitDataUserPayloadInvalidException()
     if "id" not in data:
         raise TelegramInitDataUserIdMissingException()
-    return cast("dict[str, Any]", data)
+    return _build_tg_user(data)
+
+
+def _optional_str(value: object) -> str | None:
+    return value if isinstance(value, str) else None
+
+
+def _build_tg_user(data: dict[str, object]) -> TelegramUserPayload:
+    raw_id = data["id"]
+    if not isinstance(raw_id, int | str):
+        raise TelegramInitDataUserIdMissingException()
+    return TelegramUserPayload(
+        id=raw_id,
+        username=_optional_str(data.get("username")),
+        phone_number=_optional_str(data.get("phone_number")),
+    )
 
 
 async def telegram_check(session: AsyncSession, init_data: str) -> TelegramCheckResponse:
-    parsed = _validate_init_data(init_data)
-    tg_user = _extract_tg_user(parsed)
+    parsed = validate_init_data(init_data)
+    tg_user = extract_tg_user(parsed)
     telegram_id = int(tg_user["id"])
 
     existing = await get_user_by_telegram_id(session, telegram_id)
@@ -119,9 +135,9 @@ async def telegram_register(
     phone_number: str,
     name: str,
 ) -> TokenResponse:
-    parsed = _validate_init_data(init_data)
-    await _consume_init_data_nonce(parsed, "register")
-    tg_user = _extract_tg_user(parsed)
+    parsed = validate_init_data(init_data)
+    await consume_init_data_nonce(parsed, "register")
+    tg_user = extract_tg_user(parsed)
     telegram_id = int(tg_user["id"])
     telegram_username = tg_user.get("username")
 
@@ -137,9 +153,9 @@ async def telegram_register(
 
 
 async def telegram_auth_existing(session: AsyncSession, init_data: str) -> TokenResponse:
-    parsed = _validate_init_data(init_data)
-    await _consume_init_data_nonce(parsed, "auth")
-    tg_user = _extract_tg_user(parsed)
+    parsed = validate_init_data(init_data)
+    await consume_init_data_nonce(parsed, "auth")
+    tg_user = extract_tg_user(parsed)
     telegram_id = int(tg_user["id"])
 
     user = await get_user_by_telegram_id(session, telegram_id)

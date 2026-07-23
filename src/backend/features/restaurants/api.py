@@ -20,6 +20,7 @@ from features.users.models import User
 from features.vendors.dependencies import get_current_vendor
 from features.vendors.models import VendorProfile
 from middlewares.limiter import limiter
+from settings.config.app_config import settings
 from shared.dependencies import require_permission
 from shared.enums.permissions import Permission
 from shared.enums.restaurant_sort import RestaurantSort
@@ -29,7 +30,9 @@ from shared.restaurant_resolver import resolve_restaurant_uuid
 from shared.schemas.response import SuccessListResponse, SuccessResponse
 from shared.uploads import read_image_upload
 
-router = APIRouter(prefix="/restaurants", tags=["Restaurants"])
+router = APIRouter(
+    prefix=settings.api.v1.restaurants.prefix, tags=[settings.api.v1.restaurants.tag]
+)
 
 
 @router.get("/public/{restaurant_id}", response_model=SuccessResponse[RestaurantResponse])

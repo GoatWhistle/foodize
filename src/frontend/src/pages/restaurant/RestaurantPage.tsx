@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
-import { categoryLabel } from '@shared/utils/locales';
 import { useTranslation } from '@shared/i18n/useTranslation';
 import type { Restaurant } from '@shared/types/models';
-import { BriefcaseIcon, ListIcon } from '@phosphor-icons/react';
+import { BriefcaseIcon } from '@phosphor-icons/react';
 import { useCartStore } from '../../store/useCartStore';
 import { MenuItemCard } from '@shared/components/MenuItemCard/MenuItemCard';
 import { ProductSheet } from '@shared/components/ProductSheet/ProductSheet';
@@ -18,9 +17,10 @@ import { useRestaurantPageController } from '@shared/hooks/useRestaurantPageCont
 import { StaffModal } from './components/StaffModal';
 import { ReviewsModal } from '@shared/components/ReviewsModal/ReviewsModal';
 import { InfoModal } from '@shared/components/InfoModal/InfoModal';
-import { getCategoryIcon } from '@shared/utils/categoryIcons';
+import { CategoryChips } from '@shared/components/CategoryChips/CategoryChips';
 import { toInfoWorkingHours } from '@shared/utils/restaurant';
 import { RestaurantHero } from './components/RestaurantHero';
+import { LoyaltyWidget } from './components/LoyaltyWidget';
 import type { CartLineOption } from '@shared/store/createCartStore';
 
 export const RestaurantPage = () => {
@@ -88,6 +88,7 @@ export const RestaurantPage = () => {
   });
 
   const canReview = currentUser?.permissions.includes('reviews.create') ?? false;
+  const canLoyalty = currentUser?.permissions.includes('loyalty.read') ?? false;
 
   const handleStaffSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -127,19 +128,12 @@ export const RestaurantPage = () => {
             {t('catalog.restaurantPage.closedBannerWeb')}
           </div>
         )}
-        <div className="menu-categories-scroll">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              className={`category-chip${activeCategory === cat ? ' active' : ''}`}
-              onClick={() => { setActiveCategory(cat); }}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              {cat === 'ALL' ? <ListIcon size={14} /> : getCategoryIcon(cat, { size: 16 })}
-              {cat === 'ALL' ? t('catalog.restaurantPage.allCategories') : categoryLabel(cat)}
-            </button>
-          ))}
-        </div>
+        {canLoyalty && restaurantUUID && <LoyaltyWidget restaurantId={restaurantUUID} />}
+        <CategoryChips
+          categories={categories}
+          activeCategory={activeCategory}
+          onSelect={setActiveCategory}
+        />
 
         {loading ? (
           <div className="menu-list">

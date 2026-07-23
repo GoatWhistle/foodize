@@ -71,6 +71,8 @@ export const enums = {
     "reviews.moderate": "Отзывы: модерация",
     "promos.validate": "Промокоды: проверка",
     "promos.manage": "Промокоды: управление",
+    "loyalty.read": "Лояльность: просмотр",
+    "loyalty.manage": "Лояльность: управление",
     "vendors.create": "Вендор: создание",
     "vendors.read_own": "Вендор: профиль",
     "vendors.analytics_read": "Вендор: аналитика",

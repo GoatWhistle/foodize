@@ -13,6 +13,7 @@ CUSTOMER_PERMISSIONS: frozenset[Permission] = frozenset(
         Permission.REVIEWS_CREATE,
         Permission.REVIEWS_READ,
         Permission.PROMOS_VALIDATE,
+        Permission.LOYALTY_READ,
         Permission.STAFF_REQUESTS_CREATE,
         Permission.TELEGRAM_AUTH,
     }
@@ -26,6 +27,7 @@ VENDOR_PERMISSIONS: frozenset[Permission] = frozenset(
         Permission.ORDERS_READ_RESTAURANT,
         Permission.ORDERS_MANAGE_STATUS,
         Permission.PROMOS_MANAGE,
+        Permission.LOYALTY_MANAGE,
         Permission.VENDORS_CREATE,
         Permission.VENDORS_READ_OWN,
         Permission.VENDORS_ANALYTICS_READ,

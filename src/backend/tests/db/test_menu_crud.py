@@ -31,7 +31,6 @@ from features.restaurants.schemas import RestaurantCreate
 from features.users.crud import create_user
 from features.users.schemas import UserCreate
 from features.vendors.crud import create_vendor_profile
-from features.vendors.schemas import VendorCreate
 from shared.enums.category import Category
 from shared.enums.roles import UserRole
 
@@ -45,7 +44,7 @@ async def restaurant(db_session: AsyncSession) -> Restaurant:
         user_role=UserRole.VENDOR,
     )
     vendor_user = await create_user(db_session, vendor_data)
-    vendor_profile = await create_vendor_profile(db_session, vendor_user, VendorCreate())
+    vendor_profile = await create_vendor_profile(db_session, vendor_user)
     rest_data = RestaurantCreate(name="Rest3", address="Addr3")
     return await create_restaurant(db_session, rest_data, vendor_profile.id)
 

@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,6 +22,6 @@ async def get_user_by_phone(session: AsyncSession, phone_number: str) -> User | 
     return result.scalar_one_or_none()
 
 
-async def get_telegram_id_by_user_id(session: AsyncSession, user_id: str) -> int | None:
+async def get_telegram_id_by_user_id(session: AsyncSession, user_id: uuid.UUID) -> int | None:
     result = await session.execute(select(User.telegram_id).where(User.id == user_id))
     return result.scalar_one_or_none()

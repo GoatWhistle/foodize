@@ -1,5 +1,3 @@
-from typing import Any
-
 from aiogram.types import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
@@ -10,6 +8,7 @@ from aiogram.types import (
 
 from config import bot_config
 from i18n import DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES
+from services.payloads import OrderPayload
 from utils import messages as msg
 
 
@@ -72,7 +71,7 @@ def order_deep_link_keyboard(
 
 
 def orders_keyboard(
-    orders: list[dict[str, Any]], language: str = DEFAULT_LANGUAGE
+    orders: list[OrderPayload], language: str = DEFAULT_LANGUAGE
 ) -> InlineKeyboardMarkup | None:
     if not bot_config.mini_app_url:
         return None
@@ -84,7 +83,7 @@ def orders_keyboard(
             )
         ]
         for order in orders
-        if (display_id := order.get("display_id"))
+        if (display_id := order["display_id"])
     ]
     return InlineKeyboardMarkup(inline_keyboard=rows) if rows else None
 

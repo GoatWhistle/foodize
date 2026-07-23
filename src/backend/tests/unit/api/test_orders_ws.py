@@ -3,16 +3,15 @@ import uuid
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from factories import make_user
 
 from features.orders.api.ws import (
-    _build_display_board,
-    _can_read_order,
-    _order_status_pubsub_loop,
-    _restaurant_orders_pubsub_loop,
+    build_display_board,
+    can_read_order,
+    order_status_pubsub_loop,
+    restaurant_orders_pubsub_loop,
 )
 from shared.enums.order_status import OrderStatus
 from shared.enums.permissions import Permission
@@ -52,13 +51,13 @@ class TestCanReadOrder:
         user = make_user()
         order = _order(user_id=user.id)
 
-        assert await _can_read_order(AsyncMock(), order, user) is True
+        assert await can_read_order(AsyncMock(), order, user) is True
 
     async def test_customer_cannot_read_another_user_order(self) -> None:
         user = make_user()
         order = _order(user_id=uuid.uuid4())
 
-        assert await _can_read_order(AsyncMock(), order, user) is False
+        assert await can_read_order(AsyncMock(), order, user) is False
 
     async def test_admin_can_read_any_order_without_restaurant_check(self) -> None:
         user = make_user(user_role=UserRole.ADMIN.value)
@@ -68,7 +67,7 @@ class TestCanReadOrder:
             "features.orders.api.order.verify_restaurant_access",
             new_callable=AsyncMock,
         ) as verify_access:
-            assert await _can_read_order(AsyncMock(), order, user) is True
+            assert await can_read_order(AsyncMock(), order, user) is True
 
         verify_access.assert_not_awaited()
 
@@ -80,7 +79,7 @@ class TestCanReadOrder:
             "features.orders.api.order.verify_restaurant_access",
             new_callable=AsyncMock,
         ) as verify_access:
-            assert await _can_read_order(AsyncMock(), order, user) is True
+            assert await can_read_order(AsyncMock(), order, user) is True
 
         verify_access.assert_awaited_once()
 
@@ -93,14 +92,14 @@ class TestCanReadOrder:
             new_callable=AsyncMock,
             side_effect=AccessDeniedException(),
         ):
-            assert await _can_read_order(AsyncMock(), order, user) is False
+            assert await can_read_order(AsyncMock(), order, user) is False
 
     async def test_user_without_order_permissions_is_denied(self) -> None:
         user = make_user()
         user.permissions = [Permission.MENU_READ.value]
         order = _order(user_id=user.id)
 
-        assert await _can_read_order(AsyncMock(), order, user) is False
+        assert await can_read_order(AsyncMock(), order, user) is False
 
 
 def test_build_display_board_splits_cooking_and_ready_orders() -> None:
@@ -112,16 +111,16 @@ def test_build_display_board_splits_cooking_and_ready_orders() -> None:
         (1005, OrderStatus.CANCELLED.value),
     ]
 
-    assert _build_display_board(rows) == {
+    assert build_display_board(rows) == {
         "cooking": [1001, 1002],
         "ready": [1003],
     }
 
 
-def _pubsub_from(messages: list[dict[str, Any]]) -> MagicMock:
+def _pubsub_from(messages: list[dict[str, object]]) -> MagicMock:
     pubsub = MagicMock()
 
-    async def _listen() -> AsyncGenerator[dict[str, Any]]:
+    async def _listen() -> AsyncGenerator[dict[str, object]]:
         for message in messages:
             yield message
 
@@ -159,7 +158,7 @@ class TestOrderStatusPubsubLoop:
                 new=AsyncMock(return_value=order),
             ),
         ):
-            await _order_status_pubsub_loop(websocket, pubsub, order_id, OrderStatus.PENDING.value)
+            await order_status_pubsub_loop(websocket, pubsub, order_id, OrderStatus.PENDING.value)
 
         texts = _sent_texts(websocket)
         assert len(texts) == 1
@@ -175,7 +174,7 @@ class TestOrderStatusPubsubLoop:
 
         get_order = AsyncMock()
         with patch("features.orders.api.ws.get_order_by_id", new=get_order):
-            await _order_status_pubsub_loop(websocket, pubsub, order_id, OrderStatus.PENDING.value)
+            await order_status_pubsub_loop(websocket, pubsub, order_id, OrderStatus.PENDING.value)
 
         get_order.assert_not_awaited()
         assert _sent_texts(websocket) == []
@@ -206,7 +205,7 @@ class TestOrderStatusPubsubLoop:
             ),
             patch("features.orders.api.ws.get_order_by_id", new=get_order),
         ):
-            await _order_status_pubsub_loop(websocket, pubsub, order_id, OrderStatus.PENDING.value)
+            await order_status_pubsub_loop(websocket, pubsub, order_id, OrderStatus.PENDING.value)
 
         assert get_order.await_count == 1
         assert len(_sent_texts(websocket)) == 1
@@ -223,7 +222,7 @@ class TestRestaurantOrdersPubsubLoop:
             ]
         )
 
-        await _restaurant_orders_pubsub_loop(websocket, pubsub)
+        await restaurant_orders_pubsub_loop(websocket, pubsub)
 
         texts = _sent_texts(websocket)
         assert [json.loads(t) for t in texts] == [

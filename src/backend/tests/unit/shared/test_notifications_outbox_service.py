@@ -3,16 +3,18 @@ import uuid
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
+from pydantic import JsonValue
+
 from features.notifications import outbox_service
 from features.notifications.outbox_service import (
-    _MAX_ATTEMPTS,
-    _backoff_delay,
-    _mark_publish_failure,
-    _update_outbox_metrics,
+    MAX_ATTEMPTS,
+    backoff_delay,
     enqueue_event,
+    mark_publish_failure,
     publish_pending_events,
     purge_stale_records,
     run_outbox_publisher,
+    update_outbox_metrics,
 )
 from shared.enums.outbox_status import OutboxStatus
 
@@ -22,7 +24,8 @@ class _Event:
         self.event_id = uuid.uuid4()
         self.event_type = "order.placed"
 
-    def model_dump(self, mode: str = "json") -> dict[str, str]:
+    def model_dump(self, *, mode: str = "json") -> dict[str, JsonValue]:
+        del mode
         return {"foo": "bar"}
 
 
@@ -49,8 +52,8 @@ async def test_enqueue_event_sets_run_at() -> None:
 
 
 def test_backoff_delay_grows_and_is_bounded() -> None:
-    small = _backoff_delay(1)
-    large = _backoff_delay(20)
+    small = backoff_delay(1)
+    large = backoff_delay(20)
     assert small >= 2.0
     assert large <= 300.0 + 5.0
 
@@ -58,7 +61,7 @@ def test_backoff_delay_grows_and_is_bounded() -> None:
 def test_mark_publish_failure_schedules_retry() -> None:
     event = MagicMock()
     event.attempts = 0
-    _mark_publish_failure(event, RuntimeError("boom"), datetime.now(UTC))
+    mark_publish_failure(event, RuntimeError("boom"), datetime.now(UTC))
     assert event.attempts == 1
     assert event.status != OutboxStatus.FAILED.value
     assert event.last_error == "boom"
@@ -66,9 +69,9 @@ def test_mark_publish_failure_schedules_retry() -> None:
 
 def test_mark_publish_failure_marks_failed_at_max_attempts() -> None:
     event = MagicMock()
-    event.attempts = _MAX_ATTEMPTS - 1
-    _mark_publish_failure(event, RuntimeError("boom"), datetime.now(UTC))
-    assert event.attempts == _MAX_ATTEMPTS
+    event.attempts = MAX_ATTEMPTS - 1
+    mark_publish_failure(event, RuntimeError("boom"), datetime.now(UTC))
+    assert event.attempts == MAX_ATTEMPTS
     assert event.status == OutboxStatus.FAILED.value
 
 
@@ -114,7 +117,7 @@ async def test_update_outbox_metrics_with_pending_and_failed() -> None:
     oldest = datetime(2020, 1, 1, tzinfo=UTC)
     session.scalar = AsyncMock(side_effect=[oldest, 3])
 
-    await _update_outbox_metrics(session)
+    await update_outbox_metrics(session)
 
     assert session.scalar.await_count == 2
 
@@ -123,7 +126,7 @@ async def test_update_outbox_metrics_with_no_events() -> None:
     session = AsyncMock()
     session.scalar = AsyncMock(side_effect=[None, None])
 
-    await _update_outbox_metrics(session)
+    await update_outbox_metrics(session)
 
     assert session.scalar.await_count == 2
 
@@ -149,7 +152,8 @@ async def test_run_outbox_publisher_runs_one_tick_then_stops() -> None:
     session_ctx.__aenter__ = AsyncMock(return_value=session)
     session_ctx.__aexit__ = AsyncMock(return_value=None)
 
-    async def _publish(_session: object) -> int:
+    async def _publish(session: object) -> int:
+        del session
         stop_event.set()
         return 0
 
@@ -160,7 +164,7 @@ async def test_run_outbox_publisher_runs_one_tick_then_stops() -> None:
         ),
         patch("features.notifications.outbox_service.broker.sample_dlq_depth", new=AsyncMock()),
         patch.object(outbox_service, "publish_pending_events", new=AsyncMock(side_effect=_publish)),
-        patch.object(outbox_service, "_update_outbox_metrics", new=AsyncMock()),
+        patch.object(outbox_service, "update_outbox_metrics", new=AsyncMock()),
         patch.object(outbox_service, "purge_stale_records", new=AsyncMock(return_value=0)),
     ):
         await run_outbox_publisher(poll_interval=0.01, stop_event=stop_event)
@@ -169,7 +173,8 @@ async def test_run_outbox_publisher_runs_one_tick_then_stops() -> None:
 async def test_run_outbox_publisher_survives_tick_error() -> None:
     stop_event = asyncio.Event()
 
-    async def _boom(_session: object) -> int:
+    async def _boom(session: object) -> int:
+        del session
         stop_event.set()
         raise RuntimeError("tick failure")
 

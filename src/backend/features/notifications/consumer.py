@@ -1,33 +1,23 @@
 import asyncio
 import signal
 import time
-from collections.abc import Awaitable, Callable
 from functools import partial
-from typing import cast
 
 import aio_pika
 import aio_pika.abc
 import structlog
 from prometheus_client import Counter, Gauge, start_http_server
-from pydantic import BaseModel, ConfigDict
 from sqlalchemy.dialects.postgresql import insert as pg_insert
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from database.db_helper import db_helper
 from features.notifications.broker import broker
-from features.notifications.events import (
-    FeedbackRequestedEvent,
-    NotificationEvent,
-    OrderPlacedEvent,
-    OrderStatusChangedEvent,
-    UserNotificationMessage,
+from features.notifications.consumer_bindings import (
+    BINDINGS,
+    BINDINGS_BY_ROUTING_KEY,
+    EventBinding,
 )
-from features.notifications.handlers import (
-    _publish_user_notification,
-    handle_feedback_requested,
-    handle_order_placed,
-    handle_order_status_changed,
-)
+from features.notifications.events import NotificationEvent, UserNotificationMessage
+from features.notifications.handlers import publish_user_notification
 from features.notifications.processed_event import ProcessedEvent
 from settings.config.app_config import settings
 from utils.logging_setup import configure_logging, get_logger
@@ -58,64 +48,11 @@ worker_last_message_timestamp = Gauge(
 )
 
 
-class EventBinding[EventT: NotificationEvent](BaseModel):
-    model_config = ConfigDict(frozen=True)
-
-    queue_name: str
-    routing_key: str
-    event_model: type[EventT]
-    handler: Callable[[AsyncSession, EventT], Awaitable[None]]
-
-    def decode(self, body: bytes) -> NotificationEvent:
-        return self.event_model.model_validate_json(body)
-
-    async def dispatch(self, session: AsyncSession, event: NotificationEvent) -> None:
-        await self.handler(session, cast("EventT", event))
-
-
-def _binding[EventT: NotificationEvent](
-    queue_name: str,
-    routing_key: str,
-    event_model: type[EventT],
-    handler: Callable[[AsyncSession, EventT], Awaitable[None]],
-) -> EventBinding[NotificationEvent]:
-    return cast(
-        "EventBinding[NotificationEvent]",
-        EventBinding(
-            queue_name=queue_name,
-            routing_key=routing_key,
-            event_model=event_model,
-            handler=handler,
-        ),
-    )
-
-
-_BINDINGS: tuple[EventBinding[NotificationEvent], ...] = (
-    _binding("notifications.order.placed", "order.placed", OrderPlacedEvent, handle_order_placed),
-    _binding(
-        "notifications.order.status_changed",
-        "order.status_changed",
-        OrderStatusChangedEvent,
-        handle_order_status_changed,
-    ),
-    _binding(
-        "notifications.feedback_requested",
-        "notification.feedback_requested",
-        FeedbackRequestedEvent,
-        handle_feedback_requested,
-    ),
-)
-
-_BINDINGS_BY_ROUTING_KEY: dict[str, EventBinding[NotificationEvent]] = {
-    binding.routing_key: binding for binding in _BINDINGS
-}
-
-
 def _record_failure(routing_key: str, reason: str) -> None:
     worker_events_failed_total.labels(routing_key=routing_key, reason=reason).inc()
 
 
-def _retry_count(message: aio_pika.abc.AbstractIncomingMessage) -> int:
+def retry_count(message: aio_pika.abc.AbstractIncomingMessage) -> int:
     raw = (message.headers or {}).get("x-retry-count", 0)
     if isinstance(raw, int):
         return raw
@@ -127,7 +64,7 @@ def _retry_count(message: aio_pika.abc.AbstractIncomingMessage) -> int:
     return 0
 
 
-async def _send_to_retry(
+async def send_to_retry(
     message: aio_pika.abc.AbstractIncomingMessage, routing_key: str, attempt: int
 ) -> None:
     retry_message = aio_pika.Message(
@@ -139,7 +76,7 @@ async def _send_to_retry(
     await broker.retry_exchange.publish(retry_message, routing_key=routing_key)
 
 
-async def _handle_event(
+async def handle_event(
     binding: EventBinding[NotificationEvent],
     event: NotificationEvent,
     routing_key: str,
@@ -166,7 +103,7 @@ async def _handle_event(
         return staged if isinstance(staged, UserNotificationMessage) else None
 
 
-async def _parse_message_event(
+async def parse_message_event(
     message: aio_pika.abc.AbstractIncomingMessage,
     binding: EventBinding[NotificationEvent],
     routing_key: str,
@@ -185,11 +122,11 @@ async def _parse_message_event(
         return None
 
 
-async def _retry_or_dead_letter(
+async def retry_or_dead_letter(
     message: aio_pika.abc.AbstractIncomingMessage,
     routing_key: str,
 ) -> None:
-    attempt = _retry_count(message) + 1
+    attempt = retry_count(message) + 1
     if attempt > _MAX_RETRIES:
         logger.exception("message_dead_lettered", routing_key=routing_key, attempts=attempt)
         _record_failure(routing_key, "max_retries_exceeded")
@@ -201,11 +138,11 @@ async def _retry_or_dead_letter(
         attempt=attempt,
     )
     _record_failure(routing_key, "handler_error")
-    await _send_to_retry(message, routing_key, attempt)
+    await send_to_retry(message, routing_key, attempt)
     await message.ack()
 
 
-async def _process_message(
+async def process_message(
     message: aio_pika.abc.AbstractIncomingMessage,
     routing_key: str,
 ) -> None:
@@ -213,28 +150,28 @@ async def _process_message(
     structlog.contextvars.bind_contextvars(routing_key=routing_key)
     async with message.process(requeue=False, ignore_processed=True):
         worker_last_message_timestamp.set(time.time())
-        binding = _BINDINGS_BY_ROUTING_KEY.get(routing_key)
+        binding = BINDINGS_BY_ROUTING_KEY.get(routing_key)
         if binding is None:
             logger.error("no_handler_registered", routing_key=routing_key)
             _record_failure(routing_key, "no_handler")
             await message.nack(requeue=False)
             return
-        domain_event = await _parse_message_event(message, binding, routing_key)
+        domain_event = await parse_message_event(message, binding, routing_key)
         if domain_event is None:
             return
         structlog.contextvars.bind_contextvars(event_id=str(domain_event.event_id))
         try:
-            payload = await _handle_event(binding, domain_event, routing_key)
+            payload = await handle_event(binding, domain_event, routing_key)
         except Exception:
-            await _retry_or_dead_letter(message, routing_key)
+            await retry_or_dead_letter(message, routing_key)
             return
 
         worker_events_processed_total.labels(routing_key=routing_key).inc()
         if payload is not None:
-            await _publish_user_notification(payload)
+            await publish_user_notification(payload)
 
 
-def _install_signal_handlers(stop_event: asyncio.Event) -> None:
+def install_signal_handlers(stop_event: asyncio.Event) -> None:
     loop = asyncio.get_running_loop()
 
     def _handle_stop() -> None:
@@ -245,14 +182,14 @@ def _install_signal_handlers(stop_event: asyncio.Event) -> None:
         try:
             loop.add_signal_handler(sig, _handle_stop)
         except NotImplementedError:
-            signal.signal(sig, lambda signum, frame: _handle_stop())
+            signal.signal(sig, lambda _signum, _frame: _handle_stop())
 
 
 async def start_consuming() -> None:
     from features.notifications.outbox_service import run_outbox_publisher
 
     stop_event = asyncio.Event()
-    _install_signal_handlers(stop_event)
+    install_signal_handlers(stop_event)
 
     await broker.connect()
     worker_broker_connected.set(1)
@@ -262,7 +199,7 @@ async def start_consuming() -> None:
     exchange = broker.exchange
     consumers: list[tuple[aio_pika.abc.AbstractQueue, str]] = []
 
-    for binding in _BINDINGS:
+    for binding in BINDINGS:
         queue = await channel.declare_queue(
             binding.queue_name,
             durable=True,
@@ -270,7 +207,7 @@ async def start_consuming() -> None:
         )
         await queue.bind(exchange, routing_key=binding.routing_key)
         consumer_tag = await queue.consume(
-            partial(_process_message, routing_key=binding.routing_key)
+            partial(process_message, routing_key=binding.routing_key)
         )
         consumers.append((queue, consumer_tag))
         logger.info("consuming_queue", queue=binding.queue_name, routing_key=binding.routing_key)

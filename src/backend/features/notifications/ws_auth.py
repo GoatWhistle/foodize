@@ -11,7 +11,7 @@ from features.notifications.exceptions import (
     WsTokenSubjectMissingError,
 )
 from infra.cache.redis import get_redis_cache
-from utils.jwt_tokens import decode_jwt
+from utils.jwt_tokens import claim_str, decode_jwt
 
 _ACCESS_BLACKLIST_PREFIX = "access_blacklist:"
 
@@ -34,14 +34,14 @@ async def resolve_ws_token_user_id(token: str) -> uuid.UUID | None:
         payload = decode_jwt(token)
         if payload.get("typ") != "access":
             raise WsInvalidTokenTypeError()
-        user_id = payload.get("sub")
+        user_id = claim_str(payload, "sub")
         if user_id is None:
             raise WsTokenSubjectMissingError()
         parsed_user_id = uuid.UUID(user_id)
     except (jwt.InvalidTokenError, ValueError, AttributeError):
         return None
 
-    jti = payload.get("jti")
+    jti = claim_str(payload, "jti")
     if jti:
         cache = get_redis_cache()
         if await cache.exists(f"{_ACCESS_BLACKLIST_PREFIX}{jti}"):

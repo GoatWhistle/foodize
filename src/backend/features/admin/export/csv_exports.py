@@ -3,7 +3,7 @@ import csv
 import io
 from collections.abc import Callable, Iterable
 from datetime import UTC, date, datetime, timedelta
-from typing import Any, TypeVar
+from typing import TypeVar
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,13 +16,15 @@ MAX_EXPORT_DAYS = 31
 
 _T = TypeVar("_T")
 
+type CsvRow = list[object]
 
-def _make_csv(headers: list[str], rows: list[list[Any]]) -> bytes:
+
+def make_csv(headers: list[str], rows: list[CsvRow]) -> bytes:
     return _render_csv(headers, rows, lambda row: row)
 
 
 def _render_csv(
-    headers: list[str], items: Iterable[_T], row_builder: Callable[[_T], list[Any]]
+    headers: list[str], items: Iterable[_T], row_builder: Callable[[_T], CsvRow]
 ) -> bytes:
     buf = io.StringIO()
     writer = csv.writer(buf)
@@ -32,7 +34,7 @@ def _render_csv(
 
 
 async def _make_csv_async(
-    headers: list[str], items: Iterable[_T], row_builder: Callable[[_T], list[Any]]
+    headers: list[str], items: Iterable[_T], row_builder: Callable[[_T], CsvRow]
 ) -> bytes:
     return await asyncio.to_thread(_render_csv, headers, items, row_builder)
 
@@ -125,9 +127,7 @@ async def export_orders_csv(
     )
 
 
-async def export_restaurants_csv(
-    session: AsyncSession, language: str = DEFAULT_LANGUAGE
-) -> bytes:
+async def export_restaurants_csv(session: AsyncSession, language: str = DEFAULT_LANGUAGE) -> bytes:
     restaurants = await crud.get_all_restaurants(session, offset=0, limit=50_000)
     headers = [
         translate("reports.csv.restaurants.id", language),

@@ -32,9 +32,11 @@ class TestGetUserOrNotFound:
             assert result is user
 
     async def test_not_found(self) -> None:
-        with patch("features.admin.crud.get_user_by_id", new_callable=AsyncMock, return_value=None):
-            with pytest.raises(NotFoundException):
-                await get_user_or_404(MagicMock(), uuid.uuid4())
+        with (
+            patch("features.admin.crud.get_user_by_id", new_callable=AsyncMock, return_value=None),
+            pytest.raises(NotFoundException),
+        ):
+            await get_user_or_404(MagicMock(), uuid.uuid4())
 
 
 class TestDeactivateActivateUser:
@@ -53,9 +55,11 @@ class TestDeactivateActivateUser:
             assert result is deactivated
 
     async def test_deactivate_not_found(self) -> None:
-        with patch("features.admin.crud.get_user_by_id", new_callable=AsyncMock, return_value=None):
-            with pytest.raises(NotFoundException):
-                await deactivate_user_service(MagicMock(), uuid.uuid4())
+        with (
+            patch("features.admin.crud.get_user_by_id", new_callable=AsyncMock, return_value=None),
+            pytest.raises(NotFoundException),
+        ):
+            await deactivate_user_service(MagicMock(), uuid.uuid4())
 
     async def test_activate_success(self) -> None:
         user = _make_mock_user()
@@ -72,9 +76,11 @@ class TestDeactivateActivateUser:
             assert result is activated
 
     async def test_activate_not_found(self) -> None:
-        with patch("features.admin.crud.get_user_by_id", new_callable=AsyncMock, return_value=None):
-            with pytest.raises(NotFoundException):
-                await activate_user_service(MagicMock(), uuid.uuid4())
+        with (
+            patch("features.admin.crud.get_user_by_id", new_callable=AsyncMock, return_value=None),
+            pytest.raises(NotFoundException),
+        ):
+            await activate_user_service(MagicMock(), uuid.uuid4())
 
 
 class TestSetUserPermissions:

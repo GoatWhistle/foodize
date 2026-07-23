@@ -110,9 +110,9 @@ class TestCreatePromo:
         session.flush = AsyncMock()
         session.refresh = AsyncMock()
 
-        with patch("features.promos.crud.Promo") as MockPromo:
+        with patch("features.promos.crud.Promo") as mock_promo_cls:
             mock_promo = MagicMock()
-            MockPromo.return_value = mock_promo
+            mock_promo_cls.return_value = mock_promo
             result = await create_promo(session, data)
             session.add.assert_called_once_with(mock_promo)
             session.flush.assert_awaited_once()

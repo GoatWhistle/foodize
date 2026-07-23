@@ -1,8 +1,8 @@
 import json
 import uuid
-from typing import Any
 
 from fastapi import APIRouter, WebSocket
+from pydantic import JsonValue
 from redis.asyncio.client import PubSub
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,7 +26,7 @@ TERMINAL_STATUSES = (OrderStatus.COMPLETED.value, OrderStatus.CANCELLED.value)
 router = APIRouter()
 
 
-async def _can_read_order(session: AsyncSession, order: Order, user: User) -> bool:
+async def can_read_order(session: AsyncSession, order: Order, user: User) -> bool:
     try:
         await verify_order_read_access(session, order, user)
         return True
@@ -63,7 +63,7 @@ async def order_status_ws(
             await websocket.send_text(json.dumps({"error": "not_found"}))
             await websocket.close()
             return
-        if not await _can_read_order(session, order, user):
+        if not await can_read_order(session, order, user):
             await websocket.send_text(json.dumps({"error": "forbidden"}))
             await websocket.close()
             return
@@ -78,11 +78,11 @@ async def order_status_ws(
     await run_channel_ws(
         websocket,
         f"order_status:{order_id}",
-        lambda pubsub: _order_status_pubsub_loop(websocket, pubsub, order_id, last_status),
+        lambda pubsub: order_status_pubsub_loop(websocket, pubsub, order_id, last_status),
     )
 
 
-async def _order_status_pubsub_loop(
+async def order_status_pubsub_loop(
     websocket: WebSocket,
     pubsub: PubSub,
     order_id: uuid.UUID,
@@ -110,13 +110,17 @@ async def _order_status_pubsub_loop(
             return
 
 
-def _build_display_board(rows: list[tuple[int, str]]) -> dict[str, Any]:
+def build_display_board(rows: list[tuple[int, str]]) -> dict[str, JsonValue]:
     cooking_statuses = {
         OrderStatus.PENDING.value,
         OrderStatus.ACCEPTED.value,
     }
-    cooking = [display_id for display_id, status in rows if status in cooking_statuses]
-    ready = [display_id for display_id, status in rows if status == OrderStatus.READY.value]
+    cooking: list[JsonValue] = [
+        display_id for display_id, status in rows if status in cooking_statuses
+    ]
+    ready: list[JsonValue] = [
+        display_id for display_id, status in rows if status == OrderStatus.READY.value
+    ]
     return {"cooking": cooking, "ready": ready}
 
 
@@ -141,7 +145,7 @@ async def display_board_ws(
             return
 
         rows = await get_active_orders_for_display(session, restaurant_id)
-        await _safe_send_text(websocket, json.dumps(_build_display_board(rows)))
+        await _safe_send_text(websocket, json.dumps(build_display_board(rows)))
 
     await run_channel_ws(
         websocket,
@@ -173,7 +177,7 @@ async def _display_board_pubsub_loop(
         await _drain_pending_messages(pubsub)
         async with db_helper.session_factory() as session:
             rows = await get_active_orders_for_display(session, restaurant_id)
-        await _safe_send_text(websocket, json.dumps(_build_display_board(rows)))
+        await _safe_send_text(websocket, json.dumps(build_display_board(rows)))
 
 
 @router.websocket("/ws/restaurants/{restaurant_id}/orders")
@@ -194,11 +198,11 @@ async def restaurant_orders_ws(
     await run_channel_ws(
         websocket,
         f"restaurant_orders:{restaurant_id}",
-        lambda pubsub: _restaurant_orders_pubsub_loop(websocket, pubsub),
+        lambda pubsub: restaurant_orders_pubsub_loop(websocket, pubsub),
     )
 
 
-async def _restaurant_orders_pubsub_loop(
+async def restaurant_orders_pubsub_loop(
     websocket: WebSocket,
     pubsub: PubSub,
 ) -> None:

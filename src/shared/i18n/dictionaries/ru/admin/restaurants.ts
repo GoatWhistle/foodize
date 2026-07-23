@@ -1,0 +1,71 @@
+export const adminRestaurants = {
+  emptyTitle: "Ресторанов пока нет",
+  filters: {
+    restaurantPlaceholder: "Ресторан",
+    vendorPlaceholder: "Вендор или телефон",
+    open: "Открыт",
+    closed: "Закрыт",
+    moderation: "Модерация",
+    anyRating: "Любой рейтинг",
+    ratingFrom4: "от 4 звёзд",
+    ratingFrom3: "от 3 звёзд",
+    ratingFrom2: "от 2 звёзд",
+  },
+  row: {
+    open: "Открыт",
+    closed: "Закрыт",
+    hiring: "Нанимает",
+    notHiring: "Не нанимает",
+    ordersCount: {
+      one: "{count} заказ",
+      few: "{count} заказа",
+      many: "{count} заказов",
+    },
+    displayBoard: "Табло",
+  },
+  modal: {
+    subtitle: "Детали ресторана",
+    vendorSection: "Вендор",
+    venueSection: "Заведение",
+    fields: {
+      orders: "Заказы",
+      reviews: "Отзывы",
+      rating: "Рейтинг",
+      moderation: "Модерация",
+      work: "Работа",
+    },
+    open: "Открыт",
+    closed: "Закрыт",
+    openDisplayBoard: "Открыть табло",
+    qrSite: "QR для сайта",
+    qrTelegram: "QR для Telegram",
+    deleteRestaurant: "Удалить ресторан",
+  },
+  dialogs: {
+    deleteTitle: "Удалить ресторан?",
+    deleteMessage:
+      "Точно ли вы хотите удалить ресторан? Он пропадёт из активных списков и будет закрыт.",
+    deleteConfirm: "Удалить ресторан",
+    rejectTitle: "Отклонить ресторан",
+    rejectMessage:
+      "Укажите причину. Вендор увидит, что нужно исправить перед повторной проверкой.",
+    rejectReasonTitle: "Причина отклонения",
+  },
+  messages: {
+    approved: "Ресторан одобрен",
+    rejected: "Ресторан отклонён",
+    batchDone: {
+      one: "Готово: {count} ресторан",
+      few: "Готово: {count} ресторана",
+      many: "Готово: {count} ресторанов",
+    },
+  },
+  errors: {
+    loadFailed: "Не удалось загрузить рестораны",
+    detailsFailed: "Не удалось загрузить детали ресторана",
+    deleteFailed: "Не удалось удалить ресторан",
+    approveFailed: "Не удалось одобрить ресторан",
+    rejectFailed: "Не удалось отклонить ресторан",
+    batchFailed: "Ошибка при массовом действии",
+  },
+} as const;

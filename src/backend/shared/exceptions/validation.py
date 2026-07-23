@@ -1,12 +1,9 @@
-from typing import Any
-
-
 class FieldValidationError(ValueError):
     code: str = "VALIDATION_ERROR"
     detail: str = "Validation error"
 
-    def __init__(self, detail: str | None = None, **params: Any):
-        self.params: dict[str, Any] = params
+    def __init__(self, detail: str | None = None, **params: object):
+        self.params: dict[str, object] = params
         self.detail = detail if detail is not None else self._render_detail()
         super().__init__(self.detail)
 
