@@ -61,6 +61,7 @@ export default defineConfig({
       exclude: [
         "**/*.{test,spec}.{ts,tsx}",
         "**/*.instance.ts",
+        "**/*TestMocks.{ts,tsx}",
         "**/node_modules/**",
         "test/**",
       ],

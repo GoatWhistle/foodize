@@ -107,8 +107,8 @@ else
 fi
 
 log "Applying retention: keeping last $KEEP backups (incl. encrypted)..."
-ls -t "$BACKUP_DIR"/foodize_*.dump "$BACKUP_DIR"/foodize_*.dump.enc \
-      "$BACKUP_DIR"/foodize_*.dump.gpg 2>/dev/null \
+{ ls -t "$BACKUP_DIR"/foodize_*.dump "$BACKUP_DIR"/foodize_*.dump.enc \
+       "$BACKUP_DIR"/foodize_*.dump.gpg 2>/dev/null || true; } \
   | tail -n +"$((KEEP + 1))" \
   | xargs -r rm -f --
 

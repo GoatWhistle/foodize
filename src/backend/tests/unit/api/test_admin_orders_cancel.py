@@ -48,6 +48,18 @@ async def test_admin_force_cancel_order_propagates_service_error() -> None:
         )
 
 
+def _collect_paths(router: object) -> set[str]:
+    paths: set[str] = set()
+    for route in getattr(router, "routes", []):
+        path = getattr(route, "path", None)
+        if isinstance(path, str):
+            paths.add(path)
+        nested = getattr(route, "original_router", None)
+        if nested is not None:
+            paths |= _collect_paths(nested)
+    return paths
+
+
 def test_admin_force_cancel_route_mounted() -> None:
-    paths = {getattr(route, "path", None) for route in admin_router.routes}
-    assert "/admin/orders/{order_id}/cancel" in paths
+    paths = _collect_paths(admin_router)
+    assert any(path.endswith("/orders/{order_id}/cancel") for path in paths)

@@ -126,6 +126,97 @@ describe('VendorLoyaltyTab', () => {
     ).toBeInTheDocument();
   });
 
+  it('requires a reward value for a non free item reward', async () => {
+    const user = userEvent.setup();
+    renderTab();
+    await waitFor(() => { expect(mocks.getProgram).toHaveBeenCalled(); });
+    await user.type(screen.getByLabelText(t('loyalty.vendor.punchesRequired')), '5');
+    await user.selectOptions(
+      screen.getByLabelText(t('loyalty.vendor.rewardTypeLabel')),
+      'DISCOUNT_FIXED',
+    );
+    await user.click(screen.getByRole('button', { name: t('common.actions.save') }));
+    expect(
+      screen.getByText(t('apiErrors.byCode.LOYALTY_REWARD_VALUE_REQUIRED')),
+    ).toBeInTheDocument();
+  });
+
+  it('rejects a percent discount outside the allowed range', async () => {
+    const user = userEvent.setup();
+    renderTab();
+    await waitFor(() => { expect(mocks.getProgram).toHaveBeenCalled(); });
+    await user.type(screen.getByLabelText(t('loyalty.vendor.punchesRequired')), '5');
+    await user.selectOptions(
+      screen.getByLabelText(t('loyalty.vendor.rewardTypeLabel')),
+      'DISCOUNT_PERCENT',
+    );
+    await user.type(screen.getByLabelText(t('loyalty.vendor.rewardValuePercent')), '150');
+    await user.click(screen.getByRole('button', { name: t('common.actions.save') }));
+    expect(
+      screen.getByText(t('apiErrors.byCode.LOYALTY_REWARD_PERCENT_OUT_OF_RANGE')),
+    ).toBeInTheDocument();
+  });
+
+  it('toggles the active checkbox', async () => {
+    const user = userEvent.setup();
+    renderTab();
+    await waitFor(() => { expect(mocks.getProgram).toHaveBeenCalled(); });
+    const active = screen.getByLabelText(t('loyalty.vendor.isActive'));
+    expect(active).toBeChecked();
+    await user.click(active);
+    expect(active).not.toBeChecked();
+  });
+
+  it('loads a punch card program with all fields into the form', async () => {
+    mocks.getProgram.mockResolvedValue({
+      data: {
+        data: {
+          ...cashbackProgram,
+          type: 'PUNCH_CARD',
+          min_order_amount: 500,
+          punches_required: 8,
+          reward_type: 'DISCOUNT_PERCENT',
+          reward_value: 20,
+          reward_menu_item_id: 'm1',
+          max_redeem_percent: 50,
+          tiers: [{ name: 'Base', threshold: 0, cashback_percent: 5 }],
+        },
+      },
+    });
+    renderTab();
+    await waitFor(() => { expect(mocks.getProgram).toHaveBeenCalled(); });
+    expect(await screen.findByLabelText(t('loyalty.vendor.punchesRequired'))).toHaveValue(8);
+    expect(screen.getByLabelText(t('loyalty.vendor.minOrderAmount'))).toHaveValue(500);
+    expect(screen.getByLabelText(t('loyalty.vendor.rewardTypeLabel'))).toHaveValue('DISCOUNT_PERCENT');
+    expect(screen.getByLabelText(t('loyalty.vendor.rewardValuePercent'))).toHaveValue(20);
+  });
+
+  it('saves a punch card program with a discount reward and min order amount', async () => {
+    const user = userEvent.setup();
+    mocks.upsertProgram.mockResolvedValue({
+      data: { data: { ...cashbackProgram, type: 'PUNCH_CARD' } },
+    });
+    renderTab();
+    await waitFor(() => { expect(mocks.getProgram).toHaveBeenCalled(); });
+    await user.type(screen.getByLabelText(t('loyalty.vendor.punchesRequired')), '6');
+    await user.type(screen.getByLabelText(t('loyalty.vendor.minOrderAmount')), '400');
+    await user.selectOptions(
+      screen.getByLabelText(t('loyalty.vendor.rewardTypeLabel')),
+      'DISCOUNT_FIXED',
+    );
+    await user.type(screen.getByLabelText(t('loyalty.vendor.rewardValueFixed')), '150');
+    await user.click(screen.getByRole('button', { name: t('common.actions.save') }));
+    await waitFor(() => { expect(mocks.upsertProgram).toHaveBeenCalled(); });
+    const payload = mocks.upsertProgram.mock.calls.at(-1)?.[1] as {
+      min_order_amount?: number;
+      reward_value?: number;
+      punches_required?: number;
+    };
+    expect(payload.min_order_amount).toBe(400);
+    expect(payload.reward_value).toBe(150);
+    expect(payload.punches_required).toBe(6);
+  });
+
   it('saves a punch card program and shows the saved confirmation', async () => {
     const user = userEvent.setup();
     mocks.upsertProgram.mockResolvedValue({
@@ -194,6 +285,46 @@ describe('VendorLoyaltyTab', () => {
     expect(
       await screen.findByText(t('apiErrors.byCode.LOYALTY_TIER_THRESHOLDS_DUPLICATE')),
     ).toBeInTheDocument();
+  });
+
+  it('edits punch card fields', async () => {
+    const user = userEvent.setup();
+    renderTab();
+    await waitFor(() => { expect(mocks.getProgram).toHaveBeenCalled(); });
+    const punches = screen.getByLabelText(t('loyalty.vendor.punchesRequired'));
+    await user.clear(punches);
+    await user.type(punches, '5');
+    expect(punches).toHaveValue(5);
+
+    const minAmount = screen.getByLabelText(t('loyalty.vendor.minOrderAmount'));
+    await user.clear(minAmount);
+    await user.type(minAmount, '300');
+    expect(minAmount).toHaveValue(300);
+
+    const rewardType = screen.getByLabelText(t('loyalty.vendor.rewardTypeLabel'));
+    await user.selectOptions(rewardType, 'DISCOUNT_PERCENT');
+    expect(rewardType).toHaveValue('DISCOUNT_PERCENT');
+
+    const rewardValue = screen.getByLabelText(t('loyalty.vendor.rewardValuePercent'));
+    await user.clear(rewardValue);
+    await user.type(rewardValue, '15');
+    expect(rewardValue).toHaveValue(15);
+  });
+
+  it('edits cashback tier fields', async () => {
+    const user = userEvent.setup();
+    renderTab();
+    await waitFor(() => { expect(mocks.getProgram).toHaveBeenCalled(); });
+    await user.click(screen.getByRole('radio', { name: t('loyalty.programType.CASHBACK') }));
+
+    const basis = screen.getByLabelText(t('loyalty.vendor.tierBasisLabel'));
+    await user.selectOptions(basis, 'SPENT');
+    expect(basis).toHaveValue('SPENT');
+
+    await user.click(screen.getByRole('button', { name: new RegExp(t('loyalty.vendor.tiers.add')) }));
+    const name = screen.getAllByLabelText(t('loyalty.vendor.tiers.name'))[0] as HTMLElement;
+    await user.type(name, 'Gold');
+    expect(name).toHaveValue('Gold');
   });
 
   it('renders nothing without a selected restaurant', () => {

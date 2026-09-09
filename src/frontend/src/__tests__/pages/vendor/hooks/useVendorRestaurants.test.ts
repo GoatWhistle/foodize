@@ -118,6 +118,65 @@ describe('useVendorRestaurants restaurants', () => {
     expect(result.current.editRestaurant).toBeNull();
   });
 
+  it('serializes optional fields on update', async () => {
+    const params = makeParams();
+    const { result } = renderHook(() => useVendorRestaurants(params));
+    act(() => { result.current.setSelectedRestaurant({ id: 'r1', name: 'R1', address: 'A1' } as Restaurant); });
+    act(() => {
+      result.current.setEditRestaurant({
+        id: 'r1',
+        name: 'N',
+        address: 'A',
+        description: '  desc  ',
+        is_ordering_paused: true,
+        ordering_paused_until: '2026-01-01T10:00',
+        avg_prep_time_minutes: 25,
+        max_active_orders: 7,
+        photo_url: 'https://example.com/p.jpg',
+      } as Restaurant);
+    });
+    await act(async () => {
+      await result.current.handleUpdateRestaurant(submitEvent());
+    });
+    expect(restaurantService.update).toHaveBeenCalledWith(
+      'r1',
+      expect.objectContaining({
+        description: 'desc',
+        avg_prep_time_minutes: 25,
+        max_active_orders: 7,
+        photo_url: 'https://example.com/p.jpg',
+      })
+    );
+    const payload = vi.mocked(restaurantService.update).mock.calls.at(-1)?.[1] as {
+      ordering_paused_until: string | null;
+    };
+    expect(payload.ordering_paused_until).toContain('2026-01-01');
+  });
+
+  it('nulls optional fields when they are empty on update', async () => {
+    const params = makeParams();
+    const { result } = renderHook(() => useVendorRestaurants(params));
+    act(() => { result.current.setSelectedRestaurant({ id: 'r1', name: 'R1', address: 'A1' } as Restaurant); });
+    act(() => {
+      result.current.setEditRestaurant({
+        id: 'r1',
+        name: 'N',
+        address: 'A',
+        description: '',
+        ordering_paused_until: null,
+        avg_prep_time_minutes: 0,
+        max_active_orders: 0,
+      } as Restaurant);
+    });
+    await act(async () => {
+      await result.current.handleUpdateRestaurant(submitEvent());
+    });
+    expect(restaurantService.update).toHaveBeenCalledWith(
+      'r1',
+      expect.objectContaining({ description: null, ordering_paused_until: null, max_active_orders: null })
+    );
+  });
+
   it('validates missing name on update', async () => {
     const params = makeParams();
     const { result } = renderHook(() => useVendorRestaurants(params));

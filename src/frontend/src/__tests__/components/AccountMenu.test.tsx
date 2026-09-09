@@ -131,6 +131,32 @@ describe('AccountMenu', () => {
     expect(screen.queryByText(t('profile.roles.becomeVendor'))).toBeNull();
   });
 
+  it('navigates to profile', async () => {
+    const user = userEvent.setup();
+    renderMenu();
+    await openMenu(user);
+    await user.click(screen.getByText(t('profile.nav.profile')));
+    expect(mockNavigate).toHaveBeenCalledWith('/profile');
+  });
+
+  it('navigates to the staff dashboard', async () => {
+    vi.mocked(staffService.getMyProfile).mockResolvedValue({} as never);
+    const user = userEvent.setup();
+    renderMenu();
+    await openMenu(user);
+    await user.click(await screen.findByText(t('profile.roles.staffDashboard')));
+    expect(mockNavigate).toHaveBeenCalledWith('/staff');
+  });
+
+  it('navigates to the admin panel', async () => {
+    setUser(['admin.access']);
+    const user = userEvent.setup();
+    renderMenu();
+    await openMenu(user);
+    await user.click(await screen.findByText(t('profile.page.adminPanelShort')));
+    expect(mockNavigate).toHaveBeenCalledWith('/admin');
+  });
+
   it('closes on escape', async () => {
     const user = userEvent.setup();
     renderMenu();

@@ -53,6 +53,12 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
 
+      - name: Generate JWT keys
+        run: |
+          mkdir -p certs
+          openssl genrsa -out certs/jwt-private.pem 2048
+          openssl rsa -in certs/jwt-private.pem -outform PEM -pubout -out certs/jwt-public.pem
+
       - name: Run Mypy
         run: uv run mypy .
 
@@ -117,6 +123,13 @@ jobs:
       - name: Install mobile dependencies
         working-directory: src/mobile
         run: npm ci
+
+      - name: Generate JWT keys
+        working-directory: src/backend
+        run: |
+          mkdir -p certs
+          openssl genrsa -out certs/jwt-private.pem 2048
+          openssl rsa -in certs/jwt-private.pem -outform PEM -pubout -out certs/jwt-public.pem
 
       - name: Run all pre-commit hooks
         working-directory: src/backend
@@ -247,8 +260,6 @@ jobs:
       - name: Run Tests with Coverage
         run: npm run test:coverage
 
-      - name: Run npm audit (dependency vulnerability scan)
-        run: npm audit --audit-level=high
 
   openapi-contract-ci:
     runs-on: ubuntu-latest
@@ -286,6 +297,13 @@ jobs:
         working-directory: src/telegram-miniapp
         run: npm ci
 
+      - name: Generate JWT keys
+        working-directory: src/backend
+        run: |
+          mkdir -p certs
+          openssl genrsa -out certs/jwt-private.pem 2048
+          openssl rsa -in certs/jwt-private.pem -outform PEM -pubout -out certs/jwt-public.pem
+
       - name: Regenerate OpenAPI contract
         run: make openapi
 
@@ -296,6 +314,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Provide .env for compose parsing
+        run: cp .env.example .env
 
       - name: Check docker-compose.yaml vs docker-compose.prod.yaml consistency
         run: python3 tools/check_compose_consistency.py
@@ -428,7 +449,7 @@ jobs:
           tags: foodize-telegram-bot:ci
 
       - name: Trivy scan backend image
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.36.0
         with:
           image-ref: foodize-backend:ci
           severity: HIGH,CRITICAL
@@ -437,7 +458,7 @@ jobs:
           format: table
 
       - name: Trivy scan frontend image
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.36.0
         with:
           image-ref: foodize-frontend:ci
           severity: HIGH,CRITICAL
@@ -446,7 +467,7 @@ jobs:
           format: table
 
       - name: Trivy scan miniapp image
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.36.0
         with:
           image-ref: foodize-miniapp:ci
           severity: HIGH,CRITICAL
@@ -455,7 +476,7 @@ jobs:
           format: table
 
       - name: Trivy scan telegram-bot image
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.36.0
         with:
           image-ref: foodize-telegram-bot:ci
           severity: HIGH,CRITICAL

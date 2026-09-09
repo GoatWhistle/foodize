@@ -2063,6 +2063,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/notifications/devices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register Device */
+        post: operations["register_device_api_v1_notifications_devices_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/devices/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Unregister Device */
+        delete: operations["unregister_device_api_v1_notifications_devices__token__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ping": {
         parameters: {
             query?: never;
@@ -3352,6 +3386,45 @@ export interface components {
             /** Min Order Amount */
             min_order_amount?: number | null;
         };
+        /** PushDeviceRegisterRequest */
+        PushDeviceRegisterRequest: {
+            /** Token */
+            token: string;
+            platform: components["schemas"]["PushPlatform"];
+            /** Language */
+            language?: string | null;
+        };
+        /** PushDeviceResponse */
+        PushDeviceResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+            /** Token */
+            token: string;
+            /** Platform */
+            platform: string;
+            /** Language */
+            language?: string | null;
+            /** Is Active */
+            is_active: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * PushPlatform
+         * @enum {string}
+         */
+        PushPlatform: "ios" | "android" | "web";
         /** RatingResponse */
         RatingResponse: {
             /**
@@ -8591,6 +8664,68 @@ export interface operations {
             header?: never;
             path: {
                 notification_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    register_device_api_v1_notifications_devices_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushDeviceRegisterRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PushDeviceResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unregister_device_api_v1_notifications_devices__token__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
             };
             cookie?: never;
         };

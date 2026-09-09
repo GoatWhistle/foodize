@@ -2,6 +2,7 @@ import asyncio
 import sys
 import uuid
 from pathlib import Path
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -59,9 +60,10 @@ class TestSubscribedPubsub:
         with patch("shared.ws.get_redis_cache", return_value=cache):
             async with subscribed_pubsub("chan") as ps:
                 assert ps is pubsub
-        pubsub.subscribe.assert_awaited_once_with("chan")
-        pubsub.unsubscribe.assert_awaited_once_with("chan")
-        pubsub.aclose.assert_awaited_once()
+        mocked = cast("MagicMock", pubsub)
+        mocked.subscribe.assert_awaited_once_with("chan")
+        mocked.unsubscribe.assert_awaited_once_with("chan")
+        mocked.aclose.assert_awaited_once()
 
 
 class TestRunChannelWs:

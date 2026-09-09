@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { t } from '@shared/i18n/useTranslation';
 
@@ -84,6 +84,16 @@ describe('MainLayout cart + deep links', () => {
     expect(screen.getByTestId('cart-drawer')).toBeInTheDocument();
     await user.click(screen.getByText('close-drawer'));
     expect(screen.queryByTestId('cart-drawer')).toBeNull();
+  });
+
+  it('opens the drawer from the bottom nav cart tab', async () => {
+    cartState.cart = [line(100, 1, [])];
+    const user = userEvent.setup();
+    renderLayout();
+    const nav = document.querySelector('nav') as HTMLElement;
+    const cartTab = within(nav).getByText(t('profile.nav.cart'));
+    await user.click(cartTab);
+    expect(screen.getByTestId('cart-drawer')).toBeInTheDocument();
   });
 
   it('does not render fab when cart is empty', () => {

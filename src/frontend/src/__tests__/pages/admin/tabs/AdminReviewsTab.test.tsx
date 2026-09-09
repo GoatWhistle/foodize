@@ -68,6 +68,17 @@ describe('AdminReviewsTab', () => {
     expect(screen.getByText(/u2abcdef/)).toBeInTheDocument();
   });
 
+  it('dims the list while reloading with existing reviews', () => {
+    const { container } = render(<AdminReviewsTab {...baseProps({ reviewsLoading: true })} />);
+    expect(container.querySelector('.loading-dim')).not.toBeNull();
+  });
+
+  it('keeps the header checkbox unchecked when there are no reviews', () => {
+    render(<AdminReviewsTab {...baseProps({ reviews: [] })} />);
+    const boxes = screen.queryAllByRole('checkbox');
+    boxes.forEach((box) => { expect(box).not.toBeChecked(); });
+  });
+
   it('renders empty state', () => {
     render(<AdminReviewsTab {...baseProps({ reviews: [] })} />);
     expect(screen.getByText(t('admin.reviews.emptyTitle'))).toBeInTheDocument();

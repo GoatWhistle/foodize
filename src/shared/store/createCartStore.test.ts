@@ -222,3 +222,35 @@ describe("createCartStore", () => {
     expect(mocks.getCart).toHaveBeenCalled();
   });
 });
+
+describe("createCartStore option normalization", () => {
+  it("keeps option_id, name and price_delta when they are present", async () => {
+    const store = createCartStore();
+    await store
+      .getState()
+      .addToCart(menuItem("1"), "r1", [{ id: "o1", name: "Сыр", price_delta: 50 }], 2);
+    const line = store.getState().cart[0];
+    expect(line?.selectedOptionIds).toEqual(["o1"]);
+    expect(line?.selectedOptions[0]).toMatchObject({
+      option_id: "o1",
+      id: "o1",
+      name: "Сыр",
+      price_delta: 50,
+    });
+    expect(line?.quantity).toBe(2);
+  });
+
+  it("omits absent option fields and drops options without an id", async () => {
+    const store = createCartStore();
+    await store.getState().addToCart(menuItem("2"), "r1", [{ name: "Без id" }], 0);
+    const line = store.getState().cart[0];
+    expect(line?.selectedOptionIds).toEqual([]);
+    expect(line?.quantity).toBe(1);
+  });
+
+  it("falls back to option_id when id is missing", async () => {
+    const store = createCartStore();
+    await store.getState().addToCart(menuItem("3"), "r1", [{ option_id: "o9" }]);
+    expect(store.getState().cart[0]?.selectedOptionIds).toEqual(["o9"]);
+  });
+});

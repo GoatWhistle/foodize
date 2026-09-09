@@ -78,11 +78,11 @@ flowchart LR
     Outbox --> Worker[Notification worker]
     Worker --> MQ[(RabbitMQ)]
     MQ --> Bot
-    API -.WebSocket.-> Web
+    API -. WebSocket .-> Web
     API --> LLM{LLM provider}
-    Shared[[@foodize/shared]] -.domain logic.- Web
-    Shared -.domain logic.- Mini
-    Shared -.domain logic.- Mobile
+    Shared[[shared domain layer]] -.-> Web
+    Shared -.-> Mini
+    Shared -.-> Mobile
 ```
 
 - **Feature-sliced backend.** Domain code lives in `src/backend/features/*`; infrastructure in `src/backend/infra/*` (`llm`, `cache`, `messaging`, `storage`).
