@@ -2,6 +2,7 @@ import os
 from collections.abc import AsyncGenerator
 
 import pytest_asyncio
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
@@ -22,6 +23,8 @@ TestingSessionLocal = async_sessionmaker(
 @pytest_asyncio.fixture(loop_scope="function", autouse=True)
 async def setup_test_db() -> AsyncGenerator[None]:
     async with engine.begin() as conn:
+        if not _TEST_DATABASE_URL.startswith("sqlite"):
+            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         await conn.run_sync(Base.metadata.create_all)
     yield
     async with engine.begin() as conn:

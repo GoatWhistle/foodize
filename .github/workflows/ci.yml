@@ -21,7 +21,7 @@ jobs:
         working-directory: src/backend
     services:
       postgres:
-        image: postgres:17-alpine
+        image: pgvector/pgvector:pg17
         env:
           POSTGRES_DB: foodize_test
           POSTGRES_USER: foodize_user
@@ -339,7 +339,7 @@ jobs:
             -e POSTGRES_DB="$POSTGRES_DB" \
             -e POSTGRES_USER="$POSTGRES_USER" \
             -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
-            postgres:17-alpine
+            pgvector/pgvector:pg17
           for i in $(seq 1 30); do
             if docker exec "$PG_CONTAINER" pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" >/dev/null 2>&1; then
               break
