@@ -2415,18 +2415,12 @@ export interface components {
         };
         /** Body_upload_menu_item_photo_api_v1_menu__restaurant_id__items__item_id__photo_post */
         Body_upload_menu_item_photo_api_v1_menu__restaurant_id__items__item_id__photo_post: {
-            /**
-             * File
-             * Format: binary
-             */
+            /** File */
             file: string;
         };
         /** Body_upload_restaurant_photo_api_v1_restaurants__restaurant_id__photo_post */
         Body_upload_restaurant_photo_api_v1_restaurants__restaurant_id__photo_post: {
-            /**
-             * File
-             * Format: binary
-             */
+            /** File */
             file: string;
         };
         /** CartItemIn */
@@ -4221,6 +4215,10 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+            /** Input */
+            input?: unknown;
+            /** Context */
+            ctx?: Record<string, never>;
         };
         /** VendorResponse */
         VendorResponse: {

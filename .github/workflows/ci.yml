@@ -449,7 +449,7 @@ jobs:
           tags: foodize-telegram-bot:ci
 
       - name: Trivy scan backend image
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: foodize-backend:ci
           severity: HIGH,CRITICAL
@@ -458,7 +458,7 @@ jobs:
           format: table
 
       - name: Trivy scan frontend image
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: foodize-frontend:ci
           severity: HIGH,CRITICAL
@@ -467,7 +467,7 @@ jobs:
           format: table
 
       - name: Trivy scan miniapp image
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: foodize-miniapp:ci
           severity: HIGH,CRITICAL
@@ -476,7 +476,7 @@ jobs:
           format: table
 
       - name: Trivy scan telegram-bot image
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: foodize-telegram-bot:ci
           severity: HIGH,CRITICAL
