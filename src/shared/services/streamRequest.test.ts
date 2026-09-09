@@ -1,4 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+
+vi.mock("@shared/services/cookieRefresh", () => ({
+  cookieRefresh: vi.fn(() => Promise.resolve()),
+}));
 import { streamSseRequest } from "@shared/services/streamRequest";
 import { t } from "@shared/i18n/useTranslation";
 
@@ -88,6 +92,19 @@ describe("streamSseRequest", () => {
     );
     expect(refreshToken).toHaveBeenCalled();
     expect(chunks).toEqual(["ok"]);
+  });
+
+  it("falls back to the cookie refresh when no refreshToken is given", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(makeStreamResponse([], { status: 401 }))
+      .mockResolvedValueOnce(makeStreamResponse(["done"]))
+      .mockResolvedValue(makeStreamResponse(["done"]));
+    globalThis.fetch = fetchMock;
+    const chunks: string[] = [];
+    await streamSseRequest("https://api/chat", {}, { onChunk: (c) => chunks.push(c) });
+    expect(chunks).toEqual(["done"]);
+    expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(2);
   });
 
   it("throws when the retry after 401 is not ok", async () => {

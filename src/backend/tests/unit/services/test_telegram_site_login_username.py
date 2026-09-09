@@ -7,6 +7,7 @@ from features.telegram.site_login import (
     request_site_login_code_by_username,
     verify_site_login_code_by_username,
 )
+from settings.config.app_config import settings
 from shared.exceptions.existence import AuthException
 
 from .telegram_site_login_helpers import (
@@ -41,6 +42,7 @@ async def test_request_by_username_sends_html_message() -> None:
         ),
         patch("features.telegram.site_login.secrets.randbelow", return_value=7),
         patch_telegram_client(client),
+        patch.object(settings.telegram, "bot_token", "test-token"),
     ):
         await request_site_login_code_by_username(AsyncMock(), "@Ivan_TG")
 

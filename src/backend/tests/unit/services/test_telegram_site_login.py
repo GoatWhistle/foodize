@@ -11,6 +11,7 @@ from features.telegram.site_login import (
     verify_site_login_code,
 )
 from features.users.models import User
+from settings.config.app_config import settings
 from shared.exceptions.existence import AuthException
 
 
@@ -62,6 +63,7 @@ async def test_request_site_login_code_saves_code_and_sends_telegram_message() -
         patch("features.telegram.site_login.get_redis_cache", return_value=cache),
         patch("features.telegram.site_login.secrets.randbelow", return_value=42),
         patch("features.telegram.site_login.httpx.AsyncClient", _HttpClient),
+        patch.object(settings.telegram, "bot_token", "test-token"),
     ):
         await request_site_login_code(AsyncMock(), "79001234567")
 
