@@ -1,132 +1,129 @@
-# Foodize
+<h1 align="center">Foodize</h1>
 
-Foodize is a food pre-ordering platform that connects customers with local restaurants.
-Customers build an order and pick a pickup time; restaurants manage their menus and
-process orders. The platform is reachable from a web app, a Telegram Mini App, a Telegram
-bot, and a React Native mobile app. Two conversational AI agents are built in: an order
-assistant for the customer and an AI business advisor for the venue owner.
+<p align="center">
+  <strong>Order ahead, skip the line.</strong><br/>
+  A food pre-ordering platform where guests pick up at a time they choose — and venues run the whole kitchen queue from one screen.
+</p>
 
-## Features
+<p align="center">
+  <a href="#how-it-works">How it works</a>
+  &nbsp;·&nbsp;
+  <a href="#ai-assistants">AI assistants</a>
+  &nbsp;·&nbsp;
+  <a href="#run-locally">Run locally</a>
+  &nbsp;·&nbsp;
+  <a href="#architecture">Architecture</a>
+</p>
 
-**Customers**
-- Restaurant and menu catalog, cart, orders with a pickup time.
-- Dish options and modifiers, promo codes, favorites, reviews and ratings.
-- Push notifications about order status (WebSocket + Telegram).
-- **AI order assistant** — finds dishes and places the order in chat.
+<p align="center">
+  <img alt="MIT" src="https://img.shields.io/badge/license-MIT-17191d?style=flat-square"/>
+  <img alt="Python" src="https://img.shields.io/badge/python-3.13-3776ab?style=flat-square"/>
+  <img alt="React" src="https://img.shields.io/badge/react-19-61dafb?style=flat-square"/>
+  <img alt="Clients" src="https://img.shields.io/badge/clients-web_·_telegram_·_mobile-e8562a?style=flat-square"/>
+</p>
 
-**Restaurants / vendors**
-- Menu management (items, categories, options, availability).
-- Real-time incoming-order feed, status management.
-- Financial analytics and advanced statistics, export (CSV / PDF).
-- Staff and permission management.
-- **AI business advisor** — sales breakdowns and recommendations in chat.
+## The problem
 
-**Staff and admins**
-- Staff role with an order pickup screen (display board).
-- Admin panel: restaurant and vendor moderation, users, permissions (RBAC), platform
-  statistics, exports, action audit.
+Lunch queues waste the two things nobody has: the guest's break and the venue's peak hour. Ordering apps solved delivery, not pickup — the guest still arrives to wait, and the kitchen still cooks blind, guessing what walks through the door next.
 
-**Telegram**
-- Mini App with `initData` authentication.
-- Bot (aiogram): account linking by phone number, order notifications.
+Foodize moves the order before the arrival. A guest picks a dish and a pickup time; the kitchen sees the queue ahead of it and cooks against a schedule instead of a doorbell.
+
+## Product
+
+**For guests.** Browse venues and menus, build a cart with options and modifiers, apply promo codes, and choose a pickup time. Order status arrives live over WebSocket, through Telegram, or as a native push. Favorites, reviews and ratings included — or skip the UI entirely and let the AI assistant assemble the order in chat.
+
+**For venues.** Manage menus, categories, options and availability. Watch a real-time feed of incoming orders and move them through statuses. Read financial analytics and sales breakdowns, export to CSV or PDF, and manage staff with scoped permissions. An AI advisor reads the numbers and answers questions about them.
+
+**For staff and admins.** A pickup display board for counter staff. An admin panel for venue and vendor moderation, users, RBAC, platform statistics, exports and an action audit log.
+
+**Four ways in.** Web app, Telegram Mini App, Telegram bot, and a native iOS/Android app — all on one backend, sharing one domain layer.
+
+## How it works
+
+1. **Discover** — the guest browses venues and menus, or describes what they want to the order assistant.
+2. **Build** — items, options and modifiers land in a cart; promo codes and loyalty apply at checkout.
+3. **Schedule** — the guest picks a pickup time instead of waiting for a courier.
+4. **Confirm** — the order is created idempotently (`Idempotency-Key`) and lands in the venue's live feed.
+5. **Cook** — the kitchen advances statuses; every transition is published through an outbox so no notification is lost.
+6. **Notify** — the guest sees the change over WebSocket, in Telegram, and as a native push.
+7. **Pick up** — the display board calls the order at the counter; the guest walks past the queue.
+8. **Learn** — sales, peak hours and reviews feed the venue's AI advisor for the next day.
+
+## AI assistants
+
+Two agents for two roles, both streaming token by token.
+
+| Agent | For | What it does |
+|---|---|---|
+| **Order Agent** | guest | Finds dishes via RAG menu search, builds the cart and places the order through tools — always confirming before checkout |
+| **Business Advisor** | venue owner | Analyzes sales, peak hours, top and bottom items, revenue by category and reviews, then gives concrete recommendations; ships a proactive daily breakdown cached for 24 hours |
+
+**The model proposes; the backend decides.** A single agent loop ([`infra/llm/agent.py`](src/backend/infra/llm/agent.py)) executes tool calls server-side. The model passes identifiers and parameters only — prices, availability and permissions (`user_id` / `vendor_id`) are validated on the backend, and the model never touches the database.
+
+**Provider-agnostic.** One contract, four providers, switched by a single environment variable (`LLM__PROVIDER`) with no change to agent code: Anthropic (direct), GigaChat and OpenAI/OpenRouter (OpenAI-compatible endpoint), and Ollama for local inference.
+
+**RAG menu search** ([`ai_order_agent/search.py`](src/backend/features/ai_order_agent/search.py)): SQL prefilter over available items → embeddings of query and candidates (bge-m3) → cosine similarity → hybrid re-rank → top-k, with an embedding cache in Redis. If embeddings are unavailable, search degrades to keyword mode automatically.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    Web[Web app] --> API
+    Mini[Telegram Mini App] --> API
+    Mobile[Mobile app] --> API
+    Bot[Telegram bot] --> API
+    API[FastAPI backend] --> PG[(PostgreSQL)]
+    API --> Redis[(Redis)]
+    API --> Outbox[Outbox table]
+    Outbox --> Worker[Notification worker]
+    Worker --> MQ[(RabbitMQ)]
+    MQ --> Bot
+    API -.WebSocket.-> Web
+    API --> LLM{LLM provider}
+    Shared[[@foodize/shared]] -.domain logic.- Web
+    Shared -.domain logic.- Mini
+    Shared -.domain logic.- Mobile
+```
+
+- **Feature-sliced backend.** Domain code lives in `src/backend/features/*`; infrastructure in `src/backend/infra/*` (`llm`, `cache`, `messaging`, `storage`).
+- **One domain layer, four clients.** Web, Mini App and mobile share stores, services, hooks, i18n, types and utils through `@foodize/shared`, injecting platform specifics via the `.instance` pattern — see the [shared README](src/shared/README.md).
+- **Reliable events.** An outbox table plus a worker guarantee delivery when the broker is down; order creation is idempotent by header.
+- **One source of truth for the API.** `make openapi` exports the schema from the backend and regenerates the shared TypeScript types both web clients consume.
+- **Security.** JWT on RSA keys, role-based access control, `initData` validation for the Mini App, and secure-store token handling on mobile.
 
 ## Services
 
-The monorepo contains six services under `src/`, each with its own README:
+Six services under `src/`, each with its own README:
 
 | Service | Path | Stack |
 |---|---|---|
 | Backend API | [`src/backend`](src/backend/README.md) | FastAPI, Python 3.13, SQLAlchemy (async), Alembic, PostgreSQL, Redis, RabbitMQ |
 | Web frontend | [`src/frontend`](src/frontend/README.md) | React 19, Vite, TypeScript, Zustand, Axios |
-| Shared package | [`src/shared`](src/shared/README.md) | `@foodize/shared` — platform-agnostic React/TS logic reused by the clients |
+| Shared package | [`src/shared`](src/shared/README.md) | `@foodize/shared` — platform-agnostic React/TS domain logic |
 | Telegram bot | [`src/telegram-bot`](src/telegram-bot/README.md) | aiogram 3, Python 3.13, aio-pika, Redis |
 | Telegram Mini App | [`src/telegram-miniapp`](src/telegram-miniapp/README.md) | React 19, Vite, TypeScript, Telegram WebApp SDK |
 | Mobile app | [`src/mobile`](src/mobile/README.md) | React Native, Expo SDK 53, expo-router, React 19 |
 
-The web frontend, Mini App, and mobile app share their domain logic (stores, services,
-hooks, i18n, types, utils, components) through `@foodize/shared`. Each app injects its
-platform-specific implementations via the `.instance` pattern — see the
-[shared README](src/shared/README.md) for the full architecture.
+## Run locally
 
-## AI assistants
-
-Two agents for two roles, both responding with streaming (token by token):
-
-| Agent | For | What it does |
-|---|---|---|
-| **Order Agent** | customer | finds dishes (RAG menu search), builds the cart, and places the order — via tools, with confirmation before checkout |
-| **Business Advisor** | venue owner | analyzes sales, peak hours, top/bottom items, revenue by category and reviews, and gives concrete recommendations; includes a proactive breakdown cached for 24 hours |
-
-**Provider-agnostic LLM layer.** One contract, several providers, switchable with a
-single environment variable (`LLM__PROVIDER`) without changing agent code:
-
-- Anthropic (Claude) — direct integration;
-- GigaChat (Sber) and OpenAI / OpenRouter — via an OpenAI-compatible endpoint;
-- Ollama — local inference.
-
-**Tool-calling.** A single agent loop ([`infra/llm/agent.py`](src/backend/infra/llm/agent.py))
-executes tool calls (function calling) on the server: the model passes only identifiers
-and parameters, while prices, availability, and permissions (`user_id` / `vendor_id`)
-are validated on the backend — the model never touches the database directly.
-
-**RAG menu search** ([`ai_order_agent/search.py`](src/backend/features/ai_order_agent/search.py)):
-SQL prefilter of available items → embeddings of the query and candidates (bge-m3) →
-cosine similarity → hybrid re-rank → top-k, with an embedding cache in Redis. If
-embeddings are unavailable, it automatically falls back to keyword search.
-
-**Prompt engineering.** System prompts and scenarios are defined in each agent's
-`service.py`: rules, response format, mandatory confirmation before placing an order,
-empty-result handling, and input hardening (message-role whitelist, length and history
-limits).
-
-Code: [`infra/llm/`](src/backend/infra/llm/),
-[`features/ai_order_agent/`](src/backend/features/ai_order_agent/),
-[`features/ai_advisor/`](src/backend/features/ai_advisor/);
-configuration — [`settings/config/runtime/llm.py`](src/backend/settings/config/runtime/llm.py);
-tests — [`tests/unit/ai/`](src/backend/tests/unit/ai/).
-
-## Tech stack
-
-- **AI:** provider-agnostic LLM layer (Anthropic / GigaChat / OpenAI-compatible /
-  Ollama), function calling, RAG (embeddings + Redis cache), prompt engineering.
-- **Backend:** Python, FastAPI, SQLAlchemy (async), Alembic, PostgreSQL, Redis, RabbitMQ.
-- **Frontend:** React, Vite, Zustand, Axios.
-- **Telegram:** Mini App (React + WebApp SDK), bot (aiogram).
-- **Mobile:** React Native, Expo SDK 53, expo-router.
-- **Infrastructure:** Docker Compose, Prometheus, Grafana; CI with ruff, mypy, pytest,
-  vitest.
-
-## Architecture
-
-- The backend is organized by feature: `src/backend/features/*`; infrastructure layers
-  live in `src/backend/infra/*` (`llm`, `cache`, `messaging`, `storage`).
-- JWT authentication (RSA keys), role-based access control (RBAC).
-- Realtime (orders, notifications, display board) over WebSocket.
-- Reliable event delivery via an **Outbox** (the `outbox_events` table + a worker) so
-  notifications are not lost when the broker is unavailable.
-- Order-creation idempotency via the `Idempotency-Key` header.
-- The backend is the source of truth for the API contract; `make openapi` exports the
-  schema and regenerates the shared TypeScript types (`src/shared/types/api.ts`) that the
-  web frontend and the Mini App both consume.
-
-## Quick start (Docker)
+Requirements: Docker and Docker Compose, plus credentials for one LLM provider.
 
 ```bash
-cp .env.example .env   # fill in values (at least the LLM provider, see below)
+cp .env.example .env   # fill in values — at minimum an LLM provider
 make keys              # RSA keys for JWT → src/backend/certs
 make up                # bring up the whole stack
-make seed              # seed demo data (restaurants, menus, users)
+make seed              # demo venues, menus and users
 ```
 
-Local services:
+| Service | URL |
+|---|---|
+| Backend API + Swagger | `http://localhost:8000/docs` |
+| Health check | `http://localhost:8000/api/health` |
+| Web frontend | `http://localhost:5173` |
+| Telegram Mini App (dev) | `http://localhost:5174` |
+| RabbitMQ UI | `http://localhost:15672` |
 
-- Backend API + Swagger: `http://localhost:8000/docs`
-- Health check: `http://localhost:8000/api/health`
-- Frontend: `http://localhost:5173`
-- Telegram Mini App (dev): `http://localhost:5174`
-- RabbitMQ UI: `http://localhost:15672`
-
-### LLM configuration in `.env`
+### LLM configuration
 
 ```env
 # Choose ONE provider
@@ -139,33 +136,37 @@ LLM__OPENAI_MODEL=openai/gpt-4o-mini
 # GigaChat:   LLM__PROVIDER=gigachat,  LLM__GIGACHAT_API_KEY=<token>
 # Ollama:     LLM__PROVIDER=ollama,    LLM__OLLAMA_MODEL=qwen2.5
 
-# Embeddings for RAG search (local Ollama bge-m3). If unavailable,
-# search automatically degrades to keyword mode.
+# Embeddings for RAG search (local Ollama bge-m3).
+# If unavailable, search degrades to keyword mode.
 LLM__EMBEDDINGS_ENABLED=true
 LLM__EMBEDDING_BASE_URL=http://localhost:11434/v1
 LLM__EMBEDDING_MODEL=bge-m3
 ```
 
-> The model must support tool calling (function calling) — both agents rely on it.
+> The model must support tool calling — both agents depend on it.
 
-Try the agents: Swagger at `http://localhost:8000/docs` →
-`POST /api/v1/ai/order/chat` and `POST /api/v1/ai/advisor/chat`, or the assistant button
-in the web UI.
+Try the agents in Swagger via `POST /api/v1/ai/order/chat` and `POST /api/v1/ai/advisor/chat`, or from the assistant button in the web UI.
 
-## Development commands
+### Telegram
+
+The Mini App authenticates by validating `initData` on the backend; the bot links a Telegram account to a Foodize account by phone number. For local testing behind a public HTTPS URL, `make tg` brings up the stack and exposes the Mini App through ngrok.
+
+Required in `.env`: `BOT_TOKEN`, `TELEGRAM__BOT_API_SECRET`, `MINI_APP_URL`, `BOT_MODE=polling`.
+
+## Development
 
 ```bash
-make sync      # install dependencies (all six services)
-make lint      # backend (pre-commit + mypy), bot (mypy), and eslint + typecheck for shared, frontend, miniapp, mobile
-make test      # pytest (backend, bot) + vitest (shared, frontend, miniapp) + jest (mobile)
+make sync      # install dependencies for all six services
+make lint      # pre-commit + mypy (backend, bot), eslint + typecheck (shared, frontend, miniapp, mobile)
+make test      # pytest (backend, bot), vitest (shared, frontend, miniapp), jest (mobile)
 make openapi   # export the OpenAPI schema and regenerate typed clients
-make up / down / logs   # container management
-make seed      # demo data
+make up / down / logs
+make seed
+make backup                 # PostgreSQL dump
+make restore FILE=dump.sql
 ```
 
-`make sync`, `make lint`, and `make test` cover all six services (backend, bot, shared,
-frontend, miniapp, mobile). CI in `.github/workflows/ci.yml` runs a job per service, and
-the pre-commit hooks cover every service.
+CI in `.github/workflows/ci.yml` runs a job per service; pre-commit hooks cover all six. Every client package enforces a coverage threshold, and the mobile app gates at 90%.
 
 Backend only:
 
@@ -177,36 +178,28 @@ uv run mypy .
 uv run alembic upgrade head
 ```
 
-## Telegram
-
-The Mini App authenticates the user by validating `initData` on the backend. The bot
-links Telegram to a Foodize account by phone number. For local testing with a public
-HTTPS URL, use `make tg` (it brings up the services and exposes the Mini App through
-ngrok).
-
-Required values in `.env`: `BOT_TOKEN`, `TELEGRAM__BOT_API_SECRET`, `MINI_APP_URL`,
-`BOT_MODE=polling` (locally).
-
-## Mobile
-
-The React Native app (Expo SDK 53) reuses the shared domain logic and adds a native UI.
-It authenticates with a Bearer token stored in `expo-secure-store`. See
-[`src/mobile/README.md`](src/mobile/README.md) for setup and current limitations.
-
-## Backup and monitoring
+Monitoring:
 
 ```bash
-make backup                 # PostgreSQL dump
-make restore FILE=dump.sql  # restore
-
 docker compose -f docker-compose.monitoring.yml up -d   # Prometheus + Grafana
 ```
 
-## Deployment
+## Repository layout
 
-See [DEPLOY.md](DEPLOY.md) for production deployment; the roadmap lives in
-[IDEAS.md](IDEAS.md).
+```text
+src/
+├── backend/           FastAPI API, feature-sliced domain, LLM agents
+├── frontend/          React web app
+├── shared/            @foodize/shared — domain logic for every client
+├── telegram-bot/      aiogram bot
+├── telegram-miniapp/  Telegram Mini App
+└── mobile/            React Native app (Expo)
+
+deploy/                nginx and production service definitions
+openapi/               exported API contract
+tools/                 backup, restore and maintenance scripts
+```
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+Foodize is released under the [MIT License](LICENSE).

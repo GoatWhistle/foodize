@@ -139,8 +139,8 @@ guards the authed area and redirects unauthenticated users to `(auth)/login`.
   survives restarts without touching shared.
 - **Push** — `expo-notifications` (`src/platform/pushNotifications.ts`,
   `src/services/push.ts`) with Android channels, deep-link handling
-  (`src/services/deepLinks.ts`) and haptics. The backend device-registration endpoint is
-  not yet implemented (see `PLAN.md` §15); the client degrades gracefully until it exists.
+  (`src/services/deepLinks.ts`) and haptics. Device tokens register against the backend
+  `/notifications/devices` endpoint; the client degrades gracefully if it is unavailable.
 - **Observability** — `@sentry/react-native` (`src/services/observability.ts`) plus a
   native `ErrorBoundary`.
 
