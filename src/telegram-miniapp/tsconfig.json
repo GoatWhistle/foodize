@@ -42,5 +42,15 @@
     }
   },
   "include": ["src", "../shared"],
-  "exclude": ["../shared/**/*.test.ts", "../shared/**/*.test.tsx"]
+  "exclude": [
+    "../shared/**/*.test.ts",
+    "../shared/**/*.test.tsx",
+    "../shared/**/*TestMocks.ts",
+    "../shared/**/*TestUtils.ts",
+    "../shared/**/*TestUtils.tsx",
+    "../shared/vitest.setup.ts",
+    "../shared/node_modules",
+    "../shared/coverage",
+    "../shared/*.config.ts"
+  ]
 }

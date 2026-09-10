@@ -6,7 +6,7 @@ let initialized = false;
 const resolveDsn = (): string | undefined => {
   const extra = Constants.expoConfig?.extra as { sentryDsn?: string } | undefined;
   const fromExtra = extra?.sentryDsn;
-  const fromEnv = process.env.EXPO_PUBLIC_SENTRY_DSN;
+  const fromEnv: string | undefined = process.env.EXPO_PUBLIC_SENTRY_DSN;
   return fromExtra ?? fromEnv;
 };
 

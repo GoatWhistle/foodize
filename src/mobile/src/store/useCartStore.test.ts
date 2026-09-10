@@ -15,8 +15,10 @@ jest.mock("@shared/store/createCartStore", () => ({
   },
 }));
 
+/* eslint-disable import/first */
 import { useOrdersStore } from "@/store/useOrdersStore";
 import "@/store/useCartStore";
+/* eslint-enable import/first */
 
 const options = (): CartOptions => {
   const first = captured[0];

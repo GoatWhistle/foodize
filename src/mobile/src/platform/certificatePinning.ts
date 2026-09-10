@@ -6,8 +6,10 @@ export interface PinningConfig {
   allowInsecure: boolean;
 }
 
-const resolveApiBaseUrl = (): string =>
-  process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+const resolveApiBaseUrl = (): string => {
+  const configured: string | undefined = process.env.EXPO_PUBLIC_API_URL;
+  return configured ?? "http://localhost:8000/api/v1";
+};
 
 const parseHost = (url: string): string | null => {
   try {

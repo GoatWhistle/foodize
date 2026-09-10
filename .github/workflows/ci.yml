@@ -246,7 +246,13 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: src/mobile/package-lock.json
+          cache-dependency-path: |
+            src/shared/package-lock.json
+            src/mobile/package-lock.json
+
+      - name: Install shared dependencies
+        working-directory: src/shared
+        run: npm ci
 
       - name: Install dependencies
         run: npm ci
