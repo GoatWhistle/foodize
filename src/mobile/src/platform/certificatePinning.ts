@@ -1,15 +1,14 @@
 import type { AxiosInstance, InternalAxiosRequestConfig } from "axios";
 import { logError } from "@shared/utils/logError";
+import { readEnv } from "@/config/readEnv";
 
 export interface PinningConfig {
   host: string;
   allowInsecure: boolean;
 }
 
-const resolveApiBaseUrl = (): string => {
-  const configured: string | undefined = process.env.EXPO_PUBLIC_API_URL;
-  return configured ?? "http://localhost:8000/api/v1";
-};
+const resolveApiBaseUrl = (): string =>
+  readEnv("EXPO_PUBLIC_API_URL") ?? "http://localhost:8000/api/v1";
 
 const parseHost = (url: string): string | null => {
   try {

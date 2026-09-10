@@ -1,12 +1,13 @@
 import * as Sentry from "@sentry/react-native";
 import Constants from "expo-constants";
+import { readEnv } from "@/config/readEnv";
 
 let initialized = false;
 
 const resolveDsn = (): string | undefined => {
   const extra = Constants.expoConfig?.extra as { sentryDsn?: string } | undefined;
   const fromExtra = extra?.sentryDsn;
-  const fromEnv: string | undefined = process.env.EXPO_PUBLIC_SENTRY_DSN;
+  const fromEnv = readEnv("EXPO_PUBLIC_SENTRY_DSN");
   return fromExtra ?? fromEnv;
 };
 

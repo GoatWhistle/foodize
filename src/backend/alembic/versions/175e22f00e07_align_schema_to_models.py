@@ -27,9 +27,7 @@ _JSON_COLUMNS: tuple[tuple[str, str], ...] = (
 def upgrade() -> None:
     """Upgrade schema."""
     for table, column in _JSON_COLUMNS:
-        op.execute(
-            f"ALTER TABLE {table} ALTER COLUMN {column} TYPE JSONB USING {column}::jsonb"
-        )
+        op.execute(f"ALTER TABLE {table} ALTER COLUMN {column} TYPE JSONB USING {column}::jsonb")
     op.execute("UPDATE menu_items SET category = 'SHAURMA' WHERE category IS NULL")
     op.alter_column(
         "menu_items",
@@ -50,6 +48,4 @@ def downgrade() -> None:
         existing_server_default=sa.text("'SHAURMA'::character varying"),
     )
     for table, column in _JSON_COLUMNS:
-        op.execute(
-            f"ALTER TABLE {table} ALTER COLUMN {column} TYPE JSON USING {column}::json"
-        )
+        op.execute(f"ALTER TABLE {table} ALTER COLUMN {column} TYPE JSON USING {column}::json")

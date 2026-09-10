@@ -1,12 +1,12 @@
-FROM python:3.13.0-slim-bookworm AS builder
+FROM python:3.13-slim-bookworm AS builder
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV UV_LINK_MODE=copy
 
-RUN pip install --no-cache-dir uv==0.6.0
+RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir uv==0.6.0
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     gcc libpq-dev libffi-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
@@ -17,18 +17,20 @@ RUN uv venv "$VIRTUAL_ENV"
 WORKDIR /backend
 
 COPY pyproject.toml uv.lock ./
-RUN uv pip install --no-cache -r pyproject.toml
+RUN uv pip install --no-cache -r pyproject.toml \
+    && uv pip install --no-cache --upgrade "setuptools>=78.1.1"
 
-FROM python:3.13.0-slim-bookworm AS base
+FROM python:3.13-slim-bookworm AS base
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV VIRTUAL_ENV=/opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     fonts-dejavu-core libpq5 \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    && apt-get clean && rm -rf /var/lib/apt/lists/* \
+    && pip install --no-cache-dir --upgrade pip
 
 WORKDIR /backend
 

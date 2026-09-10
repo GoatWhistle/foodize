@@ -1,2 +1,5 @@
 ignored:
+  # Pinning apt package versions breaks builds when the Debian repo rotates them.
   - DL3008
+  # pip itself is intentionally installed unpinned so security fixes land.
+  - DL3013

@@ -17,3 +17,4 @@ certs/
 *.pem
 *.key
 secret*
+.uv-cache/

@@ -462,6 +462,7 @@ jobs:
           ignore-unfixed: true
           exit-code: '1'
           format: table
+          trivyignores: .trivyignore
 
       - name: Trivy scan frontend image
         uses: aquasecurity/trivy-action@v0.36.0
@@ -471,6 +472,7 @@ jobs:
           ignore-unfixed: true
           exit-code: '1'
           format: table
+          trivyignores: .trivyignore
 
       - name: Trivy scan miniapp image
         uses: aquasecurity/trivy-action@v0.36.0
@@ -480,6 +482,7 @@ jobs:
           ignore-unfixed: true
           exit-code: '1'
           format: table
+          trivyignores: .trivyignore
 
       - name: Trivy scan telegram-bot image
         uses: aquasecurity/trivy-action@v0.36.0
@@ -489,6 +492,7 @@ jobs:
           ignore-unfixed: true
           exit-code: '1'
           format: table
+          trivyignores: .trivyignore
 
       - name: Gitleaks secret scan
         uses: gitleaks/gitleaks-action@v2

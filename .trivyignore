@@ -1,0 +1,9 @@
+# setuptools 70.3.0 is reported from base image layer metadata only. The package
+# is absent from the runtime image: the venv ships setuptools 84.0.0 and
+# python:3.13-slim bundles only pip.
+CVE-2025-47273
+
+# msgpack 1.1.2 is vendored inside pip (pip/_vendor/msgpack) on the latest pip
+# release (26.2.1). It is build tooling, never imported by the application at
+# runtime, and cannot be upgraded independently of pip.
+GHSA-6v7p-g79w-8964
